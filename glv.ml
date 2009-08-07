@@ -3,7 +3,7 @@
  *)
 
 (* glv.ml
- * this is a module signature for a generalized likelihood vector, which is
+ * this is a module for a generalized likelihood vector, which is
  * actually an across-site collection of across-rate collections of likelihood
  * vectors.
  * this abstraction layer means that we should be able to treat any glv like it
