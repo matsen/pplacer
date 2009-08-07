@@ -12,6 +12,8 @@ we want to make a randomization procedure
 open Fam_batteries
 open MapsSets
 
+exception Invalid_place_loc of float
+
 type kr_result = { distance : float }
 
 let tol = 1e-50 (* "zero" *)
@@ -104,6 +106,7 @@ let pair_core verbose cmp ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) =
       | (a, kr_v)::rest -> 
           (* we pull this out so that we do the next total, then add on the kr_v
            * onto the kr_v_sofar *)
+          if a < 0. || a > bl then raise (Invalid_place_loc a);
           let the_next_subtotal = next_subtotal a in
           aux
             ~subtotal:the_next_subtotal
@@ -124,20 +127,27 @@ let pair_core verbose cmp ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) =
       else []
   in
   let (grand_total, final_kr_v) = 
-    Stree.recur 
-      (fun id below_list -> (* the node recurrence *)
-        total_along_edge 
-          (List.fold_right ( +. ) (List.map fst below_list) 0.) (* prev subtot *)
-          (v_list_sum (List.map snd below_list)) (* total of below kr_infos *)
-          (Stree.get_bl ref_tree id)
-          (get_kr_info id))
-      (fun id ->
-        total_along_edge 
-          0. 
-          (Array.copy starter_kr_v) 
-          (Stree.get_bl ref_tree id) (* code dup, but not worth factoring... couldn't use recur then *)
-          (get_kr_info id))
-      ref_tree
+    try
+      Stree.recur 
+        (fun id below_list -> (* the node recurrence *)
+          total_along_edge 
+            (List.fold_right ( +. ) (List.map fst below_list) 0.) (* prev subtot *)
+            (v_list_sum (List.map snd below_list)) (* total of below kr_infos *)
+            (Stree.get_bl ref_tree id)
+            (get_kr_info id))
+        (fun id ->
+          total_along_edge 
+            0. 
+            (Array.copy starter_kr_v) 
+            (Stree.get_bl ref_tree id) (* code dup, but not worth factoring... couldn't use recur then *)
+            (get_kr_info id))
+        ref_tree
+    with
+    | Invalid_place_loc a -> 
+        invalid_arg
+          (Printf.sprintf 
+            "%g is not a valid placement location when comparing %s with %s"
+            a npcl_name1 npcl_name2)
   in
   if abs_float (kr_diff final_kr_v) > tol then 
     failwith ("total kr_vect not zero for "^npcl_name1^" versus "^npcl_name2);

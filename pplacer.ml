@@ -172,7 +172,8 @@ let () =
               Placement.compare_ml_place
               (Array.to_list results)
           in
-          Printf.fprintf out_ch "# unplaced sequences\n";
+          if unplaced_list <> [] then
+            Printf.fprintf out_ch "# unplaced sequences\n";
           List.iter
             (fun name -> Printf.fprintf out_ch ">%s\n" name) 
             unplaced_list;
@@ -188,12 +189,12 @@ let () =
             | Not_found -> failwith (name^" not found in fasta_file_by_npcl_map")
           in
           if unplaced_list <> [] then begin
-            Printf.fprintf fasta_ch "# unplaced sequences\n";
+            Printf.fprintf fasta_ch ">unplaced_sequences\n-\n";
             List.iter write_by_name unplaced_list
           end;
           IntMap.iter
             (fun loc npcl ->
-              Printf.fprintf fasta_ch "#placed at %d\n" loc;
+              Printf.fprintf fasta_ch ">placed_at_%d\n-\n" loc;
               List.iter 
                 (fun (name, _) -> write_by_name name)
                 npcl)
