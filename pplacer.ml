@@ -149,8 +149,7 @@ let () =
           else ThreeTax.Exponential_prior (
             (* exponential with mean = average branch length *)
             (Stree.tree_length ref_tree) /. 
-              (float_of_int (Stree.n_edges ref_tree.Stree.tree))) in
-    *)
+              (float_of_int (Stree.n_edges ref_tree.Stree.tree))) in *)
         let results = 
           Core.pplacer_core !verb_level !tolerance 
           !start_pend !max_pend !ratio_cutoff
