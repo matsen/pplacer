@@ -24,6 +24,7 @@ let emperical_freqs = ref true
 let uniform_prior = ref false
 let gamma_n_cat = ref 1
 let gamma_alpha = ref 1.
+let write_masked = ref false
 
 let bifurcation_warning = 
   "Warning: pplacer results make the most sense when the \
@@ -73,6 +74,9 @@ let parse_args () =
   and unif_prior_opt = "--uniformPrior", Arg.Set uniform_prior,
    "Use a uniform prior rather than exponential in the posterior probability \
    calculation."
+  and write_masked_opt = "--writeMasked", Arg.Set write_masked,
+   "Write out the reference alignment with the query sequence, masked to the \
+   region without gaps in the query."
   in
   let usage =
     "pplacer "^version_str^"\npplacer [options] -t ref_tree -r ref_align frags.fasta\n"
@@ -80,7 +84,7 @@ let parse_args () =
     files := arg :: !files in
   let opts = 
     [t; r; v; p; c; b; s; max_pend_opt; tolerance_opt; rel_err_opt;
-    model_freqs; unif_prior_opt] @ reparseable_opts in
+    model_freqs; unif_prior_opt; write_masked_opt] @ reparseable_opts in
   Arg.parse opts anon_arg usage;
   List.rev !files
      
@@ -88,6 +92,7 @@ let parse_args () =
 let () =
   (* Gsl_error.init(); the ocamlgsl error handler slows things by 30% *)
   if not !Sys.interactive then begin
+    print_endline "Running pplacer analysis...";
     let files = parse_args () in if files = [] then exit 0;
     (* load ref tree and alignment *)
     if !treeFname = "" then failwith "please specify a reference tree";
@@ -96,6 +101,8 @@ let () =
     let ref_tree = Stree_io.of_newick_file !treeFname
     and ref_align = 
       Alignment.uppercase (Alignment.read_align !referenceAlignFname) in
+    Printf.printf "Read reference alignment '%s' and reference tree '%s'...\n" 
+      !referenceAlignFname !treeFname; flush_all ();
     if !verb_level > 0 && 
        not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
          print_endline bifurcation_warning;
@@ -151,7 +158,7 @@ let () =
             (Stree.tree_length ref_tree) /. 
               (float_of_int (Stree.n_edges ref_tree.Stree.tree))) in *)
         let results = 
-          Core.pplacer_core !verb_level !tolerance 
+          Core.pplacer_core !verb_level !tolerance !write_masked
           !start_pend !max_pend !ratio_cutoff
           model ref_align ref_tree query_align in
         if !only_write_best then

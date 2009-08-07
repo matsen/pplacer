@@ -12,11 +12,11 @@ let max_iter = 100
 
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
-let pplacer_core verb_level tolerance 
+let pplacer_core verb_level tolerance write_masked
                  start_pend max_pend ratio_cutoff 
                  model ref_align istree query_align = 
-  if verb_level > 1 then begin
-    print_endline "running likelihood calculation on reference tree...";
+  if verb_level >= 1 then begin
+    print_endline "Running likelihood calculation on reference tree...";
     flush_all ()
   end;
   let seq_type = Model.seq_type model in
@@ -60,10 +60,11 @@ let pplacer_core verb_level tolerance
 
       (* make a masked alignment with just the given query sequence and the
        * reference seqs *)
-      Alignment.toFasta
-        (Alignment.mask_align mask_arr
-          (Alignment.stack [|query_name, query_seq|] ref_align))
-        (query_name^".mask.fasta");
+      if write_masked then
+        Alignment.toFasta
+          (Alignment.mask_align mask_arr
+            (Alignment.stack [|query_name, query_seq|] ref_align))
+          (query_name^".mask.fasta");
 
       (* first get the results from ML *)
       let ml_results = 

@@ -44,12 +44,14 @@ let of_lv_map_arr_list locs lv_map_arr_list =
 (* of_data:
  *)
 let dp_rgma_of_data model seq_type align istree locs = 
+  print_endline "running dp"; flush_all ();
   let dp_list = 
     List.map
       (fun rate ->
         Likestree.distoproximal_of_aln_and_istree 
           seq_type (Model.diagdq model) align istree rate)
       (Model.rates model) in
+  print_endline "ending dp"; flush_all ();
   (of_lv_map_arr_list locs (List.map fst dp_list),
    of_lv_map_arr_list locs (List.map snd dp_list))
 
