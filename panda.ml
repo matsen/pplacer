@@ -5,24 +5,35 @@
 open Fam_batteries
 open MapsSets
 open Placement
+open Panda_prefs
 
 let version_str = "v0.2"
 
-let verbose = ref false
-and out_fname = ref ""
+let prefs = 
+  { 
+    verbose = ref false;
+    out_fname = ref "";
+    n_shuffles = ref 100;
+    histo = ref true;
+  }
 
 let parse_args () =
   let files  = ref [] in
-  let verbose_opt = "-v", Arg.Set verbose,
-   "verbose running."
- and out_fname_opt = "-o", Arg.Set_string out_fname,
-   "Set the filename to write to. Otherwise write to stdout."
+  let verbose_opt = "-v", Arg.Set prefs.verbose,
+    "verbose running."
+  and histo_opt = "--histo", Arg.Set prefs.histo,
+    "write out a shuffle histogram data file for each pair."
+  and out_fname_opt = "-o", Arg.Set_string prefs.out_fname,
+    "Set the filename to write to. Otherwise write to stdout."
+  and n_shuffles_opt = "-s", Arg.Set_int prefs.n_shuffles,
+    ("Set how many shuffles to use for significance calculation (0 means \
+    calculate distance only). Default is "^(string_of_int (n_shuffles prefs)))
   in
   let usage =
     "panda "^version_str^"\npanda ex1.place ex2.place...\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [verbose_opt; out_fname_opt; ] in
+  let args = [verbose_opt; out_fname_opt; n_shuffles_opt; histo_opt; ] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
@@ -46,11 +57,11 @@ let () =
         (List.map fst parsed)
     in
     let out_ch = 
-      if !out_fname = "" then stdout
-      else open_out !out_fname
+      if out_fname prefs = "" then stdout
+      else open_out (out_fname prefs)
     in
     Panda_core.core
-      !verbose
+      prefs
       Placement.compare_ml_place 
       out_ch
       ref_tree
@@ -58,5 +69,5 @@ let () =
         (List.combine
           (List.map Filename.chop_extension fnames)
           (List.map snd parsed)));
-      if !out_fname <> "" then close_out out_ch
+      if out_fname prefs <> "" then close_out out_ch
   end

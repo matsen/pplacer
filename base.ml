@@ -96,10 +96,64 @@ let combine_intmaps_listly map_list =
     (List.rev map_list) (* the above rev's things *)
     IntMap.empty
 
+(* uniformly shuffle the elements of an array using the Knuth shuffle
+ * http://en.wikipedia.org/wiki/Random_permutation
+ * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
+ *)
+let shuffle a = 
+  let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
+  for i = Array.length a - 1 downto 1 do 
+    swap i (Random.int (i+1)) 
+  done
+
+(* make an integer permutation *)
+let perm n = 
+  let a = Array.init n (fun i -> i) in
+  shuffle a;
+  a
 
 let complete_fold_left f = function
  | hd::tl -> List.fold_left f hd tl
  | [] -> invalid_arg "complete_fold_left: given empty list!"
+
+(* find the i where the given x is geq a.(i) and leq a.(i+1)
+# arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 2;;
+- : int list = [1]
+# arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 6;;
+- : int list = [2; 3]
+# arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 7;;
+- : int list = [3; 4; 5; 6; 7]
+*)
+let arr_between_spots a x = 
+  let len = Array.length a in
+  let betw = ref [] in
+  for i = len-2 downto 0 do
+    if a.(i) <= x && x <= a.(i+1) then
+      betw := i::(!betw)
+  done;
+  !betw
+
+let arr_assert_increasing a = 
+  for i=0 to (Array.length a)-2 do
+    assert(a.(i) <= a.(i+1));
+  done
+
+let int_div x y = (float_of_int x) /. (float_of_int y) 
+
+(* a must be sorted increasing *)
+let arr_pvalue a x = 
+  arr_assert_increasing a;
+  let alen = Array.length a in
+  match arr_between_spots a x with
+  | [] ->
+      if x < a.(0) then 0.
+      else if x > a.(alen-1) then 1.
+      else assert(false)
+  | l ->
+      int_div
+        (List.fold_left ( + ) 0 l)
+        ((List.length l) * alen)
+
 
 
 (* mask_to_list:

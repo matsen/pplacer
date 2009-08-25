@@ -7,9 +7,8 @@
  * each site.
  * it's easier to do this one site at a time, and so our result is an array
  * (across sites) of maps from the location to the likelihood vector.
- * we then re-sort these later in mask_and_resort.
- *
  *)
+
 open MapsSets
 open Fam_batteries
 open Stree
