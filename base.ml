@@ -184,3 +184,10 @@ let normalized_prob ll_list =
   ) ll_list
 
 
+let time_fun f = 
+  let prev = Sys.time () in
+  f ();
+  ((Sys.time ()) -. prev)
+
+let print_time_fun name f = 
+  Printf.printf "%s took %g seconds\n" name (time_fun f)

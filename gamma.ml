@@ -22,9 +22,9 @@ let inverse_gamma_cdf ~alpha ~beta x =
   Gsl_cdf.gamma_Pinv ~p:x ~a:alpha ~b:(1. /. beta)
 
 let make_mean_one v = 
-  let tot = List.fold_left (+.) 0. v 
-  and f_n_entries = float_of_int (List.length v) in
-  List.map (fun x -> f_n_entries *. x /. tot) v
+  let tot = Array.fold_left (+.) 0. v 
+  and f_n_entries = float_of_int (Array.length v) in
+  Array.map (fun x -> f_n_entries *. x /. tot) v
 
 (* 
  * incomplete_gamma :
@@ -64,5 +64,5 @@ let discrete_gamma n_cat alpha =
           incomplete_gamma cutpoint ~alpha:(alpha +. 1.)
         end)
   in
-  make_mean_one (ListFuns.init n_cat (fun i -> freq.(i+1) -. freq.(i)))
+  make_mean_one (Array.init n_cat (fun i -> freq.(i+1) -. freq.(i)))
 

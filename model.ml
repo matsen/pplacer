@@ -12,7 +12,7 @@ type model =
   { statd : Gsl_vector.vector;
   diagdq : Diagd.diagd;
   seq_type : Alignment.seq_type;
-  rates : float list;
+  rates : float array;
   }
 
 let statd    model = model.statd
@@ -20,7 +20,7 @@ let diagdq   model = model.diagdq
 let rates    model = model.rates
 let seq_type model = model.seq_type
 let n_states model = Alignment.nstates_of_seq_type model.seq_type
-let n_rates  model = List.length (rates model)
+let n_rates  model = Array.length (rates model)
 
 
 let build model_name emperical_freqs phyml_stat_fname ref_align rates =

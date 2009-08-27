@@ -26,14 +26,16 @@ let pplacer_core verb_level tolerance write_masked
   (* warning: only good if locations are as above. may want to pass a smaller
    * selection of locations later *)
   let locs = ListFuns.remove_last all_locs in
-  let (d_rgma, p_rgma) = 
-    Rgma.dp_rgma_of_data model seq_type ref_align istree locs in
+  let (dmap, pmap) = 
+    GlvIntMap.dp_of_data model seq_type ref_align istree locs in
 
   (* cycle through queries *)
   let num_queries = Array.length query_align in
   let ref_length = Alignment.length ref_align in
+  (* the main query loop *)
   Array.mapi (
     fun query_num (query_name, query_seq) ->
+      Base.print_time_fun "garbage collection" Gc.compact;
       if String.length query_seq <> ref_length then
         failwith ("query '"^query_name^"' is not the same length as the ref alignment");
       if verb_level >= 1 then begin
@@ -55,8 +57,8 @@ let pplacer_core verb_level tolerance write_masked
           (Base.mask_to_list mask_arr query_like)
       in
      (* now we can mask the rgma, and the glv map we will use in three_tax *) 
-      let d_glv_map = Rgma.to_glv_map_masked mask_arr locs d_rgma 
-      and p_glv_map = Rgma.to_glv_map_masked mask_arr locs p_rgma in
+      let d_masked_map = GlvIntMap.mask mask_arr dmap 
+      and p_masked_map = GlvIntMap.mask mask_arr pmap in
 
       (* make a masked alignment with just the given query sequence and the
        * reference seqs *)
@@ -79,8 +81,8 @@ let pplacer_core verb_level tolerance write_masked
               let tt = 
                 Three_tax.make 
                   model
-                  ~dist:(make_initial d_glv_map (cut_bl /. 2.))
-                  ~prox:(make_initial p_glv_map (cut_bl /. 2.))
+                  ~dist:(make_initial d_masked_map (cut_bl /. 2.))
+                  ~prox:(make_initial p_masked_map (cut_bl /. 2.))
                   ~query:(Glv_edge.make model query_glv start_pend)
                   ~cut_bl
               in
