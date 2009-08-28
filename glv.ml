@@ -61,9 +61,6 @@ let lv_list_to_constant_rate_glv n_rates lv_list =
       Array.init n_rates (fun _ -> lv))
     (Array.of_list lv_list)
 
-
-
-
 (* these assume that the GLV is reasonably healthy *)
 let n_states g = assert(g <> [||] && g.(0) <> [||]); 
                  Gsl_vector.length (g.(0).(0))

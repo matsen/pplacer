@@ -1,8 +1,6 @@
 (* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *)
-
-(* likestree.ml
+ * 
  * the intent here is to calculate the distal and proximal likelihood vectors at
  * each site.
  * it's easier to do this one site at a time, and so our result is an array
@@ -16,6 +14,11 @@ open Stree
 
 let qmat_map_of_bl_map diagdq bl_map rate = 
   IntMap.map (fun bl -> diagdq#expWithT (bl *. rate)) bl_map
+
+(* is it a problem that we are making a map for each site then combining those
+ * maps? we could certainly give a complete map, then just be setting entries in
+ * it. 
+ *)
 
 let calc_distal_like_map_col nstates tree aln_index_map qmat_map col_like =
   let v = Gsl_vector.create nstates in

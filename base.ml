@@ -17,14 +17,12 @@ let date_time_str () =
     the_time.Unix.tm_sec
 
 
-
 let rec list_fold_left3 f accu l1 l2 l3 =
   match (l1, l2, l3) with
     ([], [], []) -> accu
   | (a1::l1, a2::l2, a3::l3) -> 
       list_fold_left3 f (f accu a1 a2 a3) l1 l2 l3
   | (_, _, _) -> invalid_arg "list_fold_left3"
-
 
 
 let triple_dot x y z size = 
@@ -117,6 +115,7 @@ let complete_fold_left f = function
  | [] -> invalid_arg "complete_fold_left: given empty list!"
 
 (* find the i where the given x is geq a.(i) and leq a.(i+1)
+ * useful for dealing with ties
 # arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 2;;
 - : int list = [1]
 # arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 6;;
@@ -141,7 +140,7 @@ let arr_assert_increasing a =
 let int_div x y = (float_of_int x) /. (float_of_int y) 
 
 (* a must be sorted increasing *)
-let arr_pvalue a x = 
+let arr_avg_pvalue a x = 
   arr_assert_increasing a;
   let alen = Array.length a in
   match arr_between_spots a x with
@@ -154,6 +153,17 @@ let arr_pvalue a x =
         (List.fold_left ( + ) 0 l)
         ((List.length l) * alen)
 
+(* just calculate the fraction of elements of a which are geq x.
+ * that's the probability that something of value x or greater was drawn from
+ * the distribution of a *)
+let arr_onesided_pvalue a x = 
+  int_div
+    (Array.fold_left
+      (fun sofar a_elt ->
+        if a_elt >= x then sofar+1
+        else sofar)
+      0 a)
+    (Array.length a)
 
 
 (* mask_to_list:

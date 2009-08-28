@@ -1,5 +1,11 @@
 (* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * is it possible that it really is a lot of memory?
+ *
+ * 4 * 2 * n_taxa * n_sites * n_chars * float
+ *
+ * 4 * 2 * n_taxa * 1000 * 20 * 8 = 1,280,000 * n_taxa
 *)
 
 open Fam_batteries
@@ -27,7 +33,7 @@ let pplacer_core verb_level tolerance write_masked
    * selection of locations later *)
   let locs = ListFuns.remove_last all_locs in
   let (dmap, pmap) = 
-    GlvIntMap.dp_of_data model seq_type ref_align istree locs in
+    GlvIntMap.dp_of_data model ref_align istree locs in
 
   (* cycle through queries *)
   let num_queries = Array.length query_align in
@@ -57,8 +63,10 @@ let pplacer_core verb_level tolerance write_masked
           (Base.mask_to_list mask_arr query_like)
       in
      (* now we can mask the rgma, and the glv map we will use in three_tax *) 
+      let curr_time = Sys.time () in
       let d_masked_map = GlvIntMap.mask mask_arr dmap 
       and p_masked_map = GlvIntMap.mask mask_arr pmap in
+      Printf.printf "masking took %g\n" ((Sys.time ()) -. curr_time);
 
       (* make a masked alignment with just the given query sequence and the
        * reference seqs *)
@@ -69,6 +77,7 @@ let pplacer_core verb_level tolerance write_masked
           (query_name^".mask.fasta");
 
       (* first get the results from ML *)
+      let curr_time = Sys.time () in
       let ml_results = 
         List.map
           (fun loc ->
@@ -92,6 +101,7 @@ let pplacer_core verb_level tolerance write_masked
               Three_tax.get_results tt))
           locs 
       in
+      Printf.printf "computation took %g\n" ((Sys.time ()) -. curr_time);
       (* calc ml weight ratios. these tuples are ugly but that way we don't need
        * to make a special type for ml results. *)
       let ratios = 
