@@ -81,7 +81,7 @@ let parseNucModel stringList =
           d.(StringMap.find nucStr nucStrMap) <- Some (float_of_string floatStr)
         with 
         | Not_found -> failwith("parseNucModel: base "^nucStr^" not known!")
-        | Failure s -> failwith("parseNucModel: is "^floatStr^" a float?")
+        | Failure _ -> failwith("parseNucModel: is "^floatStr^" a float?")
         )
       else if Str.string_match transRex line 0 then (
         let fromNuc = Str.matched_group 1 line
@@ -95,7 +95,7 @@ let parseNucModel stringList =
           <- Some (float_of_string floatStr);
         with 
         | Not_found -> failwith("parseNucModel: base "^fromNuc^" or "^toNuc^" not known!")
-        | Failure s -> failwith("parseNucModel: is "^floatStr^" a float?")
+        | Failure _ -> failwith("parseNucModel: is "^floatStr^" a float?")
         )
   ) stringList;
   let getSome = function 

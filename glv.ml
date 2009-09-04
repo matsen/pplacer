@@ -26,6 +26,7 @@ open Model
 
 type glv = Gsl_vector.vector array array
 
+(* deep copy *)
 let copy = Array.map (Array.map Gsl_vector.copy)
 
 let make ~n_sites ~n_rates lv = Array.make_matrix n_sites n_rates lv

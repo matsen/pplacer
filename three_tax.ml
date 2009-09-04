@@ -13,20 +13,25 @@ type three_tax = {
   prox   : Glv_edge.glv_edge;      (* the proximal glv *)
   dist   : Glv_edge.glv_edge;      (* the distal glv *)
   query  : Glv_edge.glv_edge;      (* the query glv *)
-  cut_bl : float
+  cut_bl : float ref
 }
 
 let get_query_bl tt = Glv_edge.get_bl tt.query
 let get_dist_bl tt = Glv_edge.get_bl tt.dist
-let get_cut_bl tt = tt.cut_bl
+let get_prox_bl tt = Glv_edge.get_bl tt.prox
+let get_cut_bl tt = !(tt.cut_bl)
 
 let make model ~prox ~dist ~query ~cut_bl = 
   { model  = model;
     prox   = prox;
     dist   = dist;
     query  = query;
-    cut_bl = cut_bl;
+    cut_bl = ref cut_bl;
   }
+
+(* set the cut_bl to what it should be *)
+let refresh_cut_bl tt = 
+  tt.cut_bl := (get_dist_bl tt) +. (get_prox_bl tt)
 
 let log_like tt = 
   Glv.log_like3 
@@ -39,7 +44,7 @@ let set_query_bl tt query_bl =
   Glv_edge.set_bl tt.model tt.query query_bl
 
 let set_dist_bl tt dist_bl = 
-  let prox_bl = tt.cut_bl -. dist_bl in
+  let prox_bl = !(tt.cut_bl) -. dist_bl in
   assert(prox_bl >= 0.);
   Glv_edge.set_bl tt.model tt.dist dist_bl;
   Glv_edge.set_bl tt.model tt.prox prox_bl

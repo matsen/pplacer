@@ -31,7 +31,7 @@ let calc_distal_like_map_col nstates tree aln_index_map qmat_map col_like =
         List.iter (
           function
         (* top_like is the likelihood of the top node of the daughter tree *)
-            | (top_id, top_like)::rest ->
+            | (top_id, top_like)::_ ->
                 (* apply markov transformation to top_like *)
                 Fam_gsl_matvec.matVecMul v (IntMap.find top_id qmat_map) top_like;
                 for k=0 to nstates-1 do

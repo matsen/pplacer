@@ -30,13 +30,13 @@ let node i tL = Node(i, tL)
 let leaf i = Leaf i
 
 let rec n_taxa = function
-  | Node(i,tL) -> List.fold_left ( + ) 0 (List.map n_taxa tL)
-  | Leaf(i) -> 1
+  | Node(_,tL) -> List.fold_left ( + ) 0 (List.map n_taxa tL)
+  | Leaf(_) -> 1
 
 let n_edges stree = 
   let rec aux = function
-    | Node(i,tL) -> List.fold_left ( + ) 1 (List.map aux tL)
-    | Leaf(i) -> 1
+    | Node(_,tL) -> List.fold_left ( + ) 1 (List.map aux tL)
+    | Leaf(_) -> 1
   in
   (aux stree) - 1   (* exclude root edge *)
 
@@ -48,7 +48,7 @@ let collect_node_numbers stree =
   List.sort compare (aux stree)
 
 let top_id = function
-  | Node(i, tL) -> i
+  | Node(i, _) -> i
   | Leaf(i) -> i
 
 let rec max_id = function
@@ -56,8 +56,8 @@ let rec max_id = function
   | Leaf(i) -> i
 
 let multifurcating_at_root = function
-  | Node(i, tL) -> List.length tL > 2
-  | Leaf(i) -> false
+  | Node(_, tL) -> List.length tL > 2
+  | Leaf(_) -> false
 
 
 (* nodeInfo functions *)
@@ -108,10 +108,10 @@ let tree_length tree =
     | Leaf id -> IntMap.find id tree.info.bl
   in
   match tree.tree with 
-  | Node(id, tL) ->
+  | Node(_, tL) ->
       (* exclude the root edge *)
       List.fold_left ( +. ) 0. (List.map aux tL)
-  | Leaf id -> 0.
+  | Leaf _ -> 0.
 
 
 (* make the bootstrap value into the node number *)

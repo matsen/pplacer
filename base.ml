@@ -110,6 +110,15 @@ let perm n =
   shuffle a;
   a
 
+(* make a min to max array such that their differences in sequence are evenly
+ * spaced *)
+let logarithmically_evenly_spaced n_x min_x max_x = 
+  let log_min_x = log min_x
+  and log_max_x = log max_x in
+  let delta = (log_max_x -. log_min_x) /. (float_of_int (n_x-1)) in
+  Array.init n_x
+    (fun i -> exp (log_min_x +. (float_of_int i) *. delta))
+
 let complete_fold_left f = function
  | hd::tl -> List.fold_left f hd tl
  | [] -> invalid_arg "complete_fold_left: given empty list!"

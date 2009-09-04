@@ -94,7 +94,7 @@ let sorted_npcl_map_by_best_loc_of_npc_list cmp npc_list =
 
 let by_name_map_of_place_hash place_hash = 
   Hashtbl.fold (
-    fun id (name, place) name_map ->
+    fun _ (name, place) name_map ->
       if StringMap.mem name name_map then
         failwith(name^" appears multiply in name_map!")
       else

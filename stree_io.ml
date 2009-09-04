@@ -59,7 +59,7 @@ let to_newick_gen entry_to_str istree =
 
 let to_newick = to_newick_gen nodeInfo_entryToStr
 let to_newick_numbered = 
-  to_newick_gen (fun info i -> string_of_int i)
+  to_newick_gen (fun _ i -> string_of_int i)
 
 let write_newick ch istree = 
   Printf.fprintf ch "%s\n" (to_newick istree)
@@ -135,7 +135,7 @@ let of_newick_file fname =
   with
     | [] -> failwith ("empty file in "^fname)
     | [s] -> of_newick_str s
-    | moreList -> failwith ("expected a single tree on a single line in "^fname)
+    | _ -> failwith ("expected a single tree on a single line in "^fname)
 
 let listOfNewickFile fname =
   List.map of_newick_str (Common_base.stringListOfFile fname)

@@ -78,23 +78,42 @@ let pplacer_core verb_level tolerance write_masked
 
       (* first get the results from ML *)
       let curr_time = Sys.time () in
+      (* start them all with query as a place holder.
+       * we are breaking interface by naming them and changing them later, but
+       * it would be silly to have setting functions for each edge.  *)
+      let dist_edge = Glv_edge.make model query_glv start_pend
+      and prox_edge = Glv_edge.make model query_glv start_pend
+      and query_edge = Glv_edge.make model query_glv start_pend
+      in
+      (* make our three taxon tree. we can't move this higher because the cached
+       * calculation on the edges needs to be the right size for the length of
+       * the query sequence. *)
+      let tt = 
+        Three_tax.make 
+          model
+          ~dist:dist_edge ~prox:prox_edge ~query:query_edge
+          ~cut_bl:0.
+      in
       let ml_results = 
         List.map
           (fun loc ->
             (loc,
               let cut_bl = IntMap.find loc istree.info.bl in
-              let make_initial glv_map start_bl = 
-                Glv_edge.make 
-                  model (IntMap.find loc glv_map) start_bl in
-              (* make our three taxon tree *)
-              let tt = 
-                Three_tax.make 
+              (* this is just to factor out setting up the prox and dist edges
+               * and setting their branch lengths to half the cut branch length *)
+              let set_edge edge glv_map = 
+                Glv_edge.set_orig_and_bl 
                   model
-                  ~dist:(make_initial d_masked_map (cut_bl /. 2.))
-                  ~prox:(make_initial p_masked_map (cut_bl /. 2.))
-                  ~query:(Glv_edge.make model query_glv start_pend)
-                  ~cut_bl
+                  edge
+                  (IntMap.find loc glv_map) 
+                  (cut_bl /. 2.)
               in
+              (* set the query edge to the default *)
+              Glv_edge.set_bl model query_edge start_pend;
+              (* set up the distal and proximal edges *)
+              set_edge dist_edge d_masked_map;
+              set_edge prox_edge p_masked_map;
+              Three_tax.refresh_cut_bl tt;
               (* optimize *)
               Three_tax.optimize tolerance max_pend max_iter tt;
               (* get the results *)
@@ -106,12 +125,12 @@ let pplacer_core verb_level tolerance write_masked
        * to make a special type for ml results. *)
       let ratios = 
         Base.normalized_prob (
-          List.map (fun (loc, (best_like, best_pend_bl, best_dist_bl)) -> best_like) 
+          List.map (fun (_, (best_like, _, _)) -> best_like) 
             ml_results) in
       (* filter results by cutoff *)
       let ml_filtered_results = 
         List.sort (
-          fun (loc, ml_ratio1, _, _, _) (loc, ml_ratio2, _, _, _) -> 
+          fun (_, ml_ratio1, _, _, _) (_, ml_ratio2, _, _, _) -> 
             - compare ml_ratio1 ml_ratio2) ( (* sort ml ratio in decreasing *)
           List.filter (
             fun (_, ml_ratio, _, _, _) -> ml_ratio > ratio_cutoff) (
