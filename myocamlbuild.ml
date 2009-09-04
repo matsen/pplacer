@@ -4,7 +4,10 @@
 
 open Ocamlbuild_plugin;; 
 open Command;; 
+
 dispatch begin function 
+  | Before_options ->
+      Options.ocaml_lflags := ["-ccopt"; "-static"];
   | After_rules -> 
       ocaml_lib ~extern:true ~dir:"+gsl" "gsl"; 
   | _ -> () 
