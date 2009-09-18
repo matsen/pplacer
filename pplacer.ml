@@ -169,7 +169,7 @@ let () =
           (* placements sorted by ml, new version *)
           let (placed_map, unplaced_list) = 
             Placement.sorted_npcl_map_by_best_loc_of_npc_list 
-              Placement.compare_ml_place
+              Placement.ml_ratio
               (Array.to_list results)
           in
           if unplaced_list <> [] then

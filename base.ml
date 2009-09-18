@@ -44,6 +44,12 @@ let pairwise_prod dest x y size =
     dest.{i} <- x.{i} *. y.{i}
   done
 
+let triplewise_prod dest x y z size =
+  for i=0 to size - 1 do
+    dest.{i} <- x.{i} *. y.{i} *. z.{i}
+
+  done
+
 (* get the unique items from a list
  * slow, clearly.
  *)

@@ -1,11 +1,12 @@
 (* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * is it possible that it really is a lot of memory?
- *
  * 4 * 2 * n_taxa * n_sites * n_chars * float
  *
  * 4 * 2 * n_taxa * 1000 * 20 * 8 = 1,280,000 * n_taxa
+ *
+ * in order to implement a quick-cut, i need to take the pairwise product of the
+ * distal and proximal, then maybe write a masked log like2?
 *)
 
 open Fam_batteries
@@ -35,13 +36,16 @@ let pplacer_core verb_level tolerance write_masked
   let (dmap, pmap) = 
     GlvIntMap.dp_of_data model ref_align istree locs in
 
+  (* for each location, make a qmap, which is the triple prod of the stationary
+   * dist, the d and the p *)
+
   (* cycle through queries *)
   let num_queries = Array.length query_align in
   let ref_length = Alignment.length ref_align in
   (* the main query loop *)
   Array.mapi (
     fun query_num (query_name, query_seq) ->
-      Base.print_time_fun "garbage collection" Gc.compact;
+      (* Base.print_time_fun "garbage collection" Gc.compact; *)
       if String.length query_seq <> ref_length then
         failwith ("query '"^query_name^"' is not the same length as the ref alignment");
       if verb_level >= 1 then begin

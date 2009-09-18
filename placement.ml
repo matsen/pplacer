@@ -15,6 +15,11 @@ open Fam_batteries
 open MapsSets
 open Stree
 
+exception No_PP
+
+let get_pp = function
+  | Some pp -> pp
+  | None -> raise No_PP
 
 type placement = {location: int; 
                   ml_ratio : float;
@@ -24,24 +29,26 @@ type placement = {location: int;
                   distal_bl: float; 
                   pendant_bl: float }
 
-let location      p = p.location
-let ml_ratio      p = p.ml_ratio
-let post_prob     p = p.post_prob
-let log_like      p = p.log_like
-let marginal_prob p = p.marginal_prob
-let distal_bl     p = p.distal_bl
-let pendant_bl    p = p.pendant_bl
+let location          p = p.location
+let ml_ratio          p = p.ml_ratio
+let post_prob_opt     p = p.post_prob
+let post_prob         p = get_pp p.post_prob
+let log_like          p = p.log_like
+let marginal_prob_opt p = p.marginal_prob
+let marginal_prob     p = get_pp p.marginal_prob
+let distal_bl         p = p.distal_bl
+let pendant_bl        p = p.pendant_bl
 
-let compare_ml_place rp1 rp2 =
-  compare rp1.ml_ratio rp2.ml_ratio
+let compare_placements criterion rp1 rp2 =
+  compare (criterion rp1) (criterion rp2)
 
-let compare_pp_place rp1 rp2 =
-  match (rp1.post_prob, rp2.post_prob) with
-  | (Some f1, Some f2) -> compare f1 f2
-  | (_, _) -> failwith "compare_pp_place : not enough PP!"
+let sort_placecoll criterion pc =
+  List.sort (fun x y -> - (compare_placements criterion) x y) pc
 
+  (*
 let ml_filter_placement_list cutoff placements = 
   List.filter (fun ml_place -> ml_place.ml_ratio > cutoff) placements
+  *)
 
 
 (*
@@ -67,9 +74,6 @@ let id_best_hash_of_placement_list cmp filter named_place_list =
 
 (* decreasing sort of a placecoll
  *)
-let sort_placecoll cmp pc =
-  List.sort (fun x y -> - (cmp x y)) pc
-
 let add_to_list_intmap k v m = 
   if IntMap.mem k m then
     IntMap.add k (v::(IntMap.find k m)) m
@@ -79,18 +83,17 @@ let add_to_list_intmap k v m =
 (* make a map 
  * (best location for nplacecoll) -> list of nplacecoll at that loc
  *)
-let sorted_npcl_map_by_best_loc_of_npc_list cmp npc_list =
-  List.fold_right 
+let sorted_npcl_map_by_best_loc_of_npc_list criterion npc_list =
+  List.fold_right
     (fun (name, pc) (placed_map, unplaced_list) ->
-      match sort_placecoll cmp pc with
+      match sort_placecoll criterion pc with
       | best::_ as sorted ->
           (add_to_list_intmap best.location (name,sorted) placed_map,
           unplaced_list)
-      | [] -> 
+      | [] ->
           (placed_map, name::unplaced_list))
     npc_list
     (IntMap.empty, [])
-
 
 let by_name_map_of_place_hash place_hash = 
   Hashtbl.fold (

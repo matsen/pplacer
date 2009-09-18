@@ -6,6 +6,7 @@ type kraphy_prefs =
     histo: bool ref;
     p_plot: bool ref;
     p_exp: float ref;
+    dropdown: float ref;
   }
 
 let verbose    p = !(p.verbose)
@@ -14,3 +15,4 @@ let n_shuffles p = !(p.n_shuffles)
 let histo      p = !(p.histo)
 let p_plot     p = !(p.p_plot)
 let p_exp      p = !(p.p_exp)
+let dropdown   p = !(p.dropdown)

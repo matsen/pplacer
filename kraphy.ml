@@ -17,6 +17,7 @@ let prefs =
     histo = ref true;
     p_plot = ref true;
     p_exp = ref 1.;
+    dropdown = ref 0.
   }
 
 let parse_args () =
@@ -25,6 +26,8 @@ let parse_args () =
     "verbose running."
   and p_opt = "-p", Arg.Set_float prefs.p_exp,
     "The value of p in Z_p."
+  and dropdown_opt = "-d", Arg.Set_float prefs.dropdown,
+    "The dropdown percentage. Default is "^(string_of_float (dropdown prefs))
   and histo_opt = "--histo", Arg.Set prefs.histo,
     "write out a shuffle histogram data file for each pair."
   and p_plot_opt = "--pPlot", Arg.Set prefs.p_plot,
@@ -39,7 +42,7 @@ let parse_args () =
     "kraphy "^version_str^"\nkraphy ex1.place ex2.place...\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [verbose_opt; out_fname_opt; n_shuffles_opt; histo_opt; p_plot_opt; p_opt ] in
+  let args = [verbose_opt; out_fname_opt; n_shuffles_opt; histo_opt; p_plot_opt; p_opt; dropdown_opt ] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
@@ -68,7 +71,7 @@ let () =
     in
     Kraphy_core.core
       prefs
-      Placement.compare_ml_place 
+      Placement.ml_ratio (* sorting criterion *)
       out_ch
       ref_tree
       (Array.of_list

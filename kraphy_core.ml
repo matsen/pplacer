@@ -38,6 +38,12 @@ let ppr_pair_float_uptri ff fu =
     ff 
     fu
 
+let write_named_float_uptri ch names u =
+  String_matrix.write_named_padded ch names
+    (MatrixFuns.map 
+      (Printf.sprintf "%g")
+      (Uptri.to_matrix (fun _ -> 0.) u))
+
 
 (* add v2 to v1 (which is modified in place) *)
 let v_addto v1 v2 = 
@@ -58,9 +64,9 @@ let outer_exponent p =
   if p < 1. then 1.
   else 1. /. p
 
-let pair_distance cmp ref_tree p npcl1 npcl2 = 
+let pair_distance criterion ref_tree p npcl1 npcl2 = 
   let get_map npcl = 
-    let (m,u) = Placement.sorted_npcl_map_by_best_loc_of_npc_list cmp npcl in
+    let (m,u) = Placement.sorted_npcl_map_by_best_loc_of_npc_list criterion npcl in
     if u <> [] then raise Unplaced_sequences
     else m
   in
@@ -158,7 +164,7 @@ let pair_distance cmp ref_tree p npcl1 npcl2 =
     raise (Total_kr_not_zero final_kr_diff);
   grand_total ** (outer_exponent p)
 
-let pair_core prefs cmp ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) = 
+let pair_core prefs criterion ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) = 
   let context = 
     Printf.sprintf "comparing %s with %s" npcl_name1 npcl_name2 
   and ref_tree_len = Stree.tree_length ref_tree in
@@ -170,7 +176,7 @@ let pair_core prefs cmp ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) =
     in
     let to_shuffle = Array.copy placement_arr in
     let calc_dist places p = 
-        pair_distance cmp ref_tree p
+        pair_distance criterion ref_tree p
             (list_of_sub_array places 0 (List.length npcl1))
             (list_of_sub_array places 
               (List.length npcl1) (List.length npcl2)) 
@@ -241,7 +247,8 @@ let pair_core prefs cmp ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) =
     end;
 
     let p_value = Base.arr_onesided_pvalue shuff_dists sample_dist in
-    Printf.fprintf ch "%s\t%s\t%g\t%g\n" npcl_name1 npcl_name2 sample_dist p_value;
+    (* Printf.fprintf ch "%s\t%s\t%g\t%g\n" npcl_name1 npcl_name2 sample_dist
+     * p_value; *)
     (sample_dist, p_value)
   with
   | Invalid_place_loc a -> 
@@ -257,14 +264,17 @@ let pair_core prefs cmp ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) =
 (* core
  * run pair_core for each unique pair 
  *)
-let core prefs cmp ch ref_tree nplacecoll_arr = 
+let core prefs criterion ch ref_tree nplacecoll_arr = 
   Printf.printf "calculating Z_%g distance...\n" (p_exp prefs);
   let u = 
     Uptri.init
       (Array.length nplacecoll_arr)
       (fun i j ->
-        pair_core prefs cmp ch 
+        pair_core prefs criterion ch 
          ref_tree nplacecoll_arr.(i) nplacecoll_arr.(j))
   in
-  ppr_pair_float_uptri Format.std_formatter u;
-  Format.pp_print_newline Format.std_formatter ()
+  let names = Array.map fst nplacecoll_arr in
+  Printf.fprintf ch "distances\n"; 
+  write_named_float_uptri ch names (Uptri.map fst u);
+  Printf.fprintf ch "\np-values\n"; 
+  write_named_float_uptri ch names (Uptri.map snd u);

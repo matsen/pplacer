@@ -19,10 +19,10 @@ let write_placements_arr ch placement_arr =
   Array.iter (write_npc ch) placement_arr
 
 let ml_sort_placement_list pl =
-  List.sort (fun x y -> - compare_ml_place x y) pl
+  List.sort (fun x y -> - compare_placements ml_ratio x y) pl
 
 let pp_sort_placement_list pl =
-  List.sort (fun x y -> - compare_pp_place x y) pl
+  List.sort (fun x y -> - compare_placements post_prob x y) pl
  
 let write_best_of_placement_arr ch use_pp results = 
   write_placements_arr ch (
