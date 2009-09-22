@@ -43,7 +43,8 @@ let bifurcation_warning =
 
 (* these are the args that we re-parse after parsing the phyml stat file *)
 let model_name_opt = "-m", Arg.Set_string prefs.model_name,
-  "Set the protein subs model. Options are LG (default) or WAG."
+  "Set the sequence substitution model. Protein options are LG (default) or WAG. \
+  For nucleotides the GTR parameters must be specified via a stats file."
 and gamma_n_cat_opt = "--gammaCats", Arg.Set_int prefs.gamma_n_cat,
  "Specify the number of categories for a discrete gamma model. (Default is \
  one, i.e. no gamma rate variation.)"
@@ -71,8 +72,7 @@ let parse_args () =
    for every fragment."
   and stats_fname_opt = "-s", Arg.Set_string prefs.stats_fname,
    "Supply a phyml stats.txt file or a RAxML info file which determines the model parameters. \
-   Note that the information in this file can be overriden by specifying \
-   things on the command line."
+   The information in this file can be overriden on the command line."
   and max_pend_opt = spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
    "Set the maximum pendant branch length for the ML and Bayes calculations. Default is %g."
   and tolerance_opt = spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.tolerance
@@ -89,11 +89,11 @@ let parse_args () =
    "Write out the reference alignment with the query sequence, masked to the \
    region without gaps in the query."
   and max_strikes_opt = spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
-   "Set the maximum number of strikes for playing ball. Default is %d."
+   "Set the maximum number of strikes for baseball. Default is %d."
   and strike_box_opt = spec_with_default "--strikeBox" (fun o -> Arg.Set_float o) prefs.strike_box
    "Set the size of the strike box in log likelihood units. Default is %g."
   and max_pitches_opt = spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
-   "Set the maximum number of strikes for playing ball. Default is %d."
+   "Set the maximum number of pitches for baseball. Default is %d."
 
   in
   let usage =
@@ -193,6 +193,7 @@ let () =
         Printf.fprintf out_ch 
           "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
         Prefs.write_prefs out_ch prefs;
+        Printf.fprintf out_ch "# output format: ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
         if not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
           Printf.fprintf out_ch "# %s\n" bifurcation_warning;
         Printf.fprintf out_ch "# numbered reference tree: %s\n"
