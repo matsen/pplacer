@@ -21,6 +21,10 @@ let prefs =
     calc_pp = ref false;
     uniform_prior = ref false;
     pp_rel_err = ref 0.01;
+    (* playing ball *)
+    max_strikes = ref 6;
+    strike_box = ref 3.;
+    max_pitches = ref 40;
     (* model *)
     emperical_freqs = ref true;
     model_name = ref "LG";
@@ -47,35 +51,35 @@ and gamma_alpha_opt = "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
  "Specify the shape parameter for a discrete gamma model."
 let reparseable_opts = [model_name_opt; gamma_n_cat_opt; gamma_alpha_opt]
 
+let spec_with_default symbol setfun p help = 
+  (symbol, setfun p, Printf.sprintf help !p)
+
 let parse_args () =
   let files  = ref [] in
-  let t = "-t", Arg.Set_string prefs.tree_fname,
+  let tree_fname_opt = "-t", Arg.Set_string prefs.tree_fname,
    "Specify the reference tree filename."
-  and r = "-r", Arg.Set_string prefs.ref_align_fname,
+  and ref_align_fname_opt = "-r", Arg.Set_string prefs.ref_align_fname,
    "Specify the reference alignment filename."
-  and v = "-v", Arg.Set_int prefs.verb_level,
-   "Set verbosity level. 0 is silent, and 2 is quite a lot."
-  and p = "-p", Arg.Set prefs.calc_pp,
-   "Calculate posterior probabilities."
-  and c = "-c", Arg.Set_float prefs.ratio_cutoff,
-  (Printf.sprintf
-   "Specify the ratio cutoff for PP calculation and recording in the .place \
-   file. Default is %g."
-   !(prefs.ratio_cutoff))
-  and b = "-b", Arg.Set prefs.only_write_best,
+  and verb_level_opt = spec_with_default "-v" (fun o -> Arg.Set_int o) prefs.verb_level 
+          "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d."
+  and calc_pp_opt = "-p", Arg.Set prefs.calc_pp, 
+  "Calculate posterior probabilities."
+  and ratio_cutoff_opt = spec_with_default "--ratioCutoff" (fun o -> Arg.Set_float o) prefs.ratio_cutoff
+   "Specify the ratio cutoff for recording in the .place file. Default is %g."
+  and only_write_best_opt = "-b", Arg.Set prefs.only_write_best,
    "Only record the best PP and ML placements in the .place file, and do so \ 
    for every fragment."
-  and s = "-s", Arg.Set_string prefs.stats_fname,
-   "Supply a phyml stats.txt file which determines the model parameters. \
+  and stats_fname_opt = "-s", Arg.Set_string prefs.stats_fname,
+   "Supply a phyml stats.txt file or a RAxML info file which determines the model parameters. \
    Note that the information in this file can be overriden by specifying \
    things on the command line."
-  and max_pend_opt = "--maxPend", Arg.Set_float prefs.max_pend,
-   "Set the maximum pendant branch length for the ML and Bayes calculations."
-  and tolerance_opt = "--mlTolerance", Arg.Set_float prefs.tolerance,
-   "Specify the tolerance for the branch length maximization."
-  and rel_err_opt = "--ppRelErr", Arg.Set_float prefs.pp_rel_err,
-   "Specify the relative error for the posterior probability calculation."
-  and model_freqs = "--modelFreqs", Arg.Clear prefs.emperical_freqs,
+  and max_pend_opt = spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
+   "Set the maximum pendant branch length for the ML and Bayes calculations. Default is %g."
+  and tolerance_opt = spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.tolerance
+   "Specify the tolerance for the branch length maximization. Default is %g."
+  and rel_err_opt = spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
+   "Specify the relative error for the posterior probability calculation. Default is %g."
+  and model_freqs_opt = "--modelFreqs", Arg.Clear prefs.emperical_freqs,
    "Use protein frequencies counted from the chosen model rather than counts \
    from the reference alignment."
   and unif_prior_opt = "--uniformPrior", Arg.Set prefs.uniform_prior,
@@ -84,14 +88,43 @@ let parse_args () =
   and write_masked_opt = "--writeMasked", Arg.Set prefs.write_masked,
    "Write out the reference alignment with the query sequence, masked to the \
    region without gaps in the query."
+  and max_strikes_opt = spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
+   "Set the maximum number of strikes for playing ball. Default is %d."
+  and strike_box_opt = spec_with_default "--strikeBox" (fun o -> Arg.Set_float o) prefs.strike_box
+   "Set the size of the strike box in log likelihood units. Default is %g."
+  and max_pitches_opt = spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
+   "Set the maximum number of strikes for playing ball. Default is %d."
+
   in
   let usage =
-    "pplacer "^version_str^"\npplacer [options] -t ref_tree -r ref_align frags.fasta\n"
+    "pplacer "^version_str^"\npplacer [options] -t ref_tree -r ref_align -s stats_file frags.fasta\n"
   and anon_arg arg =
     files := arg :: !files in
   let opts = 
-    [t; r; v; p; c; b; s; max_pend_opt; tolerance_opt; rel_err_opt;
-    model_freqs; unif_prior_opt; write_masked_opt] @ reparseable_opts in
+    [
+      tree_fname_opt; 
+      ref_align_fname_opt; 
+      stats_fname_opt;  
+    ] 
+    @ reparseable_opts @
+    [
+      calc_pp_opt; 
+      unif_prior_opt; 
+      model_freqs_opt; 
+      max_strikes_opt; 
+      strike_box_opt; 
+      max_pitches_opt;
+      max_pend_opt; 
+      tolerance_opt; 
+      rel_err_opt;
+      ratio_cutoff_opt;
+      verb_level_opt; 
+      write_masked_opt; 
+      only_write_best_opt; 
+    ]
+  
+  
+  in
   Arg.parse opts anon_arg usage;
   List.rev !files
      
@@ -134,6 +167,17 @@ let () =
                   opt_freqs_transitions ref_align 
                   (Gamma.discrete_gamma 
                     (gamma_n_cat prefs) (gamma_alpha prefs)) in
+    (* find all the tree locations *)
+    let all_locs = IntMapFuns.keys ref_tree.Stree.info.Stree.bl in
+    assert(all_locs <> []);
+      (* warning: only good if locations are as above. *)
+    let locs = ListFuns.remove_last all_locs in
+    if locs = [] then failwith("problem with reference tree: no placement locations.");
+    let curr_time = Sys.time () in
+    (* calculate like on ref tree *)
+    let (dmap, pmap) = 
+      GlvIntMap.dp_of_data model ref_align ref_tree locs in
+    if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
     (* analyze query sequences *)
     let collect ret_code query_aln_fname =
       try
@@ -163,7 +207,7 @@ let () =
         in
         let results = 
           Core.pplacer_core prefs prior
-          model ref_align ref_tree query_align in
+            model ref_align ref_tree query_align ~dmap ~pmap locs in
         if only_write_best prefs then
           (* this is for backward compatibility *)
           Placement_io.write_best_of_placement_arr 

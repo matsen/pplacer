@@ -11,6 +11,10 @@ type prefs =
     calc_pp : bool ref;
     uniform_prior : bool ref;
     pp_rel_err : float ref;
+    (* playing ball *)
+    max_strikes : int ref;
+    strike_box : float ref;
+    max_pitches : int ref;
     (* model *)
     emperical_freqs : bool ref;
     model_name : string ref;
@@ -33,6 +37,9 @@ type prefs =
   let calc_pp         p = !(p.calc_pp)
   let uniform_prior   p = !(p.uniform_prior)
   let pp_rel_err      p = !(p.pp_rel_err)
+  let max_strikes     p = !(p.max_strikes)
+  let strike_box      p = !(p.strike_box)
+  let max_pitches     p = !(p.max_pitches)
   let emperical_freqs p = !(p.emperical_freqs)
   let model_name      p = !(p.model_name)
   let gamma_n_cat     p = !(p.gamma_n_cat)
@@ -58,17 +65,18 @@ let write_prefs ch p =
   titled_str ch "reference tree"              (tree_fname p);
   titled_str ch "reference alignment"         (ref_align_fname p);
   titled_str ch "statistics file"             (stats_fname p);
+  titled_str ch "substitution model"          (model_name p);
+  titled_boo ch "use emperical frequencies"   (emperical_freqs p);
+  titled_int ch "number of gamma categories"  (gamma_n_cat p);
+  titled_flt ch "gamma alpha"                 (gamma_alpha p);
+  titled_int ch "max number of strikes"       (max_strikes p);
+  titled_flt ch "strike box"                  (strike_box p);
+  titled_int ch "max number of pitches"       (max_pitches p);
+  titled_boo ch "calculate PP"                (calc_pp p);
+  titled_boo ch "uniform prior"               (uniform_prior p);
   titled_flt ch "starting pendant length"     (start_pend p);
   titled_flt ch "maximal pendant length"      (max_pend p);
   titled_flt ch "ML tolerance"                (tolerance p);
-  titled_boo ch "calculate PP"                (calc_pp p);
-  titled_boo ch "uniform prior"               (uniform_prior p);
   titled_flt ch "relative error for PP"       (pp_rel_err p);
-  titled_boo ch "use emperical frequencies"   (emperical_freqs p);
-  titled_str ch "substitution model"          (model_name p);
-  titled_int ch "number of gamma categories"  (gamma_n_cat p);
-  titled_flt ch "gamma alpha"                 (gamma_alpha p);
-  titled_int ch "verbosity"                   (verb_level p);
-  titled_boo ch "write masked alignment"      (write_masked p);
   titled_flt ch "ML ratio cutoff for writing" (ratio_cutoff p);
   ()

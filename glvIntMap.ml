@@ -40,19 +40,15 @@ let of_lv_map_arr_arr locs lv_map_arr_arr =
 (* dp_of_data:
  *)
 let dp_of_data model align istree locs = 
-  let curr_time = Sys.time () in
   let dp_arr = 
     Array.map
       (fun rate ->
         Likestree.distoproximal_of_aln_and_istree 
           (Model.seq_type model) (Model.diagdq model) align istree rate)
       (Model.rates model) in
-  Printf.printf "actual dp took %g\n" ((Sys.time ()) -. curr_time);
-  let curr_time = Sys.time () in
   let result = 
   (of_lv_map_arr_arr locs (Array.map fst dp_arr),
    of_lv_map_arr_arr locs (Array.map snd dp_arr)) in
-  Printf.printf "re-sorting took %g\n" ((Sys.time ()) -. curr_time);
   result
 
 let mask mask_arr m = IntMap.map (Glv.mask mask_arr) m

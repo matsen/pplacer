@@ -37,25 +37,14 @@ type prior = Uniform_prior | Exponential_prior of float
 
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
-let pplacer_core prefs prior model ref_align istree query_align = 
-  let strike_limit = 6
-  and strike_box = 3. 
-  and max_pitches = 40
-  in
-  if (verb_level prefs) >= 1 then begin
+let pplacer_core 
+      prefs prior model ref_align istree 
+      query_align ~dmap ~pmap locs = 
+    if (verb_level prefs) >= 1 then begin
     print_endline "Running likelihood calculation on reference tree...";
     flush_all ()
   end;
   let seq_type = Model.seq_type model in
-  (* prepare rgmas *)
-  let all_locs = IntMapFuns.keys istree.info.bl in
-  assert(all_locs <> []);
-  (* warning: only good if locations are as above. may want to pass a smaller
-   * selection of locations later *)
-  let locs = ListFuns.remove_last all_locs in
-  assert(locs <> []);
-  let (dmap, pmap) = 
-    GlvIntMap.dp_of_data model ref_align istree locs in
   let half_evolve_glv_map loc g = 
     Glv.evolve model g ((IntMap.find loc istree.info.bl) /. 2.) in
   let halfd = IntMap.mapi half_evolve_glv_map dmap
@@ -108,8 +97,7 @@ let pplacer_core prefs prior model ref_align istree query_align =
       and half_d_maskd = GlvIntMap.mask mask_arr halfd 
       and half_p_maskd = GlvIntMap.mask mask_arr halfp 
       in
-      Printf.printf "masking took %g\n" ((Sys.time ()) -. curr_time);
-
+      if (verb_level prefs) >= 2 then Printf.printf "masking took\t%g\n" ((Sys.time ()) -. curr_time);
       (* make our edges.
        * start them all with query as a place holder.
        * we are breaking interface by naming them and changing them later, but
@@ -136,11 +124,9 @@ let pplacer_core prefs prior model ref_align istree query_align =
                 (IntMap.find loc half_p_maskd)))
             locs)
       in
-      List.iter (fun (loc, like) -> Printf.printf "%d\t%g\n" loc like) h_r;
-      print_endline "";
-      Printf.printf "naive computation took %g\n" ((Sys.time ()) -. curr_time);
+      (* List.iter (fun (loc, like) -> Printf.printf "%d\t%g\n" loc like) h_r; print_endline ""; *)
+      if (verb_level prefs) >= 2 then Printf.printf "ranking took\t%g\n" ((Sys.time ()) -. curr_time);
       let h_ranking = List.map fst h_r in
-   
       (* first get the results from ML *)
       let curr_time = Sys.time () in
       (* make our three taxon tree. we can't move this higher because the cached
@@ -184,14 +170,14 @@ let pplacer_core prefs prior model ref_align istree query_align =
         | loc::rest -> 
             let (best_like,_,_) as result = ml_evaluate_location loc in
             let new_results = (loc, result)::results in
-            if List.length results >= max_pitches then
+            if List.length results >= (max_pitches prefs) then
               new_results
             else if best_like > like_record then
               (* we have a new best likelihood *)
               play_ball best_like n_strikes new_results rest
-            else if best_like < like_record -. strike_box then
+            else if best_like < like_record-.(strike_box prefs) then
               (* we have a strike *)
-              if n_strikes+1 >= strike_limit then new_results
+              if n_strikes+1 >= (max_strikes prefs) then new_results
               else play_ball like_record (n_strikes+1) new_results rest
             else
               (* not a strike, just keep on accumulating results *)
@@ -199,13 +185,13 @@ let pplacer_core prefs prior model ref_align istree query_align =
         | [] -> results
       in
       let ml_results = 
-        if strike_limit = 0 then
+        if max_strikes prefs = 0 then
           (* we have disabled ball playing, and evaluate every location *)
           List.map (fun loc -> (loc, ml_evaluate_location loc)) locs
         else
           play_ball (-. infinity) 0 [] h_ranking 
       in
-      Printf.printf "computation took %g\n" ((Sys.time ()) -. curr_time);
+      if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
       (* calc ml weight ratios. these tuples are ugly but that way we don't need
        * to make a special type for ml results. *)
       let ml_ratios = 
@@ -223,6 +209,7 @@ let pplacer_core prefs prior model ref_align istree query_align =
             ml_ratios ml_results)
       in
       if (calc_pp prefs) then begin
+        let curr_time = Sys.time () in
         (* pp calculation *)
         (* calculate marginal likes *)
         let marginal_probs = 
@@ -233,6 +220,7 @@ let pplacer_core prefs prior model ref_align istree query_align =
                 prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
             ml_sorted_results
         in
+        if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
         (query_name, 
           Placement.filter_placecoll 
             Placement.ml_ratio 
