@@ -3,6 +3,8 @@
  *
  * Makes a type for three-taxon trees which is useful for likelihood
  * calculations. 
+ * we assume that the distance from the dist do the prox is fixed. see
+ * set_dist_bl.
  *)
 
 open MapsSets
@@ -13,28 +15,22 @@ type three_tax = {
   prox   : Glv_edge.glv_edge;      (* the proximal glv *)
   dist   : Glv_edge.glv_edge;      (* the distal glv *)
   query  : Glv_edge.glv_edge;      (* the query glv *)
-  cut_bl : float ref
 }
 
 let get_query_bl tt = Glv_edge.get_bl tt.query
 let get_dist_bl tt = Glv_edge.get_bl tt.dist
 let get_prox_bl tt = Glv_edge.get_bl tt.prox
-let get_cut_bl tt = !(tt.cut_bl)
+let get_cut_bl tt = (get_dist_bl tt) +. (get_prox_bl tt)
 
-let make model ~prox ~dist ~query ~cut_bl = 
+let make model ~prox ~dist ~query = 
   { model  = model;
     prox   = prox;
     dist   = dist;
     query  = query;
-    cut_bl = ref cut_bl;
   }
 
-(* set the cut_bl to what it should be *)
-let refresh_cut_bl tt = 
-  tt.cut_bl := (get_dist_bl tt) +. (get_prox_bl tt)
-
 let log_like tt = 
-  Glv.log_like3 
+  Glv.log_like3_statd
     tt.model 
     (Glv_edge.get_evolv tt.prox) 
     (Glv_edge.get_evolv tt.dist)
@@ -44,7 +40,7 @@ let set_query_bl tt query_bl =
   Glv_edge.set_bl tt.model tt.query query_bl
 
 let set_dist_bl tt dist_bl = 
-  let prox_bl = !(tt.cut_bl) -. dist_bl in
+  let prox_bl = (get_cut_bl tt) -. dist_bl in
   assert(prox_bl >= 0.);
   Glv_edge.set_bl tt.model tt.dist dist_bl;
   Glv_edge.set_bl tt.model tt.prox prox_bl
@@ -81,6 +77,39 @@ let optimize tolerance max_query_bl max_iter tt =
 
 let get_results tt = (log_like tt, get_query_bl tt, get_dist_bl tt)
 
+
+(* the idea here is to properly integrate log likelihood functions by removing
+ * some portion so that when we actually do the integration, we don't have
+ * underflow problems. 
+ * we use the original branch lengths in tt give us a baseLL.
+ * this calculates then
+ * baseLL + \log ( cut_bl^{-1} \int \int \exp(llF - baseLL) * prior(x) dx dy )
+ * Note: modifies the branch lengths in tt!
+*)
+let calc_marg_prob prior_fun rel_err max_pend tt =
+  let abs_err = 1000. in (* we don't worry about absolute error *)
+  (* first calculate a base_ll. we use the given base_pend and the midpoint of
+   * the edge *)
+  let base_ll = log_like tt 
+  and cut_bl = get_cut_bl tt in
+  base_ll +. 
+    log 
+      ((Integration.valueIntegrate 
+        (fun dist_bl -> 
+          set_dist_bl tt dist_bl;
+          Integration.valueIntegrate 
+            (fun pend_bl -> 
+              set_query_bl tt pend_bl;
+              (exp ((log_like tt) -. base_ll)) 
+                *. (prior_fun pend_bl))
+            0. max_pend abs_err rel_err)
+        0. cut_bl abs_err rel_err)
+      /. cut_bl)
+      (* normalize out the integration over a branch length *) 
+
+
+
+
 (*
 let locs = [0;1;2;3;4]
 let it = Stree_io.of_newick_str "((x:0.2,y:3e-2):0.05,z:1e-5):0."
@@ -95,7 +124,7 @@ let query_glv =
   Glv.lv_list_to_constant_rate_glv 
     (Model.n_rates model) 
     (List.map
-      NucModels.likeArrOfNuc 
+      Nuc_models.likeArrOfNuc 
       (Array.to_list (StringFuns.to_char_array "CC")))
 let start_pend = 0.2
 
@@ -109,7 +138,6 @@ let tt =
     ~dist:(make_initial dm (cut_bl /. 2.))
     ~prox:(make_initial pm (cut_bl /. 2.))
     ~query:(Glv_edge.make model query_glv start_pend)
-    ~cut_bl
 
 let () = optimize 0.01 2. 100 tt
 let q = tt

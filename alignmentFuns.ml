@@ -47,7 +47,7 @@ let transposeAln uAlign =
         fun i -> alnMat.(i).(j)))
 
 let alignmentLikeOfUnnamedNucAlignment uAlign = 
-  Array.map (Array.map NucModels.likeArrOfNuc) (transposeAln uAlign)
+  Array.map (Array.map Nuc_models.likeArrOfNuc) (transposeAln uAlign)
 
 let alignmentLikeOfUnnamedProtAlignment uAlign = 
   Array.map (Array.map ProtModels.likeArrOfAA) (transposeAln uAlign)

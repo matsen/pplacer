@@ -29,7 +29,7 @@ Gsl_integration.qag f ~a:a ~b:b ~epsabs:absErr ~epsrel:relErr
   ~limit:workspaceSize Gsl_integration.GAUSS61 workspace
  *)
 
-let valueOfTriple (v, err, neval) = v
+let valueOfTriple (v, _, _) = v
 
 let pairOfGslResult result = 
   let {Gsl_fun.res = r; Gsl_fun.err = e} = result in (r, e)

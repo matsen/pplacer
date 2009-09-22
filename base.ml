@@ -25,6 +25,13 @@ let rec list_fold_left3 f accu l1 l2 l3 =
   | (_, _, _) -> invalid_arg "list_fold_left3"
 
 
+let dot x y size = 
+  let tot = ref 0. in
+  for i=0 to size - 1 do
+    tot := !tot +. x.{i} *. y.{i}
+  done;
+  !tot
+
 let triple_dot x y z size = 
   let tot = ref 0. in
   for i=0 to size - 1 do
@@ -47,7 +54,6 @@ let pairwise_prod dest x y size =
 let triplewise_prod dest x y z size =
   for i=0 to size - 1 do
     dest.{i} <- x.{i} *. y.{i} *. z.{i}
-
   done
 
 (* get the unique items from a list
@@ -61,6 +67,16 @@ let list_uniques linit =
         else x :: l
     ) [] linit )
 
+(*
+# list_find_loc 2 [0;1;2;3;4;5;6;7];;
+- : int = 2
+*)
+let list_find_loc x l = 
+  let rec aux i = function
+    | hd::tl -> if x = hd then i else aux (i+1) tl
+    | [] -> raise Not_found
+  in 
+  aux 0 l
 
 (* calculate the size of arrays in the list, checking that all arrays are of
  * the same size. *)

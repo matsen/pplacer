@@ -2,12 +2,9 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *)
 
+(* *** translating nucleotide sequences into likelihood vectors *** *)
+
 open MapsSets
-
-(* *** translating protein sequences *** *)
-
-let nucStrMap = 
-  StringMapFuns.of_pairlist ["A",0; "C",1; "G",2; "T",3;]
 
   (*
 Adenine 	   A 	                A
@@ -50,8 +47,6 @@ let nucLikeMap =
        '?', [|1.; 1.; 1.; 1.|];
        'X', [|1.; 1.; 1.; 1.|];]))
 
-let freqRex = Str.regexp "[ \t]*- f(\\([ACGT]\\))= \\([0-9\\.e]+\\)" 
-and transRex = Str.regexp "[ \t]*\\([ACGT]\\) <-> \\([ACGT]\\)[ \t]* \\([0-9\\.e]+\\)" 
 
 let likeArrOfNuc nuc = 
   try
@@ -61,85 +56,37 @@ let likeArrOfNuc nuc =
         invalid_arg (Printf.sprintf "%c not a known nucleotide!" nuc)
 
 
-(* *** MODELS *** *)
 
-let parseLine line = 
-  Array.of_list (List.map float_of_string (Str.split (Str.regexp "\\s+") line))
-
-(* parse a GTR nucleotide model in phyml stat format *)
-let parseNucModel stringList = 
-  let b = Array.make_matrix 4 4 None
-  and d = Array.make 4 None in
-  for i=0 to 3 do b.(i).(i) <- Some 0. done;
-  List.iter (
-    fun line ->
-      if Str.string_match freqRex line 0 then ( 
-        let nucStr = Str.matched_group 1 line
-        and floatStr = Str.matched_group 2 line
-        in
-        try
-          d.(StringMap.find nucStr nucStrMap) <- Some (float_of_string floatStr)
-        with 
-        | Not_found -> failwith("parseNucModel: base "^nucStr^" not known!")
-        | Failure _ -> failwith("parseNucModel: is "^floatStr^" a float?")
-        )
-      else if Str.string_match transRex line 0 then (
-        let fromNuc = Str.matched_group 1 line
-        and toNuc = Str.matched_group 2 line
-        and floatStr = Str.matched_group 3 line
-        in
-        try
-          b.(StringMap.find fromNuc nucStrMap).(StringMap.find toNuc nucStrMap) 
-          <- Some (float_of_string floatStr);
-          b.(StringMap.find toNuc nucStrMap).(StringMap.find fromNuc nucStrMap) 
-          <- Some (float_of_string floatStr);
-        with 
-        | Not_found -> failwith("parseNucModel: base "^fromNuc^" or "^toNuc^" not known!")
-        | Failure _ -> failwith("parseNucModel: is "^floatStr^" a float?")
-        )
-  ) stringList;
-  let getSome = function 
-    | Some x -> x 
-    | None -> failwith "parseNucModel: some left undefined!" 
+(*
+ * um, am i over-coding here?
+ * coordinates of upper triangular matrix
+ *
+ # List.map transform 3 [0;1;2;3;4;5];;
+- : (int * int) list = [(0, 1); (0, 2); (0, 3); (1, 2); (1, 3); (2, 3)]
+ * *)
+let transform dim x = 
+  let rec aux k i j =
+    if j >= k then aux (k-1) (i+1) (j-k)
+    else (i,i+j+1)
   in
-  (Fam_gsl_matvec.matMapFromAAR getSome b, 
-   Fam_gsl_matvec.vecMapFromArray getSome d)
+  aux dim 0 x
 
-    (*
+let set_both m (i,j) x = 
+  m.(i).(j) <- x;
+  m.(j).(i) <- x
 
-to test, just paste this into the toplevel:
+(* make a symmetric matrix out of a vector which is assumed to be 
+ * ac ag at cg ct gt 
+ *)
+let b_of_trans_vector v = 
+  assert(Array.length v = 6);
+  let m = Array.make_matrix 4 4 0. in
+  for i=0 to 5 do
+    set_both m (transform 3 i) v.(i)
+  done;
+  Gsl_matrix.of_arrays m
 
-#use "nucModels.ml";;     
-#cd "/home/matsen/pplacer/ocaml/compareNucLikes";;
-let fragLL = nucLLOfPhymlFile "frag.place.phy_phyml_stats.txt";;
-let frag = Alignment.readAlign "frag.place.phy";;
-let fragAL = AlignmentLike.ofUnnamedNucAlignment (Alignment.forgetNames frag);;
-let (treeNames, untransTree) = Liketree.ofNewickFile "frag.place.phy_phyml_tree.txt";;
-let alignNames = Array.map fst frag;; 
-let translatedTree = LiketreeFuns.translateTaxonNumbers (PplacerFuns.makeTranslationArr treeNames alignNames) untransTree;;
-let ll = fragLL translatedTree fragAL;;
 
-phyml's Log-likelihood: 			-2618.26415
-
-     *)
-
-    (*
-
-to test, just paste this into the toplevel:
-
-#use "nucModels.ml";;     
-#cd "/home/matsen/pplacer/ocaml/hiv07env";;
-let fragLL = nucLLOfPhymlFile "hiv07env.stats";;
-let frag = Alignment.readAlign "frag.phy";;
-let fragAL = AlignmentLike.ofUnnamedNucAlignment (Alignment.forgetNames frag);;
-let (treeNames, untransTree) = Liketree.ofNewickFile "frag.place.phy_phyml_tree.txt";;
-let alignNames = Array.map fst frag;; 
-let translatedTree = LiketreeFuns.translateTaxonNumbers (PplacerFuns.makeTranslationArr treeNames alignNames) untransTree;;
-let ll = fragLL translatedTree fragAL;;
-
-phyml's Log-likelihood: 			-2618.26415
-
-     *)
 
 (*
      

@@ -23,15 +23,19 @@ let n_states model = Alignment.nstates_of_seq_type model.seq_type
 let n_rates  model = Array.length (rates model)
 
 
-let build model_name emperical_freqs phyml_stat_fname ref_align rates =
+let build model_name emperical_freqs opt_freqs_transitions ref_align rates =
   let seq_type, (diagd, modelStatD) = 
     if model_name = "GTR" then (* we have a nuc model *)
       (Alignment.Nucleotide_seq, 
-      Phyml_parser.diagd_and_statd_of_phyml_file phyml_stat_fname) 
+      match opt_freqs_transitions with
+      | Some(freqs, transitions) ->
+          let b = Nuc_models.b_of_trans_vector transitions 
+          and d = Gsl_vector.of_array freqs in
+          (Diagd.normalizedOfExchangeableMat b d, d)
+      | None -> assert(false)) 
     else
       (Alignment.Protein_seq,
       ProtModels.diagd_and_statd_of_model_name model_name)
-      (* and gamma_cats = Gamma.discrete_gamma !gamma_n_cat !gamma_alpha *)
   in
   (* change to emperical frequencies if emperical_freqs is on (note that we only
    * do this for proteins as the freqs are already specified in the GTR model) *)

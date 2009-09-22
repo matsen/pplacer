@@ -83,10 +83,11 @@ let finite_infinity x =
   | _ -> x
 
 
-(* log_like3:
- * take the inner product of three things then dot with the stationary
- * distribution. there are lots of things we don't do error checking on. *)
-let log_like3 model x_glv y_glv z_glv = 
+(* log_like3_statd:
+ * take the log like of the product of three things then dot with the stationary
+ * distribution. there are lots of things we don't do error checking
+ * on. *)
+let log_like3_statd model x_glv y_glv z_glv = 
   assert(n_rates x_glv = n_rates y_glv &&
          n_rates y_glv = n_rates z_glv);
   let fn_rates = float_of_int (n_rates x_glv) in
@@ -129,24 +130,11 @@ let evolve_into model dest_glv src_glv bl =
     src_glv;
   ()
 
-
-(* evolve_site_lvs_into:
- * evolve site_lvs according to model for each rate, then store the results in
- * dest_glv. see intro of this file about site_lvs.
-let evolve_site_lvs_into model dest_glv site_lvs bl = 
-  let evolve_mats = make_evolve_mats model bl in
-  List.iter2 (* iter over sites *)
-    (fun dest_site src_site ->
-      List.iter2 (* iter over rates *)
-        (fun dest_lv mat -> 
-          Fam_gsl_matvec.matVecMul dest_lv mat src_site)
-        dest_site
-        evolve_mats)
-    dest_glv
-    site_lvs;
-  ()
- *)
-
+(* functional version *)
+let evolve model src_glv bl = 
+  let dest_glv = copy src_glv in
+  evolve_into model dest_glv src_glv bl;
+  dest_glv
 
 (* pairwise_product:
  * take the pairwise product of glvs g1 and g2, then store in dest. *)
@@ -158,3 +146,4 @@ let pairwise_product dest g1 g2 =
           Base.pairwise_prod rate_dest rate_g1 rate_g2)
         site_dest site_g1 site_g2)
     dest g1 g2
+

@@ -39,17 +39,28 @@ let marginal_prob     p = get_pp p.marginal_prob
 let distal_bl         p = p.distal_bl
 let pendant_bl        p = p.pendant_bl
 
+let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl =
+  {location      =  loc;
+  ml_ratio       =  ml_ratio;
+  log_like       =  log_like;
+  distal_bl      =  dist_bl;
+  pendant_bl     =  pend_bl;
+  marginal_prob  =  None;
+  post_prob      =  None}
+
+let add_pp p ~marginal_prob ~post_prob = 
+  {p with 
+    post_prob      =  Some post_prob;
+    marginal_prob  =  Some marginal_prob}
+
 let compare_placements criterion rp1 rp2 =
   compare (criterion rp1) (criterion rp2)
 
 let sort_placecoll criterion pc =
   List.sort (fun x y -> - (compare_placements criterion) x y) pc
 
-  (*
-let ml_filter_placement_list cutoff placements = 
-  List.filter (fun ml_place -> ml_place.ml_ratio > cutoff) placements
-  *)
-
+let filter_placecoll criterion cutoff pc =
+  List.filter (fun p -> criterion p > cutoff) pc
 
 (*
  * make a hash of all of the placements, keyed by the id of their placement node

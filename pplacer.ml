@@ -4,77 +4,84 @@
 
 open Fam_batteries
 open MapsSets
+open Prefs
 
 let version_str = "v0.2"
 
-let start_pend = ref 0.5
-let max_pend = ref 2.
-let treeFname = ref ""
-let referenceAlignFname = ref ""
-let phymlStatFile = ref ""
-let verb_level = ref 1
-let calc_pp = ref false 
-let modelName = ref "LG"
-let uniformPrior = ref false
-let pp_rel_err = ref 0.01
-let tolerance = ref 0.01
-let ratio_cutoff = ref 0.05
-let only_write_best = ref false
-let emperical_freqs = ref true 
-let uniform_prior = ref false
-let gamma_n_cat = ref 1
-let gamma_alpha = ref 1.
-let write_masked = ref false
+let prefs = 
+  { 
+    (* basics *)
+    tree_fname = ref "";
+    ref_align_fname = ref "";
+    stats_fname = ref "";
+    (* tree calc *)
+    start_pend = ref 0.5;
+    max_pend = ref 2.;
+    tolerance = ref 0.01;
+    calc_pp = ref false;
+    uniform_prior = ref false;
+    pp_rel_err = ref 0.01;
+    (* model *)
+    emperical_freqs = ref true;
+    model_name = ref "LG";
+    gamma_n_cat = ref 1;
+    gamma_alpha = ref 1.;
+    (* reading and writing *)
+    verb_level = ref 1;
+    write_masked = ref false;
+    ratio_cutoff = ref 0.05;
+    only_write_best = ref false
+  }
 
 let bifurcation_warning = 
   "Warning: pplacer results make the most sense when the \
   given tree is multifurcating at the root. See manual for details."
 
 (* these are the args that we re-parse after parsing the phyml stat file *)
-let model_name_opt = "-m", Arg.Set_string modelName,
+let model_name_opt = "-m", Arg.Set_string prefs.model_name,
   "Set the protein subs model. Options are LG (default) or WAG."
-and gamma_n_cat_opt = "--gammaCats", Arg.Set_int gamma_n_cat,
+and gamma_n_cat_opt = "--gammaCats", Arg.Set_int prefs.gamma_n_cat,
  "Specify the number of categories for a discrete gamma model. (Default is \
  one, i.e. no gamma rate variation.)"
-and gamma_alpha_opt = "--gammaAlpha", Arg.Set_float gamma_alpha,
+and gamma_alpha_opt = "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
  "Specify the shape parameter for a discrete gamma model."
 let reparseable_opts = [model_name_opt; gamma_n_cat_opt; gamma_alpha_opt]
 
 let parse_args () =
   let files  = ref [] in
-  let t = "-t", Arg.Set_string treeFname,
+  let t = "-t", Arg.Set_string prefs.tree_fname,
    "Specify the reference tree filename."
-  and r = "-r", Arg.Set_string referenceAlignFname,
+  and r = "-r", Arg.Set_string prefs.ref_align_fname,
    "Specify the reference alignment filename."
-  and v = "-v", Arg.Set_int verb_level,
+  and v = "-v", Arg.Set_int prefs.verb_level,
    "Set verbosity level. 0 is silent, and 2 is quite a lot."
-  and p = "-p", Arg.Set calc_pp,
+  and p = "-p", Arg.Set prefs.calc_pp,
    "Calculate posterior probabilities."
-  and c = "-c", Arg.Set_float ratio_cutoff,
+  and c = "-c", Arg.Set_float prefs.ratio_cutoff,
   (Printf.sprintf
    "Specify the ratio cutoff for PP calculation and recording in the .place \
    file. Default is %g."
-   !ratio_cutoff)
-  and b = "-b", Arg.Set only_write_best,
+   !(prefs.ratio_cutoff))
+  and b = "-b", Arg.Set prefs.only_write_best,
    "Only record the best PP and ML placements in the .place file, and do so \ 
    for every fragment."
-  and s = "-s", Arg.Set_string phymlStatFile,
+  and s = "-s", Arg.Set_string prefs.stats_fname,
    "Supply a phyml stats.txt file which determines the model parameters. \
    Note that the information in this file can be overriden by specifying \
    things on the command line."
-  and max_pend_opt = "--maxPend", Arg.Set_float max_pend,
+  and max_pend_opt = "--maxPend", Arg.Set_float prefs.max_pend,
    "Set the maximum pendant branch length for the ML and Bayes calculations."
-  and tolerance_opt = "--mlTolerance", Arg.Set_float tolerance,
+  and tolerance_opt = "--mlTolerance", Arg.Set_float prefs.tolerance,
    "Specify the tolerance for the branch length maximization."
-  and rel_err_opt = "--ppRelErr", Arg.Set_float pp_rel_err,
+  and rel_err_opt = "--ppRelErr", Arg.Set_float prefs.pp_rel_err,
    "Specify the relative error for the posterior probability calculation."
-  and model_freqs = "--modelFreqs", Arg.Clear emperical_freqs,
+  and model_freqs = "--modelFreqs", Arg.Clear prefs.emperical_freqs,
    "Use protein frequencies counted from the chosen model rather than counts \
    from the reference alignment."
-  and unif_prior_opt = "--uniformPrior", Arg.Set uniform_prior,
+  and unif_prior_opt = "--uniformPrior", Arg.Set prefs.uniform_prior,
    "Use a uniform prior rather than exponential in the posterior probability \
    calculation."
-  and write_masked_opt = "--writeMasked", Arg.Set write_masked,
+  and write_masked_opt = "--writeMasked", Arg.Set prefs.write_masked,
    "Write out the reference alignment with the query sequence, masked to the \
    region without gaps in the query."
   in
@@ -95,36 +102,38 @@ let () =
     print_endline "Running pplacer analysis...";
     let files = parse_args () in if files = [] then exit 0;
     (* load ref tree and alignment *)
-    if !treeFname = "" then failwith "please specify a reference tree";
-    if !referenceAlignFname = "" then 
-      failwith "please specify a reference alignment";
-    let ref_tree = Stree_io.of_newick_file !treeFname
-    and ref_align = 
-      Alignment.uppercase (Alignment.read_align !referenceAlignFname) in
-    Printf.printf "Read reference alignment '%s' and reference tree '%s'...\n" 
-      !referenceAlignFname !treeFname; flush_all ();
-    if !verb_level > 0 && 
+    let ref_tree = match tree_fname prefs with
+    | s when s = "" -> failwith "please specify a reference tree";
+    | s -> Stree_io.of_newick_file s
+    and ref_align = match ref_align_fname prefs with
+    | s when s = "" -> failwith "please specify a reference alignment"
+    | s -> Alignment.uppercase (Alignment.read_align s)
+    in
+    if (verb_level prefs) > 0 && 
        not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
          print_endline bifurcation_warning;
-    if !verb_level > 1 then begin
+    if (verb_level prefs) > 1 then begin
       print_endline "found in reference alignment: ";
       Array.iter (
         fun (name,_) -> print_endline ("\t'"^name^"'")
       ) ref_align
     end;
-    (* parse the phyml stat file if it exists and build model. we want the
+    (* parse the phyml/raxml stat file if it exists and build model. we want the
      * command line arguments to override the settings in the stat file, so we
      * first parse things according to that file, then rerun the Arg.parser for
      * certain settings. *)
-    if !phymlStatFile <> "" then 
-      Phyml_parser.set_model_name_and_gamma !phymlStatFile
-        modelName gamma_n_cat gamma_alpha;
+    let opt_freqs_transitions = match stats_fname prefs with
+    | s when s = "" -> None
+    | _ -> Parse_stats.parse_stats prefs
+    in
     (* now we re-parse the arguments to override if they are set *)
     Arg.parse reparseable_opts (fun _ -> ()) "";
     (* build the model *)
     let model = 
-      Model.build !modelName !emperical_freqs !phymlStatFile ref_align 
-                  (Gamma.discrete_gamma !gamma_n_cat !gamma_alpha) in
+      Model.build (model_name prefs) (emperical_freqs prefs)
+                  opt_freqs_transitions ref_align 
+                  (Gamma.discrete_gamma 
+                    (gamma_n_cat prefs) (gamma_alpha prefs)) in
     (* analyze query sequences *)
     let collect ret_code query_aln_fname =
       try
@@ -138,33 +147,27 @@ let () =
         Printf.fprintf out_ch "# pplacer %s run, %s\n"        
           version_str (Base.date_time_str ());
         Printf.fprintf out_ch 
-          "# run as: %s\n" (String.concat " " (Array.to_list Sys.argv));
-        Printf.fprintf out_ch
-          "# Gamma variation: %d cats, alpha = %g\n" !gamma_n_cat !gamma_alpha;
-        Printf.fprintf out_ch
-          "# Model is %s; emperical freqs: %b\n" !modelName !emperical_freqs;
-        Printf.fprintf out_ch 
-          "# reference alignment file name: %s\n" !referenceAlignFname; 
+          "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
+        Prefs.write_prefs out_ch prefs;
         if not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
           Printf.fprintf out_ch "# %s\n" bifurcation_warning;
         Printf.fprintf out_ch "# numbered reference tree: %s\n"
         (Stree_io.to_newick_numbered ref_tree);
         Printf.fprintf out_ch "# reference tree: %s\n" (Stree_io.to_newick ref_tree);
-        (*
         let prior = 
-          if !uniform_prior then ThreeTax.Uniform_prior
-          else ThreeTax.Exponential_prior (
+          if uniform_prior prefs then Core.Uniform_prior
+          else Core.Exponential_prior (
             (* exponential with mean = average branch length *)
             (Stree.tree_length ref_tree) /. 
-              (float_of_int (Stree.n_edges ref_tree.Stree.tree))) in *)
+              (float_of_int (Stree.n_edges ref_tree.Stree.tree))) 
+        in
         let results = 
-          Core.pplacer_core !verb_level !tolerance !write_masked
-          !start_pend !max_pend !ratio_cutoff
+          Core.pplacer_core prefs prior
           model ref_align ref_tree query_align in
-        if !only_write_best then
+        if only_write_best prefs then
           (* this is for backward compatibility *)
           Placement_io.write_best_of_placement_arr 
-            out_ch !calc_pp results
+            out_ch (calc_pp prefs) results
         else begin
           (* placements sorted by ml, new version *)
           let (placed_map, unplaced_list) = 
@@ -205,6 +208,6 @@ let () =
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     let retVal = List.fold_left collect 1 files in
-    if !verb_level > 0 then Common_base.printElapsedTime ();
+    if verb_level prefs > 0 then Common_base.printElapsedTime ();
     exit retVal
   end

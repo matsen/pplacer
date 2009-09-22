@@ -120,7 +120,7 @@ let distoproximal_of_aln_and_istree seq_type diagdq align istree rate =
 
 
     (*
-let jc = NucModels.diagdOfPhymlFile "JC.stats.txt"
+let jc = diagdOfPhymlFile "JC.stats.txt"
 let it = Stree.ofNewick "((x:0.2,y:3e-2):0.05,z:1e-5):0."
 let mini = Alignment.readAlign "tiny.fasta"
 let (d, p) = distoproximal_of_aln_and_istree Alignment.Nucleotide_seq jc mini it
