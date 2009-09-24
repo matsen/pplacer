@@ -7,6 +7,7 @@
  *
  * *)
 
+exception ExceededMaxIter
 exception FoundMin of float
 
 let maxIter = 100
@@ -37,7 +38,7 @@ let brentOptimization f initStart left right tolerance =
     let iterator = 
       Gsl_min.make Gsl_min.BRENT f (findStart initStart 1) left right in
     let rec run whichStep = 
-      if whichStep > maxIter then failwith "exceeded number of iterations"
+      if whichStep > maxIter then raise ExceededMaxIter
       else (
         Gsl_min.iterate iterator;
         let interLow, interHigh = Gsl_min.interval iterator in

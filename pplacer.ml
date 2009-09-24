@@ -214,40 +214,16 @@ let () =
           Placement_io.write_best_of_placement_arr 
             out_ch (calc_pp prefs) results
         else begin
-          (* placements sorted by ml, new version *)
-          let (placed_map, unplaced_list) = 
-            Placement.sorted_npcl_map_by_best_loc_of_npc_list 
+          let (unplaced_list, placed_map) = 
+            Placement_io.write_npcl_sorted 
+              out_ch 
               Placement.ml_ratio
-              (Array.to_list results)
-          in
-          if unplaced_list <> [] then
-            Printf.fprintf out_ch "# unplaced sequences\n";
-          List.iter
-            (fun name -> Printf.fprintf out_ch ">%s\n" name) 
-            unplaced_list;
-          Placement_io.write_npcl_map out_ch placed_map;
-          let fasta_ch = open_out (query_bname^".loc.fasta")
-          and amap = Alignment.to_map_by_name query_align
-          in 
-          let write_by_name name = 
-            try 
-              Alignment.write_fasta_line fasta_ch
-                (name, StringMap.find name amap)
-            with
-            | Not_found -> failwith (name^" not found in fasta_file_by_npcl_map")
-          in
-          if unplaced_list <> [] then begin
-            Printf.fprintf fasta_ch ">unplaced_sequences\n-\n";
-            List.iter write_by_name unplaced_list
-          end;
-          IntMap.iter
-            (fun loc npcl ->
-              Printf.fprintf fasta_ch ">placed_at_%d\n-\n" loc;
-              List.iter 
-                (fun (name, _) -> write_by_name name)
-                npcl)
+              (Array.to_list results) in
+          Placement_io.write_fasta_by_placement_loc 
+            (query_bname^".loc.fasta")
+            query_align
+            unplaced_list 
             placed_map;
-          close_out fasta_ch;
           close_out out_ch
         end;
         if frc = 0 && ret_code = 1 then 0 else ret_code

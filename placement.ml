@@ -91,20 +91,21 @@ let add_to_list_intmap k v m =
   else 
     IntMap.add k [v] m
 
-(* make a map 
+(* make (m,l), where m is a map
  * (best location for nplacecoll) -> list of nplacecoll at that loc
+ * and l is a list of unplaced sequences.
  *)
 let sorted_npcl_map_by_best_loc_of_npc_list criterion npc_list =
   List.fold_right
-    (fun (name, pc) (placed_map, unplaced_list) ->
+    (fun (name, pc) (unplaced_list, placed_map) ->
       match sort_placecoll criterion pc with
       | best::_ as sorted ->
-          (add_to_list_intmap best.location (name,sorted) placed_map,
-          unplaced_list)
+          (unplaced_list,
+          add_to_list_intmap best.location (name,sorted) placed_map)
       | [] ->
-          (placed_map, name::unplaced_list))
+          (name::unplaced_list, placed_map))
     npc_list
-    (IntMap.empty, [])
+    ([], IntMap.empty)
 
 let by_name_map_of_place_hash place_hash = 
   Hashtbl.fold (

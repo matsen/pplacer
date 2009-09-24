@@ -1,4 +1,4 @@
-type kraphy_prefs = 
+type mokaphys_prefs = 
   {
     verbose: bool ref;
     n_shuffles: int ref;

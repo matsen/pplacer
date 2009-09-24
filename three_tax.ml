@@ -65,7 +65,7 @@ let optimize_dist_bl tolerance tt =
 let optimize tolerance max_query_bl max_iter tt = 
   let rec aux which_step prev_query prev_dist = 
     if which_step > max_iter then
-      failwith "exceeded number of iterations";
+      raise Minimization.ExceededMaxIter;
     let curr_query = optimize_query_bl tolerance max_query_bl tt
     and curr_dist = optimize_dist_bl tolerance tt in
     if (abs_float (prev_query -. curr_query) > tolerance ||

@@ -19,6 +19,7 @@ let place_single new_name absol_place istree =
     | Node(i, tL) -> Node(i, List.map aux tL)
     | Leaf(i) -> Leaf(i)
   in
+  flush_all ();
   let new_stree = aux istree.tree in
   if new_stree = istree.tree then 
     failwith (Printf.sprintf "place_single_in_tree: id %d not found!" id);
@@ -78,7 +79,7 @@ let gen_lots_place tree_and_info_of_places place_hash ref_istree =
 let check_placements placement_loc places = 
   (* make sure they are in the right place *)
   List.iter 
-    (fun (name, place) -> assert(place.location = placement_loc)) places;
+    (fun (_, place) -> assert(place.location = placement_loc)) places;
   ()
     
 (* number placement *)
@@ -113,7 +114,7 @@ let tree_and_info_of_together_places bogus_bl avail_id start_info placement_loc 
   | [pend] ->
     (* just a pendant edge. no internal node *)
     (final_id, pend, final_info)
-  | h::t -> 
+  | _::_ -> 
     (* we have added an actual tree, and need to increase the id by one to
      * account for the new internal node *)
     (final_id+1,

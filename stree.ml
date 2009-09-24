@@ -59,6 +59,11 @@ let multifurcating_at_root = function
   | Node(_, tL) -> List.length tL > 2
   | Leaf(_) -> false
 
+let rec plain_to_newick = function
+  | Node(i, tL) -> 
+      "("^(String.concat "," (List.map plain_to_newick tL))^")"^(string_of_int i)
+  | Leaf i -> string_of_int i
+
 
 (* nodeInfo functions *)
 

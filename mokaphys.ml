@@ -39,7 +39,7 @@ let parse_args () =
     calculate distance only). Default is "^(string_of_int (n_shuffles prefs)))
   in
   let usage =
-    "kraphy "^version_str^"\nkraphy ex1.place ex2.place...\n"
+    "mokaphys "^version_str^"\nmokaphys ex1.place ex2.place...\n"
   and anon_arg arg =
     files := arg :: !files in
   let args = [verbose_opt; out_fname_opt; n_shuffles_opt; histo_opt; p_plot_opt; p_opt; dropdown_opt ] in

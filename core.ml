@@ -159,7 +159,16 @@ let pplacer_core
       let ml_evaluate_location loc = 
         prepare_tt loc;
               (* optimize *)
-        Three_tax.optimize (tolerance prefs) (max_pend prefs) max_iter tt;
+        let _ = 
+          try
+            Three_tax.optimize (tolerance prefs) (max_pend prefs) max_iter tt
+          with
+          | Minimization.ExceededMaxIter ->
+              Printf.printf 
+                "optimization for %s at %d exceeded maximum number of iterations.\n"
+                query_name
+                loc;
+        in
         (* get the results *)
         Three_tax.get_results tt
       in

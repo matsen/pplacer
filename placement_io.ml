@@ -47,6 +47,48 @@ let write_npcl_map ch m =
       List.iter (write_npc ch) npcl)
     m
 
+(* write sorting and return the sorted *)
+let write_npcl_sorted ch criterion npcl = 
+  let (unplaced_list, placed_map) = 
+    Placement.sorted_npcl_map_by_best_loc_of_npc_list 
+      criterion
+      npcl
+  in
+  if unplaced_list <> [] then
+    Printf.fprintf ch "# unplaced sequences\n";
+  List.iter
+    (fun name -> Printf.fprintf ch ">%s\n" name) 
+    unplaced_list;
+  write_npcl_map ch placed_map;
+  (unplaced_list, placed_map)
+
+
+let write_fasta_by_placement_loc out_fname align unplaced_list placed_map = 
+  let fasta_ch = open_out out_fname
+  and amap = Alignment.to_map_by_name align
+  in 
+  let write_by_name name = 
+    try 
+      Alignment.write_fasta_line fasta_ch
+      (name, StringMap.find name amap)
+    with
+    | Not_found -> failwith (name^" not found in fasta_file_by_npcl_map")
+  in
+  if unplaced_list <> [] then begin
+    Printf.fprintf fasta_ch ">unplaced_sequences\n\n";
+    List.iter write_by_name unplaced_list
+  end;
+  IntMap.iter
+    (fun loc npcl ->
+      Printf.fprintf fasta_ch ">placed_at_%d\n\n" loc;
+      List.iter 
+        (fun (name, _) -> write_by_name name)
+        npcl)
+    placed_map;
+  close_out fasta_ch
+
+
+
 
 (* ***** READING ***** *)
 

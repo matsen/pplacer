@@ -66,7 +66,7 @@ let outer_exponent p =
 
 let pair_distance criterion ref_tree p npcl1 npcl2 = 
   let get_map npcl = 
-    let (m,u) = Placement.sorted_npcl_map_by_best_loc_of_npc_list criterion npcl in
+    let (u,m) = Placement.sorted_npcl_map_by_best_loc_of_npc_list criterion npcl in
     if u <> [] then raise Unplaced_sequences
     else m
   in
@@ -164,7 +164,7 @@ let pair_distance criterion ref_tree p npcl1 npcl2 =
     raise (Total_kr_not_zero final_kr_diff);
   grand_total ** (outer_exponent p)
 
-let pair_core prefs criterion ch ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) = 
+let pair_core prefs criterion ref_tree (npcl_name1,npcl1) (npcl_name2,npcl2) = 
   let context = 
     Printf.sprintf "comparing %s with %s" npcl_name1 npcl_name2 
   and ref_tree_len = Stree.tree_length ref_tree in
@@ -270,7 +270,7 @@ let core prefs criterion ch ref_tree nplacecoll_arr =
     Uptri.init
       (Array.length nplacecoll_arr)
       (fun i j ->
-        pair_core prefs criterion ch 
+        pair_core prefs criterion
          ref_tree nplacecoll_arr.(i) nplacecoll_arr.(j))
   in
   let names = Array.map fst nplacecoll_arr in

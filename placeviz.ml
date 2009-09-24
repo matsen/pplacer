@@ -55,7 +55,7 @@ let () =
           else pre_ref_tree in
         let best_place_hash = 
           Placement.id_best_hash_of_placement_list 
-            Placement.compare_ml_place 
+            (Placement.compare_placements Placement.ml_ratio)
             (Placement.make_ml_ratio_filter !ml_cutoff) 
             named_places
         in

@@ -59,7 +59,12 @@ let aln_like_of_unnamed_align seq_type seqs =
   | Alignment.Protein_seq -> 
       alignmentLikeOfUnnamedProtAlignment seqs
 
-(* getting emperical frequencies from alignments *)
+(* getting emperical frequencies from alignments 
+ # AlignmentFuns.emper_freq 20 ProtModels.prot_map [|"","?ARRV"; "","AAVY?"|];;
+- : Gsl_vector.vector =
+{0.375; 0.25; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 
+0.; 0.125; 0.25}
+ *)
 let emper_freq nstates like_map align = 
   let no_missing_normed = 
     CharMap.remove '-' (

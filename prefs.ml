@@ -62,8 +62,8 @@ let titled_boo ch title b =
   Printf.fprintf ch "# %s: %b\n" title b
 
 let write_prefs ch p = 
-  titled_str ch "reference tree"              (tree_fname p);
-  titled_str ch "reference alignment"         (ref_align_fname p);
+  titled_str ch "reference tree file"         (tree_fname p);
+  titled_str ch "reference alignment file"    (ref_align_fname p);
   titled_str ch "statistics file"             (stats_fname p);
   titled_str ch "substitution model"          (model_name p);
   titled_boo ch "use emperical frequencies"   (emperical_freqs p);
