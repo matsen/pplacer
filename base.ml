@@ -98,6 +98,21 @@ let combine_over_intmaps combine_fun keys m1 m2 =
   with
   | Not_found -> invalid_arg "combine_over_maps: key not contained in map!"
 
+(* collect key,value pairs into a map from the key to the list of all values
+ * associated with that key. *)
+let intMap_of_pairlist_listly pairlist = 
+  let rec aux m = function
+    | (k,v)::l ->
+        let mp = 
+          if IntMap.mem k m then IntMap.add k (v::(IntMap.find k m)) m
+          else IntMap.add k [v] m
+        in
+        aux mp l
+    | [] -> m
+  in
+  aux IntMap.empty (List.rev pairlist) (* the above rev's things *)
+
+
 
 (* 'a MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
  * combine all the maps into a single one, with k bound to a list of all of the
@@ -115,6 +130,16 @@ let combine_intmaps_listly map_list =
         m)
     (List.rev map_list) (* the above rev's things *)
     IntMap.empty
+
+(* 
+ * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
+ * combine all the maps into a single one, with k bound to the concatenated set
+ * of bindings for k in map_list.
+ *)
+let combine_list_intmaps map_list = 
+  IntMap.map
+    List.flatten
+    (combine_intmaps_listly map_list)
 
 (* uniformly shuffle the elements of an array using the Knuth shuffle
  * http://en.wikipedia.org/wiki/Random_permutation
@@ -210,19 +235,28 @@ let mask_to_list mask_arr a =
   !masked
 
 
-(* normalized_prob :
+(* normalized_prob:
+ * the L_1 norm of a float list
+ *)
+let normalized_prob fl = 
+  let sum = List.fold_left ( +. ) 0. fl in
+  List.map (fun x -> x /. sum) fl
+
+
+(* ll_normalized_prob :
  * ll_list is a list of log likelihoods. this function gives the normalized
  * probabilities, i.e. exponentiate then our_like / (sum other_likes) 
+ * have to do it this way to avoid underflow problems.
  * *)
-let normalized_prob ll_list = 
-  List.map (
-    fun log_like ->
-      1. /. (
-        List.fold_left ( +. ) 0. (
-          List.map (
-            fun other_ll -> exp (other_ll -. log_like)
-          ) ll_list ) )
-  ) ll_list
+let ll_normalized_prob ll_list = 
+  List.map 
+    (fun log_like ->
+      1. /. 
+        (List.fold_left ( +. ) 0. 
+          (List.map 
+            (fun other_ll -> exp (other_ll -. log_like)) 
+            ll_list)))
+    ll_list
 
 
 let time_fun f = 

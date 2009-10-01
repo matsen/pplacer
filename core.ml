@@ -204,7 +204,7 @@ let pplacer_core
       (* calc ml weight ratios. these tuples are ugly but that way we don't need
        * to make a special type for ml results. *)
       let ml_ratios = 
-        Base.normalized_prob 
+        Base.ll_normalized_prob 
           (List.map 
             (fun (_, (best_like, _, _)) -> best_like) 
             ml_results) 
@@ -239,7 +239,7 @@ let pplacer_core
                 Placement.add_pp placement ~marginal_prob ~post_prob)
               ml_sorted_results
               marginal_probs
-              (Base.normalized_prob marginal_probs)))
+              (Base.ll_normalized_prob marginal_probs)))
       end
       else
         (query_name, 
