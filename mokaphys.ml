@@ -5,7 +5,7 @@
 open Fam_batteries
 open MapsSets
 open Placement
-open Kraphy_prefs
+open Mokaphys_prefs
 
 let version_str = "v0.2"
 
@@ -69,7 +69,7 @@ let () =
       if out_fname prefs = "" then stdout
       else open_out (out_fname prefs)
     in
-    Kraphy_core.core
+    Mokaphys_core.core
       prefs
       Placement.ml_ratio (* sorting criterion *)
       out_ch

@@ -11,7 +11,7 @@ we want to make a randomization procedure
 *)
 open Fam_batteries
 open MapsSets
-open Kraphy_prefs
+open Mokaphys_prefs
 
 exception Invalid_place_loc of float
 exception Unplaced_sequences
@@ -64,6 +64,52 @@ let outer_exponent p =
   if p < 1. then 1.
   else 1. /. p
 
+(* collect the information we care about for KR: for each location, get the
+ * sequences whose best placements are there, along with their attachment
+ * locations (distal_bl) and the kr_v, which is the vector to use when adding
+ * up placements *)
+let collect_kr_info kr_v npcl_map =
+  IntMap.map
+    (List.map
+      (function (_,pc) -> (* forget the name *)
+        match pc with
+        | best::_ -> Placement.distal_bl best, kr_v
+        | [] -> assert(false)))
+    npcl_map
+
+  (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
+let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
+
+(* total up the info from the previous step. 
+ * note that kr_v_sofar will be modified in place. *)
+let total_along_edge p prev_subtot start_kr_v bl kr_info_list = 
+  let rec aux ~subtotal ~prev_a kr_v_sofar kr_info_list = 
+    (* next_total actually adds on the segment length times the exp_kr_diff of
+     * the kr vector *)
+    let next_subtotal a =
+      let seg_len = a -. prev_a in
+      (* Printf.printf "%g\t%g\n" prev_a a; *)
+      assert(seg_len >= 0.);
+      subtotal+.seg_len*.(exp_kr_diff p kr_v_sofar)
+    in
+    match kr_info_list with
+    | (a, kr_v)::rest -> 
+        (* we pull this out so that we do the next total, then add on the kr_v
+         * onto the kr_v_sofar *)
+        if a < 0. || a > bl then raise (Invalid_place_loc a);
+        let the_next_subtotal = next_subtotal a in
+        aux
+          ~subtotal:the_next_subtotal
+          ~prev_a:a
+          (v_addto kr_v_sofar kr_v; kr_v_sofar)
+          rest
+    | [] -> 
+        (* sum things up on final segment to the next node *)
+        (next_subtotal bl, kr_v_sofar)
+  in
+  aux prev_subtot 0. start_kr_v kr_info_list
+
+
 let pair_distance criterion ref_tree p npcl1 npcl2 = 
   let get_map npcl = 
     let (u,m) = Placement.sorted_npcl_map_by_best_loc_of_npc_list criterion npcl in
@@ -77,19 +123,6 @@ let pair_distance criterion ref_tree p npcl1 npcl2 =
   (* these two may take arguments in the future *)
   let kr_v1 = [|int_inv (List.length npcl1); 0.|]
   and kr_v2 = [|0.; int_inv (List.length npcl2)|]
-  in
-  (* collect the information we care about for KR: for each location, get the
-   * sequences whose best placements are there, along with their attachment
-   * locations (distal_bl) and the kr_v, which is the vector to use when adding
-   * up placements *)
-  let collect_kr_info kr_v npcl_map =
-    IntMap.map
-      (List.map
-        (function (_,pc) -> (* forget the name *)
-          match pc with
-          | best::_ -> Placement.distal_bl best, kr_v
-          | [] -> assert(false)))
-      npcl_map
   in
   (* this map has all of the information needed to do the KR calculation *)
   let all_kr_map = 
@@ -105,37 +138,6 @@ let pair_distance criterion ref_tree p npcl1 npcl2 =
   in
   (* ppr_kr_info Format.std_formatter all_kr_map; Format.pp_print_newline Format.std_formatter ()
   *)
-  (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
-  let exp_kr_diff kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p in
-  (* total up the info from the previous step. 
-   * note that kr_v_sofar will be modified in place. *)
-  let total_along_edge prev_subtot start_kr_v bl kr_info_list = 
-    let rec aux ~subtotal ~prev_a kr_v_sofar kr_info_list = 
-      (* next_total actually adds on the segment length times the exp_kr_diff of
-       * the kr vector *)
-      let next_subtotal a =
-        let seg_len = a -. prev_a in
-        (* Printf.printf "%g\t%g\n" prev_a a; *)
-        assert(seg_len >= 0.);
-        subtotal+.seg_len*.(exp_kr_diff kr_v_sofar)
-      in
-      match kr_info_list with
-      | (a, kr_v)::rest -> 
-          (* we pull this out so that we do the next total, then add on the kr_v
-           * onto the kr_v_sofar *)
-          if a < 0. || a > bl then raise (Invalid_place_loc a);
-          let the_next_subtotal = next_subtotal a in
-          aux
-            ~subtotal:the_next_subtotal
-            ~prev_a:a
-            (v_addto kr_v_sofar kr_v; kr_v_sofar)
-            rest
-      | [] -> 
-          (* sum things up on final segment to the next node *)
-          (next_subtotal bl, kr_v_sofar)
-    in
-    aux prev_subtot 0. start_kr_v kr_info_list
-  in
   (* total across all of the edges of the tree *)
   let starter_kr_v = [|0.; 0.|]
   and get_kr_info id = 
@@ -147,12 +149,14 @@ let pair_distance criterion ref_tree p npcl1 npcl2 =
     Stree.recur 
       (fun id below_list -> (* the node recurrence *)
         total_along_edge 
+          p
           (List.fold_right ( +. ) (List.map fst below_list) 0.) (* prev subtot *)
           (v_list_sum (List.map snd below_list)) (* total of below kr_infos *)
           (Stree.get_bl ref_tree id)
           (get_kr_info id))
       (fun id ->
         total_along_edge 
+          p
           0. 
           (Array.copy starter_kr_v) 
           (Stree.get_bl ref_tree id) (* code dup, but not worth factoring... couldn't use recur then *)
