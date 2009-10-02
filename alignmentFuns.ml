@@ -85,5 +85,6 @@ let emper_freq nstates like_map align =
       ) seq
   ) align;
   Fam_gsl_matvec.l1_normalize total;
+  (* Format.fprintf Format.std_formatter "%a@." Fam_gsl_matvec.ppr_gsl_vector total; *)
   total
 

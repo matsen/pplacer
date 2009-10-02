@@ -6,8 +6,17 @@ open Fam_batteries
 open MapsSets
 open Placement
 
+
+let chop_place_extension fname =
+  if Filename.check_suffix fname ".place" then
+    Filename.chop_extension fname
+  else 
+    invalid_arg ("this program requires place files ending with .place suffix")
+
  
 (* ***** WRITING ***** *)
+
+
 
 let write_npc ch (name, places) = 
   Printf.fprintf ch ">%s\n" name;

@@ -9,10 +9,11 @@
  * *)
 
 type model =
-  { statd : Gsl_vector.vector;
-  diagdq : Diagd.diagd;
-  seq_type : Alignment.seq_type;
-  rates : float array;
+  { 
+   statd     :  Gsl_vector.vector;
+   diagdq    :  Diagd.diagd;
+   seq_type  :  Alignment.seq_type;
+   rates     :  float array;
   }
 
 let statd    model = model.statd
@@ -24,26 +25,26 @@ let n_rates  model = Array.length (rates model)
 
 
 let build model_name emperical_freqs opt_freqs_transitions ref_align rates =
-  let seq_type, (diagd, modelStatD) = 
-    if model_name = "GTR" then (* we have a nuc model *)
+  let seq_type, (trans, statd) = 
+    if model_name = "GTR" then 
       (Alignment.Nucleotide_seq, 
       match opt_freqs_transitions with
       | Some(freqs, transitions) ->
-          let b = Nuc_models.b_of_trans_vector transitions 
-          and d = Gsl_vector.of_array freqs in
-          (Diagd.normalizedOfExchangeableMat b d, d)
+          (Nuc_models.b_of_trans_vector transitions,
+          Gsl_vector.of_array freqs)
       | None -> assert(false)) 
     else
       (Alignment.Protein_seq,
-      ProtModels.diagd_and_statd_of_model_name model_name)
+        let model_trans, model_statd = 
+          ProtModels.trans_and_statd_of_model_name model_name in
+        (model_trans,
+          if emperical_freqs then
+            AlignmentFuns.emper_freq 20 ProtModels.prot_map ref_align 
+          else
+            model_statd))
   in
-  (* change to emperical frequencies if emperical_freqs is on (note that we only
-   * do this for proteins as the freqs are already specified in the GTR model) *)
-  { statd = 
-    if emperical_freqs && seq_type = Alignment.Protein_seq then
-      AlignmentFuns.emper_freq 20 ProtModels.prot_map ref_align 
-    else modelStatD;
-  diagdq = diagd;
+  { statd = statd;
+  diagdq = Diagd.normalizedOfExchangeableMat trans statd;
   seq_type = seq_type;
   rates = rates }
 

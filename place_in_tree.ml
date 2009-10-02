@@ -38,7 +38,7 @@ let place_single new_name absol_place istree =
  * tree_and_info_of_places takes a collection of placements which are at a given
  * node and returns a representation of them.
  * *)
-let gen_lots_place tree_and_info_of_places place_hash ref_istree = 
+let gen_lots_place tree_and_info_of_places npcl_map ref_istree = 
   (* first we have a fun which recurs below *)
   let rec aux start_avail_id (start_tree : stree) (start_info : node_info) = 
     let (new_avail_id, new_this_tree, new_this_info) = 
@@ -56,10 +56,10 @@ let gen_lots_place tree_and_info_of_places place_hash ref_istree =
     | Leaf id -> (start_avail_id, Leaf id, start_info)
     in
     let id = top_id start_tree in
-    if Hashtbl.mem place_hash id then begin
+    if IntMap.mem id npcl_map then begin
       (* we have something to add at this node *)
       let our_bl = Stree.info_get_bl new_this_info id 
-      and placed_here = Hashtbl.find_all place_hash id in
+      and placed_here = IntMap.find id npcl_map in
       let final_avail_id, place_tree, place_info = 
         tree_and_info_of_places new_avail_id new_this_info id placed_here in
      (final_avail_id+1,
@@ -76,11 +76,16 @@ let gen_lots_place tree_and_info_of_places place_hash ref_istree =
     aux (1 + max_id ref_istree.tree) ref_istree.tree ref_istree.info in
   {tree = total_tree; info = total_info}
 
+let get_top_placement = function
+  | place::_ -> place
+  | [] -> failwith "empty placement list!"
+
 let check_placements placement_loc places = 
   (* make sure they are in the right place *)
   List.iter 
-    (fun (_, place) -> assert(place.location = placement_loc)) places;
-  ()
+    (fun (_, places) -> 
+      assert((get_top_placement places).location = placement_loc))
+    places
     
 (* number placement *)
 let tree_and_info_of_number_places 
@@ -94,21 +99,23 @@ let tree_and_info_of_number_places
       start_info.taxon;
     bl = IntMap.add avail_id bogus_bl start_info.bl;})
  
-let number_place bogus_bl place_hash ref_istree = 
-  gen_lots_place (tree_and_info_of_number_places bogus_bl) place_hash ref_istree
+let number_place bogus_bl npcl_map ref_istree = 
+  gen_lots_place (tree_and_info_of_number_places bogus_bl) npcl_map ref_istree
 
 (* together placement *)
-let tree_and_info_of_together_places bogus_bl avail_id start_info placement_loc places = 
-  check_placements placement_loc places;
+let tree_and_info_of_together_places 
+    bogus_bl avail_id start_info placement_loc npcl = 
+  check_placements placement_loc npcl;
   let (final_id, final_info, trees) =
     List.fold_right (
-      fun (name, place) (sofar_id, sofar_info, sofar_trees) ->
+      fun (name, places) (sofar_id, sofar_info, sofar_trees) ->
+        let place = get_top_placement places in
         (sofar_id+1,
         {sofar_info with 
         taxon = IntMap.add sofar_id name sofar_info.taxon;
         bl = IntMap.add sofar_id place.pendant_bl sofar_info.bl},
         (Leaf sofar_id)::sofar_trees)
-    ) places (avail_id, start_info, []) in
+    ) npcl (avail_id, start_info, []) in
   match trees with 
   | [] -> assert(false)
   | [pend] ->
@@ -121,5 +128,5 @@ let tree_and_info_of_together_places bogus_bl avail_id start_info placement_loc 
     Node(final_id, trees), 
     {final_info with bl = IntMap.add final_id bogus_bl final_info.bl})
 
-let together_place bogus_bl place_hash ref_istree = 
-  gen_lots_place (tree_and_info_of_together_places bogus_bl) place_hash ref_istree
+let together_place bogus_bl npcl_map ref_istree = 
+  gen_lots_place (tree_and_info_of_together_places bogus_bl) npcl_map ref_istree

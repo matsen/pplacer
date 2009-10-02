@@ -4,26 +4,16 @@
  * here we actually do the work.
  *
  * notes:
-   * the h-stuff (hmap, etc.) is a way to cut down the number of locations that
-   * we actually fully consider. we cut each edge in half, then evolve the distal
-   * and proximal along those cut edges, then take the pairwise product of the
-   * resulting likelihood vectors with the stationary distribution. call this
-   * the h vector. that way, we can just come along with our query (which has
-   * been evolved along start_pend) and take a dot with the h-vector to get the
-   * likelihood of attaching the query sequence in the middle of the edge with a
-   * pendant branch length of start_pend for the cost of a linear number of
-   * Glv.dot.
-   *
- * 4 * 2 * n_taxa * n_sites * n_chars * float
+ * the h-stuff (hmap, etc.) is a way to cut down the number of locations that
+ * we actually fully consider. we cut each edge in half, then evolve the distal
+ * and proximal along those cut edges, then take the pairwise product of the
+ * resulting likelihood vectors with the stationary distribution. call this
+ * the h vector. that way, we can just come along with our query (which has
+ * been evolved along start_pend) and take a dot with the h-vector to get the
+ * likelihood of attaching the query sequence in the middle of the edge with a
+ * pendant branch length of start_pend for the cost of a linear number of
+ * dot products.
  *
- * 4 * 2 * n_taxa * 1000 * 20 * 8 = 1,280,000 * n_taxa
- *
- * in order to implement a quick-cut, i need to take the pairwise product of the
- * distal and proximal, then maybe write a masked log like2?
- *
- *
- * small improvements:
-   * could improve masking so we don't have to alloc
 *)
 
 open Fam_batteries

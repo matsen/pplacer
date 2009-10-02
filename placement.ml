@@ -9,7 +9,6 @@
  * terminology: placecoll (or pc)-- collection of placements for a given sequence
  * terminology: nplacecoll (or npc)-- named placecoll. (query seq name, place list)
  * terminology: npcl-- nplacecoll list
- * TODO: migrate from id_best_hash_of_placement_list to map version
  *)
 open Fam_batteries
 open MapsSets
@@ -61,27 +60,6 @@ let sort_placecoll criterion pc =
 
 let filter_placecoll criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc
-
-(*
- * make a hash of all of the placements, keyed by the id of their placement node
- * NOTE: filter is only applied to the one with the highest cmp
- * not very good design
- * *)
-let id_best_hash_of_placement_list cmp filter named_place_list =
-  let h = Hashtbl.create (List.length named_place_list / 2) in
-  List.iter (
-    fun (name, placements) -> 
-      if placements <> [] then begin
-        let best_place = 
-          List.hd 
-            (List.sort (* want decreasing sort *)
-              (fun x y -> - (cmp x y))
-              placements) in
-        if filter best_place then
-          Hashtbl.add h (best_place.location) (name, best_place)
-      end
-  ) named_place_list;
-  h
 
 (* decreasing sort of a placecoll
  *)

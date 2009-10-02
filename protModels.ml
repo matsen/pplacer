@@ -63,7 +63,7 @@ parseProtModel [|
 "1.027040   0.528191  0.265256   0.0302949";
 |]
 
-let wagMat = 
+let wag_trans = 
 parseProtModel [|
 "0.551571";
 "0.509848   0.635346";
@@ -86,13 +86,11 @@ parseProtModel [|
 "2.006010   0.251849  0.196246   0.152335   1.002140   0.301281   0.588731   0.187247   0.118358   7.821300   1.800340  0.305434   2.058450   0.649892   0.314887   0.232739   1.388230   0.365369   0.314730";
 |]
 
-let wagFreq = parseFreq "0.0866279  0.043972  0.0390894  0.0570451  0.0193078  0.0367281  0.0580589  0.0832518  0.0244313  0.048466   0.086209  0.0620286  0.0195027  0.0384319  0.0457631  0.0695179  0.0610127  0.0143859  0.0352742  0.0708956"
-
-let wagDiagd = Diagd.normalizedOfExchangeableMat wagMat wagFreq 
+let wag_statd = parseFreq "0.0866279  0.043972  0.0390894  0.0570451  0.0193078  0.0367281  0.0580589  0.0832518  0.0244313  0.048466   0.086209  0.0620286  0.0195027  0.0384319  0.0457631  0.0695179  0.0610127  0.0143859  0.0352742  0.0708956"
 
 
 (* Le and Gascuel's matrix *)
-let lgMat = 
+let lg_trans = 
 parseProtModel [|
 "0.425093";
 "0.276818 0.751878";
@@ -115,16 +113,14 @@ parseProtModel [|
 "2.547870 0.170887 0.083688 0.037967 1.959291 0.210332 0.245034 0.076701 0.119013 10.649107 1.702745 0.185202 1.898718 0.654683 0.296501 0.098369 2.188158 0.189510 0.249313";
 |]
 
-let lgFreq = parseFreq "0.079066 0.055941 0.041977 0.053052 0.012937 0.040767 0.071586 0.057337 0.022355 0.062157 0.099081 0.064600 0.022951 0.042302 0.044040 0.061197 0.053287 0.012066 0.034155 0.069147"
+let lg_statd = parseFreq "0.079066 0.055941 0.041977 0.053052 0.012937 0.040767 0.071586 0.057337 0.022355 0.062157 0.099081 0.064600 0.022951 0.042302 0.044040 0.061197 0.053287 0.012066 0.034155 0.069147"
 
-let lgDiagd = Diagd.normalizedOfExchangeableMat lgMat lgFreq 
-
-let diagd_and_statd_of_model_name = function
-  | "LG" -> (lgDiagd, lgFreq)
-  | "WAG" -> (wagDiagd, wagFreq)
+let trans_and_statd_of_model_name = function
+  | "LG" -> (lg_trans, lg_statd)
+  | "WAG" -> (wag_trans, wag_statd)
   | model_name -> failwith ("unknown model: "^model_name)
 
-(* let qs = Diagd.ofSymmAAR wagMat
+(* let qs = Diagd.ofSymmAAR wag_trans
 
 let x = Mat.AAR.mul_vec wagDiagd#toMatrix wagFreq
 

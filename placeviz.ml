@@ -9,7 +9,6 @@ open Placement
 let version_str = "v0.2"
 
 let singly = ref false
-and ml_cutoff = ref 0.
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
@@ -18,8 +17,6 @@ let parse_args () =
   let files  = ref [] in
   let singly_opt = "-s", Arg.Set singly,
    "Single placement: make one tree for each placement."
-  and ml_cutoff_opt = "-l", Arg.Set_float ml_cutoff,
-   "The ML likelihood weight ratio cutoff for inclusion."
   and bogus_bl_opt = "--bogusBl", Arg.Set_float bogus_bl,
    "Set the branch length for the subtrees/taxa which are collected together \
    for visualization in the number and together trees."
@@ -33,7 +30,7 @@ let parse_args () =
   and anon_arg arg =
     files := arg :: !files in
   let args = 
-    [singly_opt; ml_cutoff_opt; bogus_bl_opt; tree_info_opt; show_node_numbers_opt] in
+    [singly_opt; bogus_bl_opt; tree_info_opt; show_node_numbers_opt] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
@@ -42,29 +39,25 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    let collect ret_code place_fname =
+    let collect ret_code fname =
       try
         let frc = 0 in
-        let fname_base = 
-          (Filename.chop_extension place_fname)^(
-            Printf.sprintf ".L%02d" (int_of_float (100. *. !ml_cutoff))) in
         let (pre_ref_tree, named_places) = 
-          Placement_io.parse_place_file version_str place_fname in
+          Placement_io.parse_place_file version_str fname in
         let ref_tree = 
           if !show_node_numbers then Stree.make_boot_node_num pre_ref_tree
           else pre_ref_tree in
-        let best_place_hash = 
-          Placement.id_best_hash_of_placement_list 
-            (Placement.compare_placements Placement.ml_ratio)
-            (Placement.make_ml_ratio_filter !ml_cutoff) 
+        let unplaced_seqs,npcl_map = 
+          Placement.sorted_npcl_map_by_best_loc_of_npc_list
+            Placement.ml_ratio
             named_places
         in
-        (* print some statistics *)
-        Printf.printf "in %s, %d of %d made it through filter\n"
-          place_fname
-          (List.length (HashtblFuns.keys best_place_hash))
-          (List.length named_places);
-        (* singly : one-read-at-a-time placement *)
+        if unplaced_seqs <> [] then begin
+          print_endline "Found the following unplaced sequences:";
+          List.iter print_endline unplaced_seqs;
+        end;
+        let fname_base = Placement_io.chop_place_extension fname in
+        (* singly : one-read-at-a-time placement 
         if !singly then begin
           let by_name_place_map = by_name_map_of_place_hash best_place_hash in
           let out_ch = open_out (fname_base^".sing.tre") in
@@ -81,17 +74,24 @@ let () =
           ) named_places;
           close_out out_ch;
         end;
+         * *)
         if !print_tree_info then Stree_io.print_tree_info ref_tree;
         (* number placement : counting the number of reads on an edge *)
         let out_ch = open_out (fname_base^".num.tre") in
         Stree_io.write_newick out_ch (
-          Place_in_tree.number_place !bogus_bl best_place_hash ref_tree
+          Place_in_tree.number_place !bogus_bl npcl_map ref_tree
         );
         close_out out_ch;
         (* together placement : all reads for a single location in a clade *)
         let out_ch = open_out (fname_base^".tog.tre") in
         Stree_io.write_newick out_ch (
-          Place_in_tree.together_place !bogus_bl best_place_hash ref_tree
+          Place_in_tree.together_place !bogus_bl npcl_map ref_tree
+        );
+        close_out out_ch;
+        (* each placement : place each read individually into the tree *)
+        let out_ch = open_out (fname_base^".each.tre") in
+        Stree_io.write_newick out_ch (
+          Place_in_tree.together_place !bogus_bl npcl_map ref_tree
         );
         close_out out_ch;
   
