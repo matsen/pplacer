@@ -130,16 +130,24 @@ let parse_args () =
      
     (* note return code of 0 is OK *)
 let () =
-  (* Gsl_error.init(); the ocamlgsl error handler slows things by 30% *)
   if not !Sys.interactive then begin
-    print_endline "Running pplacer analysis...";
-    let files = parse_args () in if files = [] then exit 0;
+    if (verb_level prefs) >= 1 then begin
+      print_endline "Running pplacer analysis...";
+      flush_all ()
+    end;
+    (* initialize the GSL error handler *)
+    Gsl_error.init ();
+    let files = parse_args () in 
+    if files = [] then begin
+      print_endline "please specify some query sequences."; 
+      exit 0;
+    end;
     (* load ref tree and alignment *)
     let ref_tree = match tree_fname prefs with
-    | s when s = "" -> failwith "please specify a reference tree";
+    | s when s = "" -> failwith "please specify a reference tree.";
     | s -> Stree_io.of_newick_file s
     and ref_align = match ref_align_fname prefs with
-    | s when s = "" -> failwith "please specify a reference alignment"
+    | s when s = "" -> failwith "please specify a reference alignment."
     | s -> Alignment.uppercase (Alignment.read_align s)
     in
     if (verb_level prefs) > 0 && 
@@ -175,9 +183,18 @@ let () =
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
     (* calculate like on ref tree *)
+    if (verb_level prefs) >= 1 then begin
+      print_string "Caching likelihood information on reference tree... ";
+      flush_all ()
+    end;
     let (dmap, pmap) = 
       GlvIntMap.dp_of_data model ref_align ref_tree locs in
+    if (verb_level prefs) >= 1 then begin
+      print_endline "done.";
+      flush_all ()
+    end;
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
+
     (* analyze query sequences *)
     let collect ret_code query_aln_fname =
       try

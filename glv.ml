@@ -78,8 +78,8 @@ let ppr_glv_intmap = IntMapFuns.ppr_gen ppr_glv (* HERE *)
  * throws off the Brent method. *)
 let finite_infinity x = 
   match Pervasives.classify_float x with
-  | FP_infinite -> -. max_float
-  | FP_nan -> -. max_float
+  | FP_infinite -> -. max_float /. 10.
+  | FP_nan -> -. max_float /. 10.
   | _ -> x
 
 

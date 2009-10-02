@@ -24,6 +24,7 @@ let brentOptimization f initStart left right tolerance =
   and righty = f right in
   let smaller = if lefty < righty then left else right in
   let miny = min lefty righty in
+  (* find the start *)
   let rec findStart prevStart iterNum = 
     let prevVal = f prevStart in
     if prevVal < miny then prevStart
@@ -34,6 +35,7 @@ let brentOptimization f initStart left right tolerance =
       failwith "guessBrentIter: couldn't find start!"
     else findStart ((prevStart +. smaller) /. 2.) (iterNum+1)
   in
+  (* actually do the iteration *)
   try 
     let iterator = 
       Gsl_min.make Gsl_min.BRENT f (findStart initStart 1) left right in

@@ -30,10 +30,6 @@ type prior = Uniform_prior | Exponential_prior of float
 let pplacer_core 
       prefs prior model ref_align istree 
       query_align ~dmap ~pmap locs = 
-    if (verb_level prefs) >= 1 then begin
-    print_endline "Running likelihood calculation on reference tree...";
-    flush_all ()
-  end;
   let seq_type = Model.seq_type model in
   let half_evolve_glv_map loc g = 
     Glv.evolve model g ((IntMap.find loc istree.info.bl) /. 2.) in
@@ -166,21 +162,28 @@ let pplacer_core
        * strike_limit strikes, i.e. placements that are strike_box below the
        * best one so far. *)
       let rec play_ball like_record n_strikes results = function
-        | loc::rest -> 
-            let (best_like,_,_) as result = ml_evaluate_location loc in
-            let new_results = (loc, result)::results in
-            if List.length results >= (max_pitches prefs) then
-              new_results
-            else if best_like > like_record then
-              (* we have a new best likelihood *)
-              play_ball best_like n_strikes new_results rest
-            else if best_like < like_record-.(strike_box prefs) then
-              (* we have a strike *)
-              if n_strikes+1 >= (max_strikes prefs) then new_results
-              else play_ball like_record (n_strikes+1) new_results rest
-            else
-              (* not a strike, just keep on accumulating results *)
-              play_ball like_record n_strikes new_results rest
+        | loc::rest -> begin
+            try 
+              let (best_like,_,_) as result = 
+                ml_evaluate_location loc in
+              let new_results = (loc, result)::results in
+              if List.length results >= (max_pitches prefs) then
+                new_results
+              else if best_like > like_record then
+                (* we have a new best likelihood *)
+                play_ball best_like n_strikes new_results rest
+              else if best_like < like_record-.(strike_box prefs) then
+                (* we have a strike *)
+                if n_strikes+1 >= (max_strikes prefs) then new_results
+                else play_ball like_record (n_strikes+1) new_results rest
+              else
+                (* not a strike, just keep on accumulating results *)
+                play_ball like_record n_strikes new_results rest
+            with
+              | Gsl_error.Gsl_exn(_,_) ->
+                  Printf.printf "Warning: GSL had a problem with location %d for query %s, it was skipped.\n" loc query_name;
+                  play_ball like_record n_strikes results rest
+           end
         | [] -> results
       in
       let ml_results = 

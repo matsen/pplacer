@@ -92,20 +92,21 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
    * the edge *)
   let base_ll = log_like tt 
   and cut_bl = get_cut_bl tt in
-  base_ll +. 
-    log 
-      ((Integration.valueIntegrate 
-        (fun dist_bl -> 
-          set_dist_bl tt dist_bl;
-          Integration.valueIntegrate 
-            (fun pend_bl -> 
-              set_query_bl tt pend_bl;
-              (exp ((log_like tt) -. base_ll)) 
-                *. (prior_fun pend_bl))
-            0. max_pend abs_err rel_err)
-        0. cut_bl abs_err rel_err)
-      /. cut_bl)
-      (* normalize out the integration over a branch length *) 
+    base_ll +. 
+      log 
+        ((Integration.valueIntegrate 
+          (fun dist_bl -> 
+            set_dist_bl tt dist_bl;
+            Integration.valueIntegrate 
+              (fun pend_bl -> 
+                set_query_bl tt pend_bl;
+                (exp ((log_like tt) -. base_ll)) 
+                  *. (prior_fun pend_bl))
+              0. max_pend abs_err rel_err)
+          0. cut_bl abs_err rel_err)
+        /. cut_bl)
+        (* normalize out the integration over a branch length *) 
+
 
 
 
