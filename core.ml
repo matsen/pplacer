@@ -181,7 +181,7 @@ let pplacer_core
                 play_ball like_record n_strikes new_results rest
             with
               | Gsl_error.Gsl_exn(_,_) ->
-                  Printf.printf "Warning: GSL had a problem with location %d for query %s, it was skipped.\n" loc query_name;
+                  Printf.printf "Warning: GSL had a problem with location %d for query %s; it was skipped.\n" loc query_name;
                   play_ball like_record n_strikes results rest
            end
         | [] -> results
