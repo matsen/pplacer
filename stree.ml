@@ -99,6 +99,8 @@ let inform_stree t info = {tree = t; info = info}
 let get_an_info get_what tree = 
   get_what tree.info
 
+let get_tree ist = ist.tree
+let get_info ist = ist.info
 let get_taxon = get_an_info info_get_taxon
 let get_boot = get_an_info info_get_boot
 let get_bl = get_an_info info_get_bl

@@ -16,8 +16,6 @@ let chop_place_extension fname =
  
 (* ***** WRITING ***** *)
 
-
-
 let write_npc ch (name, places) = 
   Printf.fprintf ch ">%s\n" name;
   List.iter 
@@ -159,62 +157,3 @@ let parse_place_file version_str place_fname =
   end
   | [] -> failwith (place_fname^" empty place file!")
 
-(* returns an nplacecoll list.
- * conventions for placement files: 
-  * first line is 
-# pplacer [version] run ...
-  * then whatever. last line before placements is
-# reference tree: [ref tre]
-*)
-let parse_place_filex version_str place_fname = 
-  if not (Filename.check_suffix place_fname ".place") then
-    failwith("Pplacer place file names must end in .place, unlike "^place_fname);
-  let in_ch = open_in place_fname
-  and reftree_rex = Str.regexp "^# reference tree"
-  and fastaname_rex = Str.regexp "^>"
-  in
-  try 
-    Scanf.sscanf (input_line in_ch) "# pplacer %s run" (
-      fun file_vers ->
-        if file_vers <> version_str then
-          failwith "incompatible versions of placeviz and pplacer!"
-    );
-    let rec get_tree () =
-      try
-        let line = input_line in_ch in
-        if Str.string_match reftree_rex line 0 then 
-          Scanf.sscanf 
-            line "# reference tree: %s" Stree_io.of_newick_str
-        else get_tree () 
-      with | End_of_file -> failwith "couldn't find ref tree line!"
-      in
-    let ref_tree = get_tree () in
-    let rec get_placements placement_list curr_name curr_placements = 
-      let process_placements () = 
-        if curr_placements <> [] then
-          (curr_name, List.rev curr_placements)::placement_list
-        else placement_list
-      in
-      try
-        let line = input_line in_ch in
-        if Str.string_match fastaname_rex line 0 then begin
-          (* we have hit a new set of placements *)
-          get_placements 
-            (process_placements ())
-            (Alignment.read_fasta_name line)
-            []
-        end
-        else begin
-          get_placements placement_list curr_name 
-            ((Placement.placement_of_str line)::curr_placements)
-        end
-      with 
-      | End_of_file -> (process_placements ())
-    in
-    let places = List.rev (get_placements [] "" []) in
-    close_in in_ch;
-    (ref_tree, places)
-  with
-  | Scanf.Scan_failure s ->
-      failwith ("problem with the place file: "^s)
- 

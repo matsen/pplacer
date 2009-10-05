@@ -100,6 +100,23 @@ let combine_over_intmaps combine_fun keys m1 m2 =
 
 (* collect key,value pairs into a map from the key to the list of all values
  * associated with that key. *)
+let intMap_of_list_listly ~key_f ~val_f bothlist = 
+  let rec aux m = function
+    | x::l ->
+        let k = key_f x 
+        and v = val_f x 
+        in
+        let mp = 
+          if IntMap.mem k m then IntMap.add k (v::(IntMap.find k m)) m
+          else IntMap.add k [v] m
+        in
+        aux mp l
+    | [] -> m
+  in
+  aux IntMap.empty (List.rev bothlist) (* the above rev's things *)
+
+(* collect key,value pairs into a map from the key to the list of all values
+ * associated with that key. 
 let intMap_of_pairlist_listly pairlist = 
   let rec aux m = function
     | (k,v)::l ->
@@ -111,6 +128,7 @@ let intMap_of_pairlist_listly pairlist =
     | [] -> m
   in
   aux IntMap.empty (List.rev pairlist) (* the above rev's things *)
+ * *)
 
 
 

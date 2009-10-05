@@ -18,6 +18,21 @@ let check_for_repeats name_arr =
     ) [] name_arr in
   ()
 
+(* check to make sure that each site contains a nucleotide type symbol *)
+let is_nuc_align aln = 
+  try
+    Array.iter
+      (fun (_,seq) ->
+        String.iter
+          (fun nuc -> 
+            let _ = CharMap.find nuc Nuc_models.nucLikeMap in ())
+          seq)
+    aln;
+    true
+  with
+  | Not_found -> false
+
+
 (* makeAlnIndexMap : make a map which maps from the node number to the correct column of the
  * alignment *)
 let makeAlnIndexMap taxonMap alnNameArr = 

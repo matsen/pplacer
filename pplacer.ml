@@ -1,5 +1,6 @@
 (* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
+
 *)
 
 open Fam_batteries
@@ -50,8 +51,7 @@ and gamma_n_cat_opt = "--gammaCats", Arg.Set_int prefs.gamma_n_cat,
  one, i.e. no gamma rate variation.)"
 and gamma_alpha_opt = "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
  "Specify the shape parameter for a discrete gamma model."
-let reparseable_opts = [model_name_opt; gamma_n_cat_opt; gamma_alpha_opt]
-
+let reparseable_opts = [model_name_opt; gamma_n_cat_opt; gamma_alpha_opt] 
 let spec_with_default symbol setfun p help = 
   (symbol, setfun p, Printf.sprintf help !p)
 
@@ -71,7 +71,7 @@ let parse_args () =
    "Only record the best PP and ML placements in the .place file, and do so \ 
    for every fragment."
   and stats_fname_opt = "-s", Arg.Set_string prefs.stats_fname,
-   "Supply a phyml stats.txt file or a RAxML info file which determines the model parameters. \
+   "Supply a phyml stats.txt file or a RAxML info file which specifies the model parameters. \
    The information in this file can be overriden on the command line."
   and max_pend_opt = spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
    "Set the maximum pendant branch length for the ML and Bayes calculations. Default is %g."
@@ -89,12 +89,11 @@ let parse_args () =
    "Write out the reference alignment with the query sequence, masked to the \
    region without gaps in the query."
   and max_strikes_opt = spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
-   "Set the maximum number of strikes for baseball. Default is %d."
+   "Set the maximum number of strikes for baseball. Setting to zero disables ball playing. Default is %d."
   and strike_box_opt = spec_with_default "--strikeBox" (fun o -> Arg.Set_float o) prefs.strike_box
    "Set the size of the strike box in log likelihood units. Default is %g."
   and max_pitches_opt = spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
    "Set the maximum number of pitches for baseball. Default is %d."
-
   in
   let usage =
     "pplacer "^version_str^"\npplacer [options] -t ref_tree -r ref_align -s stats_file frags.fasta\n"
@@ -122,8 +121,6 @@ let parse_args () =
       write_masked_opt; 
       only_write_best_opt; 
     ]
-  
-  
   in
   Arg.parse opts anon_arg usage;
   List.rev !files
@@ -131,10 +128,8 @@ let parse_args () =
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
-    if (verb_level prefs) >= 1 then begin
+    if (verb_level prefs) >= 1 then 
       print_endline "Running pplacer analysis...";
-      flush_all ()
-    end;
     (* initialize the GSL error handler *)
     Gsl_error.init ();
     let files = parse_args () in 
@@ -164,12 +159,21 @@ let () =
      * first parse things according to that file, then rerun the Arg.parser for
      * certain settings. *)
     let opt_freqs_transitions = match stats_fname prefs with
-    | s when s = "" -> None
+    | s when s = "" -> 
+        Printf.printf
+          "NOTE: you have not specified a stats file. I'm using the %s model.\n"
+          (model_name prefs);
+        None
     | _ -> Parse_stats.parse_stats prefs
     in
+    (*
     (* now we re-parse the arguments to override if they are set *)
-    Arg.parse reparseable_opts (fun _ -> ()) "";
+    Arg.parse_argv reparseable_opts (fun _ -> ()) "";
+    disabled.
+    *)
     (* build the model *)
+    if AlignmentFuns.is_nuc_align ref_align && (model_name prefs) <> "GTR" then
+      failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
     let model = 
       Model.build (model_name prefs) (emperical_freqs prefs)
                   opt_freqs_transitions ref_align 
@@ -189,10 +193,8 @@ let () =
     end;
     let (dmap, pmap) = 
       GlvIntMap.dp_of_data model ref_align ref_tree locs in
-    if (verb_level prefs) >= 1 then begin
+    if (verb_level prefs) >= 1 then
       print_endline "done.";
-      flush_all ()
-    end;
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
 
     (* analyze query sequences *)
@@ -210,11 +212,21 @@ let () =
         Printf.fprintf out_ch 
           "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
         Prefs.write_prefs out_ch prefs;
-        Printf.fprintf out_ch "# output format: ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
+        Printf.fprintf out_ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
         if not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
           Printf.fprintf out_ch "# %s\n" bifurcation_warning;
         Printf.fprintf out_ch "# numbered reference tree: %s\n"
-        (Stree_io.to_newick_numbered ref_tree);
+        (* we do the following to write a tree with the node numbers in place of
+         * the bootstrap values, and at @ at the end of the taxon names *)
+          (Stree_io.to_newick 
+            (Stree.make_boot_node_num 
+              (Stree.inform_stree 
+                (Stree.get_tree ref_tree)
+                {(Stree.get_info ref_tree) with 
+                  Stree.taxon = 
+                    (IntMap.map 
+                      (fun s -> s^"@")
+                      ((Stree.get_info ref_tree).Stree.taxon))})));
         Printf.fprintf out_ch "# reference tree: %s\n" (Stree_io.to_newick ref_tree);
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior

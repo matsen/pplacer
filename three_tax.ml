@@ -87,28 +87,37 @@ let get_results tt = (log_like tt, get_query_bl tt, get_dist_bl tt)
  * Note: modifies the branch lengths in tt!
 *)
 let calc_marg_prob prior_fun rel_err max_pend tt =
-  let abs_err = 1000. in (* we don't worry about absolute error *)
+  let abs_err = 0. in (* do not specify an absolute error *)
   (* first calculate a base_ll. we use the given base_pend and the midpoint of
    * the edge *)
   let base_ll = log_like tt 
   and cut_bl = get_cut_bl tt in
+  try
     base_ll +. 
       log 
-        ((Integration.valueIntegrate 
+        ((Integration.value_integrate 
           (fun dist_bl -> 
             set_dist_bl tt dist_bl;
-            Integration.valueIntegrate 
+            Integration.value_integrate 
               (fun pend_bl -> 
                 set_query_bl tt pend_bl;
                 (exp ((log_like tt) -. base_ll)) 
                   *. (prior_fun pend_bl))
-              0. max_pend abs_err rel_err)
-          0. cut_bl abs_err rel_err)
+              0. max_pend ~abs_err ~rel_err)
+          0. cut_bl ~abs_err ~rel_err)
         /. cut_bl)
         (* normalize out the integration over a branch length *) 
-
-
-
+  with
+  | Gsl_error.Gsl_exn(error_num, error_str) ->
+      if error_num = Gsl_error.ETOL then begin
+(* Integration failed to reach tolerance with highest-order rule *)
+        Printf.printf "Warning: %s\n" error_str;
+(* return the base LL *)
+        base_ll
+      end
+      else
+        raise (Gsl_error.Gsl_exn(error_num, error_str))
+        
 
 
 (*
