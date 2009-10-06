@@ -1,4 +1,4 @@
-(* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * what if we just have placements in a big list, and split the list?
@@ -7,18 +7,13 @@
 
 open Fam_batteries
 open MapsSets
-open Placement
 
-let version_str = "v0.2"
+let version_str = "v0.3"
 let verbose = false
 
 let out_prefix = ref ""
 let verbose = ref false
 let ml_cutoff = ref 0.
-
-let bifurcation_warning = 
-  "Warning: pplacer results make the most sense when the \
-  given tree is multifurcating at the root. See manual for details."
 
 let parse_args () =
   let files  = ref [] in
@@ -43,20 +38,12 @@ let () =
   if not !Sys.interactive then begin
     let fnames = parse_args () in
     if fnames = [] then exit 0;
+    (* parse the placements *)
     let parsed = 
       List.map 
-        (fun fname -> Placement_io.parse_place_file version_str fname)
+        (fun fname -> Pquery_io.parse_place_file version_str fname)
         fnames
     in
-    let out_prefix_complete = 
-      (if !out_prefix <> "" then !out_prefix
-      else if List.length fnames > 1 then 
-        failwith "Please supply an out prefix with the -o option. This is required when there are two or more input files."
-      else 
-        (* hd: have already checked that fnames isn't [] *)
-        Placement_io.chop_place_extension (List.hd fnames))
-      ^(if !ml_cutoff = 0. then ""
-      else Printf.sprintf ".L%02d" (int_of_float (100. *. !ml_cutoff))) in
     if !verbose then begin
       print_endline "combining placements...";
       List.iter2
@@ -77,62 +64,49 @@ let () =
           prev_ref)
         (List.map fst parsed)
     in
-    let placement_out_ch = open_out (out_prefix_complete^".place")
-    in
-    Printf.fprintf placement_out_ch "# pplacer %s run\n" version_str;
-    Printf.fprintf placement_out_ch 
-               "# made by placeutil run as: %s\n" 
-               (String.concat " " (Array.to_list Sys.argv));
-    Printf.fprintf placement_out_ch "# output format: ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
-    if not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
-      Printf.fprintf placement_out_ch "# %s\n" bifurcation_warning;
-    Printf.fprintf placement_out_ch "# numbered reference tree: %s\n"
-      (Stree_io.to_newick_numbered ref_tree);
-    Printf.fprintf placement_out_ch "# reference tree: %s\n" (Stree_io.to_newick ref_tree);
     let combined = List.flatten (List.map snd parsed) in
-
-    (*
-    if !verbose then
-      Printf.printf "writing %d placements\n" (List.length combined);
-
- *
- *        (* print some statistics *)
-        Printf.printf "in %s, %d of %d made it through filter\n"
-          place_fname
-          (List.length (HashtblFuns.keys best_place_hash))
-          (List.length named_places);
-          *)
-
-    let (unplaced_list, placed_map) = 
-      Placement_io.write_npcl_sorted 
-      placement_out_ch 
-      Placement.ml_ratio
-      combined
+    (* make the out prefix *)
+    let out_prefix_complete = 
+      (if !out_prefix <> "" then !out_prefix
+      else if List.length fnames > 1 then 
+        failwith "Please supply an out prefix with the -o option. This is required when there are two or more input files."
+      else 
+        (* hd: have already checked that fnames isn't [] *)
+        Pquery_io.chop_place_extension (List.hd fnames))
     in
-    close_out placement_out_ch;
-
-    try
-      match 
-        List.map 
-          (fun placement_fname -> 
-            (* filter out the annotations, which are zero length seqs *)
-            Alignment.filter_zero_length
-              (Alignment.read_align 
-                (Str.replace_first
-                  (Str.regexp ".place$")
-                  ".loc.fasta"
-                  placement_fname)))
-          fnames
-      with
-      | h::t ->
-          Placement_io.write_fasta_by_placement_loc 
-            (out_prefix_complete^".loc.fasta")
-            (List.fold_left Array.append h t)
-            (* (List.fold_left Alignment.stack h t) *)
-            unplaced_list 
-            placed_map
-      | [] -> ()
-    with
-    | Sys_error s -> 
-        print_endline ("couldn't find some loc.fasta files, so will not be combining them. ("^s^")")
+    (* write placements. infix is a string to put before .place *)
+    let write_placements infix placements = 
+      let placement_out_ch = open_out (out_prefix_complete^infix^".place") in
+      Placeutil_core.warn_about_duplicate_names placements;
+      Placeutil_core.write_placeutil_preamble 
+        placement_out_ch 
+        version_str
+        Sys.argv
+        ref_tree;
+      Pquery_io.write_by_best_loc
+        Placement.ml_ratio
+        placement_out_ch 
+        placements;
+      close_out placement_out_ch
+    in
+    if !ml_cutoff <> 0. then begin
+      (* split them up by ml cutoff *)
+      let (below, above) = 
+        Placeutil_core.partition_by_cutoff 
+          Placement.ml_ratio 
+          (!ml_cutoff) 
+          combined 
+      in
+      let cutoff_str = 
+        Printf.sprintf "%02d" (int_of_float (100. *. !ml_cutoff)) in
+      List.iter 
+        (fun (which_str, placements) ->
+          write_placements (".L"^which_str^cutoff_str) placements)
+        ["lt",below; "ge",above]
+    end
+    else if List.length fnames > 1 then
+      (* we are combining place files *)
+      write_placements "" combined
+    else 
+      print_endline "hmm... I don't have to split up by the ML ratio cutoff, and I am not combining any files. so i'm not doing anything."
   end

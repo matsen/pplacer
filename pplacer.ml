@@ -1,4 +1,4 @@
-(* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
 
 *)
@@ -7,7 +7,7 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-let version_str = "v0.2"
+let version_str = "v0.3"
 
 let prefs = 
   { 
@@ -218,15 +218,7 @@ let () =
         Printf.fprintf out_ch "# numbered reference tree: %s\n"
         (* we do the following to write a tree with the node numbers in place of
          * the bootstrap values, and at @ at the end of the taxon names *)
-          (Stree_io.to_newick 
-            (Stree.make_boot_node_num 
-              (Stree.inform_stree 
-                (Stree.get_tree ref_tree)
-                {(Stree.get_info ref_tree) with 
-                  Stree.taxon = 
-                    (IntMap.map 
-                      (fun s -> s^"@")
-                      ((Stree.get_info ref_tree).Stree.taxon))})));
+          (Stree_io.to_newick (Stree_io.make_numbered_tree ref_tree));
         Printf.fprintf out_ch "# reference tree: %s\n" (Stree_io.to_newick ref_tree);
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior
@@ -238,23 +230,8 @@ let () =
         let results = 
           Core.pplacer_core prefs prior
             model ref_align ref_tree query_align ~dmap ~pmap locs in
-        if only_write_best prefs then
-          (* this is for backward compatibility *)
-          Placement_io.write_best_of_placement_arr 
-            out_ch (calc_pp prefs) results
-        else begin
-          let (unplaced_list, placed_map) = 
-            Placement_io.write_npcl_sorted 
-              out_ch 
-              Placement.ml_ratio
-              (Array.to_list results) in
-          Placement_io.write_fasta_by_placement_loc 
-            (query_bname^".loc.fasta")
-            query_align
-            unplaced_list 
-            placed_map;
-          close_out out_ch
-        end;
+        Pquery_io.write_by_best_loc out_ch (Array.to_list results);
+        close_out out_ch;
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     let retVal = List.fold_left collect 1 files in

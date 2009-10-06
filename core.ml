@@ -1,4 +1,4 @@
-(* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * here we actually do the work.
@@ -231,8 +231,10 @@ let pplacer_core
             ml_sorted_results
         in
         if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
-        (query_name, 
-          Placement.filter_placecoll 
+        Pquery.make_ml_sorted
+          ~name:query_name 
+          ~seq:query_seq
+          (Placement.filter_placecoll 
             Placement.ml_ratio 
             (ratio_cutoff prefs) 
             (ListFuns.map3 
@@ -243,9 +245,13 @@ let pplacer_core
               (Base.ll_normalized_prob marginal_probs)))
       end
       else
-        (query_name, 
-        Placement.filter_placecoll 
-          Placement.ml_ratio (ratio_cutoff prefs) ml_sorted_results)
+        Pquery.make_ml_sorted
+          ~name:query_name 
+          ~seq:query_seq
+          (Placement.filter_placecoll 
+            Placement.ml_ratio 
+            (ratio_cutoff prefs) 
+            ml_sorted_results)
     ) query_align
 
   (*

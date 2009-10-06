@@ -1,4 +1,5 @@
-(* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v0.3. Copyright (C) 2009  Frederick A
+ * Matsen.warn_about_duplicate_names combined;
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *)
 
@@ -79,6 +80,16 @@ let ppr_info_stree ff istree =
   ppr_gen_stree (
     fun ff i -> Format.fprintf ff "%s" (nodeInfo_entryToStr istree.info i)
   ) ff istree.tree
+
+let make_numbered_tree tree =
+  Stree.make_boot_node_num 
+    (Stree.inform_stree 
+      (Stree.get_tree tree)
+      {(Stree.get_info tree) with 
+      Stree.taxon = 
+        (IntMap.map 
+        (fun s -> s^"@")
+        ((Stree.get_info tree).Stree.taxon))})
 
   (* input *)
 

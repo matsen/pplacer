@@ -1,4 +1,4 @@
-(* pplacer v0.2. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * some basic functions
@@ -77,16 +77,6 @@ let list_find_loc x l =
     | [] -> raise Not_found
   in 
   aux 0 l
-
-(* calculate the size of arrays in the list, checking that all arrays are of
- * the same size. *)
-let size_of_array_list = function
-  | x :: l ->
-      let len = Gsl_vector.length x in
-      List.iter (fun y -> assert(len = Gsl_vector.length y)) l;
-      len
-  | [] -> assert(false)
-    
 
 let combine_over_intmaps combine_fun keys m1 m2 = 
   try 
