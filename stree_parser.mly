@@ -8,12 +8,12 @@
 %{
   let node_num = ref (-1)
   let info = ref Stree.emptyInfo
-  let add_tax_info tax = 
-    info := Stree.addInfo !node_num (Some tax) None None !info
+  let add_tax_info taxon = 
+    info := Stree.opt_add_info !node_num ~taxon !info
   let add_boot_info boot = 
-    info := Stree.addInfo !node_num None (Some boot) None !info
+    info := Stree.opt_add_info !node_num ~boot !info
   let add_bl_info bl = 
-    info := Stree.addInfo !node_num None None (Some bl) !info
+    info := Stree.opt_add_info !node_num ~bl !info
   let add_leaf leafname = 
     incr node_num;
     add_tax_info leafname;

@@ -20,8 +20,6 @@ let parse_args () =
   and bogus_bl_opt = "--bogusBl", Arg.Set_float bogus_bl,
    "Set the branch length for the subtrees/taxa which are collected together \
    for visualization in the number and together trees."
-  and tree_info_opt = "--treeInfo", Arg.Set print_tree_info,
-   "Print out the information attached to each node of the tree."
   and show_node_numbers_opt = "--nodeNumbers", Arg.Set show_node_numbers,
    "Put the node numbers in where the bootstraps usually go."
   in
@@ -30,7 +28,7 @@ let parse_args () =
   and anon_arg arg =
     files := arg :: !files in
   let args = 
-    [singly_opt; bogus_bl_opt; tree_info_opt; show_node_numbers_opt] in
+    [singly_opt; bogus_bl_opt; show_node_numbers_opt] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
@@ -39,62 +37,33 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
+    let write_num_file = Placeviz_core.write_num_file !bogus_bl in
     let collect ret_code fname =
       try
         let frc = 0 in
-        let (pre_ref_tree, named_places) = 
-          Placement_io.parse_place_file version_str fname in
+        let pre_ref_tree, named_places = 
+          Pquery_io.parse_place_file version_str fname in
         let ref_tree = 
           if !show_node_numbers then Stree.make_boot_node_num pre_ref_tree
           else pre_ref_tree in
-        let unplaced_seqs,npcl_map = 
-          Placement.sorted_npcl_map_by_best_loc_of_npc_list
+        let unplaced_seqs, placed_map = 
+          Pquery.make_map_by_best_loc
             Placement.ml_ratio
             named_places
         in
         if unplaced_seqs <> [] then begin
           print_endline "Found the following unplaced sequences:";
-          List.iter print_endline unplaced_seqs;
+          List.iter 
+            (fun pq -> print_endline (Pquery.name pq))
+            unplaced_seqs;
         end;
-        let fname_base = Placement_io.chop_place_extension fname in
-        (* singly : one-read-at-a-time placement 
-        if !singly then begin
-          let by_name_place_map = by_name_map_of_place_hash best_place_hash in
-          let out_ch = open_out (fname_base^".sing.tre") in
-          List.iter (
-            fun (name, _) ->
-              if StringMap.mem name by_name_place_map then begin
-                (* this read gets placed *)
-                let best_place = StringMap.find name by_name_place_map in
-                Printf.fprintf out_ch "%s\n" (
-                  Stree_io.to_newick (
-                    Place_in_tree.place_single 
-                    name best_place ref_tree))
-              end
-          ) named_places;
-          close_out out_ch;
-        end;
-         * *)
-        if !print_tree_info then Stree_io.print_tree_info ref_tree;
-        (* number placement : counting the number of reads on an edge *)
-        let out_ch = open_out (fname_base^".num.tre") in
-        Stree_io.write_newick out_ch (
-          Place_in_tree.number_place !bogus_bl npcl_map ref_tree
-        );
-        close_out out_ch;
-        (* together placement : all reads for a single location in a clade *)
-        let out_ch = open_out (fname_base^".tog.tre") in
-        Stree_io.write_newick out_ch (
-          Place_in_tree.together_place !bogus_bl npcl_map ref_tree
-        );
-        close_out out_ch;
-        (* each placement : place each read individually into the tree *)
-        let out_ch = open_out (fname_base^".each.tre") in
-        Stree_io.write_newick out_ch (
-          Place_in_tree.together_place !bogus_bl npcl_map ref_tree
-        );
-        close_out out_ch;
-  
+        let fname_base = Pquery_io.chop_place_extension fname in
+        (* write loc file *)
+        Placeviz_core.write_loc_file 
+          fname_base unplaced_seqs placed_map;
+        (* make the various visualizations *)
+        Placeviz_core.write_tog_file fname_base ref_tree placed_map;
+        write_num_file fname_base ref_tree placed_map;
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     exit (List.fold_left collect 1 files)

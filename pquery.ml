@@ -41,15 +41,20 @@ let opt_best_location criterion pq =
   | Some place -> Some (Placement.location place)
   | None -> None
 
-let is_placed pq = 
-  match place_list pq with
-  | [] -> false
-  | _ -> true
+let best_place criterion pq = 
+  match opt_best_place criterion pq with
+  | Some place -> place
+  | None -> failwith "best_place: no places!"
 
 let best_location criterion pq = 
   match opt_best_location criterion pq with
   | Some loc -> loc
-  | None -> failwith "best_location: no location!"
+  | None -> failwith "best_location: no locations!"
+
+let is_placed pq = 
+  match place_list pq with
+  | [] -> false
+  | _ -> true
 
 let make criterion ~name ~seq pl = 
   { 
@@ -70,7 +75,7 @@ let make_map_by_best_loc criterion pquery_list =
   let (placed_l, unplaced_l) = 
     List.partition is_placed pquery_list in
   (unplaced_l,
-    Base.intMap_of_list_listly
+    IntMapFuns.of_f_list_listly
       ~key_f:(best_location criterion)
       ~val_f:(fun x -> x)
       placed_l)

@@ -230,7 +230,10 @@ let () =
         let results = 
           Core.pplacer_core prefs prior
             model ref_align ref_tree query_align ~dmap ~pmap locs in
-        Pquery_io.write_by_best_loc out_ch (Array.to_list results);
+        Pquery_io.write_by_best_loc 
+          Placement.ml_ratio 
+          out_ch 
+          (Array.to_list results);
         close_out out_ch;
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
