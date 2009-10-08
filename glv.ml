@@ -99,7 +99,7 @@ let log_like3_statd model x_glv y_glv z_glv =
         site_tot +. (* total is product in log world *)
           (log ((ArrayFuns.fold_left3 (* fold over rates *)
             (fun rate_tot x_lv y_lv z_lv -> 
-              rate_tot+.(Base.quad_dot statd x_lv y_lv z_lv size))
+              rate_tot+.(Linear.quad_dot statd x_lv y_lv z_lv size))
             0. x_site y_site z_site) /. fn_rates)))
       0. x_glv y_glv z_glv)
 
@@ -143,7 +143,7 @@ let pairwise_product dest g1 g2 =
     (fun site_dest site_g1 site_g2 ->
       ArrayFuns.iter3 
         (fun rate_dest rate_g1 rate_g2 ->
-          Base.pairwise_prod rate_dest rate_g1 rate_g2)
+          Linear.pairwise_prod rate_dest rate_g1 rate_g2)
         site_dest site_g1 site_g2)
     dest g1 g2
 
