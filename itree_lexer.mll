@@ -5,7 +5,7 @@
 
 (* this stuff gets evaluated automatically *)
 {
-  open Stree_parser
+  open Itree_parser
   let line = ref 1
 
   let dequote s = 

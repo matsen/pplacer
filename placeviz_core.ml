@@ -28,16 +28,16 @@ let write_loc_file fname_base unplaced_seqs placed_map =
 
 let trees_to_file fname trees = 
   let out_ch = open_out fname in
-  List.iter (Stree_io.write_newick out_ch) trees;
+  List.iter (Itree_io.write_newick out_ch) trees;
   close_out out_ch
 
 let make_zero_leaf bl taxon = 
-  Stree.inform_stree 
+  Itree.itree 
     (Stree.leaf 0)
-    (Stree.opt_add_info 0 ~bl ~taxon Stree.emptyInfo)
+    (Itree_info.opt_add_info 0 ~bl ~taxon Itree_info.empty_info)
 
 let tree_by_map f ref_tree placed_map = 
-  Stree.add_subtrees_by_map
+  Itree.add_subtrees_by_map
     ref_tree
     (IntMap.mapi f placed_map)
 
@@ -57,7 +57,7 @@ let tog_tree ref_tree placed_map =
 let num_tree bogus_bl ref_tree placed_map = 
   tree_by_map
     (fun loc pqueries ->
-      [(Stree.get_bl ref_tree loc,
+      [(Itree.get_bl ref_tree loc,
       make_zero_leaf 
         bogus_bl
         (Printf.sprintf "%d_at_%d" (List.length pqueries) loc))])

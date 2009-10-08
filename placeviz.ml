@@ -44,7 +44,7 @@ let () =
         let pre_ref_tree, named_places = 
           Pquery_io.parse_place_file version_str fname in
         let ref_tree = 
-          if !show_node_numbers then Stree.make_boot_node_num pre_ref_tree
+          if !show_node_numbers then Itree.make_boot_node_num pre_ref_tree
           else pre_ref_tree in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc

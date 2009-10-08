@@ -103,20 +103,21 @@ let calc_proximal_like_map nstates tree qmat_map distal_like_map =
   Array.map 
     (calc_proximal_like_map_col nstates tree qmat_map) distal_like_map
 
-let calc_distoproximal nstates aln_index_map aln_like diagdq istree rate = 
-  let qmat_map = qmat_map_of_bl_map diagdq istree.info.bl rate in
+let calc_distoproximal nstates aln_index_map aln_like diagdq itree rate = 
+  let stree = Itree.get_stree itree in
+  let qmat_map = qmat_map_of_bl_map diagdq itree.Itree.info.Itree_info.bl rate in
   let distal = 
-    calc_distal_like_map nstates istree.tree aln_index_map qmat_map aln_like in
-  let proximal = calc_proximal_like_map nstates istree.tree qmat_map distal in
+    calc_distal_like_map nstates stree aln_index_map qmat_map aln_like in
+  let proximal = calc_proximal_like_map nstates stree qmat_map distal in
   (distal, proximal)
 
-let distoproximal_of_aln_and_istree seq_type diagdq align istree rate = 
+let distoproximal_of_aln_and_itree seq_type diagdq align itree rate = 
   let aln_index_map = 
-    AlignmentFuns.makeAlnIndexMap istree.info.taxon (Array.map fst align) in
+    AlignmentFuns.makeAlnIndexMap itree.Itree.info.Itree_info.taxon (Array.map fst align) in
   let seqs = Array.map snd align 
   and nstates = Alignment.nstates_of_seq_type seq_type in
   let aln_like = AlignmentFuns.aln_like_of_unnamed_align seq_type seqs in
-  calc_distoproximal nstates aln_index_map aln_like diagdq istree rate
+  calc_distoproximal nstates aln_index_map aln_like diagdq itree rate
 
 
     (*

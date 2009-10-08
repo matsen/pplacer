@@ -32,7 +32,7 @@ let pplacer_core
       query_align ~dmap ~pmap locs = 
   let seq_type = Model.seq_type model in
   let half_evolve_glv_map loc g = 
-    Glv.evolve model g ((IntMap.find loc istree.info.bl) /. 2.) in
+    Glv.evolve model g ((Itree.get_bl istree loc) /. 2.) in
   if (verb_level prefs) >= 1 then begin
     print_string "Preparing the edges for baseball... ";
     flush_all ()
@@ -133,7 +133,7 @@ let pplacer_core
       in
       (* prepare_tt: set tt up for loc. side effect! *)
       let prepare_tt loc = 
-        let cut_bl = IntMap.find loc istree.info.bl in
+        let cut_bl = Itree.get_bl istree loc in
         (* this is just to factor out setting up the prox and dist edges
          * and setting their branch lengths to half the cut branch length *)
         let set_edge edge glv_map = 

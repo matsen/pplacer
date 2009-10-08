@@ -4,61 +4,29 @@
  *)
 
 open MapsSets
-open Stree
 open Fam_batteries
+open Itree
 
 (* output *)
 
-(*
-Unquoted labels may not contain blanks, parentheses, square brackets,
-single_quotes, colons, semicolons, or commas.
-Underscore characters in unquoted labels are converted to blanks.
-*)
-let need_quoting = 
-  Array.to_list (StringFuns.to_char_array " ()[]':;,")
-
-let if_quote_label label = 
-  try
-    String.iter 
-      (fun c -> if List.mem c need_quoting then raise Exit)
-      label;
-    false
-  with
-  | Exit -> true
-
-let prepare_label label = 
-  if if_quote_label label then "'"^label^"'" else label
-
-(* nodeInfo_entryToStr :
- * this will produce funny output if there is bootstrap info for a taxon (which
- * is nonsensical)
- * *)
-let nodeInfo_entryToStr ni i = 
-  let entryToStr toStrFn map = 
-    if IntMap.mem i map then toStrFn (IntMap.find i map)
-    else ""
-  in
-  (entryToStr prepare_label ni.taxon)^
-  (entryToStr gstring_of_float ni.boot)^(
-    if IntMap.mem i ni.bl then (":"^(gstring_of_float (IntMap.find i ni.bl)))
-    else "")
 
 let print_tree_info tree = 
+  let info = get_info tree in
   List.iter
     (fun id -> 
-      Printf.printf "%d:\t%s\n" id (nodeInfo_entryToStr tree.info id))
-    (Stree.collect_node_numbers tree.tree)
+      Printf.printf "%d:\t%s\n" id (Itree_info.entry_to_string info id))
+    (Stree.collect_node_numbers (Itree.get_stree tree))
 
 let to_newick_gen entry_to_str istree = 
   let rec aux = function
-    | Node(i, tL) ->
+    | Stree.Node(i, tL) ->
         "("^(String.concat "," (List.map aux tL))^")"^
         (entry_to_str istree.info i)
-    | Leaf i -> entry_to_str istree.info i
+    | Stree.Leaf i -> entry_to_str istree.info i
   in
-  (aux istree.tree)^";"
+  (aux (Itree.get_stree istree))^";"
 
-let to_newick = to_newick_gen nodeInfo_entryToStr
+let to_newick = to_newick_gen Itree_info.entry_to_string
 let to_newick_numbered = 
   to_newick_gen (fun _ i -> string_of_int i)
 
@@ -66,30 +34,30 @@ let write_newick ch istree =
   Printf.fprintf ch "%s\n" (to_newick istree)
 
 let rec ppr_gen_stree ppr_node ff = function
-  | Node(i, tL) ->
+  | Stree.Node(i, tL) ->
       Format.fprintf ff "@[(";
       Ppr.ppr_gen_list_inners "," (ppr_gen_stree ppr_node) ff tL;
       Format.fprintf ff ")";
       ppr_node ff i;
       Format.fprintf ff "@]"
-  | Leaf(i) -> ppr_node ff i
+  | Stree.Leaf(i) -> ppr_node ff i
 
 let ppr_stree = ppr_gen_stree Format.pp_print_int
 
-let ppr_info_stree ff istree = 
+let ppr_info_stree ff itree = 
   ppr_gen_stree (
-    fun ff i -> Format.fprintf ff "%s" (nodeInfo_entryToStr istree.info i)
-  ) ff istree.tree
+    fun ff i -> Format.fprintf ff "%s" (Itree_info.entry_to_string itree.info i)
+  ) ff itree.stree
 
 let make_numbered_tree tree =
-  Stree.make_boot_node_num 
-    (Stree.inform_stree 
-      (Stree.get_tree tree)
-      {(Stree.get_info tree) with 
-      Stree.taxon = 
+  Itree.make_boot_node_num 
+    (Itree.itree 
+      (Itree.get_stree tree)
+      {(Itree.get_info tree) with 
+      Itree_info.taxon = 
         (IntMap.map 
         (fun s -> s^"@")
-        ((Stree.get_info tree).Stree.taxon))})
+        ((Itree.get_info tree).Itree_info.taxon))})
 
   (* input *)
 
@@ -128,7 +96,7 @@ let check_newick_str s =
 
 let of_newick_lexbuf lexbuf = 
   try
-    Stree_parser.tree Stree_lexer.token lexbuf
+    Itree_parser.tree Itree_lexer.token lexbuf
   with 
   | Parsing.Parse_error -> failwith "couldn't parse tree!"
 

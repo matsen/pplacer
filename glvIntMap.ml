@@ -43,7 +43,7 @@ let dp_of_data model align istree locs =
   let dp_arr = 
     Array.map
       (fun rate ->
-        Likestree.distoproximal_of_aln_and_istree 
+        Likestree.distoproximal_of_aln_and_itree 
           (Model.seq_type model) (Model.diagdq model) align istree rate)
       (Model.rates model) in
   let result = 

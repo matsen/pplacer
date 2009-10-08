@@ -140,13 +140,13 @@ let () =
     (* load ref tree and alignment *)
     let ref_tree = match tree_fname prefs with
     | s when s = "" -> failwith "please specify a reference tree.";
-    | s -> Stree_io.of_newick_file s
+    | s -> Itree_io.of_newick_file s
     and ref_align = match ref_align_fname prefs with
     | s when s = "" -> failwith "please specify a reference alignment."
     | s -> Alignment.uppercase (Alignment.read_align s)
     in
     if (verb_level prefs) > 0 && 
-       not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
+       not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
          print_endline bifurcation_warning;
     if (verb_level prefs) > 1 then begin
       print_endline "found in reference alignment: ";
@@ -180,7 +180,7 @@ let () =
                   (Gamma.discrete_gamma 
                     (gamma_n_cat prefs) (gamma_alpha prefs)) in
     (* find all the tree locations *)
-    let all_locs = IntMapFuns.keys ref_tree.Stree.info.Stree.bl in
+    let all_locs = IntMapFuns.keys ref_tree.Itree.info.Itree_info.bl in
     assert(all_locs <> []);
       (* warning: only good if locations are as above. *)
     let locs = ListFuns.remove_last all_locs in
@@ -213,19 +213,19 @@ let () =
           "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
         Prefs.write_prefs out_ch prefs;
         Printf.fprintf out_ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
-        if not (Stree.multifurcating_at_root ref_tree.Stree.tree) then
+        if not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
           Printf.fprintf out_ch "# %s\n" bifurcation_warning;
         Printf.fprintf out_ch "# numbered reference tree: %s\n"
         (* we do the following to write a tree with the node numbers in place of
          * the bootstrap values, and at @ at the end of the taxon names *)
-          (Stree_io.to_newick (Stree_io.make_numbered_tree ref_tree));
-        Printf.fprintf out_ch "# reference tree: %s\n" (Stree_io.to_newick ref_tree);
+          (Itree_io.to_newick (Itree_io.make_numbered_tree ref_tree));
+        Printf.fprintf out_ch "# reference tree: %s\n" (Itree_io.to_newick ref_tree);
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior
           else Core.Exponential_prior (
             (* exponential with mean = average branch length *)
-            (Stree.tree_length ref_tree) /. 
-              (float_of_int (Stree.n_edges ref_tree.Stree.tree))) 
+            (Itree.tree_length ref_tree) /. 
+              (float_of_int (Stree.n_edges ref_tree.Itree.stree))) 
         in
         let results = 
           Core.pplacer_core prefs prior

@@ -82,7 +82,7 @@ let parse_place_file version_str place_fname =
             (str_match reftree_rex) 
             header_tl 
         in
-        Stree_io.of_newick_str (Str.matched_group 1 tree_line)
+        Itree_io.of_newick_str (Str.matched_group 1 tree_line)
       with | Not_found -> failwith "couldn't find ref tree line!"
     end
     | [] -> failwith (place_fname^" no header!")
