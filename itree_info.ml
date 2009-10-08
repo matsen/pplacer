@@ -98,7 +98,6 @@ let prepare_label label =
   if if_quote_label label then "'"^label^"'" else label
 
 
-
 (* entry_to_string :
  * this will produce funny output if there is bootstrap info for a taxon (which
  * is nonsensical)

@@ -47,6 +47,29 @@ let list_find_loc x l =
   in 
   aux 0 l
 
+(*
+# let divbyk k x = x mod k = 0;;                                   
+val divbyk : int -> int -> bool = <fun>
+# let x = find_multiple_matches [divbyk 2; divbyk 3] [1;2;3;4;5;6;7;8];;
+val x : int list = [6]
+*)
+let find_multiple_matches f_list =
+  let rec aux accu = function
+    | [] -> List.rev accu
+    | x::l ->
+        if (List.fold_left 
+             (fun accu f ->
+               accu+(if f x then 1 else 0))
+             0
+             f_list)
+           > 1 then
+             aux (x::accu) l
+        else
+          aux accu l
+  in 
+  aux [] 
+
+
 let combine_over_intmaps combine_fun keys m1 m2 = 
   try 
     List.fold_right 

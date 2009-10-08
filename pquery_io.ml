@@ -74,7 +74,7 @@ let parse_place_file version_str place_fname =
     Scanf.sscanf version_line "# pplacer %s run" 
       (fun file_vers ->
         if file_vers <> version_str then
-          failwith "incompatible versions of placeviz and pplacer!");
+          failwith "incompatible versions of pplacer and placeviz/placeutil.");
     (* get the ref tree *)
       try
         let tree_line,_ = 

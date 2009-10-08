@@ -45,4 +45,44 @@ let partition_by_cutoff criterion cutoff pquery_list =
       | Some place -> cutoff <= criterion place
       | None -> false)
     pquery_list
-  
+
+
+(* re splitting *)
+let re_split_rex = Str.regexp "\\(.*\\)[ \t]+\"\\(.*\\)\"" 
+
+let read_re_split_file fname = 
+  List.map 
+    (fun line -> 
+      if Str.string_match re_split_rex line 0 then
+        ((Str.matched_group 1 line),
+        Str.regexp (Str.matched_group 2 line))
+      else
+        failwith(
+          Printf.sprintf 
+            "The following line of %s could not be read as a split regex: %s"
+            fname
+            line))
+    (File_parsing.filter_comments 
+      (File_parsing.filter_empty_lines 
+        (File_parsing.string_list_of_file fname)))
+
+let re_matches rex s = Str.string_match rex s 0
+
+let warn_about_multiple_matches rex_list strings = 
+  List.iter
+    (fun s -> 
+      Printf.printf "Warning: multiple match on %s\n" s)
+    (Base.find_multiple_matches
+      (List.map re_matches rex_list)
+      strings)
+
+let separate_pqueries_by_regex re_split_list p_query_list = 
+  List.map
+    (fun (prefix, rex) ->
+      (prefix,
+      List.filter 
+        (fun pq ->
+          re_matches rex (Pquery.name pq))
+        p_query_list))
+    re_split_list
+

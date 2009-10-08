@@ -33,19 +33,19 @@ let to_newick_numbered =
 let write_newick ch istree = 
   Printf.fprintf ch "%s\n" (to_newick istree)
 
-let rec ppr_gen_stree ppr_node ff = function
+let rec ppr_gen_itree ppr_node ff = function
   | Stree.Node(i, tL) ->
       Format.fprintf ff "@[(";
-      Ppr.ppr_gen_list_inners "," (ppr_gen_stree ppr_node) ff tL;
+      Ppr.ppr_gen_list_inners "," (ppr_gen_itree ppr_node) ff tL;
       Format.fprintf ff ")";
       ppr_node ff i;
       Format.fprintf ff "@]"
   | Stree.Leaf(i) -> ppr_node ff i
 
-let ppr_stree = ppr_gen_stree Format.pp_print_int
+let ppr_numbered_itree = ppr_gen_itree Format.pp_print_int
 
-let ppr_info_stree ff itree = 
-  ppr_gen_stree (
+let ppr_itree ff itree = 
+  ppr_gen_itree (
     fun ff i -> Format.fprintf ff "%s" (Itree_info.entry_to_string itree.info i)
   ) ff itree.stree
 

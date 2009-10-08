@@ -9,8 +9,8 @@ dispatch begin function
   | Before_options ->
       Options.ocaml_lflags := ["-ccopt"; "-static"];
   | After_rules -> 
-      flag ["ocaml"; "byte"; "link"] (S[A"-custom"]);
-      dep ["ocaml"; "link"] ["linear_c.o"];
+      flag ["ocaml"; "byte"; "link"; "top";] (S[A"-custom"]);
+      dep ["ocaml"; "link";] ["linear_c.o"];
       ocaml_lib ~extern:true ~dir:"+gsl" "gsl"; 
   | _ -> () 
 end;; 

@@ -14,6 +14,8 @@ let verbose = false
 let out_prefix = ref ""
 let verbose = ref false
 let ml_cutoff = ref 0.
+let re_sep_fname = ref ""
+let warn_multiple = ref true
 
 let parse_args () =
   let files  = ref [] in
@@ -22,14 +24,18 @@ let parse_args () =
   and verbose_opt = "-v", Arg.Set verbose,
     "Verbose output."
   and ml_cutoff_opt = "-l", Arg.Set_float ml_cutoff,
-    "ML filtration cutoff."
+    "ML separation cutoff."
+  and re_sep_fname_opt = "--reSepFile", Arg.Set_string re_sep_fname,
+    "File name for the regular expression separation file."
+  and warn_multiple_opt = "--noWarnMultipleRe", Arg.Clear warn_multiple,
+    "Warn if a read name matches several regular expressions."
   in
   let usage =
     "placeutil "^version_str
       ^"\nplaceutil ex1.place ex2.place ... combines place files, filters, then splits them back up again if you want.\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt] in
+  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; re_sep_fname_opt; warn_multiple_opt] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
@@ -74,10 +80,10 @@ let () =
         (* hd: have already checked that fnames isn't [] *)
         Pquery_io.chop_place_extension (List.hd fnames))
     in
-    (* write placements. infix is a string to put before .place *)
-    let write_placements infix placements = 
-      let placement_out_ch = open_out (out_prefix_complete^infix^".place") in
-      Placeutil_core.warn_about_duplicate_names placements;
+    (* write pqueries. infix is a string to put before .place *)
+    let write_pqueries prefix pqueries = 
+      let placement_out_ch = open_out (prefix^".place") in
+      Placeutil_core.warn_about_duplicate_names pqueries;
       Placeutil_core.write_placeutil_preamble 
         placement_out_ch 
         version_str
@@ -86,27 +92,46 @@ let () =
       Pquery_io.write_by_best_loc
         Placement.ml_ratio
         placement_out_ch 
-        placements;
+        pqueries;
       close_out placement_out_ch
     in
-    if !ml_cutoff <> 0. then begin
-      (* split them up by ml cutoff *)
-      let (below, above) = 
-        Placeutil_core.partition_by_cutoff 
-          Placement.ml_ratio 
-          (!ml_cutoff) 
-          combined 
-      in
-      let cutoff_str = 
-        Printf.sprintf "%02d" (int_of_float (100. *. !ml_cutoff)) in
-      List.iter 
-        (fun (which_str, placements) ->
-          write_placements (".L"^which_str^cutoff_str) placements)
-        ["lt",below; "ge",above]
+    (* function to split up the queries by likelihood ratio and then write them *)
+    let process_pqueries prefix pqueries = 
+      if !ml_cutoff <> 0. then begin
+        (* split them up by ml cutoff *)
+        let (below, above) = 
+          Placeutil_core.partition_by_cutoff 
+            Placement.ml_ratio 
+            (!ml_cutoff) 
+            pqueries 
+        in
+        let cutoff_str = 
+          Printf.sprintf "%02d" (int_of_float (100. *. !ml_cutoff)) in
+        List.iter 
+          (fun (which_str, pqs) ->
+            write_pqueries (".L"^which_str^cutoff_str) pqs)
+          [(prefix^"lt"),below; (prefix^"ge"),above]
+      end
+      else
+        write_pqueries prefix pqueries
+    in 
+    (* "main" *)
+    if !re_sep_fname = "" then
+      if List.length fnames > 1 || !ml_cutoff <> 0. then
+        process_pqueries out_prefix_complete combined
+      else 
+        print_endline "hmm... I don't have to split up by the ML ratio cutoff or regular expressions, and I am not combining any files. so i'm not doing anything."
+    else begin
+      let re_split_list = 
+        Placeutil_core.read_re_split_file (!re_sep_fname) in
+      if List.length re_split_list <= 1 then
+        failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option."
+      else
+        List.iter
+          (fun (prefix, pqueries) ->
+            process_pqueries prefix pqueries)
+          (Placeutil_core.separate_pqueries_by_regex 
+            re_split_list 
+            combined)
     end
-    else if List.length fnames > 1 then
-      (* we are combining place files *)
-      write_placements "" combined
-    else 
-      print_endline "hmm... I don't have to split up by the ML ratio cutoff, and I am not combining any files. so i'm not doing anything."
   end
