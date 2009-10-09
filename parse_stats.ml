@@ -214,9 +214,10 @@ let rec rex_matches_a_line rex = function
 let raxml_header_rex = Str.regexp "^You are using RAxML"
 let phyml_header_rex = Str.regexp "[ \t]*---  PhyML v3"
 
-let parse_stats prefs = 
+let parse_stats ref_dir_complete prefs = 
   let lines = 
-    File_parsing.string_list_of_file (Prefs.stats_fname prefs) in
+    File_parsing.string_list_of_file 
+      (ref_dir_complete^(Prefs.stats_fname prefs)) in
   try
     if rex_matches_a_line raxml_header_rex lines then
       parse_raxml_info lines prefs

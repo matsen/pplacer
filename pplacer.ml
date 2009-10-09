@@ -9,12 +9,14 @@ open Prefs
 
 let version_str = "v0.3"
 
+(* default values *)
 let prefs = 
   { 
     (* basics *)
     tree_fname = ref "";
     ref_align_fname = ref "";
     stats_fname = ref "";
+    ref_dir = ref ".";
     (* tree calc *)
     start_pend = ref 0.5;
     max_pend = ref 2.;
@@ -61,15 +63,19 @@ let parse_args () =
    "Specify the reference tree filename."
   and ref_align_fname_opt = "-r", Arg.Set_string prefs.ref_align_fname,
    "Specify the reference alignment filename."
-  and verb_level_opt = spec_with_default "-v" (fun o -> Arg.Set_int o) prefs.verb_level 
+  and ref_dir_opt = "-d", Arg.Set_string prefs.ref_dir,
+   "Specify the directory containing the reference information."
+  and verb_level_opt = spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level 
           "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d."
   and calc_pp_opt = "-p", Arg.Set prefs.calc_pp, 
   "Calculate posterior probabilities."
   and ratio_cutoff_opt = spec_with_default "--ratioCutoff" (fun o -> Arg.Set_float o) prefs.ratio_cutoff
    "Specify the ratio cutoff for recording in the .place file. Default is %g."
+   (*
   and only_write_best_opt = "-b", Arg.Set prefs.only_write_best,
    "Only record the best PP and ML placements in the .place file, and do so \ 
    for every fragment."
+   *)
   and stats_fname_opt = "-s", Arg.Set_string prefs.stats_fname,
    "Supply a phyml stats.txt file or a RAxML info file which specifies the model parameters. \
    The information in this file can be overriden on the command line."
@@ -96,7 +102,7 @@ let parse_args () =
    "Set the maximum number of pitches for baseball. Default is %d."
   in
   let usage =
-    "pplacer "^version_str^"\npplacer [options] -t ref_tree -r ref_align -s stats_file frags.fasta\n"
+    "pplacer "^version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
   and anon_arg arg =
     files := arg :: !files in
   let opts = 
@@ -104,10 +110,11 @@ let parse_args () =
       tree_fname_opt; 
       ref_align_fname_opt; 
       stats_fname_opt;  
+      ref_dir_opt;
+      calc_pp_opt; 
     ] 
     @ reparseable_opts @
     [
-      calc_pp_opt; 
       unif_prior_opt; 
       model_freqs_opt; 
       max_strikes_opt; 
@@ -119,7 +126,7 @@ let parse_args () =
       ratio_cutoff_opt;
       verb_level_opt; 
       write_masked_opt; 
-      only_write_best_opt; 
+      (* only_write_best_opt;  *)
     ]
   in
   Arg.parse opts anon_arg usage;
@@ -128,22 +135,32 @@ let parse_args () =
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
-    if (verb_level prefs) >= 1 then 
-      print_endline "Running pplacer analysis...";
-    (* initialize the GSL error handler *)
-    Gsl_error.init ();
     let files = parse_args () in 
     if files = [] then begin
       print_endline "please specify some query sequences."; 
       exit 0;
     end;
+    if (verb_level prefs) >= 1 then 
+      print_endline "Running pplacer analysis...";
+    (* initialize the GSL error handler *)
+    Gsl_error.init ();
+    (* append on a slash to the dir if it's not there *)
+    let ref_dir_complete = 
+      match ref_dir prefs with
+      | s when s = "" -> ""
+      | s -> 
+          if s.[(String.length s)-1] = '/' then s
+          else s^"/"
+    in
     (* load ref tree and alignment *)
     let ref_tree = match tree_fname prefs with
     | s when s = "" -> failwith "please specify a reference tree.";
-    | s -> Itree_io.of_newick_file s
+    | s -> Itree_io.of_newick_file (ref_dir_complete^s)
     and ref_align = match ref_align_fname prefs with
     | s when s = "" -> failwith "please specify a reference alignment."
-    | s -> Alignment.uppercase (Alignment.read_align s)
+    | s -> 
+        Alignment.uppercase 
+          (Alignment.read_align (ref_dir_complete^s))
     in
     if (verb_level prefs) > 0 && 
        not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
@@ -164,7 +181,7 @@ let () =
           "NOTE: you have not specified a stats file. I'm using the %s model.\n"
           (model_name prefs);
         None
-    | _ -> Parse_stats.parse_stats prefs
+    | _ -> Parse_stats.parse_stats ref_dir_complete prefs
     in
     (*
     (* now we re-parse the arguments to override if they are set *)

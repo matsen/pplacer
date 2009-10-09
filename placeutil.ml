@@ -85,7 +85,7 @@ let () =
       let placement_out_ch = open_out (prefix^".place") in
       Placeutil_core.warn_about_duplicate_names pqueries;
       Placeutil_core.write_placeutil_preamble 
-        placement_out_ch 
+        placement_out_ch
         version_str
         Sys.argv
         ref_tree;
@@ -109,8 +109,8 @@ let () =
           Printf.sprintf "%02d" (int_of_float (100. *. !ml_cutoff)) in
         List.iter 
           (fun (which_str, pqs) ->
-            write_pqueries (".L"^which_str^cutoff_str) pqs)
-          [(prefix^"lt"),below; (prefix^"ge"),above]
+            write_pqueries (prefix^".L"^which_str^cutoff_str) pqs)
+          ["lt",below; "ge",above]
       end
       else
         write_pqueries prefix pqueries

@@ -8,6 +8,7 @@ type prefs =
     tree_fname : string ref;
     ref_align_fname : string ref;
     stats_fname : string ref;
+    ref_dir : string ref;
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
@@ -52,6 +53,7 @@ type prefs =
   let write_masked    p = !(p.write_masked)
   let ratio_cutoff    p = !(p.ratio_cutoff)
   let only_write_best p = !(p.only_write_best)
+  let ref_dir         p = !(p.ref_dir)
 
 let titled_flt ch title f = 
   Printf.fprintf ch "# %s: %g\n" title f
@@ -69,6 +71,7 @@ let write_prefs ch p =
   titled_str ch "reference tree file"         (tree_fname p);
   titled_str ch "reference alignment file"    (ref_align_fname p);
   titled_str ch "statistics file"             (stats_fname p);
+  titled_str ch "Reference data directory"    (ref_dir p);
   titled_str ch "substitution model"          (model_name p);
   titled_boo ch "use emperical frequencies"   (emperical_freqs p);
   titled_int ch "number of gamma categories"  (gamma_n_cat p);

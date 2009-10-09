@@ -42,7 +42,7 @@ let partition_by_cutoff criterion cutoff pquery_list =
   List.partition 
     (fun pq ->
       match Pquery.opt_best_place criterion pq with
-      | Some place -> cutoff <= criterion place
+      | Some place -> criterion place < cutoff
       | None -> false)
     pquery_list
 
