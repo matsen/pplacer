@@ -3,45 +3,9 @@
  *
 *)
 
-(*
-external print_00 : Gsl_matrix.matrix -> unit = "print_00_c"
-*)
 
 external dot : Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "dot_c"
 external triple_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "triple_dot_c"
 external quad_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "quad_dot_c"
 external pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> unit = "pairwise_prod_c"
 
-
-(*
-let dot x y size = 
-  let tot = ref 0. in
-  for i=0 to size - 1 do
-    tot := !tot +. x.{i} *. y.{i}
-  done;
-  !tot
-
-let triple_dot x y z size = 
-  let tot = ref 0. in
-  for i=0 to size - 1 do
-    tot := !tot +. x.{i} *. y.{i} *. z.{i}
-  done;
-  !tot
-
-let quad_dot x y z w size = 
-  let tot = ref 0. in
-  for i=0 to size - 1 do
-    tot := !tot +. x.{i} *. y.{i} *. z.{i} *. w.{i}
-  done;
-  !tot
-
-let pairwise_prod dest x y size =
-  for i=0 to size - 1 do
-    dest.{i} <- x.{i} *. y.{i}
-  done
-
-let triplewise_prod dest x y z size =
-  for i=0 to size - 1 do
-    dest.{i} <- x.{i} *. y.{i} *. z.{i}
-  done
-*)

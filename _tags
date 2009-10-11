@@ -1,3 +1,3 @@
 <common>: include
-<*.{byte,native,top,p.native}>: use_gsl, use_str, use_unix, use_bigarray
+<*.{byte,native,top,p.native}>: use_gsl, use_str, use_unix, use_bigarray, use_pplacer
 <**/*.ml>: use_gsl, warn_Z

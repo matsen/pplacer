@@ -5,12 +5,34 @@
 open Ocamlbuild_plugin;; 
 open Command;; 
 
-dispatch begin function 
+
+dispatch begin function
   | Before_options ->
-      Options.ocaml_lflags := ["-ccopt"; "-static"];
-  | After_rules -> 
-      flag ["ocaml"; "byte"; "link"; "top";] (S[A"-custom"]);
-      dep ["ocaml"; "link";] ["linear_c.o"];
-      ocaml_lib ~extern:true ~dir:"+gsl" "gsl"; 
-  | _ -> () 
-end;; 
+      (* use static linking for native binaries *)
+      flag ["link"; "ocaml"; "native";] (S[A"-ccopt"; A"-static"]);
+  | After_rules ->
+      (* custom: incorporate libraries into bytecode *)
+      flag ["link"; "ocaml"; "byte"] (A"-custom");
+      (* link with libpplacercside given use_pplacer tag *)
+      flag ["link"; "ocaml"; "use_pplacer"]
+        (S[A"-cclib"; A"-lpplacercside"; A"-cclib"; A"-L.";]);
+      (* make libpplacercside when needed *)
+      dep  ["use_pplacer"] ["libpplacercside.a"];
+      (* automatically include gsl when the use_gsl tag is given in _tags *)
+      ocaml_lib ~extern:true ~dir:"+gsl" "gsl";
+  | _ -> ()
+end;;
+
+
+(*
+dep tags deps:
+  Will build deps when all tags will be activated.
+
+flag tags command_spec:
+  Will inject the given piece of command (command_spec) when all tags are activated.
+
+ocaml_lib <options> library_pathname:
+  Declare an ocaml library.
+Example: ocaml_lib "foo/bar" This will setup the tag use_bar tag. At link time it will include: foo/bar.cma or foo/bar.cmxa If you supply the ~dir:"boo" option -I boo will be added at link and compile time. Use ~extern:true for non-ocamlbuild handled libraries. Use ~byte:false or ~native:false to disable byte or native mode. Use ~tag_name:"usebar" to override the default tag name.
+
+*)
