@@ -7,8 +7,6 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-let version_str = "v0.3"
-
 (* default values *)
 let prefs = 
   { 
@@ -39,10 +37,6 @@ let prefs =
     ratio_cutoff = ref 0.05;
     only_write_best = ref false
   }
-
-let bifurcation_warning = 
-  "Warning: pplacer results make the most sense when the \
-  given tree is multifurcating at the root. See manual for details."
 
 (* these are the args that we re-parse after parsing the phyml stat file *)
 let model_name_opt = "-m", Arg.Set_string prefs.model_name,
@@ -102,7 +96,7 @@ let parse_args () =
    "Set the maximum number of pitches for baseball. Default is %d."
   in
   let usage =
-    "pplacer "^version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
+    "pplacer "^Placerun_io.version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
   and anon_arg arg =
     files := arg :: !files in
   let opts = 
@@ -164,7 +158,7 @@ let () =
     in
     if (verb_level prefs) > 0 && 
        not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
-         print_endline bifurcation_warning;
+         print_endline Placerun_io.bifurcation_warning;
     if (verb_level prefs) > 1 then begin
       print_endline "found in reference alignment: ";
       Array.iter (
@@ -199,7 +193,7 @@ let () =
     (* find all the tree locations *)
     let all_locs = IntMapFuns.keys ref_tree.Itree.info.Itree_info.bl in
     assert(all_locs <> []);
-      (* warning: only good if locations are as above. *)
+    (* warning: only good if locations are as above. *)
     let locs = ListFuns.remove_last all_locs in
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
@@ -222,21 +216,11 @@ let () =
           Alignment.uppercase (Alignment.read_align query_aln_fname) in
         AlignmentFuns.check_for_repeats (Alignment.getNameArr query_align);
         let query_bname = Filename.chop_extension query_aln_fname in
-        let out_ch = 
-          open_out (query_bname^".place") in
-        Printf.fprintf out_ch "# pplacer %s run, %s\n"        
-          version_str (Base.date_time_str ());
-        Printf.fprintf out_ch 
-          "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
-        Prefs.write_prefs out_ch prefs;
-        Printf.fprintf out_ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
-        if not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
-          Printf.fprintf out_ch "# %s\n" bifurcation_warning;
-        Printf.fprintf out_ch "# numbered reference tree: %s\n"
-        (* we do the following to write a tree with the node numbers in place of
-         * the bootstrap values, and at @ at the end of the taxon names *)
-          (Itree_io.to_newick (Itree_io.make_numbered_tree ref_tree));
-        Printf.fprintf out_ch "# reference tree: %s\n" (Itree_io.to_newick ref_tree);
+        let write_preamble out_ch = 
+          Printf.fprintf out_ch 
+            "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
+          Prefs.write_prefs out_ch prefs;
+        in
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior
           else Core.Exponential_prior (
@@ -247,11 +231,12 @@ let () =
         let results = 
           Core.pplacer_core prefs prior
             model ref_align ref_tree query_align ~dmap ~pmap locs in
-        Pquery_io.write_by_best_loc 
-          Placement.ml_ratio 
-          out_ch 
-          (Array.to_list results);
-        close_out out_ch;
+        Placerun_io.to_file
+          write_preamble
+          (Placerun.make 
+             ref_tree 
+             query_bname 
+             (Array.to_list results));
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     let retVal = List.fold_left collect 1 files in

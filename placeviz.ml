@@ -6,8 +6,6 @@ open Fam_batteries
 open MapsSets
 open Placement
 
-let version_str = "v0.3"
-
 let singly = ref false
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
@@ -24,7 +22,7 @@ let parse_args () =
    "Put the node numbers in where the bootstraps usually go."
   in
   let usage =
-    "placeviz "^version_str^"\nplaceviz ex.place\n"
+    "placeviz "^Placerun_io.version_str^"\nplaceviz ex.place\n"
   and anon_arg arg =
     files := arg :: !files in
   let args = 
@@ -41,15 +39,16 @@ let () =
     let collect ret_code fname =
       try
         let frc = 0 in
-        let pre_ref_tree, named_places = 
-          Pquery_io.parse_place_file version_str fname in
+        let placerun = 
+          Placerun_io.parse_place_file fname in
+        let pre_ref_tree = Placerun.get_ref_tree placerun in
         let ref_tree = 
           if !show_node_numbers then Itree.make_boot_node_num pre_ref_tree
           else pre_ref_tree in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc
             Placement.ml_ratio
-            named_places
+            (Placerun.get_pqueries placerun)
         in
         if unplaced_seqs <> [] then begin
           print_endline "Found the following unplaced sequences:";
@@ -57,7 +56,7 @@ let () =
             (fun pq -> print_endline (Pquery.name pq))
             unplaced_seqs;
         end;
-        let fname_base = Pquery_io.chop_place_extension fname in
+        let fname_base = Placerun_io.chop_place_extension fname in
         (* write loc file *)
         Placeviz_core.write_loc_file 
           fname_base unplaced_seqs placed_map;

@@ -5,13 +5,6 @@
 open Fam_batteries
 open MapsSets
 
-
-let chop_place_extension fname =
-  if Filename.check_suffix fname ".place" then
-    Filename.chop_extension fname
-  else 
-    invalid_arg ("this program requires place files ending with .place suffix")
-
  
 (* ***** WRITING ***** *)
 
@@ -23,6 +16,7 @@ let write ch pq =
       Printf.fprintf ch "%s\n" (Placement.placement_to_str p)) 
     (Pquery.place_list pq)
 
+    (*
 let write_unplaced ch unplaced_list = 
   if unplaced_list <> [] then
     Printf.fprintf ch "# unplaced sequences\n";
@@ -40,68 +34,16 @@ let write_by_best_loc criterion ch pq_list =
     Pquery.make_map_by_best_loc criterion pq_list in
   write_unplaced ch unplaced_l;
   write_placed_map ch placed_map
+  *)
 
 
 (* ***** READING ***** *)
 
-(* returns (ref_tree, nplacecoll list)
- * conventions for placement files: 
-  * first line is 
-# pplacer [version] run ...
-  * then whatever. last line before placements is
-# reference tree: [ref tre]
-*)
-let parse_place_file version_str place_fname = 
-  if not (Filename.check_suffix place_fname ".place") then
-    failwith("Pplacer place file names must end in .place, unlike "^place_fname);
-  let reftree_rex = Str.regexp "^# reference tree: \\(.*\\)"
-  and fastaname_rex = Str.regexp "^>"
-  and str_match rex str = Str.string_match rex str 0
-  in
-  match 
-  (* split up the file by the fastanames *)
-    File_parsing.partition_list 
-      (str_match fastaname_rex) 
-      (File_parsing.string_list_of_file place_fname) 
-  with
-  | header::placements -> begin
-  try 
-  (* parse the header, getting a ref tree *)
-  let ref_tree = 
-    match header with
-    | version_line::header_tl -> begin
-    (* make sure we have appropriate versions *)
-    Scanf.sscanf version_line "# pplacer %s run" 
-      (fun file_vers ->
-        if file_vers <> version_str then
-          failwith "incompatible versions of pplacer and placeviz/placeutil.");
-    (* get the ref tree *)
-      try
-        let tree_line,_ = 
-          File_parsing.find_beginning 
-            (str_match reftree_rex) 
-            header_tl 
-        in
-        Itree_io.of_newick_str (Str.matched_group 1 tree_line)
-      with | Not_found -> failwith "couldn't find ref tree line!"
-    end
-    | [] -> failwith (place_fname^" no header!")
-    in
-    (ref_tree,
-    (* now parse the placements *)
-    List.map 
-      (function
-      | name::seq::places ->
-          Pquery.make_ml_sorted
-            ~name:(Alignment.read_fasta_name name)
-            ~seq
-            (List.map Placement.placement_of_str places)
-      | _ -> 
-          invalid_arg "problem with place file. missing sequence data?")
-      (List.map File_parsing.filter_comments placements))
-  with
-  | Scanf.Scan_failure s ->
-      failwith ("problem with the place file: "^s)
-  end
-  | [] -> failwith (place_fname^" empty place file!")
-
+let parse_pquery = function
+  | name::seq::places ->
+      Pquery.make_ml_sorted
+      ~name:(Alignment.read_fasta_name name)
+      ~seq
+      (List.map Placement.placement_of_str places)
+  | _ -> 
+      invalid_arg "problem with place file. missing sequence data?"

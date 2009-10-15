@@ -8,7 +8,7 @@
  * the chosen edge.
  * *)
 
-
+open Fam_batteries
 open MapsSets
 
 type itree = 
@@ -66,7 +66,7 @@ let make_boot_node_num tree =
 let join new_id tL = 
   itree
     (Stree.node new_id (List.map get_stree tL))
-    (Base.complete_fold_left
+    (ListFuns.complete_fold_left
       Itree_info.combine_node_infos 
       (List.map get_info tL))
 

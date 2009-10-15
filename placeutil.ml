@@ -8,9 +8,6 @@
 open Fam_batteries
 open MapsSets
 
-let version_str = "v0.3"
-let verbose = false
-
 let out_prefix = ref ""
 let verbose = ref false
 let ml_cutoff = ref 0.
@@ -31,7 +28,7 @@ let parse_args () =
     "Warn if a read name matches several regular expressions."
   in
   let usage =
-    "placeutil "^version_str
+    "placeutil "^Placerun_io.version_str
       ^"\nplaceutil ex1.place ex2.place ... combines place files, filters, then splits them back up again if you want.\n"
   and anon_arg arg =
     files := arg :: !files in
@@ -47,30 +44,21 @@ let () =
     (* parse the placements *)
     let parsed = 
       List.map 
-        (fun fname -> Pquery_io.parse_place_file version_str fname)
+        (fun fname -> Placerun_io.parse_place_file fname)
         fnames
     in
     if !verbose then begin
       print_endline "combining placements...";
       List.iter2
-        (fun (_, places) fname ->
+        (fun placerun fname ->
           Printf.printf 
             "found %d placements in %s\n" 
-            (List.length places)
+            (Placerun.n_pqueries placerun)
             fname)
         parsed
         fnames
     end;
     if parsed = [] then exit 0;
-    let ref_tree = 
-      Base.complete_fold_left
-        (fun prev_ref a_ref ->
-          if prev_ref <> a_ref then
-            failwith "Reference trees not all the same!";
-          prev_ref)
-        (List.map fst parsed)
-    in
-    let combined = List.flatten (List.map snd parsed) in
     (* make the out prefix *)
     let out_prefix_complete = 
       (if !out_prefix <> "" then !out_prefix
@@ -78,47 +66,40 @@ let () =
         failwith "Please supply an out prefix with the -o option. This is required when there are two or more input files."
       else 
         (* hd: have already checked that fnames isn't [] *)
-        Pquery_io.chop_place_extension (List.hd fnames))
+        Placerun_io.chop_place_extension (List.hd fnames))
     in
-    (* write pqueries. infix is a string to put before .place *)
-    let write_pqueries prefix pqueries = 
-      let placement_out_ch = open_out (prefix^".place") in
-      Placeutil_core.warn_about_duplicate_names pqueries;
-      Placeutil_core.write_placeutil_preamble 
-        placement_out_ch
-        version_str
-        Sys.argv
-        ref_tree;
-      Pquery_io.write_by_best_loc
-        Placement.ml_ratio
-        placement_out_ch 
-        pqueries;
-      close_out placement_out_ch
+    let combined = 
+      ListFuns.complete_fold_left 
+        (Placerun.combine out_prefix_complete) 
+        parsed
+    in
+    let write_call ch = 
+      Printf.fprintf ch "# made by placeutil run as: %s\n"
+        (String.concat " " (Array.to_list Sys.argv))
     in
     (* function to split up the queries by likelihood ratio and then write them *)
-    let process_pqueries prefix pqueries = 
+    let process_pqueries placerun = 
       if !ml_cutoff <> 0. then begin
-        (* split them up by ml cutoff *)
-        let (below, above) = 
-          Placeutil_core.partition_by_cutoff 
-            Placement.ml_ratio 
-            (!ml_cutoff) 
-            pqueries 
-        in
-        let cutoff_str = 
-          Printf.sprintf "%02d" (int_of_float (100. *. !ml_cutoff)) in
-        List.iter 
-          (fun (which_str, pqs) ->
-            write_pqueries (prefix^".L"^which_str^cutoff_str) pqs)
-          ["lt",below; "ge",above]
+        List.iter
+          (Placerun_io.to_file
+            (fun ch ->
+              write_call ch;
+              Printf.fprintf ch 
+                             "# ml split from %s" 
+                             (Placerun.get_name placerun)))
+          (Placerun.partition_by_ml 
+            (!ml_cutoff)
+            placerun)
       end
       else
-        write_pqueries prefix pqueries
+        Placerun_io.to_file
+          (fun ch -> write_call ch)
+          placerun
     in 
     (* "main" *)
     if !re_sep_fname = "" then
       if List.length fnames > 1 || !ml_cutoff <> 0. then
-        process_pqueries out_prefix_complete combined
+        process_pqueries combined
       else 
         print_endline "hmm... I don't have to split up by the ML ratio cutoff or regular expressions, and I am not combining any files. so i'm not doing anything."
     else begin
@@ -128,10 +109,9 @@ let () =
         failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option."
       else
         List.iter
-          (fun (prefix, pqueries) ->
-            process_pqueries prefix pqueries)
-          (Placeutil_core.separate_pqueries_by_regex 
-            re_split_list 
+          process_pqueries
+          (Placerun.multifilter_by_regex 
+            re_split_list
             combined)
     end
   end

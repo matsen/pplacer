@@ -134,10 +134,6 @@ let logarithmically_evenly_spaced n_x min_x max_x =
   Array.init n_x
     (fun i -> exp (log_min_x +. (float_of_int i) *. delta))
 
-let complete_fold_left f = function
- | hd::tl -> List.fold_left f hd tl
- | [] -> invalid_arg "complete_fold_left: given empty list!"
-
 (* find the i where the given x is geq a.(i) and leq a.(i+1)
  * useful for dealing with ties
 # arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 2;;

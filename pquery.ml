@@ -30,26 +30,26 @@ let name p       = p.name
 let seq p        = p.seq
 let place_list p = p.place_list
 
-let opt_best_place criterion pq =
+let opt_best_something thing criterion pq =
   assert(is_decreasing criterion (place_list pq));
   match place_list pq with
-  | best::_ -> Some best
+  | best::_ -> Some (thing best)
   | [] -> None 
 
+let opt_best_place criterion pq = 
+  opt_best_something (fun p -> p) criterion pq
 let opt_best_location criterion pq = 
+  opt_best_something Placement.location criterion pq
+
+let best_something thing criterion pq = 
   match opt_best_place criterion pq with
-  | Some place -> Some (Placement.location place)
-  | None -> None
+  | Some place -> thing place
+  | None -> failwith "best_something: no places!"
 
 let best_place criterion pq = 
-  match opt_best_place criterion pq with
-  | Some place -> place
-  | None -> failwith "best_place: no places!"
-
+  best_something (fun p -> p) criterion pq
 let best_location criterion pq = 
-  match opt_best_location criterion pq with
-  | Some loc -> loc
-  | None -> failwith "best_location: no locations!"
+  best_something Placement.location criterion pq
 
 let is_placed pq = 
   match place_list pq with
