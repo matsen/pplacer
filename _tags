@@ -1,0 +1,4 @@
+<common>: include
+<pplacer>: include
+<*.{byte,native,top,p.native}>: use_gsl, use_str, use_unix
+<**/*.ml>: use_gsl, warn_Z
