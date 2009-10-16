@@ -8,14 +8,9 @@ RELEASE=mokaphy
 # $^ $+ The names of all the prerequisites, with spaces between them. For prerequisites which are archive members, only the member named is used (see Archives). The value of $^ omits duplicate prerequisites, while $+ retains them and preserves their order.
 # $* The stem with which an implicit rule matches (see How Patterns Match). 
 
-default: $(RELEASE)
-
-$(RELEASE):
-	make $@.native
-	cp $@.native $(OCAMLDEST)/$@
-
-%.native %.byte %.p.native:
-	ocamlbuild $@
+default: 
+	ocamlbuild $(RELEASE).native
+	cp $(RELEASE).native $(OCAMLDEST)/$(RELEASE)
 
 clean:
 	ocamlbuild -clean

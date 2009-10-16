@@ -1,5 +1,5 @@
-(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
+(* mokaphy v0.3. Copyright (C) 2009  Frederick A Matsen.
+ * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *)
 
 open Fam_batteries
@@ -47,24 +47,22 @@ let parse_args () =
   List.rev !files
 
      
-    (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
     let fnames = parse_args () in
     let parsed = 
       List.map 
-        (fun fname -> Pquery_io.parse_place_file version_str fname)
+        (fun fname -> Placerun_io.parse_place_file fname)
         fnames
     in
     if parsed = [] then exit 0;
-    let ref_tree = 
-      Base.complete_fold_left
-        (fun prev_ref a_ref ->
-          if prev_ref <> a_ref then
-            failwith "Reference trees not all the same!";
-          prev_ref)
-        (List.map fst parsed)
-    in
+    List.iter
+      (fun placerun -> 
+        if Placerun.contains_unplaced_queries placerun then
+          failwith 
+            ((Placerun.get_name placerun)^
+              " contains unplaced query sequences!"))
+      parsed;
     let out_ch = 
       if out_fname prefs = "" then stdout
       else open_out (out_fname prefs)
@@ -73,10 +71,6 @@ let () =
       prefs
       Placement.ml_ratio (* sorting criterion *)
       out_ch
-      ref_tree
-      (Array.of_list
-        (List.combine
-          (List.map Filename.chop_extension fnames)
-          (List.map snd parsed)));
-      if out_fname prefs <> "" then close_out out_ch
+      (Array.of_list parsed);
+    if out_fname prefs <> "" then close_out out_ch
   end
