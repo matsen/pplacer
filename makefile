@@ -8,9 +8,15 @@ RELEASE=mokaphy
 # $^ $+ The names of all the prerequisites, with spaces between them. For prerequisites which are archive members, only the member named is used (see Archives). The value of $^ omits duplicate prerequisites, while $+ retains them and preserves their order.
 # $* The stem with which an implicit rule matches (see How Patterns Match). 
 
-default: 
-	ocamlbuild $(RELEASE).native
-	cp $(RELEASE).native $(OCAMLDEST)/$(RELEASE)
+default: $(RELEASE)
+
+$(RELEASE):
+	rm -f $@.native
+	make $@.native
+	cp $@.native $(OCAMLDEST)/$@
+
+%.native %.byte %.p.native:
+	ocamlbuild $@
 
 clean:
 	ocamlbuild -clean
@@ -26,7 +32,9 @@ version:
 %.top: %.byte
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
 	ocamlbuild $@
-	ledit -x -h .toplevel_history ./$@
+
+runtop: $(RELEASE).top
+	ledit -x -h .toplevel_history ./$(RELEASE).top
 
 runcaml: 
 	ledit -x -h .toplevel_history ocaml
