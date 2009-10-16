@@ -45,10 +45,11 @@ let () =
         let ref_tree = 
           if !show_node_numbers then Itree.make_boot_node_num pre_ref_tree
           else pre_ref_tree in
+        let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc
             Placement.ml_ratio
-            (Placerun.get_pqueries placerun)
+            pqueries
         in
         if unplaced_seqs <> [] then begin
           print_endline "Found the following unplaced sequences:";
@@ -63,6 +64,11 @@ let () =
         (* make the various visualizations *)
         Placeviz_core.write_tog_file fname_base ref_tree placed_map;
         write_num_file fname_base ref_tree placed_map;
+        if !singly then
+          Placeviz_core.write_sing_file 
+            fname_base 
+            ref_tree 
+            (List.filter Pquery.is_placed pqueries);
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     exit (List.fold_left collect 1 files)

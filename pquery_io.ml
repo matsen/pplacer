@@ -16,26 +16,6 @@ let write ch pq =
       Printf.fprintf ch "%s\n" (Placement.placement_to_str p)) 
     (Pquery.place_list pq)
 
-    (*
-let write_unplaced ch unplaced_list = 
-  if unplaced_list <> [] then
-    Printf.fprintf ch "# unplaced sequences\n";
-  List.iter (write ch) unplaced_list
-
-let write_placed_map ch placed_map = 
-  IntMap.iter
-    (fun loc npcl ->
-      Printf.fprintf ch "# location %d\n" loc;
-      List.iter (write ch) npcl)
-    placed_map
-
-let write_by_best_loc criterion ch pq_list =
-  let (unplaced_l, placed_map) = 
-    Pquery.make_map_by_best_loc criterion pq_list in
-  write_unplaced ch unplaced_l;
-  write_placed_map ch placed_map
-  *)
-
 
 (* ***** READING ***** *)
 

@@ -8,6 +8,8 @@
 
 open MapsSets
 
+exception Unplaced_pquery of string
+
 let sort_placement_list criterion pl =
   List.sort 
     (fun x y -> - Placement.compare_placements criterion x y) 
@@ -44,7 +46,7 @@ let opt_best_location criterion pq =
 let best_something thing criterion pq = 
   match opt_best_place criterion pq with
   | Some place -> thing place
-  | None -> failwith "best_something: no places!"
+  | None -> raise (Unplaced_pquery (name pq))
 
 let best_place criterion pq = 
   best_something (fun p -> p) criterion pq

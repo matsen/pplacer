@@ -3,6 +3,7 @@
 *)
 
 open MapsSets
+open Fam_batteries
 
 (* writing the .loc.fasta file *)
 let write_loc_file fname_base unplaced_seqs placed_map =
@@ -25,7 +26,6 @@ let write_loc_file fname_base unplaced_seqs placed_map =
 
 (* writing various tree formats *)
 
-
 let trees_to_file fname trees = 
   let out_ch = open_out fname in
   List.iter (Itree_io.write_newick out_ch) trees;
@@ -36,11 +36,16 @@ let make_zero_leaf bl taxon =
     (Stree.leaf 0)
     (Itree_info.opt_add_info 0 ~bl ~taxon Itree_info.empty_info)
 
+(* given a function that takes a location and a list of somethings and returns a
+ * (where, tree) list for that location, make a tree containing those extra
+ * subtrees given a something map
+ *)
 let tree_by_map f ref_tree placed_map = 
   Itree.add_subtrees_by_map
     ref_tree
     (IntMap.mapi f placed_map)
 
+(* tog tree *)
 let tog_tree ref_tree placed_map = 
   tree_by_map
     (fun _ ->
@@ -53,7 +58,13 @@ let tog_tree ref_tree placed_map =
             (Pquery.name pquery))))
     ref_tree
     placed_map
+
+let write_tog_file fname_base ref_tree placed_map = 
+  trees_to_file 
+    (fname_base^".tog.tre") 
+    [tog_tree ref_tree placed_map]
         
+(* num tree *)
 let num_tree bogus_bl ref_tree placed_map = 
   tree_by_map
     (fun loc pqueries ->
@@ -64,12 +75,33 @@ let num_tree bogus_bl ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_tog_file fname_base ref_tree placed_map = 
-  trees_to_file 
-    (fname_base^".tog.tre") 
-    [tog_tree ref_tree placed_map]
-
 let write_num_file bogus_bl fname_base ref_tree placed_map = 
   trees_to_file 
     (fname_base^".num.tre") 
     [num_tree bogus_bl ref_tree placed_map]
+
+(* sing trees *)
+let sing_tree ref_tree pquery = 
+  let pqname = Pquery.name pquery in
+  Itree.add_subtrees_by_map
+    ref_tree
+    (IntMapFuns.of_pairlist_listly 
+      (ListFuns.mapi
+        (fun num p -> 
+          (Placement.location p,
+            (Placement.distal_bl p,
+            make_zero_leaf 
+              (Placement.pendant_bl p)
+              (Printf.sprintf 
+                "%s_#%d_LR=%g" 
+                pqname 
+                num
+                (Placement.ml_ratio p)))))
+        (Pquery.place_list pquery)))
+
+let write_sing_file fname_base ref_tree placed_pquery_list = 
+  trees_to_file 
+    (fname_base^".sing.tre") 
+    (List.map (sing_tree ref_tree) placed_pquery_list)
+
+

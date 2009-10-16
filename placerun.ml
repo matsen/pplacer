@@ -9,7 +9,7 @@ type placerun =
   {
     ref_tree  :  Itree.itree;
     name      :  string;
-    pqueries  :  Pquery.pquery  list;
+    pqueries  :  Pquery.pquery list;
     (* put in the preferences later *)
   }
 
@@ -20,7 +20,6 @@ let make ref_tree name pqueries =
     pqueries  =  pqueries;
   }
 
-
 let get_ref_tree p = p.ref_tree
 let get_name p = p.name
 let get_pqueries p = p.pqueries
@@ -30,6 +29,23 @@ let set_name p name = {p with name = name}
 let set_pqueries p pqueries = {p with pqueries = pqueries}
 
 let n_pqueries p = List.length p.pqueries
+
+let contains_unplaced_queries p =
+  try
+    List.iter
+      (fun pquery ->
+        Pquery_io.write stdout pquery;
+        Printf.printf "%d %b\n" (List.length (Pquery.place_list pquery)) (Pquery.is_placed pquery);
+        if not (Pquery.is_placed pquery) then
+          print_endline (Pquery.name pquery);
+          raise Exit)
+      (get_pqueries p);
+    print_endline "no unplaced";
+    false
+  with
+  | Exit -> 
+    print_endline "unplaced";
+      true
 
 let combine name p1 p2 = 
   let ref_tree = get_ref_tree p1 in
