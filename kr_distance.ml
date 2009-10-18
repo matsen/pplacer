@@ -33,11 +33,6 @@ let outer_exponent p =
   if p < 1. then 1.
   else 1. /. p
 
-(* get from map, but return an empty list if not in map *)
-let get_from_list_intmap m id = 
-  if IntMap.mem id m then IntMap.find id m
-  else []
-
 let collect_kr_info criterion kr_v pcl =
   List.flatten
     (List.map
@@ -57,7 +52,14 @@ let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
 (* total up the info from the previous step. 
  * note that data_sofar will be modified in place. 
  * data_to_r: takes the kr info vector and turns it into a real number
+ * data_info_list: list of (distal_bl, data)
  *
+ * signature is
+('a -> float) -> float -> (float * 'b) list -> ('a -> 'b -> 'c) -> float ->     'a          -> float * 'a
+ data_to_r       bl       data_info_list        update_data        prev_subtot  start_data  
+ *
+ * is what ocaml inferrs, but update_data is actually 'a -> 'b -> unit, as
+ * update_data modifies in place
  * *)
 let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_data = 
   let rec aux ~subtotal ~prev_a data_sofar data_info_list = 
@@ -116,6 +118,12 @@ let total_over_tree curried_edge_total
   check_final_data final_data;
   grand_total /. (Itree.tree_length ref_tree)
 
+(* sort the placements along a given edge according to their location on
+ * the edge. that way we can recur along this list. *)
+let sort_along_edge = 
+  IntMap.map
+    (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
+
 (* get the KR distance between two placement collection lists *)
 let pcl_pair_distance criterion ref_tree p pcl1 pcl2 = 
   let int_inv x = 1. /. (float_of_int x) in
@@ -125,10 +133,7 @@ let pcl_pair_distance criterion ref_tree p pcl1 pcl2 =
   in
   (* this map has all of the information needed to do the KR calculation *)
   let all_kr_map = 
-    IntMap.map
-        (* sort the placements along a given edge according to their location on
-         * the edge. that way we can recur along this list. *)
-      (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
+    sort_along_edge
       (IntMapFuns.of_pairlist_listly
         ((collect_kr_info criterion kr_v1 pcl1) @
          (collect_kr_info criterion kr_v2 pcl2)))
@@ -142,7 +147,7 @@ let pcl_pair_distance criterion ref_tree p pcl1 pcl2 =
     total_along_edge 
       (exp_kr_diff p) 
       (Itree.get_bl ref_tree id) 
-      (get_from_list_intmap all_kr_map id)
+      (Mokaphy_base.get_from_list_intmap all_kr_map id)
       Mokaphy_base.v_addto
   (* make sure that the kr_v totals to zero *)
   and check_final_kr final_kr_v = 

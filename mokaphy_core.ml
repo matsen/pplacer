@@ -16,62 +16,14 @@ we want to make a randomization procedure
 open Fam_batteries
 open MapsSets
 
+type result = 
+  {
+    distance : float;
+    p_value : float;
+  }
 
-(* histogram shows where the sample sits in the shuffled distances *)
-let write_histogram name1 name2 sample_dist shuffled_dists p =
-  let histo_prefix = "histo."^name1^".VS."^name2 in
-  (* the data *)
-  let histo_dat_name = histo_prefix^".dat" in
-  let histo_dat_ch = open_out histo_dat_name in
-  List.iter 
-    (fun x -> Printf.fprintf histo_dat_ch "%g\n" x) 
-    shuffled_dists;
-  close_out histo_dat_ch;
-  (* the r file *)
-  let histo_r_ch = open_out (histo_prefix^".r") in
-  Printf.fprintf histo_r_ch "pdf(\"%s\")\n" (histo_prefix^".pdf");
-  Printf.fprintf histo_r_ch "data <- read.table(\"%s\")\n" histo_dat_name;
-  Printf.fprintf histo_r_ch 
-    "hist(data[,1], main=\"d(%s,%s) = %f\", xlab=\"KR Z_%g distance\")\n" 
-    name1 name2 sample_dist p;
-  Printf.fprintf histo_r_ch "abline(v=%g, col=\"red\")\n" sample_dist;
-  Printf.fprintf histo_r_ch "dev.off()\n";
-  close_out histo_r_ch;
-  ()
-
-(* shows the distances for various p *)
-let write_p_plot criterion weighting pr1 pr2 = 
-  let p_plot_prefix = 
-    "p_plot."^(Placerun.get_name pr1)^".VS."^(Placerun.get_name pr2) in
-  (* the data *)
-  let p_plot_dat_name = p_plot_prefix^".dat" in
-  let p_plot_dat_ch = open_out p_plot_dat_name in
-  let n_samples = 101
-  and min_sample = 1e-3
-  and max_sample = 1e+3 in
-  let p_arr = 
-    Base.logarithmically_evenly_spaced 
-      n_samples min_sample max_sample in
-  Array.iter 
-    (fun p -> 
-      Printf.fprintf 
-        p_plot_dat_ch 
-        "%g\t%g\n" 
-        p 
-        (Placerun_distance.pair_dist criterion weighting p pr1 pr2))
-    p_arr;
-  close_out p_plot_dat_ch;
-  (* the r file *)
-  let p_plot_r_ch = open_out (p_plot_prefix^".r") in
-  Printf.fprintf p_plot_r_ch "pdf(\"%s\")\n" (p_plot_prefix^".pdf");
-  Printf.fprintf p_plot_r_ch "data <- read.table(\"%s\")\n" p_plot_dat_name;
-  Printf.fprintf p_plot_r_ch 
-    "plot(data, main=\"%s versus %s\", xlab=\"p\", ylab=\"normalized KR p-distance\", log=\"x\")\n" 
-    (Placerun.get_name pr1) (Placerun.get_name pr2);
-  Printf.fprintf p_plot_r_ch "dev.off()\n";
-  close_out p_plot_r_ch;
-  ()
-
+let get_distance r = r.distance
+let get_p_value r = r.p_value
 
 (* makes an array of shuffled placeruns (identity of being in first or second
  * one shuffled randomly, but number in each the same) *)
@@ -95,40 +47,63 @@ let make_shuffled_prs n_shuffles pr1 pr2 =
   ListFuns.init 
     n_shuffles
     (fun num ->
-      Base.shuffle pquery_arr;
+      Mokaphy_base.shuffle pquery_arr;
       (make_pr pr1 num (pquery_sub 0 n1),
       make_pr pr2 num (pquery_sub n1 n2)))
 
 let pair_core prefs criterion pr1 pr2 =
+  let p = (Mokaphy_prefs.p_exp prefs) in
   let weighting = 
     if Mokaphy_prefs.weighted prefs then Placerun_distance.Weighted 
     else Placerun_distance.Unweighted 
   in
-  let shuffled_list = 
-    make_shuffled_prs (Mokaphy_prefs.n_shuffles prefs) pr1 pr2 in
   let calc_dist = 
     Placerun_distance.pair_dist 
       criterion 
       weighting 
-      (Mokaphy_prefs.p_exp prefs) in
-  let sample_dist = calc_dist pr1 pr2 in
-  let shuffled_dists = 
-    List.map 
-      (fun (spr1,spr2) -> calc_dist spr1 spr2)
-      shuffled_list
-  in
-  if Mokaphy_prefs.histo prefs then
-    write_histogram 
+      p in
+  let original_dist = calc_dist pr1 pr2 in
+  if Mokaphy_prefs.shuffle prefs then begin
+    (* shuffle mode *)
+    let shuffled_list = 
+      make_shuffled_prs (Mokaphy_prefs.n_samples prefs) pr1 pr2 in
+    let shuffled_dists = 
+      List.map 
+        (fun (spr1,spr2) -> calc_dist spr1 spr2)
+        shuffled_list
+    in
+    if Mokaphy_prefs.histo prefs then
+      R_plots.write_histogram 
+        (Placerun.get_name pr1)
+        (Placerun.get_name pr2)
+        original_dist 
+        shuffled_dists 
+        p;
+    if Mokaphy_prefs.p_plot prefs then
+      R_plots.write_p_plot criterion weighting pr1 pr2;
+    if Mokaphy_prefs.box_plot prefs then
+      R_plots.write_boxplot criterion weighting pr1 pr2 shuffled_list;
+    { distance = original_dist;
+      p_value = 
+        Mokaphy_base.list_onesided_pvalue shuffled_dists original_dist}
+  end
+  else begin
+    (* normal approx mode *)
+    let resampled_dists = 
+      Normal_approx.resampled_distn 
+        (Mokaphy_prefs.n_samples prefs) criterion p pr1 pr2
+    in
+    R_plots.write_histogram 
       (Placerun.get_name pr1)
       (Placerun.get_name pr2)
-      sample_dist 
-      shuffled_dists 
-      (Mokaphy_prefs.p_exp prefs);
-  if Mokaphy_prefs.p_plot prefs then
-    write_p_plot criterion weighting pr1 pr2;
-  let p_value = 
-    Base.list_onesided_pvalue shuffled_dists sample_dist in
-  (sample_dist, p_value)
+      original_dist 
+      resampled_dists
+      p;
+    { distance = original_dist;
+      p_value = 
+        Mokaphy_base.list_onesided_pvalue resampled_dists original_dist}
+  end
+
 
 (* core
  * run pair_core for each unique pair 
@@ -148,6 +123,6 @@ let core prefs criterion ch pr_arr =
   in
   let names = Array.map Placerun.get_name pr_arr in
   Printf.fprintf ch "distances\n"; 
-  Mokaphy_base.write_named_float_uptri ch names (Uptri.map fst u);
+  Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
   Printf.fprintf ch "\np-values\n"; 
-  Mokaphy_base.write_named_float_uptri ch names (Uptri.map snd u);
+  Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);

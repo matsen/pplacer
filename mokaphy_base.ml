@@ -47,3 +47,86 @@ let v_list_sum = function
     v
   | [] -> assert(false)
 
+
+(* uniformly shuffle the elements of an array using the Knuth shuffle
+ * http://en.wikipedia.org/wiki/Random_permutation
+ * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
+ *)
+let shuffle a = 
+  let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
+  for i = Array.length a - 1 downto 1 do 
+    swap i (Random.int (i+1)) 
+  done
+
+(* make an integer permutation *)
+let perm n = 
+  let a = Array.init n (fun i -> i) in
+  shuffle a;
+  a
+
+(* make a min to max array such that their differences in sequence are evenly
+ * spaced *)
+let logarithmically_evenly_spaced n_x min_x max_x = 
+  let log_min_x = log min_x
+  and log_max_x = log max_x in
+  let delta = (log_max_x -. log_min_x) /. (float_of_int (n_x-1)) in
+  Array.init n_x
+    (fun i -> exp (log_min_x +. (float_of_int i) *. delta))
+
+(* find the i where the given x is geq a.(i) and leq a.(i+1)
+ * useful for dealing with ties
+# arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 2;;
+- : int list = [1]
+# arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 6;;
+- : int list = [2; 3]
+# arr_between_spots [|0;1;3;6;7;7;7;7;8;9;|] 7;;
+- : int list = [3; 4; 5; 6; 7]
+*)
+let arr_between_spots a x = 
+  let len = Array.length a in
+  let betw = ref [] in
+  for i = len-2 downto 0 do
+    if a.(i) <= x && x <= a.(i+1) then
+      betw := i::(!betw)
+  done;
+  !betw
+
+let arr_assert_increasing a = 
+  for i=0 to (Array.length a)-2 do
+    assert(a.(i) <= a.(i+1));
+  done
+
+let int_div x y = (float_of_int x) /. (float_of_int y) 
+
+(* a must be sorted increasing *)
+let arr_avg_pvalue a x = 
+  arr_assert_increasing a;
+  let alen = Array.length a in
+  match arr_between_spots a x with
+  | [] ->
+      if x < a.(0) then 0.
+      else if x > a.(alen-1) then 1.
+      else assert(false)
+  | l ->
+      int_div
+        (List.fold_left ( + ) 0 l)
+        ((List.length l) * alen)
+
+(* just calculate the fraction of elements of a which are geq x.
+ * that's the probability that something of value x or greater was drawn from
+ * the distribution of a.
+ * clearly, l doesn't need to be sorted *)
+let list_onesided_pvalue l x = 
+  int_div
+    (List.fold_left
+      (fun accu a_elt ->
+        if a_elt >= x then accu+1
+        else accu)
+      0 l)
+    (List.length l)
+
+(* get from map, but return an empty list if not in map *)
+let get_from_list_intmap m id = 
+  if IntMap.mem id m then IntMap.find id m
+  else []
+

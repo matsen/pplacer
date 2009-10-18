@@ -2,6 +2,7 @@
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * calculate the distance between placeruns.
+ *
  *)
 
 open Fam_batteries
@@ -10,11 +11,7 @@ open Mokaphy_prefs
 
 type weighting_choice = Weighted | Unweighted
 
-(*
- * note: this requires that placerun1 and placerun2 don't have any unplaced
- * sequences.
- *)
-let pair_dist criterion weighting p placerun1 placerun2 = 
+let pair_dist_gen process_pcl distance_fun p placerun1 placerun2 = 
   let context = 
     Printf.sprintf 
       "comparing %s with %s" 
@@ -24,19 +21,13 @@ let pair_dist criterion weighting p placerun1 placerun2 =
   in
   if ref_tree <> Placerun.get_ref_tree placerun2 then
     failwith ("reference trees not the same when "^context);
-  let process_pcl pquery = 
-    match weighting with
-    | Weighted -> Pquery.place_list pquery
-    | Unweighted -> [ Pquery.best_place criterion pquery ]
-  in
   try
     let make_pcl placerun = 
       List.map
         process_pcl
         (Placerun.get_pqueries placerun)
     in
-    Kr_distance.pcl_pair_distance 
-      criterion 
+    distance_fun
       ref_tree 
       p
       (make_pcl placerun1)
@@ -50,3 +41,20 @@ let pair_dist criterion weighting p placerun1 placerun2 =
       invalid_arg (s^" unplaced when "^context)
   | Kr_distance.Total_kr_not_zero tkr ->
       failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
+
+
+(*
+ * the code here will fail (nicely) if given unplaced sequences.
+ *)
+let pair_dist criterion weighting p placerun1 placerun2 = 
+  let process_pcl pquery = 
+    match weighting with
+    | Weighted -> Pquery.place_list pquery
+    | Unweighted -> [ Pquery.best_place criterion pquery ]
+  in
+  pair_dist_gen 
+    process_pcl 
+    (Kr_distance.pcl_pair_distance criterion)
+    p 
+    placerun1 
+    placerun2

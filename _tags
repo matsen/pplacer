@@ -1,4 +1,5 @@
 <common>: include
 <pplacer>: include
-<*.{byte,native,top,p.native}>: use_str, use_unix
+<*.{byte,native,top,p.native}>: use_str, use_unix, use_gsl, use_bigarray
 <**/*.ml>: warn_Z
+<**/normal_approx.ml>: use_gsl
