@@ -125,8 +125,4 @@ let list_onesided_pvalue l x =
       0 l)
     (List.length l)
 
-(* get from map, but return an empty list if not in map *)
-let get_from_list_intmap m id = 
-  if IntMap.mem id m then IntMap.find id m
-  else []
 

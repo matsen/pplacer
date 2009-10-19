@@ -119,7 +119,8 @@ let total_over_tree curried_edge_total
   grand_total /. (Itree.tree_length ref_tree)
 
 (* sort the placements along a given edge according to their location on
- * the edge. that way we can recur along this list. *)
+ * the edge in an increasing manner. that way we can recur along this list,
+ * moving towards the root. *)
 let sort_along_edge = 
   IntMap.map
     (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))

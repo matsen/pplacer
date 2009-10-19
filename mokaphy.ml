@@ -20,7 +20,7 @@ let prefs =
     n_samples = ref 100;
     histo = ref true;
     p_plot = ref true;
-    box_plot = ref true;
+    box_plot = ref false;
     p_exp = ref 1.;
     weighted = ref true;
   }
