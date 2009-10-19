@@ -48,6 +48,33 @@ let list_find_loc x l =
   in 
   aux 0 l
 
+
+(* given f and a list, apply f to all unordered pairs of the list.
+# list_iterpairs (Printf.printf "(%d,%d)\t") [1;2;3];;
+(1,2)   (1,3)   (2,3)   - : unit = ()
+ * *)
+let rec list_iterpairs f = function
+  | x::l -> List.iter (f x) l; list_iterpairs f l
+  | [] -> ()
+
+(* apply f to each pair in each pairing of the lists
+# list_list_iterpairs (Printf.printf "(%d,%d)\t") [[1;2];[3];[4;5]];;
+(1,3)   (2,3)   (1,4)   (1,5)   (2,4)   (2,5)   (3,4)   (3,5)   - : unit = ()
+* note that we don't get (1,2).
+*)
+let list_list_iterpairs f ll = 
+  list_iterpairs
+    (fun l1 l2 ->
+      List.iter 
+        (fun x -> List.iter (fun y -> f x y) l2)
+        l1)
+    ll
+
+(* get from map, but return an empty list if not in map *)
+let get_from_list_intmap id m = 
+  if IntMap.mem id m then IntMap.find id m
+  else []
+
 (*
 # let divbyk k x = x mod k = 0;;                                   
 val divbyk : int -> int -> bool = <fun>

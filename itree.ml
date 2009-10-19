@@ -27,6 +27,7 @@ let get_boot = get_an_info Itree_info.get_boot
 let get_bl = get_an_info Itree_info.get_bl
 
 let top_id t = Stree.top_id (get_stree t)
+let recur f_node f_leaf t = Stree.recur f_node f_leaf (get_stree t)
 
 (* copy the info from src at id over to dest *)
 let istree_copy_info ~dest ~src id = 

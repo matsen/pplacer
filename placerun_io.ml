@@ -32,9 +32,9 @@ let write_placed_map ch placed_map =
       List.iter (Pquery_io.write ch) npcl)
     placed_map
 
-let write_pq_list_by_best_loc criterion ch pq_list =
+let write_by_best_loc criterion ch placerun =
   let (unplaced_l, placed_map) = 
-    Pquery.make_map_by_best_loc criterion pq_list in
+    Placerun.make_map_by_best_loc criterion placerun in
   write_unplaced ch unplaced_l;
   write_placed_map ch placed_map
 
@@ -53,16 +53,16 @@ let to_file write_preamble placerun =
    * the bootstrap values, and at @ at the end of the taxon names *)
   (Itree_io.to_newick (Itree_io.make_numbered_tree ref_tree));
   Printf.fprintf ch "# reference tree: %s\n" (Itree_io.to_newick ref_tree);
-  write_pq_list_by_best_loc 
+  write_by_best_loc 
     Placement.ml_ratio 
     ch 
-    (Placerun.get_pqueries placerun);
+    placerun;
   close_out ch
 
 
 (* ***** READING ***** *)
 
-(* returns (ref_tree, nplacecoll list)
+(* returns a placerun
  * conventions for placement files: 
   * first line is 
 # pplacer [version] run ...

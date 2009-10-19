@@ -47,6 +47,8 @@ let () =
         (fun fname -> Placerun_io.parse_place_file fname)
         fnames
     in
+(* KILL *)
+    let _ = Distance_mat.of_place_file (List.hd fnames) in
     if !verbose then begin
       print_endline "combining placements...";
       List.iter2
