@@ -34,18 +34,11 @@ let contains_unplaced_queries p =
   try
     List.iter
       (fun pquery ->
-        Pquery_io.write stdout pquery;
-        Printf.printf "%d %b\n" (List.length (Pquery.place_list pquery)) (Pquery.is_placed pquery);
-        if not (Pquery.is_placed pquery) then
-          print_endline (Pquery.name pquery);
-          raise Exit)
+        if not (Pquery.is_placed pquery) then raise Exit)
       (get_pqueries p);
-    print_endline "no unplaced";
     false
   with
-  | Exit -> 
-    print_endline "unplaced";
-      true
+  | Exit -> true
 
 let combine name p1 p2 = 
   let ref_tree = get_ref_tree p1 in
