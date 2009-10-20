@@ -8,11 +8,15 @@
 open Fam_batteries
 open MapsSets
 
+let ml_cutoff_off_val = -.max_float
+
 let out_prefix = ref ""
 let verbose = ref false
-let ml_cutoff = ref 0.
+let ml_cutoff = ref ml_cutoff_off_val
 let re_sep_fname = ref ""
 let warn_multiple = ref true
+
+let is_on opt_value off_val = !opt_value <> off_val
 
 let parse_args () =
   let files  = ref [] in
@@ -34,6 +38,8 @@ let parse_args () =
     files := arg :: !files in
   let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; re_sep_fname_opt; warn_multiple_opt] in
   Arg.parse args anon_arg usage;
+  if is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0. then
+    failwith "negative cutoff value?";
   List.rev !files
 
     (* note return code of 0 is OK *)
@@ -98,21 +104,22 @@ let () =
           placerun
     in 
     (* "main" *)
-    if !re_sep_fname = "" then
-      if List.length fnames > 1 || !ml_cutoff <> 0. then
-        process_pqueries combined
-      else 
+    if !re_sep_fname = "" && List.length fnames <= 1 || !ml_cutoff <> 0. then
         print_endline "hmm... I don't have to split up by the ML ratio cutoff or regular expressions, and I am not combining any files. so i'm not doing anything."
     else begin
-      let re_split_list = 
-        Placeutil_core.read_re_split_file (!re_sep_fname) in
-      if List.length re_split_list <= 1 then
-        failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option."
-      else
-        List.iter
-          process_pqueries
-          (Placerun.multifilter_by_regex 
-            re_split_list
-            combined)
+      if !re_sep_fname = "" then
+        process_pqueries combined
+      else begin
+        let re_split_list = 
+          Placeutil_core.read_re_split_file (!re_sep_fname) in
+        if List.length re_split_list <= 1 then
+          failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option."
+        else
+          List.iter
+            process_pqueries
+            (Placerun.multifilter_by_regex 
+              re_split_list
+              combined)
+      end
     end
   end
