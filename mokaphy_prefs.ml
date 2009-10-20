@@ -13,14 +13,16 @@ type mokaphy_prefs =
     box_plot: bool ref;
     p_exp: float ref;
     weighted: bool ref;
+    matrix_check: bool ref;
   }
 
-let verbose    p = !(p.verbose)
-let shuffle    p = !(p.shuffle)
-let out_fname  p = !(p.out_fname)
-let n_samples  p = !(p.n_samples)
-let histo      p = !(p.histo)
-let p_plot     p = !(p.p_plot)
-let box_plot   p = !(p.box_plot)
-let p_exp      p = !(p.p_exp)
-let weighted   p = !(p.weighted)
+let verbose      p = !(p.verbose)
+let shuffle      p = !(p.shuffle)
+let out_fname    p = !(p.out_fname)
+let n_samples    p = !(p.n_samples)
+let histo        p = !(p.histo)
+let p_plot       p = !(p.p_plot)
+let box_plot     p = !(p.box_plot)
+let p_exp        p = !(p.p_exp)
+let weighted     p = !(p.weighted)
+let matrix_check p = !(p.matrix_check)

@@ -3,3 +3,5 @@
 <*.{byte,native,top,p.native}>: use_str, use_unix, use_gsl, use_bigarray
 <**/*.ml>: warn_Z
 <**/normal_approx.ml>: use_gsl
+<**/fam_gsl_matvec.ml>: use_gsl
+<**/matrix_check.ml>: use_gsl

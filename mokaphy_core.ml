@@ -1,17 +1,5 @@
 (* mokaphy v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *)
-
-(*
-for each edge, collect placements as a list of 
-(location along edge, vector showing which one it is)
-then take sums of these, and multiply them by length of segment
-
-keep in mind:
-at some point we may want to customize weight of the placements
-we may or may not want to have the pendant branch lengths
-we want to make a randomization procedure
-
 *)
 open Fam_batteries
 open MapsSets
@@ -63,6 +51,8 @@ let pair_core prefs criterion pr1 pr2 =
       weighting 
       p in
   let original_dist = calc_dist pr1 pr2 in
+  if Mokaphy_prefs.matrix_check prefs then
+    Matrix_check.check pr1 pr2;
   if Mokaphy_prefs.shuffle prefs then begin
     (* shuffle mode *)
     let shuffled_list = 

@@ -81,7 +81,7 @@ let normal_pair_approx n_samples ref_tree p pl1 pl2 =
         Kr_distance.total_along_edge 
           (to_xi_p p)
           (Itree.get_bl ref_tree id)
-          (Mokaphy_base.get_from_list_intmap n_map id)
+          (Base.get_from_list_intmap id n_map)
           update_norm_v
       (* make sure that the kr_v totals to zero *)
       and check_final_norm_v final_norm_v = 

@@ -18,11 +18,12 @@ let prefs =
     shuffle = ref true;
     out_fname = ref "";
     n_samples = ref 100;
-    histo = ref true;
-    p_plot = ref true;
+    histo = ref false;
+    p_plot = ref false;
     box_plot = ref false;
     p_exp = ref 1.;
     weighted = ref true;
+    matrix_check = ref false;
   }
 
 let parse_args () =
@@ -46,12 +47,14 @@ let parse_args () =
   and n_samples_opt = "-s", Arg.Set_int prefs.n_samples,
     ("Set how many samples to use for significance calculation (0 means \
     calculate distance only). Default is "^(string_of_int (n_samples prefs)))
+  and matrix_check_opt = "--matrixCheck", Arg.Set prefs.matrix_check,
+    "Run a check using the distance matrix formulation of the KR p=2 distance."
   in
   let usage =
     "mokaphy "^version_str^"\nmokaphy ex1.place ex2.place...\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [verbose_opt; out_fname_opt; normal_approx_opt; n_samples_opt; histo_opt; p_plot_opt; p_opt; box_plot_opt; unweighted_opt ] in
+  let args = [verbose_opt; out_fname_opt; normal_approx_opt; n_samples_opt; histo_opt; p_plot_opt; p_opt; box_plot_opt; unweighted_opt; matrix_check_opt; ] in
   Arg.parse args anon_arg usage;
   List.rev !files
 

@@ -148,7 +148,7 @@ let pcl_pair_distance criterion ref_tree p pcl1 pcl2 =
     total_along_edge 
       (exp_kr_diff p) 
       (Itree.get_bl ref_tree id) 
-      (Mokaphy_base.get_from_list_intmap all_kr_map id)
+      (Base.get_from_list_intmap id all_kr_map)
       Mokaphy_base.v_addto
   (* make sure that the kr_v totals to zero *)
   and check_final_kr final_kr_v = 

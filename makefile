@@ -33,8 +33,8 @@ version:
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
 	ocamlbuild $@
 
-runtop: $(RELEASE).top
-	ledit -x -h .toplevel_history ./$(RELEASE).top
+%.runtop: %.top
+	ledit -x -h .toplevel_history ./$*.top
 
 runcaml: 
 	ledit -x -h .toplevel_history ocaml
