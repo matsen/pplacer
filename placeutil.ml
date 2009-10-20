@@ -9,11 +9,12 @@ open Fam_batteries
 open MapsSets
 
 let ml_cutoff_off_val = -.max_float
+let re_sep_fname_off_val = ""
 
 let out_prefix = ref ""
 let verbose = ref false
 let ml_cutoff = ref ml_cutoff_off_val
-let re_sep_fname = ref ""
+let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
 
 let is_on opt_value off_val = !opt_value <> off_val
@@ -83,43 +84,40 @@ let () =
       Printf.fprintf ch "# made by placeutil run as: %s\n"
         (String.concat " " (Array.to_list Sys.argv))
     in
-    (* function to split up the queries by likelihood ratio and then write them *)
-    (* let _ = Distance_mat.of_place_file (List.hd fnames) in *)
-    let process_pqueries placerun = 
-      if !ml_cutoff <> 0. then begin
-        List.iter
-          (Placerun_io.to_file
-            (fun ch ->
-              write_call ch;
-              Printf.fprintf ch 
-                             "# ml split from %s" 
-                             (Placerun.get_name placerun)))
-          (Placerun.partition_by_ml 
-            (!ml_cutoff)
-            placerun)
-      end
+    let re_split_list = 
+      if is_on re_sep_fname re_sep_fname_off_val then
+        Placeutil_core.read_re_split_file (!re_sep_fname)
       else
-        Placerun_io.to_file
-          (fun ch -> write_call ch)
-          placerun
+        []
+    in
+    if List.length re_split_list = 1 then
+      failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option.";
+    (* let _ = Distance_mat.of_place_file (List.hd fnames) in *)
+    (* ways to split *)
+    let split_by_ml placerun = 
+      if is_on ml_cutoff ml_cutoff_off_val then
+        (Placerun.partition_by_ml (!ml_cutoff) placerun)
+      else [placerun]
     in 
+    let split_by_re placerun = 
+      if re_split_list <> [] then
+        (Placerun.multifilter_by_regex re_split_list placerun)
+      else
+        [placerun]
+    in
+    (* splitting *)
+    let flat_split split_fun placerun_list = 
+      List.flatten ((List.map split_fun) placerun_list)
+    in
+    let placerun_list = 
+      List.fold_right
+        (fun f a -> f a)
+        (List.map flat_split [split_by_ml; split_by_re])
+        [combined]
+    in
     (* "main" *)
-    if !re_sep_fname = "" && List.length fnames <= 1 || !ml_cutoff <> 0. then
-        print_endline "hmm... I don't have to split up by the ML ratio cutoff or regular expressions, and I am not combining any files. so i'm not doing anything."
-    else begin
-      if !re_sep_fname = "" then
-        process_pqueries combined
-      else begin
-        let re_split_list = 
-          Placeutil_core.read_re_split_file (!re_sep_fname) in
-        if List.length re_split_list <= 1 then
-          failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option."
-        else
-          List.iter
-            process_pqueries
-            (Placerun.multifilter_by_regex 
-              re_split_list
-              combined)
-      end
+    if List.length fnames <= 1 && List.length placerun_list <= 1 then
+        print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
+    else 
+      List.iter (Placerun_io.to_file write_call) placerun_list
     end
-  end
