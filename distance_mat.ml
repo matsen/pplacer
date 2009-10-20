@@ -6,12 +6,14 @@
 
 open MapsSets
 
+let ppr_dm = Uptri.ppr_uptri (Ppr.ppr_opt Ppr.ppr_gfloat)
 
 (* return 
  * (number of placements, 
  * a map from loc to (placement number, distal bl)) 
  * NOTE: due to an order of evaluation bug in map.ml, the order of the
- * numberings is not what I would have expected. in fact, it's reverse.
+ * numberings is not what I would have expected. in fact, it's reverse. it
+ * doesn't matter for functionality, but it does for checking in the toplevel.
  * *)
 let make_numbered_distal_map start_num placemap = 
   let num = ref start_num in
@@ -79,7 +81,9 @@ let of_numbered_distal_map t n_p ndm =
       List.iter
         (fun below_num -> 
           set_dm num below_num (distal_bl +. dist_to_here.(below_num)))
-      below
+        below;
+(* recur for the rest *)
+      process_edge below above;
   in
   let _ = 
 (* the downside to using the recur function is some clear code dup below *)
@@ -108,7 +112,9 @@ let of_numbered_distal_map t n_p ndm =
   Uptri.map
     (function 
       | Some x -> x
-      | None -> failwith "empty entry in distance matrix!")
+      | None -> 
+          Format.fprintf Format.std_formatter "%a@." ppr_dm dm;
+          failwith "empty entry in distance matrix!")
     dm
 
 let of_placement_list_map t pl_map =
@@ -130,4 +136,3 @@ let ml_best_of_placerun placerun =
 let ml_best_of_place_file fname = 
   ml_best_of_placerun (Placerun_io.parse_place_file fname)
 
-let ppr_dm = Uptri.ppr_uptri (Ppr.ppr_opt Ppr.ppr_gfloat)
