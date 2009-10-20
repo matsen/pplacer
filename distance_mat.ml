@@ -17,7 +17,7 @@ let make_numbered_distal_map start_num placemap =
   let num = ref start_num in
   let number_place p = 
     let result = (Placement.distal_bl p, !num) in
-    Printf.printf "loc %d has %d\n" (Placement.location p) (!num);
+    (* Printf.printf "loc %d has %d\n" (Placement.location p) (!num); *)
     incr num;
     result
   in

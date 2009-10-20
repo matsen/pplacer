@@ -3,7 +3,7 @@
  *
  * here we actually do the work.
  *
- * notes:
+ * note about baseball:
  * the h-stuff (hmap, etc.) is a way to cut down the number of locations that
  * we actually fully consider. we cut each edge in half, then evolve the distal
  * and proximal along those cut edges, then take the pairwise product of the

@@ -7,8 +7,8 @@ open MapsSets
 open Fam_batteries
 open Itree
 
-(* output *)
 
+(* output *)
 
 let print_tree_info tree = 
   let info = get_info tree in
@@ -59,35 +59,16 @@ let make_numbered_tree tree =
         (fun s -> s^"@")
         ((Itree.get_info tree).Itree_info.taxon))})
 
-  (* input *)
 
-(* count_n_occurrences :
-  * count the number of occurrences of c in str
-  * *)
+(* input *)
+
+(* count the number of occurrences of char c in str *)
 let count_n_occurrences c str = 
   let count = ref 0 in
   String.iter (fun d -> if c = d then incr count) str;
   !count
 
-let problematic_regexes =
-  List.map (fun (r, msg) -> (Str.regexp r, msg)) 
-  [
-    ".*;;", "double semicolon";
-    (* "([^(),]*REMOVE)", "degree two node" *)
-  ]
-
 let check_newick_str s = 
-  (*
-  List.iter (
-    fun (regex, msg) ->
-      try
-        let _ = Str.search_forward regex s 0 in 
-        (* found a problematic string *)
-        print_endline ("newick parsing warning: "^msg)
-      with
-      | Not_found -> ()
-  ) problematic_regexes;
-  *)
   let n_open = count_n_occurrences '(' s 
   and n_closed = count_n_occurrences ')' s in
   if n_open <> n_closed then

@@ -41,7 +41,6 @@ CAMLprim value triple_dot_c(value x_value, value y_value, value z_value, value s
 }
 
 
-
 CAMLprim value quad_dot_c(value x_value, value y_value, value z_value, value w_value, value size_value)
 {
   CAMLparam5(x_value, y_value, z_value, w_value, size_value);

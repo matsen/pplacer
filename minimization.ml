@@ -1,9 +1,5 @@
 (* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *)
-
-(* strategies for minimization: 
- * could take one step at a time, with some stepsize
  *
  * *)
 
@@ -70,11 +66,11 @@ let twoDBrent f startx leftx rightx starty lefty righty tolerance =
   let result = run startx starty 1 in
   result
 
-
+(* 
 let parab x y = 
   let xa = x -. 4. in
   let yb = y -. 4.5 in
   10. *. xa *. xa +. 20. *. yb *. yb *. yb *. yb
-
-
-(* let z = twoDBrent parab 1. 0. 10. 1. 0. 10. 0.001*)
+ *
+ *
+ * let z = twoDBrent parab 1. 0. 10. 1. 0. 10. 0.001*)

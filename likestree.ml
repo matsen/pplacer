@@ -1,10 +1,8 @@
 (* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  * 
- * the intent here is to calculate the distal and proximal likelihood vectors at
- * each site.
- * it's easier to do this one site at a time, and so our result is an array
- * (across sites) of maps from the location to the likelihood vector.
+ * calculate the distal and proximal likelihood vectors at each site of the
+ * reference tree.
  *)
 
 open MapsSets
@@ -14,11 +12,6 @@ open Stree
 
 let qmat_map_of_bl_map diagdq bl_map rate = 
   IntMap.map (fun bl -> diagdq#expWithT (bl *. rate)) bl_map
-
-(* is it a problem that we are making a map for each site then combining those
- * maps? we could certainly give a complete map, then just be setting entries in
- * it. 
- *)
 
 let calc_distal_like_map_col nstates tree aln_index_map qmat_map col_like =
   let v = Gsl_vector.create nstates in
@@ -120,7 +113,7 @@ let distoproximal_of_aln_and_itree seq_type diagdq align itree rate =
   calc_distoproximal nstates aln_index_map aln_like diagdq itree rate
 
 
-    (*
+(*
 let jc = diagdOfPhymlFile "JC.stats.txt"
 let it = Stree.ofNewick "((x:0.2,y:3e-2):0.05,z:1e-5):0."
 let mini = Alignment.readAlign "tiny.fasta"
