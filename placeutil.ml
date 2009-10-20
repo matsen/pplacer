@@ -47,8 +47,6 @@ let () =
         (fun fname -> Placerun_io.parse_place_file fname)
         fnames
     in
-(* KILL *)
-    let _ = Distance_mat.of_place_file (List.hd fnames) in
     if !verbose then begin
       print_endline "combining placements...";
       List.iter2
@@ -80,6 +78,7 @@ let () =
         (String.concat " " (Array.to_list Sys.argv))
     in
     (* function to split up the queries by likelihood ratio and then write them *)
+    (* let _ = Distance_mat.of_place_file (List.hd fnames) in *)
     let process_pqueries placerun = 
       if !ml_cutoff <> 0. then begin
         List.iter

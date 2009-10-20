@@ -13,7 +13,7 @@ open MapsSets
  * NOTE: due to an order of evaluation bug in map.ml, the order of the
  * numberings is not what I would have expected. in fact, it's reverse.
  * *)
-let make_numbered_placement_map start_num placemap = 
+let make_numbered_distal_map start_num placemap = 
   let num = ref start_num in
   let number_place p = 
     let result = (Placement.distal_bl p, !num) in
@@ -24,8 +24,8 @@ let make_numbered_placement_map start_num placemap =
   (!num, 
   IntMap.mapi 
     (* sort in order going towards the root *)
-    (fun i l ->
-      Printf.printf "%d\n" i;
+    (fun _ l ->
+      (* Printf.printf "%d\n" i; *)
       List.sort (fun (a1,_) (a2,_) -> compare a1 a2)
       (List.map number_place l)) 
     placemap)
@@ -37,7 +37,7 @@ let make_numbered_placement_map start_num placemap =
  * along the edge is that then we aren't adding a little snippet of edge to
  * dist_to_here each time we encounter a new placement. This might be important
  * with many placements. And it's just as easy. *)
-let of_numbered_placement_map t n_p npm = 
+let of_numbered_distal_map t n_p ndm = 
   let dist_to_here = Array.make n_p 0. in
   let add_to_dth i x = dist_to_here.(i) <- dist_to_here.(i) +. x in
   (* we are going to be carrying tokens up the tree, i.e. the collection of
@@ -73,7 +73,6 @@ let of_numbered_placement_map t n_p npm =
   (* record the distances from this one to others above on this edge *)
       List.iter 
         (fun (above_distal_bl,above_num) ->
-          Printf.printf "above is %d\n" above_num;
           set_dm num above_num (above_distal_bl -. distal_bl))
         above;
 (* record distances from this one to the ones below this edge's internal node *)
@@ -89,9 +88,8 @@ let of_numbered_placement_map t n_p npm =
       (fun id below -> 
         let bl = Itree.get_bl t id in
         (* the numbered placement distal_bls *)
-        let numbered_ps = Base.get_from_list_intmap id npm in
+        let numbered_ps = Base.get_from_list_intmap id ndm in
         let flat_below = List.flatten below in
-        Printf.printf "numbered_ps : %d\n" (List.length numbered_ps);
   (* order important: 
    * first record the distances between the taxa below this edge *)
         process_internal_node below;
@@ -102,19 +100,22 @@ let of_numbered_placement_map t n_p npm =
 (* --- leaves --- *)
       (fun id -> 
         let bl = Itree.get_bl t id in
-        let numbered_ps = Base.get_from_list_intmap id npm in
+        let numbered_ps = Base.get_from_list_intmap id ndm in
         process_edge [] numbered_ps;
         update_dth_and_accu bl [] numbered_ps)
       t
   in
-  dm
+  Uptri.map
+    (function 
+      | Some x -> x
+      | None -> failwith "empty entry in distance matrix!")
+    dm
 
 let of_placement_list_map t pl_map =
-  let (n_p, npm) = make_numbered_placement_map 0 pl_map in
-  of_numbered_placement_map t n_p npm
+  let (n_p, ndm) = make_numbered_distal_map 0 pl_map in
+  of_numbered_distal_map t n_p ndm
 
-let of_place_file fname = 
-  let placerun = Placerun_io.parse_place_file fname in
+let ml_best_of_placerun placerun = 
   let (_, pl_map) = 
     Placerun.make_map_by_best_loc 
       Placement.ml_ratio
@@ -125,5 +126,8 @@ let of_place_file fname =
     (IntMap.map 
       (List.map (Pquery.best_place Placement.ml_ratio))
       pl_map)
+
+let ml_best_of_place_file fname = 
+  ml_best_of_placerun (Placerun_io.parse_place_file fname)
 
 let ppr_dm = Uptri.ppr_uptri (Ppr.ppr_opt Ppr.ppr_gfloat)
