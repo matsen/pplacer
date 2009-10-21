@@ -82,21 +82,37 @@ let multifilter named_f_list placerun =
       (List.map snd named_f_list)
       (get_pqueries placerun))
 
+
+let cutoff_str x = Printf.sprintf "%02d" (int_of_float (100. *. x))
+
+let cutoff_filter make_name cutoff_fun =
+  multifilter 
+    [ (make_name "lt"), (fun pq -> not (cutoff_fun pq));
+      (make_name "ge"), cutoff_fun ]
+
 (* split up placeruns by ml ratio *)
 let partition_by_ml ml_cutoff placerun = 
-  let cutoff_str = 
-    Printf.sprintf "%02d" (int_of_float (100. *. ml_cutoff)) in
   let make_name which_str = 
-    (get_name placerun)^".L"^which_str^cutoff_str in
-  let geq_ml_cutoff cutoff pq = 
+    (get_name placerun)^".L"^which_str^(cutoff_str ml_cutoff) in
+  let geq_cutoff pq = 
     match Pquery.opt_best_place Placement.ml_ratio pq with
-    | Some p -> cutoff <= Placement.ml_ratio p
+    | Some p -> ml_cutoff <= Placement.ml_ratio p
     | None -> false
   in
-  multifilter 
-    [ (make_name "lt"), (fun pq -> not (geq_ml_cutoff ml_cutoff pq));
-      (make_name "ge"), (geq_ml_cutoff ml_cutoff)]
-    placerun
+  cutoff_filter make_name geq_cutoff placerun
+
+(* split up placeruns by bounce distance *)
+let partition_by_bounce bounce_cutoff placerun = 
+  let t = get_ref_tree placerun in
+  let make_name which_str = 
+    (get_name placerun)^".B"^which_str^(cutoff_str bounce_cutoff)
+  and tree_length = Itree.tree_length t in
+  let geq_cutoff pq = 
+    (Bounce.raw_bounce_of_pquery t pq) /. tree_length >= 
+      bounce_cutoff
+  in
+  cutoff_filter make_name geq_cutoff placerun
+
 
 let re_matches rex s = Str.string_match rex s 0
 

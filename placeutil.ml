@@ -7,11 +7,13 @@ open Fam_batteries
 open MapsSets
 
 let ml_cutoff_off_val = -.max_float
+let bounce_cutoff_off_val = -.max_float
 let re_sep_fname_off_val = ""
 
 let out_prefix = ref ""
 let verbose = ref false
 let ml_cutoff = ref ml_cutoff_off_val
+let bounce_cutoff = ref bounce_cutoff_off_val
 let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
 
@@ -25,6 +27,8 @@ let parse_args () =
     "Verbose output."
   and ml_cutoff_opt = "-l", Arg.Set_float ml_cutoff,
     "ML separation cutoff."
+  and bounce_cutoff_opt = "-b", Arg.Set_float bounce_cutoff,
+    "Bounce distance separation cutoff."
   and re_sep_fname_opt = "--reSepFile", Arg.Set_string re_sep_fname,
     "File name for the regular expression separation file."
   and warn_multiple_opt = "--noWarnMultipleRe", Arg.Clear warn_multiple,
@@ -32,10 +36,10 @@ let parse_args () =
   in
   let usage =
     "placeutil "^Placerun_io.version_str
-      ^"\nplaceutil ex1.place ex2.place ... combines place files, filters, then splits them back up again if you want.\n"
+      ^"\nplaceutil ex1.place ex2.place ... combines place files and splits them back up again.\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; re_sep_fname_opt; warn_multiple_opt] in
+  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; bounce_cutoff_opt; re_sep_fname_opt; warn_multiple_opt] in
   Arg.parse args anon_arg usage;
   if is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0. then
     failwith "negative cutoff value?";
@@ -97,6 +101,11 @@ let () =
         (Placerun.partition_by_ml (!ml_cutoff) placerun)
       else [placerun]
     in 
+    let split_by_bounce placerun = 
+      if is_on bounce_cutoff bounce_cutoff_off_val then
+        (Placerun.partition_by_bounce (!bounce_cutoff) placerun)
+      else [placerun]
+    in 
     let split_by_re placerun = 
       if re_split_list <> [] then
         (Placerun.multifilter_by_regex re_split_list placerun)
@@ -110,7 +119,9 @@ let () =
     let placerun_list = 
       List.fold_right
         (fun f a -> f a)
-        (List.map flat_split [split_by_ml; split_by_re])
+        (List.map 
+          flat_split 
+          [split_by_bounce; split_by_ml; split_by_re])
         [combined]
     in
     (* "main" *)

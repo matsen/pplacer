@@ -2,20 +2,26 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
  * calculate a pairwise distance matrix between placements.
+ * a "numbered distal map" is a map going from location to (distal_bl,
+ * placement_number) where placement_number is the number to be used in the
+ * distance matrix.
 *)
 
 open MapsSets
 
 let ppr_dm = Uptri.ppr_uptri (Ppr.ppr_opt Ppr.ppr_gfloat)
 
-(* return 
- * (number of placements, 
- * a map from loc to (placement number, distal bl)) 
+ (* sort in order going towards the root *)
+let sort_numbered_distal_map_by_distal = 
+ IntMap.map (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
+
+(* placemap should be a map from location to a list of placements at that
+ * location.
  * NOTE: due to an order of evaluation bug in map.ml, the order of the
  * numberings is not what I would have expected. in fact, it's reverse. it
  * doesn't matter for functionality, but it does for checking in the toplevel.
  * *)
-let make_numbered_distal_map start_num placemap = 
+let numbered_distal_map_of_placemap start_num placemap = 
   let num = ref start_num in
   let number_place p = 
     let result = (Placement.distal_bl p, !num) in
@@ -24,14 +30,18 @@ let make_numbered_distal_map start_num placemap =
     result
   in
   (!num, 
-  IntMap.mapi 
-    (* sort in order going towards the root *)
-    (fun _ l ->
-      (* Printf.printf "%d\n" i; *)
-      List.sort (fun (a1,_) (a2,_) -> compare a1 a2)
-      (List.map number_place l)) 
-    placemap)
+    sort_numbered_distal_map_by_distal 
+      (IntMap.map (List.map number_place) placemap))
 
+(* pa is an array of placements; the numbering comes from the array index *)
+let numbered_distal_map_of_place_arr pa = 
+  sort_numbered_distal_map_by_distal 
+    (IntMapFuns.of_pairlist_listly
+      (Array.to_list
+        (Array.mapi 
+          (fun i p -> 
+            (Placement.location p,
+              (Placement.distal_bl p,i))) pa)))
 
 (* here we actually do the work. i decided to process the placements along an
  * edge in three stages, as described in the definition below starting 
@@ -118,9 +128,16 @@ let of_numbered_distal_map t n_p ndm =
     dm
 
 let of_placement_list_map t pl_map =
-  let (n_p, ndm) = make_numbered_distal_map 0 pl_map in
+  let (n_p, ndm) = numbered_distal_map_of_placemap 0 pl_map in
   of_numbered_distal_map t n_p ndm
 
+let of_placement_array t pa = 
+  of_numbered_distal_map 
+    t 
+    (Array.length pa) 
+    (numbered_distal_map_of_place_arr pa)
+
+    (*
 let ml_best_of_placerun placerun = 
   let (_, pl_map) = 
     Placerun.make_map_by_best_loc 
@@ -135,4 +152,4 @@ let ml_best_of_placerun placerun =
 
 let ml_best_of_place_file fname = 
   ml_best_of_placerun (Placerun_io.parse_place_file fname)
-
+*)

@@ -150,12 +150,15 @@ let mask_to_list mask_arr a =
   !masked
 
 
-(* normalized_prob:
- * the L_1 norm of a float list
- *)
+(* the L_1 norm of a float list *)
 let normalized_prob fl = 
   let sum = List.fold_left ( +. ) 0. fl in
   List.map (fun x -> x /. sum) fl
+
+(* the L_1 norm of a float array *)
+let arr_normalized_prob fa = 
+  let sum = Array.fold_left ( +. ) 0. fa in
+  Array.map (fun x -> x /. sum) fa
 
 
 (* ll_normalized_prob :
