@@ -73,7 +73,7 @@ let parse_place_file place_fname =
   let reftree_rex = Str.regexp "^# reference tree: \\(.*\\)"
   and fastaname_rex = Str.regexp "^>"
   and str_match rex str = Str.string_match rex str 0
-  and name = chop_place_extension place_fname
+  and name = chop_place_extension (Filename.basename place_fname)
   in
   match 
   (* split up the file by the fastanames *)

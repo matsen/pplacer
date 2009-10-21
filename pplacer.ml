@@ -214,7 +214,8 @@ let () =
         let query_align = 
           Alignment.uppercase (Alignment.read_align query_aln_fname) in
         AlignmentFuns.check_for_repeats (Alignment.getNameArr query_align);
-        let query_bname = Filename.chop_extension query_aln_fname in
+        let query_bname = 
+          Filename.basename (Filename.chop_extension query_aln_fname) in
         let write_preamble out_ch = 
           Printf.fprintf out_ch 
             "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
