@@ -41,11 +41,11 @@ let parse_args () =
     files := arg :: !files in
   let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; bounce_cutoff_opt; re_sep_fname_opt; warn_multiple_opt] in
   Arg.parse args anon_arg usage;
-  if is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0. then
+  if (is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0.) ||
+     (is_on ml_cutoff bounce_cutoff && !bounce_cutoff < 0.) then
     failwith "negative cutoff value?";
   List.rev !files
 
-    (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
     let fnames = parse_args () in

@@ -83,7 +83,7 @@ let multifilter named_f_list placerun =
       (get_pqueries placerun))
 
 
-let cutoff_str x = Printf.sprintf "%02d" (int_of_float (100. *. x))
+let cutoff_str x = Printf.sprintf "%02d" (Base.round (100. *. x))
 
 let cutoff_filter make_name cutoff_fun =
   multifilter 

@@ -6,6 +6,8 @@
 
 open MapsSets
 
+let round x = int_of_float (floor (x +. 0.5))
+
 let date_time_str () = 
   let the_time = Unix.localtime (Unix.time ()) in
   Printf.sprintf "%02d/%02d/%d %02d:%02d:%02d" 
@@ -15,8 +17,6 @@ let date_time_str () =
     the_time.Unix.tm_hour 
     the_time.Unix.tm_min
     the_time.Unix.tm_sec
-
-
 
 let rec list_fold_left3 f accu l1 l2 l3 =
   match (l1, l2, l3) with
