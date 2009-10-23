@@ -6,36 +6,7 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-(* default values *)
-let prefs = 
-  { 
-    (* basics *)
-    tree_fname = ref "";
-    ref_align_fname = ref "";
-    stats_fname = ref "";
-    ref_dir = ref ".";
-    (* tree calc *)
-    start_pend = ref 0.5;
-    max_pend = ref 2.;
-    tolerance = ref 0.01;
-    calc_pp = ref false;
-    uniform_prior = ref false;
-    pp_rel_err = ref 0.01;
-    (* playing ball *)
-    max_strikes = ref 6;
-    strike_box = ref 3.;
-    max_pitches = ref 40;
-    (* model *)
-    emperical_freqs = ref true;
-    model_name = ref "LG";
-    gamma_n_cat = ref 1;
-    gamma_alpha = ref 1.;
-    (* reading and writing *)
-    verb_level = ref 1;
-    write_masked = ref false;
-    ratio_cutoff = ref 0.05;
-    only_write_best = ref false
-  }
+let prefs = Prefs.defaults () 
 
 (* these are the args that we re-parse after parsing the phyml stat file *)
 let model_name_opt = "-m", Arg.Set_string prefs.model_name,
@@ -216,11 +187,6 @@ let () =
         AlignmentFuns.check_for_repeats (Alignment.getNameArr query_align);
         let query_bname = 
           Filename.basename (Filename.chop_extension query_aln_fname) in
-        let write_preamble out_ch = 
-          Printf.fprintf out_ch 
-            "# invocation: %s\n" (String.concat " " (Array.to_list Sys.argv));
-          Prefs.write_prefs out_ch prefs;
-        in
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior
           else Core.Exponential_prior (
@@ -232,9 +198,10 @@ let () =
           Core.pplacer_core prefs prior
             model ref_align ref_tree query_align ~dmap ~pmap locs in
         Placerun_io.to_file
-          write_preamble
+          (String.concat " " (Array.to_list Sys.argv))
           (Placerun.make 
              ref_tree 
+             prefs
              query_bname 
              (Array.to_list results));
         if frc = 0 && ret_code = 1 then 0 else ret_code

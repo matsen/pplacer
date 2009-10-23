@@ -9,24 +9,28 @@ open MapsSets
 
 type placerun = 
   {
+    (* listed in increasing order of going-to-be-changed *)
     ref_tree  :  Itree.itree;
+    prefs     :  Prefs.prefs;
     name      :  string;
     pqueries  :  Pquery.pquery list;
-    (* put in the preferences ? *)
   }
 
-let make ref_tree name pqueries = 
+let make ref_tree prefs name pqueries = 
   {
     ref_tree  =  ref_tree;
+    prefs     =  prefs;
     name      =  name;
     pqueries  =  pqueries;
   }
 
 let get_ref_tree p = p.ref_tree
+let get_prefs p = p.prefs
 let get_name p = p.name
 let get_pqueries p = p.pqueries
 
 let set_ref_tree p ref_tree = {p with ref_tree = ref_tree}
+let set_prefs p prefs = {p with prefs = prefs}
 let set_name p name = {p with name = name}
 let set_pqueries p pqueries = {p with pqueries = pqueries}
 
@@ -44,18 +48,23 @@ let contains_unplaced_queries p =
   with
   | Exit -> true
 
-let combine name p1 p2 = 
-  let ref_tree = get_ref_tree p1 in
-  if ref_tree <> get_ref_tree p2 then
+let get_same get_thing thing_name pr1 pr2 = 
+  let x = get_thing pr1 in
+  if x = get_thing pr2 then x
+  else 
     failwith 
       (Printf.sprintf
-        "Reference trees for %s and %s not the same!"
-        (get_name p1)
-        (get_name p2));
-   make
-     ref_tree
-     name
-     ((get_pqueries p1) @ (get_pqueries p2))
+        "%ss for %s and %s not the same! Were these run with the same reference tree and model parameters (e.g. statistics files?)"
+        thing_name (get_name pr1) (get_name pr2))
+
+let combine name pr1 pr2 = 
+  let ref_tree = get_same get_ref_tree "Reference tree" pr1 pr2 in
+  let prefs = get_same get_prefs "Pref" pr1 pr2 in
+  make
+    ref_tree
+    prefs
+    name
+    ((get_pqueries pr1) @ (get_pqueries pr2))
 
 let warn_about_duplicate_names placerun = 
   let name_set = StringSet.empty in
@@ -74,16 +83,18 @@ let warn_about_duplicate_names placerun =
 (* for each entry of a (name, f) list, make a placerun with the given name and
  * the pqueries that satisfy f *)
 let multifilter named_f_list placerun = 
-  let ref_tree = get_ref_tree placerun in
+  let ref_tree = get_ref_tree placerun
+  and prefs = get_prefs placerun in
   List.map2
-    (make ref_tree)
+    (make ref_tree prefs)
     (List.map fst named_f_list)
     (ListFuns.multifilter
       (List.map snd named_f_list)
       (get_pqueries placerun))
 
 
-let cutoff_str x = Printf.sprintf "%02d" (Base.round (100. *. x))
+let cutoff_str x = Printf.sprintf "%1.2g" x
+(* let cutoff_str x = Printf.sprintf "%02d" (Base.round (100. *. x)) *)
 
 let cutoff_filter make_name cutoff_fun =
   multifilter 
@@ -113,18 +124,15 @@ let partition_by_bounce bounce_cutoff placerun =
   in
   cutoff_filter make_name geq_cutoff placerun
 
-
 let re_matches rex s = Str.string_match rex s 0
 
-(*
-let warn_about_multiple_matches rex_list strings = 
+let warn_about_multiple_matches rex_list placerun = 
   List.iter
     (fun s -> 
       Printf.printf "Warning: multiple match on %s\n" s)
     (Base.find_multiple_matches
       (List.map re_matches rex_list)
-      strings)
-*)
+      (List.map Pquery.name (get_pqueries placerun)))
 
 let multifilter_by_regex named_regex_list placerun = 
   multifilter 

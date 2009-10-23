@@ -16,6 +16,7 @@ let ml_cutoff = ref ml_cutoff_off_val
 let bounce_cutoff = ref bounce_cutoff_off_val
 let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
+let print_bounce = ref false
 
 let is_on opt_value off_val = !opt_value <> off_val
 
@@ -33,16 +34,18 @@ let parse_args () =
     "File name for the regular expression separation file."
   and warn_multiple_opt = "--noWarnMultipleRe", Arg.Clear warn_multiple,
     "Warn if a read name matches several regular expressions."
+  and print_bounce_opt = "--printBounce", Arg.Set print_bounce,
+    "Print out a table of bounce values for each placement."
   in
   let usage =
     "placeutil "^Placerun_io.version_str
       ^"\nplaceutil ex1.place ex2.place ... combines place files and splits them back up again.\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; bounce_cutoff_opt; re_sep_fname_opt; warn_multiple_opt] in
+  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; bounce_cutoff_opt; re_sep_fname_opt; warn_multiple_opt; print_bounce_opt ] in
   Arg.parse args anon_arg usage;
   if (is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0.) ||
-     (is_on ml_cutoff bounce_cutoff && !bounce_cutoff < 0.) then
+     (is_on bounce_cutoff bounce_cutoff_off_val && !bounce_cutoff < 0.) then
     failwith "negative cutoff value?";
   List.rev !files
 
@@ -82,10 +85,9 @@ let () =
         (Placerun.combine out_prefix_complete) 
         parsed
     in
-    let write_call ch = 
-      Printf.fprintf ch "# made by placeutil run as: %s\n"
-        (String.concat " " (Array.to_list Sys.argv))
-    in
+    if !print_bounce then begin
+      Placeutil_core.print_bounce_list combined
+    end;
     let re_split_list = 
       if is_on re_sep_fname re_sep_fname_off_val then
         Placeutil_core.read_re_split_file (!re_sep_fname)
@@ -94,21 +96,26 @@ let () =
     in
     if List.length re_split_list = 1 then
       failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option.";
-    (* let _ = Distance_mat.of_place_file (List.hd fnames) in *)
     (* ways to split *)
     let split_by_ml placerun = 
       if is_on ml_cutoff ml_cutoff_off_val then
-        (Placerun.partition_by_ml (!ml_cutoff) placerun)
+        Placerun.partition_by_ml (!ml_cutoff) placerun
       else [placerun]
     in 
     let split_by_bounce placerun = 
       if is_on bounce_cutoff bounce_cutoff_off_val then
-        (Placerun.partition_by_bounce (!bounce_cutoff) placerun)
+        Placerun.partition_by_bounce (!bounce_cutoff) placerun
       else [placerun]
     in 
     let split_by_re placerun = 
-      if re_split_list <> [] then
-        (Placerun.multifilter_by_regex re_split_list placerun)
+      if re_split_list <> [] then begin
+        if !warn_multiple then begin
+          Placerun.warn_about_multiple_matches 
+            (List.map snd re_split_list)
+            placerun;
+        end;
+        Placerun.multifilter_by_regex re_split_list placerun
+      end
       else
         [placerun]
     in
@@ -125,8 +132,11 @@ let () =
         [combined]
     in
     (* "main" *)
-    if List.length fnames <= 1 && List.length placerun_list <= 1 then
-        print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
+    let invocation = String.concat " " (Array.to_list Sys.argv) in
+    if List.length fnames <= 1 && 
+       List.length placerun_list <= 1 && 
+       not (!print_bounce) then
+      print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
     else 
-      List.iter (Placerun_io.to_file write_call) placerun_list
+      List.iter (Placerun_io.to_file invocation) placerun_list
     end

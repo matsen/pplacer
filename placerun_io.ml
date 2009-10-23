@@ -15,7 +15,7 @@ let chop_place_extension fname =
   if Filename.check_suffix fname ".place" then
     Filename.chop_extension fname
   else 
-    invalid_arg ("this program requires place files ending with .place suffix")
+    invalid_arg ("this program requires place files ending with .place suffix, unlike "^fname)
 
  
 (* ***** WRITING ***** *)
@@ -38,13 +38,14 @@ let write_by_best_loc criterion ch placerun =
   write_unplaced ch unplaced_l;
   write_placed_map ch placed_map
 
-let to_file write_preamble placerun = 
+let to_file invocation placerun = 
   Placerun.warn_about_duplicate_names placerun;
   let ch = open_out ((Placerun.get_name placerun)^".place") in
   let ref_tree = Placerun.get_ref_tree placerun in
   Printf.fprintf ch "# pplacer %s run, %s\n"        
     version_str (Base.date_time_str ());
-  write_preamble ch;
+  Printf.fprintf ch "# invocation: %s\n" invocation;
+  Prefs.write ch (Placerun.get_prefs placerun);
   Printf.fprintf ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
   if not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
     Printf.fprintf ch "# %s\n" bifurcation_warning;
@@ -71,6 +72,7 @@ let to_file write_preamble placerun =
 *)
 let parse_place_file place_fname = 
   let reftree_rex = Str.regexp "^# reference tree: \\(.*\\)"
+  and invocation_rex = Str.regexp "^# invocation:"
   and fastaname_rex = Str.regexp "^>"
   and str_match rex str = Str.string_match rex str 0
   and name = chop_place_extension (Filename.basename place_fname)
@@ -84,7 +86,7 @@ let parse_place_file place_fname =
   | [] -> failwith (place_fname^" empty place file!")
   | header::placements -> 
   (* parse the header, getting a ref tree *)
-  let ref_tree = 
+  let (prefs, ref_tree) = 
     try 
       match header with
       | [] -> failwith (place_fname^" no header!")
@@ -94,13 +96,19 @@ let parse_place_file place_fname =
         (fun file_vers ->
           if file_vers <> version_str then
             failwith "incompatible versions of pplacer-related program.");
-      (* get the ref tree *)
-          let tree_line,_ = 
-            File_parsing.find_beginning 
-              (str_match reftree_rex) 
-              header_tl 
-          in
-          Itree_io.of_newick_str (Str.matched_group 1 tree_line)
+            let _, post_invocation = 
+              File_parsing.find_beginning 
+                (str_match invocation_rex) 
+                header_tl in
+            let prefs = Prefs.read post_invocation in
+            (* get the ref tree *)
+            let tree_line,_ = 
+              File_parsing.find_beginning 
+                (str_match reftree_rex) 
+                post_invocation 
+            in
+            (prefs,
+              Itree_io.of_newick_str (Str.matched_group 1 tree_line))
       end
     with
     | Scanf.Scan_failure s ->
@@ -109,6 +117,7 @@ let parse_place_file place_fname =
   in
   Placerun.make
     ref_tree
+    prefs
     name
     (List.map 
       (fun pquery_lines ->
