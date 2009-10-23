@@ -52,9 +52,10 @@ let matrix_version pr1 pr2 =
   and plm2 = make_pl_map pr2 in
   let t = Placerun.get_ref_tree pr1 in
   assert(t = Placerun.get_ref_tree pr2);
-  let (n_p1, ndm1) = Distance_mat.make_numbered_distal_map 0 plm1 in
+  let (n_p1, ndm1) = 
+    Distance_mat.numbered_distal_map_of_placemap 0 plm1 in
   let (tot_n_p, ndm2) = 
-    Distance_mat.make_numbered_distal_map n_p1 plm2 
+    Distance_mat.numbered_distal_map_of_placemap n_p1 plm2 
   in
   let ndm_all = Base.combine_list_intmaps [ndm1; ndm2] in
   let d = 

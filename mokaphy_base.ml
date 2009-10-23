@@ -24,10 +24,10 @@ let ppr_pair_float_uptri ff fu =
 
 let write_named_float_uptri ch names u =
   String_matrix.write_named_padded ch names
-    (MatrixFuns.map 
-      (Printf.sprintf "%g")
-      (Uptri.to_matrix (fun _ -> 0.) u))
-
+    (MatrixFuns.init (Uptri.get_dim u) (Uptri.get_dim u)
+      (fun i j -> 
+        if i < j then (Printf.sprintf "%g" (Uptri.get u i j))
+        else ""))
 
 (* add v2 to v1 (which is modified in place) *)
 let v_addto v1 v2 = 
@@ -125,4 +125,23 @@ let list_onesided_pvalue l x =
       0 l)
     (List.length l)
 
+let mean l = 
+  (List.fold_left ( +. ) 0. l) /. (float_of_int (List.length l))
 
+let sq x = x *. x
+
+(*
+# let data = [2.;4.;4.;4.;5.;5.;7.;9.];;
+val data : float list = [2.; 4.; 4.; 4.; 5.; 5.; 7.; 9.]
+# mean_std_dev(data);;
+- : float * float = (5., 2.)
+*)
+let mean_std_dev l = 
+  let tot = ref 0. in
+  let mu = mean l in
+  List.iter
+    (fun x -> tot := !tot +. sq (x -. mu))
+    l;
+  (mu, sqrt(!tot /. (float_of_int (List.length l))))
+
+let std_dev l = snd(mean_std_dev l)

@@ -29,6 +29,7 @@ let make_shuffled_prs n_shuffles pr1 pr2 =
   let make_pr pr num pqueries = 
     Placerun.make
       (Placerun.get_ref_tree pr)
+      (Placerun.get_prefs pr)
       ((Placerun.get_name pr)^"_shuffle_"^(string_of_int num))
       pqueries
   in
@@ -64,6 +65,7 @@ let pair_core prefs criterion pr1 pr2 =
     in
     if Mokaphy_prefs.histo prefs then
       R_plots.write_histogram 
+        "histo"
         (Placerun.get_name pr1)
         (Placerun.get_name pr2)
         original_dist 
@@ -83,7 +85,17 @@ let pair_core prefs criterion pr1 pr2 =
       Normal_approx.resampled_distn 
         (Mokaphy_prefs.n_samples prefs) criterion p pr1 pr2
     in
+    (* here we shadow original_dist with one we know is unweighted *)
+    let original_dist = 
+      Placerun_distance.pair_dist 
+        criterion 
+        Placerun_distance.Unweighted 
+        p 
+        pr1 
+        pr2
+    in
     R_plots.write_histogram 
+      "normal"
       (Placerun.get_name pr1)
       (Placerun.get_name pr2)
       original_dist 

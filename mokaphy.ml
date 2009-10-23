@@ -17,7 +17,7 @@ let prefs =
     verbose = ref false;
     shuffle = ref true;
     out_fname = ref "";
-    n_samples = ref 100;
+    n_samples = ref 1000;
     histo = ref false;
     p_plot = ref false;
     box_plot = ref false;
@@ -38,9 +38,9 @@ let parse_args () =
     "The unweighted version simply uses the best placement. Default is weighted."
   and histo_opt = "--histo", Arg.Set prefs.histo,
     "write out a shuffle histogram data file for each pair."
-  and p_plot_opt = "--pPlot", Arg.Set prefs.p_plot,
+  and p_plot_opt = "--pplot", Arg.Set prefs.p_plot,
     "write out a plot of the distances when varying the p for the Z_p calculation"
-  and box_plot_opt = "--boxPlot", Arg.Set prefs.box_plot,
+  and box_plot_opt = "--box", Arg.Set prefs.box_plot,
     "write out a box and point plot showing the original sample distances compared to the shuffled ones."
   and out_fname_opt = "-o", Arg.Set_string prefs.out_fname,
     "Set the filename to write to. Otherwise write to stdout."
@@ -54,7 +54,7 @@ let parse_args () =
     "mokaphy "^version_str^"\nmokaphy ex1.place ex2.place...\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [verbose_opt; out_fname_opt; normal_approx_opt; n_samples_opt; histo_opt; p_plot_opt; p_opt; box_plot_opt; unweighted_opt; matrix_check_opt; ] in
+  let args = [verbose_opt; out_fname_opt; p_opt; n_samples_opt; unweighted_opt; normal_approx_opt; box_plot_opt; histo_opt; p_plot_opt; matrix_check_opt; ] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
