@@ -28,9 +28,9 @@ let write_loc_file fname_base unplaced_seqs placed_map =
 
 (* writing various tree formats *)
 
-let trees_to_file fname trees = 
+let trees_to_file tree_writer fname trees = 
   let out_ch = open_out fname in
-  List.iter (Itree_io.write_newick out_ch) trees;
+  List.iter (tree_writer out_ch) trees;
   close_out out_ch
 
 let make_zero_leaf bl taxon = 
@@ -61,8 +61,9 @@ let tog_tree ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_tog_file fname_base ref_tree placed_map = 
+let write_tog_file tree_writer fname_base ref_tree placed_map = 
   trees_to_file 
+    tree_writer
     (fname_base^".tog.tre") 
     [tog_tree ref_tree placed_map]
         
@@ -77,8 +78,10 @@ let num_tree bogus_bl ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_num_file bogus_bl fname_base ref_tree placed_map = 
+let write_num_file bogus_bl tree_writer fname_base ref_tree 
+                                                   placed_map = 
   trees_to_file 
+    tree_writer
     (fname_base^".num.tre") 
     [num_tree bogus_bl ref_tree placed_map]
 
@@ -101,8 +104,10 @@ let sing_tree ref_tree pquery =
                 (Placement.ml_ratio p)))))
         (Pquery.place_list pquery)))
 
-let write_sing_file fname_base ref_tree placed_pquery_list = 
+let write_sing_file tree_writer fname_base ref_tree 
+                                           placed_pquery_list = 
   trees_to_file 
+    tree_writer 
     (fname_base^".sing.tre") 
     (List.map (sing_tree ref_tree) placed_pquery_list)
 

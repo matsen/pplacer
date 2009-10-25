@@ -10,6 +10,7 @@ let singly = ref false
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
+and xml = ref false
 
 let parse_args () =
   let files  = ref [] in
@@ -20,22 +21,33 @@ let parse_args () =
    for visualization in the number and together trees."
   and show_node_numbers_opt = "--nodeNumbers", Arg.Set show_node_numbers,
    "Put the node numbers in where the bootstraps usually go."
+  and xml_opt = "--xml", Arg.Set xml,
+   "Write phyloXML with colors."
   in
   let usage =
     "placeviz "^Placerun_io.version_str^"\nplaceviz ex.place\n"
   and anon_arg arg =
     files := arg :: !files in
   let args = 
-    [singly_opt; bogus_bl_opt; show_node_numbers_opt] in
+    [singly_opt; bogus_bl_opt; show_node_numbers_opt; xml_opt] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
+let placement_decoration_list = 
+  [
+    Ftree.Color(255,0,0)
+  ]
      
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    let write_num_file = Placeviz_core.write_num_file !bogus_bl in
+    let tree_writer ch itree = 
+      if !xml then 
+        Phyloxml.write_ftree ch (Ftree.make itree Ftree.empty_decor)
+      else Itree_io.write_newick ch itree in
+    let write_num_file = 
+      Placeviz_core.write_num_file !bogus_bl tree_writer in
     let collect ret_code fname =
       try
         let frc = 0 in
@@ -62,10 +74,12 @@ let () =
         Placeviz_core.write_loc_file 
           fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
-        Placeviz_core.write_tog_file fname_base ref_tree placed_map;
+        Placeviz_core.write_tog_file 
+          tree_writer fname_base ref_tree placed_map;
         write_num_file fname_base ref_tree placed_map;
         if !singly then
           Placeviz_core.write_sing_file 
+            tree_writer
             fname_base 
             ref_tree 
             (List.filter Pquery.is_placed pqueries);
