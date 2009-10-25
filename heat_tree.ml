@@ -5,6 +5,8 @@
 open MapsSets
 open Fam_batteries
 
+
+(* color utils *)
 let unsigned_byte_of_heat heat = 
   assert(heat >= 0. || heat <= 1.);
   int_of_float(heat *. 255.)
@@ -14,6 +16,14 @@ let color_of_heat heat =
     Ftree.Color(unsigned_byte_of_heat heat, 0, 0)
   else
     Ftree.Color(0, 0, unsigned_byte_of_heat (-. heat))
+
+(* width utils *)
+let min_width = 0.5
+let max_width = 15.
+let width_diff = max_width -. min_width
+
+let width_of_heat heat = 
+  Ftree.Width(min_width +. width_diff *. heat)
 
 let color_map_aux criterion ref_tree p pcl1 pcl2 = 
   let kr_map = 
@@ -55,10 +65,15 @@ let color_map_aux criterion ref_tree p pcl1 pcl2 =
       (ListFuns.complete_fold_left max heat_only)
       (-. (ListFuns.complete_fold_left min heat_only))
   in
-  IntMapFuns.of_pairlist_listly
+  IntMapFuns.of_pairlist
     (List.map 
       (fun (id, raw_heat) -> 
-        (id, color_of_heat (raw_heat /. max_abs_heat)))
+        let scaled_heat = raw_heat /. max_abs_heat in
+        (id, 
+          [
+            color_of_heat scaled_heat;
+            width_of_heat (abs_float scaled_heat);
+          ]))
       heat_list) 
 
 let color_map criterion weighting p pr1 pr2 = 
