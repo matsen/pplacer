@@ -59,4 +59,7 @@ let recur f_node f_leaf tree =
   in
   aux tree
 
+(* for functions that don't treat leaves differently than a node with empty
+ * leaves. *)
+let recur_listly f = recur f (fun id -> f id []) 
 

@@ -117,3 +117,5 @@ let tree_list_to_file tl fname =
   List.iter (write_ftree ch) tl;
   write_string_list ch afterword;
   close_out ch
+  
+let tree_to_file t = tree_list_to_file [t]
