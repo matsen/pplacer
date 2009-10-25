@@ -3,65 +3,32 @@
  *
  * to do:
  * fix seeds
+ * figure out what to do with respect to normal approx / -s 0
+ *
+    if Mokaphy_prefs.n_samples prefs <= 0 then
+      prefs.shuffle := false;
  *)
 
 open Fam_batteries
 open MapsSets
 open Placement
-open Mokaphy_prefs
-
-let version_str = "v0.3"
-
-let prefs = 
-  { 
-    verbose = ref false;
-    shuffle = ref true;
-    out_fname = ref "";
-    n_samples = ref 1000;
-    histo = ref false;
-    p_plot = ref false;
-    box_plot = ref false;
-    p_exp = ref 1.;
-    weighted = ref true;
-    matrix_check = ref false;
-  }
 
 let parse_args () =
-  let files  = ref [] in
-  let verbose_opt = "-v", Arg.Set prefs.verbose,
-    "verbose running."
-  and normal_approx_opt = "--normalApprox", Arg.Clear prefs.shuffle,
-    "Use the normal approximation rather than shuffling. This disables the --pPlot and --boxPlot options."
-  and p_opt = "-p", Arg.Set_float prefs.p_exp,
-    "The value of p in Z_p."
-  and unweighted_opt = "--unweighted", Arg.Clear prefs.weighted,
-    "The unweighted version simply uses the best placement. Default is weighted."
-  and histo_opt = "--histo", Arg.Set prefs.histo,
-    "write out a shuffle histogram data file for each pair."
-  and p_plot_opt = "--pplot", Arg.Set prefs.p_plot,
-    "write out a plot of the distances when varying the p for the Z_p calculation"
-  and box_plot_opt = "--box", Arg.Set prefs.box_plot,
-    "write out a box and point plot showing the original sample distances compared to the shuffled ones."
-  and out_fname_opt = "-o", Arg.Set_string prefs.out_fname,
-    "Set the filename to write to. Otherwise write to stdout."
-  and n_samples_opt = "-s", Arg.Set_int prefs.n_samples,
-    ("Set how many samples to use for significance calculation (0 means \
-    calculate distance only). Default is "^(string_of_int (n_samples prefs)))
-  and matrix_check_opt = "--matrixCheck", Arg.Set prefs.matrix_check,
-    "Run a check using the distance matrix formulation of the KR p=2 distance."
+  let files  = ref [] 
+  and prefs = Mokaphy_prefs.defaults ()
   in
   let usage =
-    "mokaphy "^version_str^"\nmokaphy ex1.place ex2.place...\n"
+    "mokaphy "^Placerun_io.version_str^"\nmokaphy ex1.place ex2.place...\n"
   and anon_arg arg =
-    files := arg :: !files in
-  let args = [verbose_opt; out_fname_opt; p_opt; n_samples_opt; unweighted_opt; normal_approx_opt; box_plot_opt; histo_opt; p_plot_opt; matrix_check_opt; ] in
-  Arg.parse args anon_arg usage;
-  List.rev !files
+    files := arg :: !files
+  in
+  Arg.parse (Mokaphy_prefs.args prefs) anon_arg usage;
+  (List.rev !files, prefs)
 
      
 let () =
   if not !Sys.interactive then begin
-    let fnames = parse_args () in
+    let (fnames, prefs) = parse_args () in
     let parsed = 
       List.map 
         (fun fname -> Placerun_io.parse_place_file fname)
@@ -76,13 +43,13 @@ let () =
               " contains unplaced query sequences!"))
       parsed;
     let out_ch = 
-      if out_fname prefs = "" then stdout
-      else open_out (out_fname prefs)
+      if Mokaphy_prefs.out_fname prefs = "" then stdout
+      else open_out (Mokaphy_prefs.out_fname prefs)
     in
     Mokaphy_core.core
       prefs
       Placement.ml_ratio (* sorting criterion *)
       out_ch
       (Array.of_list parsed);
-    if out_fname prefs <> "" then close_out out_ch
+    if Mokaphy_prefs.out_fname prefs <> "" then close_out out_ch
   end

@@ -14,6 +14,7 @@ type mokaphy_prefs =
     p_exp: float ref;
     weighted: bool ref;
     matrix_check: bool ref;
+    heat_tree: bool ref;
   }
 
 let verbose      p = !(p.verbose)
@@ -26,3 +27,50 @@ let box_plot     p = !(p.box_plot)
 let p_exp        p = !(p.p_exp)
 let weighted     p = !(p.weighted)
 let matrix_check p = !(p.matrix_check)
+let heat_tree    p = !(p.heat_tree)
+
+
+(* defaults *)
+let defaults () = 
+  { 
+    verbose = ref false;
+    shuffle = ref true;
+    out_fname = ref "";
+    n_samples = ref 1000;
+    histo = ref false;
+    p_plot = ref false;
+    box_plot = ref false;
+    p_exp = ref 1.;
+    weighted = ref true;
+    matrix_check = ref false;
+    heat_tree = ref false;
+  }
+
+
+(* arguments *)
+let args prefs = [
+  "-v", Arg.Set prefs.verbose,
+  "verbose running.";
+  "--normal", Arg.Clear prefs.shuffle,
+  "Use the normal approximation rather than shuffling. This disables the --pPlot and --boxPlot options.";
+  "-p", Arg.Set_float prefs.p_exp,
+  "The value of p in Z_p.";
+  "--unweighted", Arg.Clear prefs.weighted,
+      "The unweighted version simply uses the best placement. Default is weighted.";
+  "--histo", Arg.Set prefs.histo,
+  "write out a shuffle histogram data file for each pair.";
+  "--pplot", Arg.Set prefs.p_plot,
+      "write out a plot of the distances when varying the p for the Z_p calculation";
+  "--box", Arg.Set prefs.box_plot,
+      "write out a box and point plot showing the original sample distances compared to the shuffled ones.";
+  "-o", Arg.Set_string prefs.out_fname,
+  "Set the filename to write to. Otherwise write to stdout.";
+  "-s", Arg.Set_int prefs.n_samples,
+      ("Set how many samples to use for significance calculation (0 means \
+      calculate distance only). Default is "^(string_of_int (n_samples prefs)));
+  "--matrix", Arg.Set prefs.matrix_check,
+      "Run a check using the distance matrix formulation of the KR p=2 distance.";
+  "--heat", Arg.Set prefs.heat_tree,
+  "Make a heat tree for each pair.";
+  ]
+

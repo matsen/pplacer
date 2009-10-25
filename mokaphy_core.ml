@@ -54,6 +54,8 @@ let pair_core prefs criterion pr1 pr2 =
   let original_dist = calc_dist pr1 pr2 in
   if Mokaphy_prefs.matrix_check prefs then
     Matrix_check.check pr1 pr2;
+  if Mokaphy_prefs.heat_tree prefs then
+    Heat_tree.write_heat_tree pr1 pr2;
   if Mokaphy_prefs.shuffle prefs then begin
     (* shuffle mode *)
     let shuffled_list = 
