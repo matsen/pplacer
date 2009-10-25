@@ -125,22 +125,22 @@ let sort_along_edge =
   IntMap.map
     (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
 
-(* get the KR distance between two placement collection lists *)
-let pcl_pair_distance criterion ref_tree p pcl1 pcl2 = 
+let make_kr_map criterion pcl1 pcl2 = 
   let int_inv x = 1. /. (float_of_int x) in
   (* these two may take arguments in the future *)
   let kr_v1 = [|int_inv (List.length pcl1); 0.|]
   and kr_v2 = [|0.; int_inv (List.length pcl2)|]
   in
   (* this map has all of the information needed to do the KR calculation *)
-  let all_kr_map = 
     sort_along_edge
       (IntMapFuns.of_pairlist_listly
         ((collect_kr_info criterion kr_v1 pcl1) @
          (collect_kr_info criterion kr_v2 pcl2)))
-  in
-  (* ppr_kr_info Format.std_formatter all_kr_map; Format.pp_print_newline Format.std_formatter ()
-  *)
+
+(* get the KR distance between two placement collection lists *)
+let pcl_pair_distance criterion ref_tree p pcl1 pcl2 = 
+  let kr_map = make_kr_map criterion pcl1 pcl2 in
+  (* ppr_kr_info Format.std_formatter kr_map; Format.pp_print_newline Format.std_formatter () *)
   (* total across all of the edges of the tree *)
   let starter_kr_v = [|0.; 0.|]
    in
@@ -148,7 +148,7 @@ let pcl_pair_distance criterion ref_tree p pcl1 pcl2 =
     total_along_edge 
       (exp_kr_diff p) 
       (Itree.get_bl ref_tree id) 
-      (Base.get_from_list_intmap id all_kr_map)
+      (Base.get_from_list_intmap id kr_map)
       Mokaphy_base.v_addto
   (* make sure that the kr_v totals to zero *)
   and check_final_kr final_kr_v = 

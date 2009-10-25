@@ -42,18 +42,17 @@ let pair_dist_gen process_pcl distance_fun p placerun1 placerun2 =
   | Kr_distance.Total_kr_not_zero tkr ->
       failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
 
+let process_pcl weighting criterion pquery = 
+  match weighting with
+  | Weighted -> Pquery.place_list pquery
+  | Unweighted -> [ Pquery.best_place criterion pquery ]
 
 (*
  * the code here will fail (nicely) if given unplaced sequences.
  *)
 let pair_dist criterion weighting p placerun1 placerun2 = 
-  let process_pcl pquery = 
-    match weighting with
-    | Weighted -> Pquery.place_list pquery
-    | Unweighted -> [ Pquery.best_place criterion pquery ]
-  in
   pair_dist_gen 
-    process_pcl 
+    (process_pcl weighting criterion)
     (Kr_distance.pcl_pair_distance criterion)
     p 
     placerun1 
