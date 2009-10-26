@@ -1,4 +1,5 @@
 RELEASE=mokaphy
+RDIRNAME=mokaphy_ocaml
 
 # http://www.gnu.org/software/automake/manual/make/Quick-Reference.html
 # $@ The file name of the target.
@@ -26,9 +27,6 @@ commit:
 	git commit -a && git push origin master
 	make -C /home/matsen/ocaml/common commit
 
-version:
-	mkvers *.ml *.mly *.mll
-
 %.top: %.byte
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
 	ocamlbuild $@
@@ -40,9 +38,9 @@ runcaml:
 	ledit -x -h .toplevel_history ocaml
 
 sync:
-	rsync -avz --delete complete_distr.sh *.ml *.mll *.mly *.c *.clib makefile _tags --exclude common bloom:erick/pplacer_ocaml/
+	rsync -avz --delete *.ml makefile _tags --exclude common bloom:erick/$(RDIRNAME)/
 	rsync -avz $(FAMOCAML)/common/*.ml bloom:erick/ocaml/common/
-	ssh bloom "cd erick/pplacer_ocaml && make $(RELEASE)"
+	ssh bloom "cd erick/$(RDIRNAME) && make $(RELEASE)"
 
 stoke_release:
 	make
@@ -51,14 +49,14 @@ stoke_release:
 
 bloom_release:
 	make sync
-	ssh bloom "cd erick/pplacer_ocaml && ./complete_distr.sh"
-	scp bloom:erick/pplacer_ocaml/*.tar.gz ../distributions
+	ssh bloom "cd erick/$(RDIRNAME) && ./complete_distr.sh"
+	scp bloom:erick/$(RDIRNAME)/*.tar.gz ../distributions
 
 gollum_release:
-	rsync -avz complete_distr.sh *.ml *.mll *.mly *.c _tags makefile --exclude myocamlbuild.ml gollum:pplacer_ocaml/
+	rsync -avz complete_distr.sh *.ml _tags makefile --exclude myocamlbuild.ml gollum:$(RDIRNAME)/
 	rsync -avz $(FAMOCAML)/common/*.ml gollum:ocaml/common/
-	ssh gollum "cd pplacer_ocaml && make $(MACRELEASE) && ./complete_distr.sh"
-	scp gollum:pplacer_ocaml/*.tar.gz ../distributions
+	ssh gollum "cd $(RDIRNAME) && make $(MACRELEASE) && ./complete_distr.sh"
+	scp gollum:$(RDIRNAME)/*.tar.gz ../distributions
 
 release:
 	#make stoke_release bloom_release gollum_release

@@ -128,8 +128,6 @@ let pair_core prefs criterion pr1 pr2 =
  * run pair_core for each unique pair 
  *)
 let core prefs criterion ch pr_arr = 
-  Printf.printf "calculating Z_%g distance...\n" 
-                (Mokaphy_prefs.p_exp prefs);
   let u = 
     Uptri.init
       (Array.length pr_arr)
@@ -141,9 +139,9 @@ let core prefs criterion ch pr_arr =
           pr_arr.(j))
   in
   let names = Array.map Placerun.get_name pr_arr in
-  Printf.fprintf ch "distances\n"; 
+  Printf.fprintf ch "Z_%g distances:\n" (Mokaphy_prefs.p_exp prefs);
   Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
   if Mokaphy_prefs.n_samples prefs > 0 then begin
-    Printf.fprintf ch "\np-values\n"; 
+    Printf.fprintf ch "Z_%g p-values:\n" (Mokaphy_prefs.p_exp prefs);
     Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
   end
