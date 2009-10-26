@@ -15,6 +15,7 @@ type mokaphy_prefs =
     weighted: bool ref;
     matrix_check: bool ref;
     heat_tree: bool ref;
+    rev_video: bool ref;
   }
 
 let verbose      p = !(p.verbose)
@@ -28,6 +29,7 @@ let p_exp        p = !(p.p_exp)
 let weighted     p = !(p.weighted)
 let matrix_check p = !(p.matrix_check)
 let heat_tree    p = !(p.heat_tree)
+let rev_video    p = !(p.rev_video)
 
 
 (* defaults *)
@@ -44,6 +46,7 @@ let defaults () =
     weighted = ref true;
     matrix_check = ref false;
     heat_tree = ref false;
+    rev_video = ref false;
   }
 
 
@@ -72,5 +75,7 @@ let args prefs = [
       "Run a check using the distance matrix formulation of the KR p=2 distance.";
   "--heat", Arg.Set prefs.heat_tree,
   "Make a heat tree for each pair.";
+  "--rv", Arg.Set prefs.rev_video,
+  "Use reverse video for the heat tree (i.e. zero being white).";
   ]
 

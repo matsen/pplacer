@@ -11,13 +11,17 @@ let unsigned_byte_of_heat heat =
   assert(heat >= 0. || heat <= 1.);
   int_of_float(heat *. 255.)
 
-let color_of_heat heat = 
+let color_of_heat rev_video heat = 
   let uheat = unsigned_byte_of_heat (abs_float heat) in
-  let rev_uheat = 255 - uheat in
-  if heat >= 0. then
-    Ftree.Color(255, rev_uheat, rev_uheat)
-  else
-    Ftree.Color(rev_uheat, rev_uheat, 255)
+  if rev_video then begin
+    let rev_uheat = 255 - uheat in
+    if heat >= 0. then Ftree.Color(255, rev_uheat, rev_uheat)
+    else Ftree.Color(rev_uheat, rev_uheat, 255)
+  end
+  else begin
+    if heat >= 0. then Ftree.Color(uheat, 0, 0)
+    else Ftree.Color(0, 0, uheat)
+  end
 
 (* width utils *)
 let min_width = 0.5
@@ -27,7 +31,7 @@ let width_diff = max_width -. min_width
 let width_of_heat heat = 
   Ftree.Width(min_width +. width_diff *. heat)
 
-let color_map_aux criterion ref_tree p pcl1 pcl2 = 
+let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 = 
   let kr_map = 
     IntMap.map
     (* we don't care about where we are along the edge *)
@@ -73,28 +77,30 @@ let color_map_aux criterion ref_tree p pcl1 pcl2 =
         let scaled_heat = raw_heat /. max_abs_heat in
         (id, 
           [
-            color_of_heat scaled_heat;
+            color_of_heat rev_video scaled_heat;
             width_of_heat (abs_float scaled_heat);
           ]))
       heat_list) 
 
-let color_map criterion weighting p pr1 pr2 = 
+let color_map rev_video criterion weighting p pr1 pr2 = 
   Placerun_distance.pair_dist_gen 
     (Placerun_distance.process_pcl weighting criterion)
-    (color_map_aux criterion)
+    (color_map_aux rev_video criterion)
     p 
     pr1 
     pr2
 
-let make_heat_tree criterion weighting p pr1 pr2 = 
+let make_heat_tree rev_video criterion weighting p pr1 pr2 = 
   let ref_tree = 
     Placerun.get_same Placerun.get_ref_tree "Reference tree" pr1 pr2
   in
-  Ftree.make ref_tree (color_map criterion weighting p pr1 pr2)
+  Ftree.make 
+    ref_tree 
+    (color_map rev_video criterion weighting p pr1 pr2)
 
-let write_heat_tree criterion weighting p pr1 pr2 =
+let write_heat_tree rev_video criterion weighting p pr1 pr2 =
   Phyloxml.tree_to_file
-    (make_heat_tree criterion weighting p pr1 pr2)
+    (make_heat_tree rev_video criterion weighting p pr1 pr2)
     (Printf.sprintf "%s.VS.%s.heat.xml"
       (Placerun.get_name pr1)
       (Placerun.get_name pr2))

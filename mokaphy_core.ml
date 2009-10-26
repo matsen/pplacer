@@ -55,7 +55,8 @@ let pair_core prefs criterion pr1 pr2 =
   if Mokaphy_prefs.matrix_check prefs then
     Matrix_check.check pr1 pr2;
   if Mokaphy_prefs.heat_tree prefs then
-    Heat_tree.write_heat_tree criterion weighting p pr1 pr2;
+    Heat_tree.write_heat_tree (Mokaphy_prefs.rev_video prefs) 
+      criterion weighting p pr1 pr2;
   if Mokaphy_prefs.shuffle prefs then begin
     (* shuffle mode *)
     let shuffled_list = 
