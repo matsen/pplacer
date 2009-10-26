@@ -55,7 +55,7 @@ let args prefs = [
   "-v", Arg.Set prefs.verbose,
   "verbose running.";
   "--normal", Arg.Clear prefs.shuffle,
-  "Use the normal approximation rather than shuffling. This disables the --pPlot and --boxPlot options.";
+  "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
   "-p", Arg.Set_float prefs.p_exp,
   "The value of p in Z_p.";
   "--unweighted", Arg.Clear prefs.weighted,

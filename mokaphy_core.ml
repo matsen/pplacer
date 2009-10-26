@@ -7,11 +7,13 @@ open MapsSets
 type result = 
   {
     distance : float;
-    p_value : float;
+    p_value : float option;
   }
 
 let get_distance r = r.distance
-let get_p_value r = r.p_value
+let get_p_value r = match r.p_value with
+  | Some p -> p
+  | None -> failwith "no p-value!"
 
 (* makes an array of shuffled placeruns (identity of being in first or second
  * one shuffled randomly, but number in each the same) *)
@@ -59,31 +61,40 @@ let pair_core prefs criterion pr1 pr2 =
       criterion weighting p pr1 pr2;
   if Mokaphy_prefs.shuffle prefs then begin
     (* shuffle mode *)
-    let shuffled_list = 
-      make_shuffled_prs (Mokaphy_prefs.n_samples prefs) pr1 pr2 in
-    let shuffled_dists = 
-      List.map 
-        (fun (spr1,spr2) -> calc_dist spr1 spr2)
-        shuffled_list
+    let p_value = 
+      if 0 < Mokaphy_prefs.n_samples prefs then begin
+        let shuffled_list = 
+          make_shuffled_prs (Mokaphy_prefs.n_samples prefs) pr1 pr2 in
+        let shuffled_dists = 
+          List.map 
+            (fun (spr1,spr2) -> calc_dist spr1 spr2)
+            shuffled_list
+        in
+        if Mokaphy_prefs.histo prefs then
+          R_plots.write_histogram 
+            "histo"
+            (Placerun.get_name pr1)
+            (Placerun.get_name pr2)
+            original_dist 
+            shuffled_dists 
+            p;
+        if Mokaphy_prefs.p_plot prefs then
+          R_plots.write_p_plot criterion weighting pr1 pr2;
+        if Mokaphy_prefs.box_plot prefs then
+          R_plots.write_boxplot criterion weighting pr1 pr2 shuffled_list;
+        Some
+          (Mokaphy_base.list_onesided_pvalue 
+            shuffled_dists 
+            original_dist)
+      end
+      else None
     in
-    if Mokaphy_prefs.histo prefs then
-      R_plots.write_histogram 
-        "histo"
-        (Placerun.get_name pr1)
-        (Placerun.get_name pr2)
-        original_dist 
-        shuffled_dists 
-        p;
-    if Mokaphy_prefs.p_plot prefs then
-      R_plots.write_p_plot criterion weighting pr1 pr2;
-    if Mokaphy_prefs.box_plot prefs then
-      R_plots.write_boxplot criterion weighting pr1 pr2 shuffled_list;
-    { distance = original_dist;
-      p_value = 
-        Mokaphy_base.list_onesided_pvalue shuffled_dists original_dist}
+    {distance = original_dist; p_value = p_value}
   end
   else begin
     (* normal approx mode *)
+    if 0 >= Mokaphy_prefs.n_samples prefs then
+      failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
     let resampled_dists = 
       Normal_approx.resampled_distn 
         (Mokaphy_prefs.n_samples prefs) criterion p pr1 pr2
@@ -106,7 +117,10 @@ let pair_core prefs criterion pr1 pr2 =
       p;
     { distance = original_dist;
       p_value = 
-        Mokaphy_base.list_onesided_pvalue resampled_dists original_dist}
+        Some 
+          (Mokaphy_base.list_onesided_pvalue 
+            resampled_dists 
+            original_dist)}
   end
 
 
@@ -129,5 +143,7 @@ let core prefs criterion ch pr_arr =
   let names = Array.map Placerun.get_name pr_arr in
   Printf.fprintf ch "distances\n"; 
   Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
-  Printf.fprintf ch "\np-values\n"; 
-  Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+  if Mokaphy_prefs.n_samples prefs > 0 then begin
+    Printf.fprintf ch "\np-values\n"; 
+    Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+  end
