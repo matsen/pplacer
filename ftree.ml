@@ -8,6 +8,7 @@ open MapsSets
 
 type decor_elt = 
   | Color of int * int * int
+  | Width of float
 
 type decor = decor_elt list IntMap.t
 

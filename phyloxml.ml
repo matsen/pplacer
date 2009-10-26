@@ -56,6 +56,8 @@ let write_decor_elt ch = function
         "color"
         ch
         ()
+  | Ftree.Width w -> 
+      write_float "width" ch w
 
 let write_ftree_decor_at ch t id = 
   List.iter 
