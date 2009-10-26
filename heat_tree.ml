@@ -5,31 +5,51 @@
 open MapsSets
 open Fam_batteries
 
+(* settings *)
+
+let gray = 5 (* the strength of gray *)
+let min_width = 0.5
+let max_width = 25.5
+
 
 (* color utils *)
-let unsigned_byte_of_heat heat = 
-  assert(heat >= 0. || heat <= 1.);
-  int_of_float(heat *. 255.)
 
-let color_of_heat rev_video heat = 
-  let uheat = unsigned_byte_of_heat (abs_float heat) in
+(* intesity is a float from 0 to 1 which is the absolute-valued and
+ * exponentiated version of the heat *)
+let intensity_of_heat ~p heat = (abs_float heat) ** p
+
+let assert_intensity intensity = 
+  assert(intensity >= 0. || intensity <= 1.)
+
+let fgray = float_of_int gray
+let gray_scale = 255. -. fgray
+
+let color_ubyte_of_intensity intensity = 
+  assert_intensity intensity;
+  int_of_float(fgray +. intensity *. gray_scale)
+
+let color_of_heat rev_video ?(p=1.) heat = 
+  let uheat = 
+    color_ubyte_of_intensity (intensity_of_heat ~p heat) in
   if rev_video then begin
-    let rev_uheat = 255 - uheat in
-    if heat >= 0. then Ftree.Color(255, rev_uheat, rev_uheat)
-    else Ftree.Color(rev_uheat, rev_uheat, 255)
+    let rev_uheat = 255 - uheat 
+    and rev_gray = 255 - gray
+    in
+    if heat >= 0. then Ftree.Color(rev_gray, rev_uheat, rev_uheat)
+    else Ftree.Color(rev_uheat, rev_gray, rev_uheat)
   end
   else begin
-    if heat >= 0. then Ftree.Color(uheat, 0, 0)
-    else Ftree.Color(0, 0, uheat)
+    if heat >= 0. then Ftree.Color(uheat, gray, gray)
+    else Ftree.Color(gray, uheat, gray)
   end
 
 (* width utils *)
-let min_width = 0.5
-let max_width = 15.
 let width_diff = max_width -. min_width
 
-let width_of_heat heat = 
-  Ftree.Width(min_width +. width_diff *. heat)
+let width_of_heat ?(p=1.) heat = 
+  let intensity = intensity_of_heat ~p heat in
+  assert_intensity intensity;
+  Ftree.Width(min_width +. width_diff *. intensity)
 
 let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 = 
   let kr_map = 
@@ -43,24 +63,22 @@ let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 =
       (Base.get_from_list_intmap id kr_map)
   in
   let heat_list = 
-    List.map
-      (fun (id, raw_heat) -> (id, raw_heat ** p))
-      (Stree.recur_listly
-        (fun id below ->
-          ((id,
-            sum_over_krs_of_id 
-              id 
+    Stree.recur_listly
+      (fun id below ->
+        ((id,
+          sum_over_krs_of_id 
+            id 
 (* the first item a list from a subtree is the total of all of the heat in that
- * subtree. therefore to get the total heat for our tree, we just have to total
- * all of those *)
-              (List.fold_left 
-                (fun accu -> function
-                  | (_,heat)::_ -> heat +. accu
-                  | [] -> accu)
-                0.
-                below)))
-          :: (List.flatten below))
-        (Itree.get_stree ref_tree))
+* subtree. therefore to get the total heat for our tree, we just have to total
+* all of those *)
+            (List.fold_left 
+              (fun accu -> function
+                | (_,heat)::_ -> heat +. accu
+                | [] -> accu)
+              0.
+              below)))
+        :: (List.flatten below))
+      (Itree.get_stree ref_tree)
   in
   let heat_only = List.map snd heat_list in
   let top_heat = List.hd heat_only in
@@ -77,8 +95,8 @@ let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 =
         let scaled_heat = raw_heat /. max_abs_heat in
         (id, 
           [
-            color_of_heat rev_video scaled_heat;
-            width_of_heat (abs_float scaled_heat);
+            color_of_heat rev_video ~p scaled_heat;
+            width_of_heat ~p scaled_heat;
           ]))
       heat_list) 
 
