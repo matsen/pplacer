@@ -12,10 +12,12 @@ let unsigned_byte_of_heat heat =
   int_of_float(heat *. 255.)
 
 let color_of_heat heat = 
+  let uheat = unsigned_byte_of_heat (abs_float heat) in
+  let rev_uheat = 255 - uheat in
   if heat >= 0. then
-    Ftree.Color(unsigned_byte_of_heat heat, 0, 0)
+    Ftree.Color(255, rev_uheat, rev_uheat)
   else
-    Ftree.Color(0, 0, unsigned_byte_of_heat (-. heat))
+    Ftree.Color(rev_uheat, rev_uheat, 255)
 
 (* width utils *)
 let min_width = 0.5
