@@ -6,18 +6,10 @@
 
 open MapsSets
 
-type decor_elt = 
-  | Color of int * int * int
-  | Width of float
-
-type decor = decor_elt list IntMap.t
-
-let empty_decor = IntMap.empty
-
 type ftree = 
   {
     itree : Itree.itree;
-    decor : decor;
+    decor : Decor.decor;
   }
 
 let make itree decor = { itree = itree; decor = decor; }
@@ -25,7 +17,7 @@ let make itree decor = { itree = itree; decor = decor; }
 let get_itree t = t.itree
 let get_decor t = t.decor
 
-let find_decor_elt_list t id = 
-  Base.get_from_list_intmap id (get_decor t)
+let get_decoration_list t id = 
+  Decor.get_decoration_list (get_decor t) id
 
 

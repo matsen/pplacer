@@ -32,11 +32,6 @@ let parse_args () =
     [singly_opt; bogus_bl_opt; show_node_numbers_opt; xml_opt] in
   Arg.parse args anon_arg usage;
   List.rev !files
-
-let placement_decoration_list = 
-  [
-    Ftree.Color(255,0,0)
-  ]
      
     (* note return code of 0 is OK *)
 let () =
@@ -44,7 +39,7 @@ let () =
     let files = parse_args () in if files = [] then exit 0;
     let tree_writer ch itree = 
       if !xml then 
-        Phyloxml.write_ftree ch (Ftree.make itree Ftree.empty_decor)
+        Phyloxml.write_ftree ch (Ftree.make itree Decor.empty_decor)
       else Itree_io.write_newick ch itree in
     let write_num_file = 
       Placeviz_core.write_num_file !bogus_bl tree_writer in

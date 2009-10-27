@@ -47,7 +47,7 @@ let write_string = write_tag (fun ch x -> Printf.fprintf ch "%s" x)
 
 (* writing tags *)
 let write_decor_elt ch = function
-  | Ftree.Color(r,g,b) -> 
+  | Decor.Color(r,g,b) -> 
       write_long_tag
         (fun _ _ -> 
           write_int "red" ch r;
@@ -56,13 +56,13 @@ let write_decor_elt ch = function
         "color"
         ch
         ()
-  | Ftree.Width w -> 
+  | Decor.Width w -> 
       write_float "width" ch w
 
 let write_ftree_decor_at ch t id = 
   List.iter 
     (write_decor_elt ch)
-    (Ftree.find_decor_elt_list t id)
+    (Ftree.get_decoration_list t id)
   
 let write_something_opt get_it write_it ch info id = 
   match get_it info id with
