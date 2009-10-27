@@ -11,27 +11,32 @@ and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
 and xml = ref false
+and fat_width = ref 100.
 
 let parse_args () =
   let files  = ref [] in
-  let singly_opt = "-s", Arg.Set singly,
-   "Single placement: make one tree for each placement."
-  and bogus_bl_opt = "--bogusBl", Arg.Set_float bogus_bl,
-   "Set the branch length for the subtrees/taxa which are collected together \
-   for visualization in the number and together trees."
-  and show_node_numbers_opt = "--nodeNumbers", Arg.Set show_node_numbers,
-   "Put the node numbers in where the bootstraps usually go."
-  and xml_opt = "--xml", Arg.Set xml,
-   "Write phyloXML with colors."
-  in
-  let usage =
+   let usage =
     "placeviz "^Placerun_io.version_str^"\nplaceviz ex.place\n"
   and anon_arg arg =
     files := arg :: !files in
   let args = 
-    [singly_opt; bogus_bl_opt; show_node_numbers_opt; xml_opt] in
+    [
+      "-s", Arg.Set singly,
+      "Single placement: make one tree for each placement.";
+      "--bogusBl", Arg.Set_float bogus_bl,
+      "Set the branch length for visualization in the number tree.";
+      "--nodeNumbers", Arg.Set show_node_numbers,
+      "Put the node numbers in where the bootstraps usually go.";
+      "--xml", Arg.Set xml,
+      "Write phyloXML with colors.";
+      "--fatWidth", Arg.Set_float fat_width,
+      "Set the total width for the fat tree.";
+  ] in
   Arg.parse args anon_arg usage;
   List.rev !files
+
+let criterion = Placement.ml_ratio
+let weighting = Mass_map.Weighted
      
     (* note return code of 0 is OK *)
 let () =
@@ -55,7 +60,7 @@ let () =
         let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc
-            Placement.ml_ratio
+            criterion
             pqueries
         in
         if unplaced_seqs <> [] then begin
@@ -72,6 +77,8 @@ let () =
         Placeviz_core.write_tog_file 
           tree_writer fname_base ref_tree placed_map;
         write_num_file fname_base ref_tree placed_map;
+        Placeviz_core.write_fat_tree 
+           weighting criterion !fat_width fname_base placerun;
         if !singly then
           Placeviz_core.write_sing_file 
             tree_writer
