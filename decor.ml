@@ -30,9 +30,9 @@ let gray_blue ~gray_level level =
   assert_ubytes [gray_level; level];
   Color(gray_level, gray_level, level)
 
-let red = gray_red 0
-let green = gray_green 0
-let blue = gray_blue 0
+let red = gray_red ~gray_level:0
+let green = gray_green ~gray_level:0
+let blue = gray_blue ~gray_level:0
 
 let rev_color = function
   | Color(r,g,b) -> 
