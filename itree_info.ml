@@ -51,13 +51,14 @@ let combine_node_infos n1 n2 =
    boot = IntMapFuns.union n1.boot n2.boot;
    bl = IntMapFuns.union n1.bl n2.bl}
 
+let boost_map by m = 
+  IntMap.fold (fun k v -> IntMap.add (k+by) v) m IntMap.empty
+
 (* increase all of the keys in the info map by "by" *)
 let boost by info = 
-  let boost_map m = 
-    IntMap.fold (fun k v -> IntMap.add (k+by) v) m IntMap.empty in
-  { taxon = boost_map info.taxon;
-  boot = boost_map info.boot;
-  bl = boost_map info.bl }
+  { taxon = boost_map by info.taxon;
+  boot = boost_map by info.boot;
+  bl = boost_map by info.bl }
 
 let copy_info ~dest ~src id = 
   add_info 

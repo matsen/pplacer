@@ -76,7 +76,7 @@ let boost by ist =
     (Stree.boost by (get_stree ist))
     (Itree_info.boost by (get_info ist))
 
-(* join two trees and add a branch length *)
+(* join two trees and add a branch length to the top *)
 let bl_join2 t1 t2 new_id bl = 
   let without_bl = join new_id [t1; t2] in
   { without_bl with
@@ -140,6 +140,7 @@ let add_subtrees_above avail_id tree where_subtree_list =
 
 (* we assume that all input trees have their maximal ids at the top *)
 let add_subtrees_by_map ref_tree where_subtree_map = 
+  (* here we keep track of the available ids so that we can use new ones *)
   let global_avail_id = ref (1+(top_id ref_tree)) in
   let globalized_id_add_subtrees_above tree where_subtree_list = 
     let new_id, result = 

@@ -142,3 +142,15 @@ let multifilter_by_regex named_regex_list placerun =
       named_regex_list)
     placerun
 
+let fail_if_unplaced_seqs placerun =
+  if contains_unplaced_queries placerun then begin
+    match partition_by_ml 0. placerun with
+    | unplaced::_ ->
+        failwith 
+          (Printf.sprintf 
+            "%s contains %d unplaced queries. Run \"placeutil -l 0 %s.place\" to split them off.\n"
+            (get_name placerun)
+            (List.length (get_pqueries unplaced))
+            (get_name placerun))
+    | [] -> assert(false)
+  end
