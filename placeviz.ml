@@ -32,6 +32,9 @@ let parse_args () =
     [singly_opt; bogus_bl_opt; show_node_numbers_opt; xml_opt] in
   Arg.parse args anon_arg usage;
   List.rev !files
+
+let criterion = Placement.ml_ratio
+let weighting = Mass_map.Weighted
      
     (* note return code of 0 is OK *)
 let () =
@@ -55,7 +58,7 @@ let () =
         let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc
-            Placement.ml_ratio
+            criterion
             pqueries
         in
         if unplaced_seqs <> [] then begin
@@ -72,6 +75,8 @@ let () =
         Placeviz_core.write_tog_file 
           tree_writer fname_base ref_tree placed_map;
         write_num_file fname_base ref_tree placed_map;
+        Placeviz_core.write_fat_tree 
+           weighting criterion fname_base placerun;
         if !singly then
           Placeviz_core.write_sing_file 
             tree_writer

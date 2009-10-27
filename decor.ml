@@ -14,18 +14,19 @@ type decor = decoration list IntMap.t
 
 let assert_ubyte i = assert(i >= 0 || i <= 255)
 let assert_ubytes = List.iter assert_ubyte
+let assert_unit_interval x = assert(0. <= x && x <= 1.)
 
 (* colors! *)
 (* gray_level is the amount of gray to put in *)
-let gray_red gray_level level = 
+let gray_red ~gray_level level = 
   assert_ubytes [gray_level; level];
   Color(level, gray_level, gray_level)
 
-let gray_green gray_level level = 
+let gray_green ~gray_level level = 
   assert_ubytes [gray_level; level];
   Color(gray_level, level, gray_level)
 
-let gray_blue gray_level level = 
+let gray_blue ~gray_level level = 
   assert_ubytes [gray_level; level];
   Color(gray_level, gray_level, level)
 
@@ -40,14 +41,19 @@ let rev_color = function
       Color(rev r, rev g, rev g)
   | Width _ as width -> width
 
+(* "color" is actually any map from an int to a decoration *)
+let scaled_color color ~min ~max x = 
+  assert_unit_interval x;
+  color (min + (int_of_float ((float_of_int (max - min)) *. x)))
+
 
 (* width *)
 
 let width w = Width w
 
-let scaled_width min_width max_width x = 
-  assert(0. <= x && x <= 1.);
-  width (min_width +. (max_width -. min_width) *. x)
+let scaled_width ~min ~max x = 
+  assert_unit_interval x;
+  width (min +. (max -. min) *. x)
 
 
 (* decors *)

@@ -112,3 +112,28 @@ let write_sing_file tree_writer fname_base ref_tree
     (List.map (sing_tree ref_tree) placed_pquery_list)
 
 
+(* fat trees *)
+
+let fat_tree weighting criterion pr =
+  let min_width = 0.0
+  and max_width = 40.
+  (* and gray_level = 8 *)
+  in
+  Ftree.make
+    (Placerun.get_ref_tree pr)
+    (IntMap.map
+      (fun mass -> 
+        [
+          Decor.scaled_width ~min:min_width ~max:max_width mass;
+          (*
+          Decor.scaled_color 
+            (Decor.gray_blue ~gray_level) ~min:0 ~max:255 mass;
+            *)
+        ])
+      (Mass_map.By_edge.of_placerun weighting criterion pr))
+
+let write_fat_tree weighting criterion fname_base placerun = 
+  Phyloxml.tree_to_file
+    (fat_tree weighting criterion placerun)
+    (fname_base^".fat.xml") 
+
