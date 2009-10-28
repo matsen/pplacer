@@ -59,6 +59,15 @@ let pair_core prefs criterion pr1 pr2 =
   if Mokaphy_prefs.heat_tree prefs then
     Heat_tree.write_heat_tree (Mokaphy_prefs.rev_video prefs) 
       criterion weighting p pr1 pr2;
+  if Mokaphy_prefs.dhisto prefs then begin
+    R_plots.write_dhisto pr1;
+    R_plots.write_dhisto pr2;
+    R_plots.write_dhisto 
+      (Placerun.combine
+        ((Placerun.get_name pr1)^"_and_"^(Placerun.get_name pr2))
+        pr1
+        pr2);
+  end;
   if Mokaphy_prefs.shuffle prefs then begin
     (* shuffle mode *)
     let p_value = 

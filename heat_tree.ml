@@ -35,12 +35,12 @@ let color_of_heat rev_video ?(p=1.) heat =
     let rev_uheat = 255 - uheat 
     and rev_gray = 255 - gray
     in
-    if heat >= 0. then Ftree.Color(rev_gray, rev_uheat, rev_uheat)
-    else Ftree.Color(rev_uheat, rev_gray, rev_uheat)
+    if heat >= 0. then Decor.Color(rev_gray, rev_uheat, rev_uheat)
+    else Decor.Color(rev_uheat, rev_gray, rev_uheat)
   end
   else begin
-    if heat >= 0. then Ftree.Color(uheat, gray, gray)
-    else Ftree.Color(gray, uheat, gray)
+    if heat >= 0. then Decor.Color(uheat, gray, gray)
+    else Decor.Color(gray, uheat, gray)
   end
 
 (* width utils *)
@@ -49,7 +49,7 @@ let width_diff = max_width -. min_width
 let width_of_heat ?(p=1.) heat = 
   let intensity = intensity_of_heat ~p heat in
   assert_intensity intensity;
-  Ftree.Width(min_width +. width_diff *. intensity)
+  Decor.Width(min_width +. width_diff *. intensity)
 
 let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 = 
   let kr_map = 

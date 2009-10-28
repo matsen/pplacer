@@ -3,6 +3,7 @@
  *)
 
 open Fam_batteries
+open MapsSets
 
 let int_div x y = (float_of_int x) /. (float_of_int y)
 
@@ -131,4 +132,39 @@ let write_boxplot criterion weighting pr1 pr2 shuffled_prs =
   close_out r_ch;
   ()
 
+
+let dists_between_ml_best_of_placerun placerun = 
+  let (_, pl_map) = 
+    Placerun.make_map_by_best_loc 
+      Placement.ml_ratio
+      placerun
+  in
+  Distance_mat.of_placement_list_map 
+    (Placerun.get_ref_tree placerun) 
+    (IntMap.map 
+      (List.map (Pquery.best_place Placement.ml_ratio))
+      pl_map)
+
+(* dhisto shows the histogram of pairwise distances *)
+let write_dhisto pr =
+  let name = Placerun.get_name pr in
+  let prefix = "dhisto."^name in
+  (* the data *)
+  let dm = dists_between_ml_best_of_placerun pr in
+  let dat_name = prefix^".dat" in
+  let dat_ch = open_out dat_name in
+  Array.iter 
+    (fun x -> Printf.fprintf dat_ch "%g\n" x) 
+    (Uptri.get_data dm);
+  close_out dat_ch;
+  (* the r file *)
+  let r_ch = open_out (prefix^".r") in
+  Printf.fprintf r_ch "pdf(\"%s\")\n" (prefix^".pdf");
+  Printf.fprintf r_ch "data <- read.table(\"%s\")\n" dat_name;
+  Printf.fprintf r_ch 
+    "hist(data[,1], main=\"%s\", xlab=\"within tree distance\")\n" 
+    name;
+  Printf.fprintf r_ch "dev.off()\n";
+  close_out r_ch;
+  ()
 

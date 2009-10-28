@@ -14,6 +14,7 @@ type mokaphy_prefs =
     p_exp: float ref;
     weighted: bool ref;
     matrix_check: bool ref;
+    dhisto: bool ref;
     heat_tree: bool ref;
     rev_video: bool ref;
   }
@@ -28,6 +29,7 @@ let box_plot     p = !(p.box_plot)
 let p_exp        p = !(p.p_exp)
 let weighted     p = !(p.weighted)
 let matrix_check p = !(p.matrix_check)
+let dhisto       p = !(p.dhisto)
 let heat_tree    p = !(p.heat_tree)
 let rev_video    p = !(p.rev_video)
 
@@ -45,6 +47,7 @@ let defaults () =
     p_exp = ref 1.;
     weighted = ref true;
     matrix_check = ref false;
+    dhisto = ref false;
     heat_tree = ref false;
     rev_video = ref false;
   }
@@ -73,6 +76,8 @@ let args prefs = [
       calculate distance only). Default is "^(string_of_int (n_samples prefs)));
   "--matrix", Arg.Set prefs.matrix_check,
       "Run a check using the distance matrix formulation of the KR p=2 distance.";
+  "--dhisto", Arg.Set prefs.dhisto,
+    "Make distance-by-distance histograms.";
   "--heat", Arg.Set prefs.heat_tree,
   "Make a heat tree for each pair.";
   "--rv", Arg.Set prefs.rev_video,

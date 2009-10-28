@@ -127,7 +127,6 @@ let sort_along_edge =
 
 let make_kr_map criterion pcl1 pcl2 = 
   let int_inv x = 1. /. (float_of_int x) in
-  (* these two may take arguments in the future *)
   let kr_v1 = [|int_inv (List.length pcl1); 0.|]
   and kr_v2 = [|0.; int_inv (List.length pcl2)|]
   in

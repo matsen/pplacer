@@ -13,6 +13,7 @@ open Fam_batteries
 open MapsSets
 open Placement
 
+
 let parse_args () =
   let files  = ref [] 
   and prefs = Mokaphy_prefs.defaults ()
@@ -24,7 +25,6 @@ let parse_args () =
   in
   Arg.parse (Mokaphy_prefs.args prefs) anon_arg usage;
   (List.rev !files, prefs)
-
      
 let () =
   if not !Sys.interactive then begin
@@ -35,13 +35,8 @@ let () =
         fnames
     in
     if parsed = [] then exit 0;
-    List.iter
-      (fun placerun -> 
-        if Placerun.contains_unplaced_queries placerun then
-          failwith 
-            ((Placerun.get_name placerun)^
-              " contains unplaced query sequences!"))
-      parsed;
+
+    List.iter Placerun.fail_if_unplaced_seqs parsed;
     let out_ch = 
       if Mokaphy_prefs.out_fname prefs = "" then stdout
       else open_out (Mokaphy_prefs.out_fname prefs)
