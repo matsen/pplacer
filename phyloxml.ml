@@ -86,17 +86,15 @@ let write_bl_opt =
     Itree_info.get_bl_opt 
     (write_float "branch_length")
 
-(*
 let write_boot_opt = 
   write_something_opt 
     Itree_info.get_boot_opt 
-    (write_float "branch_length")
-*)
+    (write_float "confidence")
 
 let write_info ch info id = 
   List.iter 
     (fun f -> f ch info id)
-    [ write_id; write_taxon_opt; write_bl_opt; ]
+    [ write_id; write_taxon_opt; write_bl_opt; write_boot_opt; ]
 
 let write_ftree ch ftree = 
   let itree = Ftree.get_itree ftree in
