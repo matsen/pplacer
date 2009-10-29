@@ -69,6 +69,13 @@ let write_something_opt get_it write_it ch info id =
   | Some x -> write_it ch x
   | None -> ()
 
+let write_id ch _ id = 
+  write_long_tag
+    (fun _ _ -> write_int "id" ch id)
+    "taxonomy"
+    ch
+    ()
+
 let write_taxon_opt = 
   write_something_opt 
     Itree_info.get_taxon_opt 
@@ -89,7 +96,7 @@ let write_boot_opt =
 let write_info ch info id = 
   List.iter 
     (fun f -> f ch info id)
-    [ write_taxon_opt; write_bl_opt; ]
+    [ write_id; write_taxon_opt; write_bl_opt; ]
 
 let write_ftree ch ftree = 
   let itree = Ftree.get_itree ftree in

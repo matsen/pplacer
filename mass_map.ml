@@ -66,7 +66,7 @@ module Indiv = struct
 end
 
 
-(* ByEdge just considers the weight per edge *)
+(* By_edge just considers the weight per edge *)
 module By_edge = struct
 
   let of_placerun weighting criterion pr = 

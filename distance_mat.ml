@@ -137,19 +137,3 @@ let of_placement_array t pa =
     (Array.length pa) 
     (numbered_distal_map_of_place_arr pa)
 
-    (*
-let ml_best_of_placerun placerun = 
-  let (_, pl_map) = 
-    Placerun.make_map_by_best_loc 
-      Placement.ml_ratio
-      placerun
-  in
-  of_placement_list_map 
-    (Placerun.get_ref_tree placerun) 
-    (IntMap.map 
-      (List.map (Pquery.best_place Placement.ml_ratio))
-      pl_map)
-
-let ml_best_of_place_file fname = 
-  ml_best_of_placerun (Placerun_io.parse_place_file fname)
-*)
