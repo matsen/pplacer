@@ -28,20 +28,11 @@ let color_ubyte_of_intensity intensity =
   assert_intensity intensity;
   int_of_float(fgray +. intensity *. gray_scale)
 
-let color_of_heat rev_video ?(p=1.) heat = 
+let color_of_heat ?(p=1.) heat = 
   let uheat = 
     color_ubyte_of_intensity (intensity_of_heat ~p heat) in
-  if rev_video then begin
-    let rev_uheat = 255 - uheat 
-    and rev_gray = 255 - gray
-    in
-    if heat >= 0. then Decor.Color(rev_gray, rev_uheat, rev_uheat)
-    else Decor.Color(rev_uheat, rev_gray, rev_uheat)
-  end
-  else begin
-    if heat >= 0. then Decor.Color(uheat, gray, gray)
-    else Decor.Color(gray, uheat, gray)
-  end
+  if heat >= 0. then Decor.gray_red ~gray_level:gray uheat
+  else Decor.gray_blue ~gray_level:gray uheat
 
 (* width utils *)
 let width_diff = max_width -. min_width
@@ -49,9 +40,9 @@ let width_diff = max_width -. min_width
 let width_of_heat ?(p=1.) heat = 
   let intensity = intensity_of_heat ~p heat in
   assert_intensity intensity;
-  Decor.Width(min_width +. width_diff *. intensity)
+  Decor.width (min_width +. width_diff *. intensity)
 
-let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 = 
+let color_map_aux criterion ref_tree p pcl1 pcl2 = 
   let kr_map = 
     IntMap.map
     (* we don't care about where we are along the edge *)
@@ -95,18 +86,22 @@ let color_map_aux rev_video criterion ref_tree p pcl1 pcl2 =
         let scaled_heat = raw_heat /. max_abs_heat in
         (id, 
           [
-            color_of_heat rev_video ~p scaled_heat;
+            color_of_heat ~p scaled_heat;
             width_of_heat ~p scaled_heat;
           ]))
       heat_list) 
 
 let color_map rev_video criterion weighting p pr1 pr2 = 
-  Placerun_distance.pair_dist_gen 
-    (Placerun_distance.process_pcl weighting criterion)
-    (color_map_aux rev_video criterion)
-    p 
-    pr1 
-    pr2
+  let result = 
+    Placerun_distance.pair_dist_gen 
+      (Placerun_distance.process_pcl weighting criterion)
+      (color_map_aux criterion)
+      p 
+      pr1 
+      pr2
+  in
+  if rev_video = false then result
+  else (IntMap.map (List.map Decor.rev_color) result)
 
 let make_heat_tree rev_video criterion weighting p pr1 pr2 = 
   let ref_tree = 
