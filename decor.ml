@@ -38,7 +38,7 @@ let rev_color = function
   | Color(r,g,b) -> 
       assert_ubytes [r;g;b];
       let rev x = 255 - x in
-      Color(rev r, rev g, rev g)
+      Color(rev r, rev g, rev b)
   | Width _ as width -> width
 
 (* "color" is actually any map from an int to a decoration *)
