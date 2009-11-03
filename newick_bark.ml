@@ -15,58 +15,62 @@ let ppr_opt_named name ppr_val ff = function
 class type newick_bark_type = 
   object
     method get_bl : float
-    method set_bl : float -> unit
+    method set_bl : float -> newick_bark_type
     method get_name : string
-    method set_name : string -> unit
+    method set_name : string -> newick_bark_type
     method get_boot : float
-    method set_boot : float -> unit
+    method set_boot : float -> newick_bark_type
     method ppr : Format.formatter -> unit
   end
  
 class newick_bark = 
   object (self)
-    val bl = ref None
-    val name = ref None
-    val boot = ref None
+    val bl = None
+    val name = None
+    val boot = None
 
     method get_bl = 
-      match !bl with
+      match bl with
       | Some x -> x
       | None -> raise No_bl
 
-    method set_bl (x:float) = 
-      bl := Some x
+    method set_bl (x:float) = {< bl = Some x >}
 
     method get_name = 
-      match !name with
+      match name with
       | Some s -> s
       | None -> raise No_name
 
-    method set_name s = 
-      name := Some s
+    method set_name s = {< name = Some s >}
 
     method get_boot =
-      match !boot with
+      match boot with
       | Some x -> x
       | None -> raise No_boot
       
-    method set_boot x =
-      boot := Some x
+    method set_boot x = {< boot = Some x >}
 
     method to_newick_string = 
-      (opt_val_to_string gstring_of_float !boot) ^ 
-      (opt_val_to_string (fun s -> s) !name) ^ 
-      (opt_val_to_string (fun x -> ":"^(gstring_of_float x)) !bl)
+      (opt_val_to_string gstring_of_float boot) ^ 
+      (opt_val_to_string (fun s -> s) name) ^ 
+      (opt_val_to_string (fun x -> ":"^(gstring_of_float x)) bl)
 
     method ppr_inners ff = 
-      ppr_opt_named "bl" Format.pp_print_float ff !bl;
-      ppr_opt_named "name" Format.pp_print_string ff !name;
-      ppr_opt_named "boot" Format.pp_print_float ff !boot
+      ppr_opt_named "bl" Format.pp_print_float ff bl;
+      ppr_opt_named "name" Format.pp_print_string ff name;
+      ppr_opt_named "boot" Format.pp_print_float ff boot
 
     method ppr ff = 
       Format.fprintf ff "{%a}" (fun ff () -> self#ppr_inners ff) ()
 
   end
+
+let find_loose id m = 
+  if Bark_map.mem id m then Bark_map.find id m
+  else new newick_bark
+
+let map_set_bl
+    add_bark ((Bark_map.find_loose !node_num !bark_map)#set_name name)
 
 let b = new newick_bark
 

@@ -20,14 +20,19 @@ let gtree stree (bark_map : Newick_bark.newick_bark_type IntMap.t) =
 
 let of_stree stree = {stree = stree; bark_map = IntMap.empty}
 
-let get_stree gt = gt.stree
-let get_bark_map gt = gt.bark_map
+let get_stree t = t.stree
+let get_bark_map t = t.bark_map
 let get_bark t id = IntMap.find id t.bark_map
 let get_bl t id = (get_bark t id)#get_bl
+let get_name t id = (get_bark t id)#get_name
+let get_boot t id = (get_bark t id)#get_boot
 
-let set_bark_map gt bark_map = {gt with bark_map = bark_map}
-let add_bark gt id bark = 
-  set_bark_map gt (Bark_map.add id bark (get_bark_map gt))
+let set_bark_map t bark_map = {t with bark_map = bark_map}
+let add_bark t id bark = 
+  set_bark_map t (Bark_map.add id bark (get_bark_map t))
+
+let set_bl t id bl = 
+  add_bark t id ((get_bark t id)#set_bl bl)
 
 (* stree related *)
 let top_id t = Stree.top_id (get_stree t)
@@ -94,6 +99,7 @@ let bark_join2 t1 t2 new_id bark =
  * we boost all of the indices in new_t by boost_by, and take the newly created
  * node to have id = 1 + top_id of boosted new_t.
  *)
+
 let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by = 
   let our_top_id = top_id t in
   let new_top_bl = (get_bl t our_top_id) -. where in
@@ -102,12 +108,11 @@ let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by =
   (* if new_top_bl is neg then highest_distal was bigger than top edge *)
   assert(new_top_bl >= 0.);
   bark_join2
-    {t with info = Itree_info.opt_add_info our_top_id ~bl:where t.info}
+    (set_bl t our_top_id where)
     boosted_new_t
     new_id
     (bark_of_bl new_top_bl)
 
-(*
 (* add a collection of subtrees given a list of (where, tree) pairs; where
  * describes where the tree should be glued in. pos is the "where" of the
  * previous lowest tree.
@@ -116,13 +121,14 @@ let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by =
  * starting from zero.
  * we assume that all ids >= avail_id are available.
  *)
-let add_subtrees_above avail_id tree where_subtree_list = 
+let add_subtrees_above bark_of_bl avail_id tree where_subtree_list = 
   let rec aux pos accu accu_id = function
     | [] -> accu_id, accu
     | (new_pos, new_t)::rest ->
         aux
           new_pos
           (add_boosted_subtree_above 
+            bark_of_bl
             ~t:accu 
             ~new_t 
             (new_pos -. pos)
@@ -140,12 +146,12 @@ let add_subtrees_above avail_id tree where_subtree_list =
       where_subtree_list)
 
 (* we assume that all input trees have their maximal ids at the top *)
-let add_subtrees_by_map ref_tree where_subtree_map = 
+let add_subtrees_by_map bark_of_bl ref_tree where_subtree_map = 
   (* here we keep track of the available ids so that we can use new ones *)
   let global_avail_id = ref (1+(top_id ref_tree)) in
   let globalized_id_add_subtrees_above tree where_subtree_list = 
     let new_id, result = 
-      add_subtrees_above !global_avail_id tree where_subtree_list in
+      add_subtrees_above bark_of_bl !global_avail_id tree where_subtree_list in
     global_avail_id := new_id;
     result
   in
@@ -153,7 +159,7 @@ let add_subtrees_by_map ref_tree where_subtree_map =
   let our_add_above below = 
     let id = top_id below in
     globalized_id_add_subtrees_above 
-      (istree_copy_info ~src:ref_tree ~dest:below id)
+      (copy_bark ~src:ref_tree ~dest:below id)
       (if IntMap.mem id where_subtree_map then 
         IntMap.find id where_subtree_map
       else [])
@@ -161,10 +167,7 @@ let add_subtrees_by_map ref_tree where_subtree_map =
   (* fill the stree skeleton back in with info and add subtrees *)
   let rec aux = function
     | Stree.Node(i, tL) -> our_add_above (join i (List.map aux tL))
-    | Stree.Leaf i -> 
-        our_add_above (itree (Stree.Leaf i) Itree_info.empty_info)
+    | Stree.Leaf i -> our_add_above (of_stree (Stree.Leaf i))
   in
   aux (get_stree ref_tree)
 
-
-*)

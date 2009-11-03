@@ -4,8 +4,10 @@
 
 open MapsSets
 
+let empty = IntMap.empty
 let add = IntMap.add
 let find = IntMap.find
+let mem = IntMap.mem
 let union = IntMapFuns.union
 
 let ppr ff bm = 
