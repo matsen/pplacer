@@ -2,19 +2,16 @@
 %token <string> LABEL REAL
 
 %start tree
-%type<Newick_bark.newick_bark_type Gtree.gtree> tree
+%type<Newick_bark.newick_bark Gtree.gtree> tree
 %%
 
 %{
   let node_num = ref (-1)
   let bark_map = ref Bark_map.empty
-  let add_bark b = bark_map := Bark_map.add !node_num b !bark_map
-  let add_name name = 
-    add_bark ((Bark_map.find_loose !node_num !bark_map)#set_name name)
-  let add_boot boot = 
-    add_bark ((Bark_map.find_loose !node_num !bark_map)#set_boot boot)
-  let add_bl bl = 
-    add_bark ((Bark_map.find_loose !node_num !bark_map)#set_bl bl)
+  let add_bark add_fun x = bark_map := add_fun !node_num x !bark_map
+  let add_bl = add_bark Newick_bark.map_set_bl
+  let add_name = add_bark Newick_bark.map_set_name
+  let add_boot = add_bark Newick_bark.map_set_boot
   let add_leaf leafname = 
     incr node_num;
     add_name leafname;

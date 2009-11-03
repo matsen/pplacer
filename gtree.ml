@@ -15,7 +15,7 @@ type 'a gtree =
   {stree : Stree.stree;
   bark_map : 'a IntMap.t}
 
-let gtree stree (bark_map : Newick_bark.newick_bark_type IntMap.t) = 
+let gtree stree bark_map = 
   {stree = stree; bark_map = bark_map}
 
 let of_stree stree = {stree = stree; bark_map = IntMap.empty}

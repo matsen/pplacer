@@ -11,17 +11,6 @@ let opt_val_to_string val_to_string = function
 let ppr_opt_named name ppr_val ff = function
   | Some x -> Format.fprintf ff " %s = %a;@," name ppr_val x
   | None -> ()
-
-class type newick_bark_type = 
-  object
-    method get_bl : float
-    method set_bl : float -> newick_bark_type
-    method get_name : string
-    method set_name : string -> newick_bark_type
-    method get_boot : float
-    method set_boot : float -> newick_bark_type
-    method ppr : Format.formatter -> unit
-  end
  
 class newick_bark = 
   object (self)
@@ -55,7 +44,7 @@ class newick_bark =
       (opt_val_to_string (fun s -> s) name) ^ 
       (opt_val_to_string (fun x -> ":"^(gstring_of_float x)) bl)
 
-    method ppr_inners ff = 
+    method private ppr_inners ff = 
       ppr_opt_named "bl" Format.pp_print_float ff bl;
       ppr_opt_named "name" Format.pp_print_string ff name;
       ppr_opt_named "boot" Format.pp_print_float ff boot
@@ -65,16 +54,15 @@ class newick_bark =
 
   end
 
-let find_loose id m = 
+let map_find_loose id m = 
   if Bark_map.mem id m then Bark_map.find id m
   else new newick_bark
 
-let map_set_bl
-    add_bark ((Bark_map.find_loose !node_num !bark_map)#set_name name)
+let map_set_bl id bl m = 
+  Bark_map.add id ((map_find_loose id m)#set_bl bl) m
 
-let b = new newick_bark
+let map_set_name id name m = 
+  Bark_map.add id ((map_find_loose id m)#set_name name) m
 
-let ppr_newick_bark ff nb = 
-  Format.fprintf ff "%s" (nb#to_newick_string)
-
-
+let map_set_boot id boot m = 
+  Bark_map.add id ((map_find_loose id m)#set_boot boot) m
