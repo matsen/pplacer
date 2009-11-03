@@ -119,7 +119,7 @@ let () =
     (* load ref tree and alignment *)
     let ref_tree = match tree_fname prefs with
     | s when s = "" -> failwith "please specify a reference tree.";
-    | s -> Itree_io.of_newick_file (ref_dir_complete^s)
+    | s -> Newick.of_file (ref_dir_complete^s)
     and ref_align = match ref_align_fname prefs with
     | s when s = "" -> failwith "please specify a reference alignment."
     | s -> 
@@ -127,7 +127,7 @@ let () =
           (Alignment.read_align (ref_dir_complete^s))
     in
     if (verb_level prefs) > 0 && 
-       not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
+       not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
          print_endline Placerun_io.bifurcation_warning;
     if (verb_level prefs) > 1 then begin
       print_endline "found in reference alignment: ";
@@ -161,7 +161,7 @@ let () =
                   (Gamma.discrete_gamma 
                     (gamma_n_cat prefs) (gamma_alpha prefs)) in
     (* find all the tree locations *)
-    let all_locs = IntMapFuns.keys ref_tree.Itree.info.Itree_info.bl in
+    let all_locs = IntMapFuns.keys (Gtree.get_bark_map ref_tree) in
     assert(all_locs <> []);
     (* warning: only good if locations are as above. *)
     let locs = ListFuns.remove_last all_locs in
@@ -173,7 +173,7 @@ let () =
       flush_all ()
     end;
     let (dmap, pmap) = 
-      GlvIntMap.dp_of_data model ref_align ref_tree locs in
+      Glv_int_map.dp_of_data model ref_align ref_tree locs in
     if (verb_level prefs) >= 1 then
       print_endline "done.";
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
@@ -191,8 +191,8 @@ let () =
           if uniform_prior prefs then Core.Uniform_prior
           else Core.Exponential_prior (
             (* exponential with mean = average branch length *)
-            (Itree.tree_length ref_tree) /. 
-              (float_of_int (Stree.n_edges ref_tree.Itree.stree))) 
+            (Gtree.tree_length ref_tree) /. 
+              (float_of_int (Gtree.n_edges ref_tree))) 
         in
         let results = 
           Core.pplacer_core prefs prior

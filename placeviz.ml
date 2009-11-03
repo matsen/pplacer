@@ -42,10 +42,11 @@ let weighting = Mass_map.Weighted
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    let tree_writer ch itree = 
+    let tree_writer ch t = 
+      (*
       if !xml then 
         Phyloxml.write_ftree ch (Ftree.make itree Decor.empty_decor)
-      else Itree_io.write_newick ch itree in
+      else *) Newick.write ch t in
     let write_num_file = 
       Placeviz_core.write_num_file !bogus_bl tree_writer in
     let collect ret_code fname =
@@ -53,10 +54,7 @@ let () =
         let frc = 0 in
         let placerun = 
           Placerun_io.parse_place_file fname in
-        let pre_ref_tree = Placerun.get_ref_tree placerun in
-        let ref_tree = 
-          if !show_node_numbers then Itree.make_boot_node_num pre_ref_tree
-          else pre_ref_tree in
+        let ref_tree = Placerun.get_ref_tree placerun in
         let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc

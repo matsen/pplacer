@@ -13,6 +13,7 @@ dispatch begin function
   | After_rules ->
       (* custom: incorporate libraries into bytecode *)
       flag ["link"; "ocaml"; "byte"] (A"-custom");
+      (* flag ["link"; "ocaml"; "byte"] (S[A"-custom"; A"-g"]); *)
       (* link with libpplacercside given use_pplacer tag *)
       flag ["link"; "ocaml"; "use_pplacer"]
         (S[A"-cclib"; A"-lpplacercside"; A"-cclib"; A"-L.";]);

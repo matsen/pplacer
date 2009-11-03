@@ -7,10 +7,10 @@
 open Fam_batteries
 open MapsSets
 
-type placerun = 
+type 'a placerun = 
   {
     (* listed in increasing order of going-to-be-changed *)
-    ref_tree  :  Itree.itree;
+    ref_tree  :  'a Gtree.gtree;
     prefs     :  Prefs.prefs;
     name      :  string;
     pqueries  :  Pquery.pquery list;
@@ -117,7 +117,7 @@ let partition_by_bounce bounce_cutoff placerun =
   let t = get_ref_tree placerun in
   let make_name which_str = 
     (get_name placerun)^".B"^which_str^(cutoff_str bounce_cutoff)
-  and tree_length = Itree.tree_length t in
+  and tree_length = Gtree.tree_length t in
   let geq_cutoff pq = 
     (Bounce.raw_bounce_of_pquery t pq) /. tree_length >= 
       bounce_cutoff

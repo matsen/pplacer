@@ -28,11 +28,11 @@ type prior = Uniform_prior | Exponential_prior of float
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
-      prefs prior model ref_align istree 
+      prefs prior model ref_align gtree 
       query_align ~dmap ~pmap locs = 
   let seq_type = Model.seq_type model in
   let half_evolve_glv_map loc g = 
-    Glv.evolve model g ((Itree.get_bl istree loc) /. 2.) in
+    Glv.evolve model g ((Gtree.get_bl gtree loc) /. 2.) in
   if (verb_level prefs) >= 1 then begin
     print_string "Preparing the edges for baseball... ";
     flush_all ()
@@ -86,10 +86,10 @@ let pplacer_core
           (query_name^".mask.fasta");
      (* now we can mask the rgma, and the glv map we will use in three_tax *) 
       let curr_time = Sys.time () in
-      let d_masked_map = GlvIntMap.mask mask_arr dmap 
-      and p_masked_map = GlvIntMap.mask mask_arr pmap 
-      and half_d_maskd = GlvIntMap.mask mask_arr halfd 
-      and half_p_maskd = GlvIntMap.mask mask_arr halfp 
+      let d_masked_map = Glv_int_map.mask mask_arr dmap 
+      and p_masked_map = Glv_int_map.mask mask_arr pmap 
+      and half_d_maskd = Glv_int_map.mask mask_arr halfd 
+      and half_p_maskd = Glv_int_map.mask mask_arr halfp 
       in
       if (verb_level prefs) >= 2 then Printf.printf "masking took\t%g\n" ((Sys.time ()) -. curr_time);
       (* make our edges.
@@ -133,7 +133,7 @@ let pplacer_core
       in
       (* prepare_tt: set tt up for loc. side effect! *)
       let prepare_tt loc = 
-        let cut_bl = Itree.get_bl istree loc in
+        let cut_bl = Gtree.get_bl gtree loc in
         (* this is just to factor out setting up the prox and dist edges
          * and setting their branch lengths to half the cut branch length *)
         let set_edge edge glv_map = 

@@ -33,17 +33,23 @@ let trees_to_file tree_writer fname trees =
   List.iter (tree_writer out_ch) trees;
   close_out out_ch
 
-let make_zero_leaf bl taxon = 
-  Itree.itree 
+let make_zero_leaf bl name = 
+  Gtree.gtree 
     (Stree.leaf 0)
-    (Itree_info.opt_add_info 0 ~bl ~taxon Itree_info.empty_info)
+    (IntMap.add 
+      0 
+      (new Newick_bark.newick_bark ~bl ~name ())
+      IntMap.empty)
+
+let newick_bark_of_bl bl = new Newick_bark.newick_bark ~bl ()
 
 (* given a function that takes a location and a list of somethings and returns a
  * (where, tree) list for that location, make a tree containing those extra
  * subtrees given a something map
  *)
 let tree_by_map f ref_tree placed_map = 
-  Itree.add_subtrees_by_map
+  Gtree.add_subtrees_by_map
+    newick_bark_of_bl
     ref_tree
     (IntMap.mapi f placed_map)
 
@@ -71,7 +77,7 @@ let write_tog_file tree_writer fname_base ref_tree placed_map =
 let num_tree bogus_bl ref_tree placed_map = 
   tree_by_map
     (fun loc pqueries ->
-      [(Itree.get_bl ref_tree loc,
+      [(Gtree.get_bl ref_tree loc,
       make_zero_leaf 
         bogus_bl
         (Printf.sprintf "%d_at_%d" (List.length pqueries) loc))])
@@ -88,7 +94,8 @@ let write_num_file bogus_bl tree_writer fname_base ref_tree
 (* sing trees *)
 let sing_tree ref_tree pquery = 
   let pqname = Pquery.name pquery in
-  Itree.add_subtrees_by_map
+  Gtree.add_subtrees_by_map
+    newick_bark_of_bl
     ref_tree
     (IntMapFuns.of_pairlist_listly 
       (ListFuns.mapi
@@ -112,12 +119,13 @@ let write_sing_file tree_writer fname_base ref_tree
     (List.map (sing_tree ref_tree) placed_pquery_list)
 
 
+    (*
 (* fat trees *)
 let fat_tree weighting criterion fat_width pr =
   let min_width = 0.5
   and max_width = fat_width
   in
-  Ftree.make
+  Gtree.make
     (Placerun.get_ref_tree pr)
     (IntMap.map
       (fun mass -> 
@@ -129,3 +137,6 @@ let write_fat_tree weighting criterion fat_width fname_base placerun =
     (fat_tree weighting criterion fat_width placerun)
     (fname_base^".fat.xml") 
 
+*)
+
+let write_fat_tree _ _ _ _ _ = ()

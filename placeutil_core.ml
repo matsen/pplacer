@@ -46,7 +46,7 @@ let read_re_split_file fname =
 
 let write_bounce_list ch pr = 
   let t = Placerun.get_ref_tree pr in
-  let tl = Itree.tree_length t in
+  let tl = Gtree.tree_length t in
   String_matrix.write_padded ch
     (Array.map
       (fun pq ->
@@ -56,4 +56,4 @@ let write_bounce_list ch pr =
         |]) 
       (Array.of_list (Placerun.get_pqueries pr)))
 
-let print_bounce_list = write_bounce_list stdout
+let print_bounce_list pr = write_bounce_list stdout pr

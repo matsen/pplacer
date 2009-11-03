@@ -1,3 +1,10 @@
+(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
+ * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
+open Fam_batteries
+open MapsSets
+
 exception No_bl
 exception No_name
 exception No_boot
@@ -12,11 +19,11 @@ let ppr_opt_named name ppr_val ff = function
   | Some x -> Format.fprintf ff " %s = %a;@," name ppr_val x
   | None -> ()
  
-class newick_bark = 
+class newick_bark ?bl ?name ?boot () = 
   object (self)
-    val bl = None
-    val name = None
-    val boot = None
+    val bl = bl
+    val name = name
+    val boot = boot
 
     method get_bl = 
       match bl with
@@ -55,14 +62,14 @@ class newick_bark =
   end
 
 let map_find_loose id m = 
-  if Bark_map.mem id m then Bark_map.find id m
-  else new newick_bark
+  if IntMap.mem id m then IntMap.find id m
+  else new newick_bark ()
 
 let map_set_bl id bl m = 
-  Bark_map.add id ((map_find_loose id m)#set_bl bl) m
+  IntMap.add id ((map_find_loose id m)#set_bl bl) m
 
 let map_set_name id name m = 
-  Bark_map.add id ((map_find_loose id m)#set_name name) m
+  IntMap.add id ((map_find_loose id m)#set_name name) m
 
 let map_set_boot id boot m = 
-  Bark_map.add id ((map_find_loose id m)#set_boot boot) m
+  IntMap.add id ((map_find_loose id m)#set_boot boot) m

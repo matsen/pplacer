@@ -1,7 +1,10 @@
 (* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * our tree data stucture with information 
+ * our tree data stucture with information.
+ *
+ * Gtree stands for general tree, meaning that we have a tree with any kind of
+ * bark that has get/set methods for bl, name, and boot.
  *
  * We number all of the nodes and then have maps which tell us about the edges.
  * Note that the edge information is for the node directly above the node with
@@ -23,6 +26,8 @@ let of_stree stree = {stree = stree; bark_map = IntMap.empty}
 let get_stree t = t.stree
 let get_bark_map t = t.bark_map
 let get_bark t id = IntMap.find id t.bark_map
+let get_bark_opt t id = 
+  if IntMap.mem id t.bark_map then Some(get_bark t id) else None
 let get_bl t id = (get_bark t id)#get_bl
 let get_name t id = (get_bark t id)#get_name
 let get_boot t id = (get_bark t id)#get_boot
@@ -36,6 +41,7 @@ let set_bl t id bl =
 
 (* stree related *)
 let top_id t = Stree.top_id (get_stree t)
+let n_edges t = Stree.n_edges (get_stree t)
 let recur f_node f_leaf t = Stree.recur f_node f_leaf (get_stree t)
 
 (* bark map related *)

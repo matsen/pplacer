@@ -10,8 +10,15 @@ open Fam_batteries
 open Stree
 
 
-let qmat_map_of_bl_map diagdq bl_map rate = 
-  IntMap.map (fun bl -> diagdq#expWithT (bl *. rate)) bl_map
+let qmat_map_of_bark_map diagdq bark_map rate = 
+  IntMap.map 
+    (fun bark ->
+      try 
+        diagdq#expWithT (bark#get_bl *. rate)
+      with
+      | Newick_bark.No_bl ->
+          failwith "Branch length unspecified in qmat_map_of_bark_map")
+    bark_map
 
 let calc_distal_like_map_col nstates tree aln_index_map qmat_map col_like =
   let v = Gsl_vector.create nstates in
@@ -96,21 +103,25 @@ let calc_proximal_like_map nstates tree qmat_map distal_like_map =
   Array.map 
     (calc_proximal_like_map_col nstates tree qmat_map) distal_like_map
 
-let calc_distoproximal nstates aln_index_map aln_like diagdq itree rate = 
-  let stree = Itree.get_stree itree in
-  let qmat_map = qmat_map_of_bl_map diagdq itree.Itree.info.Itree_info.bl rate in
+let calc_distoproximal nstates aln_index_map aln_like diagdq gtree rate = 
+  let stree = Gtree.get_stree gtree in
+  let qmat_map = 
+    qmat_map_of_bark_map diagdq (Gtree.get_bark_map gtree) rate in
   let distal = 
     calc_distal_like_map nstates stree aln_index_map qmat_map aln_like in
   let proximal = calc_proximal_like_map nstates stree qmat_map distal in
   (distal, proximal)
 
-let distoproximal_of_aln_and_itree seq_type diagdq align itree rate = 
+let distoproximal_of_aln_and_gtree seq_type diagdq align gtree rate = 
   let aln_index_map = 
-    AlignmentFuns.makeAlnIndexMap itree.Itree.info.Itree_info.taxon (Array.map fst align) in
+    AlignmentFuns.makeAlnIndexMap 
+      (Bark_map.to_name_map (Gtree.get_bark_map gtree))
+      (Array.map fst align) 
+  in
   let seqs = Array.map snd align 
   and nstates = Alignment.nstates_of_seq_type seq_type in
   let aln_like = AlignmentFuns.aln_like_of_unnamed_align seq_type seqs in
-  calc_distoproximal nstates aln_index_map aln_like diagdq itree rate
+  calc_distoproximal nstates aln_index_map aln_like diagdq gtree rate
 
 
 (*

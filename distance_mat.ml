@@ -97,10 +97,10 @@ let of_numbered_distal_map t n_p ndm =
   in
   let _ = 
 (* the downside to using the recur function is some clear code dup below *)
-    Itree.recur
+    Gtree.recur
 (* --- internal nodes --- *)
       (fun id below -> 
-        let bl = Itree.get_bl t id in
+        let bl = Gtree.get_bl t id in
         (* the numbered placement distal_bls *)
         let numbered_ps = Base.get_from_list_intmap id ndm in
         let flat_below = List.flatten below in
@@ -113,7 +113,7 @@ let of_numbered_distal_map t n_p ndm =
         update_dth_and_accu bl flat_below numbered_ps)
 (* --- leaves --- *)
       (fun id -> 
-        let bl = Itree.get_bl t id in
+        let bl = Gtree.get_bl t id in
         let numbered_ps = Base.get_from_list_intmap id ndm in
         process_edge [] numbered_ps;
         update_dth_and_accu bl [] numbered_ps)

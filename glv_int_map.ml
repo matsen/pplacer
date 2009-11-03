@@ -39,12 +39,12 @@ let of_lv_map_arr_arr locs lv_map_arr_arr =
 
 (* dp_of_data:
  *)
-let dp_of_data model align istree locs = 
+let dp_of_data model align gtree locs = 
   let dp_arr = 
     Array.map
       (fun rate ->
-        Likestree.distoproximal_of_aln_and_itree 
-          (Model.seq_type model) (Model.diagdq model) align istree rate)
+        Likestree.distoproximal_of_aln_and_gtree 
+          (Model.seq_type model) (Model.diagdq model) align gtree rate)
       (Model.rates model) in
   let result = 
   (of_lv_map_arr_arr locs (Array.map fst dp_arr),

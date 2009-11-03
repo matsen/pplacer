@@ -16,3 +16,13 @@ let ppr ff bm =
 let boost by m = 
   IntMap.fold (fun k v -> IntMap.add (k+by) v) m IntMap.empty
 
+let to_name_map bm = 
+  IntMap.fold
+    (fun id bark accu ->
+      try 
+        IntMap.add id bark#get_name accu
+      with
+      | Newick_bark.No_name -> accu)
+    bm
+    IntMap.empty
+

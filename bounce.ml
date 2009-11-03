@@ -32,5 +32,5 @@ let raw_bounce_of_pquery t pq =
     (Pquery.place_list pq)
 
 let bounce_of_pquery t pq = 
-  (raw_bounce_of_pquery t pq) /. (Itree.tree_length t)
+  (raw_bounce_of_pquery t pq) /. (Gtree.tree_length t)
 

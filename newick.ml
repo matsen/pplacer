@@ -9,6 +9,25 @@ open Fam_batteries
 
 (* output *)
 
+let string_of_bark t id = 
+    match Gtree.get_bark_opt t id with
+    | Some b -> b#to_newick_string
+    | None -> ""
+
+let to_string_gen f t = 
+    (Gtree.recur
+      (fun id below ->
+        "("^(String.concat "," below)^")"^(f t id))
+      (f t)
+      t)^";"
+
+let to_string t = to_string_gen string_of_bark t
+let to_numbered_string t =
+  to_string_gen (fun _ id -> string_of_int id) t
+
+let write ch t = Printf.fprintf ch "%s\n" (to_string t)
+  
+
 (* input *)
 
 (* count the number of occurrences of char c in str *)

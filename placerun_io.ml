@@ -47,13 +47,12 @@ let to_file invocation placerun =
   Printf.fprintf ch "# invocation: %s\n" invocation;
   Prefs.write ch (Placerun.get_prefs placerun);
   Printf.fprintf ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
-  if not (Stree.multifurcating_at_root ref_tree.Itree.stree) then
+  if not (Stree.multifurcating_at_root (Gtree.get_stree ref_tree)) then
     Printf.fprintf ch "# %s\n" bifurcation_warning;
-  Printf.fprintf ch "# numbered reference tree: %s\n"
   (* we do the following to write a tree with the node numbers in place of
    * the bootstrap values, and at @ at the end of the taxon names *)
-  (Itree_io.to_newick (Itree_io.make_numbered_tree ref_tree));
-  Printf.fprintf ch "# reference tree: %s\n" (Itree_io.to_newick ref_tree);
+  (* Printf.fprintf ch "# numbered reference tree: %s\n" (Newick.to_numbered_string ref_tree); *)
+  Printf.fprintf ch "# reference tree: %s\n" (Newick.to_string ref_tree);
   write_by_best_loc 
     Placement.ml_ratio 
     ch 
@@ -108,7 +107,7 @@ let parse_place_file place_fname =
                 post_invocation 
             in
             (prefs,
-              Itree_io.of_newick_str (Str.matched_group 1 tree_line))
+              Newick.of_string (Str.matched_group 1 tree_line))
       end
     with
     | Scanf.Scan_failure s ->
