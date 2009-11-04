@@ -63,7 +63,7 @@ let matrix_version pr1 pr2 =
       (Distance_mat.of_numbered_distal_map t tot_n_p ndm_all)
   in
   let (x_diff, coeff) = make_x_diff_and_coeff ~tot_n_p ~n_p1 in
-  (coeff *. (quad_form d x_diff) /. (Itree.tree_length t), d)
+  (coeff *. (quad_form d x_diff) /. (Gtree.tree_length t), d)
 
 let check pr1 pr2 = 
   Printf.printf 

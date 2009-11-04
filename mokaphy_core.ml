@@ -59,15 +59,8 @@ let pair_core prefs criterion pr1 pr2 =
   if Mokaphy_prefs.heat_tree prefs then
     Heat_tree.write_heat_tree (Mokaphy_prefs.rev_video prefs) 
       criterion weighting p pr1 pr2;
-  if Mokaphy_prefs.dhisto prefs then begin
-    R_plots.write_dhisto pr1;
-    R_plots.write_dhisto pr2;
-    R_plots.write_dhisto 
-      (Placerun.combine
-        ((Placerun.get_name pr1)^"_and_"^(Placerun.get_name pr2))
-        pr1
-        pr2);
-  end;
+  if Mokaphy_prefs.ddensity prefs then
+    R_plots.write_ddensity pr1 pr2;
   if Mokaphy_prefs.shuffle prefs then begin
     (* shuffle mode *)
     let p_value = 
@@ -79,9 +72,9 @@ let pair_core prefs criterion pr1 pr2 =
             (fun (spr1,spr2) -> calc_dist spr1 spr2)
             shuffled_list
         in
-        if Mokaphy_prefs.histo prefs then
-          R_plots.write_histogram 
-            "histo"
+        if Mokaphy_prefs.density prefs then
+          R_plots.write_density 
+            "density"
             (Placerun.get_name pr1)
             (Placerun.get_name pr2)
             original_dist 
@@ -117,7 +110,7 @@ let pair_core prefs criterion pr1 pr2 =
         pr1 
         pr2
     in
-    R_plots.write_histogram 
+    R_plots.write_density 
       "normal"
       (Placerun.get_name pr1)
       (Placerun.get_name pr2)

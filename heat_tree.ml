@@ -69,7 +69,7 @@ let color_map_aux criterion ref_tree p pcl1 pcl2 =
               0.
               below)))
         :: (List.flatten below))
-      (Itree.get_stree ref_tree)
+      (Gtree.get_stree ref_tree)
   in
   let heat_only = List.map snd heat_list in
   let top_heat = List.hd heat_only in
@@ -107,8 +107,8 @@ let make_heat_tree rev_video criterion weighting p pr1 pr2 =
   let ref_tree = 
     Placerun.get_same Placerun.get_ref_tree "Reference tree" pr1 pr2
   in
-  Ftree.make 
-    ref_tree 
+  Decor_gtree.add_decor_by_map 
+    (Decor_gtree.of_newick_gtree ref_tree)
     (color_map rev_video criterion weighting p pr1 pr2)
 
 let write_heat_tree rev_video criterion weighting p pr1 pr2 =

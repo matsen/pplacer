@@ -5,10 +5,17 @@
 open Fam_batteries
 open MapsSets
 
-let int_div x y = (float_of_int x) /. (float_of_int y)
+(* the percent extra to stretch the x limits *)
+let relax_factor = 0.05
 
-(* histogram shows where the sample sits in the shuffled distances *)
-let write_histogram 
+let int_div x y = (float_of_int x) /. (float_of_int y)
+let min_list l = ListFuns.complete_fold_left min l
+let max_list l = ListFuns.complete_fold_left max l
+let min_x all_dists = (1. -. relax_factor) *. (min_list all_dists)
+let max_x all_dists = (1. +. relax_factor) *. (max_list all_dists)
+
+(* density shows where the sample sits in the shuffled distances *)
+let write_density 
       plot_name name1 name2 sample_dist shuffled_dists p =
   let prefix = plot_name^"."^name1^".VS."^name2 in
   (* the data *)
@@ -22,9 +29,11 @@ let write_histogram
   let r_ch = open_out (prefix^".r") in
   Printf.fprintf r_ch "pdf(\"%s\")\n" (prefix^".pdf");
   Printf.fprintf r_ch "data <- read.table(\"%s\")\n" dat_name;
+  let all_dists = sample_dist::shuffled_dists in
   Printf.fprintf r_ch 
-    "hist(data[,1], main=\"d(%s,%s) = %f\", xlab=\"KR Z_%g distance\")\n" 
-    name1 name2 sample_dist p;
+    "plot(density(data[,1]), main=\"d(%s,%s) = %f\", xlab=\"KR Z_%g distance\",
+    xlim=c(%g,%g))\n" 
+    name1 name2 sample_dist p (min_x all_dists) (max_x all_dists);
   Printf.fprintf r_ch "abline(v=%g, col=\"red\")\n" sample_dist;
   Printf.fprintf r_ch "dev.off()\n";
   close_out r_ch;
@@ -145,25 +154,42 @@ let dists_between_ml_best_of_placerun placerun =
       (List.map (Pquery.best_place Placement.ml_ratio))
       pl_map)
 
-(* dhisto shows the histogram of pairwise distances *)
-let write_dhisto pr =
-  let name = Placerun.get_name pr in
-  let prefix = "dhisto."^name in
-  (* the data *)
-  let dm = dists_between_ml_best_of_placerun pr in
-  let dat_name = prefix^".dat" in
-  let dat_ch = open_out dat_name in
-  Array.iter 
-    (fun x -> Printf.fprintf dat_ch "%g\n" x) 
-    (Uptri.get_data dm);
-  close_out dat_ch;
+(* ddensity shows the density of pairwise distances *)
+let write_ddensity pr1 pr2 =
+  let write_data pr = 
+    let name = Placerun.get_name pr in
+    let prefix = "ddensity."^name in
+    (* the data *)
+    let dm = dists_between_ml_best_of_placerun pr in
+    let dat_name = prefix^".dat" in
+    let dat_ch = open_out dat_name in
+    let data = Uptri.get_data dm in
+    Array.iter 
+      (fun x -> Printf.fprintf dat_ch "%g\n" x) 
+      data;
+    close_out dat_ch;
+    (dat_name, max_list (Array.to_list data))
+  in
+
+  let prefix = 
+    (Placerun.get_name pr1)^".and."^(Placerun.get_name pr2) in
+  let dat_name1,_ = write_data pr1
+  and dat_name2,_ = write_data pr2
+  and dat_nameboth, our_max = 
+    write_data (Placerun.combine prefix pr1 pr2)
+  in
   (* the r file *)
   let r_ch = open_out (prefix^".r") in
   Printf.fprintf r_ch "pdf(\"%s\")\n" (prefix^".pdf");
-  Printf.fprintf r_ch "data <- read.table(\"%s\")\n" dat_name;
+  Printf.fprintf r_ch "data1 <- read.table(\"%s\")\n" dat_name1;
+  Printf.fprintf r_ch "data2 <- read.table(\"%s\")\n" dat_name2;
+  Printf.fprintf r_ch "databoth <- read.table(\"%s\")\n" dat_nameboth;
   Printf.fprintf r_ch 
-    "hist(data[,1], main=\"%s\", xlab=\"within tree distance\")\n" 
-    name;
+    "plot(density(databoth[,1]), main=\"%s\", xlab=\"within tree distance\",xlim=c(0,%g))\n" 
+    prefix our_max;
+  Printf.fprintf r_ch "lines(density(data1[,1]),lty=2)\n";
+  Printf.fprintf r_ch "lines(density(data2[,1]),lty=3)\n";
+  Printf.fprintf r_ch "legend(\"topright\",c(\"%s\", \"%s\",\"%s\"),lty=c(1,2,3))\n" dat_name1 dat_name2 dat_nameboth;
   Printf.fprintf r_ch "dev.off()\n";
   close_out r_ch;
   ()

@@ -113,10 +113,10 @@ let total_over_tree curried_edge_total
           id
           0. 
           (starter_data_factory ()))
-      (Itree.get_stree ref_tree)
+      (Gtree.get_stree ref_tree)
   in
   check_final_data final_data;
-  grand_total /. (Itree.tree_length ref_tree)
+  grand_total /. (Gtree.tree_length ref_tree)
 
 (* sort the placements along a given edge according to their location on
  * the edge in an increasing manner. that way we can recur along this list,
@@ -146,7 +146,7 @@ let pcl_pair_distance criterion ref_tree p pcl1 pcl2 =
   let kr_edge_total id = 
     total_along_edge 
       (exp_kr_diff p) 
-      (Itree.get_bl ref_tree id) 
+      (Gtree.get_bl ref_tree id) 
       (Base.get_from_list_intmap id kr_map)
       Mokaphy_base.v_addto
   (* make sure that the kr_v totals to zero *)

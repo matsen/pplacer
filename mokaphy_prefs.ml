@@ -8,13 +8,13 @@ type mokaphy_prefs =
     shuffle: bool ref;
     n_samples: int ref;
     out_fname: string ref;
-    histo: bool ref;
+    density: bool ref;
     p_plot: bool ref;
     box_plot: bool ref;
     p_exp: float ref;
     weighted: bool ref;
     matrix_check: bool ref;
-    dhisto: bool ref;
+    ddensity: bool ref;
     heat_tree: bool ref;
     rev_video: bool ref;
   }
@@ -23,13 +23,13 @@ let verbose      p = !(p.verbose)
 let shuffle      p = !(p.shuffle)
 let out_fname    p = !(p.out_fname)
 let n_samples    p = !(p.n_samples)
-let histo        p = !(p.histo)
+let density      p = !(p.density)
 let p_plot       p = !(p.p_plot)
 let box_plot     p = !(p.box_plot)
 let p_exp        p = !(p.p_exp)
 let weighted     p = !(p.weighted)
 let matrix_check p = !(p.matrix_check)
-let dhisto       p = !(p.dhisto)
+let ddensity     p = !(p.ddensity)
 let heat_tree    p = !(p.heat_tree)
 let rev_video    p = !(p.rev_video)
 
@@ -41,13 +41,13 @@ let defaults () =
     shuffle = ref true;
     out_fname = ref "";
     n_samples = ref 0;
-    histo = ref false;
+    density = ref false;
     p_plot = ref false;
     box_plot = ref false;
     p_exp = ref 1.;
     weighted = ref true;
     matrix_check = ref false;
-    dhisto = ref false;
+    ddensity = ref false;
     heat_tree = ref false;
     rev_video = ref false;
   }
@@ -63,8 +63,8 @@ let args prefs = [
   "The value of p in Z_p.";
   "--unweighted", Arg.Clear prefs.weighted,
       "The unweighted version simply uses the best placement. Default is weighted.";
-  "--histo", Arg.Set prefs.histo,
-  "write out a shuffle histogram data file for each pair.";
+  "--density", Arg.Set prefs.density,
+  "write out a shuffle density data file for each pair.";
   "--pplot", Arg.Set prefs.p_plot,
       "write out a plot of the distances when varying the p for the Z_p calculation";
   "--box", Arg.Set prefs.box_plot,
@@ -76,8 +76,8 @@ let args prefs = [
       calculate distance only). Default is "^(string_of_int (n_samples prefs)));
   "--matrix", Arg.Set prefs.matrix_check,
       "Run a check using the distance matrix formulation of the KR p=2 distance.";
-  "--dhisto", Arg.Set prefs.dhisto,
-    "Make distance-by-distance histograms.";
+  "--ddensity", Arg.Set prefs.ddensity,
+    "Make distance-by-distance densities.";
   "--heat", Arg.Set prefs.heat_tree,
   "Make a heat tree for each pair.";
   "--rv", Arg.Set prefs.rev_video,
