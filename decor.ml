@@ -10,8 +10,6 @@ type decoration =
   | Color of int * int * int
   | Width of float
 
-type decor = decoration list IntMap.t
-
 let assert_ubyte i = assert(i >= 0 || i <= 255)
 let assert_ubytes = List.iter assert_ubyte
 let assert_unit_interval x = assert(0. <= x && x <= 1.)
@@ -55,10 +53,19 @@ let scaled_width ~min ~max x =
   assert_unit_interval x;
   width (min +. (max -. min) *. x)
 
+let ppr ff = function
+  | Color(r,g,b) -> Format.fprintf ff "Color(%d, %d, %d)" r g b
+  | Width w -> Format.fprintf ff "Width(%g)" w
 
-(* decors *)
+let write_xml ch = function
+  | Color(r,g,b) -> 
+      Xml.write_long_tag
+        (fun () -> 
+          Xml.write_int "red" ch r;
+          Xml.write_int "green" ch g;
+          Xml.write_int "blue" ch b;)
+        "color"
+        ch
+  | Width w -> 
+      Xml.write_float "width" ch w
 
-let get_decoration_list d id =
-  Base.get_from_list_intmap id d
-
-let empty_decor = IntMap.empty

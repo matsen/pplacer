@@ -34,7 +34,7 @@ let get_boot t id = (get_bark t id)#get_boot
 
 let set_bark_map t bark_map = {t with bark_map = bark_map}
 let add_bark t id bark = 
-  set_bark_map t (Bark_map.add id bark (get_bark_map t))
+  set_bark_map t (IntMap.add id bark (get_bark_map t))
 
 let set_bl t id bl = 
   add_bark t id ((get_bark t id)#set_bl bl)
@@ -46,7 +46,9 @@ let recur f_node f_leaf t = Stree.recur f_node f_leaf (get_stree t)
 
 (* bark map related *)
 let add_bark id b t = 
-  { t with bark_map = (Bark_map.add id b (get_bark_map t)) }
+  { t with bark_map = (IntMap.add id b (get_bark_map t)) }
+let map_bark_map f t = 
+  {t with bark_map = IntMap.map f (get_bark_map t)}
 
 (* general *)
 let tree_length tree = 
@@ -69,9 +71,9 @@ let tree_length tree =
 let copy_bark ~dest ~src id = 
   gtree 
     (get_stree dest)
-    (Bark_map.add 
+    (IntMap.add 
       id 
-      (Bark_map.find id (get_bark_map src)) 
+      (IntMap.find id (get_bark_map src)) 
       (get_bark_map dest))
 
 

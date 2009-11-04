@@ -4,6 +4,8 @@
  * the actual functionality of placeviz
 *)
 
+type tree_fmt = Newick | Phyloxml
+
 open MapsSets
 open Fam_batteries
 
@@ -28,20 +30,23 @@ let write_loc_file fname_base unplaced_seqs placed_map =
 
 (* writing various tree formats *)
 
-let trees_to_file tree_writer fname trees = 
-  let out_ch = open_out fname in
-  List.iter (tree_writer out_ch) trees;
-  close_out out_ch
+let trees_to_file tree_fmt prefix trees = 
+  match tree_fmt with
+  | Newick -> Newick.tree_list_to_file trees (prefix^".tre") 
+  | Phyloxml -> Phyloxml.tree_list_to_file trees (prefix^".xml") 
 
 let make_zero_leaf bl name = 
   Gtree.gtree 
     (Stree.leaf 0)
     (IntMap.add 
       0 
-      (new Newick_bark.newick_bark ~bl ~name ())
+      (new Newick_bark.newick_bark 
+        (`Of_bl_name_boot (Some bl, Some name, None)))
       IntMap.empty)
 
-let newick_bark_of_bl bl = new Newick_bark.newick_bark ~bl ()
+let newick_bark_of_bl bl = 
+  new Newick_bark.newick_bark 
+    (`Of_bl_name_boot (Some bl, None, None))
 
 (* given a function that takes a location and a list of somethings and returns a
  * (where, tree) list for that location, make a tree containing those extra
@@ -67,9 +72,9 @@ let tog_tree ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_tog_file tree_writer fname_base ref_tree placed_map = 
+let write_tog_file tree_fmt fname_base ref_tree placed_map = 
   trees_to_file 
-    tree_writer
+    tree_fmt
     (fname_base^".tog.tre") 
     [tog_tree ref_tree placed_map]
         
@@ -84,11 +89,11 @@ let num_tree bogus_bl ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_num_file bogus_bl tree_writer fname_base ref_tree 
+let write_num_file bogus_bl tree_fmt fname_base ref_tree 
                                                    placed_map = 
   trees_to_file 
-    tree_writer
-    (fname_base^".num.tre") 
+    tree_fmt
+    (fname_base^".num") 
     [num_tree bogus_bl ref_tree placed_map]
 
 (* sing trees *)
@@ -111,22 +116,21 @@ let sing_tree ref_tree pquery =
                 (Placement.ml_ratio p)))))
         (Pquery.place_list pquery)))
 
-let write_sing_file tree_writer fname_base ref_tree 
+let write_sing_file tree_fmt fname_base ref_tree 
                                            placed_pquery_list = 
   trees_to_file 
-    tree_writer 
-    (fname_base^".sing.tre") 
+    tree_fmt 
+    (fname_base^".sing") 
     (List.map (sing_tree ref_tree) placed_pquery_list)
 
 
-    (*
 (* fat trees *)
 let fat_tree weighting criterion fat_width pr =
   let min_width = 0.5
   and max_width = fat_width
   in
-  Gtree.make
-    (Placerun.get_ref_tree pr)
+  Decor_gtree.add_decor_by_map
+    (Decor_gtree.of_newick_gtree (Placerun.get_ref_tree pr))
     (IntMap.map
       (fun mass -> 
         [ Decor.scaled_width ~min:min_width ~max:max_width mass; ])
@@ -137,6 +141,3 @@ let write_fat_tree weighting criterion fat_width fname_base placerun =
     (fat_tree weighting criterion fat_width placerun)
     (fname_base^".fat.xml") 
 
-*)
-
-let write_fat_tree _ _ _ _ _ = ()

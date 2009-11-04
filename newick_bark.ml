@@ -18,32 +18,38 @@ let opt_val_to_string val_to_string = function
 let ppr_opt_named name ppr_val ff = function
   | Some x -> Format.fprintf ff " %s = %a;@," name ppr_val x
   | None -> ()
+
+let write_something_opt write_it ch = function
+  | Some x -> write_it ch x
+  | None -> ()
  
-class newick_bark ?bl ?name ?boot () = 
+
+class newick_bark arg = 
+
+  let (bl, name, boot) = 
+    match arg with
+    | `Empty -> (None, None, None)
+    | `Of_bl_name_boot (bl, name, boot) -> (bl, name, boot) 
+  in
+
   object (self)
     val bl = bl
     val name = name
     val boot = boot
 
+    method get_bl_opt = bl
     method get_bl = 
-      match bl with
-      | Some x -> x
-      | None -> raise No_bl
-
+      match bl with | Some x -> x | None -> raise No_bl
     method set_bl (x:float) = {< bl = Some x >}
 
+    method get_name_opt = name
     method get_name = 
-      match name with
-      | Some s -> s
-      | None -> raise No_name
-
+      match name with | Some s -> s | None -> raise No_name
     method set_name s = {< name = Some s >}
 
+    method get_boot_opt = boot
     method get_boot =
-      match boot with
-      | Some x -> x
-      | None -> raise No_boot
-      
+      match boot with | Some x -> x | None -> raise No_boot
     method set_boot x = {< boot = Some x >}
 
     method to_newick_string = 
@@ -57,13 +63,18 @@ class newick_bark ?bl ?name ?boot () =
       ppr_opt_named "boot" Format.pp_print_float ff boot
 
     method ppr ff = 
-      Format.fprintf ff "{%a}" (fun ff () -> self#ppr_inners ff) ()
+      Format.fprintf ff "@[{%a}@]" (fun ff () -> self#ppr_inners ff) ()
+
+    method write_xml ch = 
+      write_something_opt (Xml.write_float "branch_length") ch bl;
+      write_something_opt (Xml.write_string "name") ch name;
+      write_something_opt (Xml.write_float "confidence") ch boot
 
   end
 
 let map_find_loose id m = 
   if IntMap.mem id m then IntMap.find id m
-  else new newick_bark ()
+  else new newick_bark `Empty
 
 let map_set_bl id bl m = 
   IntMap.add id ((map_find_loose id m)#set_bl bl) m

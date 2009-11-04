@@ -42,13 +42,11 @@ let weighting = Mass_map.Weighted
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    let tree_writer ch t = 
-      (*
-      if !xml then 
-        Phyloxml.write_ftree ch (Ftree.make itree Decor.empty_decor)
-      else *) Newick.write ch t in
+    let tree_fmt = 
+      if !xml then Placeviz_core.Phyloxml 
+      else Placeviz_core.Newick in
     let write_num_file = 
-      Placeviz_core.write_num_file !bogus_bl tree_writer in
+      Placeviz_core.write_num_file !bogus_bl tree_fmt in
     let collect ret_code fname =
       try
         let frc = 0 in
@@ -73,13 +71,13 @@ let () =
           fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
         Placeviz_core.write_tog_file 
-          tree_writer fname_base ref_tree placed_map;
+          tree_fmt fname_base ref_tree placed_map;
         write_num_file fname_base ref_tree placed_map;
         Placeviz_core.write_fat_tree 
            weighting criterion !fat_width fname_base placerun;
         if !singly then
           Placeviz_core.write_sing_file 
-            tree_writer
+            tree_fmt
             fname_base 
             ref_tree 
             (List.filter Pquery.is_placed pqueries);

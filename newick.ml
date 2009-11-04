@@ -26,7 +26,11 @@ let to_numbered_string t =
   to_string_gen (fun _ id -> string_of_int id) t
 
 let write ch t = Printf.fprintf ch "%s\n" (to_string t)
-  
+
+let tree_list_to_file trees fname = 
+  let ch = open_out fname in
+  List.iter (write ch) trees;
+  close_out ch
 
 (* input *)
 

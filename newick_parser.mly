@@ -7,7 +7,7 @@
 
 %{
   let node_num = ref (-1)
-  let bark_map = ref Bark_map.empty
+  let bark_map = ref MapsSets.IntMap.empty
   let add_bark add_fun x = bark_map := add_fun !node_num x !bark_map
   let add_bl = add_bark Newick_bark.map_set_bl
   let add_name = add_bark Newick_bark.map_set_name
@@ -49,7 +49,7 @@ nosemitree:
     let result = Gtree.gtree $1 !bark_map in
     (* clear things out for the next tree *)
     node_num := -1;
-    bark_map := Bark_map.empty;
+    bark_map := MapsSets.IntMap.empty;
     result
   }
 
