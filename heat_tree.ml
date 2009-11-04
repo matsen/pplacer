@@ -105,7 +105,11 @@ let color_map rev_video criterion weighting p pr1 pr2 =
 
 let make_heat_tree rev_video criterion weighting p pr1 pr2 = 
   let ref_tree = 
-    Placerun.get_same Placerun.get_ref_tree "Reference tree" pr1 pr2
+    Placerun.get_same 
+      Newick.compare 
+      Placerun.get_ref_tree 
+      "Reference tree" 
+      pr1 pr2
   in
   Decor_gtree.add_decor_by_map 
     (Decor_gtree.of_newick_gtree ref_tree)

@@ -17,10 +17,13 @@ let pair_dist_gen process_pcl distance_fun p placerun1 placerun2 =
       "comparing %s with %s" 
       (Placerun.get_name placerun1)
       (Placerun.get_name placerun2)
-  and ref_tree = Placerun.get_ref_tree placerun1
+  and ref_tree = 
+    Placerun.get_same 
+      Newick.compare 
+      Placerun.get_ref_tree 
+      "Reference tree" 
+      placerun1 placerun2
   in
-  if ref_tree <> Placerun.get_ref_tree placerun2 then
-    failwith ("reference trees not the same when "^context);
   try
     let make_pcl placerun = 
       List.map

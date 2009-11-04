@@ -4,6 +4,7 @@
 
 open Fam_batteries
 open MapsSets
+open Multiset
 
 (* the percent extra to stretch the x limits *)
 let relax_factor = 0.05
@@ -13,6 +14,17 @@ let min_list l = ListFuns.complete_fold_left min l
 let max_list l = ListFuns.complete_fold_left max l
 let min_x all_dists = (1. -. relax_factor) *. (min_list all_dists)
 let max_x all_dists = (1. +. relax_factor) *. (max_list all_dists)
+
+(*
+# R_plots.remove_from_list ~orig:[1.;2.;3.;4.;2.;2.;] ~to_remove:[2.; 2.; 1.];;
+- : Multiset.FloatMultiset.M.key list = [2.; 3.; 4.]
+*)
+let remove_from_list ~orig ~to_remove = 
+  FloatMultiset.to_list
+    (List.fold_right 
+      FloatMultiset.remove
+      to_remove
+      (FloatMultiset.of_list orig))
 
 (* density shows where the sample sits in the shuffled distances *)
 let write_density 
@@ -156,28 +168,38 @@ let dists_between_ml_best_of_placerun placerun =
 
 (* ddensity shows the density of pairwise distances *)
 let write_ddensity pr1 pr2 =
-  let write_data pr = 
+  let get_data pr = 
     let name = Placerun.get_name pr in
     let prefix = "ddensity."^name in
     (* the data *)
-    let dm = dists_between_ml_best_of_placerun pr in
+    (prefix, 
+      Array.to_list
+        (Uptri.get_data (dists_between_ml_best_of_placerun pr)))
+  in
+  let write_data prefix data = 
     let dat_name = prefix^".dat" in
     let dat_ch = open_out dat_name in
-    let data = Uptri.get_data dm in
-    Array.iter 
+    List.iter 
       (fun x -> Printf.fprintf dat_ch "%g\n" x) 
       data;
     close_out dat_ch;
-    (dat_name, max_list (Array.to_list data))
+    (dat_name, data)
   in
-
+  let gw_data pr = 
+    let prefix, data = get_data pr in
+    write_data prefix data
+  in
   let prefix = 
     (Placerun.get_name pr1)^".and."^(Placerun.get_name pr2) in
-  let dat_name1,_ = write_data pr1
-  and dat_name2,_ = write_data pr2
-  and dat_nameboth, our_max = 
-    write_data (Placerun.combine prefix pr1 pr2)
+  let dat_name1, data_l1 = gw_data pr1
+  and dat_name2, data_l2 = gw_data pr2 in
+  let ddensity_prefix, both_data = 
+    get_data (Placerun.combine prefix pr1 pr2) in
+  (* remove the within class distances from all pairwise distances *)
+  let data_between = 
+    remove_from_list ~to_remove:(data_l1 @ data_l2) ~orig:both_data
   in
+  let dat_nameboth, _ = write_data ddensity_prefix data_between in
   (* the r file *)
   let r_ch = open_out (prefix^".r") in
   Printf.fprintf r_ch "pdf(\"%s\")\n" (prefix^".pdf");
@@ -186,10 +208,13 @@ let write_ddensity pr1 pr2 =
   Printf.fprintf r_ch "databoth <- read.table(\"%s\")\n" dat_nameboth;
   Printf.fprintf r_ch 
     "plot(density(databoth[,1]), main=\"%s\", xlab=\"within tree distance\",xlim=c(0,%g))\n" 
-    prefix our_max;
+    prefix 
+    (max 
+      (max (max_list data_l1) (max_list data_l2)) 
+      (max_list data_between));
   Printf.fprintf r_ch "lines(density(data1[,1]),lty=2)\n";
   Printf.fprintf r_ch "lines(density(data2[,1]),lty=3)\n";
-  Printf.fprintf r_ch "legend(\"topright\",c(\"%s\", \"%s\",\"%s\"),lty=c(1,2,3))\n" dat_name1 dat_name2 dat_nameboth;
+  Printf.fprintf r_ch "legend(\"topright\",c(\"%s\", \"%s\",\"%s\"),lty=c(1,2,3))\n" dat_nameboth dat_name1 dat_name2;
   Printf.fprintf r_ch "dev.off()\n";
   close_out r_ch;
   ()
