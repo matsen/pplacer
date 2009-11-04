@@ -48,9 +48,9 @@ let contains_unplaced_queries p =
   with
   | Exit -> true
 
-let get_same get_thing thing_name pr1 pr2 = 
+let get_same cmp get_thing thing_name pr1 pr2 = 
   let x = get_thing pr1 in
-  if x = get_thing pr2 then x
+  if 0 = cmp x (get_thing pr2) then x
   else 
     failwith 
       (Printf.sprintf
@@ -58,8 +58,9 @@ let get_same get_thing thing_name pr1 pr2 =
         thing_name (get_name pr1) (get_name pr2))
 
 let combine name pr1 pr2 = 
-  let ref_tree = get_same get_ref_tree "Reference tree" pr1 pr2 in
-  let prefs = get_same get_prefs "Pref" pr1 pr2 in
+  let ref_tree = 
+    get_same Newick.compare get_ref_tree "Reference tree" pr1 pr2 in
+  let prefs = get_same compare get_prefs "Pref" pr1 pr2 in
   make
     ref_tree
     prefs

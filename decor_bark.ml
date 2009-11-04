@@ -21,6 +21,8 @@ class decor_bark arg =
       (`Of_bl_name_boot (bl, name, boot))
       as super
 
+    method get_decor = decor
+
     method ppr ff = 
       Format.fprintf ff "@[{%a decor = %a;}@]" 
         (fun ff () -> super#ppr_inners ff) ()
@@ -35,5 +37,12 @@ class decor_bark arg =
 
   end
 
+let compare b1 b2 = 
+  try 
+    Base.raise_if_different Newick_bark.compare b1 b2;
+    Base.raise_if_different compare b1#get_decor b2#get_decor;
+    0
+  with
+  | Base.Different c -> c
 
 let of_newick_bark nb = new decor_bark (`Of_newick_bark nb)

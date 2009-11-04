@@ -5,6 +5,9 @@
 open Fam_batteries
 open MapsSets
 
+
+let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
+
 let of_newick_gtree t = 
   Gtree.map_bark_map Decor_bark.of_newick_bark t
 

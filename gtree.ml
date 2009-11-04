@@ -51,6 +51,18 @@ let map_bark_map f t =
   {t with bark_map = IntMap.map f (get_bark_map t)}
 
 (* general *)
+
+let compare bark_compare t1 t2 = 
+  try 
+    Base.raise_if_different compare (get_stree t1) (get_stree t2);
+    Base.raise_if_different 
+      (IntMap.compare bark_compare)
+      (get_bark_map t1)
+      (get_bark_map t2);
+    0
+  with
+  | Base.Different c -> c
+
 let tree_length tree = 
   let get_our_bl id = get_bl tree id in
   let rec aux = function
@@ -150,7 +162,8 @@ let add_subtrees_above bark_of_bl avail_id tree where_subtree_list =
     tree
     avail_id
     (List.sort
-      (fun pos_t1 pos_t2 -> compare (fst pos_t1) (fst pos_t2))
+      (fun pos_t1 pos_t2 -> 
+        Pervasives.compare (fst pos_t1) (fst pos_t2))
       where_subtree_list)
 
 (* we assume that all input trees have their maximal ids at the top *)

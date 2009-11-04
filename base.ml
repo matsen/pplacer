@@ -26,6 +26,12 @@ let rec list_fold_left3 f accu l1 l2 l3 =
   | (_, _, _) -> invalid_arg "list_fold_left3"
 
 
+exception Different of int
+
+let raise_if_different cmp x1 x2 = 
+  let c = cmp x1 x2 in
+  if c <> 0 then raise (Different c)
+
 (* get the unique items from a list
  * slow, clearly.
  *)
