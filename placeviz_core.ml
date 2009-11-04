@@ -86,7 +86,7 @@ let write_tog_file tree_fmt fname_base ref_tree placed_map =
 let num_tree bogus_bl ref_tree placed_map = 
   tree_by_map
     (fun loc pqueries ->
-      [(Gtree.get_bl ref_tree loc,
+      [((Gtree.get_bl ref_tree loc) /. 2.,
       make_zero_leaf 
         [ Decor.red 255 ]
         bogus_bl
