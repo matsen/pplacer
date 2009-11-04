@@ -14,7 +14,7 @@ let assert_ubyte i = assert(i >= 0 || i <= 255)
 let assert_ubytes = List.iter assert_ubyte
 let assert_unit_interval x = assert(0. <= x && x <= 1.)
 
-(* colors! *)
+(* colors! 255 is the most saturated. *)
 (* gray_level is the amount of gray to put in *)
 let gray_red ~gray_level level = 
   assert_ubytes [gray_level; level];

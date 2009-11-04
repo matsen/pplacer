@@ -9,6 +9,8 @@ type tree_fmt = Newick | Phyloxml
 open MapsSets
 open Fam_batteries
 
+let min_width = 0.5
+
 (* writing the .loc.fasta file *)
 let write_loc_file fname_base unplaced_seqs placed_map =
   let out_ch = open_out (fname_base^".loc.fasta") in
@@ -35,18 +37,19 @@ let trees_to_file tree_fmt prefix trees =
   | Newick -> Newick.tree_list_to_file trees (prefix^".tre") 
   | Phyloxml -> Phyloxml.tree_list_to_file trees (prefix^".xml") 
 
-let make_zero_leaf bl name = 
+let make_zero_leaf decor_list bl name = 
   Gtree.gtree 
     (Stree.leaf 0)
     (IntMap.add 
       0 
-      (new Newick_bark.newick_bark 
-        (`Of_bl_name_boot (Some bl, Some name, None)))
+      (new Decor_bark.decor_bark 
+        (`Of_bl_name_boot_dlist 
+          (Some bl, Some name, None, decor_list)))
       IntMap.empty)
 
-let newick_bark_of_bl bl = 
-  new Newick_bark.newick_bark 
-    (`Of_bl_name_boot (Some bl, None, None))
+let decor_bark_of_bl bl = 
+  new Decor_bark.decor_bark 
+    (`Of_bl_name_boot_dlist (Some bl, None, None, []))
 
 (* given a function that takes a location and a list of somethings and returns a
  * (where, tree) list for that location, make a tree containing those extra
@@ -54,7 +57,7 @@ let newick_bark_of_bl bl =
  *)
 let tree_by_map f ref_tree placed_map = 
   Gtree.add_subtrees_by_map
-    newick_bark_of_bl
+    decor_bark_of_bl
     ref_tree
     (IntMap.mapi f placed_map)
 
@@ -67,6 +70,7 @@ let tog_tree ref_tree placed_map =
           let best = Pquery.best_place Placement.ml_ratio pquery in
           (Placement.distal_bl best,
           make_zero_leaf 
+            [ Decor.red 255 ]
             (Placement.pendant_bl best)
             (Pquery.name pquery))))
     ref_tree
@@ -75,7 +79,7 @@ let tog_tree ref_tree placed_map =
 let write_tog_file tree_fmt fname_base ref_tree placed_map = 
   trees_to_file 
     tree_fmt
-    (fname_base^".tog.tre") 
+    (fname_base^".tog") 
     [tog_tree ref_tree placed_map]
         
 (* num tree *)
@@ -84,6 +88,7 @@ let num_tree bogus_bl ref_tree placed_map =
     (fun loc pqueries ->
       [(Gtree.get_bl ref_tree loc,
       make_zero_leaf 
+        [ Decor.red 255 ]
         bogus_bl
         (Printf.sprintf "%d_at_%d" (List.length pqueries) loc))])
     ref_tree
@@ -97,38 +102,43 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
     [num_tree bogus_bl ref_tree placed_map]
 
 (* sing trees *)
-let sing_tree ref_tree pquery = 
+let sing_tree max_width ref_tree pquery = 
   let pqname = Pquery.name pquery in
   Gtree.add_subtrees_by_map
-    newick_bark_of_bl
+    decor_bark_of_bl
     ref_tree
     (IntMapFuns.of_pairlist_listly 
       (ListFuns.mapi
         (fun num p -> 
+          let ml_ratio = Placement.ml_ratio p in
           (Placement.location p,
             (Placement.distal_bl p,
             make_zero_leaf 
+              [ 
+                Decor.red 255; 
+                Decor.scaled_width 
+                  ~min:min_width 
+                  ~max:max_width 
+                  ml_ratio;
+              ]
               (Placement.pendant_bl p)
               (Printf.sprintf 
                 "%s_#%d_LR=%g" 
                 pqname 
                 num
-                (Placement.ml_ratio p)))))
+                ml_ratio))))
         (Pquery.place_list pquery)))
 
-let write_sing_file tree_fmt fname_base ref_tree 
+let write_sing_file max_width tree_fmt fname_base ref_tree 
                                            placed_pquery_list = 
   trees_to_file 
     tree_fmt 
     (fname_base^".sing") 
-    (List.map (sing_tree ref_tree) placed_pquery_list)
+    (List.map (sing_tree max_width ref_tree) placed_pquery_list)
 
 
 (* fat trees *)
-let fat_tree weighting criterion fat_width pr =
-  let min_width = 0.5
-  and max_width = fat_width
-  in
+let fat_tree weighting criterion max_width pr =
   Decor_gtree.add_decor_by_map
     (Decor_gtree.of_newick_gtree (Placerun.get_ref_tree pr))
     (IntMap.map

@@ -11,7 +11,7 @@ and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
 and xml = ref false
-and fat_width = ref 100.
+and total_width = ref 100.
 
 let parse_args () =
   let files  = ref [] in
@@ -29,8 +29,8 @@ let parse_args () =
       "Put the node numbers in where the bootstraps usually go.";
       "--xml", Arg.Set xml,
       "Write phyloXML with colors.";
-      "--fatWidth", Arg.Set_float fat_width,
-      "Set the total width for the fat tree.";
+      "--width", Arg.Set_float total_width,
+      "Set the total width for the fat tree and the sing tree.";
   ] in
   Arg.parse args anon_arg usage;
   List.rev !files
@@ -52,7 +52,9 @@ let () =
         let frc = 0 in
         let placerun = 
           Placerun_io.parse_place_file fname in
-        let ref_tree = Placerun.get_ref_tree placerun in
+        let decor_ref_tree = 
+          Decor_gtree.of_newick_gtree 
+            (Placerun.get_ref_tree placerun) in
         let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc
@@ -71,15 +73,16 @@ let () =
           fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
         Placeviz_core.write_tog_file 
-          tree_fmt fname_base ref_tree placed_map;
-        write_num_file fname_base ref_tree placed_map;
+          tree_fmt fname_base decor_ref_tree placed_map;
+        write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-           weighting criterion !fat_width fname_base placerun;
+           weighting criterion !total_width fname_base placerun;
         if !singly then
           Placeviz_core.write_sing_file 
+            !total_width
             tree_fmt
             fname_base 
-            ref_tree 
+            decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
