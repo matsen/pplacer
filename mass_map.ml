@@ -10,7 +10,6 @@ type weighting_choice = Weighted | Unweighted
 
 (* indiv makes the weighting for a given edge as a list of (distal_bl, weight)
  * for each placement *)
-
 module Indiv = struct
 
   (* we just return the top one if unweighted *)

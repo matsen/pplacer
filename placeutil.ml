@@ -54,7 +54,7 @@ let () =
     let fnames = parse_args () in
     if fnames = [] then exit 0;
     (* parse the placements *)
-    let parsed = List.map Placerun_io.parse_place_file fnames in
+    let parsed = List.map Placerun_io.of_file fnames in
     if !verbose then begin
       print_endline "combining placements...";
       List.iter2

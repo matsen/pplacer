@@ -57,10 +57,14 @@ let get_same cmp get_thing thing_name pr1 pr2 =
         "%ss for %s and %s not the same! Were these run with the same reference tree and model parameters (e.g. statistics files?)"
         thing_name (get_name pr1) (get_name pr2))
 
+let get_same_tree pr1 pr2 = 
+  get_same Newick.compare get_ref_tree "Reference tree" pr1 pr2
+let get_same_prefs pr1 pr2 = 
+  get_same compare get_prefs "Pref" pr1 pr2
+
 let combine name pr1 pr2 = 
-  let ref_tree = 
-    get_same Newick.compare get_ref_tree "Reference tree" pr1 pr2 in
-  let prefs = get_same compare get_prefs "Pref" pr1 pr2 in
+  let ref_tree = get_same_tree pr1 pr2
+  and prefs = get_same_prefs pr1 pr2 in
   make
     ref_tree
     prefs
