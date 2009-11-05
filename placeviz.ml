@@ -51,7 +51,7 @@ let () =
       try
         let frc = 0 in
         let placerun = 
-          Placerun_io.parse_place_file fname in
+          Placerun_io.of_file fname in
         let decor_ref_tree = 
           Decor_gtree.of_newick_gtree 
             (Placerun.get_ref_tree placerun) in

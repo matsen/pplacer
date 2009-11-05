@@ -70,7 +70,7 @@ let to_file invocation placerun =
   * then whatever. last line before placements is
 # reference tree: [ref tre]
 *)
-let parse_place_file place_fname = 
+let of_file place_fname = 
   let reftree_rex = Str.regexp "^# reference tree: \\(.*\\)"
   and invocation_rex = Str.regexp "^# invocation:"
   and fastaname_rex = Str.regexp "^>"
