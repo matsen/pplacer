@@ -29,11 +29,7 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let (fnames, prefs) = parse_args () in
-    let parsed = 
-      List.map 
-        (fun fname -> Placerun_io.parse_place_file fname)
-        fnames
-    in
+    let parsed = List.map Placerun_io.of_file fnames in
     if parsed = [] then exit 0;
 
     List.iter Placerun.fail_if_unplaced_seqs parsed;
