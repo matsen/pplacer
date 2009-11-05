@@ -12,6 +12,9 @@ open Fam_batteries
 
 let compare t1 t2 = Gtree.compare Newick_bark.compare t1 t2
 
+let to_numbered t = 
+  Gtree.mapi_bark_map (fun i x -> x#to_numbered i) t
+
 (* output *)
 
 let string_of_bark t id = 
@@ -27,8 +30,6 @@ let to_string_gen f t =
       t)^";"
 
 let to_string t = to_string_gen string_of_bark t
-let to_numbered_string t =
-  to_string_gen (fun _ id -> string_of_int id) t
 
 let write ch t = Printf.fprintf ch "%s\n" (to_string t)
 

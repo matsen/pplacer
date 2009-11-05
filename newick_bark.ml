@@ -70,6 +70,13 @@ class newick_bark arg =
       write_something_opt (Xml.write_string "name") ch name;
       write_something_opt (Xml.write_float "confidence") ch boot
 
+    method to_numbered id = 
+      {< name = Some
+                (match name with
+                | Some s -> Printf.sprintf "@%s" s
+                | None -> "");
+         boot = Some (float_of_int id); >}
+
   end
 
 let compare b1 b2 = 
@@ -80,6 +87,7 @@ let compare b1 b2 =
     0
   with
   | Base.Different c -> c
+
 
 let map_find_loose id m = 
   if IntMap.mem id m then IntMap.find id m

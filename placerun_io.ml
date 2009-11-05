@@ -51,7 +51,8 @@ let to_file invocation placerun =
     Printf.fprintf ch "# %s\n" bifurcation_warning;
   (* we do the following to write a tree with the node numbers in place of
    * the bootstrap values, and at @ at the end of the taxon names *)
-  (* Printf.fprintf ch "# numbered reference tree: %s\n" (Newick.to_numbered_string ref_tree); *)
+  Printf.fprintf ch "# numbered reference tree: %s\n" 
+    (Newick.to_string (Newick.to_numbered ref_tree));
   Printf.fprintf ch "# reference tree: %s\n" (Newick.to_string ref_tree);
   write_by_best_loc 
     Placement.ml_ratio 

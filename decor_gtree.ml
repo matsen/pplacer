@@ -9,7 +9,7 @@ open MapsSets
 let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
 
 let of_newick_gtree t = 
-  Gtree.map_bark_map Decor_bark.of_newick_bark t
+  Gtree.mapi_bark_map (fun _ b -> Decor_bark.of_newick_bark b) t
 
 let add_decor_by_map t decor_map = 
   let bark_map = Gtree.get_bark_map t in
