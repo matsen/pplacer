@@ -63,7 +63,7 @@ gollum_release:
 release:
 	make stoke_release bloom_release gollum_release
 	rsync ../distributions/* armbrustlab:/var/www/html/pplacer/distributions/
-	scp ../distributions/* dormouse:www/distributions/
+	scp ../distributions/* dormouse:www/pplacer/distributions/
 
 tags:
 	taggage *.ml
