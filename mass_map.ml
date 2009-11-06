@@ -62,6 +62,14 @@ module Indiv = struct
       (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
       m
 
+  let ppr = 
+    IntMapFuns.ppr_gen
+      (fun ff l ->
+        List.iter
+          (fun (distal, mass) -> 
+            Format.fprintf ff "@[{d = %g; m = %g}@]" distal mass)
+          l)
+
 end
 
 

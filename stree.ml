@@ -47,6 +47,13 @@ let rec plain_to_newick = function
       "("^(String.concat "," (List.map plain_to_newick tL))^")"^(string_of_int i)
   | Leaf i -> string_of_int i
 
+let rec ppr ff = function
+  | Node(i, tL) -> 
+      Format.fprintf ff "@[(%a)@]%d" 
+        (Ppr.ppr_gen_list_inners "," ppr) tL i
+  | Leaf i -> Format.pp_print_int ff i
+
+
 (* increase all of the indices of the tree by "by" *)
 let rec boost by = function
   | Node(i,tL) -> Node(i+by, List.map (boost by) tL)
