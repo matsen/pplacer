@@ -42,12 +42,13 @@ let width_of_heat ?(p=1.) heat =
   assert_intensity intensity;
   Decor.width (min_width +. width_diff *. intensity)
 
-let color_map_aux criterion ref_tree p pcl1 pcl2 = 
-  let kr_map = 
+let color_map_aux weighting criterion p pr1 pr2 = 
+  let ref_tree = Placerun.get_same_tree pr1 pr2
+  and kr_map = 
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd) 
-      (Kr_distance.make_kr_map criterion pcl1 pcl2) in
+      (Kr_distance.make_kr_map weighting criterion pr1 pr2) in
   let sum_over_krs_of_id id = 
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
@@ -91,14 +92,9 @@ let color_map_aux criterion ref_tree p pcl1 pcl2 =
           ]))
       heat_list) 
 
-let color_map rev_video criterion weighting p pr1 pr2 = 
+let color_map rev_video weighting criterion p pr1 pr2 = 
   let result = 
-    Placerun_distance.pair_dist_gen 
-      (Placerun_distance.process_pcl weighting criterion)
-      (color_map_aux criterion)
-      p 
-      pr1 
-      pr2
+    color_map_aux weighting criterion p pr1 pr2
   in
   if rev_video = false then result
   else (IntMap.map (List.map Decor.rev_color) result)

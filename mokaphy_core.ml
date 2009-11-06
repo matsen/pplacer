@@ -42,23 +42,24 @@ let make_shuffled_prs n_shuffles pr1 pr2 =
       (make_pr pr1 num (pquery_sub 0 n1),
       make_pr pr2 num (pquery_sub n1 n2)))
 
+
 let pair_core prefs criterion pr1 pr2 =
   let p = (Mokaphy_prefs.p_exp prefs) in
   let weighting = 
-    if Mokaphy_prefs.weighted prefs then Placerun_distance.Weighted 
-    else Placerun_distance.Unweighted 
+    if Mokaphy_prefs.weighted prefs then Mass_map.Weighted 
+    else Mass_map.Unweighted 
   in
   let calc_dist = 
-    Placerun_distance.pair_dist 
-      criterion 
+    Kr_distance.pair_distance
       weighting 
+      criterion 
       p in
   let original_dist = calc_dist pr1 pr2 in
   if Mokaphy_prefs.matrix_check prefs then
     Matrix_check.check pr1 pr2;
   if Mokaphy_prefs.heat_tree prefs then
     Heat_tree.write_heat_tree (Mokaphy_prefs.rev_video prefs) 
-      criterion weighting p pr1 pr2;
+      weighting criterion p pr1 pr2;
   if Mokaphy_prefs.ddensity prefs then
     R_plots.write_ddensity pr1 pr2;
   if Mokaphy_prefs.shuffle prefs then begin
@@ -81,9 +82,9 @@ let pair_core prefs criterion pr1 pr2 =
             shuffled_dists 
             p;
         if Mokaphy_prefs.p_plot prefs then
-          R_plots.write_p_plot criterion weighting pr1 pr2;
+          R_plots.write_p_plot weighting criterion pr1 pr2;
         if Mokaphy_prefs.box_plot prefs then
-          R_plots.write_boxplot criterion weighting pr1 pr2 shuffled_list;
+          R_plots.write_boxplot weighting criterion pr1 pr2 shuffled_list;
         Some
           (Mokaphy_base.list_onesided_pvalue 
             shuffled_dists 
@@ -98,14 +99,14 @@ let pair_core prefs criterion pr1 pr2 =
     if 0 >= Mokaphy_prefs.n_samples prefs then
       failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
     let resampled_dists = 
-      Normal_approx.resampled_distn 
-        (Mokaphy_prefs.n_samples prefs) criterion p pr1 pr2
+      Normal_approx.normal_pair_approx 
+        criterion (Mokaphy_prefs.n_samples prefs) p pr1 pr2
     in
     (* here we shadow original_dist with one we know is unweighted *)
     let original_dist = 
-      Placerun_distance.pair_dist 
+      Kr_distance.pair_distance
+        Mass_map.Unweighted 
         criterion 
-        Placerun_distance.Unweighted 
         p 
         pr1 
         pr2
@@ -125,6 +126,22 @@ let pair_core prefs criterion pr1 pr2 =
             original_dist)}
   end
 
+let wrapped_pair_core prefs criterion pr1 pr2 =
+  let context = 
+    Printf.sprintf "comparing %s with %s" 
+      (Placerun.get_name pr1) (Placerun.get_name pr2)
+  in
+  try
+    pair_core prefs criterion pr1 pr2
+  with
+  | Kr_distance.Invalid_place_loc a -> 
+      invalid_arg
+        (Printf.sprintf 
+          "%g is not a valid placement location when %s" a context)
+  | Pquery.Unplaced_pquery s ->
+      invalid_arg (s^" unplaced when "^context)
+  | Kr_distance.Total_kr_not_zero tkr ->
+      failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
 
 (* core
  * run pair_core for each unique pair 
@@ -134,7 +151,7 @@ let core prefs criterion ch pr_arr =
     Uptri.init
       (Array.length pr_arr)
       (fun i j ->
-        pair_core 
+        wrapped_pair_core
           prefs
           criterion
           pr_arr.(i) 

@@ -70,7 +70,7 @@ let write_p_plot criterion weighting pr1 pr2 =
         dat_ch 
         "%g\t%g\n" 
         p 
-        (Placerun_distance.pair_dist criterion weighting p pr1 pr2))
+        (Kr_distance.pair_distance criterion weighting p pr1 pr2))
     p_arr;
   close_out dat_ch;
   (* the r file *)
@@ -95,7 +95,7 @@ let write_boxplot criterion weighting pr1 pr2 shuffled_prs =
     Mokaphy_base.logarithmically_evenly_spaced 
       n_samples min_p max_p in
   let calc_dist p x_pr1 x_pr2 = 
-    Placerun_distance.pair_dist criterion weighting p x_pr1 x_pr2 in
+    Kr_distance.pair_distance criterion weighting p x_pr1 x_pr2 in
   let write_dist ch p d = Printf.fprintf ch "%g\t%g\n" p d in
   let shuff_results =
     Array.map 

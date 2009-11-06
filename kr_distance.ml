@@ -32,19 +32,6 @@ let tol = 1e-10 (* "zero" *)
 let outer_exponent p = 
   if p < 1. then 1.
   else 1. /. p
-
-let collect_kr_info criterion kr_v pcl =
-  List.flatten
-    (List.map
-      (function pc ->
-        List.map2
-          (fun place weight ->
-            (Placement.location place,
-            (Placement.distal_bl place, 
-            Mokaphy_base.v_times_scalar kr_v weight)))
-          pc
-          (Base.normalized_prob (List.map criterion pc)))
-       pcl)
  
 (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
 let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
@@ -118,31 +105,26 @@ let total_over_tree curried_edge_total
   check_final_data final_data;
   grand_total /. (Gtree.tree_length ref_tree)
 
-(* sort the placements along a given edge according to their location on
- * the edge in an increasing manner. that way we can recur along this list,
- * moving towards the root. *)
-let sort_along_edge = 
-  IntMap.map
-    (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
-
-let make_kr_map criterion pcl1 pcl2 = 
-  let int_inv x = 1. /. (float_of_int x) in
-  let kr_v1 = [|int_inv (List.length pcl1); 0.|]
-  and kr_v2 = [|0.; int_inv (List.length pcl2)|]
+let make_kr_map weighting criterion pr1 pr2 = 
+  let m1 = Mass_map.Indiv.of_placerun weighting criterion pr1
+  and m2 = Mass_map.Indiv.of_placerun weighting criterion pr2 
+  and process_map f = 
+    IntMap.map (List.map (fun (dist_bl, mass) -> (dist_bl, f mass)))
   in
-  (* this map has all of the information needed to do the KR calculation *)
-    sort_along_edge
-      (IntMapFuns.of_pairlist_listly
-        ((collect_kr_info criterion kr_v1 pcl1) @
-         (collect_kr_info criterion kr_v2 pcl2)))
+  Mass_map.Indiv.sort
+    (Base.combine_list_intmaps 
+    [
+      process_map (fun mass -> [|mass; 0.|]) m1;
+      process_map (fun mass -> [|0.; mass|]) m2;
+    ])
 
 (* get the KR distance between two placement collection lists *)
-let pcl_pair_distance criterion ref_tree p pcl1 pcl2 = 
-  let kr_map = make_kr_map criterion pcl1 pcl2 in
+let pair_distance weighting criterion p pr1 pr2 = 
+  let kr_map = make_kr_map weighting criterion pr1 pr2 in
   (* ppr_kr_info Format.std_formatter kr_map; Format.pp_print_newline Format.std_formatter () *)
   (* total across all of the edges of the tree *)
   let starter_kr_v = [|0.; 0.|]
-   in
+  and ref_tree = Placerun.get_same_tree pr1 pr2 in
   let kr_edge_total id = 
     total_along_edge 
       (exp_kr_diff p) 

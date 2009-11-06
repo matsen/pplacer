@@ -38,16 +38,23 @@ let total_normals n_map =
  * norm_v just means that it's the vector which is associated with the normal
  * simulation.
  *)
-let normal_pair_approx n_samples ref_tree p pl1 pl2 = 
-  let int_inv x = 1. /. (float_of_int x) in
+let normal_pair_approx criterion n_samples p pr1 pr2 = 
+  let int_inv x = 1. /. (float_of_int x)
+  and ref_tree = Placerun.get_same_tree pr1 pr2 in
+  let of_placerun = 
+    Mass_map.Indiv.of_placerun 
+      Mass_map.Unweighted 
+      criterion
+  in
   let all_pre_norm_map = 
     IntMap.map
-      (List.sort compare) (* sort distal bl's along edge *)
-      (IntMapFuns.of_pairlist_listly
-        (collect_placement_info (pl1 @ pl2)))
+      (List.map (fun (distal_bl, _) -> distal_bl))
+      (Mass_map.Indiv.sort
+        (Base.combine_list_intmaps 
+          [of_placerun pr1; of_placerun pr2]))
   in
-  let np1 = List.length pl1
-  and np2 = List.length pl2 in
+  let np1 = Placerun.n_pqueries pr1
+  and np2 = Placerun.n_pqueries pr2 in
   let inv_np = int_inv (np1+np2) in
   let front_coeff = 
     sqrt (((int_inv np1) +. (int_inv np2)) *. inv_np) in
@@ -96,13 +103,3 @@ let normal_pair_approx n_samples ref_tree p pl1 pl2 =
         (fun () -> Array.copy starter_norm_v)
         ref_tree)
       ** (Kr_distance.outer_exponent p))
-
-
-(* make a distribution of distances via the normal approximation *)
-let resampled_distn n_samples criterion p placerun1 placerun2 = 
-  Placerun_distance.pair_dist_gen 
-    (Pquery.best_place criterion)
-    (normal_pair_approx n_samples)
-    p 
-    placerun1 
-    placerun2

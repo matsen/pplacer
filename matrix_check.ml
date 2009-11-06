@@ -72,9 +72,9 @@ let check pr1 pr2 =
     (Placerun.get_name pr2);
   let kr =
     sq 
-      (Placerun_distance.pair_dist 
+      (Kr_distance.pair_distance
+        Mass_map.Unweighted
         Placement.ml_ratio
-        Placerun_distance.Unweighted
         2.
         pr1
         pr2)
