@@ -38,6 +38,21 @@ let tree_list_to_file trees fname =
   List.iter (write ch) trees;
   close_out ch
 
+let ppr ff t = 
+  let ppr_bark ff id = 
+    Format.pp_print_string ff (string_of_bark t id) in 
+  let rec aux ff = function
+    | Stree.Node(id, tL) ->
+      Format.fprintf ff "@[(%a)%a@]"
+        (Ppr.ppr_gen_list_inners "," aux) tL 
+        ppr_bark id
+    | Stree.Leaf(id) ->
+        ppr_bark ff id
+  in
+  Format.fprintf ff "%a;" aux (Gtree.get_stree t)
+
+
+
 (* input *)
 
 (* count the number of occurrences of char c in str *)
