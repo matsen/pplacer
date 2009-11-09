@@ -126,7 +126,8 @@ let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by =
   let boosted_new_t = boost boost_by new_t in
   let new_id = 1 + top_id boosted_new_t in
   (* if new_top_bl is neg then highest_distal was bigger than top edge *)
-  assert(new_top_bl >= 0.);
+  if new_top_bl >= 0. then
+    failwith ("Attachment distal branch length is out of range when attaching a subtree to "^(string_of_int our_top_id));
   bark_join2
     (set_bl t our_top_id where)
     boosted_new_t
