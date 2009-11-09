@@ -5,6 +5,23 @@
 open MapsSets
 open Fam_batteries
 
+(*
+# Mokaphy_base.identify_biggest_via_f abs [1;2;3;-4;2];;
+- : int * int list = (-4, [1; 2; 3; 2])
+*)
+let identify_biggest_via_f f = function
+  | [] -> assert(false)
+  | h::t ->
+      let rec aux big big_val rest = function
+        | [] -> (big, big_val, rest)
+        | x::l -> 
+            let new_val = f x in
+            if new_val > big_val then aux x new_val (big::rest) l
+            else aux big big_val (x::rest) l
+      in
+      match aux h (f h) [] t with
+      | (biggest, _, rest) -> (biggest, List.rev rest)
+
 let ppr_kr_info ff info_map = 
   IntMapFuns.ppr_gen
     (Ppr.ppr_list

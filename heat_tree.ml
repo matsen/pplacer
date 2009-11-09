@@ -48,7 +48,9 @@ let color_map_aux weighting criterion p pr1 pr2 =
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd) 
-      (Kr_distance.make_kr_map weighting criterion pr1 pr2) in
+      (Kr_distance.make_kr_map 
+        (Mass_map.Indiv.of_placerun weighting criterion pr1)
+        (Mass_map.Indiv.of_placerun weighting criterion pr2)) in
   let sum_over_krs_of_id id = 
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))

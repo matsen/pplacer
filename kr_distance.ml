@@ -105,10 +105,8 @@ let total_over_tree curried_edge_total
   check_final_data final_data;
   grand_total /. (Gtree.tree_length ref_tree)
 
-let make_kr_map weighting criterion pr1 pr2 = 
-  let m1 = Mass_map.Indiv.of_placerun weighting criterion pr1
-  and m2 = Mass_map.Indiv.of_placerun weighting criterion pr2 
-  and process_map f = 
+let make_kr_map m1 m2 = 
+  let process_map f = 
     IntMap.map (List.map (fun (dist_bl, mass) -> (dist_bl, f mass)))
   in
   Mass_map.Indiv.sort
@@ -118,13 +116,10 @@ let make_kr_map weighting criterion pr1 pr2 =
       process_map (fun mass -> [|0.; mass|]) m2;
     ])
 
-(* get the KR distance between two placement collection lists *)
-let pair_distance weighting criterion p pr1 pr2 = 
-  let kr_map = make_kr_map weighting criterion pr1 pr2 in
-  (* ppr_kr_info Format.std_formatter kr_map; Format.pp_print_newline Format.std_formatter () *)
-  (* total across all of the edges of the tree *)
-  let starter_kr_v = [|0.; 0.|]
-  and ref_tree = Placerun.get_same_tree pr1 pr2 in
+(* Z_p distance between two mass maps *)
+let dist ref_tree p m1 m2 = 
+  let starter_kr_v = [|0.; 0.|] 
+  and kr_map = make_kr_map m1 m2 in
   let kr_edge_total id = 
     total_along_edge 
       (exp_kr_diff p) 
@@ -144,3 +139,11 @@ let pair_distance weighting criterion p pr1 pr2 =
     (fun () -> Array.copy starter_kr_v)
     ref_tree)
   ** (outer_exponent p)
+
+let pair_distance weighting criterion p pr1 pr2 = 
+  dist
+    (Placerun.get_same_tree pr1 pr2)
+    p
+    (Mass_map.Indiv.of_placerun weighting criterion pr1)
+    (Mass_map.Indiv.of_placerun weighting criterion pr2)
+
