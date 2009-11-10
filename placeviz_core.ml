@@ -58,7 +58,6 @@ let decor_bark_of_bl bl =
  *)
 let tree_by_map f ref_tree placed_map = 
   Gtree.add_subtrees_by_map
-    decor_bark_of_bl
     ref_tree
     (IntMap.mapi f placed_map)
 
@@ -73,7 +72,8 @@ let tog_tree ref_tree placed_map =
           make_zero_leaf 
             [ Decor.red 255 ]
             (Placement.pendant_bl best)
-            (Pquery.name pquery))))
+            (Pquery.name pquery),
+         decor_bark_of_bl)))
     ref_tree
     placed_map
 
@@ -91,7 +91,8 @@ let num_tree bogus_bl ref_tree placed_map =
       make_zero_leaf 
         [ Decor.red 255 ]
         bogus_bl
-        (Printf.sprintf "%d_at_%d" (List.length pqueries) loc))])
+        (Printf.sprintf "%d_at_%d" (List.length pqueries) loc),
+      decor_bark_of_bl)])
     ref_tree
     placed_map
 
@@ -106,7 +107,6 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
 let sing_tree max_width ref_tree pquery = 
   let pqname = Pquery.name pquery in
   Gtree.add_subtrees_by_map
-    decor_bark_of_bl
     ref_tree
     (IntMapFuns.of_pairlist_listly 
       (ListFuns.mapi
@@ -127,7 +127,8 @@ let sing_tree max_width ref_tree pquery =
                 "%s_#%d_LR=%g" 
                 pqname 
                 num
-                ml_ratio))))
+                ml_ratio),
+            decor_bark_of_bl)))
         (Pquery.place_list pquery)))
 
 let write_sing_file max_width tree_fmt fname_base ref_tree 

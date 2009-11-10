@@ -163,10 +163,10 @@ let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by =
  * starting from zero.
  * we assume that all ids >= avail_id are available.
  *)
-let add_subtrees_above bark_of_bl avail_id tree where_subtree_list = 
+let add_subtrees_above avail_id tree where_subtree_list = 
   let rec aux pos accu accu_id = function
     | [] -> accu_id, accu
-    | (new_pos, new_t)::rest ->
+    | (new_pos, new_t, bark_of_bl)::rest ->
         aux
           new_pos
           (add_boosted_subtree_above 
@@ -178,22 +178,27 @@ let add_subtrees_above bark_of_bl avail_id tree where_subtree_list =
           (2 + accu_id + (addition_n_edges new_t))
           rest
   in
+  let get_where (where,_,_) = where in
   aux 
     0. 
     tree
     avail_id
     (List.sort
       (fun pos_t1 pos_t2 -> 
-        Pervasives.compare (fst pos_t1) (fst pos_t2))
+        Pervasives.compare (get_where pos_t1) (get_where pos_t2))
       where_subtree_list)
 
-(* we assume that all input trees have their maximal ids at the top *)
-let add_subtrees_by_map bark_of_bl ref_tree where_subtree_map = 
+(* where_subtree_map is a map from a location to a triple (pos, tree,
+ * bark_of_bl), where pos is the position along the edge in terms of distal
+ * branch length, tree is the tree to attach, and bark_of_bl is the function to
+ * use when making a new bark out of the branch length which has been cut down.
+ * we assume that all input trees have their maximal ids at the top. *)
+let add_subtrees_by_map ref_tree where_subtree_map = 
   (* here we keep track of the available ids so that we can use new ones *)
   let global_avail_id = ref (1+(top_id ref_tree)) in
   let globalized_id_add_subtrees_above tree where_subtree_list = 
     let new_id, result = 
-      add_subtrees_above bark_of_bl !global_avail_id tree where_subtree_list in
+      add_subtrees_above !global_avail_id tree where_subtree_list in
     global_avail_id := new_id;
     result
   in
