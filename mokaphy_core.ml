@@ -1,6 +1,7 @@
 (* mokaphy v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
 *)
+
 open Fam_batteries
 open MapsSets
 
@@ -147,53 +148,32 @@ let wrapped_pair_core prefs criterion pr1 pr2 =
  * run pair_core for each unique pair 
  *)
 let core prefs criterion ch pr_arr = 
-  let u = 
-    Uptri.init
-      (Array.length pr_arr)
-      (fun i j ->
-        wrapped_pair_core
-          prefs
-          criterion
-          pr_arr.(i) 
-          pr_arr.(j))
-  in
-  let names = Array.map Placerun.get_name pr_arr in
-  Printf.fprintf ch "Z_%g distances:\n" (Mokaphy_prefs.p_exp prefs);
-  Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
-  if Mokaphy_prefs.n_samples prefs > 0 then begin
-    Printf.fprintf ch "Z_%g p-values:\n" (Mokaphy_prefs.p_exp prefs);
-    Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+  if Array.length pr_arr > 1 then begin
+    let u = 
+      Uptri.init
+        (Array.length pr_arr)
+        (fun i j ->
+          wrapped_pair_core
+            prefs
+            criterion
+            pr_arr.(i) 
+            pr_arr.(j))
+    in
+    let names = Array.map Placerun.get_name pr_arr in
+    Printf.fprintf ch "Z_%g distances:\n" (Mokaphy_prefs.p_exp prefs);
+    Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
+    if Mokaphy_prefs.n_samples prefs > 0 then begin
+      Printf.fprintf ch "Z_%g p-values:\n" (Mokaphy_prefs.p_exp prefs);
+      Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+    end;
   end;
   let bary_prefix = Mokaphy_prefs.bary_prefix prefs in
-  if bary_prefix <> "" then begin
-    let bary_map = 
-      IntMapFuns.of_pairlist_listly
-        (Array.to_list
-          (Array.map 
-            (Barycenter.of_placerun 
-              (weighting_of_prefs prefs)
-              criterion
-              (Mokaphy_prefs.p_exp prefs))
-            pr_arr))
-    in
-    let ref_tree = 
-      let ref_trees = Array.map Placerun.get_ref_tree pr_arr in
-      for i=1 to (Array.length pr_arr)-1 do
-        assert(0 = Newick.compare ref_trees.(0) ref_trees.(i))
-      done;
-      ref_trees.(0)
-    in
-    Placeviz_core.trees_to_file
-      Placeviz_core.Phyloxml
-      bary_prefix
-      [
-        Gtree.add_subtrees_by_map
-          Placeviz_core.decor_bark_of_bl
-          (Decor_gtree.of_newick_gtree ref_tree)
-          (IntMap.map
-            (List.map
-              (fun pos -> (pos, Gtree.Internal_node)))
-            bary_map)
-      ]
-  end
+  if bary_prefix <> "" then 
+    Barycenter_tree.write 
+      (weighting_of_prefs prefs)
+      criterion 
+      (Mokaphy_prefs.p_exp prefs)
+      bary_prefix 
+      pr_arr;
+  ()
 
