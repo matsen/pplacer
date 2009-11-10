@@ -17,6 +17,7 @@ type mokaphy_prefs =
     ddensity: bool ref;
     heat_tree: bool ref;
     rev_video: bool ref;
+    bary_prefix: string ref;
   }
 
 let verbose      p = !(p.verbose)
@@ -32,6 +33,7 @@ let matrix_check p = !(p.matrix_check)
 let ddensity     p = !(p.ddensity)
 let heat_tree    p = !(p.heat_tree)
 let rev_video    p = !(p.rev_video)
+let bary_prefix  p = !(p.bary_prefix)
 
 
 (* defaults *)
@@ -50,6 +52,7 @@ let defaults () =
     ddensity = ref false;
     heat_tree = ref false;
     rev_video = ref false;
+    bary_prefix = ref "";
   }
 
 
@@ -82,5 +85,8 @@ let args prefs = [
   "Make a heat tree for each pair.";
   "--rv", Arg.Set prefs.rev_video,
   "Use reverse video for the heat tree (i.e. zero being white).";
+  "--bary", Arg.Set_string prefs.bary_prefix,
+  "Calculate the barycenter of each of the .place files. Specify the prefix
+  string"
   ]
 

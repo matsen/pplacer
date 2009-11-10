@@ -42,13 +42,13 @@ let make_shuffled_prs n_shuffles pr1 pr2 =
       (make_pr pr1 num (pquery_sub 0 n1),
       make_pr pr2 num (pquery_sub n1 n2)))
 
+let weighting_of_prefs prefs =
+  if Mokaphy_prefs.weighted prefs then Mass_map.Weighted 
+  else Mass_map.Unweighted 
 
 let pair_core prefs criterion pr1 pr2 =
   let p = (Mokaphy_prefs.p_exp prefs) in
-  let weighting = 
-    if Mokaphy_prefs.weighted prefs then Mass_map.Weighted 
-    else Mass_map.Unweighted 
-  in
+  let weighting = weighting_of_prefs prefs in
   let calc_dist = 
     Kr_distance.pair_distance
       weighting 
@@ -163,4 +163,37 @@ let core prefs criterion ch pr_arr =
   if Mokaphy_prefs.n_samples prefs > 0 then begin
     Printf.fprintf ch "Z_%g p-values:\n" (Mokaphy_prefs.p_exp prefs);
     Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+  end;
+  let bary_prefix = Mokaphy_prefs.bary_prefix prefs in
+  if bary_prefix <> "" then begin
+    let bary_map = 
+      IntMapFuns.of_pairlist_listly
+        (Array.to_list
+          (Array.map 
+            (Barycenter.of_placerun 
+              (weighting_of_prefs prefs)
+              criterion
+              (Mokaphy_prefs.p_exp prefs))
+            pr_arr))
+    in
+    let ref_tree = 
+      let ref_trees = Array.map Placerun.get_ref_tree pr_arr in
+      for i=1 to (Array.length pr_arr)-1 do
+        assert(0 = Newick.compare ref_trees.(0) ref_trees.(i))
+      done;
+      ref_trees.(0)
+    in
+    Placeviz_core.trees_to_file
+      Placeviz_core.Phyloxml
+      bary_prefix
+      [
+        Gtree.add_subtrees_by_map
+          Placeviz_core.decor_bark_of_bl
+          (Decor_gtree.of_newick_gtree ref_tree)
+          (IntMap.map
+            (List.map
+              (fun pos -> (pos, Gtree.Internal_node)))
+            bary_map)
+      ]
   end
+
