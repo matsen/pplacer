@@ -187,6 +187,7 @@ let find p ref_tree unsorted_mass =
     (* the amount by which the work moving the proximal mass to pos exceeds that
      * moving the distal mass to pos. the sign is reversed when compared to
      * the "edge" version but that way we again stop when it becomes negative. *)
+    (* da and dc are Delta(a) and Delta(c) in the barycenter scan *)
     let delta pos = (work pm pos) -. (work dm pos) in
     let dc = delta curr_pos in
     (* Printf.printf "dc = %g\n" dc; *)
