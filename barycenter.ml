@@ -8,8 +8,6 @@
 open MapsSets
 open Fam_batteries
 
-type direction = Distal | Proximal
-
 (* masses *)
 let list_sum = List.fold_left (fun accu x -> accu +. x) 0.
 
@@ -41,7 +39,6 @@ let list_count f l =
     0
     l
 
-
 (*
 # let t = Gtree.get_stree (Newick.of_string "((a,b),(c,d))");;
 val t : Stree.stree = ((0,1)2,(3,4)5)6
@@ -49,6 +46,8 @@ val t : Stree.stree = ((0,1)2,(3,4)5)6
 val ids : int list = [0; 1; 2]
 # let ids = Barycenter.collect_proximal_ids t 2;;
 val ids : int list = [6; 5; 3; 4]
+*
+* note that distal includes wanted
 *)
 let collect_distal_ids stree wanted = 
   let rec aux = function
@@ -72,6 +71,8 @@ let collect_proximal_ids stree wanted =
   in 
   aux stree
 
+(* the amount of work required to move the mass in "mass" map to the distal side
+ * of the edge labeled edge_id *)
 let tree_work collect_fun p ref_tree mass edge_id = 
   let sub_mass = 
     submap 
@@ -86,6 +87,7 @@ let tree_work collect_fun p ref_tree mass edge_id =
       edge_id
       [Gtree.get_bl ref_tree edge_id, total_mass sub_mass])
 
+(* distal includes the chosen edge *)
 let distal_work p ref_tree = 
   tree_work collect_distal_ids p ref_tree
 
@@ -99,7 +101,8 @@ let work_diff p ref_tree mass edge_id =
 let ppr_opt_int_list =
   Ppr.ppr_list (Ppr.ppr_opt Format.pp_print_int) 
 
-let find p ref_tree mass = 
+(* find the edge containing the barycenter *)
+let find_edge p ref_tree mass = 
   (* return the id iff the work diff on that edge is positive *)
   let diff id = 
     let d = work_diff p ref_tree mass id in
@@ -130,14 +133,70 @@ let find p ref_tree mass =
               (ppr_opt_int_list Format.std_formatter l;
               failwith "convexity problem!")))
   in
-  aux (Gtree.get_stree ref_tree)
+  match aux (Gtree.get_stree ref_tree) with
+  | Some edge_id -> edge_id
+  | None -> failwith "find_edge failed!"
 
+let find p ref_tree unsorted_mass = 
+  let mass = Mass_map.Indiv.sort unsorted_mass in
+  let edge_id = find_edge p ref_tree mass in
+  let get_sub_mass collect_fun = 
+    submap mass (collect_fun (Gtree.get_stree ref_tree) edge_id) 
+  in
+(* these are the true distal and proximal, so we don't include the chosen edge
+ * in the mass map *)
+  let distal_mass = 
+    IntMap.remove edge_id (get_sub_mass collect_distal_ids) 
+  and proximal_mass = get_sub_mass collect_proximal_ids 
+  and our_mass_list = 
+    if IntMap.mem edge_id mass then IntMap.find edge_id mass
+    else []
+  and bl = Gtree.get_bl ref_tree edge_id
+  in
+  let work sub_mass pos = 
+    Kr_distance.dist
+      ref_tree
+      p
+      sub_mass
+      (singleton_map
+        edge_id
+        [pos, total_mass sub_mass])
+  in
+  let rec aux curr_pos below_mass above_mass = 
+    Printf.printf "curr_pos is %g\n" curr_pos;
+    let add_mass extra_mass mass_map =
+      IntMap.add edge_id extra_mass mass_map in
+    let bm = add_mass below_mass distal_mass
+    and am = add_mass above_mass proximal_mass
+    in
+    (* the amount by which the work moving the above mass to pos exceeds that
+     * moving the below mass to pos *)
+    let delta pos = (work am pos) -. (work bm pos) in
+    assert(curr_pos <= bl);
+    let dc = delta curr_pos in
+    Printf.printf "dc = %g\n" dc;
+    assert(0. <= dc);
+    let bary ~above_pos da = 
+      curr_pos +. (above_pos -. curr_pos) *. dc /. (dc -. da)
+    in
+    match above_mass with
+    | [] -> (edge_id, bary ~above_pos:bl (delta bl))
+    | (pos, mass)::rest -> begin
+        let da = delta pos in
+        if da > 0. then
+          (* we can do better by moving past this placement *)
+          aux pos ((pos,mass)::below_mass) rest
+        else
+          (edge_id, bary ~above_pos:pos da)
+    end
+  in
+  aux 0. [] our_mass_list
 
-
-    (*
-let work_in_tree p t mass = 
-
-
-let prx = Placerun_io.of_file 
-
-*)
+let of_placerun weighting criterion p pr = 
+  find 
+    p 
+    (Placerun.get_ref_tree pr)
+    (Mass_map.Indiv.of_placerun 
+      weighting
+      criterion
+      pr)
