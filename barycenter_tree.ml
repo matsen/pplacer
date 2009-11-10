@@ -8,8 +8,17 @@ let make weighting criterion p pr_arr =
   let bary_map = 
     IntMapFuns.of_pairlist_listly
       (Array.to_list
-        (Array.map 
-          (Barycenter.of_placerun weighting criterion p)
+        (Array.mapi
+          (fun i pr ->
+            let (loc, pos) = 
+              Barycenter.of_placerun weighting criterion p pr in
+            (loc,
+              (pos, 
+              Gtree.Internal_node,
+              (fun bl -> 
+                new Decor_bark.decor_bark 
+                  (`Of_bl_name_boot_dlist 
+                     (Some bl, None, None, [Decor.dot i]))))))
           pr_arr))
   in
   let ref_tree = 
@@ -20,12 +29,8 @@ let make weighting criterion p pr_arr =
     ref_trees.(0)
   in
   Gtree.add_subtrees_by_map
-    (fun bl -> print_endline "hi"; Placeviz_core.decor_bark_of_bl bl)
     (Decor_gtree.of_newick_gtree ref_tree)
-    (IntMap.map
-      (List.map
-        (fun pos -> (pos, Gtree.Internal_node)))
-      bary_map)
+    bary_map
 
 let write weighting criterion p bary_prefix pr_arr =
   Placeviz_core.trees_to_file
