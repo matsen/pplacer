@@ -118,8 +118,9 @@ let bark_join2 t1 t2 new_id bark =
  * 
  * we boost all of the indices in new_t by boost_by, and take the newly created
  * node to have id = 1 + top_id of boosted new_t.
+ * bark_of_bl is called with the new top bl to equip the root of the new tree
+ * with bark corresponding to the branch length bl.
  *)
-
 let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by = 
   let our_top_id = top_id t in
   let new_top_bl = (get_bl t our_top_id) -. where in
