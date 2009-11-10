@@ -8,6 +8,7 @@ open MapsSets
 type decoration = 
   | Color of int * int * int
   | Width of float
+  | Dot of int
 
 let assert_ubyte i = assert(i >= 0 || i <= 255)
 let assert_ubytes = List.iter assert_ubyte
@@ -37,6 +38,7 @@ let rev_color = function
       let rev x = 255 - x in
       Color(rev r, rev g, rev b)
   | Width _ as width -> width
+  | Dot _ as dot -> dot
 
 (* "color" is actually any map from an int to a decoration *)
 let scaled_color color ~min ~max x = 
@@ -52,9 +54,18 @@ let scaled_width ~min ~max x =
   assert_unit_interval x;
   width (min +. (max -. min) *. x)
 
+
+(* dot *)
+
+let dot i = Dot i
+
+
+(* writing *)
+
 let ppr ff = function
   | Color(r,g,b) -> Format.fprintf ff "Color(%d, %d, %d)" r g b
   | Width w -> Format.fprintf ff "Width(%g)" w
+  | Dot i -> Format.fprintf ff "Dot(%d)" i
 
 let write_xml ch = function
   | Color(r,g,b) -> 
@@ -67,4 +78,14 @@ let write_xml ch = function
         ch
   | Width w -> 
       Xml.write_float "width" ch w
-
+  | Dot i -> 
+      let tag_name = 
+        let r = i mod 3 in
+        if r = 0 then "duplications"
+        else if r = 1 then "speciations"
+        else "losses"
+      in
+      Xml.write_long_tag
+        (fun () -> Xml.write_int tag_name ch (i+1);)
+        "events"
+        ch
