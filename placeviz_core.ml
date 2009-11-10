@@ -38,14 +38,15 @@ let trees_to_file tree_fmt prefix trees =
   | Phyloxml -> Phyloxml.tree_list_to_file trees (prefix^".xml") 
 
 let make_zero_leaf decor_list bl name = 
-  Gtree.gtree 
-    (Stree.leaf 0)
-    (IntMap.add 
-      0 
-      (new Decor_bark.decor_bark 
-        (`Of_bl_name_boot_dlist 
-          (Some bl, Some name, None, decor_list)))
-      IntMap.empty)
+  Gtree.Subtree 
+    (Gtree.gtree 
+      (Stree.leaf 0)
+      (IntMap.add 
+        0 
+        (new Decor_bark.decor_bark 
+          (`Of_bl_name_boot_dlist 
+            (Some bl, Some name, None, decor_list)))
+        IntMap.empty))
 
 let decor_bark_of_bl bl = 
   new Decor_bark.decor_bark 

@@ -79,6 +79,17 @@ let tree_length tree =
       List.fold_left ( +. ) 0. (List.map aux tL)
   | Stree.Leaf _ -> 0.
 
+
+(* adding things to trees *)
+
+type 'a addition = 
+  | Subtree of 'a gtree 
+  | Internal_node
+
+let addition_n_edges = function
+  | Subtree t -> n_edges t
+  | Internal_node -> 0
+
 (* copy the info from src at id over to dest *)
 let copy_bark ~dest ~src id = 
   gtree 
@@ -88,7 +99,6 @@ let copy_bark ~dest ~src id =
       (IntMap.find id (get_bark_map src)) 
       (get_bark_map dest))
 
-
 (* join a list of info_trees *)
 let join new_id tL = 
   gtree
@@ -97,15 +107,25 @@ let join new_id tL =
       Bark_map.union 
       (List.map get_bark_map tL))
 
-let boost by t = 
-  gtree
-    (Stree.boost by (get_stree t))
-    (Bark_map.boost by (get_bark_map t))
+let boost by = function
+  | Subtree t ->
+    Subtree
+      (gtree
+        (Stree.boost by (get_stree t))
+        (Bark_map.boost by (get_bark_map t)))
+  | Internal_node -> Internal_node
 
 (* join two trees and add bark to the top *)
-let bark_join2 t1 t2 new_id bark = 
-  let without_bl = join new_id [t1; t2] in
-  add_bark new_id bark without_bl 
+let opt_join t t_opt new_id bark = 
+  add_bark 
+    new_id 
+    bark
+    (join 
+      new_id 
+      (match t_opt with
+      | Subtree t_new -> [t; t_new]
+      | Internal_node -> [t]))
+
 
 (* add a subtree above the prev one, giving
  *     
@@ -125,11 +145,11 @@ let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by =
   let our_top_id = top_id t in
   let new_top_bl = (get_bl t our_top_id) -. where in
   let boosted_new_t = boost boost_by new_t in
-  let new_id = 1 + top_id boosted_new_t in
+  let new_id = 1 + boost_by + (addition_n_edges new_t) in
   (* if new_top_bl is neg then highest_distal was bigger than top edge *)
   if new_top_bl < 0. then
     failwith ("Attachment distal branch length is out of range when attaching a subtree to "^(string_of_int our_top_id));
-  bark_join2
+  opt_join
     (set_bl t our_top_id where)
     boosted_new_t
     new_id
@@ -155,8 +175,7 @@ let add_subtrees_above bark_of_bl avail_id tree where_subtree_list =
             ~new_t 
             (new_pos -. pos)
             accu_id)
-          (* 2 = 1 for internal node + 1 to get to next avail *)
-          (2 + accu_id + (top_id new_t))
+          (2 + accu_id + (addition_n_edges new_t))
           rest
   in
   aux 
