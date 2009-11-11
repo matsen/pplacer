@@ -6,7 +6,9 @@ open Fam_batteries
 open MapsSets
 open Placement
 
-let singly = ref false
+let write_sing = ref false
+let write_tog = ref false
+let write_loc = ref false
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
@@ -21,8 +23,12 @@ let parse_args () =
     files := arg :: !files in
   let args = 
     [
-      "-s", Arg.Set singly,
+      "--sing", Arg.Set write_sing,
       "Single placement: make one tree for each placement.";
+      "--tog", Arg.Set write_tog,
+      "Together placement: make a tree with each of the fragments represented as a pendant edge. Not recommended for more than 1000 placements.";
+      "--loc", Arg.Set write_loc,
+      "Write a fasta file sorted by location.";
       "--bogusBl", Arg.Set_float bogus_bl,
       "Set the branch length for visualization in the number tree.";
       "--nodeNumbers", Arg.Set show_node_numbers,
@@ -69,15 +75,17 @@ let () =
         end;
         let fname_base = Placerun_io.chop_place_extension fname in
         (* write loc file *)
-        Placeviz_core.write_loc_file 
-          fname_base unplaced_seqs placed_map;
+        if !write_loc then
+          Placeviz_core.write_loc_file 
+            fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
-        Placeviz_core.write_tog_file 
-          tree_fmt fname_base decor_ref_tree placed_map;
         write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-           weighting criterion !total_width fname_base placerun;
-        if !singly then
+          weighting criterion !total_width fname_base placerun;
+        if !write_tog then
+          Placeviz_core.write_tog_file 
+            tree_fmt fname_base decor_ref_tree placed_map;
+        if !write_sing then
           Placeviz_core.write_sing_file 
             !total_width
             tree_fmt
