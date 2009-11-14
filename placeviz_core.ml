@@ -140,16 +140,16 @@ let write_sing_file max_width tree_fmt fname_base ref_tree
 
 
 (* fat trees *)
-let fat_tree weighting criterion max_width pr =
+let fat_tree weighting criterion max_width decor_ref_tree pr =
   Decor_gtree.add_decor_by_map
-    (Decor_gtree.of_newick_gtree (Placerun.get_ref_tree pr))
+    decor_ref_tree
     (IntMap.map
       (fun mass -> 
         [ Decor.scaled_width ~min:min_width ~max:max_width mass; ])
       (Mass_map.By_edge.of_placerun weighting criterion pr))
 
-let write_fat_tree weighting criterion fat_width fname_base placerun = 
+let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree placerun = 
   Phyloxml.tree_to_file
-    (fat_tree weighting criterion fat_width placerun)
+    (fat_tree weighting criterion fat_width decor_ref_tree placerun)
     (fname_base^".fat.xml") 
 

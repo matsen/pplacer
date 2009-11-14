@@ -15,6 +15,9 @@ let compare t1 t2 = Gtree.compare Newick_bark.compare t1 t2
 let to_numbered t = 
   Gtree.mapi_bark_map (fun i x -> x#to_numbered i) t
 
+let make_boot_id t =
+  Gtree.mapi_bark_map (fun i x -> x#set_boot (float_of_int i)) t
+
 (* output *)
 
 let string_of_bark t id = 

@@ -58,9 +58,12 @@ let () =
         let frc = 0 in
         let placerun = 
           Placerun_io.of_file fname in
+        let ref_tree = Placerun.get_ref_tree placerun in
         let decor_ref_tree = 
           Decor_gtree.of_newick_gtree 
-            (Placerun.get_ref_tree placerun) in
+            (if not !show_node_numbers then ref_tree
+            else (Newick.make_boot_id ref_tree))
+        in
         let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map = 
           Pquery.make_map_by_best_loc
@@ -81,7 +84,7 @@ let () =
         (* make the various visualizations *)
         write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-          weighting criterion !total_width fname_base placerun;
+          weighting criterion !total_width fname_base decor_ref_tree placerun;
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt fname_base decor_ref_tree placed_map;
