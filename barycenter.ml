@@ -6,6 +6,8 @@
  * position on that edge. We *could* add edges in then remove them later, but
  * that has its own perils and have settled with a bit of code dup.
  *
+ *
+ *  options are to 
 *)
 
 open MapsSets
@@ -41,180 +43,165 @@ let list_count f l =
   List.fold_left 
     (fun accu x -> if f x then accu+1 else accu) 0 l
 
+let extract_goods l = 
+  List.fold_left 
+    (fun accu -> function | Some x -> x::accu | None -> accu) [] l
+
+
 (*
 # let t = Gtree.get_stree (Newick.of_string "((a,b),(c,d))");;
 val t : Stree.stree = ((0,1)2,(3,4)5)6
 # let ids = Barycenter.collect_distal_ids t 2;;
-val ids : int list = [0; 1; 2]
+val ids : int list = [0; 1]
 # let ids = Barycenter.collect_proximal_ids t 2;;
 val ids : int list = [6; 5; 3; 4]
 *
-* note that distal includes "wanted".
+* note that neither of them include "wanted."
 *)
 let collect_distal_ids stree wanted = 
   let rec aux = function
-    | Stree.Node(i, tL) as sub ->
-        if i = wanted then Stree.collect_node_numbers sub
+    | Stree.Node(i, tL) ->
+        if i = wanted then 
+          List.flatten (List.map Stree.collect_node_numbers tL)
         else 
           (let below = List.map aux tL in
 (* make sure we don't have the id appearing multiple places *)
           assert(list_count (( <> ) []) below <= 1);
           List.flatten below)
-    | Stree.Leaf i -> if i = wanted then [i] else []
+(* if we get to a leaf but haven't hit wanted yet then the leaf must be wanted.
+ * however, in that case we don't include it by the above comment *)
+    | Stree.Leaf _ -> []
   in 
   aux stree
 
 let collect_proximal_ids stree wanted = 
   let rec aux = function
     | Stree.Node(i, tL) ->
-        if i = wanted then []
+        if i = wanted then [] (* stop *)
         else (i :: (List.flatten (List.map aux tL)))
     | Stree.Leaf i -> if i = wanted then [] else [i]
   in 
   aux stree
 
-(* the amount of work required to move the mass in "mass" map to the distal side
- * of the edge labeled edge_id *)
-let tree_work collect_fun p ref_tree mass edge_id = 
-  let sub_mass = 
-    submap 
-      mass 
-      (collect_fun (Gtree.get_stree ref_tree) edge_id) 
-  in
-  Kr_distance.dist
-    ref_tree
-    p
-    sub_mass
-    (singleton_map
-      edge_id
-      [Gtree.get_bl ref_tree edge_id, total_mass sub_mass])
+exception Found_edge of int
+exception Found_node of int
+type action = Continue | Stop
 
-(* distal includes the chosen edge *)
-let distal_work p ref_tree = 
-  tree_work collect_distal_ids p ref_tree
-
-let proximal_work p ref_tree = 
-  tree_work collect_proximal_ids p ref_tree
-
-(* positive when distal beats proximal. that means that we should stop when this
- * value becomes positive. *)
-let work_diff p ref_tree mass edge_id = 
-  let run f = f p ref_tree mass edge_id in
-  (run distal_work) -. (run proximal_work)
-
-let ppr_opt_int_list =
-  Ppr.ppr_list (Ppr.ppr_opt Format.pp_print_int) 
-
-(* find the edge containing the barycenter *)
-let find_edge p ref_tree mass = 
-  (* return the id iff the work diff on that edge is positive. Some id means
-   * that we go investigate below the id edge. *)
-  let diff id = 
-    let d = work_diff p ref_tree mass id in
-    (* Printf.printf "at %d we get %g\n" id d; *)
-    if d < 0. then None else Some id
-  in
-  let rec aux = function
-    | Stree.Leaf id -> diff id
-    | Stree.Node(id, tL) ->
-      (match diff id with
-      | None -> None
-      | Some _ ->
-      (* pos work diff, so we try moving lower *)
-        (match List.filter (( <> ) None) (List.map aux tL) with
-        | [] -> 
-            (* nothing good below, so stop here *)
-            Some id
-        | [ x ] -> 
-            (* found something good below. return it. *)
-            x
-        | l -> 
-            if List.length tL = List.length l then 
-              (* the node (not the edge) is the barycenter *)
-              Some id
-            else
-              (ppr_opt_int_list Format.std_formatter l;
-              failwith "convexity problem!")))
-  in
-  match aux (Gtree.get_stree ref_tree) with
-  | Some edge_id -> edge_id
-  | None -> failwith "find_edge failed!"
-
-(* find the edge and the location along the edge.
- * we move along the edge from the bottom to the top, and stop when appropriate.
- * this could be made faster by special handling of the masses, i.e. not using
- * the kr_distance function. but that would take lots more code.
- * *)
-let find p ref_tree unsorted_mass = 
-  let mass = Mass_map.Indiv.sort unsorted_mass in
-  let edge_id = find_edge p ref_tree mass in
-  let get_sub_mass collect_fun = 
-    submap mass (collect_fun (Gtree.get_stree ref_tree) edge_id) 
-  in
-(* the first step is to get the distal and proximal maps for the mass not
- * on the given edge. in contrast to before these are the true distal and
- * proximal, so we don't include the chosen edge in the mass map *)
-  let distal_mass = 
-    IntMap.remove edge_id (get_sub_mass collect_distal_ids) 
-  and proximal_mass = get_sub_mass collect_proximal_ids 
-  (* we also get the mass on our edge. this is what we will be cycling through. *)
-  and our_mass_list = 
-    if IntMap.mem edge_id mass then IntMap.find edge_id mass
-    else []
-  and bl = Gtree.get_bl ref_tree edge_id in
-  (* here and below, pos refers to the position along the edge, measured from
-   * the distal side *)
-  let work sub_mass pos = 
-    Kr_distance.dist
-      ref_tree
-      p
+let find p ref_tree mass_m = 
+  let smass = Mass_map.Indiv.sort mass_m in
+  let work sub_mass id pos = 
+    Kr_distance.dist ref_tree p
       sub_mass
-      (singleton_map
-        edge_id
-        [pos, total_mass sub_mass])
+      (singleton_map id [pos, total_mass sub_mass])
   in
-  (* our loop. we are at a place on the edge which has our_distal_mass_list
-   * below us, and our_proximal_mass_list above us. we add those to our
-   * respective maps so we can calculate with kr_distance. *)
-  let rec aux curr_pos our_distal_mass_list our_proximal_mass_list = 
-    (* Printf.printf "curr_pos is %g\n" curr_pos; *)
-    let add_mass extra_mass mass_map =
-      IntMap.add edge_id extra_mass mass_map in
-    (* add mass to the maps as mentioned above *)
-    let dm = add_mass our_distal_mass_list distal_mass
-    and pm = add_mass our_proximal_mass_list proximal_mass
+  let get_sub_mass collect_fun id = 
+    submap smass (collect_fun (Gtree.get_stree ref_tree) id) 
+  in
+  (* the amount of work required to move all of the mass on the chosen side, as
+   * well as the edge_mass, to pos on id *)
+  let tree_work collect_fun edge_mass id pos = 
+    let sub_mass =
+      IntMap.add id edge_mass (get_sub_mass collect_fun id)
     in
-    (* the amount by which the work moving the proximal mass to pos exceeds that
-     * moving the distal mass to pos. the sign is reversed when compared to
-     * the "edge" version but that way we again stop when it becomes negative. *)
-    (* da and dc are Delta(a) and Delta(c) in the barycenter scan *)
-    let delta pos = (work pm pos) -. (work dm pos) in
-    let dc = delta curr_pos in
-    (* Printf.printf "dc = %g\n" dc; *)
-    assert(curr_pos <= bl);
-    assert(dc >= 0.);
+    work sub_mass id pos
+  in
+  let proximal_work prox_ml id pos = 
+    List.iter (fun (m_pos,_) -> assert(m_pos >= pos)) prox_ml;
+    tree_work collect_proximal_ids prox_ml id pos 
+  and distal_work dist_ml id pos = 
+    List.iter (fun (m_pos,_) -> assert(m_pos <= pos)) dist_ml;
+    tree_work collect_distal_ids dist_ml id pos
+  in
+  let delta ~prox_ml ~dist_ml id pos = 
+    (proximal_work prox_ml id pos) -. 
+    (distal_work dist_ml id pos)
+  in
+  let print_edge_info id =
+    let our_mass_list = 
+      if IntMap.mem id smass then IntMap.find id smass
+      else []
+    and bl = Gtree.get_bl ref_tree id in
+    Printf.printf "edge id: %d\n" id;
+    Printf.printf "prox: %g\n" (delta ~prox_ml:[] ~dist_ml:our_mass_list id bl);
+    Printf.printf "dist: %g\n" (delta ~prox_ml:our_mass_list ~dist_ml:[] id 0.);
+  in
+  (* return barycenter information about a certain edge *)
+  let get_mass_list id = 
+    if IntMap.mem id smass then IntMap.find id smass
+    else []
+  in
+  let check id = 
+    let bl = Gtree.get_bl ref_tree id
+    and our_mass_list = get_mass_list id in
+    if 0. > delta ~prox_ml:our_mass_list ~dist_ml:[] id 0. 
+    (* at the bottom of the edge we are negative. continue. *)
+    then Continue
+    else if 0. > delta ~prox_ml:[] ~dist_ml:our_mass_list id bl 
+    (* top is negative (and bottom is positive from before) *)
+    then raise (Found_edge id)
+    else 
+    (* top is positive *)
+      Stop
+  in
+  (* find the location, i.e. edge or node where the barycenter lies *)
+  let rec find_loc = function
+    | Stree.Leaf id -> check id
+    | Stree.Node(id, tL) ->
+        (match check id with
+        | Continue -> 
+            let below = List.map find_loc tL in
+  (* this edge is negative at the bottom but nothing was found. 
+   * the deepest node to have this must have positive at the tops of all of the
+   * edges. we assert to make sure this is the case. *)
+            List.iter (fun b -> assert(b = Stop)) below;
+            raise (Found_node id)
+        | Stop as s -> s)
+  in
+  (* da and dc are Delta(a) and Delta(c) in the barycenter scan *)
+  let find_pos id = 
+    let bl = Gtree.get_bl ref_tree id in
+    let rec aux ~dist_ml ~prox_ml curr_pos = 
+      let our_delta pos = 
+        assert(pos <= bl);
+        delta ~dist_ml ~prox_ml id pos
+      in
+      let dc = our_delta curr_pos in
+      assert(dc >= 0.);
     (* the barycenter formula. because da is negative (as we don't want to move
      * farther up) we are taking a weighted average here. 
-     * wp + mp * x = wd + md * (bl - x)
-     * (mp - md) * x = md * bl + wd + wp
      * *)
-    let bary ~above_pos da = 
-      assert(da <= 0.);
-      curr_pos +. (above_pos -. curr_pos) *. dc /. (dc -. da)
-    in
-    match our_proximal_mass_list with
-    | [] -> (* at the top of the edge *)
-        (edge_id, bary ~above_pos:bl (delta bl))
-    | (pos, mass)::rest -> begin
-        let da = delta pos in
+      let bary ~above_pos da = 
+        assert(da <= 0.);
+        curr_pos +. (above_pos -. curr_pos) *. dc /. (dc -. da)
+      in
+      match prox_ml with
+      | [] -> (* at the top of the edge *)
+          bary ~above_pos:bl (our_delta bl)
+      | (pos, mass)::rest -> begin
+        (* pos is now the next position up *)
+        let da = our_delta pos in
         if da > 0. then
           (* we can do better by moving past this placement *)
-          aux pos ((pos,mass)::our_distal_mass_list) rest
+          aux 
+            ~dist_ml:((pos,mass)::dist_ml) 
+            ~prox_ml:rest 
+            pos 
         else
-          (edge_id, bary ~above_pos:pos da)
-    end
+          bary ~above_pos:pos da
+      end
+    in
+    (* start at the bottom with all the placements on top *)
+    aux ~dist_ml:[] ~prox_ml:(get_mass_list id) 0.
   in
-  aux 0. [] our_mass_list
+  try
+    let _ = find_loc (Gtree.get_stree ref_tree) in 
+    failwith "failed to find barycenter edge/node!"
+  with
+  | Found_node id -> 
+      (* the node as at the bottom of the edge *)
+      (id, 0.)
+  | Found_edge id -> 
+      (id, find_pos id)
 
 let of_placerun weighting criterion p pr = 
   find 
