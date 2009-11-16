@@ -112,10 +112,14 @@ let find p ref_tree mass_m =
     List.iter (fun (m_pos,_) -> assert(m_pos <= pos)) dist_ml;
     tree_work collect_distal_ids dist_ml id pos
   in
+  (* prox_ml is extra mass that is thought of as living on the proximal side of
+   * the edge. as used below, it is the mass that is proximal to pos on the
+   * edge. equivalent for dist_ml. *)
   let delta ~prox_ml ~dist_ml id pos = 
     (proximal_work prox_ml id pos) -. 
     (distal_work dist_ml id pos)
   in
+  (*
   let print_edge_info id =
     let our_mass_list = 
       if IntMap.mem id smass then IntMap.find id smass
@@ -125,16 +129,17 @@ let find p ref_tree mass_m =
     Printf.printf "prox: %g\n" (delta ~prox_ml:[] ~dist_ml:our_mass_list id bl);
     Printf.printf "dist: %g\n" (delta ~prox_ml:our_mass_list ~dist_ml:[] id 0.);
   in
-  (* return barycenter information about a certain edge *)
+  *)
   let get_mass_list id = 
     if IntMap.mem id smass then IntMap.find id smass
     else []
   in
+  (* this is the function that helps us find the barycenter-containing edge *)
   let check id = 
     let bl = Gtree.get_bl ref_tree id
     and our_mass_list = get_mass_list id in
     if 0. > delta ~prox_ml:our_mass_list ~dist_ml:[] id 0. 
-    (* at the bottom of the edge we are negative. continue. *)
+    (* we are negative at the bottom of the edge. continue. *)
     then Continue
     else if 0. > delta ~prox_ml:[] ~dist_ml:our_mass_list id bl 
     (* top is negative (and bottom is positive from before) *)
@@ -165,13 +170,12 @@ let find p ref_tree mass_m =
         assert(pos <= bl);
         delta ~dist_ml ~prox_ml id pos
       in
-      let dc = our_delta curr_pos in
-      assert(dc >= 0.);
-    (* the barycenter formula. because da is negative (as we don't want to move
-     * farther up) we are taking a weighted average here. 
-     * *)
+    (* the barycenter formula. because da is negative we are essentially taking
+     * a weighted average here. *)
       let bary ~above_pos da = 
         assert(da <= 0.);
+        let dc = our_delta curr_pos in
+        assert(dc >= 0.);
         curr_pos +. (above_pos -. curr_pos) *. dc /. (dc -. da)
       in
       match prox_ml with
