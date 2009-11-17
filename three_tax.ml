@@ -76,6 +76,19 @@ let optimize tolerance max_query_bl max_iter tt =
 
 let get_results tt = (log_like tt, get_query_bl tt, get_dist_bl tt)
 
+let copy_bls ~src ~dest = 
+  set_query_bl dest (get_query_bl src);
+  set_dist_bl dest (get_dist_bl src)
+
+(* in two stage optimization, we first optimize the one-rate tt corresponding to
+ * the dominant rate on the reference tree, then optimize the whole enchilada 
+ *
+let two_stage_optimize tolerance max_query_bl max_iter tt = 
+
+  first optimize with respect to the dominant rate, then optimize with the whole
+  thing
+ * *)
+ 
 
 (* the idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
@@ -117,37 +130,3 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
       else
         raise (Gsl_error.Gsl_exn(error_num, error_str))
         
-
-
-(*
-let locs = [0;1;2;3;4]
-let it = Stree_io.of_newick_str "((x:0.2,y:3e-2):0.05,z:1e-5):0."
-let mini = [| ("x","AA"); ("y","AT"); ("z","AA"); |]
-let model = Model.build "GTR" false "JC.stats.txt" mini [1.; 2.]
-let (d,p) = Rgma.dp_rgma_of_data model Alignment.Nucleotide_seq mini it [0;1;2;3;4]
-let dm = Rgma.to_glv_map locs d
-and pm = Rgma.to_glv_map locs p
-let loc = 0
-let cut_bl = 0.1
-let query_glv = 
-  Glv.lv_list_to_constant_rate_glv 
-    (Model.n_rates model) 
-    (List.map
-      Nuc_models.likeArrOfNuc 
-      (Array.to_list (StringFuns.to_char_array "CC")))
-let start_pend = 0.2
-
-let make_initial glv_map start_bl = 
-  Glv_edge.make 
-  model (IntMap.find loc glv_map) start_bl
-
-let tt = 
-  make 
-    model
-    ~dist:(make_initial dm (cut_bl /. 2.))
-    ~prox:(make_initial pm (cut_bl /. 2.))
-    ~query:(Glv_edge.make model query_glv start_pend)
-
-let () = optimize 0.01 2. 100 tt
-let q = tt
-*)

@@ -84,7 +84,7 @@ let pplacer_core
           (Alignment.mask_align mask_arr
             (Alignment.stack [|query_name, query_seq|] ref_align))
           (query_name^".mask.fasta");
-     (* now we can mask the rgma, and the glv map we will use in three_tax *) 
+     (* mask *) 
       let curr_time = Sys.time () in
       let d_masked_map = Glv_int_map.mask mask_arr dmap 
       and p_masked_map = Glv_int_map.mask mask_arr pmap 
@@ -100,7 +100,6 @@ let pplacer_core
       and prox_edge = Glv_edge.make model query_glv (start_pend prefs)
       and query_edge = Glv_edge.make model query_glv (start_pend prefs)
       in
-
       (* get the results from the h_map *)
       let q_evolved = Glv_edge.get_evolv query_edge in
       (* the h_ranking ranks the locations according to the h criterion. we use
@@ -112,6 +111,8 @@ let pplacer_core
           (List.map
             (fun loc ->
               (loc,
+              (* HERE we could have this set up an array which tells which rate
+               * is most important for each site (for each location?) *)
               Glv.log_like3_statd model 
                 q_evolved 
                 (IntMap.find loc half_d_maskd) 

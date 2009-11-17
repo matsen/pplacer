@@ -7,12 +7,12 @@
  * this abstraction layer means that we should be able to treat any glv like it
  * was a simple likelihood vector.
  *
- * the implementation is as a list (over sites) of vector lists (over rates).
+ * the implementation is as an array (over sites) of vector arrays (over rates).
  *
- * note that i wanted originally to strictly conform to a very general module
- * signature which would be universal across all types of likelihood type
- * vectors. however, it is necessary to pass some rate information in functions
- * like evolve_into. i think i could have done so by specifying some
+ * i wanted originally to strictly conform to a very general module signature
+ * which would be universal across all types of likelihood type vectors.
+ * however, it is necessary to pass some rate information in functions like
+ * evolve_into. i think i could have done so by specifying some
  * extra_information type in the signature, but it didn't seem worth it given
  * that i don't know what other sorts of data i would want to support.
  *)
@@ -99,6 +99,17 @@ let log_like3_statd model x_glv y_glv z_glv =
               rate_tot+.(Linear.quad_dot statd x_lv y_lv z_lv size))
             0. x_site y_site z_site) /. fn_rates)))
       0. x_glv y_glv z_glv)
+
+(* pick_rate
+ * iteri over the sites, finding the rate that maximizes the given triple
+ *
+ * *)
+
+(*
+ * rate_loglike
+ * given a vector which gives the dominiant ML rate for each site, give the log
+ * likelihood for that rate
+ * *)
 
 
 (* make_evolve_mats:
