@@ -29,21 +29,8 @@ type prior = Uniform_prior | Exponential_prior of float
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
       prefs prior model ref_align gtree 
-      query_align ~dmap ~pmap locs = 
+      query_align ~dmap ~pmap ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model in
-  let half_evolve_glv_map loc g = 
-    Glv.evolve model g ((Gtree.get_bl gtree loc) /. 2.) in
-  if (verb_level prefs) >= 1 then begin
-    print_string "Preparing the edges for baseball... ";
-    flush_all ()
-  end;
-  let halfd = IntMap.mapi half_evolve_glv_map dmap
-  and halfp = IntMap.mapi half_evolve_glv_map pmap
-  in
-  if (verb_level prefs) >= 1 then begin
-    print_endline "done."
-  end;
-
   let prior_fun =
     match prior with
     | Uniform_prior -> (fun _ -> 1.)

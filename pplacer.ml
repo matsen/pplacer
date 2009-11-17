@@ -177,6 +177,18 @@ let () =
     if (verb_level prefs) >= 1 then
       print_endline "done.";
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
+    let half_evolve_glv_map loc g = 
+      Glv.evolve model g ((Gtree.get_bl ref_tree loc) /. 2.) in
+    if (verb_level prefs) >= 1 then begin
+      print_string "Preparing the edges for baseball... ";
+      flush_all ()
+    end;
+    let halfd = IntMap.mapi half_evolve_glv_map dmap
+    and halfp = IntMap.mapi half_evolve_glv_map pmap
+    in
+    if (verb_level prefs) >= 1 then begin
+      print_endline "done."
+    end;
 
     (* analyze query sequences *)
     let collect ret_code query_aln_fname =
@@ -196,7 +208,8 @@ let () =
         in
         let results = 
           Core.pplacer_core prefs prior
-            model ref_align ref_tree query_align ~dmap ~pmap locs in
+            model ref_align ref_tree query_align 
+            ~dmap ~pmap ~halfd ~halfp locs in
         Placerun_io.to_file
           (String.concat " " (Array.to_list Sys.argv))
           (Placerun.make 
