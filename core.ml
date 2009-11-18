@@ -141,9 +141,13 @@ let pplacer_core
       let ml_evaluate_location loc = 
         prepare_tt loc;
               (* optimize *)
-        let _ = 
+        let () = 
           try
-            Three_tax.optimize (tolerance prefs) (max_pend prefs) max_iter tt
+            let n_like_calls = 
+              Three_tax.optimize (tolerance prefs) (max_pend prefs) max_iter tt
+            in
+            if 2 < verb_level prefs then
+              Printf.printf "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
           with
           | Minimization.ExceededMaxIter ->
               Printf.printf 

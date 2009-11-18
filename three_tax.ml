@@ -9,6 +9,8 @@
 open MapsSets
 open Fam_batteries
 
+let n_like_calls = ref 0
+
 type three_tax = { 
   model  : Model.model;
   prox   : Glv_edge.glv_edge;      (* the proximal glv *)
@@ -47,6 +49,7 @@ let set_dist_bl tt dist_bl =
 (* we minimize the negative of the log likelihood *)
 let optimize_something tolerance set_fun start_value max_value tt = 
   let opt_fun value = 
+    incr n_like_calls;
     set_fun value;
     -. (log_like tt)
   in
@@ -72,7 +75,9 @@ let optimize tolerance max_query_bl max_iter tt =
       then aux (which_step+1) curr_query curr_dist
       else ()
   in
-  aux 1 (get_query_bl tt) (get_dist_bl tt)
+  n_like_calls := 0;
+  let () = aux 1 (get_query_bl tt) (get_dist_bl tt) in
+  !n_like_calls
 
 let get_results tt = (log_like tt, get_query_bl tt, get_dist_bl tt)
 
