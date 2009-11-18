@@ -56,7 +56,6 @@ let likeArrOfNuc nuc =
         invalid_arg (Printf.sprintf "%c not a known nucleotide!" nuc)
 
 
-
 (*
  * um, am i over-coding here?
  * coordinates of upper triangular matrix
@@ -86,57 +85,3 @@ let b_of_trans_vector v =
   done;
   Gsl_matrix.of_arrays m
 
-
-
-(*
-     
-. Nucleotides frequencies:
-
-
-let test = 
-[
-". Nucleotides frequencies:";
-"";
-"  - f(A)= 0.25229";
-"  - f(C)= 0.21152";
-"  - f(G)= 0.30687";
-"  - f(T)= 0.22932";
-"";
-". GTR relative rate parameters : ";
-"";
-"  A <-> C    0.65466";
-"  A <-> G    2.77648";
-"  A <-> T    1.40191";
-"  C <-> G    0.91195";
-"  C <-> T    8.01328";
-"  G <-> T    1.00000";
-]
-
-let (testB, testD) = parseNucModel test
-let testDiagd = Diagd.normalizedOfExchangeableMat testB testD
-let testLL = nucLLOfStringList test
-
-
-
-
-. Instantaneous rate matrix : 
-
-  [A---------C---------G---------T------]
-  -0.77243   0.08153   0.50163   0.18927  
-   0.09724  -1.34388   0.16476   1.08188  
-   0.41242   0.11357  -0.66100   0.13501  
-   0.20824   0.99792   0.18067  -1.38683  
-
-
-my IRM
-- : Mat.ArrArr(Number.R).mat =
-[|[|-0.772429232472147564; 0.0815266052601899271; 0.501627223316949311;
-    0.189275403895007882|];
-  [|0.0972406734166666176; -1.34389600857833225; 0.164762197568105201;
-    1.08189313759356076|];
-  [|0.412407638969704449; 0.113567634599685913; -0.660987794983038723;
-    0.135012521413648445|];
-  [|0.208234308602265633; 0.997915735495333855; 0.180670209515987723;
-    -1.38682025361358741|]|]
-
-     *)

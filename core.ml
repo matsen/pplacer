@@ -242,16 +242,3 @@ let pplacer_core
             ml_sorted_results)
     ) query_align
 
-  (*
-let jc, statD = diagd_and_statd_of_phyml_file "JC.stats.txt";;
-let it = Stree.ofNewick "((x:0.2,y:3e-2):0.05,z:1e-5):0.";;
-let mini = Alignment.readAlign "mini.fasta";;
-let p = ThreeTax.pplacer_core 2 1e-2 0.1 1. Alignment.Nucleotide_seq jc statD mini it [|"hi", "ACAAA"|];;
-
-let smallRefAlign = Alignment.readAlign "test/smallRefAlign.phy"
-let query_align = Alignment.readAlign "test/fragment.fasta"
-let small_it = Stree.ofNewickFile "test/small.tre"
-
-let q = pplacer_core 2 1e-2 0.1 2. Alignment.Protein_seq ProtModels.lgDiagd 
-                     ProtModels.lgFreq smallRefAlign small_it query_align
-*)

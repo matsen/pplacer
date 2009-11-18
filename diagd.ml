@@ -123,17 +123,3 @@ let symmQ n =
 let symmDQ n = ofSymmMat (symmQ n)
 let binarySymmDQ = symmDQ 2
 
-(*
-let b = symmDQ 2
-let y = b#expWithT 1.
-let s = ofSymmAAR [|[|-. 1.; 0.15|];[|0.15; -.2.|]|]
-let y = s#expWithT 1.
-let s = ofBDMatrix [|0.25; 0.75|] [|[|-. 1.; 0.15|];[|0.15; -.2.|]|]
-let z = s#toMatrix
-let z = Mat.AAR.mul [|[|-. 1.; 0.15|];[|0.15; -.2.|]|] (Mat.AAR.diag_of_arr [|0.25; 0.75|])
-let r = s#normalizeRate [|0.25; 0.75|]
-let s = ofExchangeableMat [|[|-. 1.; 1.|];[|1.; -.1.|]|] [|0.25; 0.75|] 
-let z = s#toMatrix
-let ff = Mat.AAR.mul_rowVec [|0.25; 0.75|] z
-let r = s#normalizeRate [|0.25; 0.75|]
-*)

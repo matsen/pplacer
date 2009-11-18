@@ -65,12 +65,3 @@ let twoDBrent f startx leftx rightx starty lefty righty tolerance =
   in
   let result = run startx starty 1 in
   result
-
-(* 
-let parab x y = 
-  let xa = x -. 4. in
-  let yb = y -. 4.5 in
-  10. *. xa *. xa +. 20. *. yb *. yb *. yb *. yb
- *
- *
- * let z = twoDBrent parab 1. 0. 10. 1. 0. 10. 0.001*)

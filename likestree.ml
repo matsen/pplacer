@@ -122,13 +122,3 @@ let distoproximal_of_aln_and_gtree seq_type diagdq align gtree rate =
   and nstates = Alignment.nstates_of_seq_type seq_type in
   let aln_like = AlignmentFuns.aln_like_of_unnamed_align seq_type seqs in
   calc_distoproximal nstates aln_index_map aln_like diagdq gtree rate
-
-
-(*
-let jc = diagdOfPhymlFile "JC.stats.txt"
-let it = Stree.ofNewick "((x:0.2,y:3e-2):0.05,z:1e-5):0."
-let mini = Alignment.readAlign "tiny.fasta"
-let (d, p) = distoproximal_of_aln_and_istree Alignment.Nucleotide_seq jc mini it
-let qmat_map = qmat_map_of_bl_map jc it.info.bl
-
-*)

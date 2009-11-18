@@ -52,11 +52,3 @@ let dp_of_data model align gtree locs =
   result
 
 let mask mask_arr m = IntMap.map (Glv.mask mask_arr) m
-
-(*
-let it = Stree_io.of_newick_str "((x:0.2,y:3e-2):0.05,z:1e-5):0."
-let mini = [| ("x","AA"); ("y","AT"); ("z","AA"); |]
-let model = Model.build "GTR" false "JC.stats.txt" mini [|1.; 2.|]
-let (x,y) = dp_of_data model Alignment.Nucleotide_seq mini it [0;1;2;3;4]
-let mk = mask [|false; true|] x
-*)

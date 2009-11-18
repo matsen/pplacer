@@ -131,9 +131,3 @@ let placement_of_str str =
     distal_bl = float_of_string strs.(5);
     pendant_bl = float_of_string strs.(6)}
 
-
-    (*
-let x = 
-  placement_of_str 
-  "3       0.000000        -       -1329.78     -        0       0.855013"
-*)
