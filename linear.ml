@@ -8,5 +8,8 @@
 external dot : Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "dot_c"
 external triple_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "triple_dot_c"
 external quad_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "quad_dot_c"
-external pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> unit = "pairwise_prod_c"
+(* dest x y *)
+external pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> unit = "pairwise_prod_c"
+(* dest x y z *)
+external triplewise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> unit = "triplewise_prod_c"
 

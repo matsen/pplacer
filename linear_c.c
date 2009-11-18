@@ -59,7 +59,6 @@ CAMLprim value quad_dot_c(value x_value, value y_value, value z_value, value w_v
   CAMLreturn(ml_tot);
 }
 
-
 CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value, value size_value)
 {
   CAMLparam4(dest_value, x_value, y_value, size_value);
@@ -74,3 +73,17 @@ CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value, v
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value triplewise_prod_c(value dest_value, value x_value, value y_value, value z_value, value size_value)
+{
+  CAMLparam5(dest_value, x_value, y_value, z_value, size_value);
+  double *dest = Data_bigarray_val(dest_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  double *z = Data_bigarray_val(z_value);
+  int size = Int_val(size_value);
+  int i;
+  for(i=0; i < size; i++) {
+    dest[i] = x[i] * y[i] * z[i];
+  }
+  CAMLreturn(Val_unit);
+}

@@ -64,6 +64,8 @@ let parse_args () =
    "Set the size of the strike box in log likelihood units. Default is %g."
   and max_pitches_opt = spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
    "Set the maximum number of pitches for baseball. Default is %d."
+  and entropy_scale_opt = spec_with_default "--entropy" (fun o -> Arg.Set_float o) prefs.entropy_scale
+   "Write out an entropy tree with the given scale if this is set to be nonzero. Default is %g."
   in
   let usage =
     "pplacer "^Placerun_io.version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
@@ -91,6 +93,7 @@ let parse_args () =
       verb_level_opt; 
       write_masked_opt; 
       (* only_write_best_opt;  *)
+      entropy_scale_opt;
     ]
   in
   Arg.parse opts anon_arg usage;
@@ -100,8 +103,8 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in 
-    if files = [] then begin
-      print_endline "please specify some query sequences."; 
+    if files = [] && 0. = Prefs.entropy_scale prefs then begin
+      print_endline "Please specify some query sequences, or ask for an entropy tree."; 
       exit 0;
     end;
     if (verb_level prefs) >= 1 then 
@@ -181,7 +184,7 @@ let () =
       Glv.evolve model g ((Gtree.get_bl ref_tree loc) /. 2.) in
     if (verb_level prefs) >= 1 then begin
       print_string "Preparing the edges for baseball... ";
-      flush_all ()
+      flush_all ();
     end;
     let halfd = IntMap.mapi half_evolve_glv_map dmap
     and halfp = IntMap.mapi half_evolve_glv_map pmap
@@ -189,7 +192,15 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
-
+    (* make entropy tree *)
+    if Prefs.entropy_scale prefs <> 0. then begin
+      Entropy.write_entropy_tree 
+        (Prefs.entropy_scale prefs)
+        (Filename.chop_extension (tree_fname prefs))
+        (Decor_gtree.of_newick_gtree ref_tree)
+        (Entropy.make_entropy_map 
+          (Model.statd model) ~halfd ~halfp locs);
+    end;
     (* analyze query sequences *)
     let collect ret_code query_aln_fname =
       try
