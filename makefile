@@ -19,8 +19,8 @@ $(RELEASE):
 	ocamlbuild $@
 
 clean:
-	ocamlbuild -clean
 	rm -f *.mltop
+	ocamlbuild -clean
 
 commit:
 	git commit -a && git push origin master

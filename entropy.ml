@@ -23,10 +23,10 @@ let vec_entropy v =
  * for each site, we take the entropy of the normalized 
  *)
 let glv_entropy statd x_glv y_glv = 
-  let n_rates = Glv.n_rates x_glv in
-  let dest_site = Gsl_vector.copy statd
-  and tot_site = Gsl_vector.copy statd
-  and n_states = Gsl_vector.length statd
+  let n_rates = Glv.n_rates x_glv 
+  and n_states = Gsl_vector.length statd in
+  let dest_site = Gsl_vector.create n_states
+  and tot_site = Gsl_vector.create n_states
   in
   ArrayFuns.fold_left2 (* fold over sites *)
     (fun tot_entropy x_site y_site -> 
