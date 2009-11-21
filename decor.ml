@@ -15,22 +15,22 @@ let assert_ubytes = List.iter assert_ubyte
 let assert_unit_interval x = assert(0. <= x && x <= 1.)
 
 (* colors! 255 is the most saturated. *)
+let color r g b = assert_ubytes [r; g; b]; Color(r, g, b)
+
 (* gray_level is the amount of gray to put in *)
-let gray_red ~gray_level level = 
-  assert_ubytes [gray_level; level];
-  Color(level, gray_level, gray_level)
+let gray_red ~gray_level level = color level gray_level gray_level
+let gray_green ~gray_level level = color gray_level level gray_level
+let gray_blue ~gray_level level = color gray_level gray_level level
 
-let gray_green ~gray_level level = 
-  assert_ubytes [gray_level; level];
-  Color(gray_level, level, gray_level)
+let red_f = gray_red ~gray_level:0
+let green_f = gray_green ~gray_level:0
+let blue_f = gray_blue ~gray_level:0
 
-let gray_blue ~gray_level level = 
-  assert_ubytes [gray_level; level];
-  Color(gray_level, gray_level, level)
-
-let red = gray_red ~gray_level:0
-let green = gray_green ~gray_level:0
-let blue = gray_blue ~gray_level:0
+let red = red_f 255
+let orange = color 255 165 0
+let yellow = color 255 255 0
+let green = green_f 255
+let blue = blue_f 255
 
 let rev_color = function
   | Color(r,g,b) -> 
@@ -40,10 +40,10 @@ let rev_color = function
   | Width _ as width -> width
   | Dot _ as dot -> dot
 
-(* "color" is actually any map from an int to a decoration *)
-let scaled_color color ~min ~max x = 
+(* "a_color" is actually any map from an int to a decoration *)
+let scaled_color a_color ~min ~max x = 
   assert_unit_interval x;
-  color (min + (int_of_float ((float_of_int (max - min)) *. x)))
+  a_color (min + (int_of_float ((float_of_int (max - min)) *. x)))
 
 
 (* width *)

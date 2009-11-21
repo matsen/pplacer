@@ -80,3 +80,4 @@ let make_map_by_best_loc criterion pquery_list =
       ~key_f:(best_location criterion)
       ~val_f:(fun x -> x)
       placed_l)
+

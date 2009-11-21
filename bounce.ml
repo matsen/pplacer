@@ -7,6 +7,8 @@
  *
 *)
 
+open MapsSets
+
 (* calculate quadratic form of an uptri u and a vector v *)
 let qform u v = 
   assert(Uptri.get_dim u = Array.length v);
@@ -16,21 +18,54 @@ let qform u v =
     u;
   !tot
 
-let raw_bounce_of_placement_array t pa = 
+let raw_bounce_of_placement_array criterion t pa = 
   let d = Distance_mat.of_placement_array t pa in
   qform 
     d 
-    (Base.arr_normalized_prob
-      (Array.map (fun p -> Placement.ml_ratio p) pa))
+    (Base.arr_normalized_prob (Array.map criterion pa))
 
-let raw_bounce_of_placement_list t pl = 
-  raw_bounce_of_placement_array t (Array.of_list pl)
+let raw_bounce_of_placement_list criterion t pl = 
+  raw_bounce_of_placement_array criterion t (Array.of_list pl)
 
-let raw_bounce_of_pquery t pq = 
+let raw_bounce_of_pquery criterion t pq = 
   raw_bounce_of_placement_list 
-    t
-    (Pquery.place_list pq)
+    criterion t (Pquery.place_list pq)
 
-let bounce_of_pquery t pq = 
-  (raw_bounce_of_pquery t pq) /. (Gtree.tree_length t)
+let bounce_of_pquery criterion t pq = 
+  (raw_bounce_of_pquery criterion t pq) /. (Gtree.tree_length t)
 
+(* weight the bounce list by the mass. will throw an out of bounds if the top
+ * id is not the biggest in the tree. *)
+let weighted_bounce_map weighting criterion t pquery_list = 
+  let top_id = Gtree.top_id t in
+  let mass_a = Array.make (1+top_id) 0.
+  and bounce_a = Array.make (1+top_id) 0.
+  and tree_len = Gtree.tree_length t
+  in
+  List.iter
+    (fun pq ->
+      let b = (raw_bounce_of_pquery criterion t pq) /. tree_len in
+      List.iter
+        (fun (i, (_,mass)) ->
+            mass_a.(i) <- mass_a.(i) +. mass;
+            bounce_a.(i) <- bounce_a.(i) +. mass *. b)
+        (Mass_map.Indiv.split_pquery_mass weighting criterion 1. pq))
+    pquery_list;
+  let rec make_map accu i = 
+    if i < 0 then accu
+    else 
+      make_map 
+        (if mass_a.(i) <> 0. then
+          IntMap.add i (mass_a.(i), bounce_a.(i) /. mass_a.(i)) accu
+        else 
+          accu)
+        (i-1)
+  in
+  make_map IntMap.empty top_id
+
+let weighted_bounce_map_of_pr weighting criterion pr = 
+  weighted_bounce_map 
+    weighting 
+    criterion 
+    (Placerun.get_ref_tree pr)
+    (Placerun.get_pqueries pr)

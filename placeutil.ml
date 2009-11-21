@@ -81,9 +81,11 @@ let () =
         (Placerun.combine out_prefix_complete) 
         parsed
     in
+    (*
     if !print_bounce then begin
       Placeutil_core.print_bounce_list combined
     end;
+      *)
     let re_split_list = 
       if is_on re_sep_fname re_sep_fname_off_val then
         Placeutil_core.read_re_split_file (!re_sep_fname)
@@ -100,7 +102,7 @@ let () =
     in 
     let split_by_bounce placerun = 
       if is_on bounce_cutoff bounce_cutoff_off_val then
-        Placerun.partition_by_bounce (!bounce_cutoff) placerun
+        Placeutil_core.partition_by_bounce Placement.ml_ratio (!bounce_cutoff) placerun
       else [placerun]
     in 
     let split_by_re placerun = 

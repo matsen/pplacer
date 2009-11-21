@@ -11,6 +11,9 @@ open Fam_batteries
 
 let min_width = 0.5
 
+let width_of_mass mass_width mass = 
+  Decor.width (min_width +. mass_width *. mass)
+
 (* writing the .loc.fasta file *)
 let write_loc_file fname_base unplaced_seqs placed_map =
   let out_ch = open_out (fname_base^".loc.fasta") in
@@ -31,7 +34,6 @@ let write_loc_file fname_base unplaced_seqs placed_map =
 
 
 (* writing various tree formats *)
-
 let trees_to_file tree_fmt prefix trees = 
   match tree_fmt with
   | Newick -> Newick.tree_list_to_file trees (prefix^".tre") 
@@ -70,7 +72,7 @@ let tog_tree ref_tree placed_map =
           let best = Pquery.best_place Placement.ml_ratio pquery in
           (Placement.distal_bl best,
           make_zero_leaf 
-            [ Decor.red 255 ]
+            [ Decor.red ]
             (Placement.pendant_bl best)
             (Pquery.name pquery),
          decor_bark_of_bl)))
@@ -89,7 +91,7 @@ let num_tree bogus_bl ref_tree placed_map =
     (fun loc pqueries ->
       [((Gtree.get_bl ref_tree loc) /. 2.,
       make_zero_leaf 
-        [ Decor.red 255 ]
+        [ Decor.red ]
         bogus_bl
         (Printf.sprintf "%d_at_%d" (List.length pqueries) loc),
       decor_bark_of_bl)])
@@ -104,48 +106,45 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
     [num_tree bogus_bl ref_tree placed_map]
 
 (* sing trees *)
-let sing_tree max_width ref_tree pquery = 
+let sing_tree criterion mass_width ref_tree pquery = 
   let pqname = Pquery.name pquery in
   Gtree.add_subtrees_by_map
     ref_tree
     (IntMapFuns.of_pairlist_listly 
       (ListFuns.mapi
         (fun num p -> 
-          let ml_ratio = Placement.ml_ratio p in
+          let mass = criterion p in
           (Placement.location p,
             (Placement.distal_bl p,
             make_zero_leaf 
-              [ 
-                Decor.red 255; 
-                Decor.scaled_width 
-                  ~min:min_width 
-                  ~max:max_width 
-                  ml_ratio;
-              ]
+              [ Decor.red; 
+                width_of_mass mass_width mass; ]
               (Placement.pendant_bl p)
               (Printf.sprintf 
-                "%s_#%d_LR=%g" 
+                "%s_#%d_M=%g" 
                 pqname 
                 num
-                ml_ratio),
+                mass),
             decor_bark_of_bl)))
         (Pquery.place_list pquery)))
 
-let write_sing_file max_width tree_fmt fname_base ref_tree 
+let write_sing_file criterion mass_width tree_fmt fname_base ref_tree 
                                            placed_pquery_list = 
   trees_to_file 
     tree_fmt 
     (fname_base^".sing") 
-    (List.map (sing_tree max_width ref_tree) placed_pquery_list)
+    (List.map 
+      (sing_tree criterion mass_width ref_tree) 
+      placed_pquery_list)
 
 
 (* fat trees *)
-let fat_tree weighting criterion max_width decor_ref_tree pr =
+let fat_tree weighting criterion mass_width decor_ref_tree pr =
   Decor_gtree.add_decor_by_map
     decor_ref_tree
     (IntMap.map
       (fun mass -> 
-        [ Decor.scaled_width ~min:min_width ~max:max_width mass; ])
+        [ width_of_mass mass_width mass; ])
       (Mass_map.By_edge.of_placerun weighting criterion pr))
 
 let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree placerun = 
@@ -153,3 +152,24 @@ let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree place
     (fat_tree weighting criterion fat_width decor_ref_tree placerun)
     (fname_base^".fat.xml") 
 
+
+(* bounce trees *)
+let bounce_tree 
+      weighting criterion mass_width max_bounce decor_ref_tree pr = 
+  Decor_gtree.add_decor_by_map
+    decor_ref_tree
+    (IntMap.map
+      (fun (mass, bounce) -> 
+        [ width_of_mass mass_width mass;
+          if bounce <= max_bounce then
+            Decor.gray_red 255 
+              ~gray_level:(int_of_float 
+                            (255. *. (1. -. bounce /. max_bounce)))
+          else
+            Decor.orange ])
+      (Bounce.weighted_bounce_map_of_pr weighting criterion pr))
+
+let write_bounce_tree weighting criterion mass_width max_bounce fname_base decor_ref_tree placerun = 
+  Phyloxml.tree_to_file
+    (bounce_tree weighting criterion mass_width max_bounce decor_ref_tree placerun)
+    (fname_base^".bounce.xml") 

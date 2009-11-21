@@ -6,14 +6,18 @@ open Fam_batteries
 open MapsSets
 open Placement
 
-let write_sing = ref false
-let write_tog = ref false
-let write_loc = ref false
+let use_pp = ref false
+and weighted = ref true
+and write_sing = ref false
+and write_tog = ref false
+and write_loc = ref false
+and max_bounce = ref 0.
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
 and xml = ref false
-and total_width = ref 100.
+and unit_width = ref 1.
+and total_width = ref 0.
 
 let parse_args () =
   let files  = ref [] in
@@ -23,30 +27,44 @@ let parse_args () =
     files := arg :: !files in
   let args = 
     [
+      "-p", Arg.Set use_pp,
+      "Use posterior probability for the weight.";
+      "--unweighted", Arg.Clear weighted,
+      "Treat every placement as a point mass concentrated on the highest-weight placement.";
       "--sing", Arg.Set write_sing,
       "Single placement: make one tree for each placement.";
       "--tog", Arg.Set write_tog,
       "Together placement: make a tree with each of the fragments represented as a pendant edge. Not recommended for more than 1000 placements.";
       "--loc", Arg.Set write_loc,
       "Write a fasta file sorted by location.";
+      "--bounce", Arg.Set_float max_bounce,
+      "Write out a bounce tree such that the given bounce is the maximum.";
       "--bogusBl", Arg.Set_float bogus_bl,
       "Set the branch length for visualization in the number tree.";
       "--nodeNumbers", Arg.Set show_node_numbers,
       "Put the node numbers in where the bootstraps usually go.";
       "--xml", Arg.Set xml,
       "Write phyloXML with colors.";
-      "--width", Arg.Set_float total_width,
-      "Set the total width for the fat tree and the sing tree.";
+      "--width", Arg.Set_float unit_width,
+      "Set the number of pixels for a single placement (default setting). Set to 100 or so when making a sing tree.";
+      "--totalwidth", Arg.Set_float total_width,
+      "Set the number of pixels for all of the mass together. Setting this changes to all-together mode.";
   ] in
   Arg.parse args anon_arg usage;
   List.rev !files
 
-let criterion = Placement.ml_ratio
-let weighting = Mass_map.Weighted
      
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
+    (* set up params *)
+    let criterion = 
+      if !use_pp then Placement.post_prob
+      else Placement.ml_ratio
+    and weighting = 
+      if !weighted then Mass_map.Weighted
+      else Mass_map.Unweighted
+    in
     let files = parse_args () in if files = [] then exit 0;
     let tree_fmt = 
       if !xml then Placeviz_core.Phyloxml 
@@ -77,6 +95,15 @@ let () =
             unplaced_seqs;
         end;
         let fname_base = Placerun_io.chop_place_extension fname in
+        (* set up the width *)
+        let mass_width = 
+          if !total_width = 0. then (* total width not specified *)
+            !unit_width
+          else (* split up the mass according to the number of queries *)
+            (!total_width) /. 
+            (float_of_int 
+              ((List.length pqueries) - (List.length unplaced_seqs)))
+        in
         (* write loc file *)
         if !write_loc then
           Placeviz_core.write_loc_file 
@@ -84,18 +111,26 @@ let () =
         (* make the various visualizations *)
         write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-          weighting criterion !total_width fname_base decor_ref_tree placerun;
+          weighting criterion mass_width fname_base decor_ref_tree placerun;
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt fname_base decor_ref_tree placed_map;
+        if !max_bounce <> 0. then
+          Placeviz_core.write_bounce_tree 
+            weighting criterion mass_width !max_bounce fname_base decor_ref_tree placerun;
         if !write_sing then
           Placeviz_core.write_sing_file 
-            !total_width
+            criterion
+            !unit_width
             tree_fmt
             fname_base 
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
         if frc = 0 && ret_code = 1 then 0 else ret_code
-      with Sys_error msg -> prerr_endline msg; 2 in
+      with 
+      | Sys_error msg -> prerr_endline msg; 2 
+      | Placement.No_PP -> 
+          failwith "Posterior probability use requested, but some or all placements were calculated without pp."
+    in
     exit (List.fold_left collect 1 files)
   end

@@ -44,16 +44,30 @@ let read_re_split_file fname =
       (File_parsing.filter_empty_lines 
         (File_parsing.string_list_of_file fname)))
 
-let write_bounce_list ch pr = 
+(* split up placeruns by bounce distance *)
+let partition_by_bounce criterion bounce_cutoff placerun = 
+  let t = Placerun.get_ref_tree placerun in
+  let make_name which_str = 
+    (Placerun.get_name placerun)^".B"
+    ^which_str
+    ^(Placerun.cutoff_str bounce_cutoff)
+  and tree_length = Gtree.tree_length t in
+  let geq_cutoff pq = 
+    (Bounce.raw_bounce_of_pquery criterion t pq) /. tree_length >= 
+      bounce_cutoff
+  in
+  Placerun.cutoff_filter make_name geq_cutoff placerun
+
+let write_bounce_list criterion ch pr = 
   let t = Placerun.get_ref_tree pr in
   let tl = Gtree.tree_length t in
   String_matrix.write_padded ch
     (Array.map
       (fun pq ->
         [| 
-          string_of_float ((Bounce.raw_bounce_of_pquery t pq) /. tl);
+          string_of_float 
+            ((Bounce.raw_bounce_of_pquery criterion t pq) /. tl);
           Pquery.name pq; 
         |]) 
       (Array.of_list (Placerun.get_pqueries pr)))
 
-let print_bounce_list pr = write_bounce_list stdout pr

@@ -117,18 +117,6 @@ let partition_by_ml ml_cutoff placerun =
   in
   cutoff_filter make_name geq_cutoff placerun
 
-(* split up placeruns by bounce distance *)
-let partition_by_bounce bounce_cutoff placerun = 
-  let t = get_ref_tree placerun in
-  let make_name which_str = 
-    (get_name placerun)^".B"^which_str^(cutoff_str bounce_cutoff)
-  and tree_length = Gtree.tree_length t in
-  let geq_cutoff pq = 
-    (Bounce.raw_bounce_of_pquery t pq) /. tree_length >= 
-      bounce_cutoff
-  in
-  cutoff_filter make_name geq_cutoff placerun
-
 let re_matches rex s = Str.string_match rex s 0
 
 let warn_about_multiple_matches rex_list placerun = 
