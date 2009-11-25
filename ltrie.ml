@@ -1,66 +1,49 @@
 (* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
- * a trie of same-length lists with storage of things
- * what about repeats
+ * do we want to have a "count", could have a combine_data
 *)
 
 
 open MapsSets
 
-exception Wrong_length
-
-type 'a t = 
-  | Middle of ('a t) IntMap.t
-  | Terminus of 'a
+type 'a t = { data : 'a list; node : ('a t) IntMap.t }
 
 type 'a approximate_choice = int * int list -> int
 
-let is_terminus = function
-  | Middle _ -> false
-  | Terminus _ -> true
+let empty = { data = []; node = IntMap.empty; }
 
 let rec mem t = function
-  | [] -> if is_terminus t then true 
-          else raise Wrong_length
+  | [] -> true 
   | x::l ->
-      match t with
-      | Middle m ->
-          if IntMap.mem x m then mem (IntMap.find x m) l
-          else false
-      | Terminus _ -> raise Wrong_length
+      if IntMap.mem x t.node then mem (IntMap.find x t.node) l
+      else false
 
-let add t k y = 
-  let rec aux t = function
-    | [] -> Terminus y
-    | x::l ->
-        match t with
-        | Middle m ->
-            Middle 
-              (IntMap.add
-                x
-                (aux (IntMap.find x m) l)
-              our_map
-        | Terminus _ -> raise Wrong_length
-  in
-  aux t k
-          
+let rec add k y t = 
+  match k with
+  | [] -> { t with data = y::t.data }
+  | x::l ->
+      { t with node = 
+        IntMap.add
+          x
+          (add l y
+            (if IntMap.mem x t.node then IntMap.find x t.node
+            else { data = []; node = IntMap.empty }))
+          t.node }
 
 
 (* ppr *)
 
-let rec ppr ppr_k ppr_v ff = function
-  | Middle h ->
-      Format.fprintf ff "@[{";
-        Ppr.ppr_list_inners 
-            (fun ff k ->
-              Format.fprintf ff "%a -> @[%a@]"
-                ppr_k k
-                (ppr ppr_k ppr_v) (IntMap.find h k))
-            ff
-            (IntMapFuns.keys h);
-      Format.fprintf ff "}@]";
-  | Terminus yl ->
-      (* Ppr.ppr_list ppr_v ff yl *)
-      ppr_v ff y
+let rec ppr ppr_v ff t = 
+  Format.fprintf ff "@[{";
+  Format.fprintf ff "@[data = %a; @]" (Ppr.ppr_list ppr_v) t.data;
+    Ppr.ppr_list_inners 
+     (fun ff k ->
+       Format.fprintf ff "%a -> @[%a@]"
+         Format.pp_print_int k
+         (ppr ppr_v) (IntMap.find k t.node))
+     ff
+     (IntMapFuns.keys t.node);
+  Format.fprintf ff "}@]"
 
+let ppr_int = ppr Format.pp_print_int
