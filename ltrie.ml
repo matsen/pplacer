@@ -7,28 +7,36 @@
 
 open MapsSets
 
-type 'a t = { data : 'a list; node : ('a t) IntMap.t }
+type 'a t = { data : 'a option; node : ('a t) IntMap.t }
 
 type 'a approximate_choice = int * int list -> int
 
-let empty = { data = []; node = IntMap.empty; }
+let empty = { data = None; node = IntMap.empty; }
 
-let rec mem t = function
+let rec mem k t = 
+  match k with
   | [] -> true 
   | x::l ->
-      if IntMap.mem x t.node then mem (IntMap.find x t.node) l
+      if IntMap.mem x t.node then mem l (IntMap.find x t.node)
       else false
+
+let rec find k t = 
+  match k with
+  | [] -> t.data
+  | x::l ->
+      if IntMap.mem x t.node then find l (IntMap.find x t.node)
+      else raise Not_found
 
 let rec add k y t = 
   match k with
-  | [] -> { t with data = y::t.data }
+  | [] -> { t with data = Some y }
   | x::l ->
       { t with node = 
         IntMap.add
           x
           (add l y
             (if IntMap.mem x t.node then IntMap.find x t.node
-            else { data = []; node = IntMap.empty }))
+            else empty))
           t.node }
 
 
@@ -36,7 +44,7 @@ let rec add k y t =
 
 let rec ppr ppr_v ff t = 
   Format.fprintf ff "@[{";
-  Format.fprintf ff "@[data = %a; @]" (Ppr.ppr_list ppr_v) t.data;
+  Format.fprintf ff "@[data = %a; @]" (Ppr.ppr_opt ppr_v) t.data;
     Ppr.ppr_list_inners 
      (fun ff k ->
        Format.fprintf ff "%a -> @[%a@]"
