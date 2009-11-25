@@ -192,15 +192,6 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
-    (* make entropy tree *)
-    if Prefs.entropy_scale prefs <> 0. then begin
-      Entropy.write_entropy_tree 
-        (Prefs.entropy_scale prefs)
-        (Filename.chop_extension (tree_fname prefs))
-        (Decor_gtree.of_newick_gtree ref_tree)
-        (Entropy.make_entropy_map 
-          (Model.statd model) ~halfd ~halfp locs);
-    end;
     (* analyze query sequences *)
     let collect ret_code query_aln_fname =
       try

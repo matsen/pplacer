@@ -32,8 +32,6 @@ type prefs =
     write_masked : bool ref;
     ratio_cutoff : float ref;
     only_write_best : bool ref;
-    (* entropy *)
-    entropy_scale : float ref;
   }
 
 
@@ -66,8 +64,6 @@ let defaults () =
     write_masked = ref false;
     ratio_cutoff = ref 0.05;
     only_write_best = ref false;
-    (* entropy *)
-    entropy_scale = ref 0.;
   }
 
 
@@ -100,7 +96,6 @@ let write_masked    p = !(p.write_masked)
 let ratio_cutoff    p = !(p.ratio_cutoff)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
-let entropy_scale   p = !(p.entropy_scale)
 
 (* include a pref here if it should go in the place file *)
 let titled_typed_prefs p =

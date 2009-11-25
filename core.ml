@@ -3,17 +3,12 @@
  *
  * here we actually do the work.
  *
- * note about baseball:
- * the h-stuff (hmap, etc.) is a way to cut down the number of locations that
- * we actually fully consider. we cut each edge in half, then evolve the distal
- * and proximal along those cut edges, then take the pairwise product of the
- * resulting likelihood vectors with the stationary distribution. call this
- * the h vector. that way, we can just come along with our query (which has
- * been evolved along start_pend) and take a dot with the h-vector to get the
- * likelihood of attaching the query sequence in the middle of the edge with a
- * pendant branch length of start_pend for the cost of a linear number of
- * dot products.
- *
+ * idea: implement profile-dag, which records the order of locations in the
+ * tree, and finds the one which best matches the current query sequence.
+ * D of IntMap | T of pquery
+ * insertion
+ * if we do maps, need to replace mapi with a recursive fun which passes along
+ * the data structure
 *)
 
 open Fam_batteries
