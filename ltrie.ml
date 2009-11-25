@@ -5,43 +5,49 @@
  * what about repeats
 *)
 
-let initial_size = 5
 
-type ('a, 'b) t = 
-  | Middle of ('a, ('a,'b) t) Hashtbl.t
-  | Terminus of 'b
+open MapsSets
 
-type 'a approximate_choice = 'a * 'a list -> 'a
+exception Wrong_length
+
+type 'a t = 
+  | Middle of ('a t) IntMap.t
+  | Terminus of 'a
+
+type 'a approximate_choice = int * int list -> int
+
+let is_terminus = function
+  | Middle _ -> false
+  | Terminus _ -> true
 
 let rec mem t = function
-  | [] -> true
+  | [] -> if is_terminus t then true 
+          else raise Wrong_length
   | x::l ->
       match t with
-      | Middle h ->
-          if Hashtbl.mem h x then mem (Hashtbl.find h x) l
+      | Middle m ->
+          if IntMap.mem x m then mem (IntMap.find x m) l
           else false
-      | Terminus _ -> false
+      | Terminus _ -> raise Wrong_length
 
-let new_middle () = 
-  Middle (Hashtbl.create initial_size)
-
-let add lt k y = 
+let add t k y = 
   let rec aux t = function
     | [] -> Terminus y
     | x::l ->
         match t with
-        | Middle h ->
-            if Hashtbl.mem h x then add (Hashtbl.find h x) l
-            else Hashtbl.add h x (aux (new_middle ()) l)
-        | Terminus _ -> ()
+        | Middle m ->
+            Middle 
+              (IntMap.add
+                x
+                (aux (IntMap.find x m) l)
+              our_map
+        | Terminus _ -> raise Wrong_length
   in
-  aux lt k
+  aux t k
           
 
 
 (* ppr *)
-
-let get_keys h = Hashtbl.fold (fun k _ accu -> k::accu) h []
 
 let rec ppr ppr_k ppr_v ff = function
   | Middle h ->
@@ -50,10 +56,11 @@ let rec ppr ppr_k ppr_v ff = function
             (fun ff k ->
               Format.fprintf ff "%a -> @[%a@]"
                 ppr_k k
-                (ppr ppr_k ppr_v) (Hashtbl.find h k))
+                (ppr ppr_k ppr_v) (IntMap.find h k))
             ff
-            (get_keys h);
+            (IntMapFuns.keys h);
       Format.fprintf ff "}@]";
   | Terminus yl ->
-      Ppr.ppr_list ppr_v ff yl
+      (* Ppr.ppr_list ppr_v ff yl *)
+      ppr_v ff y
 
