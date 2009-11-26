@@ -7,9 +7,14 @@
 
 open MapsSets
 
+exception No_data
+
 type 'a t = { data : 'a option; node : ('a t) IntMap.t }
 
-type approx_choice = int * int list -> int
+let get_data t = 
+  match t.data with 
+  | Some x -> x 
+  | None -> raise No_data
 
 let empty = { data = None; node = IntMap.empty; }
 
@@ -22,7 +27,7 @@ let rec mem k t =
 
 let rec find k t = 
   match k with
-  | [] -> t.data
+  | [] -> get_data t
   | x::l ->
       if IntMap.mem x t.node then find l (IntMap.find x t.node)
       else raise Not_found
@@ -42,13 +47,30 @@ let rec add k y t =
 let rec approx_find choice k t = 
   let rec aux k t = 
     match k with
-    | [] -> t.data
+    | [] -> get_data t
     | x::l ->
         if IntMap.mem x t.node then aux l (IntMap.find x t.node)
         else 
         aux l (IntMap.find (choice x (IntMapFuns.keys t.node)) t.node)
   in
   aux t k
+
+(* finds the closest of them to us in terms of dist_f *)
+let closest dist_f us them = 
+  let rec aux min_dist best = function
+    | x::l ->
+        let dist = (dist_f x us) in
+        if dist < min_dist then aux dist x l
+        else aux min_dist best l
+    | [] -> best
+  in
+  match them with
+  | [] -> invalid_arg "closest given an empty list"
+  | x::l -> aux (dist_f x us) x l
+
+let int_closest = closest (fun x y -> (abs (x-y)))
+
+let int_approx_find = approx_find int_closest
 
 
 (* ppr *)
