@@ -9,7 +9,7 @@ open MapsSets
 
 type 'a t = { data : 'a option; node : ('a t) IntMap.t }
 
-type 'a approximate_choice = int * int list -> int
+type approx_choice = int * int list -> int
 
 let empty = { data = None; node = IntMap.empty; }
 
@@ -38,6 +38,17 @@ let rec add k y t =
             (if IntMap.mem x t.node then IntMap.find x t.node
             else empty))
           t.node }
+
+let rec approx_find choice k t = 
+  let rec aux k t = 
+    match k with
+    | [] -> t.data
+    | x::l ->
+        if IntMap.mem x t.node then aux l (IntMap.find x t.node)
+        else 
+        aux l (IntMap.find (choice x (IntMapFuns.keys t.node)) t.node)
+  in
+  aux t k
 
 
 (* ppr *)
