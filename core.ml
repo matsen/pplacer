@@ -226,48 +226,53 @@ let pplacer_core
           ml_results) 
     in
     let ml_sorted_results = 
-      Placement.sort_placecoll Placement.ml_ratio 
+      Placement.sort_placecoll 
+        Placement.ml_ratio
         (List.map2 
           (fun ml_ratio (loc, (log_like, pend_bl, dist_bl)) -> 
             Placement.make_ml 
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
+    let above_cutoff, below_cutoff = 
+      List.partition 
+        (fun p -> Placement.ml_ratio p >= (ratio_cutoff prefs))
+        ml_sorted_results
+    in
+  (* the tricky thing here is that we want to keep the optimized branch lengths
+   * for all of the pqueries that we try so that we can use them later as
+   * friends. however, we don't want to calculate pp for all of them, and we
+   * don't want to return them for writing either *)
     result_arr.(query_num) <-
-      if (calc_pp prefs) then begin
-        let curr_time = Sys.time () in
-        (* pp calculation *)
-        (* calculate marginal likes *)
-        let marginal_probs = 
-          List.map 
-            (fun placement ->
-              prepare_tt (Placement.location placement);
-              Three_tax.calc_marg_prob 
-                prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
-            ml_sorted_results
-        in
-        if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
-        Pquery.make_ml_sorted
-          ~name:query_name 
-          ~seq:query_seq
-          (Placement.filter_placecoll 
-            Placement.ml_ratio 
-            (ratio_cutoff prefs) 
-            (ListFuns.map3 
+      Pquery.make_ml_sorted
+        ~name:query_name 
+        ~seq:query_seq
+        (if (calc_pp prefs) then begin
+          (* pp calculation *)
+          let curr_time = Sys.time () in
+          (* calculate marginal likes for those placements whose ml ratio is
+           * above cutoff *)
+          let marginal_probs = 
+            List.map 
+              (fun placement ->
+                prepare_tt (Placement.location placement);
+                Three_tax.calc_marg_prob 
+                  prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
+              above_cutoff
+          in
+          (* just add pp to those above cutoff *)
+          if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
+            ((ListFuns.map3 
               (fun placement marginal_prob post_prob ->
                 Placement.add_pp placement ~marginal_prob ~post_prob)
-              ml_sorted_results
+              above_cutoff
               marginal_probs
-              (Base.ll_normalized_prob marginal_probs)))
-      end
-      else
-        Pquery.make_ml_sorted
-          ~name:query_name 
-          ~seq:query_seq
-          (Placement.filter_placecoll 
-            Placement.ml_ratio 
-            (ratio_cutoff prefs) 
-            ml_sorted_results)
+              (Base.ll_normalized_prob marginal_probs))
+          (* keep the ones below cutoff, but don't calc pp *)
+              @ below_cutoff)
+        end
+        else ml_sorted_results)
   done;
-  result_arr
+(* here we actually apply the ratio cutoff so that we don't write them to file *)
+  Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
   

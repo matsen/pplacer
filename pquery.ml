@@ -89,3 +89,15 @@ let make_map_by_best_loc criterion pquery_list =
       ~val_f:(fun x -> x)
       placed_l)
 
+(* if either the ml_ratio or the pp is above the cutoff, keep it *)
+let apply_cutoff cutoff pq = 
+  { pq with 
+    place_list = 
+     List.filter
+      (fun p ->
+        Placement.ml_ratio p >= cutoff ||
+        (match Placement.post_prob_opt p with
+        | None -> false
+        | Some pp -> pp >= cutoff))
+      (place_list pq) }
+

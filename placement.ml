@@ -52,7 +52,7 @@ let compare_placements criterion rp1 rp2 =
 let sort_placecoll criterion pc =
   List.sort (fun x y -> - (compare_placements criterion) x y) pc
 
-let filter_placecoll criterion cutoff pc =
+let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc
 
 (* decreasing sort of a placecoll
