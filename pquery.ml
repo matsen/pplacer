@@ -42,6 +42,14 @@ let opt_best_place criterion pq =
 let opt_best_location criterion pq = 
   opt_best_something Placement.location criterion pq
 
+let opt_place_by_location pq loc = 
+  match List.filter 
+          (fun p -> loc = Placement.location p) 
+          (place_list pq) with
+  | [] -> None
+  | [ x ] -> Some x
+  | _ -> failwith "multiple placements in a single location"
+
 let best_something thing criterion pq = 
   match opt_best_place criterion pq with
   | Some place -> thing place

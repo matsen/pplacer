@@ -25,6 +25,16 @@ let rec mem k t =
       if IntMap.mem x t.node then mem l (IntMap.find x t.node)
       else false
 
+(* check to see if something with the first len entries of its key matches *)
+let rec prefix_mem k len t = 
+  if len <= 0 then true
+  else match k with
+  | [] -> true 
+  | x::l ->
+      if IntMap.mem x t.node then 
+        prefix_mem l (len-1) (IntMap.find x t.node)
+      else false
+
 let rec find k t = 
   match k with
   | [] -> get_data t
@@ -53,7 +63,7 @@ let rec approx_find choice k t =
         else 
         aux l (IntMap.find (choice x (IntMapFuns.keys t.node)) t.node)
   in
-  aux t k
+  aux k t
 
 (* finds the closest of them to us in terms of dist_f *)
 let closest dist_f us them = 
@@ -70,7 +80,19 @@ let closest dist_f us them =
 
 let int_closest = closest (fun x y -> (abs (x-y)))
 
-let int_approx_find = approx_find int_closest
+let int_approx_find k t = approx_find int_closest k t
+
+
+(* utils *)
+
+let list_first_n l len = 
+  let rec aux accu lp n = 
+    if n <= 0 then accu
+    else match lp with
+    | [] -> accu
+    | x::rest -> aux (x::accu) rest (n-1)
+  in
+  List.rev (aux [] l len)
 
 
 (* ppr *)
