@@ -14,14 +14,14 @@ let isOKStart f start left right =
   let starty = f start in
   starty < f left || starty < f right
 
-let brentOptimization f initStart left right tolerance = 
+let brentOptimization f raw_start left right tolerance = 
   (* find a starting point via bisection *)
   let lefty = f left
   and righty = f right in
   let smaller = if lefty < righty then left else right in
   let miny = min lefty righty in
   (* find the start *)
-  let rec findStart prevStart iterNum = 
+  let rec find_start prevStart iterNum = 
     let prevVal = f prevStart in
     if prevVal < miny then prevStart
     else if abs_float (prevStart -. smaller) < tolerance then
@@ -29,12 +29,18 @@ let brentOptimization f initStart left right tolerance =
       else raise (FoundMin smaller)
     else if iterNum > maxIter then 
       failwith "guessBrentIter: couldn't find start!"
-    else findStart ((prevStart +. smaller) /. 2.) (iterNum+1)
+    else find_start ((prevStart +. smaller) /. 2.) (iterNum+1)
   in
   (* actually do the iteration *)
   try 
     let iterator = 
-      Gsl_min.make Gsl_min.BRENT f (findStart initStart 1) left right in
+        Gsl_min.make Gsl_min.BRENT f (find_start raw_start 1) left right in
+    (* try
+        Gsl_min.make Gsl_min.BRENT f raw_start left right
+      with
+      | Gsl_error.Gsl_exn(_,_) ->
+        Gsl_min.make Gsl_min.BRENT f (find_start raw_start 1) left right
+    in *)
     let rec run whichStep = 
       if whichStep > maxIter then raise ExceededMaxIter
       else (
