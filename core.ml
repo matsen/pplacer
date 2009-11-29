@@ -11,7 +11,7 @@ open Prefs
 
 let max_iter = 100
 let prof_prefix_req = 1
-let prof_length = 5 
+let prof_length = 0 
 
 type prior = Uniform_prior | Exponential_prior of float
 
@@ -214,7 +214,7 @@ let pplacer_core
         (* we have disabled ball playing, and evaluate every location *)
         List.map (fun loc -> (loc, ml_evaluate_location loc)) locs
       else
-        play_ball (-. infinity) 0 [] h_ranking 
+        List.rev (play_ball (-. infinity) 0 [] h_ranking)
     in
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
     (* calc ml weight ratios. these tuples are ugly but that way we don't need
