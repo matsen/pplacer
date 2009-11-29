@@ -64,6 +64,8 @@ let parse_args () =
    "Set the size of the strike box in log likelihood units. Default is %g."
   and max_pitches_opt = spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
    "Set the maximum number of pitches for baseball. Default is %d."
+  and fantasy_opt = "--fantasy", Arg.Set prefs.fantasy,
+    "Run in fantasy baseball mode."
   in
   let usage =
     "pplacer "^Placerun_io.version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
@@ -84,6 +86,7 @@ let parse_args () =
       max_strikes_opt; 
       strike_box_opt; 
       max_pitches_opt;
+      fantasy_opt;
       max_pend_opt; 
       tolerance_opt; 
       rel_err_opt;

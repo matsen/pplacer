@@ -22,6 +22,7 @@ type prefs =
     max_strikes : int ref;
     strike_box : float ref;
     max_pitches : int ref;
+    fantasy : bool ref;
     (* model *)
     emperical_freqs : bool ref;
     model_name : string ref;
@@ -54,6 +55,7 @@ let defaults () =
     max_strikes = ref 6;
     strike_box = ref 3.;
     max_pitches = ref 40;
+    fantasy = ref false;
     (* model *)
     emperical_freqs = ref true;
     model_name = ref "LG";
@@ -87,6 +89,7 @@ let pp_rel_err      p = !(p.pp_rel_err)
 let max_strikes     p = !(p.max_strikes)
 let strike_box      p = !(p.strike_box)
 let max_pitches     p = !(p.max_pitches)
+let fantasy         p = !(p.fantasy)
 let emperical_freqs p = !(p.emperical_freqs)
 let model_name      p = !(p.model_name)
 let gamma_n_cat     p = !(p.gamma_n_cat)

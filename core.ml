@@ -12,7 +12,6 @@ open Prefs
 let max_iter = 100
 let prof_prefix_req = 1
 let prof_length = 5 
-let fantasy_prefs = true
 
 type prior = Uniform_prior | Exponential_prior of float
 
@@ -36,7 +35,7 @@ let pplacer_core
     (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" []) in
   let prof_trie = ref Ltrie.empty in
   let fantasy_mat = 
-    if fantasy_prefs then
+    if fantasy prefs then
       Fantasy.make_fantasy_matrix 
         ~max_strike_box:(int_of_float (strike_box prefs))
         ~max_strikes:(max_strikes prefs)
@@ -223,7 +222,7 @@ let pplacer_core
       if max_strikes prefs = 0 then
     (* we have disabled ball playing, and evaluate every location *)
         List.map evaluate_loc locs
-      else if fantasy_prefs then
+      else if fantasy prefs then
     (* in fantasy mode we evaluate the first max_pitches locations *)
         List.map evaluate_loc 
           (if (max_pitches prefs) >= List.length locs then locs
@@ -232,7 +231,7 @@ let pplacer_core
         List.rev (play_ball (-. infinity) 0 [] h_ranking)
     in
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
-    if fantasy_prefs then
+    if fantasy prefs then
       Fantasy.add_to_fantasy_matrix ml_results fantasy_mat;
     (* calc ml weight ratios. these tuples are ugly but that way we don't need
      * to make a special type for ml results. *)
@@ -290,7 +289,7 @@ let pplacer_core
         end
         else ml_sorted_results)
   done;
-  if fantasy_prefs then
+  if fantasy prefs then
     Fantasy.results_to_file fname_prefix fantasy_mat num_queries;
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
   Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
