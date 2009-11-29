@@ -19,7 +19,7 @@ type prior = Uniform_prior | Exponential_prior of float
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
-      prefs prior model ref_align gtree 
+      prefs fname_prefix prior model ref_align gtree 
       query_align ~dmap ~pmap ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model in
   let prior_fun =
@@ -291,7 +291,7 @@ let pplacer_core
         else ml_sorted_results)
   done;
   if fantasy_prefs then
-    Fantasy.results_to_file "fantasy.out" fantasy_mat num_queries;
+    Fantasy.results_to_file fname_prefix fantasy_mat num_queries;
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
   Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
   

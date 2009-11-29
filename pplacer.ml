@@ -206,7 +206,7 @@ let () =
               (float_of_int (Gtree.n_edges ref_tree))) 
         in
         let results = 
-          Core.pplacer_core prefs prior
+          Core.pplacer_core prefs query_bname prior
             model ref_align ref_tree query_align 
             ~dmap ~pmap ~halfd ~halfp locs in
         Placerun_io.to_file
