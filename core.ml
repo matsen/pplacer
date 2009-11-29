@@ -11,7 +11,8 @@ open Prefs
 
 let max_iter = 100
 let prof_prefix_req = 1
-let prof_length = 0 
+let prof_length = 5 
+let fantasy_prefs = true
 
 type prior = Uniform_prior | Exponential_prior of float
 
@@ -34,6 +35,13 @@ let pplacer_core
     Array.make num_queries
     (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" []) in
   let prof_trie = ref Ltrie.empty in
+  let fantasy_mat = 
+    if fantasy_prefs then
+      Fantasy.make_fantasy_matrix 
+        ~max_strike_box:(int_of_float (strike_box prefs))
+        ~max_strikes:(max_strikes prefs)
+    else [||]
+  in
   (* the main query loop *)
   for query_num=0 to num_queries-1 do
     let (query_name, query_seq) = query_align.(query_num) in
@@ -147,6 +155,7 @@ let pplacer_core
           (IntMap.find loc glv_map) 
           len
       in
+    (* set up branch lengths, using a friend's branch lengths if we have them *)
       match get_friend_place loc with
       | None -> (* set to usual defaults *)
         (* set the query edge to the default *)
@@ -209,14 +218,22 @@ let pplacer_core
          end
       | [] -> results
     in
+    let evaluate_loc loc = (loc, ml_evaluate_location loc) in
     let ml_results = 
       if max_strikes prefs = 0 then
-        (* we have disabled ball playing, and evaluate every location *)
-        List.map (fun loc -> (loc, ml_evaluate_location loc)) locs
+    (* we have disabled ball playing, and evaluate every location *)
+        List.map evaluate_loc locs
+      else if fantasy_prefs then
+    (* in fantasy mode we evaluate the first max_pitches locations *)
+        List.map evaluate_loc 
+          (if (max_pitches prefs) >= List.length locs then locs
+          else Base.list_sub (max_pitches prefs) locs)
       else
         List.rev (play_ball (-. infinity) 0 [] h_ranking)
     in
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
+    if fantasy_prefs then
+      Fantasy.add_to_fantasy_matrix ml_results fantasy_mat;
     (* calc ml weight ratios. these tuples are ugly but that way we don't need
      * to make a special type for ml results. *)
     let ml_ratios = 
@@ -273,6 +290,8 @@ let pplacer_core
         end
         else ml_sorted_results)
   done;
+  if fantasy_prefs then
+    Fantasy.results_to_file "fantasy.out" fantasy_mat num_queries;
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
   Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
   

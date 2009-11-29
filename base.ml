@@ -25,6 +25,15 @@ let rec list_fold_left3 f accu l1 l2 l3 =
       list_fold_left3 f (f accu a1 a2 a3) l1 l2 l3
   | (_, _, _) -> invalid_arg "list_fold_left3"
 
+(* funny. 
+# list_sub 4 [1;2;3;4;5;6;7;8];;
+- : int list = [1; 2; 3; 4]
+# list_sub ~start:2 ~len:4 [1;2;3;4;5;6;7;8];;
+- : int list = [3; 4; 5; 6]
+ * *)
+let list_sub ?start:(start=0) ~len l = 
+  Array.to_list (Array.sub (Array.of_list l) start len)
+
 
 exception Different of int
 
