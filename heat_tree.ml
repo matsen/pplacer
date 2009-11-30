@@ -7,7 +7,7 @@ open Fam_batteries
 
 (* settings *)
 
-let gray = 5 (* the strength of gray *)
+let gray_level = 5 (* the strength of gray *)
 let min_width = 0.5
 let max_width = 25.5
 
@@ -21,18 +21,14 @@ let intensity_of_heat ~p heat = (abs_float heat) ** p
 let assert_intensity intensity = 
   assert(intensity >= 0. || intensity <= 1.)
 
-let fgray = float_of_int gray
-let gray_scale = 255. -. fgray
-
-let color_ubyte_of_intensity intensity = 
+let color_of_heat white_bg ?(p=1.) heat = 
+  let intensity = intensity_of_heat ~p heat
+  and color = if heat >= 0. then Decor.red else Decor.blue
+  and gray = 
+    Decor.gray (if white_bg then 255-gray_level else gray_level)
+  in
   assert_intensity intensity;
-  int_of_float(fgray +. intensity *. gray_scale)
-
-let color_of_heat ?(p=1.) heat = 
-  let uheat = 
-    color_ubyte_of_intensity (intensity_of_heat ~p heat) in
-  if heat >= 0. then Decor.gray_red ~gray_level:gray uheat
-  else Decor.gray_blue ~gray_level:gray uheat
+  Decor.color_avg intensity color gray 
 
 (* width utils *)
 let width_diff = max_width -. min_width
@@ -42,7 +38,7 @@ let width_of_heat ?(p=1.) heat =
   assert_intensity intensity;
   Decor.width (min_width +. width_diff *. intensity)
 
-let color_map_aux weighting criterion p pr1 pr2 = 
+let color_map white_bg weighting criterion p pr1 pr2 = 
   let ref_tree = Placerun.get_same_tree pr1 pr2
   and kr_map = 
     IntMap.map
@@ -89,19 +85,13 @@ let color_map_aux weighting criterion p pr1 pr2 =
         let scaled_heat = raw_heat /. max_abs_heat in
         (id, 
           [
-            color_of_heat ~p scaled_heat;
+            color_of_heat white_bg ~p scaled_heat;
             width_of_heat ~p scaled_heat;
           ]))
       heat_list) 
 
-let color_map rev_video weighting criterion p pr1 pr2 = 
-  let result = 
-    color_map_aux weighting criterion p pr1 pr2
-  in
-  if rev_video = false then result
-  else (IntMap.map (List.map Decor.rev_color) result)
 
-let make_heat_tree rev_video criterion weighting p pr1 pr2 = 
+let make_heat_tree white_bg criterion weighting p pr1 pr2 = 
   let ref_tree = 
     Placerun.get_same 
       Newick.compare 
@@ -111,11 +101,11 @@ let make_heat_tree rev_video criterion weighting p pr1 pr2 =
   in
   Decor_gtree.add_decor_by_map 
     (Decor_gtree.of_newick_gtree ref_tree)
-    (color_map rev_video criterion weighting p pr1 pr2)
+    (color_map white_bg criterion weighting p pr1 pr2)
 
-let write_heat_tree rev_video criterion weighting p pr1 pr2 =
+let write_heat_tree white_bg criterion weighting p pr1 pr2 =
   Phyloxml.tree_to_file
-    (make_heat_tree rev_video criterion weighting p pr1 pr2)
+    (make_heat_tree white_bg criterion weighting p pr1 pr2)
     (Printf.sprintf "%s.VS.%s.heat.xml"
       (Placerun.get_name pr1)
       (Placerun.get_name pr2))
