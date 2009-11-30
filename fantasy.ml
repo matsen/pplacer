@@ -66,7 +66,7 @@ let add_to_fantasy_matrix ml_results fm =
   and max_strikes = (Array.length fm.(0))-1
   in
   for strike_box=0 to max_strike_box do
-    for max_strikes=0 to max_strikes do
+    for max_strikes=1 to max_strikes do
       add_single_to_fm fm strike_box max_strikes 
         (fantasy_ball ml_results (float_of_int strike_box) max_strikes)
     done;
