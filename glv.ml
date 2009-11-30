@@ -100,17 +100,6 @@ let log_like3_statd model x_glv y_glv z_glv =
             0. x_site y_site z_site) /. fn_rates)))
       0. x_glv y_glv z_glv)
 
-(* pick_rate
- * iteri over the sites, finding the rate that maximizes the given triple
- *
- * *)
-
-(*
- * rate_loglike
- * given a vector which gives the dominiant ML rate for each site, give the log
- * likelihood for that rate
- * *)
-
 
 (* make_evolve_mats:
  * make matrices for each rate

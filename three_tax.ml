@@ -85,16 +85,6 @@ let copy_bls ~src ~dest =
   set_query_bl dest (get_query_bl src);
   set_dist_bl dest (get_dist_bl src)
 
-(* in two stage optimization, we first optimize the one-rate tt corresponding to
- * the dominant rate on the reference tree, then optimize the whole enchilada 
- *
-let two_stage_optimize tolerance max_query_bl max_iter tt = 
-
-  first optimize with respect to the dominant rate, then optimize with the whole
-  thing
- * *)
- 
-
 (* the idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
  * underflow problems. 
