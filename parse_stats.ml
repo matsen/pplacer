@@ -14,7 +14,7 @@ let parse_raxml_info lines prefs =
   let partition_rex = Str.regexp "^Partition:"
   and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
   and base_freqs_rex = Str.regexp "pi(A): \\([^ ]+\\) pi(C): \\([^ ]+\\) pi(G): \\([^ ]+\\) pi(T): \\([^ ]+\\)"
-  and inference_rex = Str.regexp "^Inference\\[0\\]: .* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
+  and inference_rex = Str.regexp "^Inference\\[0\\].* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
   and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
   in
   match 

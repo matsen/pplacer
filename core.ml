@@ -233,6 +233,7 @@ let pplacer_core
       | [] -> results
     in
     let ml_results = 
+ (* important to reverse for fantasy baseball. also should save time on sorting *)
       List.rev (play_ball (-. infinity) 0 [] h_ranking) 
     in
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
