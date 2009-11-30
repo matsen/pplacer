@@ -171,7 +171,7 @@ let pplacer_core
     in
     let ml_evaluate_location loc = 
       prepare_tt loc;
-            (* optimize *)
+      (* optimize *)
       let () = 
         try
           let n_like_calls = 
@@ -189,6 +189,20 @@ let pplacer_core
       (* get the results *)
       Three_tax.get_results tt
     in
+    let gsl_warn loc query_name = 
+      Printf.printf "Warning: GSL had a problem with location %d for query %s; it was skipped.\n" loc query_name;
+    in
+    let (t_max_pitches, t_max_strikes) = 
+      if max_strikes prefs = 0 then 
+    (* we have disabled ball playing, and evaluate every location *)
+        (max_int, max_int)
+      else if fantasy prefs then
+    (* in fantasy mode we evaluate the first max_pitches locations *)
+        (max_pitches prefs, max_int)
+      else
+    (* usual ball playing *)
+        (max_pitches prefs, max_strikes prefs)
+    in
     (* in play_ball we go down the h_ranking list and wait until we get
      * strike_limit strikes, i.e. placements that are strike_box below the
      * best one so far. *)
@@ -198,37 +212,28 @@ let pplacer_core
             let (best_like,_,_) as result = 
               ml_evaluate_location loc in
             let new_results = (loc, result)::results in
-            if List.length results >= (max_pitches prefs) then
+            if List.length results >= t_max_pitches then
               new_results
             else if best_like > like_record then
               (* we have a new best likelihood *)
               play_ball best_like n_strikes new_results rest
             else if best_like < like_record-.(strike_box prefs) then
               (* we have a strike *)
-              if n_strikes+1 >= (max_strikes prefs) then new_results
+              if n_strikes+1 >= t_max_strikes then new_results
               else play_ball like_record (n_strikes+1) new_results rest
             else
               (* not a strike, just keep on accumulating results *)
               play_ball like_record n_strikes new_results rest
           with
-            | Gsl_error.Gsl_exn(_,_) ->
-                Printf.printf "Warning: GSL had a problem with location %d for query %s; it was skipped.\n" loc query_name;
-                play_ball like_record n_strikes results rest
+(* we need to handle the exception here so that we continue the baseball recursion *)
+          | Gsl_error.Gsl_exn(_,_) ->
+              gsl_warn loc query_name;
+              play_ball like_record n_strikes results rest
          end
       | [] -> results
     in
-    let evaluate_loc loc = (loc, ml_evaluate_location loc) in
     let ml_results = 
-      if max_strikes prefs = 0 then
-    (* we have disabled ball playing, and evaluate every location *)
-        List.map evaluate_loc locs
-      else if fantasy prefs then
-    (* in fantasy mode we evaluate the first max_pitches locations *)
-        List.map evaluate_loc 
-          (if (max_pitches prefs) >= List.length locs then locs
-          else Base.list_sub (max_pitches prefs) locs)
-      else
-        List.rev (play_ball (-. infinity) 0 [] h_ranking)
+      List.rev (play_ball (-. infinity) 0 [] h_ranking) 
     in
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
     if fantasy prefs then
