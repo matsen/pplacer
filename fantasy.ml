@@ -90,6 +90,7 @@ let results_to_file fname_prefix fantasy_mat num_queries =
   let batting_avg,n_trials_avg = calc_stats fantasy_mat num_queries in
   let write_mat fname m = 
     let ch = open_out fname in
+    Printf.fprintf ch "# strike box is first coordinate, and max strikes is second.\n";
     String_matrix.write_padded ch (mat_map string_of_float m);
     close_out ch
   in
