@@ -12,6 +12,7 @@ and write_sing = ref false
 and write_tog = ref false
 and write_loc = ref false
 and max_bounce = ref 0.
+and white_bg = ref false
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
@@ -39,6 +40,8 @@ let parse_args () =
       "Write a fasta file sorted by location.";
       "--bounce", Arg.Set_float max_bounce,
       "Write out a bounce tree such that the given bounce is the maximum.";
+      "--whitebg", Arg.Set white_bg,
+      "Make colors appropriate for a white background.";
       "--bogusBl", Arg.Set_float bogus_bl,
       "Set the branch length for visualization in the number tree.";
       "--nodeNumbers", Arg.Set show_node_numbers,
@@ -116,7 +119,7 @@ let () =
           Placeviz_core.write_tog_file 
             tree_fmt fname_base decor_ref_tree placed_map;
         if !max_bounce <> 0. then
-          Placeviz_core.write_bounce_tree 
+          Placeviz_core.write_bounce_tree !white_bg
             weighting criterion mass_width !max_bounce fname_base decor_ref_tree placerun;
         if !write_sing then
           Placeviz_core.write_sing_file 

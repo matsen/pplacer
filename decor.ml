@@ -15,35 +15,45 @@ let assert_ubytes = List.iter assert_ubyte
 let assert_unit_interval x = assert(0. <= x && x <= 1.)
 
 (* colors! 255 is the most saturated. *)
-let color r g b = assert_ubytes [r; g; b]; Color(r, g, b)
+let color (r, g, b) = assert_ubytes [r; g; b]; Color(r, g, b)
 
+let white = color (255,255,255)
+let black = color (0,0,0)
+let red = color (255,0,0)
+let orange = color (255, 165, 0)
+let yellow = color (255, 255, 0)
+let green = color (0, 255, 0)
+let blue = color (0, 0, 255)
+
+(* white is 255, black is 0 *)
+let gray intensity = color (intensity, intensity, intensity)
+
+(* weight is the weight of a *)
+let int_avg weight a b = 
+  assert(0. <= weight && weight <= 1.);
+  int_of_float 
+    ((float_of_int a) *. weight +. (float_of_int b) *. (1. -. weight))
+let triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2) =
+  (int_avg weight r1 r2, int_avg weight g1 g2, int_avg weight b1 b2)
+
+(* weight is the weight of a *)
+let color_avg weight c1 c2 = 
+  match (c1,c2) with
+  | (Color (r1,g1,b1), Color (r2,g2,b2)) ->
+      color (triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2))
+  | _ -> assert(false)
+
+(*
 (* gray_level is the amount of gray to put in *)
 let gray_red ~gray_level level = color level gray_level gray_level
 let gray_green ~gray_level level = color gray_level level gray_level
 let gray_blue ~gray_level level = color gray_level gray_level level
 
-let red_f = gray_red ~gray_level:0
-let green_f = gray_green ~gray_level:0
-let blue_f = gray_blue ~gray_level:0
-
-let red = red_f 255
-let orange = color 255 165 0
-let yellow = color 255 255 0
-let green = green_f 255
-let blue = blue_f 255
-
-let rev_color = function
-  | Color(r,g,b) -> 
-      assert_ubytes [r;g;b];
-      let rev x = 255 - x in
-      Color(rev r, rev g, rev b)
-  | Width _ as width -> width
-  | Dot _ as dot -> dot
-
 (* "a_color" is actually any map from an int to a decoration *)
 let scaled_color a_color ~min ~max x = 
   assert_unit_interval x;
   a_color (min + (int_of_float ((float_of_int (max - min)) *. x)))
+*)
 
 
 (* width *)
