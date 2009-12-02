@@ -105,7 +105,7 @@ let make_heat_tree white_bg criterion weighting p pr1 pr2 =
 
 let write_heat_tree white_bg criterion weighting p pr1 pr2 =
   let prefix = 
-    Printf.sprintf "%s.VS.%s.heat.xml"
+    Printf.sprintf "%s.VS.%s.heat"
       (Placerun.get_name pr1)
       (Placerun.get_name pr2) 
   in
