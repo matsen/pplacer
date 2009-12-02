@@ -97,7 +97,9 @@ let () =
             (fun pq -> print_endline (Pquery.name pq))
             unplaced_seqs;
         end;
-        let fname_base = Placerun_io.chop_place_extension fname in
+        let fname_base = 
+          Filename.basename (Placerun_io.chop_place_extension fname)
+        in
         (* set up the width *)
         let mass_width = 
           if !total_width = 0. then (* total width not specified *)

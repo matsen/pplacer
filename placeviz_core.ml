@@ -148,7 +148,8 @@ let fat_tree weighting criterion mass_width decor_ref_tree pr =
       (Mass_map.By_edge.of_placerun weighting criterion pr))
 
 let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree placerun = 
-  Phyloxml.tree_to_file
+  Phyloxml.named_tree_to_file
+    (fname_base^".fat")
     (fat_tree weighting criterion fat_width decor_ref_tree placerun)
     (fname_base^".fat.xml") 
 
@@ -170,6 +171,7 @@ let bounce_tree white_bg
       (Bounce.weighted_bounce_map_of_pr weighting criterion pr))
 
 let write_bounce_tree white_bg weighting criterion mass_width max_bounce fname_base decor_ref_tree placerun = 
-  Phyloxml.tree_to_file
+  Phyloxml.named_tree_to_file
+    (fname_base^".bounce")
     (bounce_tree white_bg weighting criterion mass_width max_bounce decor_ref_tree placerun)
     (fname_base^".bounce.xml") 

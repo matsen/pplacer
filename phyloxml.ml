@@ -23,7 +23,7 @@ let write_string_list ch =
 
 (* output *)
 
-let write_tree ch gtree = 
+let write_tree ?name ch gtree = 
   let bark_map = Gtree.get_bark_map gtree in
   let rec aux st = 
     let write_clade id tL =
@@ -46,6 +46,9 @@ let write_tree ch gtree =
       | Stree.Leaf id -> write_clade id []
   in
   Printf.fprintf ch "<phylogeny rooted=\"true\">\n";
+  match name with
+  | None -> ()
+  | Some n -> Xml.write_string "name" ch n;
   aux (Gtree.get_stree gtree);
   Printf.fprintf ch "</phylogeny>\n\n"
 
@@ -55,5 +58,17 @@ let tree_list_to_file tl fname =
   List.iter (write_tree ch) tl;
   write_string_list ch afterword;
   close_out ch
+
+(* tl should be a list of (name_opt, t). thus not all trees have to have a name *)
+let named_tree_list_to_file tl fname = 
+  let ch = open_out fname in
+  write_string_list ch foreword;
+  List.iter 
+    (fun (name_opt, t) ->
+      write_tree ?name:name_opt ch t) 
+    tl;
+  write_string_list ch afterword;
+  close_out ch
   
 let tree_to_file t = tree_list_to_file [t]
+let named_tree_to_file tname t = named_tree_list_to_file [Some tname, t]

@@ -94,6 +94,24 @@ let results_to_file fname_prefix fantasy_mat num_queries =
     String_matrix.write_padded ch (mat_map string_of_float m);
     close_out ch
   in
-  write_mat (fname_prefix^".fantasy.ba.out") batting_avg;
-  write_mat (fname_prefix^".fantasy.nt.out") n_trials_avg;
+  write_mat (fname_prefix^".batting_avg.out") batting_avg;
+  write_mat (fname_prefix^".n_trials.out") n_trials_avg;
   ()
+
+
+  (*
+let write_fantasy_r fname_prefix fantasy_mat = 
+  let n_rows = Array.length fantasy_mat
+  and n_cols = Array.length fantasy_mat.(0)
+  and pdf_line = "pdf(file=\""^fname_prefix^".%s.pdf\")"
+  and read_line = "%s <- read.table(\""^fname_prefix^".%s.out\")"
+  in
+  let write_file which_abbrev which = 
+    Printf.fprintf 
+image(x=c(0:10),xlab="strike box", ylab="number of strikes", y=c(0:9),z=as.matrix(ba), main="batting average")
+dev.off()
+pdf(file="reads_nodups.num_trials.pdf")
+nt <- read.table("reads_nodups.fantasy.nt.out")
+image(x=c(0:10),xlab="strike box", ylab="number of strikes", y=c(0:9),z=as.matrix(nt), main="number of trials")
+dev.off()
+*)
