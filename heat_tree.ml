@@ -104,8 +104,12 @@ let make_heat_tree white_bg criterion weighting p pr1 pr2 =
     (color_map white_bg criterion weighting p pr1 pr2)
 
 let write_heat_tree white_bg criterion weighting p pr1 pr2 =
-  Phyloxml.tree_to_file
-    (make_heat_tree white_bg criterion weighting p pr1 pr2)
-    (Printf.sprintf "%s.VS.%s.heat.xml"
+  let prefix = 
+    Printf.sprintf "%s.VS.%s.heat.xml"
       (Placerun.get_name pr1)
-      (Placerun.get_name pr2))
+      (Placerun.get_name pr2) 
+  in
+  Phyloxml.named_tree_to_file
+    prefix
+    (make_heat_tree white_bg criterion weighting p pr1 pr2)
+    (prefix^".xml")
