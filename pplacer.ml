@@ -156,7 +156,7 @@ let () =
     disabled.
     *)
     (* build the model *)
-    if AlignmentFuns.is_nuc_align ref_align && (model_name prefs) <> "GTR" then
+    if Alignment_funs.is_nuc_align ref_align && (model_name prefs) <> "GTR" then
       failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
     let model = 
       Model.build (model_name prefs) (emperical_freqs prefs)
@@ -198,7 +198,7 @@ let () =
         let frc = 0 in
         let query_align = 
           Alignment.uppercase (Alignment.read_align query_aln_fname) in
-        AlignmentFuns.check_for_repeats (Alignment.getNameArr query_align);
+        Alignment_funs.check_for_repeats (Alignment.getNameArr query_align);
         let query_bname = 
           Filename.basename (Filename.chop_extension query_aln_fname) in
         let prior = 

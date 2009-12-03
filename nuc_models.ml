@@ -24,7 +24,7 @@ Not C 	           G or A or T 	        D
 Any 	           G or C or T or A 	N
    *)
 
-let nucLikeMap = 
+let nuc_map = 
   CharMapFuns.of_pairlist (
     List.map (fun (c, v) -> (c, Gsl_vector.of_array v)) (
 (*            A   C   G   T  *)
@@ -50,7 +50,7 @@ let nucLikeMap =
 
 let likeArrOfNuc nuc = 
   try
-    CharMap.find nuc nucLikeMap 
+    CharMap.find nuc nuc_map 
   with
     | Not_found -> 
         invalid_arg (Printf.sprintf "%c not a known nucleotide!" nuc)

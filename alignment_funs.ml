@@ -25,7 +25,7 @@ let is_nuc_align aln =
       (fun (_,seq) ->
         String.iter
           (fun nuc -> 
-            let _ = CharMap.find nuc Nuc_models.nucLikeMap in ())
+            let _ = CharMap.find nuc Nuc_models.nuc_map in ())
           seq)
     aln;
     true

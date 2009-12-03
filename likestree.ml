@@ -114,11 +114,11 @@ let calc_distoproximal nstates aln_index_map aln_like diagdq gtree rate =
 
 let distoproximal_of_aln_and_gtree seq_type diagdq align gtree rate = 
   let aln_index_map = 
-    AlignmentFuns.makeAlnIndexMap 
+    Alignment_funs.makeAlnIndexMap 
       (Bark_map.to_name_map (Gtree.get_bark_map gtree))
       (Array.map fst align) 
   in
   let seqs = Array.map snd align 
   and nstates = Alignment.nstates_of_seq_type seq_type in
-  let aln_like = AlignmentFuns.aln_like_of_unnamed_align seq_type seqs in
+  let aln_like = Alignment_funs.aln_like_of_unnamed_align seq_type seqs in
   calc_distoproximal nstates aln_index_map aln_like diagdq gtree rate
