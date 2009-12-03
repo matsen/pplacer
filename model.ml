@@ -33,10 +33,10 @@ let build model_name emperical_freqs opt_freqs_transitions ref_align rates =
     else
       (Alignment.Protein_seq,
         let model_trans, model_statd = 
-          ProtModels.trans_and_statd_of_model_name model_name in
+          Prot_models.trans_and_statd_of_model_name model_name in
         (model_trans,
           if emperical_freqs then
-            Alignment_funs.emper_freq 20 ProtModels.prot_map ref_align 
+            Alignment_funs.emper_freq 20 Prot_models.prot_map ref_align 
           else
             model_statd))
   in

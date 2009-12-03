@@ -58,7 +58,7 @@ let pplacer_core
     let query_like = 
       match seq_type with
       | Alignment.Nucleotide_seq -> Array.map Nuc_models.likeArrOfNuc query_arr
-      | Alignment.Protein_seq -> Array.map ProtModels.likeArrOfAA query_arr
+      | Alignment.Protein_seq -> Array.map Prot_models.likeArrOfAA query_arr
     in
     let query_glv = 
       Glv.lv_list_to_constant_rate_glv 

@@ -65,7 +65,7 @@ let alignmentLikeOfUnnamedNucAlignment uAlign =
   Array.map (Array.map Nuc_models.likeArrOfNuc) (transposeAln uAlign)
 
 let alignmentLikeOfUnnamedProtAlignment uAlign = 
-  Array.map (Array.map ProtModels.likeArrOfAA) (transposeAln uAlign)
+  Array.map (Array.map Prot_models.likeArrOfAA) (transposeAln uAlign)
 
 let aln_like_of_unnamed_align seq_type seqs = 
   match seq_type with
@@ -75,7 +75,7 @@ let aln_like_of_unnamed_align seq_type seqs =
       alignmentLikeOfUnnamedProtAlignment seqs
 
 (* getting emperical frequencies from alignments 
- # AlignmentFuns.emper_freq 20 ProtModels.prot_map [|"","?ARRV"; "","AAVY?"|];;
+ # AlignmentFuns.emper_freq 20 Prot_models.prot_map [|"","?ARRV"; "","AAVY?"|];;
 - : Gsl_vector.vector =
 {0.375; 0.25; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 0.; 
 0.; 0.125; 0.25}
