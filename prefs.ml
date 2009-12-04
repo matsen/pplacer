@@ -100,6 +100,74 @@ let ratio_cutoff    p = !(p.ratio_cutoff)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
 
+
+(* arguments and preferences *)
+
+let spec_with_default symbol setfun p help = 
+  (symbol, setfun p, Printf.sprintf help !p)
+
+let args prefs = 
+  [
+    (* short *)
+    "-t", Arg.Set_string prefs.tree_fname,
+    "Specify the reference tree filename.";
+    "-r", Arg.Set_string prefs.ref_align_fname,
+    "Specify the reference alignment filename.";
+    "-s", Arg.Set_string prefs.stats_fname,
+    "Supply a phyml stats.txt file or a RAxML info file which specifies the model parameters. \
+    The information in this file can be overriden on the command line.";
+    "-d", Arg.Set_string prefs.ref_dir,
+    "Specify the directory containing the reference information.";
+    "-p", Arg.Set prefs.calc_pp, 
+    "Calculate posterior probabilities.";
+    "-m", Arg.Set_string prefs.model_name,
+    "Set the sequence substitution model. Protein options are LG (default) or WAG. \
+    For nucleotides the GTR parameters must be specified via a stats file.";
+    (* model *)
+    "--modelFreqs", Arg.Clear prefs.emperical_freqs,
+    "Use protein frequencies counted from the chosen model rather than counts \
+    from the reference alignment.";
+    "--gammaCats", Arg.Set_int prefs.gamma_n_cat,
+    "Specify the number of categories for a discrete gamma model. (Default is \
+    one, i.e. no gamma rate variation.)";
+    "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
+    "Specify the shape parameter for a discrete gamma model.";
+    (* like calc parameters *)
+    spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.tolerance
+    "Specify the tolerance for the branch length maximization. Default is %g.";
+    spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
+    "Specify the relative error for the posterior probability calculation. Default is %g.";
+    "--uniformPrior", Arg.Set prefs.uniform_prior,
+    "Use a uniform prior rather than exponential in the posterior probability \
+    calculation.";
+    spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
+    "Set the maximum pendant branch length for the ML and Bayes calculations. Default is %g.";
+    spec_with_default "--ratioCutoff" (fun o -> Arg.Set_float o) prefs.ratio_cutoff
+    "Specify the ratio cutoff for recording in the .place file. Default is %g.";
+    (* baseball *)
+    spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
+    "Set the maximum number of strikes for baseball. Setting to zero disables ball playing. Default is %d.";
+    spec_with_default "--strikeBox" (fun o -> Arg.Set_float o) prefs.strike_box
+    "Set the size of the strike box in log likelihood units. Default is %g.";
+    spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
+    "Set the maximum number of pitches for baseball. Default is %d.";
+    "--fantasy", Arg.Set prefs.fantasy,
+    "Run in fantasy baseball mode.";
+    (* other *)
+    "--writeMasked", Arg.Set prefs.write_masked,
+    "Write out the reference alignment with the query sequence, masked to the \
+    region without gaps in the query.";
+    spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level 
+    "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
+  ]
+
+  (*
+and only_write_best_opt = "-b", Arg.Set prefs.only_write_best,
+"Only record the best PP and ML placements in the .place file, and do so \ 
+for every fragment."
+*)
+
+
 (* include a pref here if it should go in the place file *)
 let titled_typed_prefs p =
   [

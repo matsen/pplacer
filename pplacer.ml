@@ -6,103 +6,24 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-let prefs = Prefs.defaults () 
-
-(* these are the args that we re-parse after parsing the phyml stat file *)
-let model_name_opt = "-m", Arg.Set_string prefs.model_name,
-  "Set the sequence substitution model. Protein options are LG (default) or WAG. \
-  For nucleotides the GTR parameters must be specified via a stats file."
-and gamma_n_cat_opt = "--gammaCats", Arg.Set_int prefs.gamma_n_cat,
- "Specify the number of categories for a discrete gamma model. (Default is \
- one, i.e. no gamma rate variation.)"
-and gamma_alpha_opt = "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
- "Specify the shape parameter for a discrete gamma model."
-let reparseable_opts = [model_name_opt; gamma_n_cat_opt; gamma_alpha_opt] 
-let spec_with_default symbol setfun p help = 
-  (symbol, setfun p, Printf.sprintf help !p)
 
 let parse_args () =
-  let files  = ref [] in
-  let tree_fname_opt = "-t", Arg.Set_string prefs.tree_fname,
-   "Specify the reference tree filename."
-  and ref_align_fname_opt = "-r", Arg.Set_string prefs.ref_align_fname,
-   "Specify the reference alignment filename."
-  and ref_dir_opt = "-d", Arg.Set_string prefs.ref_dir,
-   "Specify the directory containing the reference information."
-  and verb_level_opt = spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level 
-          "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d."
-  and calc_pp_opt = "-p", Arg.Set prefs.calc_pp, 
-  "Calculate posterior probabilities."
-  and ratio_cutoff_opt = spec_with_default "--ratioCutoff" (fun o -> Arg.Set_float o) prefs.ratio_cutoff
-   "Specify the ratio cutoff for recording in the .place file. Default is %g."
-   (*
-  and only_write_best_opt = "-b", Arg.Set prefs.only_write_best,
-   "Only record the best PP and ML placements in the .place file, and do so \ 
-   for every fragment."
-   *)
-  and stats_fname_opt = "-s", Arg.Set_string prefs.stats_fname,
-   "Supply a phyml stats.txt file or a RAxML info file which specifies the model parameters. \
-   The information in this file can be overriden on the command line."
-  and max_pend_opt = spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
-   "Set the maximum pendant branch length for the ML and Bayes calculations. Default is %g."
-  and tolerance_opt = spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.tolerance
-   "Specify the tolerance for the branch length maximization. Default is %g."
-  and rel_err_opt = spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
-   "Specify the relative error for the posterior probability calculation. Default is %g."
-  and model_freqs_opt = "--modelFreqs", Arg.Clear prefs.emperical_freqs,
-   "Use protein frequencies counted from the chosen model rather than counts \
-   from the reference alignment."
-  and unif_prior_opt = "--uniformPrior", Arg.Set prefs.uniform_prior,
-   "Use a uniform prior rather than exponential in the posterior probability \
-   calculation."
-  and write_masked_opt = "--writeMasked", Arg.Set prefs.write_masked,
-   "Write out the reference alignment with the query sequence, masked to the \
-   region without gaps in the query."
-  and max_strikes_opt = spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
-   "Set the maximum number of strikes for baseball. Setting to zero disables ball playing. Default is %d."
-  and strike_box_opt = spec_with_default "--strikeBox" (fun o -> Arg.Set_float o) prefs.strike_box
-   "Set the size of the strike box in log likelihood units. Default is %g."
-  and max_pitches_opt = spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
-   "Set the maximum number of pitches for baseball. Default is %d."
-  and fantasy_opt = "--fantasy", Arg.Set prefs.fantasy,
-    "Run in fantasy baseball mode."
+  let files  = ref [] 
+  and prefs = Prefs.defaults ()
   in
   let usage =
     "pplacer "^Placerun_io.version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
   and anon_arg arg =
-    files := arg :: !files in
-  let opts = 
-    [
-      tree_fname_opt; 
-      ref_align_fname_opt; 
-      stats_fname_opt;  
-      ref_dir_opt;
-      calc_pp_opt; 
-    ] 
-    @ reparseable_opts @
-    [
-      unif_prior_opt; 
-      model_freqs_opt; 
-      max_strikes_opt; 
-      strike_box_opt; 
-      max_pitches_opt;
-      fantasy_opt;
-      max_pend_opt; 
-      tolerance_opt; 
-      rel_err_opt;
-      ratio_cutoff_opt;
-      verb_level_opt; 
-      write_masked_opt; 
-      (* only_write_best_opt;  *)
-    ]
+    files := arg :: !files
   in
-  Arg.parse opts anon_arg usage;
-  List.rev !files
-     
+  Arg.parse (Prefs.args prefs) anon_arg usage;
+  (List.rev !files, prefs)
+
+
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
-    let files = parse_args () in 
+    let (files, prefs) = parse_args () in 
     if files = [] then begin
       print_endline "Please specify some query sequences, or ask for an entropy tree."; 
       exit 0;
