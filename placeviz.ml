@@ -121,8 +121,8 @@ let () =
           Placeviz_core.write_tog_file 
             tree_fmt fname_base decor_ref_tree placed_map;
         if !max_bounce <> 0. then
-          Placeviz_core.write_bounce_tree !white_bg
-            weighting criterion mass_width !max_bounce fname_base decor_ref_tree placerun;
+          Placeviz_core.write_bounce_tree !white_bg weighting 
+            criterion ~mass_width !max_bounce fname_base decor_ref_tree placerun;
         if !write_sing then
           Placeviz_core.write_sing_file 
             criterion

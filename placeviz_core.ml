@@ -157,7 +157,7 @@ let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree place
 (* bounce trees *)
 
 let bounce_tree white_bg
-      weighting criterion mass_width max_bounce decor_ref_tree pr = 
+      weighting criterion ~mass_width max_bounce decor_ref_tree pr = 
   let gray = if white_bg then Decor.black else Decor.white in
   Decor_gtree.add_decor_by_map
     decor_ref_tree
@@ -170,8 +170,8 @@ let bounce_tree white_bg
             Decor.orange ])
       (Bounce.weighted_bounce_map_of_pr weighting criterion pr))
 
-let write_bounce_tree white_bg weighting criterion mass_width max_bounce fname_base decor_ref_tree placerun = 
+let write_bounce_tree white_bg weighting criterion ~mass_width max_bounce fname_base decor_ref_tree placerun = 
   Phyloxml.named_tree_to_file
     (fname_base^".bounce")
-    (bounce_tree white_bg weighting criterion mass_width max_bounce decor_ref_tree placerun)
+    (bounce_tree white_bg weighting criterion ~mass_width max_bounce decor_ref_tree placerun)
     (fname_base^".bounce.xml") 
