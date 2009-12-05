@@ -5,9 +5,11 @@
 
 open MapsSets
 
+(* note that order is important so the xml comes out right when we sort using
+ * polymorphic compare *)
 type decoration = 
-  | Color of int * int * int
   | Width of float
+  | Color of int * int * int
   | Dot of int
 
 let assert_ubyte i = assert(i >= 0 || i <= 255)

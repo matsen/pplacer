@@ -32,7 +32,8 @@ class decor_bark arg =
 
     method write_xml ch = 
       super#write_xml ch;
-      List.iter (Decor.write_xml ch) decor
+      (* sort so tags are in proper order *)
+      List.iter (Decor.write_xml ch) (List.sort compare decor)
 
     method append_decor decor_list = 
       {< decor = decor @ decor_list >}
