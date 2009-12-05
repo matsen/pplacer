@@ -41,6 +41,7 @@ let weighted_bounce_map weighting criterion t pquery_list =
   let mass_a = Array.make (1+top_id) 0.
   and bounce_a = Array.make (1+top_id) 0.
   and tree_len = Gtree.tree_length t
+  and mass_per_pquery = 1. /. (float_of_int (List.length pquery_list))
   in
   List.iter
     (fun pq ->
@@ -49,7 +50,8 @@ let weighted_bounce_map weighting criterion t pquery_list =
         (fun (i, (_,mass)) ->
             mass_a.(i) <- mass_a.(i) +. mass;
             bounce_a.(i) <- bounce_a.(i) +. mass *. b)
-        (Mass_map.Indiv.split_pquery_mass weighting criterion 1. pq))
+        (Mass_map.Indiv.split_pquery_mass weighting criterion 
+           mass_per_pquery pq))
     pquery_list;
   let rec make_map accu i = 
     if i < 0 then accu

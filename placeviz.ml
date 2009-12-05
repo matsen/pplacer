@@ -100,14 +100,14 @@ let () =
         let fname_base = 
           Filename.basename (Placerun_io.chop_place_extension fname)
         in
-        (* set up the width *)
+        (* set up the coefficiant for the width *)
+        let n_placed = 
+          (List.length pqueries) - (List.length unplaced_seqs) in
         let mass_width = 
           if !total_width = 0. then (* total width not specified *)
-            !unit_width
+            (!unit_width) *. (float_of_int n_placed)
           else (* split up the mass according to the number of queries *)
-            (!total_width) /. 
-            (float_of_int 
-              ((List.length pqueries) - (List.length unplaced_seqs)))
+            !total_width
         in
         (* write loc file *)
         if !write_loc then
