@@ -209,15 +209,15 @@ let pplacer_core
     let rec play_ball like_record n_strikes results = function
       | loc::rest -> begin
           try 
-            let (best_like,_,_) as result = 
+            let (like,_,_) as result = 
               ml_evaluate_location loc in
             let new_results = (loc, result)::results in
             if List.length results >= t_max_pitches then
               new_results
-            else if best_like > like_record then
+            else if like > like_record then
               (* we have a new best likelihood *)
-              play_ball best_like n_strikes new_results rest
-            else if best_like < like_record-.(strike_box prefs) then
+              play_ball like n_strikes new_results rest
+            else if like < like_record-.(strike_box prefs) then
               (* we have a strike *)
               if n_strikes+1 >= t_max_strikes then new_results
               else play_ball like_record (n_strikes+1) new_results rest
@@ -244,7 +244,7 @@ let pplacer_core
     let ml_ratios = 
       Base.ll_normalized_prob 
         (List.map 
-          (fun (_, (best_like, _, _)) -> best_like) 
+          (fun (_, (like, _, _)) -> like) 
           ml_results) 
     in
     let ml_sorted_results = 

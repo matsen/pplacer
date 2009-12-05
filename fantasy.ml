@@ -7,18 +7,30 @@
    * http://sekhon.berkeley.edu/graphics/html/image.html
 *)
 
+type info = { n_hits : int; n_trials : int; like_diff : float }
+
+let empty_info = { n_hits = 0; n_trials = 0; like_diff = 0.; }
+
+let get_n_hits r = r.n_hits
+let get_n_trials r = r.n_trials
+let get_like_diff r = r.like_diff
+
+let add_to_info a (hit, n_trials, like_diff) = 
+  { n_hits = a.n_hits + if hit then 1 else 0; 
+  n_trials = a.n_trials + n_trials; 
+  like_diff = a.like_diff +. like_diff; }
 
 let get_like (_, (like, _, _)) = like
 let get_loc (loc, _) = loc
 
-let find_best_loc ml_results = 
+let find_best ml_results = 
   let rec aux best_loc like_record = function
     | r::rest ->
         if get_like r > like_record then 
           aux (get_loc r) (get_like r) rest
         else
           aux best_loc like_record rest
-    | [] -> best_loc
+    | [] -> (best_loc, like_record)
   in
   match ml_results with
   | r::rest -> aux (get_loc r) (get_like r) rest
@@ -30,43 +42,44 @@ let find_best_loc ml_results =
  * note that we don't do anything with max_pitches, assuming that is has been
  * taken care of by filtering down the ml_results. *)
 let fantasy_ball ml_results strike_box max_strikes = 
-  let best_loc = find_best_loc ml_results in
-  let rec play_ball like_record n_strikes prev_found prev_n_trials = function
-    | (loc, (best_like,_,_))::rest -> begin
+  let (best_loc, best_like) = find_best ml_results in
+  let rec play_ball our_like_record n_strikes prev_found prev_n_trials = function
+    | (loc, (like,_,_))::rest -> begin
       let n_trials = prev_n_trials+1 in
       (* have we found it yet? *)
       let found = if loc = best_loc then true else prev_found in
-      if best_like > like_record then
+      if like > our_like_record then
         (* we have a new best likelihood *)
-        play_ball best_like n_strikes found n_trials rest 
-      else if best_like < like_record-.strike_box then
+        play_ball like n_strikes found n_trials rest 
+      else if like < our_like_record-.strike_box then
         (* we have a strike *)
         if n_strikes+1 >= max_strikes then 
         (* struck out *)
-          (found, n_trials)
-        else play_ball like_record (n_strikes+1) found n_trials rest 
+          (found, n_trials, our_like_record)
+        else play_ball our_like_record (n_strikes+1) found n_trials rest 
       else
         (* not a strike, just keep on accumulating results *)
-        play_ball like_record n_strikes found n_trials rest
+        play_ball our_like_record n_strikes found n_trials rest
        end
-    | [] -> (prev_found, prev_n_trials)
+    | [] -> (prev_found, prev_n_trials, our_like_record)
   in
-  play_ball (-. infinity) 0 false 0 ml_results
+  let (found, n_trials, our_like_record) = 
+    play_ball (-. infinity) 0 false 0 ml_results in
+  (found, n_trials, best_like -. our_like_record)
 
 let make_fantasy_matrix ~max_strike_box ~max_strikes = 
-  Array.make_matrix (1+max_strike_box) (1+max_strikes) (0,0)
+  Array.make_matrix (1+max_strike_box) (1+max_strikes) empty_info
 
-let add_single_to_fm fm strike_box max_strikes (hit, n_trials) = 
-  let (ph, pnt) = fm.(strike_box).(max_strikes) in
+let add_single_to_fm fm strike_box max_strikes result = 
   fm.(strike_box).(max_strikes) <- 
-    (ph + (if hit then 1 else 0), pnt + n_trials)
+    add_to_info (fm.(strike_box).(max_strikes)) result
 
 let add_to_fantasy_matrix ml_results fm = 
   let max_strike_box = (Array.length fm)-1
   and max_strikes = (Array.length fm.(0))-1
   in
   for strike_box=0 to max_strike_box do
-    for max_strikes=1 to max_strikes do
+    for max_strikes=0 to max_strikes do
       add_single_to_fm fm strike_box max_strikes 
         (fantasy_ball ml_results (float_of_int strike_box) max_strikes)
     done;
@@ -82,20 +95,29 @@ let build_fantasy_matrix ml_results ~max_strike_box ~max_strikes =
 let mat_map f m = Array.map (Array.map f) m
 
 let calc_stats fantasy_mat num_queries = 
-  let avg x = (float_of_int x) /. (float_of_int num_queries) in
-  let get_stat f = mat_map (fun r -> avg (f r)) fantasy_mat in
-  (get_stat fst, get_stat snd)
+  let avg x = x /. (float_of_int num_queries) in
+  (mat_map (fun r -> avg (float_of_int (get_n_hits r))) fantasy_mat,
+   mat_map (fun r -> avg (float_of_int (get_n_trials r))) fantasy_mat,
+   mat_map (fun r -> avg (get_like_diff r)) fantasy_mat)
+
+let arr_forget_first a = 
+  let len = Array.length a in
+  assert(len > 0);
+  Array.sub a 1 (len-1)
 
 let results_to_file fname_prefix fantasy_mat num_queries =
-  let batting_avg,n_trials_avg = calc_stats fantasy_mat num_queries in
+  let batting_avg,n_trials_avg,like_diff_avg = 
+    calc_stats fantasy_mat num_queries in
   let write_mat fname m = 
     let ch = open_out fname in
     Printf.fprintf ch "# strike box is first coordinate, and max strikes is second.\n";
-    String_matrix.write_padded ch (mat_map string_of_float m);
+    String_matrix.write_padded ch 
+      (mat_map string_of_float (Array.map arr_forget_first m));
     close_out ch
   in
   write_mat (fname_prefix^".batting_avg.out") batting_avg;
   write_mat (fname_prefix^".n_trials.out") n_trials_avg;
+  write_mat (fname_prefix^".like_diff.out") like_diff_avg;
   ()
 
 
