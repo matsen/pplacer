@@ -63,7 +63,7 @@ let () =
      * command line arguments to override the settings in the stat file, so we
      * first parse things according to that file, then rerun the Arg.parser for
      * certain settings. *)
-    let opt_freqs_transitions = match stats_fname prefs with
+    let opt_transitions = match stats_fname prefs with
     | s when s = "" -> 
         Printf.printf
           "NOTE: you have not specified a stats file. I'm using the %s model.\n"
@@ -81,7 +81,7 @@ let () =
       failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
     let model = 
       Model.build (model_name prefs) (emperical_freqs prefs)
-                  opt_freqs_transitions ref_align 
+                  opt_transitions ref_align 
                   (Gamma.discrete_gamma 
                     (gamma_n_cat prefs) (gamma_alpha prefs)) in
     (* find all the tree locations *)

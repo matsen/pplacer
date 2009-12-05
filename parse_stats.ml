@@ -13,7 +13,6 @@ let str_match rex s = Str.string_match rex s 0
 let parse_raxml_info lines prefs = 
   let partition_rex = Str.regexp "^Partition:"
   and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
-  and base_freqs_rex = Str.regexp "pi(A): \\([^ ]+\\) pi(C): \\([^ ]+\\) pi(G): \\([^ ]+\\) pi(T): \\([^ ]+\\)"
   and inference_rex = Str.regexp "^Inference\\[0\\].* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
   and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
   in
@@ -37,28 +36,6 @@ let parse_raxml_info lines prefs =
               raise (Stats_parsing_error "couldn't find substitution matrix line")
         in
         prefs.Prefs.model_name := Str.matched_group 1 subs_line;
-        let freqs_opt = 
-          if (Prefs.model_name prefs) = "GTR" then begin
-            let (base_freqs_line,_) = 
-              try
-                File_parsing.find_beginning 
-                  (str_match base_freqs_rex) rest 
-              with
-              | Not_found -> 
-                  raise (Stats_parsing_error "couldn't find base freqs line for GTR model")
-            in
-            let process_freq i = 
-              try 
-                float_of_string (Str.matched_group i base_freqs_line)
-              with
-              | Invalid_argument s -> 
-                  raise (Stats_parsing_error ("problem parsing freqs: "^s))
-            in
-            Some (Array.map process_freq [|1;2;3;4|])
-          end
-          else
-            None
-        in
         let (inference_line,_) = 
           try
             File_parsing.find_beginning 
@@ -67,39 +44,26 @@ let parse_raxml_info lines prefs =
           | Not_found -> 
               raise (Stats_parsing_error "couldn't find inference line")
         in
-                (* raxml gamma always 4 categories *)
+        (* raxml gamma always 4 categories *)
         prefs.Prefs.gamma_n_cat := 4;
         prefs.Prefs.gamma_alpha := 
           float_of_string (Str.matched_group 1 inference_line);
         let rate_info = Str.matched_group 2 inference_line in
-        let rates_freqs = 
-          if str_match rates_rex rate_info then begin
-            let freqs = 
-              match freqs_opt with
-              | Some f -> f
-              | None -> 
-                  raise (Stats_parsing_error 
-                    ("GTR is the only allowed nucleotide model"))
-            in
-            if Prefs.model_name prefs <> "GTR" then
-              raise (Stats_parsing_error ("have rates but model is not GTR!"));
-            Some
-              (freqs,
-                Array.of_list
-                  (List.map
-                    float_of_string
-                    (Str.split 
-                      (Str.regexp "[ ]")
-                      (Str.matched_group 1 rate_info))))
-          end
-          else begin
-            (* we have amino acids *)
-            if Prefs.model_name prefs == "GTR" then
-              raise (Stats_parsing_error "no rates for GTR!");
-            None 
-          end
-        in
-        rates_freqs
+        if str_match rates_rex rate_info then begin
+          if Prefs.model_name prefs <> "GTR" then
+            raise (Stats_parsing_error ("have rates but model is not GTR! GTR is only allowed nucleotide model."));
+          Some
+            (Array.of_list
+              (List.map
+                float_of_string
+                (Str.split 
+                  (Str.regexp "[ ]")
+                  (Str.matched_group 1 rate_info))))
+        end
+        else if Prefs.model_name prefs == "GTR" then
+          raise (Stats_parsing_error "GTR model specified, but no rates found.")
+        else
+          None
       with
       | Not_found -> raise (Stats_parsing_error "problem parsing ")
     end
@@ -165,31 +129,19 @@ let parse_phyml_stats lines prefs =
     end
     | _ -> raise (Stats_parsing_error "not enough lines after gamma!")
     end;
-  let split_to_arr_and_rest l to_pull = 
-    let (a,b) = list_split l to_pull in 
-    (Array.of_list a, b)
-  in
   try 
     let (_,nuc_f_lines) = 
       File_parsing.find_beginning (str_match nuc_freqs_rex) after_g in
     (* if we get here then we did find some nucleotide freq info *)
     if Prefs.model_name prefs <> "GTR" then 
       raise (Stats_parsing_error "model must be GTR if we are using nucleotides");
-    let (freq_strs, after_freq) = 
-      split_to_arr_and_rest (List.tl nuc_f_lines) 4 in
-    let freqs = 
-      ArrayFuns.map2 
-      assert_and_extract_float
-      [|"  - f(A)= ";"  - f(C)= ";"  - f(G)= ";"  - f(T)= "|]
-      freq_strs
-    in
-    let transitions = 
-      ArrayFuns.map2 
+    let (_, after_freq) = list_split (List.tl nuc_f_lines) 4 in
+    Some
+      (ArrayFuns.map2 
       assert_and_extract_float
       [|"  A <-> C"; "  A <-> G"; "  A <-> T"; "  C <-> G"; "  C <-> T"; "  G <-> T"|]
-      (fst (split_to_arr_and_rest (snd (list_split after_freq 3)) 6))
-    in
-    Some (freqs,transitions)
+      (Array.of_list (fst (list_split (snd (list_split after_freq 3)) 6))))
+    
   with
   | Not_found -> 
     if Prefs.model_name prefs == "GTR" then 

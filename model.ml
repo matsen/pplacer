@@ -21,14 +21,14 @@ let n_states model = Alignment.nstates_of_seq_type model.seq_type
 let n_rates  model = Array.length (rates model)
 
 
-let build model_name emperical_freqs opt_freqs_transitions ref_align rates =
+let build model_name emperical_freqs opt_transitions ref_align rates =
   let seq_type, (trans, statd) = 
     if model_name = "GTR" then 
       (Alignment.Nucleotide_seq, 
-      match opt_freqs_transitions with
-      | Some(freqs, transitions) ->
+      match opt_transitions with
+      | Some transitions ->
           (Nuc_models.b_of_trans_vector transitions,
-          Gsl_vector.of_array freqs)
+          Alignment_funs.emper_freq 4 Nuc_models.nuc_map ref_align)
       | None -> assert(false)) 
     else
       (Alignment.Protein_seq,
