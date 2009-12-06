@@ -71,11 +71,6 @@ let () =
         None
     | _ -> Parse_stats.parse_stats ref_dir_complete prefs
     in
-    (*
-    (* now we re-parse the arguments to override if they are set *)
-    Arg.parse_argv reparseable_opts (fun _ -> ()) "";
-    disabled.
-    *)
     (* build the model *)
     if Alignment_funs.is_nuc_align ref_align && (model_name prefs) <> "GTR" then
       failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
