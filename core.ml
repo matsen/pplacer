@@ -18,8 +18,8 @@ type prior = Uniform_prior | Exponential_prior of float
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
-      prefs fname_prefix prior model ref_align gtree 
-      query_align ~dmap ~pmap ~halfd ~halfp locs = 
+      prefs query_fname prior model ref_align gtree 
+      ~dmap ~pmap ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model in
   let prior_fun =
     match prior with
@@ -27,8 +27,10 @@ let pplacer_core
     | Exponential_prior mean ->
         fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
   in
+  let query_channel = Fasta_channel.of_fname query_fname in
   (* cycle through queries *)
-  let num_queries = Array.length query_align in
+  let num_queries = 
+    Fasta_channel.size_checking_for_duplicate_names query_channel in
   let ref_length = Alignment.length ref_align in
   let result_arr = 
     Array.make num_queries
@@ -42,8 +44,8 @@ let pplacer_core
     else [||]
   in
   (* the main query loop *)
-  for query_num=0 to num_queries-1 do
-    let (query_name, query_seq) = query_align.(query_num) in
+  let process_query query_num (query_name, pre_query_seq) = 
+    let query_seq = String.uppercase pre_query_seq in
     (* Base.print_time_fun "garbage collection" Gc.compact; *)
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
@@ -294,9 +296,12 @@ let pplacer_core
               @ below_cutoff)
         end
         else ml_sorted_results)
-  done;
+  in
+  Fasta_channel.named_seq_iteri process_query query_channel;
   if fantasy prefs then
-    Fantasy.results_to_file fname_prefix fantasy_mat num_queries;
+    Fantasy.results_to_file 
+      (Filename.basename (Filename.chop_extension query_fname))
+      fantasy_mat num_queries;
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
   Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
   

@@ -4,7 +4,10 @@
  * functions to iterate over a fasta file
 *)
 
+open MapsSets
+
 exception Beginning_of_file
+exception Duplicate_name of string
 
 let whitespace_regexp = Str.regexp "^[ \\t]*$"
 let whitespace_match s = Str.string_match whitespace_regexp s 0
@@ -89,4 +92,26 @@ let name_iter f ch = gen_iter next_name f ch
 
 let named_seq_iteri f ch = gen_iteri next_named_seq f ch
 let named_seq_iter f ch = gen_iter next_named_seq f ch
+
+let gen_fold next_fun f start ch = 
+  let rec aux accu = 
+    try aux (f (next_fun ch) accu) with 
+    | End_of_file -> complete_rewind ch; accu
+  in
+  aux start
+
+let name_fold f start ch = gen_fold next_name f start ch
+let named_seq_fold f start ch = gen_fold next_named_seq f start ch
+
+(* *** other functions *** *)
+let size_checking_for_duplicate_names ch = 
+  let (size,_) =
+    name_fold
+      (fun name (i,s) -> 
+        if StringSet.mem name s then raise (Duplicate_name name)
+        else (i+1, StringSet.add name s))
+      (0,StringSet.empty)
+      ch
+  in
+  size
 

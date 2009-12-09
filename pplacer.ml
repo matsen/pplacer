@@ -109,14 +109,11 @@ let () =
       print_endline "done."
     end;
     (* analyze query sequences *)
-    let collect ret_code query_aln_fname =
+    let collect ret_code query_fname =
       try
         let frc = 0 in
-        let query_align = 
-          Alignment.uppercase (Alignment.read_align query_aln_fname) in
-        Alignment_funs.check_for_repeats (Alignment.getNameArr query_align);
         let query_bname = 
-          Filename.basename (Filename.chop_extension query_aln_fname) in
+          Filename.basename (Filename.chop_extension query_fname) in
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior
           else Core.Exponential_prior (
@@ -125,8 +122,8 @@ let () =
               (float_of_int (Gtree.n_edges ref_tree))) 
         in
         let results = 
-          Core.pplacer_core prefs query_bname prior
-            model ref_align ref_tree query_align 
+          Core.pplacer_core prefs query_fname prior
+            model ref_align ref_tree
             ~dmap ~pmap ~halfd ~halfp locs in
         Placerun_io.to_file
           (String.concat " " (Array.to_list Sys.argv))
@@ -138,7 +135,9 @@ let () =
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     let retVal = List.fold_left collect 1 files in
-    if verb_level prefs > 0 then Common_base.print_elapsed_time ();
-    if verb_level prefs > 0 then Common_base.print_memory_usage ();
+    if verb_level prefs > 0 then begin
+      Common_base.print_elapsed_time ();
+      Common_base.print_memory_usage ();
+    end;
     exit retVal
   end
