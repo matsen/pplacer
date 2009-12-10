@@ -135,9 +135,10 @@ let () =
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     let retVal = List.fold_left collect 1 files in
-    if verb_level prefs > 0 then begin
+    if verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
       Common_base.print_memory_usage ();
+      Common_base.print_n_compactions ();
     end;
     exit retVal
   end

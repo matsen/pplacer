@@ -20,7 +20,12 @@ let pplacer_core
       prefs query_fname prior model ref_align gtree 
       ~dmap ~pmap ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model in
-  let max_bytes = Memory.bytes_of_gb (max_memory prefs) in
+  let max_bytes = Memory.bytes_of_gb (max_memory prefs) 
+  and max_usage = ref 0 in
+  let update_usage () = 
+    let cb = Memory.curr_bytes () in
+    if cb > !max_usage then max_usage := cb
+  in
   let prior_fun =
     match prior with
     | Uniform_prior -> (fun _ -> 1.)
@@ -46,6 +51,7 @@ let pplacer_core
   (* the main query loop *)
   let process_query query_num (query_name, pre_query_seq) = 
     let query_seq = String.uppercase pre_query_seq in
+    update_usage ();
     if Memory.ceiling_collection max_bytes then 
       if (verb_level prefs) >= 1 then begin
         print_endline "performed garbage collection";
@@ -307,5 +313,12 @@ let pplacer_core
       (Filename.basename (Filename.chop_extension query_fname))
       fantasy_mat num_queries;
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
-  Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
-  
+  let results = 
+    Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
+  in
+  update_usage ();
+  if (verb_level prefs) >= 1 then 
+    Printf.printf "maximal memory usage for %s: %d bytes\n" 
+                  query_fname (!max_usage);
+  results
+
