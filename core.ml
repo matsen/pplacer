@@ -6,7 +6,6 @@
 
 open Fam_batteries
 open MapsSets
-open Stree
 open Prefs
 
 let max_iter = 100
@@ -21,6 +20,7 @@ let pplacer_core
       prefs query_fname prior model ref_align gtree 
       ~dmap ~pmap ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model in
+  let max_bytes = Memory.bytes_of_gb (max_memory prefs) in
   let prior_fun =
     match prior with
     | Uniform_prior -> (fun _ -> 1.)
@@ -46,7 +46,11 @@ let pplacer_core
   (* the main query loop *)
   let process_query query_num (query_name, pre_query_seq) = 
     let query_seq = String.uppercase pre_query_seq in
-    (* Base.print_time_fun "garbage collection" Gc.compact; *)
+    if Memory.ceiling_collection max_bytes then 
+      if (verb_level prefs) >= 1 then begin
+        print_endline "performed garbage collection";
+        Memory.check_ceiling max_bytes;
+      end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
     if (verb_level prefs) >= 1 then begin

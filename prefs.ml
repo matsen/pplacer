@@ -33,6 +33,8 @@ type prefs =
     write_masked : bool ref;
     ratio_cutoff : float ref;
     only_write_best : bool ref;
+    (* other *)
+    max_memory : float ref;
   }
 
 
@@ -66,6 +68,8 @@ let defaults () =
     write_masked = ref false;
     ratio_cutoff = ref 0.05;
     only_write_best = ref false;
+    (* other *)
+    max_memory = ref 2.;
   }
 
 
@@ -99,6 +103,7 @@ let write_masked    p = !(p.write_masked)
 let ratio_cutoff    p = !(p.ratio_cutoff)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
+let max_memory      p = !(p.max_memory)
 
 
 (* arguments and preferences *)
@@ -159,6 +164,8 @@ let args prefs =
     region without gaps in the query.";
     spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level 
     "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
+    spec_with_default "--maxMemory" (fun o -> Arg.Set_float o) prefs.max_memory 
+    "Set a memory ceiling in Gb. Pplacer will try to stay below this level, and will warn if it can't. Default is %g.";
   ]
 
   (*
