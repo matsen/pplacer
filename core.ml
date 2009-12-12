@@ -102,7 +102,7 @@ let pplacer_core
     in
     (* get the results from the h_map *)
     let q_evolved = Glv_edge.get_evolv query_edge in
-    (* the h_ranking ranks the locations according to the h criterion. we use
+    (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
     let h_r = 
