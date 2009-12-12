@@ -19,7 +19,8 @@ let get_evolv e =
   e.evolv
 
 let recalculate model glve = 
-  Glv.evolve_into model glve.evolv !(glve.orig) !(glve.bl)
+  Glv.evolve_into model 
+                  ~dst:(glve.evolv) ~src:(!(glve.orig)) !(glve.bl)
 
 let set_bl model glve new_bl = 
   glve.bl := new_bl;

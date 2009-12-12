@@ -21,15 +21,24 @@ open Fam_batteries
 open MapsSets
 open Model
 
+let arr_get = Array.get
+
 type glv = Gsl_vector.vector array array
 
 (* deep copy *)
 let copy = Array.map (Array.map Gsl_vector.copy)
 
-let make ~n_sites ~n_rates lv = Array.make_matrix n_sites n_rates lv
+let make ~n_sites ~n_rates ~n_states = 
+  Array.init
+    n_sites
+    (fun _ -> 
+      Array.init n_rates (fun _ -> Gsl_vector.create n_states))
+  
+(* HERE: this can disappear after migrating to glv_arr *)
 let make_empty ~n_sites ~n_rates = 
-  make n_sites n_rates (Gsl_vector.create 0)
+  Array.make_matrix n_sites n_rates (Gsl_vector.create 0)
 
+let get ~site ~rate g = arr_get (arr_get g site) rate
 let set g ~site ~rate lv = g.(site).(rate) <- lv
 
 let zero ~n_sites ~n_rates ~n_states = 
@@ -112,8 +121,9 @@ let make_evolve_mats model bl =
 (* evolve_into:
  * evolve src_glv according to model for branch length bl, then store the
  * results in dest_glv.
+ * HERE: do i want to make it faster by avoiding allocation for matrices?
  *)
-let evolve_into model dest_glv src_glv bl = 
+let evolve_into model ~dst ~src bl = 
   let evolve_mats = make_evolve_mats model bl in
   ArrayFuns.iter2 (* iter over sites *)
     (fun dest_site src_site ->
@@ -123,15 +133,25 @@ let evolve_into model dest_glv src_glv bl =
         dest_site
         src_site
         evolve_mats)
-    dest_glv
-    src_glv;
+    dst
+    src;
   ()
 
 (* functional version *)
 let evolve model src_glv bl = 
   let dest_glv = copy src_glv in
-  evolve_into model dest_glv src_glv bl;
+  evolve_into model ~dst:dest_glv ~src:src_glv bl;
   dest_glv
+
+(* copy src to dest *)
+let memcpy ~src ~dst = 
+  ArrayFuns.iter2
+    (fun site_src site_dest ->
+      ArrayFuns.iter2
+        (fun rate_src rate_dest ->
+          Gsl_vector.memcpy ~src:rate_src ~dst:rate_dest)
+        site_src site_dest)
+    src dst
 
 (* pairwise_product:
  * take the pairwise product of glvs g1 and g2, then store in dest. *)
