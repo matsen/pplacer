@@ -5,8 +5,16 @@
 open Gc
 
 let word_size = Sys.word_size
-let bytes_conversion_factor = word_size / 8
-let bytes_of_words words = words * bytes_conversion_factor
+let bytes_per_word = word_size / 8
+let fbytes_per_word = float_of_int bytes_per_word
+
+let words_of_kb b = int_of_float (1e3 *. b /. fbytes_per_word)
+let words_of_mb b = int_of_float (1e6 *. b /. fbytes_per_word)
+let words_of_gb b = int_of_float (1e9 *. b /. fbytes_per_word)
+
+let kb_of_words w = fbytes_per_word *. (float_of_int w) /. 1e3
+let mb_of_words w = fbytes_per_word *. (float_of_int w) /. 1e6
+let gb_of_words w = fbytes_per_word *. (float_of_int w) /. 1e9
 
 let curr_words () = 
   let s = quick_stat ()
@@ -14,18 +22,18 @@ let curr_words () =
   in
   s.heap_words + c.minor_heap_size
 
-let curr_bytes () = bytes_of_words (curr_words ())
+let curr_gb () = gb_of_words (curr_words ())
 
-let ceiling_compaction ceiling = 
-  if ceiling < curr_bytes () then begin Gc.compact (); true end
+let ceiling_compaction ceiling_gb = 
+  if ceiling_gb < curr_gb () then 
+    begin Gc.compact (); true end
   else false
 
-let check_ceiling ceiling = 
-  let cb = curr_bytes () in
-  if ceiling < cb then 
+let check_ceiling ceiling_gb = 
+  let cg = curr_gb () in
+  if ceiling_gb < cg then 
     Printf.printf 
-      "current memory use of %d exceeds ceiling of %d\n" cb ceiling
+      "current memory use of %g gb exceeds ceiling of %g gb\n" 
+      cg ceiling_gb
 
-let bytes_of_kb b = int_of_float (1e3 *. b)
-let bytes_of_mb b = int_of_float (1e6 *. b)
-let bytes_of_gb b = int_of_float (1e9 *. b)
+

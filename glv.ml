@@ -34,10 +34,6 @@ let make_init init ~n_sites ~n_rates ~n_states =
     (fun _ -> 
       Array.init n_rates (fun _ -> Gsl_vector.create ~init n_states))
   
-(* HERE: this can disappear after migrating to glv_arr *)
-let make_empty ~n_sites ~n_rates = 
-  Array.make_matrix n_sites n_rates (Gsl_vector.create 0)
-
 (* deep copy *)
 let copy = Array.map (Array.map Gsl_vector.copy)
 
@@ -94,7 +90,6 @@ let n_rates g = assert(g <> [||]); Array.length (g.(0))
 let n_sites g = Array.length g
 
 let ppr_glv = Ppr.ppr_array (Ppr.ppr_array Fam_gsl_matvec.ppr_gsl_vector)
-let ppr_glv_intmap = IntMapFuns.ppr_gen ppr_glv (* HERE *)
 
 (* *** likelihood calculations *** *)
 

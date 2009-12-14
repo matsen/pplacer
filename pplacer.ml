@@ -87,7 +87,8 @@ let () =
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
     (* calculate like on ref tree *)
-    Printf.printf "memory before alloc: %d\n" (Memory.curr_bytes ());
+    if (verb_level prefs) >= 2 then
+      Printf.printf "memory before alloc (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 1 then begin
       print_string "Caching likelihood information on reference tree... ";
       flush_all ()
@@ -98,7 +99,8 @@ let () =
     and halfd = Glv_arr.mimic darr
     and halfp = Glv_arr.mimic darr
     in
-    Printf.printf "memory after alloc: %d\n" (Memory.curr_bytes ());
+    if (verb_level prefs) >= 2 then
+      Printf.printf "memory after alloc (gb): %g\n" (Memory.curr_gb ());
     (* the like data from the alignment *)
     let like_aln_map = 
       Like_stree.like_aln_map_of_data 
@@ -124,7 +126,7 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
-    let mem_usage = ref 0 in
+    let mem_usage = ref 0. in
     (* analyze query sequences *)
     let collect ret_code query_fname =
       try
@@ -154,7 +156,7 @@ let () =
     let retVal = List.fold_left collect 1 files in
     if verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
-      Printf.printf "maximal observed memory usage (bytes): %d\n" 
+      Printf.printf "maximal observed memory usage (gb): %g\n" 
                     (!mem_usage);
       Common_base.print_n_compactions ();
     end;

@@ -20,9 +20,8 @@ let pplacer_core
       mem_usage prefs query_fname prior model ref_align gtree 
       ~darr ~parr ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model
-  and max_bytes = Memory.bytes_of_gb (max_memory prefs) 
   and update_usage () = 
-    let cb = Memory.curr_bytes () in
+    let cb = Memory.curr_gb () in
     if cb > !mem_usage then mem_usage := cb
   and prior_fun =
     match prior with
@@ -50,10 +49,10 @@ let pplacer_core
   let process_query query_num (query_name, pre_query_seq) = 
     let query_seq = String.uppercase pre_query_seq in
     update_usage ();
-    if Memory.ceiling_compaction max_bytes then 
+    if Memory.ceiling_compaction (max_memory prefs) then 
       if (verb_level prefs) >= 1 then begin
         print_endline "performed garbage compaction.";
-        Memory.check_ceiling max_bytes;
+        Memory.check_ceiling (max_memory prefs);
       end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
