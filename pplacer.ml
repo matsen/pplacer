@@ -144,7 +144,7 @@ let () =
           Core.pplacer_core mem_usage prefs query_fname prior
             model ref_align ref_tree
             ~darr ~parr ~halfd ~halfp locs in
-        (* write if we aren't in fantasy mode *)
+        (* write output if we aren't in fantasy mode *)
         if fantasy prefs = 0. then
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
