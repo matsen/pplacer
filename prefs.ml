@@ -22,7 +22,8 @@ type prefs =
     max_strikes : int ref;
     strike_box : float ref;
     max_pitches : int ref;
-    fantasy : bool ref;
+    fantasy : float ref;
+    fantasy_frac : float ref;
     (* model *)
     emperical_freqs : bool ref;
     model_name : string ref;
@@ -35,7 +36,6 @@ type prefs =
     only_write_best : bool ref;
     (* other *)
     max_memory : float ref;
-    like_rax : float ref;
   }
 
 
@@ -58,7 +58,8 @@ let defaults () =
     max_strikes = ref 6;
     strike_box = ref 3.;
     max_pitches = ref 40;
-    fantasy = ref false;
+    fantasy = ref 0.;
+    fantasy_frac = ref 0.1;
     (* model *)
     emperical_freqs = ref true;
     model_name = ref "LG";
@@ -71,7 +72,6 @@ let defaults () =
     only_write_best = ref false;
     (* other *)
     max_memory = ref 2.;
-    like_rax = ref 0.;
   }
 
 
@@ -96,6 +96,7 @@ let max_strikes     p = !(p.max_strikes)
 let strike_box      p = !(p.strike_box)
 let max_pitches     p = !(p.max_pitches)
 let fantasy         p = !(p.fantasy)
+let fantasy_frac    p = !(p.fantasy_frac)
 let emperical_freqs p = !(p.emperical_freqs)
 let model_name      p = !(p.model_name)
 let gamma_n_cat     p = !(p.gamma_n_cat)
@@ -106,7 +107,6 @@ let ratio_cutoff    p = !(p.ratio_cutoff)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
 let max_memory      p = !(p.max_memory)
-let like_rax        p = !(p.like_rax)
 
 
 (* arguments and preferences *)
@@ -159,8 +159,13 @@ let args prefs =
     "Set the size of the strike box in log likelihood units. Default is %g.";
     spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
     "Set the maximum number of pitches for baseball. Default is %d.";
-    "--fantasy", Arg.Set prefs.fantasy,
-    "Run in fantasy baseball mode.";
+    spec_with_default "--fantasy" (fun o -> Arg.Set_float o) prefs.fantasy
+    "Set to a nonzero value to run in fantasy baseball mode. The value given \
+    will be the desired average difference between the likelihood of the best \
+    placement with the given baseball parameters and that evaluating all \
+    maxPitches pitches. Default is %g.";
+    spec_with_default "--fantasyFrac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
+    "Set the fraction of fragments to use when running fantasy baseball. Default is %g.";
     (* other *)
     "--writeMasked", Arg.Set prefs.write_masked,
     "Write out the reference alignment with the query sequence, masked to the \
@@ -169,8 +174,6 @@ let args prefs =
     "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
     spec_with_default "--maxMemory" (fun o -> Arg.Set_float o) prefs.max_memory 
     "Set a memory ceiling in Gb. Pplacer will try to stay below this level, and will warn if it can't. Default is %g.";
-    spec_with_default "--likeRax" (fun o -> Arg.Set_float o) prefs.like_rax 
-    "Run pplacer with RAxML's heuristic of only fully analyzing the top given fraction of the tree. A value of 0 turns this off. Default is %g.";
   ]
 
   (*

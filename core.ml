@@ -29,27 +29,25 @@ let pplacer_core
     | Exponential_prior mean ->
         fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
   and query_channel = Fasta_channel.of_fname query_fname 
-  and n_locs = List.length locs
   and ref_length = Alignment.length ref_align
   and prof_trie = ref Ltrie.empty
   and fantasy_mat = 
-    if fantasy prefs then
+    if fantasy prefs <> 0. then
       Fantasy.make_fantasy_matrix 
         ~max_strike_box:(int_of_float (strike_box prefs))
         ~max_strikes:(max_strikes prefs)
     else [||]
+  and fantasy_mod = Base.round (100. *. (fantasy_frac prefs))
+  and n_fantasies = ref 0
   in
   (* set up the number of pitches and strikes according to the prefs *)
   let (t_max_pitches, t_max_strikes) = 
-    if like_rax prefs <> 0. then 
-      (int_of_float ((float_of_int n_locs) *. (like_rax prefs)), 
-      max_int)
+    if fantasy prefs <> 0. then
+  (* in fantasy mode we evaluate the first max_pitches locations *)
+      (max_pitches prefs, max_int)
     else if max_strikes prefs = 0 then 
   (* we have disabled ball playing, and evaluate every location *)
       (max_int, max_int)
-    else if fantasy prefs then
-  (* in fantasy mode we evaluate the first max_pitches locations *)
-      (max_pitches prefs, max_int)
     else
   (* usual ball playing *)
       (max_pitches prefs, max_strikes prefs)
@@ -60,9 +58,11 @@ let pplacer_core
     Array.make num_queries
     (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" [])
   in
-  Printf.printf "there are %d locs and i am evaluating %d of them\n" n_locs t_max_pitches;
   (* *** the main query loop *** *)
   let process_query query_num (query_name, pre_query_seq) = 
+    if fantasy prefs = 0. || query_num mod fantasy_mod = 0 then begin
+    (* we only proceed if fantasy baseball is turned off or if this is one of
+     * the sequences used for the fantasy baseball procedure *)
     let query_seq = String.uppercase pre_query_seq in
     update_usage ();
     if Memory.ceiling_compaction (max_memory prefs) then 
@@ -251,8 +251,10 @@ let pplacer_core
       List.rev (play_ball (-. infinity) 0 [] h_ranking) 
     in
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
-    if fantasy prefs then
+    if fantasy prefs <> 0. then begin
       Fantasy.add_to_fantasy_matrix ml_results fantasy_mat;
+      incr n_fantasies;
+    end;
     (* calc ml weight ratios. these tuples are ugly but that way we don't need
      * to make a special type for ml results. *)
     let ml_ratios = 
@@ -308,12 +310,13 @@ let pplacer_core
               @ below_cutoff)
         end
         else ml_sorted_results)
+  end
   in
   Fasta_channel.named_seq_iteri process_query query_channel;
-  if fantasy prefs then
+  if fantasy prefs <> 0. then
     Fantasy.results_to_file 
       (Filename.basename (Filename.chop_extension query_fname))
-      fantasy_mat num_queries;
+      fantasy_mat (!n_fantasies);
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
   let results = 
     Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr

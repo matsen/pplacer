@@ -144,13 +144,15 @@ let () =
           Core.pplacer_core mem_usage prefs query_fname prior
             model ref_align ref_tree
             ~darr ~parr ~halfd ~halfp locs in
-        Placerun_io.to_file
-          (String.concat " " (Array.to_list Sys.argv))
-          (Placerun.make 
-             ref_tree 
-             prefs
-             query_bname 
-             (Array.to_list results));
+        (* write if we aren't in fantasy mode *)
+        if fantasy prefs = 0. then
+          Placerun_io.to_file
+            (String.concat " " (Array.to_list Sys.argv))
+            (Placerun.make 
+               ref_tree 
+               prefs
+               query_bname 
+               (Array.to_list results));
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with Sys_error msg -> prerr_endline msg; 2 in
     let retVal = List.fold_left collect 1 files in

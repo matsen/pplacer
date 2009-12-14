@@ -2,10 +2,9 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * routines for "fantasy baseball"
-
- * heat map:
-   * http://sekhon.berkeley.edu/graphics/html/image.html
 *)
+
+open Fam_batteries
 
 type info = { n_hits : int; n_trials : int; like_diff : float }
 
@@ -94,22 +93,56 @@ let build_fantasy_matrix ml_results ~max_strike_box ~max_strikes =
 
 let mat_map f m = Array.map (Array.map f) m
 
-let calc_stats fantasy_mat num_queries = 
-  let avg x = x /. (float_of_int num_queries) in
+let calc_stats fantasy_mat n_fantasies = 
+  let avg x = x /. (float_of_int n_fantasies) in
   (mat_map (fun r -> avg (float_of_int (get_n_hits r))) fantasy_mat,
    mat_map (fun r -> avg (float_of_int (get_n_trials r))) fantasy_mat,
    mat_map (fun r -> avg (get_like_diff r)) fantasy_mat)
+
+(* find the set of parameters which minimizes the number of trials for a given
+ * cutoff. the cutoff is the average likelihood difference for the fantasy
+ * runs. return Some (strike box, n strikes) if found, None if not.  *)
+let find_optimum fantasy_mat cutoff n_fantasies = 
+  let best_choice = ref (-1,-1)
+  and best_n_trials = ref None
+  (* the cutoff argument is an average *)
+  and big_cutoff = cutoff *. (float_of_int n_fantasies)
+  in
+  MatrixFuns.iterij
+    (fun sbox maxs_less_one info -> 
+      let our_trials = Some (get_n_trials info) in
+      if (get_like_diff info) < big_cutoff && 
+                   our_trials < !best_n_trials then begin
+        best_choice := (sbox,1+maxs_less_one);
+        best_n_trials := our_trials
+      end)
+    fantasy_mat;
+  match !best_n_trials with
+  | None -> None (* nothing above cutoff found *)
+  | Some _ -> Some (!best_choice)
+
+let print_optimum fantasy_mat cutoff n_fantasies = 
+  match find_optimum fantasy_mat cutoff n_fantasies with
+  | None -> 
+      Printf.printf 
+        "No (strike box, max strikes) combination found with average likelihood difference of %g or better.\n"
+        cutoff
+  | Some (strike_box, n_strikes) ->
+      Printf.printf "Fantasy baseball results: fastest combination with average likelihood difference %g is as follows:\n" cutoff;
+      Printf.printf "--strikeBox %d --maxStrikes %d\n" strike_box n_strikes
 
 let arr_forget_first a = 
   let len = Array.length a in
   assert(len > 0);
   Array.sub a 1 (len-1)
 
-let results_to_file fname_prefix fantasy_mat num_queries =
+let results_to_file fname_prefix fantasy_mat n_fantasies =
   let batting_avg,n_trials_avg,like_diff_avg = 
-    calc_stats fantasy_mat num_queries in
+    calc_stats fantasy_mat n_fantasies 
+  in
   let write_mat fname m = 
     let ch = open_out fname in
+    Printf.fprintf ch "# fantasy run. results obtained by evaluating %d equally spaced sequences.\n" n_fantasies;
     Printf.fprintf ch "# strike box is first coordinate (indexed from zero), and max strikes is second (indexed from one).\n";
     String_matrix.write_padded ch 
       (mat_map string_of_float (Array.map arr_forget_first m));
