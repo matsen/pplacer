@@ -3,7 +3,12 @@
  *
  * this simply contains the information about the Markov process corresponding
  * to the model.
+ *
+ * we also include matrices mats which can be used as scratch to avoid having to
+ * allocate for it. see prep_mats_for_bl below.
  * *)
+
+open Fam_batteries
 
 type model =
   { 
@@ -11,15 +16,16 @@ type model =
    diagdq    :  Diagd.diagd;
    seq_type  :  Alignment.seq_type;
    rates     :  float array;
+   mats      :  Gsl_matrix.matrix array;
   }
 
 let statd    model = model.statd
 let diagdq   model = model.diagdq
 let rates    model = model.rates
+let mats     model = model.mats
 let seq_type model = model.seq_type
 let n_states model = Alignment.nstates_of_seq_type model.seq_type
 let n_rates  model = Array.length (rates model)
-
 
 let build model_name emperical_freqs opt_transitions ref_align rates =
   let seq_type, (trans, statd) = 
@@ -40,8 +46,21 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
           else
             model_statd))
   in
-  { statd = statd;
-  diagdq = Diagd.normalizedOfExchangeableMat trans statd;
-  seq_type = seq_type;
-  rates = rates }
+  let n_states = Alignment.nstates_of_seq_type seq_type in
+  { 
+    statd = statd;
+    diagdq = Diagd.normalizedOfExchangeableMat trans statd;
+    seq_type = seq_type;
+    rates = rates;
+    mats = 
+      Array.init 
+        (Array.length rates)
+        (fun _ -> Gsl_matrix.create n_states n_states);
+  }
 
+(* prepare the matrices for a certain branch length *)
+let prep_mats_for_bl model bl = 
+  ArrayFuns.iter2 
+    (fun rate m -> (model.diagdq)#expWithT m (bl *. rate)) 
+    model.rates 
+    model.mats

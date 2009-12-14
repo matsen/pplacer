@@ -19,7 +19,9 @@
 
 open Fam_batteries
 open MapsSets
+(*
 open Model
+*)
 
 let arr_get = Array.get
 
@@ -123,7 +125,7 @@ let log_like3_statd model x_glv y_glv z_glv =
   assert(n_rates x_glv = n_rates y_glv &&
          n_rates y_glv = n_rates z_glv);
   let fn_rates = float_of_int (n_rates x_glv) in
-  let statd = model.statd in
+  let statd = Model.statd model in
   let size = Gsl_vector.length statd in
   finite_infinity 
     (ArrayFuns.fold_left3 (* fold over sites *)
@@ -136,21 +138,12 @@ let log_like3_statd model x_glv y_glv z_glv =
       0. x_glv y_glv z_glv)
 
 
-(* make_evolve_mats:
- * make matrices for each rate
- *)
-let make_evolve_mats model bl = 
-  Array.map 
-    (fun rate -> (model.diagdq)#expWithT (bl *. rate)) 
-    model.rates 
-
 (* evolve_into:
  * evolve src_glv according to model for branch length bl, then store the
  * results in dest_glv.
- * HERE: do i want to make it faster by avoiding allocation for matrices?
  *)
 let evolve_into model ~dst ~src bl = 
-  let evolve_mats = make_evolve_mats model bl in
+  Model.prep_mats_for_bl model bl;
   ArrayFuns.iter2 (* iter over sites *)
     (fun dest_site src_site ->
       ArrayFuns.iter3 (* iter over rates *)
@@ -158,7 +151,7 @@ let evolve_into model ~dst ~src bl =
           Fam_gsl_matvec.matVecMul dest_lv mat src_lv)
         dest_site
         src_site
-        evolve_mats)
+        (Model.mats model))
     dst
     src;
   ()
@@ -204,5 +197,4 @@ let listwise_product dst = function
       (* just copy over *)
       memcpy ~dst ~src
   | [] -> assert(false)
-
 

@@ -12,18 +12,18 @@ module FGM = Fam_gsl_matvec
 
 (* deDiagonalize: multiply out eigenvector (u), eigenvalue (lambda) matrices,
  * and inverse eigenvector (uInv) matrices to get usual matrix rep *)
-let deDiagonalize u lambda uInv = 
+let deDiagonalize ~dst u lambda uInv = 
   let n = Gsl_vector.length lambda in
   try 
-    let m = Gsl_matrix.create ~init:0. n n in
+    Gsl_matrix.set_all dst 0.;
     for i=0 to n-1 do
       for j=0 to n-1 do
         for k=0 to n-1 do
-          m.{i,j} <- m.{i,j} +. (lambda.{k} *. u.{i,k} *. uInv.{k,j})
+          dst.{i,j} <- 
+            dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uInv.{k,j})
         done;
       done;
     done;
-    m
   with
     | Invalid_argument s -> invalid_arg ("deDiagonalize: "^s)
 
@@ -80,21 +80,17 @@ object (self)
   method size = 
     Gsl_vector.length eVals
 
-      (*
-  method print = 
-    Mat.AAR.print eVects;
-    Common_base.printFloatArr eVals;
-       *)
+  method toMatrix dst = deDiagonalize ~dst eVects eVals invEVects
 
-  method toMatrix = deDiagonalize eVects eVals invEVects
-
-  method expWithT t = 
-    deDiagonalize eVects 
+  method expWithT dst t = 
+    deDiagonalize ~dst
+                  eVects 
                   (FGM.vecMap (fun lambda -> exp (t *. lambda)) eVals)
                   invEVects
 
   method normalizeRate statnDist = 
-    let q = self#toMatrix in
+    let q = Gsl_matrix.create (self#size) (self#size) in
+    self#toMatrix q;
     let rate = ref 0. in
     for i=0 to (Gsl_vector.length eVals)-1 do
       rate := !rate -. q.{i,i} *. (Gsl_vector.get statnDist i)
