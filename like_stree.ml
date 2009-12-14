@@ -9,7 +9,6 @@ open MapsSets
 open Fam_batteries
 open Stree
 
-
 let like_aln_map_of_data seq_type align tree = 
   let like_aln = Alignment_funs.like_aln_of_align seq_type align in
   IntMap.map

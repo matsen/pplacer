@@ -54,33 +54,6 @@ let makeAlnIndexMap taxonMap alnNameArr =
   ) taxonMap
 
 
-(* HERE: this is code which will be eliminated *)
-let transposeAln uAlign = 
-  if uAlign = [||] then invalid_arg "empty alignment!";
-  let alnMat = Alignment.toMatrixUnnamed uAlign in
-  Array.init (Array.length alnMat.(0)) (
-    fun j -> 
-      Array.init (Array.length alnMat) (
-        fun i -> alnMat.(i).(j)))
-
-let alignmentLikeOfUnnamedNucAlignment uAlign = 
-  Array.map (Array.map Nuc_models.lv_of_nuc) (transposeAln uAlign)
-
-let alignmentLikeOfUnnamedProtAlignment uAlign = 
-  Array.map (Array.map Prot_models.lv_of_aa) (transposeAln uAlign)
-
-let aln_like_of_unnamed_align seq_type seqs = 
-  match seq_type with
-  | Alignment.Nucleotide_seq -> 
-      alignmentLikeOfUnnamedNucAlignment seqs
-  | Alignment.Protein_seq -> 
-      alignmentLikeOfUnnamedProtAlignment seqs
-
-(* new version 
- *
- *
- * *)
-
 let like_aln_of_align seq_type align = 
   let like_fun = 
     match seq_type with
@@ -91,7 +64,6 @@ let like_aln_of_align seq_type align =
     (fun (_, seq) ->
       Array.map like_fun (StringFuns.to_char_array seq))
     align
-
 
 
 (* getting emperical frequencies from alignments 
