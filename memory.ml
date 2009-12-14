@@ -16,7 +16,7 @@ let curr_words () =
 
 let curr_bytes () = bytes_of_words (curr_words ())
 
-let ceiling_collection ceiling = 
+let ceiling_compaction ceiling = 
   if ceiling < curr_bytes () then begin Gc.compact (); true end
   else false
 

@@ -19,14 +19,8 @@
 
 open Fam_batteries
 open MapsSets
-(*
-open Model
-*)
-
-let arr_get = Array.get
 
 type glv = Gsl_vector.vector array array
-
 
 let make ~n_sites ~n_rates ~n_states = 
   Array.init
@@ -49,9 +43,6 @@ let copy = Array.map (Array.map Gsl_vector.copy)
 
 (* make a glv of the same dimensions *)
 let mimic = Array.map (Array.map Fam_gsl_matvec.vecMimic)
-
-let get ~site ~rate g = arr_get (arr_get g site) rate
-let set g ~site ~rate lv = g.(site).(rate) <- lv
 
 (* iter over the likelihood vectors *)
 let lv_iter f g = 

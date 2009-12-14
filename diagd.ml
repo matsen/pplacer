@@ -10,17 +10,23 @@
 
 module FGM = Fam_gsl_matvec
 
+let get1 = Bigarray.Array1.get
+let get2 = Bigarray.Array2.get
+let set2 = Bigarray.Array2.set
+
 (* deDiagonalize: multiply out eigenvector (u), eigenvalue (lambda) matrices,
  * and inverse eigenvector (uInv) matrices to get usual matrix rep *)
-let deDiagonalize ~dst u lambda uInv = 
+let deDiagonalize ~dst u lambda uinv = 
   let n = Gsl_vector.length lambda in
   try 
     Gsl_matrix.set_all dst 0.;
     for i=0 to n-1 do
       for j=0 to n-1 do
         for k=0 to n-1 do
-          dst.{i,j} <- 
-            dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uInv.{k,j})
+          (* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uInv.{k,j}) *)
+          set2 dst i j 
+               ((get2 dst i j) +. 
+                  (get1 lambda k) *. (get2 u i k) *. (get2 uinv k j))
         done;
       done;
     done;

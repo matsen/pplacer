@@ -87,12 +87,12 @@ let () =
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
     (* calculate like on ref tree *)
+    Printf.printf "memory before alloc: %d\n" (Memory.curr_bytes ());
     if (verb_level prefs) >= 1 then begin
       print_string "Caching likelihood information on reference tree... ";
       flush_all ()
     end;
     (* allocate our memory *)
-    Printf.printf "memory before alloc: %d\n" (Memory.curr_bytes ());
     let darr = Like_stree.glv_arr_for model ref_align ref_tree in
     let parr = Glv_arr.mimic darr
     and halfd = Glv_arr.mimic darr
@@ -124,6 +124,7 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
+    let mem_usage = ref 0 in
     (* analyze query sequences *)
     let collect ret_code query_fname =
       try
@@ -138,7 +139,7 @@ let () =
               (float_of_int (Gtree.n_edges ref_tree))) 
         in
         let results = 
-          Core.pplacer_core prefs query_fname prior
+          Core.pplacer_core mem_usage prefs query_fname prior
             model ref_align ref_tree
             ~darr ~parr ~halfd ~halfp locs in
         Placerun_io.to_file
@@ -153,7 +154,8 @@ let () =
     let retVal = List.fold_left collect 1 files in
     if verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
-      Common_base.print_memory_usage ();
+      Printf.printf "maximal observed memory usage (bytes): %d\n" 
+                    (!mem_usage);
       Common_base.print_n_compactions ();
     end;
     exit retVal

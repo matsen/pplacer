@@ -17,22 +17,20 @@ type prior = Uniform_prior | Exponential_prior of float
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
-      prefs query_fname prior model ref_align gtree 
+      mem_usage prefs query_fname prior model ref_align gtree 
       ~darr ~parr ~halfd ~halfp locs = 
-  let seq_type = Model.seq_type model in
-  let max_bytes = Memory.bytes_of_gb (max_memory prefs) 
-  and max_usage = ref 0 in
-  let update_usage () = 
+  let seq_type = Model.seq_type model
+  and max_bytes = Memory.bytes_of_gb (max_memory prefs) 
+  and update_usage () = 
     let cb = Memory.curr_bytes () in
-    if cb > !max_usage then max_usage := cb
-  in
-  let prior_fun =
+    if cb > !mem_usage then mem_usage := cb
+  and prior_fun =
     match prior with
     | Uniform_prior -> (fun _ -> 1.)
     | Exponential_prior mean ->
         fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
+  and query_channel = Fasta_channel.of_fname query_fname 
   in
-  let query_channel = Fasta_channel.of_fname query_fname in
   (* cycle through queries *)
   let num_queries = 
     Fasta_channel.size_checking_for_duplicate_names query_channel in
@@ -52,9 +50,9 @@ let pplacer_core
   let process_query query_num (query_name, pre_query_seq) = 
     let query_seq = String.uppercase pre_query_seq in
     update_usage ();
-    if Memory.ceiling_collection max_bytes then 
+    if Memory.ceiling_compaction max_bytes then 
       if (verb_level prefs) >= 1 then begin
-        print_endline "performed garbage collection";
+        print_endline "performed garbage compaction.";
         Memory.check_ceiling max_bytes;
       end;
     if String.length query_seq <> ref_length then
@@ -317,8 +315,5 @@ let pplacer_core
     Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
   in
   update_usage ();
-  if (verb_level prefs) >= 1 then 
-    Printf.printf "maximal memory usage for %s: %d bytes\n" 
-                  query_fname (!max_usage);
   results
 
