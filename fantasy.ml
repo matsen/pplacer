@@ -104,22 +104,21 @@ let calc_stats fantasy_mat n_fantasies =
  * runs. return Some (strike box, n strikes) if found, None if not.  *)
 let find_optimum fantasy_mat cutoff n_fantasies = 
   let best_choice = ref (-1,-1)
-  and best_n_trials = ref None
+  and best_n_trials = ref max_int
   (* the cutoff argument is an average *)
   and big_cutoff = cutoff *. (float_of_int n_fantasies)
   in
   MatrixFuns.iterij
-    (fun sbox maxs_less_one info -> 
-      let our_trials = Some (get_n_trials info) in
+    (fun sbox maxs info -> 
+      let our_trials = get_n_trials info in
       if (get_like_diff info) < big_cutoff && 
                    our_trials < !best_n_trials then begin
-        best_choice := (sbox,1+maxs_less_one);
+        best_choice := (sbox, maxs);
         best_n_trials := our_trials
       end)
     fantasy_mat;
-  match !best_n_trials with
-  | None -> None (* nothing above cutoff found *)
-  | Some _ -> Some (!best_choice)
+  if !best_n_trials = max_int then None (* couldn't find anything *)
+  else Some (!best_choice)
 
 let print_optimum fantasy_mat cutoff n_fantasies = 
   match find_optimum fantasy_mat cutoff n_fantasies with

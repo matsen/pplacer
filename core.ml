@@ -313,10 +313,12 @@ let pplacer_core
   end
   in
   Fasta_channel.named_seq_iteri process_query query_channel;
-  if fantasy prefs <> 0. then
+  if fantasy prefs <> 0. then begin
     Fantasy.results_to_file 
       (Filename.basename (Filename.chop_extension query_fname))
       fantasy_mat (!n_fantasies);
+      Fantasy.print_optimum fantasy_mat (fantasy prefs) (!n_fantasies);
+  end;
 (* here we actually apply the ratio cutoff so that we don't write them to file *)
   let results = 
     Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
