@@ -29,23 +29,39 @@ let pplacer_core
     | Exponential_prior mean ->
         fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
   and query_channel = Fasta_channel.of_fname query_fname 
-  in
-  (* cycle through queries *)
-  let num_queries = 
-    Fasta_channel.size_checking_for_duplicate_names query_channel in
-  let ref_length = Alignment.length ref_align in
-  let result_arr = 
-    Array.make num_queries
-    (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" []) in
-  let prof_trie = ref Ltrie.empty in
-  let fantasy_mat = 
+  and n_locs = List.length locs
+  and ref_length = Alignment.length ref_align
+  and prof_trie = ref Ltrie.empty
+  and fantasy_mat = 
     if fantasy prefs then
       Fantasy.make_fantasy_matrix 
         ~max_strike_box:(int_of_float (strike_box prefs))
         ~max_strikes:(max_strikes prefs)
     else [||]
   in
-  (* the main query loop *)
+  (* set up the number of pitches and strikes according to the prefs *)
+  let (t_max_pitches, t_max_strikes) = 
+    if like_rax prefs <> 0. then 
+      (int_of_float ((float_of_int n_locs) *. (like_rax prefs)), 
+      max_int)
+    else if max_strikes prefs = 0 then 
+  (* we have disabled ball playing, and evaluate every location *)
+      (max_int, max_int)
+    else if fantasy prefs then
+  (* in fantasy mode we evaluate the first max_pitches locations *)
+      (max_pitches prefs, max_int)
+    else
+  (* usual ball playing *)
+      (max_pitches prefs, max_strikes prefs)
+  and num_queries = 
+    Fasta_channel.size_checking_for_duplicate_names query_channel
+  in
+  let result_arr = 
+    Array.make num_queries
+    (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" [])
+  in
+  Printf.printf "there are %d locs and i am evaluating %d of them\n" n_locs t_max_pitches;
+  (* *** the main query loop *** *)
   let process_query query_num (query_name, pre_query_seq) = 
     let query_seq = String.uppercase pre_query_seq in
     update_usage ();
@@ -200,17 +216,6 @@ let pplacer_core
     in
     let gsl_warn loc query_name = 
       Printf.printf "Warning: GSL had a problem with location %d for query %s; it was skipped.\n" loc query_name;
-    in
-    let (t_max_pitches, t_max_strikes) = 
-      if max_strikes prefs = 0 then 
-    (* we have disabled ball playing, and evaluate every location *)
-        (max_int, max_int)
-      else if fantasy prefs then
-    (* in fantasy mode we evaluate the first max_pitches locations *)
-        (max_pitches prefs, max_int)
-      else
-    (* usual ball playing *)
-        (max_pitches prefs, max_strikes prefs)
     in
     (* in play_ball we go down the h_ranking list and wait until we get
      * strike_limit strikes, i.e. placements that are strike_box below the
