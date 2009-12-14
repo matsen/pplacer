@@ -91,20 +91,36 @@ let () =
       print_string "Caching likelihood information on reference tree... ";
       flush_all ()
     end;
-    let (dmap, pmap) = 
-      Glv_int_map.dp_of_data model ref_align ref_tree locs in
+    (* allocate our memory *)
+    Printf.printf "memory before alloc: %d\n" (Memory.curr_bytes ());
+    let darr = Like_stree.glv_arr_for model ref_align ref_tree in
+    let parr = Glv_arr.mimic darr
+    and halfd = Glv_arr.mimic darr
+    and halfp = Glv_arr.mimic darr
+    in
+    Printf.printf "memory after alloc: %d\n" (Memory.curr_bytes ());
+    (* the like data from the alignment *)
+    let like_aln_map = 
+      Like_stree.like_aln_map_of_data 
+       (Model.seq_type model) ref_align ref_tree 
+    in
+    (* do the reference tree likelihood calculation. we do so using halfd and
+     * one glv from halfp as our utility storage *)
+    let util_glv = Glv_arr.get_one halfp in
+    Like_stree.calc_distal_and_proximal model ref_tree like_aln_map 
+      util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr 
+      ~util_glv_arr:halfd;
     if (verb_level prefs) >= 1 then
       print_endline "done.";
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
-    let half_evolve_glv_map loc g = 
-      Glv.evolve model g ((Gtree.get_bl ref_tree loc) /. 2.) in
     if (verb_level prefs) >= 1 then begin
+    (* baseball calculation *)
       print_string "Preparing the edges for baseball... ";
       flush_all ();
     end;
-    let halfd = IntMap.mapi half_evolve_glv_map dmap
-    and halfp = IntMap.mapi half_evolve_glv_map pmap
-    in
+    let half_bl_fun loc = (Gtree.get_bl ref_tree loc) /. 2. in
+    Glv_arr.evolve_into model ~src:darr ~dst:halfd half_bl_fun;
+    Glv_arr.evolve_into model ~src:parr ~dst:halfp half_bl_fun;
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
@@ -124,7 +140,7 @@ let () =
         let results = 
           Core.pplacer_core prefs query_fname prior
             model ref_align ref_tree
-            ~dmap ~pmap ~halfd ~halfp locs in
+            ~darr ~parr ~halfd ~halfp locs in
         Placerun_io.to_file
           (String.concat " " (Array.to_list Sys.argv))
           (Placerun.make 

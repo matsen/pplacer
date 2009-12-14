@@ -18,7 +18,7 @@ type prior = Uniform_prior | Exponential_prior of float
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
       prefs query_fname prior model ref_align gtree 
-      ~dmap ~pmap ~halfd ~halfp locs = 
+      ~darr ~parr ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model in
   let max_bytes = Memory.bytes_of_gb (max_memory prefs) 
   and max_usage = ref 0 in
@@ -86,10 +86,10 @@ let pplacer_core
         (query_name^".mask.fasta");
    (* mask *) 
     let curr_time = Sys.time () in
-    let d_masked_map = Glv_int_map.mask mask_arr dmap 
-    and p_masked_map = Glv_int_map.mask mask_arr pmap 
-    and half_d_maskd = Glv_int_map.mask mask_arr halfd 
-    and half_p_maskd = Glv_int_map.mask mask_arr halfp 
+    let darr_masked = Glv_arr.mask mask_arr darr 
+    and parr_masked = Glv_arr.mask mask_arr parr 
+    and halfd_maskd = Glv_arr.mask mask_arr halfd 
+    and halfp_maskd = Glv_arr.mask mask_arr halfp 
     in
     if (verb_level prefs) >= 2 then Printf.printf "masking took\t%g\n" ((Sys.time ()) -. curr_time);
     (* make our edges.
@@ -113,8 +113,8 @@ let pplacer_core
             (loc,
             Glv.log_like3_statd model 
               q_evolved 
-              (IntMap.find loc half_d_maskd) 
-              (IntMap.find loc half_p_maskd)))
+              (Glv_arr.get halfd_maskd loc) 
+              (Glv_arr.get halfp_maskd loc)))
           locs)
     in
     if (verb_level prefs) >= 2 then Printf.printf "ranking took\t%g\n" ((Sys.time ()) -. curr_time);
@@ -159,11 +159,11 @@ let pplacer_core
     let prepare_tt loc = 
       let cut_bl = Gtree.get_bl gtree loc in
       (* this is just to factor out setting up the prox and dist edges *)
-      let set_edge edge glv_map len = 
+      let set_edge edge glv_arr len = 
         Glv_edge.set_orig_and_bl 
           model
           edge
-          (IntMap.find loc glv_map) 
+          (Glv_arr.get glv_arr loc) 
           len
       in
     (* set up branch lengths, using a friend's branch lengths if we have them *)
@@ -172,14 +172,14 @@ let pplacer_core
         (* set the query edge to the default *)
         Glv_edge.set_bl model query_edge (start_pend prefs);
         (* set the distal and proximal edges to half of the cut one *)
-        set_edge dist_edge d_masked_map (cut_bl /. 2.);
-        set_edge prox_edge p_masked_map (cut_bl /. 2.)
+        set_edge dist_edge darr_masked (cut_bl /. 2.);
+        set_edge prox_edge parr_masked (cut_bl /. 2.)
       | Some f -> (* use a friend's branch lengths *)
         Glv_edge.set_bl model query_edge (Placement.pendant_bl f);
         (* set the distal and proximal edges to half of the cut one *)
         let distal = Placement.distal_bl f in
-        set_edge dist_edge d_masked_map distal;
-        set_edge prox_edge p_masked_map (cut_bl -. distal)
+        set_edge dist_edge darr_masked distal;
+        set_edge prox_edge parr_masked (cut_bl -. distal)
     in
     let ml_evaluate_location loc = 
       prepare_tt loc;

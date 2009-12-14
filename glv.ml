@@ -45,6 +45,9 @@ let make_empty ~n_sites ~n_rates =
 (* deep copy *)
 let copy = Array.map (Array.map Gsl_vector.copy)
 
+(* make a glv of the same dimensions *)
+let mimic = Array.map (Array.map Fam_gsl_matvec.vecMimic)
+
 let get ~site ~rate g = arr_get (arr_get g site) rate
 let set g ~site ~rate lv = g.(site).(rate) <- lv
 
