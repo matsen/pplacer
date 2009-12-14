@@ -26,7 +26,7 @@ let prot_map = begin
     CharMap.add 'X' any !pm))))
 end
 
-let likeArrOfAA aa = 
+let lv_of_aa aa = 
   try
     CharMap.find aa prot_map 
   with

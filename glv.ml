@@ -25,26 +25,36 @@ let arr_get = Array.get
 
 type glv = Gsl_vector.vector array array
 
-(* deep copy *)
-let copy = Array.map (Array.map Gsl_vector.copy)
 
 let make ~n_sites ~n_rates ~n_states = 
   Array.init
     n_sites
     (fun _ -> 
       Array.init n_rates (fun _ -> Gsl_vector.create n_states))
+
+let make_init init ~n_sites ~n_rates ~n_states = 
+  Array.init
+    n_sites
+    (fun _ -> 
+      Array.init n_rates (fun _ -> Gsl_vector.create ~init n_states))
   
 (* HERE: this can disappear after migrating to glv_arr *)
 let make_empty ~n_sites ~n_rates = 
   Array.make_matrix n_sites n_rates (Gsl_vector.create 0)
 
+(* deep copy *)
+let copy = Array.map (Array.map Gsl_vector.copy)
+
 let get ~site ~rate g = arr_get (arr_get g site) rate
 let set g ~site ~rate lv = g.(site).(rate) <- lv
 
-let zero ~n_sites ~n_rates ~n_states = 
-  Array.init n_sites (fun _ -> 
-    Array.init n_rates (fun _ -> 
-      Gsl_vector.create ~init:0. n_states))
+(* iter over the likelihood vectors *)
+let lv_iter f g = 
+  Array.iter (Array.iter f) g
+
+(* set all of the entries of the glv to some float *)
+let set_all_entries g x = 
+  lv_iter (fun v -> Gsl_vector.set_all v x) g
 
 (* mask does *not* copy anything, just gets a subarray *)
 let mask site_mask_arr g = 
@@ -60,13 +70,26 @@ let mask site_mask_arr g =
   in
   Array.of_list (aux [] (len-1))
 
-(* this is used when we want to make a glv out of a list of likelihood vectors
+(* this is used when we want to make a glv out of a list of likelihood vectors.
+ * differs from below because we want to make a new one.
  * *)
 let lv_list_to_constant_rate_glv n_rates lv_list = 
   Array.map
     (fun lv ->
       Array.init n_rates (fun _ -> lv))
     (Array.of_list lv_list)
+
+(* this is used when we have a pre-allocated GLV and want to fill it with a
+ * same-length lv array *)
+let prep_constant_rate_glv_from_lv_arr glv lv_arr = 
+  assert(Array.length glv = Array.length lv_arr);
+  ArrayFuns.iter2
+    (fun site src -> 
+      Array.iter
+        (fun rate_site -> Gsl_vector.memcpy ~dst:rate_site ~src)
+        site)
+    glv
+    lv_arr
 
 (* these assume that the GLV is reasonably healthy *)
 let n_states g = assert(g <> [||] && g.(0) <> [||]); 
@@ -153,14 +176,30 @@ let memcpy ~src ~dst =
         site_src site_dest)
     src dst
 
-(* pairwise_product:
- * take the pairwise product of glvs g1 and g2, then store in dest. *)
-let pairwise_product dest g1 g2 = 
+(* take the pairwise product of glvs g1 and g2, then store in dest. *)
+let pairwise_product ~dst g1 g2 = 
+  let n_states = n_states dst in
   ArrayFuns.iter3
     (fun site_dest site_g1 site_g2 ->
       ArrayFuns.iter3 
         (fun rate_dest rate_g1 rate_g2 ->
-          Linear.pairwise_prod rate_dest rate_g1 rate_g2)
+          Linear.pairwise_prod rate_dest rate_g1 rate_g2 n_states)
         site_dest site_g1 site_g2)
-    dest g1 g2
+    dst g1 g2
+
+(* take the product of all of the GLV's in the list, then store in dst. 
+ * could probably be implemented more quickly, but typically we are only taking
+ * pairwise products anyway. we pull out the x::y below to optimize for that
+ * case. *)
+let listwise_product dst = function
+  | x::y::rest ->
+      (* first product of first two *)
+      pairwise_product ~dst x y;
+      (* now take product with each of the rest *)
+      List.iter (pairwise_product ~dst dst) rest
+  | [src] -> 
+      (* just copy over *)
+      memcpy ~dst ~src
+  | [] -> assert(false)
+
 

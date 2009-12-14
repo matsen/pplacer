@@ -48,7 +48,7 @@ let nuc_map =
        'X', [|1.; 1.; 1.; 1.|];]))
 
 
-let likeArrOfNuc nuc = 
+let lv_of_nuc nuc = 
   try
     CharMap.find nuc nuc_map 
   with

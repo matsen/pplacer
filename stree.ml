@@ -53,6 +53,11 @@ let rec ppr ff = function
         (Ppr.ppr_gen_list_inners "," ppr) tL i
   | Leaf i -> Format.pp_print_int ff i
 
+(* the maximal outdegree of nodes in the tree *)
+let rec outdegree = function
+  | Node(_,tL) -> 
+      List.fold_left max (List.length tL) (List.map outdegree tL)
+  | Leaf _ -> 0
 
 (* increase all of the indices of the tree by "by" *)
 let rec boost by = function

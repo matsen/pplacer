@@ -69,8 +69,8 @@ let pplacer_core
       Array.map (fun c -> c <> '?' && c <> '-') query_arr in
     let query_like = 
       match seq_type with
-      | Alignment.Nucleotide_seq -> Array.map Nuc_models.likeArrOfNuc query_arr
-      | Alignment.Protein_seq -> Array.map Prot_models.likeArrOfAA query_arr
+      | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc query_arr
+      | Alignment.Protein_seq -> Array.map Prot_models.lv_of_aa query_arr
     in
     let query_glv = 
       Glv.lv_list_to_constant_rate_glv 

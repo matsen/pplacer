@@ -7,6 +7,7 @@
 open MapsSets
 open Fam_batteries
 
+(* funny old code. *)
 let check_for_repeats name_arr = 
   let _ = 
     Array.fold_left (
@@ -32,9 +33,8 @@ let is_nuc_align aln =
   with
   | Not_found -> false
 
-
-(* makeAlnIndexMap : make a map which maps from the node number to the correct column of the
- * alignment *)
+(* makeAlnIndexMap: make a map which maps from the node number to the row number of the
+ * alignment. funny old code. *)
 let makeAlnIndexMap taxonMap alnNameArr = 
   let n_tree = IntMapFuns.nkeys taxonMap 
   and n_aln = Array.length alnNameArr in
@@ -53,6 +53,8 @@ let makeAlnIndexMap taxonMap alnNameArr =
         List.hd outEdges
   ) taxonMap
 
+
+(* HERE: this is code which will be eliminated *)
 let transposeAln uAlign = 
   if uAlign = [||] then invalid_arg "empty alignment!";
   let alnMat = Alignment.toMatrixUnnamed uAlign in
@@ -62,10 +64,10 @@ let transposeAln uAlign =
         fun i -> alnMat.(i).(j)))
 
 let alignmentLikeOfUnnamedNucAlignment uAlign = 
-  Array.map (Array.map Nuc_models.likeArrOfNuc) (transposeAln uAlign)
+  Array.map (Array.map Nuc_models.lv_of_nuc) (transposeAln uAlign)
 
 let alignmentLikeOfUnnamedProtAlignment uAlign = 
-  Array.map (Array.map Prot_models.likeArrOfAA) (transposeAln uAlign)
+  Array.map (Array.map Prot_models.lv_of_aa) (transposeAln uAlign)
 
 let aln_like_of_unnamed_align seq_type seqs = 
   match seq_type with
@@ -73,6 +75,24 @@ let aln_like_of_unnamed_align seq_type seqs =
       alignmentLikeOfUnnamedNucAlignment seqs
   | Alignment.Protein_seq -> 
       alignmentLikeOfUnnamedProtAlignment seqs
+
+(* new version 
+ *
+ *
+ * *)
+
+let like_aln_of_align seq_type align = 
+  let like_fun = 
+    match seq_type with
+    | Alignment.Nucleotide_seq -> Nuc_models.lv_of_nuc
+    | Alignment.Protein_seq -> Prot_models.lv_of_aa
+  in
+  Array.map 
+    (fun (_, seq) ->
+      Array.map like_fun (StringFuns.to_char_array seq))
+    align
+
+
 
 (* getting emperical frequencies from alignments 
  *)
