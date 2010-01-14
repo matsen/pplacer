@@ -52,8 +52,7 @@ exception FoundDistance of int
 let edgeDistToNodeDist nEdges = 
   if nEdges = 0 then 0 else nEdges-1
 
-(* calcNodeDist:
- * calculate the number of nodes of the original tree which must be traversed to
+(* calculate the number of nodes of the original tree which must be traversed to
  * get from one edge to another. note that this function assumes that all of the
  * node indices in the tree are distinct. 
  * note that this is not the internode distance:
