@@ -42,7 +42,7 @@ let parse_args () =
       "Write out a bounce tree such that the given bounce is the maximum.";
       "--whitebg", Arg.Set white_bg,
       "Make colors appropriate for a white background.";
-      "--bogusBl", Arg.Set_float bogus_bl,
+      "--numBl", Arg.Set_float bogus_bl,
       "Set the branch length for visualization in the number tree.";
       "--nodeNumbers", Arg.Set show_node_numbers,
       "Put the node numbers in where the bootstraps usually go.";
