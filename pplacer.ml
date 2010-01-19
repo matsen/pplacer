@@ -126,6 +126,22 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
+    let (oned,onep) = (Glv_arr.get_one halfd,Glv_arr.get_one halfp) in
+    let zero_like_sites = Glv.find_zerolike_sites model oned onep in
+    if (verb_level prefs) >= 1 then
+      Printf.printf "Reference tree log likelihood: %g\n"
+        (Glv.log_like2_statd model oned onep);
+    List.iter 
+      (fun site_num ->
+        Printf.printf 
+          "Warning: site %d (zero-indexed) has zero likelihood.\n" 
+          site_num)
+      zero_like_sites;
+    (*
+    Array.iter 
+      (fun a -> ppr_print_site a.(125))
+      halfp;
+      *)
     let mem_usage = ref 0. in
     (* analyze query sequences *)
     let collect ret_code query_fname =
@@ -143,7 +159,7 @@ let () =
         let results = 
           Core.pplacer_core mem_usage prefs query_fname prior
             model ref_align ref_tree
-            ~darr ~parr ~halfd ~halfp locs in
+            ~darr ~parr ~halfd ~halfp zero_like_sites locs in
         (* write output if we aren't in fantasy mode *)
         if fantasy prefs = 0. then
           Placerun_io.to_file

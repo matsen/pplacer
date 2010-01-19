@@ -103,6 +103,48 @@ let finite_infinity x =
   | _ -> x
 
 
+(* find sites which give zero likelihood *)
+let find_zerolike_sites model x_glv y_glv = 
+  assert(n_rates x_glv = n_rates y_glv);
+  let statd = Model.statd model in
+  let size = Gsl_vector.length statd 
+  and zls = ref []
+  in
+  ArrayFuns.iteri2
+    (fun site_num x_site y_site -> 
+      let pre_log = 
+        ArrayFuns.fold_left2 (* fold over rates *)
+          (fun rate_tot x_lv y_lv -> 
+            rate_tot+.(Linear.triple_dot statd x_lv y_lv size))
+          0. x_site y_site 
+      in
+      if pre_log <= 0. then begin
+        zls := site_num::(!zls);
+      end)
+    x_glv y_glv;
+  List.rev (!zls)
+
+
+(* log_like2_statd:
+ * take the log like of the product of two things then dot with the stationary
+ * distribution. there are lots of things we don't do error checking
+ * on. *)
+let log_like2_statd model x_glv y_glv = 
+  assert(n_rates x_glv = n_rates y_glv);
+  let fn_rates = float_of_int (n_rates x_glv) in
+  let statd = Model.statd model in
+  let size = Gsl_vector.length statd in
+  finite_infinity 
+    (ArrayFuns.fold_left2 (* fold over sites *)
+      (fun site_tot x_site y_site -> 
+        site_tot +. (* total is product in log world *)
+          (log ((ArrayFuns.fold_left2 (* fold over rates *)
+            (fun rate_tot x_lv y_lv -> 
+              rate_tot+.(Linear.triple_dot statd x_lv y_lv size))
+            0. x_site y_site) /. fn_rates)))
+      0. x_glv y_glv)
+
+
 (* log_like3_statd:
  * take the log like of the product of three things then dot with the stationary
  * distribution. there are lots of things we don't do error checking
