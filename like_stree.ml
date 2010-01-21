@@ -89,6 +89,7 @@ let calc_proximal model tree
   in
   let stree = Gtree.get_stree tree in
   let top_prox = glv_from_stree proximal_glv_arr stree in
+  (* NGLV *)
   Glv.set_all_entries top_prox 1.;
   calc stree
 
@@ -102,20 +103,3 @@ let calc_distal_and_proximal model tree like_aln_map util_glv
     ~evolv_dist_glv_arr:util_glv_arr ~proximal_glv_arr;
   ()
 
-  (*
-let prep model align tree = 
-  let distal_glv_arr = glv_arr_for model align tree in
-  let evolv_dist_glv_arr = Glv_arr.copy distal_glv_arr
-  and proximal_glv_arr = Glv_arr.copy distal_glv_arr 
-  and evolved_prox = Glv_arr.copy_one distal_glv_arr
-  in
-  let like_aln_map = 
-    like_aln_map_of_data (Model.seq_type model) align tree in
-  calc_distal_and_evolv_dist model tree like_aln_map 
-                        ~distal_glv_arr ~evolv_dist_glv_arr;
-  calc_proximal model tree evolved_prox 
-    ~evolv_dist_glv_arr ~proximal_glv_arr;
-  (distal_glv_arr, evolv_dist_glv_arr, proximal_glv_arr)
-
-let n = Newick.of_string
-*)
