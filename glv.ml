@@ -20,33 +20,31 @@
 open Fam_batteries
 open MapsSets
 
-type glv = Gsl_vector.vector array array
+let float_lower_bound = 1e-100
+
+type glv = Glv_site.glv_site array
 
 let make ~n_sites ~n_rates ~n_states = 
   Array.init
     n_sites
-    (fun _ -> 
-      Array.init n_rates (fun _ -> Gsl_vector.create n_states))
+    (fun _ -> Glv_site.make ~n_rates ~n_states)
 
-let make_init init ~n_sites ~n_rates ~n_states = 
+let make_init e_init init ~n_sites ~n_rates ~n_states = 
   Array.init
     n_sites
-    (fun _ -> 
-      Array.init n_rates (fun _ -> Gsl_vector.create ~init n_states))
+    (fun _ -> Glv_site.make_init e_init init ~n_rates ~n_states)
   
 (* deep copy *)
-let copy = Array.map (Array.map Gsl_vector.copy)
+let copy = Array.map Glv_site.copy
 
 (* make a glv of the same dimensions *)
-let mimic = Array.map (Array.map Fam_gsl_matvec.vecMimic)
+let mimic = Array.map Glv_site.mimic
 
-(* iter over the likelihood vectors *)
-let lv_iter f g = 
-  Array.iter (Array.iter f) g
+let iter = Array.iter
 
 (* set all of the entries of the glv to some float *)
-let set_all_entries g x = 
-  lv_iter (fun v -> Gsl_vector.set_all v x) g
+let set_exp_and_all_entries g e x = 
+  iter (fun s -> Glv_site.set_exp_and_all_entries s e x) g
 
 (* mask does *not* copy anything, just gets a subarray *)
 let mask site_mask_arr g = 
@@ -66,64 +64,30 @@ let mask site_mask_arr g =
  * differs from below because we want to make a new one.
  * *)
 let lv_list_to_constant_rate_glv n_rates lv_list = 
-  Array.map
-    (fun lv ->
-      Array.init n_rates (fun _ -> lv))
+  Array.map 
+    (Glv_site.constant_rate_of_lv n_rates)
     (Array.of_list lv_list)
 
 (* this is used when we have a pre-allocated GLV and want to fill it with a
  * same-length lv array *)
 let prep_constant_rate_glv_from_lv_arr glv lv_arr = 
   assert(Array.length glv = Array.length lv_arr);
-  ArrayFuns.iter2
-    (fun site src -> 
-      Array.iter
-        (fun rate_site -> Gsl_vector.memcpy ~dst:rate_site ~src)
-        site)
-    glv
-    lv_arr
+  ArrayFuns.iter2 Glv_site.set_all_lvs_exp_zero glv lv_arr
 
 (* these assume that the GLV is reasonably healthy *)
-let n_states g = assert(g <> [||] && g.(0) <> [||]); 
-                 Gsl_vector.length (g.(0).(0))
-let n_rates g = assert(g <> [||]); Array.length (g.(0))
+let n_states g = assert(g <> [||]); Glv_site.n_states g.(0)
+let n_rates g = assert(g <> [||]); Glv_site.n_rates g.(0)
 let n_sites g = Array.length g
 
-let ppr_glv = Ppr.ppr_array (Ppr.ppr_array Fam_gsl_matvec.ppr_gsl_vector)
+let ppr = Ppr.ppr_array Glv_site.ppr
+
+
+(* *** pulling exponent *** *)
+
+let perhaps_pull_exponent g = 
+  iter Glv_site.perhaps_pull_exponent g
 
 (* *** likelihood calculations *** *)
-
-(* we "clean up" like so because an infinite value passed to a GSL function will
- * throw an exception. it would be nice if we could do better, as this probably
- * throws off the Brent method. *)
-let finite_infinity x = 
-  match Pervasives.classify_float x with
-  | FP_infinite -> -. max_float
-  | FP_nan -> -. max_float
-  | _ -> x
-
-
-(* find sites which give zero likelihood *)
-let find_zerolike_sites model x_glv y_glv = 
-  assert(n_rates x_glv = n_rates y_glv);
-  let statd = Model.statd model in
-  let size = Gsl_vector.length statd 
-  and zls = ref []
-  in
-  ArrayFuns.iteri2
-    (fun site_num x_site y_site -> 
-      let pre_log = 
-        ArrayFuns.fold_left2 (* fold over rates *)
-          (fun rate_tot x_lv y_lv -> 
-            rate_tot+.(Linear.triple_dot statd x_lv y_lv size))
-          0. x_site y_site 
-      in
-      if pre_log <= 0. then begin
-        zls := site_num::(!zls);
-      end)
-    x_glv y_glv;
-  List.rev (!zls)
-
 
 (* log_like2_statd:
  * take the log like of the product of two things then dot with the stationary
@@ -133,17 +97,13 @@ let log_like2_statd model x_glv y_glv =
   assert(n_rates x_glv = n_rates y_glv);
   let fn_rates = float_of_int (n_rates x_glv) in
   let statd = Model.statd model in
-  let size = Gsl_vector.length statd in
-  finite_infinity 
-    (ArrayFuns.fold_left2 (* fold over sites *)
-      (fun site_tot x_site y_site -> 
-        site_tot +. (* total is product in log world *)
-          (log ((ArrayFuns.fold_left2 (* fold over rates *)
-            (fun rate_tot x_lv y_lv -> 
-              rate_tot+.(Linear.triple_dot statd x_lv y_lv size))
-            0. x_site y_site) /. fn_rates)))
-      0. x_glv y_glv)
-
+  let our_n_states = Gsl_vector.length statd in
+  ArrayFuns.fold_left2 (* fold over sites *)
+   (fun site_tot x_s y_s -> 
+     site_tot +. 
+     (Glv_site.log_like2_statd 
+        statd fn_rates our_n_states x_s y_s))
+   0. x_glv y_glv
 
 (* log_like3_statd:
  * take the log like of the product of three things then dot with the stationary
@@ -154,61 +114,49 @@ let log_like3_statd model x_glv y_glv z_glv =
          n_rates y_glv = n_rates z_glv);
   let fn_rates = float_of_int (n_rates x_glv) in
   let statd = Model.statd model in
-  let size = Gsl_vector.length statd in
-  finite_infinity 
-    (ArrayFuns.fold_left3 (* fold over sites *)
-      (fun site_tot x_site y_site z_site -> 
-        site_tot +. (* total is product in log world *)
-          (log ((ArrayFuns.fold_left3 (* fold over rates *)
-            (fun rate_tot x_lv y_lv z_lv -> 
-              rate_tot+.(Linear.quad_dot statd x_lv y_lv z_lv size))
-            0. x_site y_site z_site) /. fn_rates)))
-      0. x_glv y_glv z_glv)
-
+  let our_n_states = Gsl_vector.length statd in
+  ArrayFuns.fold_left3 (* fold over sites *)
+   (fun site_tot x_s y_s z_s -> 
+     site_tot +. 
+     (Glv_site.log_like3_statd 
+        statd fn_rates our_n_states x_s y_s z_s))
+   0. x_glv y_glv z_glv
 
 (* evolve_into:
- * evolve src_glv according to model for branch length bl, then store the
- * results in dest_glv.
+ * evolve src according to model for branch length bl, then store the
+ * results in dst.
  *)
 let evolve_into model ~dst ~src bl = 
+  (* prepare the matrices in our matrix cache *)
   Model.prep_mats_for_bl model bl;
-  ArrayFuns.iter2 (* iter over sites *)
+  (* iter over sites *)
+  ArrayFuns.iter2 
     (fun dest_site src_site ->
-      ArrayFuns.iter3 (* iter over rates *)
-        (fun dest_lv src_lv mat -> 
-          Fam_gsl_matvec.matVecMul dest_lv mat src_lv)
-        dest_site
-        src_site
-        (Model.mats model))
+      Glv_site.evolve_into model ~dst:dest_site ~src:src_site)
     dst
     src;
   ()
 
+  (*
 (* functional version *)
 let evolve model src_glv bl = 
   let dest_glv = copy src_glv in
   evolve_into model ~dst:dest_glv ~src:src_glv bl;
   dest_glv
+  *)
 
 (* copy src to dest *)
 let memcpy ~src ~dst = 
-  ArrayFuns.iter2
-    (fun site_src site_dest ->
-      ArrayFuns.iter2
-        (fun rate_src rate_dest ->
-          Gsl_vector.memcpy ~src:rate_src ~dst:rate_dest)
-        site_src site_dest)
+  ArrayFuns.iter2 
+    (fun s_src s_dst -> Glv_site.memcpy ~src:s_src ~dst:s_dst)
     src dst
 
 (* take the pairwise product of glvs g1 and g2, then store in dest. *)
 let pairwise_product ~dst g1 g2 = 
   let n_states = n_states dst in
   ArrayFuns.iter3
-    (fun site_dest site_g1 site_g2 ->
-      ArrayFuns.iter3 
-        (fun rate_dest rate_g1 rate_g2 ->
-          Linear.pairwise_prod rate_dest rate_g1 rate_g2 n_states)
-        site_dest site_g1 site_g2)
+    (fun s_dst s1 s2 ->
+      Glv_site.pairwise_product ~dst:s_dst s1 s2 n_states)
     dst g1 g2
 
 (* take the product of all of the GLV's in the list, then store in dst. 
@@ -225,4 +173,3 @@ let listwise_product dst = function
       (* just copy over *)
       memcpy ~dst ~src
   | [] -> assert(false)
-

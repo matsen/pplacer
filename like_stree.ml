@@ -34,9 +34,11 @@ let calc_distal_and_evolv_dist model tree like_aln_map
     in
   (* first calculate distal *)
     let () = match t with
-    | Stree.Node(_, tL) -> 
-  (* take the product of the below *)
-        Glv.listwise_product distal (List.map calc tL)
+    | Stree.Node(_, tL) -> begin
+        (* take the product of the below *)
+        Glv.listwise_product distal (List.map calc tL);
+        Glv.perhaps_pull_exponent distal
+      end
     | Stree.Leaf _ -> 
   (* for a leaf, distal is just the LV from the aln for each rate *)
         Glv.prep_constant_rate_glv_from_lv_arr
@@ -82,15 +84,15 @@ let calc_proximal model tree
             Glv.listwise_product 
               prox_below
               (evolved_prox::
-                (List.map (glv_from_stree evolv_dist_glv_arr) rest)))
+                (List.map (glv_from_stree evolv_dist_glv_arr) rest));
+            Glv.perhaps_pull_exponent prox_below)
           (pull_each_out tL);
         List.iter calc tL
     | Stree.Leaf _ -> ()
   in
   let stree = Gtree.get_stree tree in
   let top_prox = glv_from_stree proximal_glv_arr stree in
-  (* NGLV *)
-  Glv.set_all_entries top_prox 1.;
+  Glv.set_exp_and_all_entries top_prox 0 1.;
   calc stree
 
 (* this is our "main". the utils are just data structures of the same size as

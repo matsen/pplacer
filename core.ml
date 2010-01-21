@@ -18,7 +18,7 @@ type prior = Uniform_prior | Exponential_prior of float
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
       mem_usage prefs query_fname prior model ref_align gtree 
-      ~darr ~parr ~halfd ~halfp zero_like_sites locs = 
+      ~darr ~parr ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model
   and update_usage () = 
     let cb = Memory.curr_gb () in
@@ -81,8 +81,6 @@ let pplacer_core
     (* the mask array shows true if it's included *)
     let mask_arr = 
       Array.map (fun c -> c <> '?' && c <> '-') query_arr in
-    (* mask out the sites with zero likelihood in the ref tree *)
-    List.iter (fun i -> mask_arr.(i) <- false) zero_like_sites;
     let query_like = 
       match seq_type with
       | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc query_arr
