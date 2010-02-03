@@ -170,10 +170,9 @@ let pplacer_core
       | None -> None
       | Some f -> Pquery.opt_place_by_location f loc
     in 
-    (* prepare_tt: set tt up for loc. side effect! *)
-    let prepare_tt loc = 
+(* set tt edges to be for location loc with given pendant and distal branch lengths *)
+    let set_tt_edges loc ~pendant ~distal = 
       let cut_bl = Gtree.get_bl gtree loc in
-      (* this is just to factor out setting up the prox and dist edges *)
       let set_edge edge glv_arr len = 
         Glv_edge.set_orig_and_bl 
           model
@@ -181,20 +180,29 @@ let pplacer_core
           (Glv_arr.get glv_arr loc) 
           len
       in
+      (* still the same glv for query, but have to set branch length *)
+      Glv_edge.set_bl model query_edge pendant;
+      (* need to set the glv and branch length for dist and prox *)
+      set_edge dist_edge darr_masked distal;
+      set_edge prox_edge parr_masked (cut_bl -. distal)
+    in
+    let tt_edges_from_placement p = 
+      let loc = Placement.location p in
+      set_tt_edges loc 
+        ~pendant:(Placement.pendant_bl p)
+        ~distal:(Placement.distal_bl p)
+    in
+    (* prepare_tt: set tt up for loc. side effect! *)
+    let prepare_tt loc = 
     (* set up branch lengths, using a friend's branch lengths if we have them *)
       match get_friend_place loc with
       | None -> (* set to usual defaults *)
-        (* set the query edge to the default *)
-        Glv_edge.set_bl model query_edge (start_pend prefs);
-        (* set the distal and proximal edges to half of the cut one *)
-        set_edge dist_edge darr_masked (cut_bl /. 2.);
-        set_edge prox_edge parr_masked (cut_bl /. 2.)
+          let cut_bl = Gtree.get_bl gtree loc in
+          set_tt_edges loc 
+            ~pendant:(start_pend prefs)
+            ~distal:(cut_bl /. 2.);
       | Some f -> (* use a friend's branch lengths *)
-        Glv_edge.set_bl model query_edge (Placement.pendant_bl f);
-        (* set the distal and proximal edges to half of the cut one *)
-        let distal = Placement.distal_bl f in
-        set_edge dist_edge darr_masked distal;
-        set_edge prox_edge parr_masked (cut_bl -. distal)
+          tt_edges_from_placement f
     in
     let ml_evaluate_location loc = 
       prepare_tt loc;
@@ -296,7 +304,7 @@ let pplacer_core
           let marginal_probs = 
             List.map 
               (fun placement ->
-                prepare_tt (Placement.location placement);
+                tt_edges_from_placement placement;
                 Three_tax.calc_marg_prob 
                   prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
               above_cutoff

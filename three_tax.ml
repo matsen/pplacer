@@ -107,6 +107,28 @@ let write_like_surf prior_fun max_pend tt fname n_samples =
   done;
   close_out ch
 
+(* find an appropriate upper limit for pendant branch length integration. if we
+ * come up with a resonable upper limit then we get better results than
+ * integrating out to max_pend. 
+ * this function uses the current query branch length and moves right in
+ * increments of the current branch length, stopping when the ll function drops
+ * below 1e-10*orig_ll.
+ * note 1: this does change the query_bl.
+ * note 2: this assumes that the likelihood function is monotonic in the pendant
+ * branch length.
+ *)
+let find_upper_limit max_pend orig_ll tt = 
+  let orig_query_bl = get_query_bl tt 
+  and min_ll = 1e-10 *. orig_ll
+  in
+  let rec aux next_query_bl = 
+    set_query_bl tt next_query_bl;
+    if min_ll > log_like tt then get_query_bl tt
+    else if next_query_bl > max_pend then max_pend
+    else aux (orig_query_bl +. next_query_bl)
+  in
+  aux (get_query_bl tt)
+
 (* the idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
  * underflow problems. 
@@ -121,6 +143,7 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
    * the edge *)
   let base_ll = log_like tt 
   and cut_bl = get_cut_bl tt in
+  let upper_limit = find_upper_limit max_pend base_ll tt in
   try
     base_ll +. 
       log 
@@ -132,7 +155,7 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
                 set_query_bl tt pend_bl;
                 (exp ((log_like tt) -. base_ll)) 
                   *. (prior_fun pend_bl))
-              0. max_pend ~abs_err ~rel_err)
+              0. upper_limit ~abs_err ~rel_err)
           0. cut_bl ~abs_err ~rel_err)
         /. cut_bl)
         (* normalize out the integration over a branch length *) 
@@ -141,11 +164,8 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
       if error_num = Gsl_error.ETOL then begin
 (* Integration failed to reach tolerance with highest-order rule *)
         Printf.printf "Warning: %s\n" error_str;
-        write_like_surf prior_fun max_pend tt "problem.txt" 20;
-        failwith "badness!"
-(* return the base LL 
+(* return the base LL *)
         base_ll
- * *)
       end
       else
         raise (Gsl_error.Gsl_exn(error_num, error_str))
