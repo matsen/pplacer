@@ -12,6 +12,10 @@ let max_iter = 100
 let prof_prefix_req = 1
 (* let prof_length = 0 *)
 let prof_length = 5 
+(* the most number of placements we keep *)
+let keep_at_most = 5
+(* we throw away anything that has ml_ratio below keep_factor * (best ml_ratio) *)
+let keep_factor = 0.05
 
 type prior = Uniform_prior | Exponential_prior of float
 
@@ -283,9 +287,13 @@ let pplacer_core
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
+    assert(ml_sorted_results <> []);
+    let best_ratio = Placement.ml_ratio (List.hd ml_sorted_results) in
     let above_cutoff, below_cutoff = 
-      List.partition 
-        (fun p -> Placement.ml_ratio p >= (ratio_cutoff prefs))
+      ListFuns.partitioni 
+        (fun i p -> 
+          ((i < keep_at_most) &&
+          (Placement.ml_ratio p >= keep_factor *. best_ratio)))
         ml_sorted_results
     in
   (* the tricky thing here is that we want to keep the optimized branch lengths
