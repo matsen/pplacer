@@ -24,6 +24,7 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let (files, prefs) = parse_args () in 
+    Prefs.check prefs;
     if files = [] then begin
       print_endline "Please specify some query sequences, or ask for an entropy tree."; 
       exit 0;

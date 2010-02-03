@@ -53,7 +53,7 @@ let optimize_something tolerance set_fun start_value max_value tt =
     set_fun value;
     -. (log_like tt)
   in
-  Minimization.brentOptimization 
+  Minimization.brent 
       opt_fun start_value 0. max_value tolerance
 
 let optimize_query_bl tolerance max_value tt = 
@@ -84,6 +84,28 @@ let get_results tt = (log_like tt, get_query_bl tt, get_dist_bl tt)
 let copy_bls ~src ~dest = 
   set_query_bl dest (get_query_bl src);
   set_dist_bl dest (get_dist_bl src)
+
+(* write out the likelihood surface, with base_ll discounted. this is what
+ * integrate actually integrates, sampled on an integer-plus-half lattice. *)
+let write_like_surf prior_fun max_pend tt fname n_samples =
+  let base_ll = log_like tt 
+  and cut_bl = get_cut_bl tt in
+  let dist_incr = cut_bl /. (float_of_int n_samples)
+  and pend_incr = max_pend /. (float_of_int n_samples) 
+  and float_and_half i = 0.5 +. (float_of_int i) 
+  and ch = open_out fname
+  in
+  for i=0 to n_samples-1 do
+    set_dist_bl tt (dist_incr *. (float_and_half i));
+    for j=0 to n_samples-1 do
+      let pend_bl = pend_incr *. (float_and_half j) in
+      set_query_bl tt pend_bl;
+      Printf.fprintf ch "%g\t"
+        ((exp ((log_like tt) -. base_ll)) *. (prior_fun pend_bl));
+    done;
+    Printf.fprintf ch "\n";
+  done;
+  close_out ch
 
 (* the idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
@@ -119,9 +141,12 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
       if error_num = Gsl_error.ETOL then begin
 (* Integration failed to reach tolerance with highest-order rule *)
         Printf.printf "Warning: %s\n" error_str;
-(* return the base LL *)
+        write_like_surf prior_fun max_pend tt "problem.txt" 20;
+        failwith "badness!"
+(* return the base LL 
         base_ll
+ * *)
       end
       else
         raise (Gsl_error.Gsl_exn(error_num, error_str))
-        
+

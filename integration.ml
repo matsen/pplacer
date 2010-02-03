@@ -33,14 +33,3 @@ let value_integrate f a b ~abs_err ~rel_err =
   value_of_triple (integrate f a b ~abs_err ~rel_err)
 
 
-(* testing....
-
-  (*
-   In[5]:= N[Log[Integrate[Exp[-x^2 -y^3], {x,0,1}, {y,2,4}]]]
-   Out[5]= -10.8494
-   *)
-
-let twoDF x y = -.x*.x -.y*.y*.y
-let x = twoDIntegrateLL twoDF (twoDF 0. 2.) 0. 1. 2. 4. 0.1
-
-*)

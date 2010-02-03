@@ -148,8 +148,10 @@ let args prefs =
     "--uniformPrior", Arg.Set prefs.uniform_prior,
     "Use a uniform prior rather than exponential in the posterior probability \
     calculation.";
+    spec_with_default "--startPend" (fun o -> Arg.Set_float o) prefs.start_pend
+    "Set the starting pendant branch length for the ML and Bayes calculations. Default is %g.";
     spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
-    "Set the maximum pendant branch length for the ML and Bayes calculations. Default is %g.";
+    "Set the maximum pendant branch length for the ML calculation. Default is %g.";
     spec_with_default "--ratioCutoff" (fun o -> Arg.Set_float o) prefs.ratio_cutoff
     "Specify the ratio cutoff for recording in the .place file. Default is %g.";
     (* baseball *)
@@ -205,6 +207,14 @@ let titled_typed_prefs p =
     MutFloat p.pp_rel_err,       "relative error for PP"       ; 
     MutFloat p.ratio_cutoff,     "ML ratio cutoff for writing" ; 
   ]
+
+(* do a sanity check on the preferences *)
+let check p = 
+  if start_pend p <= 0. then
+    failwith "Starting pendant branch length must be strictly positive.";
+  if start_pend p >= max_pend p then
+    failwith "Starting pendant branch length must be strictly less than maximum pendant branch length.";
+  ()
 
 (* reading and writing *)
 

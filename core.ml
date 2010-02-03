@@ -10,6 +10,7 @@ open Prefs
 
 let max_iter = 100
 let prof_prefix_req = 1
+(* let prof_length = 0 *)
 let prof_length = 5 
 
 type prior = Uniform_prior | Exponential_prior of float
@@ -215,8 +216,9 @@ let pplacer_core
       (* get the results *)
       Three_tax.get_results tt
     in
-    let gsl_warn loc query_name = 
-      Printf.printf "Warning: GSL had a problem with location %d for query %s; it was skipped.\n" loc query_name;
+    let gsl_warn loc query_name warn_str = 
+      Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning %s.\n" 
+                    loc query_name warn_str;
     in
     (* in play_ball we go down the h_ranking list and wait until we get
      * strike_limit strikes, i.e. placements that are strike_box below the
@@ -241,8 +243,8 @@ let pplacer_core
               play_ball like_record n_strikes new_results rest
           with
 (* we need to handle the exception here so that we continue the baseball recursion *)
-          | Gsl_error.Gsl_exn(_,_) ->
-              gsl_warn loc query_name;
+          | Gsl_error.Gsl_exn(_,warn_str) ->
+              gsl_warn loc query_name warn_str;
               play_ball like_record n_strikes results rest
          end
       | [] -> results

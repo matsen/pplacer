@@ -14,7 +14,12 @@ let isOKStart f start left right =
   let starty = f start in
   starty < f left || starty < f right
 
-let brentOptimization f raw_start left right tolerance = 
+let brent f raw_start left right tolerance = 
+  if left >= raw_start || raw_start >= right then
+    failwith 
+    (Printf.sprintf 
+      "Minimization.brent: start values don't satisfy %g < %g < %g" 
+      left raw_start right);
   (* find a starting point via bisection *)
   let lefty = f left
   and righty = f right in
@@ -28,19 +33,13 @@ let brentOptimization f raw_start left right tolerance =
       if prevVal < miny then raise (FoundMin prevStart)
       else raise (FoundMin smaller)
     else if iterNum > maxIter then 
-      failwith "guessBrentIter: couldn't find start!"
+      failwith "Minimization.brent: couldn't find start!"
     else find_start ((prevStart +. smaller) /. 2.) (iterNum+1)
   in
   (* actually do the iteration *)
   try 
     let iterator = 
         Gsl_min.make Gsl_min.BRENT f (find_start raw_start 1) left right in
-    (* try
-        Gsl_min.make Gsl_min.BRENT f raw_start left right
-      with
-      | Gsl_error.Gsl_exn(_,_) ->
-        Gsl_min.make Gsl_min.BRENT f (find_start raw_start 1) left right
-    in *)
     let rec run whichStep = 
       if whichStep > maxIter then raise ExceededMaxIter
       else (
@@ -58,16 +57,3 @@ let brentOptimization f raw_start left right tolerance =
   with
     | FoundMin minLoc -> minLoc
 
-
-let twoDBrent f startx leftx rightx starty lefty righty tolerance = 
-  let rec run currx curry whichStep = 
-    let newx = brentOptimization (fun x -> f x curry) currx leftx rightx tolerance in
-    let newy = brentOptimization (fun y -> f newx y) curry lefty righty tolerance in
-    if whichStep < maxIter && 
-       abs_float (currx -. newx) > tolerance &&
-       abs_float (curry -. newy) > tolerance 
-    then run newx newy (whichStep+1)
-    else (f newx newy, newx, newy)
-  in
-  let result = run startx starty 1 in
-  result
