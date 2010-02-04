@@ -293,11 +293,10 @@ let pplacer_core
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
-    let above_cutoff, below_cutoff = 
-      split_keep_and_not ml_sorted_results in
-  (* the tricky thing here is that we want to keep the optimized branch lengths
-   * for all of the pqueries that we try so that we can use them later as
-   * friends. however, we don't want to calculate pp for all of them, and we
+    let keep, not_keep = split_keep_and_not ml_sorted_results in
+  (* the tricky thing here is that we want to retain the optimized branch
+   * lengths for all of the pqueries that we try so that we can use them later
+   * as friends. however, we don't want to calculate pp for all of them, and we
    * don't want to return them for writing either *)
     result_arr.(query_num) <-
       Pquery.make_ml_sorted
@@ -306,26 +305,25 @@ let pplacer_core
         (if (calc_pp prefs) then begin
           (* pp calculation *)
           let curr_time = Sys.time () in
-          (* calculate marginal likes for those placements whose ml ratio is
-           * above cutoff *)
+        (* calculate marginal likes for those placements we will keep *)
           let marginal_probs = 
             List.map 
               (fun placement ->
                 tt_edges_from_placement placement;
                 Three_tax.calc_marg_prob 
                   prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
-              above_cutoff
+              keep
           in
-          (* just add pp to those above cutoff *)
+          (* just add pp to those we will keep *)
           if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
             ((ListFuns.map3 
               (fun placement marginal_prob post_prob ->
                 Placement.add_pp placement ~marginal_prob ~post_prob)
-              above_cutoff
+              keep
               marginal_probs
               (Base.ll_normalized_prob marginal_probs))
-          (* keep the ones below cutoff, but don't calc pp *)
-              @ below_cutoff)
+          (* retain the ones we will throw away, but don't calc pp *)
+              @ not_keep)
         end
         else ml_sorted_results)
   end

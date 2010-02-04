@@ -32,7 +32,6 @@ type prefs =
     (* reading and writing *)
     verb_level : int ref;
     write_masked : bool ref;
-    ratio_cutoff : float ref;
     only_write_best : bool ref;
     (* other *)
     max_memory : float ref;
@@ -69,7 +68,6 @@ let defaults () =
     (* reading and writing *)
     verb_level = ref 1;
     write_masked = ref false;
-    ratio_cutoff = ref 0.05;
     only_write_best = ref false;
     (* other *)
     max_memory = ref 2.;
@@ -105,7 +103,6 @@ let gamma_n_cat     p = !(p.gamma_n_cat)
 let gamma_alpha     p = !(p.gamma_alpha)
 let verb_level      p = !(p.verb_level)
 let write_masked    p = !(p.write_masked)
-let ratio_cutoff    p = !(p.ratio_cutoff)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
 let max_memory      p = !(p.max_memory)
@@ -155,8 +152,6 @@ let args prefs =
     "Set the starting pendant branch length for the ML and Bayes calculations. Default is %g.";
     spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
     "Set the maximum pendant branch length for the ML calculation. Default is %g.";
-    spec_with_default "--ratioCutoff" (fun o -> Arg.Set_float o) prefs.ratio_cutoff
-    "Specify the ratio cutoff for recording in the .place file. Default is %g.";
     (* baseball *)
     spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
     "Set the maximum number of strikes for baseball. Setting to zero disables ball playing. Default is %d.";
@@ -203,7 +198,6 @@ let titled_typed_prefs p =
     MutFloat p.max_pend,         "maximal pendant length"      ; 
     MutFloat p.tolerance,        "ML tolerance"                ; 
     MutFloat p.pp_rel_err,       "relative error for PP"       ; 
-    MutFloat p.ratio_cutoff,     "ML ratio cutoff for writing" ; 
   ]
 
 (* do a sanity check on the preferences *)
