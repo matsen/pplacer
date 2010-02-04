@@ -19,8 +19,8 @@
 open Fam_batteries
 open MapsSets
 
-(* below 2^-150 we pull out the exponent into the int *)
-let min_allowed_twoexp = -150
+(* below 2^-50 we pull out the exponent into the int *)
+let min_allowed_twoexp = -50
 
 let log_of_2 = log 2.
 

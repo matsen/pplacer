@@ -75,6 +75,9 @@ let make criterion ~name ~seq pl =
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
+let apply_to_place_list f pq = 
+  { pq with place_list = f (pq.place_list) }
+
 let sort criterion pq = 
   if is_decreasing criterion (place_list pq) then pq
   else { pq with 
@@ -89,15 +92,4 @@ let make_map_by_best_loc criterion pquery_list =
       ~val_f:(fun x -> x)
       placed_l)
 
-(* if either the ml_ratio or the pp is above the cutoff, keep it *)
-let apply_cutoff cutoff pq = 
-  { pq with 
-    place_list = 
-     List.filter
-      (fun p ->
-        Placement.ml_ratio p >= cutoff ||
-        (match Placement.post_prob_opt p with
-        | None -> false
-        | Some pp -> pp >= cutoff))
-      (place_list pq) }
 

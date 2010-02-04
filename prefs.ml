@@ -36,6 +36,7 @@ type prefs =
     only_write_best : bool ref;
     (* other *)
     max_memory : float ref;
+    profile_len : int ref;
   }
 
 
@@ -72,6 +73,7 @@ let defaults () =
     only_write_best = ref false;
     (* other *)
     max_memory = ref 2.;
+    profile_len = ref 5;
   }
 
 
@@ -107,6 +109,7 @@ let ratio_cutoff    p = !(p.ratio_cutoff)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
 let max_memory      p = !(p.max_memory)
+let profile_len     p = !(p.profile_len)
 
 
 (* arguments and preferences *)
@@ -176,14 +179,9 @@ let args prefs =
     "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
     spec_with_default "--maxMemory" (fun o -> Arg.Set_float o) prefs.max_memory 
     "Set a memory ceiling in Gb. Pplacer will try to stay below this level, and will warn if it can't. Default is %g.";
+    spec_with_default "--profileLen" (fun o -> Arg.Set_int o) prefs.profile_len 
+    "The depth of the trie to use when using profile-based branch length pre-assignment. Zero turns the feature off. Default is %d.";
   ]
-
-  (*
-and only_write_best_opt = "-b", Arg.Set prefs.only_write_best,
-"Only record the best PP and ML placements in the .place file, and do so \ 
-for every fragment."
-*)
-
 
 (* include a pref here if it should go in the place file *)
 let titled_typed_prefs p =

@@ -127,18 +127,12 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
+    (*
     let (oned,onep) = (Glv_arr.get_one halfd,Glv_arr.get_one halfp) in
     if (verb_level prefs) >= 1 then
       Printf.printf "Reference tree log likelihood: %g\n"
         (Glv.log_like2_statd model oned onep);
-    (*
-    List.iter 
-      (fun site_num ->
-        Printf.printf 
-          "Warning: site %d (zero-indexed) has zero likelihood.\n" 
-          site_num)
-      zero_like_sites;
-      *)
+    *)
     let mem_usage = ref 0. in
     (* analyze query sequences *)
     let collect ret_code query_fname =

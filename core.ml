@@ -10,8 +10,6 @@ open Prefs
 
 let max_iter = 100
 let prof_prefix_req = 1
-(* let prof_length = 0 *)
-let prof_length = 5 
 (* the most number of placements we keep *)
 let keep_at_most = 5
 (* we throw away anything that has ml_ratio below keep_factor * (best ml_ratio) *)
@@ -26,8 +24,8 @@ let pplacer_core
       ~darr ~parr ~halfd ~halfp locs = 
   let seq_type = Model.seq_type model
   and update_usage () = 
-    let cb = Memory.curr_gb () in
-    if cb > !mem_usage then mem_usage := cb
+    let c = Memory.curr_gb () in
+    if c > !mem_usage then mem_usage := c
   and prior_fun =
     match prior with
     | Uniform_prior -> (fun _ -> 1.)
@@ -44,6 +42,14 @@ let pplacer_core
     else [||]
   and fantasy_mod = Base.round (100. *. (fantasy_frac prefs))
   and n_fantasies = ref 0
+  and split_keep_and_not ml_sorted_results = 
+    assert(ml_sorted_results <> []);
+    let best_ratio = Placement.ml_ratio (List.hd ml_sorted_results) in
+    ListFuns.partitioni 
+      (fun i p -> 
+        ((i < keep_at_most) &&
+        (Placement.ml_ratio p >= keep_factor *. best_ratio)))
+      ml_sorted_results
   in
   (* set up the number of pitches and strikes according to the prefs *)
   let (t_max_pitches, t_max_strikes) = 
@@ -150,9 +156,9 @@ let pplacer_core
     in
     (* finding a friend *)
     let friend =
-      if prof_length = 0 then None (* profiling turned off *)
+      if (profile_len prefs) = 0 then None (* profiling turned off *)
       else begin
-        let prof = Ltrie.list_first_n h_ranking prof_length in
+        let prof = Ltrie.list_first_n h_ranking (profile_len prefs) in
         let friend_result = 
           if Ltrie.prefix_mem prof prof_prefix_req !prof_trie then 
             (* we pass the prefix test *)
@@ -229,7 +235,7 @@ let pplacer_core
       Three_tax.get_results tt
     in
     let gsl_warn loc query_name warn_str = 
-      Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning %s.\n" 
+      Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" 
                     loc query_name warn_str;
     in
     (* in play_ball we go down the h_ranking list and wait until we get
@@ -287,15 +293,8 @@ let pplacer_core
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
-    assert(ml_sorted_results <> []);
-    let best_ratio = Placement.ml_ratio (List.hd ml_sorted_results) in
     let above_cutoff, below_cutoff = 
-      ListFuns.partitioni 
-        (fun i p -> 
-          ((i < keep_at_most) &&
-          (Placement.ml_ratio p >= keep_factor *. best_ratio)))
-        ml_sorted_results
-    in
+      split_keep_and_not ml_sorted_results in
   (* the tricky thing here is that we want to keep the optimized branch lengths
    * for all of the pqueries that we try so that we can use them later as
    * friends. however, we don't want to calculate pp for all of them, and we
@@ -338,9 +337,11 @@ let pplacer_core
       fantasy_mat (!n_fantasies);
       Fantasy.print_optimum fantasy_mat (fantasy prefs) (!n_fantasies);
   end;
-(* here we actually apply the ratio cutoff so that we don't write them to file *)
+  (* here we filter things away we don't write them to file *)
   let results = 
-    Array.map (Pquery.apply_cutoff (ratio_cutoff prefs)) result_arr
+    Array.map 
+      (Pquery.apply_to_place_list 
+        (fun pl -> fst(split_keep_and_not pl))) result_arr
   in
   update_usage ();
   results
