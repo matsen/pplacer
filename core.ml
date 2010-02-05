@@ -49,11 +49,23 @@ let pplacer_core
         (Placement.ml_ratio p >= keep_factor *. best_ratio)))
       ml_sorted_results
   in
-  Printf.printf "current memory use is %f gb\n" (Memory.curr_gb ());
-  let a = Alignment.read_align query_fname in
-  print_endline "bla";
-  let prof = Sim_prof.prev_pairing_of_alignment a in
-  Printf.printf "current memory use is %f gb\n" (Memory.curr_gb ());
+  (* make the friend profile if required *)
+  let friend_prof = 
+    if friendly prefs then begin
+      let a = Alignment.read_align query_fname in
+      let flen = float_of_int (Alignment.n_seqs a) in
+      if (verb_level prefs) >= 1 then begin
+        Printf.printf
+          "Finding friends. This may require as many as %.4g sequence comparisons... "
+          (flen *. (flen -. 1.) /. 2.);
+        flush_all();
+      end;
+      let fp = Friendly.prev_pairing_of_alignment a in
+      print_endline "done.";
+      fp
+    end
+    else [||]
+  in
   (* set up the number of pitches and strikes according to the prefs *)
   let (t_max_pitches, t_max_strikes) = 
     if fantasy prefs <> 0. then
@@ -90,6 +102,18 @@ let pplacer_core
       Printf.printf "running '%s' %d / %d ...\n" query_name (query_num+1) num_queries; 
       flush_all ()
     end;
+    (* pull out the friend *)
+    let friend = 
+      if friendly prefs then friend_prof.(query_num) 
+      else Friendly.Friendless
+    in
+    (* if we have an identical friend, then we can use that friend's info *)
+    match friend with
+    | Friendly.Identical j ->
+        result_arr.(query_num) <-
+          Pquery.set_name result_arr.(j) query_name
+    (* otherwise, start the evaluation *)
+    | _ -> begin
     (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
     (* the mask array shows true if it's included *)
@@ -157,12 +181,18 @@ let pplacer_core
         model
         ~dist:dist_edge ~prox:prox_edge ~query:query_edge
     in
+    (* set up the function which gives placements by location *)
     let get_friend_place = 
-      match prof.(query_num) with
-      | None -> fun _ -> None
-      | Some friend_num -> 
+      match friend with
+      (* no friend *)
+      | Friendly.Friendless -> fun _ -> None
+      (* if identical, should have skipped optimization *)
+      | Friendly.Identical _ -> assert(false)
+      (* set up the function *)
+      | Friendly.Friend friend_num -> begin
           let f = result_arr.(friend_num) in
           fun loc -> Pquery.opt_place_by_location f loc
+      end
     in 
 (* set tt edges to be for location loc with given pendant and distal branch lengths *)
     let set_tt_edges loc ~pendant ~distal = 
@@ -310,6 +340,7 @@ let pplacer_core
               @ not_keep)
         end
         else ml_sorted_results)
+  end
   end
   in
   Fasta_channel.named_seq_iteri process_query query_channel;

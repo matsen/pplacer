@@ -35,6 +35,7 @@ type prefs =
     only_write_best : bool ref;
     (* other *)
     max_memory : float ref;
+    friendly : bool ref;
   }
 
 
@@ -70,6 +71,7 @@ let defaults () =
     only_write_best = ref false;
     (* other *)
     max_memory = ref 2.;
+    friendly = ref true;
   }
 
 
@@ -104,6 +106,7 @@ let write_masked    p = !(p.write_masked)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
 let max_memory      p = !(p.max_memory)
+let friendly        p = !(p.friendly)
 
 
 (* arguments and preferences *)
@@ -171,6 +174,8 @@ let args prefs =
     "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
     spec_with_default "--maxMemory" (fun o -> Arg.Set_float o) prefs.max_memory 
     "Set a memory ceiling in Gb. Pplacer will try to stay below this level, and will warn if it can't. Default is %g.";
+    "--unfriendly", Arg.Clear prefs.friendly,
+    "Do not run friend finder pre-analysis.";
   ]
 
 (* include a pref here if it should go in the place file *)

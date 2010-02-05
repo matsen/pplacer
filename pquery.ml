@@ -75,6 +75,8 @@ let make criterion ~name ~seq pl =
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
+let set_name pq name = { pq with name = name }
+
 let apply_to_place_list f pq = 
   { pq with place_list = f (pq.place_list) }
 
