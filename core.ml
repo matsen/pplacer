@@ -9,7 +9,6 @@ open MapsSets
 open Prefs
 
 let max_iter = 200
-let prof_prefix_req = 1
 (* the most number of placements we keep *)
 let keep_at_most = 5
 (* we throw away anything that has ml_ratio below keep_factor * (best ml_ratio) *)
