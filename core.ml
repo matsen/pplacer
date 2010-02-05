@@ -49,6 +49,11 @@ let pplacer_core
         (Placement.ml_ratio p >= keep_factor *. best_ratio)))
       ml_sorted_results
   in
+  Printf.printf "current memory use is %f gb\n" (Memory.curr_gb ());
+  let a = Alignment.read_align query_fname in
+  print_endline "bla";
+  let prof = Sim_prof.prev_pairing_of_alignment a in
+  Printf.printf "current memory use is %f gb\n" (Memory.curr_gb ());
   (* set up the number of pitches and strikes according to the prefs *)
   let (t_max_pitches, t_max_strikes) = 
     if fantasy prefs <> 0. then
@@ -152,6 +157,13 @@ let pplacer_core
         model
         ~dist:dist_edge ~prox:prox_edge ~query:query_edge
     in
+    let get_friend_place = 
+      match prof.(query_num) with
+      | None -> fun _ -> None
+      | Some friend_num -> 
+          let f = result_arr.(friend_num) in
+          fun loc -> Pquery.opt_place_by_location f loc
+    in 
 (* set tt edges to be for location loc with given pendant and distal branch lengths *)
     let set_tt_edges loc ~pendant ~distal = 
       let cut_bl = Gtree.get_bl gtree loc in
@@ -176,9 +188,15 @@ let pplacer_core
     in
     (* prepare_tt: set tt up for loc. side effect! *)
     let prepare_tt loc = 
-      set_tt_edges loc 
-        ~pendant:(start_pend prefs)
-        ~distal:((Gtree.get_bl gtree loc) /. 2.);
+    (* set up branch lengths, using a friend's branch lengths if we have them *)
+      match get_friend_place loc with
+      | None -> (* set to usual defaults *)
+          let cut_bl = Gtree.get_bl gtree loc in
+          set_tt_edges loc 
+            ~pendant:(start_pend prefs)
+            ~distal:(cut_bl /. 2.);
+      | Some f -> (* use a friend's branch lengths *)
+          tt_edges_from_placement f
     in
     let ml_evaluate_location loc = 
       prepare_tt loc;
@@ -259,7 +277,11 @@ let pplacer_core
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
-    let keep, _ = split_keep_and_not ml_sorted_results in
+    let keep, not_keep = split_keep_and_not ml_sorted_results in
+  (* the tricky thing here is that we want to retain the optimized branch
+   * lengths for all of the pqueries that we try so that we can use them later
+   * as friends. however, we don't want to calculate pp for all of them, and we
+   * don't want to return them for writing either *)
     result_arr.(query_num) <-
       Pquery.make_ml_sorted
         ~name:query_name 
@@ -283,7 +305,9 @@ let pplacer_core
                 Placement.add_pp placement ~marginal_prob ~post_prob)
               keep
               marginal_probs
-              (Base.ll_normalized_prob marginal_probs)))
+              (Base.ll_normalized_prob marginal_probs))
+          (* retain the ones we will throw away, but don't calc pp *)
+              @ not_keep)
         end
         else ml_sorted_results)
   end
@@ -295,6 +319,12 @@ let pplacer_core
       fantasy_mat (!n_fantasies);
       Fantasy.print_optimum fantasy_mat (fantasy prefs) (!n_fantasies);
   end;
+  (* here we filter things away we don't write them to file *)
+  let results = 
+    Array.map 
+      (Pquery.apply_to_place_list 
+        (fun pl -> fst(split_keep_and_not pl))) result_arr
+  in
   update_usage ();
-  result_arr
+  results
 

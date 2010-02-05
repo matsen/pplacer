@@ -26,7 +26,7 @@ let () =
     let (files, prefs) = parse_args () in 
     Prefs.check prefs;
     if files = [] then begin
-      print_endline "Please specify some query sequences, or ask for an entropy tree."; 
+      print_endline "Please specify some query sequences."; 
       exit 0;
     end;
     if (verb_level prefs) >= 1 then 
