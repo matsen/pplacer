@@ -33,7 +33,6 @@ let pplacer_core
         fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
   and query_channel = Fasta_channel.of_fname query_fname 
   and ref_length = Alignment.length ref_align
-  and prof_trie = ref Ltrie.empty
   and fantasy_mat = 
     if fantasy prefs <> 0. then
       Fantasy.make_fantasy_matrix 
@@ -154,32 +153,6 @@ let pplacer_core
         model
         ~dist:dist_edge ~prox:prox_edge ~query:query_edge
     in
-    (* finding a friend *)
-    let friend =
-      if (profile_len prefs) = 0 then None (* profiling turned off *)
-      else begin
-        let prof = Ltrie.list_first_n h_ranking (profile_len prefs) in
-        let friend_result = 
-          if Ltrie.prefix_mem prof prof_prefix_req !prof_trie then 
-            (* we pass the prefix test *)
-            begin
-              let f_index = Ltrie.int_approx_find prof !prof_trie in
-              if (verb_level prefs) >= 2 then
-                Printf.printf "found friend in %d\n" f_index;
-              assert(f_index < query_num);
-              Some (result_arr.(f_index))
-            end
-          else None
-        in
-        prof_trie := Ltrie.add prof query_num !prof_trie;
-        friend_result
-      end
-    in
-    let get_friend_place loc = 
-      match friend with
-      | None -> None
-      | Some f -> Pquery.opt_place_by_location f loc
-    in 
 (* set tt edges to be for location loc with given pendant and distal branch lengths *)
     let set_tt_edges loc ~pendant ~distal = 
       let cut_bl = Gtree.get_bl gtree loc in
@@ -204,15 +177,9 @@ let pplacer_core
     in
     (* prepare_tt: set tt up for loc. side effect! *)
     let prepare_tt loc = 
-    (* set up branch lengths, using a friend's branch lengths if we have them *)
-      match get_friend_place loc with
-      | None -> (* set to usual defaults *)
-          let cut_bl = Gtree.get_bl gtree loc in
-          set_tt_edges loc 
-            ~pendant:(start_pend prefs)
-            ~distal:(cut_bl /. 2.);
-      | Some f -> (* use a friend's branch lengths *)
-          tt_edges_from_placement f
+      set_tt_edges loc 
+        ~pendant:(start_pend prefs)
+        ~distal:((Gtree.get_bl gtree loc) /. 2.);
     in
     let ml_evaluate_location loc = 
       prepare_tt loc;
@@ -293,11 +260,7 @@ let pplacer_core
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
-    let keep, not_keep = split_keep_and_not ml_sorted_results in
-  (* the tricky thing here is that we want to retain the optimized branch
-   * lengths for all of the pqueries that we try so that we can use them later
-   * as friends. however, we don't want to calculate pp for all of them, and we
-   * don't want to return them for writing either *)
+    let keep, _ = split_keep_and_not ml_sorted_results in
     result_arr.(query_num) <-
       Pquery.make_ml_sorted
         ~name:query_name 
@@ -321,9 +284,7 @@ let pplacer_core
                 Placement.add_pp placement ~marginal_prob ~post_prob)
               keep
               marginal_probs
-              (Base.ll_normalized_prob marginal_probs))
-          (* retain the ones we will throw away, but don't calc pp *)
-              @ not_keep)
+              (Base.ll_normalized_prob marginal_probs)))
         end
         else ml_sorted_results)
   end
@@ -335,12 +296,6 @@ let pplacer_core
       fantasy_mat (!n_fantasies);
       Fantasy.print_optimum fantasy_mat (fantasy prefs) (!n_fantasies);
   end;
-  (* here we filter things away we don't write them to file *)
-  let results = 
-    Array.map 
-      (Pquery.apply_to_place_list 
-        (fun pl -> fst(split_keep_and_not pl))) result_arr
-  in
   update_usage ();
-  results
+  result_arr
 
