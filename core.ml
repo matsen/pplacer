@@ -8,7 +8,7 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-let max_iter = 100
+let max_iter = 200
 let prof_prefix_req = 1
 (* the most number of placements we keep *)
 let keep_at_most = 5

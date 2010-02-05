@@ -48,9 +48,9 @@ let defaults () =
     stats_fname = ref "";
     ref_dir = ref ".";
     (* tree calc *)
-    start_pend = ref 0.5;
+    start_pend = ref 0.1;
     max_pend = ref 2.;
-    tolerance = ref 0.01;
+    tolerance = ref 0.001;
     calc_pp = ref false;
     uniform_prior = ref false;
     pp_rel_err = ref 0.01;
@@ -142,7 +142,7 @@ let args prefs =
     "Specify the shape parameter for a discrete gamma model.";
     (* like calc parameters *)
     spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.tolerance
-    "Specify the tolerance for the branch length maximization. Default is %g.";
+    "Specify the tolerance for the branch length optimization. Default is %g.";
     spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
     "Specify the relative error for the posterior probability calculation. Default is %g.";
     "--uniformPrior", Arg.Set prefs.uniform_prior,
