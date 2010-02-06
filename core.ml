@@ -50,7 +50,7 @@ let pplacer_core
       ml_sorted_results
   in
   (* we turn off friend finding in fantasy mode *)
-  let friendly_run = friendly prefs && (fantasy prefs <> 0.) in
+  let friendly_run = friendly prefs && (fantasy prefs = 0.) in
   (* make the friend profile if required *)
   let friend_prof = 
     if friendly_run then begin
