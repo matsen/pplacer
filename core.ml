@@ -10,9 +10,9 @@ open Prefs
 
 let max_iter = 200
 (* the most number of placements we keep *)
-let keep_at_most = 5
+let keep_at_most = 7
 (* we throw away anything that has ml_ratio below keep_factor * (best ml_ratio) *)
-let keep_factor = 0.05
+let keep_factor = 0.01
 
 type prior = Uniform_prior | Exponential_prior of float
 
@@ -49,14 +49,16 @@ let pplacer_core
         (Placement.ml_ratio p >= keep_factor *. best_ratio)))
       ml_sorted_results
   in
+  (* we turn off friend finding in fantasy mode *)
+  let friendly_run = friendly prefs && (fantasy prefs <> 0.) in
   (* make the friend profile if required *)
   let friend_prof = 
-    if friendly prefs then begin
+    if friendly_run then begin
       let a = Alignment.read_align query_fname in
       let flen = float_of_int (Alignment.n_seqs a) in
       if (verb_level prefs) >= 1 then begin
         Printf.printf
-          "Finding friends. This may require as many as %.4g sequence comparisons... "
+          "Finding friends. This will require around %.4g sequence comparisons... "
           (flen *. (flen -. 1.) /. 2.);
         flush_all();
       end;
@@ -104,7 +106,7 @@ let pplacer_core
     end;
     (* pull out the friend *)
     let friend = 
-      if friendly prefs then friend_prof.(query_num) 
+      if friendly_run then friend_prof.(query_num) 
       else Friendly.Friendless
     in
     (* if we have an identical friend, then we can use that friend's info *)
@@ -307,7 +309,8 @@ let pplacer_core
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
           ml_ratios ml_results)
     in
-    let keep, not_keep = split_keep_and_not ml_sorted_results in
+    let keep, _ = split_keep_and_not ml_sorted_results in
+    (* let keep, not_keep = split_keep_and_not ml_sorted_results in *)
   (* the tricky thing here is that we want to retain the optimized branch
    * lengths for all of the pqueries that we try so that we can use them later
    * as friends. however, we don't want to calculate pp for all of them, and we
@@ -337,7 +340,8 @@ let pplacer_core
               marginal_probs
               (Base.ll_normalized_prob marginal_probs))
           (* retain the ones we will throw away, but don't calc pp *)
-              @ not_keep)
+              (* @ not_keep) *)
+            )
         end
         else ml_sorted_results)
   end
