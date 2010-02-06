@@ -11,8 +11,9 @@ open Prefs
 let max_iter = 200
 (* the most number of placements we keep *)
 let keep_at_most = 7
-(* we throw away anything that has ml_ratio below keep_factor * (best ml_ratio) *)
+(* we throw away anything that has ml_ratio below keep_factor times (best ml_ratio) *)
 let keep_factor = 0.01
+let log_keep_factor = log keep_factor
 
 type prior = Uniform_prior | Exponential_prior of float
 
@@ -40,14 +41,6 @@ let pplacer_core
     else [||]
   and fantasy_mod = Base.round (100. *. (fantasy_frac prefs))
   and n_fantasies = ref 0
-  and split_keep_and_not ml_sorted_results = 
-    assert(ml_sorted_results <> []);
-    let best_ratio = Placement.ml_ratio (List.hd ml_sorted_results) in
-    ListFuns.partitioni 
-      (fun i p -> 
-        ((i < keep_at_most) &&
-        (Placement.ml_ratio p >= keep_factor *. best_ratio)))
-      ml_sorted_results
   in
   (* we turn off friend finding in fantasy mode *)
   let friendly_run = friendly prefs && (fantasy prefs = 0.) in
@@ -287,34 +280,39 @@ let pplacer_core
  (* important to reverse for fantasy baseball. also should save time on sorting *)
       List.rev (play_ball (-. infinity) 0 [] h_ranking) 
     in
+    if ml_results = [] then
+      failwith 
+        (Printf.sprintf "empty results for %s, query number %d!\n"
+                        query_name query_num);
     if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
     if fantasy prefs <> 0. then begin
       Fantasy.add_to_fantasy_matrix ml_results fantasy_mat;
       incr n_fantasies;
     end;
-    (* calc ml weight ratios. these tuples are ugly but that way we don't need
+    (* these tuples are ugly but that way we don't need
      * to make a special type for ml results. *)
-    let ml_ratios = 
-      Base.ll_normalized_prob 
-        (List.map 
-          (fun (_, (like, _, _)) -> like) 
-          ml_results) 
+    let get_like (_, (like, _, _)) = like in
+    let decreasing_cmp_likes r1 r2 = 
+      - compare (get_like r1) (get_like r2) in
+    let sorted_ml_results = 
+      List.sort decreasing_cmp_likes ml_results in
+    assert(sorted_ml_results <> []);
+    let best_like = get_like (List.hd sorted_ml_results) in
+    let keep_results, _ = 
+      ListFuns.partitioni 
+        (fun i r -> 
+          ((i < keep_at_most) &&
+          (get_like r >= log_keep_factor +. best_like)))
+        sorted_ml_results
     in
-    let ml_sorted_results = 
-      Placement.sort_placecoll 
-        Placement.ml_ratio
-        (List.map2 
-          (fun ml_ratio (loc, (log_like, pend_bl, dist_bl)) -> 
-            Placement.make_ml 
-              loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
-          ml_ratios ml_results)
+    let sorted_ml_placements = 
+      List.map2 
+        (fun ml_ratio (loc, (log_like, pend_bl, dist_bl)) -> 
+          Placement.make_ml 
+            loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
+         (Base.ll_normalized_prob (List.map get_like keep_results))
+         keep_results
     in
-    let keep, _ = split_keep_and_not ml_sorted_results in
-    (* let keep, not_keep = split_keep_and_not ml_sorted_results in *)
-  (* the tricky thing here is that we want to retain the optimized branch
-   * lengths for all of the pqueries that we try so that we can use them later
-   * as friends. however, we don't want to calculate pp for all of them, and we
-   * don't want to return them for writing either *)
     result_arr.(query_num) <-
       Pquery.make_ml_sorted
         ~name:query_name 
@@ -329,21 +327,18 @@ let pplacer_core
                 tt_edges_from_placement placement;
                 Three_tax.calc_marg_prob 
                   prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
-              keep
+              sorted_ml_placements
           in
-          (* just add pp to those we will keep *)
+          (* add pp *)
           if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
             ((ListFuns.map3 
               (fun placement marginal_prob post_prob ->
                 Placement.add_pp placement ~marginal_prob ~post_prob)
-              keep
+              sorted_ml_placements
               marginal_probs
-              (Base.ll_normalized_prob marginal_probs))
-          (* retain the ones we will throw away, but don't calc pp *)
-              (* @ not_keep) *)
-            )
+              (Base.ll_normalized_prob marginal_probs)))
         end
-        else ml_sorted_results)
+        else sorted_ml_placements)
   end
   end
   in
@@ -354,12 +349,6 @@ let pplacer_core
       fantasy_mat (!n_fantasies);
       Fantasy.print_optimum fantasy_mat (fantasy prefs) (!n_fantasies);
   end;
-  (* here we filter things away we don't write them to file *)
-  let results = 
-    Array.map 
-      (Pquery.apply_to_place_list 
-        (fun pl -> fst(split_keep_and_not pl))) result_arr
-  in
   update_usage ();
-  results
+  result_arr
 
