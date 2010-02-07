@@ -137,13 +137,11 @@ let evolve_into model ~dst ~src bl =
     src;
   ()
 
-  (*
 (* functional version *)
 let evolve model src_glv bl = 
   let dest_glv = copy src_glv in
   evolve_into model ~dst:dest_glv ~src:src_glv bl;
   dest_glv
-  *)
 
 (* copy src to dest *)
 let memcpy ~src ~dst = 

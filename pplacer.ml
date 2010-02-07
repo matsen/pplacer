@@ -127,6 +127,11 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
+    print_endline "pulling exponents";
+    List.iter 
+      Glv_arr.perhaps_pull_exponent 
+      [darr; parr; halfd; halfp; ];
+    print_endline "done";
     (*
     let (oned,onep) = (Glv_arr.get_one halfd,Glv_arr.get_one halfp) in
     if (verb_level prefs) >= 1 then

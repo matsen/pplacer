@@ -124,11 +124,13 @@ let finite_infinity x =
   | FP_nan -> -. max_float
   | _ -> x
 
+let finite_log x = finite_infinity (log x)
+
 (* the log like of the "product" of two things *)
 let log_like2_statd statd fn_rates our_n_states x_s y_s = 
   (float_of_int ((get_e x_s) + (get_e y_s)))
     *. log_of_2 +.
-    log ((ArrayFuns.fold_left2 (* fold over rates *)
+    finite_log ((ArrayFuns.fold_left2 (* fold over rates *)
       (fun rate_tot x_lv y_lv -> 
         rate_tot+.(Linear.triple_dot statd x_lv y_lv our_n_states))
       0. (get_a x_s) (get_a y_s)) /. fn_rates)
@@ -137,7 +139,7 @@ let log_like2_statd statd fn_rates our_n_states x_s y_s =
 let log_like3_statd statd fn_rates our_n_states x_s y_s z_s = 
   (float_of_int ((get_e x_s) + (get_e y_s) + (get_e z_s)))
     *. log_of_2 +.
-    log ((ArrayFuns.fold_left3 (* fold over rates *)
+    finite_log ((ArrayFuns.fold_left3 (* fold over rates *)
       (fun rate_tot x_lv y_lv z_lv -> 
         rate_tot+.(Linear.quad_dot statd x_lv y_lv z_lv our_n_states))
       0. (get_a x_s) (get_a y_s) (get_a z_s)) /. fn_rates)

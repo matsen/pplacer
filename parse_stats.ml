@@ -8,14 +8,29 @@ exception Stats_parsing_error of string
 
 let str_match rex s = Str.string_match rex s 0
 
+let check_version program version known_versions = 
+  if not (List.mem version known_versions) then 
+    Printf.printf 
+      "Warning: your stats file is from %s %s; %s has been tested with the following versions: %s\n"
+      program
+      version
+      program
+      (String.concat "; " known_versions)
+
 
 (* ************ RAXML ************* *)
-let parse_raxml_info lines prefs = 
+
+let raxml_header_rex = Str.regexp "^You are using RAxML version \\([^ ]+\\)"
+
+let known_raxml_versions = [ "7.2.3"; "7.2.5"; ]
+
+let parse_raxml_info version lines prefs = 
   let partition_rex = Str.regexp "^Partition:"
   and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
   and inference_rex = Str.regexp "^Inference\\[0\\].* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
   and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
   in
+  check_version "RAxML" version known_raxml_versions;
   match 
     (File_parsing.partition_list 
       (str_match partition_rex)
@@ -73,6 +88,10 @@ let parse_raxml_info lines prefs =
 
 (* ************ PHYML ************* *)
 
+let phyml_header_rex = Str.regexp "[ \t]*---  PhyML v\\([^ ]+\\)"
+
+let known_phyml_versions = [ "3.0"; "3.0_246M"; ]
+
 (*
 # list_split [1;2;3;4;5] 2;;  
 - : int list * int list = ([1; 2], [3; 4; 5])
@@ -95,7 +114,7 @@ let assert_and_extract_float beginning s =
   float_of_string 
     (String.sub s beginning_len ((String.length s) - beginning_len))
 
-let parse_phyml_stats lines prefs = 
+let parse_phyml_stats version lines prefs = 
   let model_rex = Str.regexp 
   ". Model of .* substitution:[ \t]+\\([A-Z]+\\)"
   and gamma_rex = Str.regexp 
@@ -107,6 +126,7 @@ let parse_phyml_stats lines prefs =
   and nuc_freqs_rex = Str.regexp 
   ". Nucleotides frequencies:"
   in
+  check_version "phyml" version known_phyml_versions;
   let (m_line, after_m) = 
     try
       File_parsing.find_beginning 
@@ -151,26 +171,26 @@ let parse_phyml_stats lines prefs =
 
 (* ************ BOTH ************* *)
 
-let rec rex_matches_a_line rex = function
+let rec find_version_line rex = function
   | hd :: tl -> 
-      if str_match rex hd then true
-      else rex_matches_a_line rex tl
-  | [] -> false
-
-let raxml_header_rex = Str.regexp "^You are using RAxML"
-let phyml_header_rex = Str.regexp "[ \t]*---  PhyML v3"
+      if str_match rex hd then Some (Str.matched_group 1 hd)
+      else find_version_line rex tl
+  | [] -> None
 
 let parse_stats ref_dir_complete prefs = 
   let lines = 
     File_parsing.string_list_of_file 
       (ref_dir_complete^(Prefs.stats_fname prefs)) in
   try
-    if rex_matches_a_line raxml_header_rex lines then
-      parse_raxml_info lines prefs
-    else if rex_matches_a_line phyml_header_rex lines then
-      parse_phyml_stats lines prefs
-    else
-      raise (Stats_parsing_error "is this a RAxML v7 info or PHYML v3 statistics file? The header didn't match.")
+    match find_version_line raxml_header_rex lines with
+    | Some v -> parse_raxml_info v lines prefs
+    | None -> begin
+      match find_version_line phyml_header_rex lines with
+      | Some v -> parse_phyml_stats v lines prefs
+      | None -> 
+          raise (Stats_parsing_error "is this a RAxML v7 info or PHYML v3 statistics file? The header didn't match.")
+    end
+
   with
   | Stats_parsing_error s ->
       invalid_arg (Printf.sprintf "Problem parsing info or stats file %s: %s" (Prefs.stats_fname prefs) s)

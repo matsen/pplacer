@@ -9,6 +9,8 @@ let arr_get = Array.get
 let make ~n_glvs ~n_sites ~n_rates ~n_states = 
   Array.init n_glvs (fun _ -> Glv.make ~n_sites ~n_rates ~n_states)
 
+let iter = Array.iter
+
 let copy a = Array.map Glv.copy a
 
 let mimic a = Array.map Glv.mimic a
@@ -26,3 +28,5 @@ let evolve_into model ~src ~dst bl_fun =
   for i=0 to n-1 do
     Glv.evolve_into model ~src:src.(i) ~dst:dst.(i) (bl_fun i)
   done
+
+let perhaps_pull_exponent = iter Glv.perhaps_pull_exponent
