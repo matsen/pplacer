@@ -4,11 +4,12 @@
  * This code goes down an alignment and for every entry i looks for a j < i such
  * that i and j are as similar as possible. it records if i and j are identical.
  *
- * If two sequences have more than basic_max_mismatches mismatches, then they
- * are considered to be unrelated.
+ * If two sequences have more than basic_max_mismatches mismatches, or have
+ * fewer than min_matches matches, then they are considered to be unrelated.
 *)
 
 let basic_max_mismatches = 5
+let min_matches = 15
 
 type similarity = Unrelated | Similar of int * int 
 type friend = Friendless | Identical of int | Friend of int
@@ -31,6 +32,7 @@ let similarity max_mismatches s1 s2 =
   assert(l = String.length s2);
   let mismatches = ref 0 
   and matches_to_gap = ref 0
+  and n_matches = ref 0
   in
   try
     for i=0 to l-1 do
@@ -45,8 +47,12 @@ let similarity max_mismatches s1 s2 =
             raise Exit
         end
       end
+      else incr n_matches
     done;
-    Similar(!mismatches, !matches_to_gap)
+    if !n_matches >= min_matches then
+      Similar(!mismatches, !matches_to_gap)
+    else
+      Unrelated
   with
   | Exit -> Unrelated
 
