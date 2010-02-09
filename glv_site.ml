@@ -119,9 +119,10 @@ let perhaps_pull_exponent s =
  * throw an exception. it would be nice if we could do better, as this probably
  * throws off the Brent method. *)
 let finite_log x = 
-  match Pervasives.classify_float (log x) with
+  let log_x = log x in
+  match Pervasives.classify_float log_x with
   | FP_infinite | FP_nan -> -. 1e200
-  | _ -> x
+  | _ -> log_x
 
 (* the log like of the "product" of two things *)
 let log_like2_statd statd fn_rates our_n_states x_s y_s = 
