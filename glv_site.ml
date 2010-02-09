@@ -118,13 +118,10 @@ let perhaps_pull_exponent s =
 (* we "clean up" like so because an infinite value passed to a GSL function will
  * throw an exception. it would be nice if we could do better, as this probably
  * throws off the Brent method. *)
-let finite_infinity x = 
-  match Pervasives.classify_float x with
-  | FP_infinite -> -. max_float
-  | FP_nan -> -. max_float
+let finite_log x = 
+  match Pervasives.classify_float (log x) with
+  | FP_infinite | FP_nan -> -. 1e200
   | _ -> x
-
-let finite_log x = finite_infinity (log x)
 
 (* the log like of the "product" of two things *)
 let log_like2_statd statd fn_rates our_n_states x_s y_s = 
