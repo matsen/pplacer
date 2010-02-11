@@ -5,7 +5,6 @@
 open Fam_batteries
 open MapsSets
 
-let version_str = "v1.0"
 let compatible_versions = [ "v0.3"; "v1.0"; ]
 
 let bifurcation_warning = 
@@ -44,7 +43,7 @@ let to_file invocation placerun =
   let ch = open_out ((Placerun.get_name placerun)^".place") in
   let ref_tree = Placerun.get_ref_tree placerun in
   Printf.fprintf ch "# pplacer %s run, %s\n"        
-    version_str (Base.date_time_str ());
+    Version.version_revision (Base.date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
   Prefs.write ch (Placerun.get_prefs placerun);
   Printf.fprintf ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
@@ -95,12 +94,14 @@ let of_file place_fname =
       (* make sure we have appropriate versions *)
       Scanf.sscanf version_line "# pplacer %s run" 
         (fun file_vers ->
-          if not (List.mem file_vers compatible_versions) then
+          if not (List.mem 
+                   (Version.chop_revision file_vers)
+                   compatible_versions) then
             failwith
               (Printf.sprintf 
                "This file is from version %s which is incompatible with the present version of %s"
                file_vers
-               version_str));
+               Version.version));
       let _, post_invocation = 
         File_parsing.find_beginning 
           (str_match invocation_rex) 

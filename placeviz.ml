@@ -23,7 +23,7 @@ and total_width = ref 0.
 let parse_args () =
   let files  = ref [] in
    let usage =
-    "placeviz "^Placerun_io.version_str^"\nplaceviz ex.place\n"
+    "placeviz "^Version.version_revision^"\nplaceviz ex.place\n"
   and anon_arg arg =
     files := arg :: !files in
   let args = 

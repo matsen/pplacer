@@ -12,7 +12,7 @@ let parse_args () =
   and prefs = Prefs.defaults ()
   in
   let usage =
-    "pplacer "^Placerun_io.version_str^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
+    "pplacer "^Version.version_revision^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
   and anon_arg arg =
     files := arg :: !files
   in
@@ -30,7 +30,9 @@ let () =
       exit 0;
     end;
     if (verb_level prefs) >= 1 then 
-      print_endline "Running pplacer analysis...";
+      Printf.printf 
+        "Running pplacer %s analysis..."
+        Version.version_revision;
     (* initialize the GSL error handler *)
     Gsl_error.init ();
     (* append on a slash to the dir if it's not there *)

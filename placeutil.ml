@@ -38,7 +38,7 @@ let parse_args () =
     "Print out a table of bounce values for each placement."
   in
   let usage =
-    "placeutil "^Placerun_io.version_str
+    "placeutil "^Version.version_revision
       ^"\nplaceutil ex1.place ex2.place ... combines place files and splits them back up again.\n"
   and anon_arg arg =
     files := arg :: !files in
