@@ -47,7 +47,7 @@ let parse_args () =
       "--nodeNumbers", Arg.Set show_node_numbers,
       "Put the node numbers in where the bootstraps usually go.";
       "--xml", Arg.Set xml,
-      "Write phyloXML with colors.";
+      "Write phyloXML (with colors) for all visualizations.";
       "--width", Arg.Set_float unit_width,
       "Set the number of pixels for a single placement (default setting). Set to 100 or so when making a sing tree.";
       "--totalwidth", Arg.Set_float total_width,

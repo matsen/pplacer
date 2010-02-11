@@ -5,7 +5,8 @@
 open Fam_batteries
 open MapsSets
 
-let version_str = "v0.3"
+let version_str = "v1.0"
+let compatible_versions = [ "v0.3"; "v1.0"; ]
 
 let bifurcation_warning = 
   "Warning: pplacer results make the most sense when the \
@@ -94,21 +95,25 @@ let of_file place_fname =
       (* make sure we have appropriate versions *)
       Scanf.sscanf version_line "# pplacer %s run" 
         (fun file_vers ->
-          if file_vers <> version_str then
-            failwith "incompatible versions of pplacer-related program.");
-            let _, post_invocation = 
-              File_parsing.find_beginning 
-                (str_match invocation_rex) 
-                header_tl in
-            let prefs = Prefs.read post_invocation in
-            (* get the ref tree *)
-            let tree_line,_ = 
-              File_parsing.find_beginning 
-                (str_match reftree_rex) 
-                post_invocation 
-            in
-            (prefs,
-              Newick.of_string (Str.matched_group 1 tree_line))
+          if not (List.mem file_vers compatible_versions) then
+            failwith
+              (Printf.sprintf 
+               "This file is from version %s which is incompatible with the present version of %s"
+               file_vers
+               version_str));
+      let _, post_invocation = 
+        File_parsing.find_beginning 
+          (str_match invocation_rex) 
+          header_tl in
+      let prefs = Prefs.read post_invocation in
+      (* get the ref tree *)
+      let tree_line,_ = 
+        File_parsing.find_beginning 
+          (str_match reftree_rex) 
+          post_invocation 
+      in
+      (prefs,
+        Newick.of_string (Str.matched_group 1 tree_line))
       end
     with
     | Scanf.Scan_failure s ->
