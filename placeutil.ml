@@ -136,5 +136,5 @@ let () =
        not (!print_bounce) then
       print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
     else 
-      List.iter (Placerun_io.to_file invocation) placerun_list
+      List.iter (Placerun_io.to_file invocation ".") placerun_list
     end

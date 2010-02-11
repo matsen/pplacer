@@ -11,6 +11,7 @@ type prefs =
     ref_align_fname : string ref;
     stats_fname : string ref;
     ref_dir : string ref;
+    out_dir : string ref;
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
@@ -36,6 +37,7 @@ type prefs =
     (* other *)
     max_memory : float ref;
     friendly : bool ref;
+    pretend : bool ref;
   }
 
 
@@ -47,6 +49,7 @@ let defaults () =
     ref_align_fname = ref "";
     stats_fname = ref "";
     ref_dir = ref ".";
+    out_dir = ref ".";
     (* tree calc *)
     start_pend = ref 0.1;
     max_pend = ref 2.;
@@ -72,6 +75,7 @@ let defaults () =
     (* other *)
     max_memory = ref 2.;
     friendly = ref true;
+    pretend = ref false;
   }
 
 
@@ -105,8 +109,10 @@ let verb_level      p = !(p.verb_level)
 let write_masked    p = !(p.write_masked)
 let only_write_best p = !(p.only_write_best)
 let ref_dir         p = !(p.ref_dir)
+let out_dir         p = !(p.out_dir)
 let max_memory      p = !(p.max_memory)
 let friendly        p = !(p.friendly)
+let pretend         p = !(p.pretend)
 
 
 (* arguments and preferences *)
@@ -176,6 +182,10 @@ let args prefs =
     "Set a memory ceiling in Gb. Pplacer will try to stay below this level, and will warn if it can't. Default is %g.";
     "--unfriendly", Arg.Clear prefs.friendly,
     "Do not run friend finder pre-analysis.";
+    "--outDir", Arg.Set_string prefs.out_dir,
+    "Specify the directory to write place files to.";
+    "--pretend", Arg.Set prefs.pretend,
+    "Only check out the files then report. Do not run the analysis.";
   ]
 
 (* include a pref here if it should go in the place file *)

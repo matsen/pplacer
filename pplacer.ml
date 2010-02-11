@@ -31,7 +31,7 @@ let () =
     end;
     if (verb_level prefs) >= 1 then 
       Printf.printf 
-        "Running pplacer %s analysis..."
+        "Running pplacer %s analysis...\n"
         Version.version_revision;
     (* initialize the GSL error handler *)
     Gsl_error.init ();
@@ -82,6 +82,48 @@ let () =
                   opt_transitions ref_align 
                   (Gamma.discrete_gamma 
                     (gamma_n_cat prefs) (gamma_alpha prefs)) in
+    (* the like data from the alignment *)
+    let like_aln_map = 
+      Like_stree.like_aln_map_of_data 
+       (Model.seq_type model) ref_align ref_tree 
+    in
+    (* checking the out directory *)
+    let () = begin
+      try
+        if not (Sys.is_directory (out_dir prefs)) then 
+          raise (Sys_error "");
+      with
+      | Sys_error _ -> 
+          failwith
+            (Printf.sprintf "Bad out directory specification: %s" 
+            (out_dir prefs));
+    end
+    in
+    (* pretending *)
+    if pretend prefs then begin
+      let len = Alignment.length ref_align in
+      Printf.printf "found %d reference sequences of length %d.\n"
+        (Alignment.n_seqs ref_align) len;
+      List.iter
+        (fun fname -> 
+          let ch = Fasta_channel.of_fname fname in
+          let (size,_) =
+            Fasta_channel.named_seq_fold
+              (fun (name,seq) (i,s) -> 
+                if StringSet.mem name s then 
+                  raise (Fasta_channel.Duplicate_name name)
+                else if len <> String.length seq then
+                  failwith (name^" does not have the same length as the reference alignment!")
+                else (i+1,StringSet.add name s))
+              (0,StringSet.empty)
+              ch
+          in
+          Printf.printf "%s: %d sequences.\n" fname size;
+          Fasta_channel.close ch;)
+        files;
+      print_endline "everything looks OK.";
+      exit 0;
+    end;
     (* find all the tree locations *)
     let all_locs = IntMapFuns.keys (Gtree.get_bark_map ref_tree) in
     assert(all_locs <> []);
@@ -104,11 +146,6 @@ let () =
     in
     if (verb_level prefs) >= 2 then
       Printf.printf "memory after alloc (gb): %g\n" (Memory.curr_gb ());
-    (* the like data from the alignment *)
-    let like_aln_map = 
-      Like_stree.like_aln_map_of_data 
-       (Model.seq_type model) ref_align ref_tree 
-    in
     (* do the reference tree likelihood calculation. we do so using halfd and
      * one glv from halfp as our utility storage *)
     let util_glv = Glv_arr.get_one halfp in
@@ -162,6 +199,7 @@ let () =
         if fantasy prefs = 0. then
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
+            (out_dir prefs)
             (Placerun.make 
                ref_tree 
                prefs

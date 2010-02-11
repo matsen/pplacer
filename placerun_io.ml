@@ -38,9 +38,10 @@ let write_by_best_loc criterion ch placerun =
   write_unplaced ch unplaced_l;
   write_placed_map ch placed_map
 
-let to_file invocation placerun = 
+let to_file invocation out_dir placerun = 
   Placerun.warn_about_duplicate_names placerun;
-  let ch = open_out ((Placerun.get_name placerun)^".place") in
+  let ch = 
+    open_out (out_dir^"/"^(Placerun.get_name placerun)^".place") in
   let ref_tree = Placerun.get_ref_tree placerun in
   Printf.fprintf ch "# pplacer %s run, %s\n"        
     Version.version_revision (Base.date_time_str ());
