@@ -1,4 +1,4 @@
-(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
  * the actual functionality of placeviz
@@ -154,24 +154,24 @@ let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree place
     (fname_base^".fat.xml") 
 
 
-(* bounce trees *)
+(* edpl trees *)
 
-let bounce_tree white_bg
-      weighting criterion ~mass_width max_bounce decor_ref_tree pr = 
+let edpl_tree white_bg
+      weighting criterion ~mass_width max_edpl decor_ref_tree pr = 
   let gray = if white_bg then Decor.black else Decor.white in
   Decor_gtree.add_decor_by_map
     decor_ref_tree
     (IntMap.map
-      (fun (mass, bounce) -> 
+      (fun (mass, edpl) -> 
         [ width_of_mass mass_width mass;
-          if bounce <= max_bounce then
-            Decor.color_avg (bounce /. max_bounce) Decor.red gray 
+          if edpl <= max_edpl then
+            Decor.color_avg (edpl /. max_edpl) Decor.red gray 
           else
             Decor.orange ])
-      (Bounce.weighted_bounce_map_of_pr weighting criterion pr))
+      (Edpl.weighted_edpl_map_of_pr weighting criterion pr))
 
-let write_bounce_tree white_bg weighting criterion ~mass_width max_bounce fname_base decor_ref_tree placerun = 
+let write_edpl_tree white_bg weighting criterion ~mass_width max_edpl fname_base decor_ref_tree placerun = 
   Phyloxml.named_tree_to_file
-    (fname_base^".bounce")
-    (bounce_tree white_bg weighting criterion ~mass_width max_bounce decor_ref_tree placerun)
-    (fname_base^".bounce.xml") 
+    (fname_base^".edpl")
+    (edpl_tree white_bg weighting criterion ~mass_width max_edpl decor_ref_tree placerun)
+    (fname_base^".edpl.xml") 

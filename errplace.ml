@@ -1,4 +1,4 @@
-(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
  * to calculate the errors of placement given a correct tree
@@ -11,14 +11,12 @@
 open Fam_batteries
 open MapsSets
 
-let version_str = "v0.3"
-
 let correct_tree_fname = ref ""
 
 let parse_args () =
   let files  = ref [] in
   let usage =
-    "errplace "^version_str^"\nerrplace -c correct_tree ex.place \
+    "errplace \nerrplace -c correct_tree ex.place \
    calculates errors from the .place file based on the supplied correct tree.\
    We assume that the correct tree is bifurcating and rooted at a trifurcating \
    internal node."

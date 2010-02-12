@@ -1,4 +1,4 @@
-(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *)
 
@@ -11,7 +11,7 @@ and weighted = ref true
 and write_sing = ref false
 and write_tog = ref false
 and write_loc = ref false
-and max_bounce = ref 0.
+and max_edpl = ref 0.
 and white_bg = ref false
 and bogus_bl = ref 0.1
 and print_tree_info = ref false
@@ -38,8 +38,8 @@ let parse_args () =
       "Together placement: make a tree with each of the fragments represented as a pendant edge. Not recommended for more than 1000 placements.";
       "--loc", Arg.Set write_loc,
       "Write a fasta file sorted by location.";
-      "--bounce", Arg.Set_float max_bounce,
-      "Write out a bounce tree such that the given bounce is the maximum.";
+      "--edpl", Arg.Set_float max_edpl,
+      "Write out a edpl tree such that the given edpl is the maximum.";
       "--whitebg", Arg.Set white_bg,
       "Make colors appropriate for a white background.";
       "--numBl", Arg.Set_float bogus_bl,
@@ -120,9 +120,9 @@ let () =
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt fname_base decor_ref_tree placed_map;
-        if !max_bounce <> 0. then
-          Placeviz_core.write_bounce_tree !white_bg weighting 
-            criterion ~mass_width !max_bounce fname_base decor_ref_tree placerun;
+        if !max_edpl <> 0. then
+          Placeviz_core.write_edpl_tree !white_bg weighting 
+            criterion ~mass_width !max_edpl fname_base decor_ref_tree placerun;
         if !write_sing then
           Placeviz_core.write_sing_file 
             criterion

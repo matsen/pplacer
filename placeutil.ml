@@ -1,4 +1,4 @@
-(* pplacer v0.3. Copyright (C) 2009  Frederick A Matsen.
+(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  *)
@@ -7,16 +7,16 @@ open Fam_batteries
 open MapsSets
 
 let ml_cutoff_off_val = -.max_float
-let bounce_cutoff_off_val = -.max_float
+let edpl_cutoff_off_val = -.max_float
 let re_sep_fname_off_val = ""
 
 let out_prefix = ref ""
 let verbose = ref false
 let ml_cutoff = ref ml_cutoff_off_val
-let bounce_cutoff = ref bounce_cutoff_off_val
+let edpl_cutoff = ref edpl_cutoff_off_val
 let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
-let print_bounce = ref false
+let print_edpl = ref false
 
 let is_on opt_value off_val = !opt_value <> off_val
 
@@ -28,24 +28,24 @@ let parse_args () =
     "Verbose output."
   and ml_cutoff_opt = "-l", Arg.Set_float ml_cutoff,
     "ML separation cutoff."
-  and bounce_cutoff_opt = "-b", Arg.Set_float bounce_cutoff,
-    "Bounce distance separation cutoff."
+  and edpl_cutoff_opt = "-b", Arg.Set_float edpl_cutoff,
+    "EDPL distance separation cutoff."
   and re_sep_fname_opt = "--reSepFile", Arg.Set_string re_sep_fname,
     "File name for the regular expression separation file."
   and warn_multiple_opt = "--noWarnMultipleRe", Arg.Clear warn_multiple,
     "Warn if a read name matches several regular expressions."
-  and print_bounce_opt = "--printBounce", Arg.Set print_bounce,
-    "Print out a table of bounce values for each placement."
+  and print_edpl_opt = "--printEDPL", Arg.Set print_edpl,
+    "Print out a table of edpl values for each placement."
   in
   let usage =
     "placeutil "^Version.version_revision
       ^"\nplaceutil ex1.place ex2.place ... combines place files and splits them back up again.\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; bounce_cutoff_opt; re_sep_fname_opt; warn_multiple_opt; print_bounce_opt ] in
+  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; edpl_cutoff_opt; re_sep_fname_opt; warn_multiple_opt; print_edpl_opt ] in
   Arg.parse args anon_arg usage;
   if (is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0.) ||
-     (is_on bounce_cutoff bounce_cutoff_off_val && !bounce_cutoff < 0.) then
+     (is_on edpl_cutoff edpl_cutoff_off_val && !edpl_cutoff < 0.) then
     failwith "negative cutoff value?";
   List.rev !files
 
@@ -82,8 +82,8 @@ let () =
         parsed
     in
     (*
-    if !print_bounce then begin
-      Placeutil_core.print_bounce_list combined
+    if !print_edpl then begin
+      Placeutil_core.print_edpl_list combined
     end;
       *)
     let re_split_list = 
@@ -100,9 +100,9 @@ let () =
         Placerun.partition_by_ml (!ml_cutoff) placerun
       else [placerun]
     in 
-    let split_by_bounce placerun = 
-      if is_on bounce_cutoff bounce_cutoff_off_val then
-        Placeutil_core.partition_by_bounce Placement.ml_ratio (!bounce_cutoff) placerun
+    let split_by_edpl placerun = 
+      if is_on edpl_cutoff edpl_cutoff_off_val then
+        Placeutil_core.partition_by_edpl Placement.ml_ratio (!edpl_cutoff) placerun
       else [placerun]
     in 
     let split_by_re placerun = 
@@ -126,14 +126,14 @@ let () =
         (fun f a -> f a)
         (List.map 
           flat_split 
-          [split_by_bounce; split_by_ml; split_by_re])
+          [split_by_edpl; split_by_ml; split_by_re])
         [combined]
     in
     (* "main" *)
     let invocation = String.concat " " (Array.to_list Sys.argv) in
     if List.length fnames <= 1 && 
        List.length placerun_list <= 1 && 
-       not (!print_bounce) then
+       not (!print_edpl) then
       print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
     else 
       List.iter (Placerun_io.to_file invocation ".") placerun_list
