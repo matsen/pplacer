@@ -20,7 +20,6 @@ let parse_args () =
   (List.rev !files, prefs)
 
 
-    (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
     let (files, prefs) = parse_args () in 
@@ -136,9 +135,8 @@ let () =
       [darr; parr; halfd; halfp; ];
     let mem_usage = ref 0. in
     (* analyze query sequences *)
-    let collect ret_code query_fname =
-      try
-        let frc = 0 in
+    List.iter 
+      (fun query_fname ->
         let query_bname = 
           Filename.basename (Filename.chop_extension query_fname) in
         let prior = 
@@ -161,15 +159,13 @@ let () =
                ref_tree 
                prefs
                query_bname 
-               (Array.to_list results));
-        if frc = 0 && ret_code = 1 then 0 else ret_code
-      with Sys_error msg -> prerr_endline msg; 2 in
-    let retVal = List.fold_left collect 1 files in
+               (Array.to_list results)))
+      files;
     if verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
       Printf.printf "maximal observed memory usage (gb): %g\n" 
                     (!mem_usage);
       Common_base.print_n_compactions ();
     end;
-    exit retVal
+    exit 0
   end
