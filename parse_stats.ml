@@ -179,10 +179,10 @@ let rec find_version_line rex = function
       else find_version_line rex tl
   | [] -> None
 
-let parse_stats prefs = 
+let parse_stats ref_dir_complete prefs = 
   let lines = 
     File_parsing.string_list_of_file 
-      ((Prefs.ref_dir prefs)^"/"^(Prefs.stats_fname prefs)) in
+      (ref_dir_complete^(Prefs.stats_fname prefs)) in
   try
     match find_version_line raxml_header_rex lines with
     | Some v -> parse_raxml_info v lines prefs

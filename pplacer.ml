@@ -34,18 +34,25 @@ let () =
         Version.version_revision;
     (* initialize the GSL error handler *)
     Gsl_error.init ();
-    (* check that the directories exist *)
-    Check.directory (ref_dir prefs);
+    (* check that the directories exist and get a good in path *)
     Check.directory (out_dir prefs);
+    let ref_dir_complete =
+      match ref_dir prefs with
+      | s when s = "" -> ""
+      | s ->
+          Check.directory s;
+          if s.[(String.length s)-1] = '/' then s
+          else s^"/"
+    in
     (* load ref tree and alignment *)
     let ref_tree = match tree_fname prefs with
     | s when s = "" -> failwith "please specify a reference tree.";
-    | s -> Newick.of_file ((ref_dir prefs)^"/"^s)
+    | s -> Newick.of_file (ref_dir_complete^s)
     and ref_align = match ref_align_fname prefs with
     | s when s = "" -> failwith "please specify a reference alignment."
     | s -> 
         Alignment.uppercase 
-          (Alignment.read_align ((ref_dir prefs)^"/"^s))
+          (Alignment.read_align (ref_dir_complete^s))
     in
     if (verb_level prefs) > 0 && 
        not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
@@ -66,7 +73,7 @@ let () =
           "NOTE: you have not specified a stats file. I'm using the %s model.\n"
           (model_name prefs);
         None
-    | _ -> Parse_stats.parse_stats prefs
+    | _ -> Parse_stats.parse_stats ref_dir_complete prefs
     in
     (* build the model *)
     if Alignment_funs.is_nuc_align ref_align && (model_name prefs) <> "GTR" then

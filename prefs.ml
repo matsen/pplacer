@@ -48,7 +48,7 @@ let defaults () =
     tree_fname = ref "";
     ref_align_fname = ref "";
     stats_fname = ref "";
-    ref_dir = ref ".";
+    ref_dir = ref ""; (* empty is the correct default; it gets some special handling *)
     out_dir = ref ".";
     (* tree calc *)
     start_pend = ref 0.1;
