@@ -145,10 +145,10 @@ let pplacer_core
      * it would be silly to have setting functions for each edge.  *)
     let dist_edge = Glv_edge.make model query_glv (start_pend prefs)
     and prox_edge = Glv_edge.make model query_glv (start_pend prefs)
-    and query_edge = Glv_edge.make model query_glv (start_pend prefs)
+    and pend_edge = Glv_edge.make model query_glv (start_pend prefs)
     in
     (* get the results from the h_map *)
-    let q_evolved = Glv_edge.get_evolv query_edge in
+    let q_evolved = Glv_edge.get_evolv pend_edge in
     (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
@@ -174,7 +174,7 @@ let pplacer_core
     let tt = 
       Three_tax.make 
         model
-        ~dist:dist_edge ~prox:prox_edge ~query:query_edge
+        ~dist:dist_edge ~prox:prox_edge ~pend:pend_edge
     in
     (* set up the function which gives placements by location *)
     let get_friend_place = 
@@ -200,7 +200,7 @@ let pplacer_core
           len
       in
       (* still the same glv for query, but have to set branch length *)
-      Glv_edge.set_bl model query_edge pendant;
+      Glv_edge.set_bl model pend_edge pendant;
       (* need to set the glv and branch length for dist and prox *)
       set_edge dist_edge darr_masked distal;
       set_edge prox_edge parr_masked (cut_bl -. distal)

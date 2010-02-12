@@ -15,19 +15,19 @@ type three_tax = {
   model  : Model.model;
   prox   : Glv_edge.glv_edge;      (* the proximal glv *)
   dist   : Glv_edge.glv_edge;      (* the distal glv *)
-  query  : Glv_edge.glv_edge;      (* the query glv *)
+  pend  : Glv_edge.glv_edge;      (* the pendant, i.e. query glv *)
 }
 
-let get_query_bl tt = Glv_edge.get_bl tt.query
+let get_pend_bl tt = Glv_edge.get_bl tt.pend
 let get_dist_bl tt = Glv_edge.get_bl tt.dist
 let get_prox_bl tt = Glv_edge.get_bl tt.prox
 let get_cut_bl tt = (get_dist_bl tt) +. (get_prox_bl tt)
 
-let make model ~prox ~dist ~query = 
+let make model ~prox ~dist ~pend = 
   { model  = model;
     prox   = prox;
     dist   = dist;
-    query  = query;
+    pend  = pend;
   }
 
 let log_like tt = 
@@ -35,10 +35,10 @@ let log_like tt =
     tt.model 
     (Glv_edge.get_evolv tt.prox) 
     (Glv_edge.get_evolv tt.dist)
-    (Glv_edge.get_evolv tt.query) 
+    (Glv_edge.get_evolv tt.pend) 
     
-let set_query_bl tt query_bl = 
-  Glv_edge.set_bl tt.model tt.query query_bl
+let set_pend_bl tt pend_bl = 
+  Glv_edge.set_bl tt.model tt.pend pend_bl
 
 let set_dist_bl tt dist_bl = 
   let prox_bl = (get_cut_bl tt) -. dist_bl in
@@ -56,33 +56,33 @@ let optimize_something tolerance set_fun start_value max_value tt =
   Minimization.brent 
       opt_fun start_value 0. max_value tolerance
 
-let optimize_query_bl tolerance max_value tt = 
+let optimize_pend_bl tolerance max_value tt = 
   optimize_something 
-    tolerance (set_query_bl tt) (get_query_bl tt) max_value tt 
+    tolerance (set_pend_bl tt) (get_pend_bl tt) max_value tt 
 
 let optimize_dist_bl tolerance tt = 
   optimize_something 
     tolerance (set_dist_bl tt) (get_dist_bl tt) (get_cut_bl tt) tt 
 
-let optimize tolerance max_query_bl max_iter tt = 
-  let rec aux which_step prev_query prev_dist = 
+let optimize tolerance max_pend_bl max_iter tt = 
+  let rec aux which_step prev_pend prev_dist = 
     if which_step > max_iter then
       raise Minimization.ExceededMaxIter;
-    let curr_query = optimize_query_bl tolerance max_query_bl tt
+    let curr_pend = optimize_pend_bl tolerance max_pend_bl tt
     and curr_dist = optimize_dist_bl tolerance tt in
-    if (abs_float (prev_query -. curr_query) > tolerance ||
+    if (abs_float (prev_pend -. curr_pend) > tolerance ||
         abs_float (prev_dist -. curr_dist) > tolerance)
-      then aux (which_step+1) curr_query curr_dist
+      then aux (which_step+1) curr_pend curr_dist
       else ()
   in
   n_like_calls := 0;
-  let () = aux 1 (get_query_bl tt) (get_dist_bl tt) in
+  let () = aux 1 (get_pend_bl tt) (get_dist_bl tt) in
   !n_like_calls
 
-let get_results tt = (log_like tt, get_query_bl tt, get_dist_bl tt)
+let get_results tt = (log_like tt, get_pend_bl tt, get_dist_bl tt)
 
 let copy_bls ~src ~dest = 
-  set_query_bl dest (get_query_bl src);
+  set_pend_bl dest (get_pend_bl src);
   set_dist_bl dest (get_dist_bl src)
 
 (* write out the likelihood surface, with base_ll discounted. this is what
@@ -99,7 +99,7 @@ let write_like_surf prior_fun max_pend tt fname n_samples =
     set_dist_bl tt (dist_incr *. (float_and_half i));
     for j=0 to n_samples-1 do
       let pend_bl = pend_incr *. (float_and_half j) in
-      set_query_bl tt pend_bl;
+      set_pend_bl tt pend_bl;
       Printf.fprintf ch "%g\t"
         ((exp ((log_like tt) -. base_ll)) *. (prior_fun pend_bl));
     done;
@@ -110,24 +110,24 @@ let write_like_surf prior_fun max_pend tt fname n_samples =
 (* find an appropriate upper limit for pendant branch length integration. if we
  * come up with a resonable upper limit then we get better results than
  * integrating out to max_pend. 
- * this function uses the current query branch length and moves right in
+ * this function uses the current pend branch length and moves right in
  * increments of the current branch length, stopping when the ll function drops
  * below 1e-10*orig_ll.
- * note 1: this does change the query_bl.
+ * note 1: this does change the pend_bl.
  * note 2: this assumes that the likelihood function is monotonic in the pendant
  * branch length.
  *)
 let find_upper_limit max_pend orig_ll tt = 
-  let orig_query_bl = get_query_bl tt 
+  let orig_pend_bl = get_pend_bl tt 
   and min_ll = 1e-10 *. orig_ll
   in
-  let rec aux next_query_bl = 
-    set_query_bl tt next_query_bl;
-    if min_ll > log_like tt then get_query_bl tt
-    else if next_query_bl > max_pend then max_pend
-    else aux (orig_query_bl +. next_query_bl)
+  let rec aux next_pend_bl = 
+    set_pend_bl tt next_pend_bl;
+    if min_ll > log_like tt then get_pend_bl tt
+    else if next_pend_bl > max_pend then max_pend
+    else aux (orig_pend_bl +. next_pend_bl)
   in
-  aux (get_query_bl tt)
+  aux (get_pend_bl tt)
 
 (* the idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
@@ -152,7 +152,7 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
             set_dist_bl tt dist_bl;
             Integration.value_integrate 
               (fun pend_bl -> 
-                set_query_bl tt pend_bl;
+                set_pend_bl tt pend_bl;
                 (exp ((log_like tt) -. base_ll)) 
                   *. (prior_fun pend_bl))
               0. upper_limit ~abs_err ~rel_err)
