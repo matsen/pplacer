@@ -35,23 +35,18 @@ let () =
         Version.version_revision;
     (* initialize the GSL error handler *)
     Gsl_error.init ();
-    (* append on a slash to the dir if it's not there *)
-    let ref_dir_complete = 
-      match ref_dir prefs with
-      | s when s = "" -> ""
-      | s -> 
-          if s.[(String.length s)-1] = '/' then s
-          else s^"/"
-    in
+    (* check that the directories exist *)
+    Check.directory (ref_dir prefs);
+    Check.directory (out_dir prefs);
     (* load ref tree and alignment *)
     let ref_tree = match tree_fname prefs with
     | s when s = "" -> failwith "please specify a reference tree.";
-    | s -> Newick.of_file (ref_dir_complete^s)
+    | s -> Newick.of_file ((ref_dir prefs)^"/"^s)
     and ref_align = match ref_align_fname prefs with
     | s when s = "" -> failwith "please specify a reference alignment."
     | s -> 
         Alignment.uppercase 
-          (Alignment.read_align (ref_dir_complete^s))
+          (Alignment.read_align ((ref_dir prefs)^"/"^s))
     in
     if (verb_level prefs) > 0 && 
        not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
@@ -72,7 +67,7 @@ let () =
           "NOTE: you have not specified a stats file. I'm using the %s model.\n"
           (model_name prefs);
         None
-    | _ -> Parse_stats.parse_stats ref_dir_complete prefs
+    | _ -> Parse_stats.parse_stats prefs
     in
     (* build the model *)
     if Alignment_funs.is_nuc_align ref_align && (model_name prefs) <> "GTR" then
@@ -87,28 +82,16 @@ let () =
       Like_stree.like_aln_map_of_data 
        (Model.seq_type model) ref_align ref_tree 
     in
-    (* checking the out directory *)
-    let () = begin
-      try
-        if not (Sys.is_directory (out_dir prefs)) then 
-          raise (Sys_error "");
-      with
-      | Sys_error _ -> 
-          failwith
-            (Printf.sprintf "Bad out directory specification: %s" 
-            (out_dir prefs));
-    end
-    in
     (* pretending *)
     if pretend prefs then begin
-      Pretend.check model ref_align files;
+      Check.pretend model ref_align files;
       print_endline "everything looks OK.";
       exit 0;
     end;
     (* find all the tree locations *)
     let all_locs = IntMapFuns.keys (Gtree.get_bark_map ref_tree) in
     assert(all_locs <> []);
-    (* warning: only good if locations are as above. *)
+    (* the last element in the list is the root, and we don't want to place there *)
     let locs = ListFuns.remove_last all_locs in
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
@@ -147,17 +130,10 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
-    print_endline "pulling exponents";
+    (* pull exponents *)
     List.iter 
       Glv_arr.perhaps_pull_exponent 
       [darr; parr; halfd; halfp; ];
-    print_endline "done";
-    (*
-    let (oned,onep) = (Glv_arr.get_one halfd,Glv_arr.get_one halfp) in
-    if (verb_level prefs) >= 1 then
-      Printf.printf "Reference tree log likelihood: %g\n"
-        (Glv.log_like2_statd model oned onep);
-    *)
     let mem_usage = ref 0. in
     (* analyze query sequences *)
     let collect ret_code query_fname =
@@ -167,9 +143,9 @@ let () =
           Filename.basename (Filename.chop_extension query_fname) in
         let prior = 
           if uniform_prior prefs then Core.Uniform_prior
-          else Core.Exponential_prior (
+          else Core.Exponential_prior 
             (* exponential with mean = average branch length *)
-            (Gtree.tree_length ref_tree) /. 
+            ((Gtree.tree_length ref_tree) /. 
               (float_of_int (Gtree.n_edges ref_tree))) 
         in
         let results = 

@@ -15,7 +15,7 @@ type three_tax = {
   model  : Model.model;
   prox   : Glv_edge.glv_edge;      (* the proximal glv *)
   dist   : Glv_edge.glv_edge;      (* the distal glv *)
-  pend  : Glv_edge.glv_edge;      (* the pendant, i.e. query glv *)
+  pend   : Glv_edge.glv_edge;      (* the pendant, i.e. query glv *)
 }
 
 let get_pend_bl tt = Glv_edge.get_bl tt.pend
