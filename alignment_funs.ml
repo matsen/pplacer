@@ -7,16 +7,17 @@
 open MapsSets
 open Fam_batteries
 
-(* funny old code. *)
 let check_for_repeats name_arr = 
-  let _ = 
-    Array.fold_left (
-      fun found_list name ->
-        if List.mem name found_list then
-          failwith("repeated taxon name: "^name)
-        else
-          name::found_list
-    ) [] name_arr in
+  let _ =
+    Array.fold_left
+      (fun s name -> 
+        if StringSet.mem name s then 
+          failwith("repeated taxon name in alignment: "^name)
+        else 
+          StringSet.add name s)
+      StringSet.empty
+      name_arr
+  in
   ()
 
 (* check to make sure that each site contains a nucleotide type symbol *)

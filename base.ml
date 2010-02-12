@@ -175,7 +175,6 @@ let arr_normalized_prob fa =
   let sum = Array.fold_left ( +. ) 0. fa in
   Array.map (fun x -> x /. sum) fa
 
-
 (* ll_normalized_prob :
  * ll_list is a list of log likelihoods. this function gives the normalized
  * probabilities, i.e. exponentiate then our_like / (sum other_likes) 
@@ -190,7 +189,6 @@ let ll_normalized_prob ll_list =
             (fun other_ll -> exp (other_ll -. log_like)) 
             ll_list)))
     ll_list
-
 
 let time_fun f = 
   let prev = Sys.time () in

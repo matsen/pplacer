@@ -101,26 +101,7 @@ let () =
     in
     (* pretending *)
     if pretend prefs then begin
-      let len = Alignment.length ref_align in
-      Printf.printf "found %d reference sequences of length %d.\n"
-        (Alignment.n_seqs ref_align) len;
-      List.iter
-        (fun fname -> 
-          let ch = Fasta_channel.of_fname fname in
-          let (size,_) =
-            Fasta_channel.named_seq_fold
-              (fun (name,seq) (i,s) -> 
-                if StringSet.mem name s then 
-                  raise (Fasta_channel.Duplicate_name name)
-                else if len <> String.length seq then
-                  failwith (name^" does not have the same length as the reference alignment!")
-                else (i+1,StringSet.add name s))
-              (0,StringSet.empty)
-              ch
-          in
-          Printf.printf "%s: %d sequences.\n" fname size;
-          Fasta_channel.close ch;)
-        files;
+      Pretend.check model ref_align files;
       print_endline "everything looks OK.";
       exit 0;
     end;

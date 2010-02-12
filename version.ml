@@ -4,7 +4,7 @@
 
 let chop_revision s = Str.replace_first (Str.regexp "\\.r[0-9]+") "" s
 
-let version = "v0.3.r001"
+let version_revision = "v0.3.r001"
 let version = chop_revision version_revision
 
 
