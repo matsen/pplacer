@@ -19,6 +19,7 @@ and show_node_numbers = ref false
 and xml = ref false
 and unit_width = ref 1.
 and total_width = ref 0.
+and out_dir = ref "."
 
 let parse_args () =
   let files  = ref [] in
@@ -52,6 +53,8 @@ let parse_args () =
       "Set the number of pixels for a single placement (default setting). Set to 100 or so when making a sing tree.";
       "--totalwidth", Arg.Set_float total_width,
       "Set the number of pixels for all of the mass together. Setting this changes to all-together mode.";
+      "--outDir", Arg.Set_string out_dir,
+      "Specify the directory to write place files to.";
   ] in
   Arg.parse args anon_arg usage;
   List.rev !files
@@ -98,9 +101,11 @@ let () =
             unplaced_seqs;
         end;
         let fname_base = 
-          Filename.basename (Placerun_io.chop_place_extension fname)
+          (!out_dir)^"/"^
+            (Filename.basename 
+              (Placerun_io.chop_place_extension fname))
         in
-        (* set up the coefficiant for the width *)
+        (* set up the coefficient for the width *)
         let n_placed = 
           (List.length pqueries) - (List.length unplaced_seqs) in
         let mass_width = 

@@ -136,11 +136,11 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
+    let mem_usage = ref 0. in
     (* pull exponents *)
     List.iter 
       Glv_arr.perhaps_pull_exponent 
       [darr; parr; halfd; halfp; ];
-    let mem_usage = ref 0. in
     (* analyze query sequences *)
     List.iter 
       (fun query_fname ->

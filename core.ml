@@ -86,11 +86,6 @@ let pplacer_core
      * the sequences used for the fantasy baseball procedure *)
     let query_seq = String.uppercase pre_query_seq in
     update_usage ();
-    if Memory.ceiling_compaction (max_memory prefs) then 
-      if (verb_level prefs) >= 1 then begin
-        print_endline "performed garbage compaction.";
-        Memory.check_ceiling (max_memory prefs);
-      end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
     if (verb_level prefs) >= 1 then begin
