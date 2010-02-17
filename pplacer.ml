@@ -103,7 +103,7 @@ let () =
     let curr_time = Sys.time () in
     (* calculate like on ref tree *)
     if (verb_level prefs) >= 2 then
-      Printf.printf "memory before alloc (gb): %g\n" (Memory.curr_gb ());
+      Printf.printf "memory before reference tree calculation (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 1 then begin
       print_string "Caching likelihood information on reference tree... ";
       flush_all ()
@@ -114,8 +114,6 @@ let () =
     and halfd = Glv_arr.mimic darr
     and halfp = Glv_arr.mimic darr
     in
-    if (verb_level prefs) >= 2 then
-      Printf.printf "memory after alloc (gb): %g\n" (Memory.curr_gb ());
     (* do the reference tree likelihood calculation. we do so using halfd and
      * one glv from halfp as our utility storage *)
     let util_glv = Glv_arr.get_one halfp in
@@ -124,6 +122,8 @@ let () =
       ~util_glv_arr:halfd;
     if (verb_level prefs) >= 1 then
       print_endline "done.";
+    if (verb_level prefs) >= 2 then
+      Printf.printf "memory after reference tree calculation (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
     if (verb_level prefs) >= 1 then begin
     (* baseball calculation *)
