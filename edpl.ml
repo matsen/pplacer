@@ -35,7 +35,7 @@ let edpl_of_pquery criterion t pq =
   (raw_edpl_of_pquery criterion t pq) /. (Gtree.tree_length t)
 
 (* weight the edpl list by the mass. will throw an out of bounds if the top
- * id is not the biggest in the tree. *)
+ * id is not the biggest id in the tree. *)
 let weighted_edpl_map weighting criterion t pquery_list = 
   let top_id = Gtree.top_id t in
   let mass_a = Array.make (1+top_id) 0.

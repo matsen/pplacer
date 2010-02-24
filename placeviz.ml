@@ -63,6 +63,7 @@ let parse_args () =
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
+    let files = parse_args () in if files = [] then exit 0;
     (* set up params *)
     let criterion = 
       if !use_pp then Placement.post_prob
@@ -71,7 +72,6 @@ let () =
       if !weighted then Mass_map.Weighted
       else Mass_map.Unweighted
     in
-    let files = parse_args () in if files = [] then exit 0;
     let tree_fmt = 
       if !xml then Placeviz_core.Phyloxml 
       else Placeviz_core.Newick in
@@ -103,7 +103,8 @@ let () =
         let fname_base = 
           (!out_dir)^"/"^
             (Filename.basename 
-              (Placerun_io.chop_place_extension fname))
+              (Placerun_io.chop_place_extension fname))^
+            (if !use_pp then ".ML" else ".PP")
         in
         (* set up the coefficient for the width *)
         let n_placed = 
@@ -140,7 +141,7 @@ let () =
       with 
       | Sys_error msg -> prerr_endline msg; 2 
       | Placement.No_PP -> 
-          failwith "Posterior probability use requested, but some or all placements were calculated without pp."
+          failwith "Posterior probability use requested, but some or all placements were calculated without PP."
     in
     exit (List.fold_left collect 1 files)
   end
