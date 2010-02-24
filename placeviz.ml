@@ -104,7 +104,7 @@ let () =
           (!out_dir)^"/"^
             (Filename.basename 
               (Placerun_io.chop_place_extension fname))^
-            (if !use_pp then ".ML" else ".PP")
+            (if !use_pp then ".PP" else ".ML")
         in
         (* set up the coefficient for the width *)
         let n_placed = 

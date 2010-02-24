@@ -32,9 +32,19 @@ let seq p        = p.seq
 let place_list p = p.place_list
 
 let opt_best_something thing criterion pq =
-  assert(is_decreasing criterion (place_list pq));
   match place_list pq with
-  | best::_ -> Some (thing best)
+  | h::t -> 
+      let best = ref h 
+      and best_val = ref (criterion h) in
+      List.iter
+        (fun x ->
+          let v = criterion h in
+          if v > !best_val then begin
+            best := x;
+            best_val := v;
+          end;)
+        t;
+      Some (thing (!best))
   | [] -> None 
 
 let opt_best_place criterion pq = 
