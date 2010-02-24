@@ -125,7 +125,7 @@ let () =
           weighting criterion mass_width fname_base decor_ref_tree placerun;
         if !write_tog then
           Placeviz_core.write_tog_file 
-            tree_fmt fname_base decor_ref_tree placed_map;
+            tree_fmt criterion fname_base decor_ref_tree placed_map;
         if !max_edpl <> 0. then
           Placeviz_core.write_edpl_tree !white_bg weighting 
             criterion ~mass_width !max_edpl fname_base decor_ref_tree placerun;

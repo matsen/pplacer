@@ -64,12 +64,12 @@ let tree_by_map f ref_tree placed_map =
     (IntMap.mapi f placed_map)
 
 (* tog tree *)
-let tog_tree ref_tree placed_map = 
+let tog_tree criterion ref_tree placed_map = 
   tree_by_map
     (fun _ ->
       List.map
         (fun pquery ->
-          let best = Pquery.best_place Placement.ml_ratio pquery in
+          let best = Pquery.best_place criterion pquery in
           (Placement.distal_bl best,
           make_zero_leaf 
             [ Decor.red ]
@@ -79,11 +79,11 @@ let tog_tree ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_tog_file tree_fmt fname_base ref_tree placed_map = 
+let write_tog_file tree_fmt criterion fname_base ref_tree placed_map = 
   trees_to_file 
     tree_fmt
     (fname_base^".tog") 
-    [tog_tree ref_tree placed_map]
+    [tog_tree criterion ref_tree placed_map]
         
 (* num tree *)
 let num_tree bogus_bl ref_tree placed_map = 
