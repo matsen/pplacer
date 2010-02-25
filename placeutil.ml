@@ -6,46 +6,49 @@
 open Fam_batteries
 open MapsSets
 
-let ml_cutoff_off_val = -.max_float
-let edpl_cutoff_off_val = -.max_float
+let cutoff_off_val = -.max_float
 let re_sep_fname_off_val = ""
+
+let is_on opt_value off_val = !opt_value <> off_val
 
 let out_prefix = ref ""
 let verbose = ref false
-let ml_cutoff = ref ml_cutoff_off_val
-let edpl_cutoff = ref edpl_cutoff_off_val
+let use_pp = ref false
+let use_edpl = ref false
+let cutoff = ref cutoff_off_val
 let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
 let print_edpl = ref false
 
-let is_on opt_value off_val = !opt_value <> off_val
-
-let parse_args () =
+let parse_args () = 
   let files  = ref [] in
-  let out_prefix_opt = "-o", Arg.Set_string out_prefix,
-    "Set the output prefix. Required if there are two or more input files."
-  and verbose_opt = "-v", Arg.Set verbose,
-    "Verbose output."
-  and ml_cutoff_opt = "-l", Arg.Set_float ml_cutoff,
-    "ML separation cutoff."
-  and edpl_cutoff_opt = "-b", Arg.Set_float edpl_cutoff,
-    "EDPL distance separation cutoff."
-  and re_sep_fname_opt = "--reSepFile", Arg.Set_string re_sep_fname,
-    "File name for the regular expression separation file."
-  and warn_multiple_opt = "--noWarnMultipleRe", Arg.Clear warn_multiple,
-    "Warn if a read name matches several regular expressions."
-  and print_edpl_opt = "--printEDPL", Arg.Set print_edpl,
-    "Print out a table of edpl values for each placement."
+  let args = 
+   [
+     "-o", Arg.Set_string out_prefix,
+     "Set the output prefix. Required if there are two or more input files.";
+     "-v", Arg.Set verbose,
+     "Verbose output.";
+     "-p", Arg.Set use_pp,
+     "Use posterior probability for our criteria.";
+     "-c", Arg.Set_float cutoff,
+     "Specify separation cutoff value. Perform cutoff if this is set to some value.";
+     "--edpl", Arg.Set use_edpl,
+     "Use the EDPL for cutoff.";
+     "--reSepFile", Arg.Set_string re_sep_fname,
+     "File name for the regular expression separation file.";
+     "--noWarnMultipleRe", Arg.Clear warn_multiple,
+     "Warn if a read name matches several regular expressions.";
+     "--printEDPL", Arg.Set print_edpl,
+     "Print out a table of edpl values for each placement.";
+   ]
   in
   let usage =
     "placeutil "^Version.version_revision
-      ^"\nplaceutil ex1.place ex2.place ... combines place files and splits them back up again.\n"
+      ^"\nplaceutil ex1.place ex2.place ... combines place files and (given some options) splits them back up again.\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = [out_prefix_opt; verbose_opt; ml_cutoff_opt; edpl_cutoff_opt; re_sep_fname_opt; warn_multiple_opt; print_edpl_opt ] in
   Arg.parse args anon_arg usage;
-  if (is_on ml_cutoff ml_cutoff_off_val && !ml_cutoff < 0.) ||
-     (is_on edpl_cutoff edpl_cutoff_off_val && !edpl_cutoff < 0.) then
+  if is_on cutoff cutoff_off_val && (!cutoff) < 0. then
     failwith "negative cutoff value?";
   List.rev !files
 
@@ -67,6 +70,10 @@ let () =
         fnames
     end;
     if parsed = [] then exit 0;
+    let criterion = 
+      if !use_pp then Placement.post_prob
+      else Placement.ml_ratio
+    in
     (* make the out prefix *)
     let out_prefix_complete = 
       (if !out_prefix <> "" then !out_prefix
@@ -81,11 +88,9 @@ let () =
         (Placerun.combine out_prefix_complete) 
         parsed
     in
-    (*
     if !print_edpl then begin
-      Placeutil_core.print_edpl_list combined
+      Placeutil_core.write_edpl_list criterion stdout combined
     end;
-      *)
     let re_split_list = 
       if is_on re_sep_fname re_sep_fname_off_val then
         Placeutil_core.read_re_split_file (!re_sep_fname)
@@ -95,14 +100,16 @@ let () =
     if List.length re_split_list = 1 then
       failwith "I only found one regular expression split. If you don't want to split by regular expression, just don't use the option.";
     (* ways to split *)
-    let split_by_ml placerun = 
-      if is_on ml_cutoff ml_cutoff_off_val then
-        Placerun.partition_by_ml (!ml_cutoff) placerun
-      else [placerun]
-    in 
-    let split_by_edpl placerun = 
-      if is_on edpl_cutoff edpl_cutoff_off_val then
-        Placeutil_core.partition_by_edpl Placement.ml_ratio (!edpl_cutoff) placerun
+    let split_by_cutoff placerun = 
+      if is_on cutoff cutoff_off_val then
+        Placeutil_core.partition_by_cutoff 
+          ((if !use_pp then ".PP" else ".ML")^
+            (if !use_edpl then ".edpl" else "")^".")
+          (if !use_pp then Placement.post_prob 
+           else Placement.ml_ratio)
+          (!use_edpl)
+          (!cutoff)
+          placerun
       else [placerun]
     in 
     let split_by_re placerun = 
@@ -122,12 +129,15 @@ let () =
       List.flatten ((List.map split_fun) placerun_list)
     in
     let placerun_list = 
-      List.fold_right
-        (fun f a -> f a)
-        (List.map 
-          flat_split 
-          [split_by_edpl; split_by_ml; split_by_re])
-        [combined]
+      try
+        List.fold_right
+          (fun f a -> f a)
+          (List.map 
+            flat_split 
+            [split_by_cutoff; split_by_re])
+          [combined]
+      with
+      | Placement.No_PP -> failwith "Posterior probability use requested but some or all files were calculated without PP switched on."
     in
     (* "main" *)
     let invocation = String.concat " " (Array.to_list Sys.argv) in

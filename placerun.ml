@@ -106,17 +106,6 @@ let cutoff_filter make_name cutoff_fun =
     [ (make_name "lt"), (fun pq -> not (cutoff_fun pq));
       (make_name "ge"), cutoff_fun ]
 
-(* split up placeruns by ml ratio *)
-let partition_by_ml ml_cutoff placerun = 
-  let make_name which_str = 
-    (get_name placerun)^".L"^which_str^(cutoff_str ml_cutoff) in
-  let geq_cutoff pq = 
-    match Pquery.opt_best_place Placement.ml_ratio pq with
-    | Some p -> ml_cutoff <= Placement.ml_ratio p
-    | None -> false
-  in
-  cutoff_filter make_name geq_cutoff placerun
-
 let re_matches rex s = Str.string_match rex s 0
 
 let warn_about_multiple_matches rex_list placerun = 
@@ -135,15 +124,4 @@ let multifilter_by_regex named_regex_list placerun =
       named_regex_list)
     placerun
 
-let fail_if_unplaced_seqs placerun =
-  if contains_unplaced_queries placerun then begin
-    match partition_by_ml 0. placerun with
-    | unplaced::_ ->
-        failwith 
-          (Printf.sprintf 
-            "%s contains %d unplaced queries. Run \"placeutil -l 0 %s.place\" to split them off.\n"
-            (get_name placerun)
-            (List.length (get_pqueries unplaced))
-            (get_name placerun))
-    | [] -> assert(false)
-  end
+
