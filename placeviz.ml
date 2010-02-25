@@ -40,7 +40,7 @@ let parse_args () =
       "--loc", Arg.Set write_loc,
       "Write a fasta file sorted by location.";
       "--edpl", Arg.Set_float max_edpl,
-      "Write out a edpl tree such that the given edpl is the maximum.";
+      "Write out an EDPL tree such that the specified EDPL is the maximum.";
       "--whitebg", Arg.Set white_bg,
       "Make colors appropriate for a white background.";
       "--numBl", Arg.Set_float bogus_bl,
@@ -50,9 +50,9 @@ let parse_args () =
       "--xml", Arg.Set xml,
       "Write phyloXML (with colors) for all visualizations.";
       "--width", Arg.Set_float unit_width,
-      "Set the number of pixels for a single placement (default setting). Set to 100 or so when making a sing tree.";
+      "Set the number of pixels for a single placement (default setting).";
       "--totalwidth", Arg.Set_float total_width,
-      "Set the number of pixels for all of the mass together. Setting this changes to all-together mode.";
+      "Set the total number of pixels for all of the mass.";
       "--outDir", Arg.Set_string out_dir,
       "Specify the directory to write place files to.";
   ] in
