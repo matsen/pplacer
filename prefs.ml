@@ -15,7 +15,7 @@ type prefs =
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
-    tolerance : float ref;
+    initial_tolerance : float ref;
     calc_pp : bool ref;
     uniform_prior : bool ref;
     pp_rel_err : float ref;
@@ -52,7 +52,7 @@ let defaults () =
     (* tree calc *)
     start_pend = ref 0.1;
     max_pend = ref 2.;
-    tolerance = ref 0.001;
+    initial_tolerance = ref 0.01;
     calc_pp = ref false;
     uniform_prior = ref false;
     pp_rel_err = ref 0.01;
@@ -85,31 +85,31 @@ type mut_param =
 
 
 (* yay visual block! *)
-let tree_fname      p = !(p.tree_fname)
-let ref_align_fname p = !(p.ref_align_fname)
-let stats_fname     p = !(p.stats_fname)
-let start_pend      p = !(p.start_pend)
-let max_pend        p = !(p.max_pend)
-let tolerance       p = !(p.tolerance)
-let calc_pp         p = !(p.calc_pp)
-let uniform_prior   p = !(p.uniform_prior)
-let pp_rel_err      p = !(p.pp_rel_err)
-let max_strikes     p = !(p.max_strikes)
-let strike_box      p = !(p.strike_box)
-let max_pitches     p = !(p.max_pitches)
-let fantasy         p = !(p.fantasy)
-let fantasy_frac    p = !(p.fantasy_frac)
-let emperical_freqs p = !(p.emperical_freqs)
-let model_name      p = !(p.model_name)
-let gamma_n_cat     p = !(p.gamma_n_cat)
-let gamma_alpha     p = !(p.gamma_alpha)
-let verb_level      p = !(p.verb_level)
-let write_masked    p = !(p.write_masked)
-let only_write_best p = !(p.only_write_best)
-let ref_dir         p = !(p.ref_dir)
-let out_dir         p = !(p.out_dir)
-let friendly        p = !(p.friendly)
-let pretend         p = !(p.pretend)
+let tree_fname        p = !(p.tree_fname)
+let ref_align_fname   p = !(p.ref_align_fname)
+let stats_fname       p = !(p.stats_fname)
+let start_pend        p = !(p.start_pend)
+let max_pend          p = !(p.max_pend)
+let initial_tolerance p = !(p.initial_tolerance)
+let calc_pp           p = !(p.calc_pp)
+let uniform_prior     p = !(p.uniform_prior)
+let pp_rel_err        p = !(p.pp_rel_err)
+let max_strikes       p = !(p.max_strikes)
+let strike_box        p = !(p.strike_box)
+let max_pitches       p = !(p.max_pitches)
+let fantasy           p = !(p.fantasy)
+let fantasy_frac      p = !(p.fantasy_frac)
+let emperical_freqs   p = !(p.emperical_freqs)
+let model_name        p = !(p.model_name)
+let gamma_n_cat       p = !(p.gamma_n_cat)
+let gamma_alpha       p = !(p.gamma_alpha)
+let verb_level        p = !(p.verb_level)
+let write_masked      p = !(p.write_masked)
+let only_write_best   p = !(p.only_write_best)
+let ref_dir           p = !(p.ref_dir)
+let out_dir           p = !(p.out_dir)
+let friendly          p = !(p.friendly)
+let pretend           p = !(p.pretend)
 
 
 (* arguments and preferences *)
@@ -144,8 +144,8 @@ let args prefs =
     "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
     "Specify the shape parameter for a discrete gamma model.";
     (* like calc parameters *)
-    spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.tolerance
-    "Specify the tolerance for the branch length optimization. Default is %g.";
+    spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.initial_tolerance
+    "Specify the tolerance for the first stage of branch length optimization (the second stage optimizes to 1e-5). Default is %g.";
     spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
     "Specify the relative error for the posterior probability calculation. Default is %g.";
     "--uniformPrior", Arg.Set prefs.uniform_prior,
@@ -186,23 +186,23 @@ let args prefs =
 (* include a pref here if it should go in the place file *)
 let titled_typed_prefs p =
   [
-    MutString p.tree_fname,      "reference tree file"         ; 
-    MutString p.ref_align_fname, "reference alignment file"    ; 
-    MutString p.stats_fname,     "statistics file"             ; 
-    MutString p.ref_dir,         "reference data directory"    ; 
-    MutString p.model_name,      "substitution model"          ; 
-    MutBool p.emperical_freqs,   "use emperical frequencies"   ; 
-    MutInt p.gamma_n_cat,        "number of gamma categories"  ; 
-    MutFloat p.gamma_alpha,      "gamma alpha"                 ; 
-    MutInt p.max_strikes,        "max number of strikes"       ; 
-    MutFloat p.strike_box,       "strike box"                  ; 
-    MutInt p.max_pitches,        "max number of pitches"       ; 
-    MutBool p.calc_pp,           "calculate PP"                ; 
-    MutBool p.uniform_prior,     "uniform prior"               ; 
-    MutFloat p.start_pend,       "starting pendant length"     ; 
-    MutFloat p.max_pend,         "maximal pendant length"      ; 
-    MutFloat p.tolerance,        "ML tolerance"                ; 
-    MutFloat p.pp_rel_err,       "relative error for PP"       ; 
+    MutString p.tree_fname,       "reference tree file"         ; 
+    MutString p.ref_align_fname,  "reference alignment file"    ; 
+    MutString p.stats_fname,      "statistics file"             ; 
+    MutString p.ref_dir,          "reference data directory"    ; 
+    MutString p.model_name,       "substitution model"          ; 
+    MutBool p.emperical_freqs,    "use emperical frequencies"   ; 
+    MutInt p.gamma_n_cat,         "number of gamma categories"  ; 
+    MutFloat p.gamma_alpha,       "gamma alpha"                 ; 
+    MutInt p.max_strikes,         "max number of strikes"       ; 
+    MutFloat p.strike_box,        "strike box"                  ; 
+    MutInt p.max_pitches,         "max number of pitches"       ; 
+    MutBool p.calc_pp,            "calculate PP"                ; 
+    MutBool p.uniform_prior,      "uniform prior"               ; 
+    MutFloat p.start_pend,        "starting pendant length"     ; 
+    MutFloat p.max_pend,          "maximal pendant length"      ; 
+    MutFloat p.initial_tolerance, "ML tolerance"                ; 
+    MutFloat p.pp_rel_err,        "relative error for PP"       ; 
   ]
 
 (* do a sanity check on the preferences *)

@@ -15,7 +15,8 @@ let keep_at_most = 7
 let keep_factor = 0.01
 let log_keep_factor = log keep_factor
 
-let initial_tolerance = 0.05
+(* the second stage tolerance for branch length optimization. modify in online
+ * help if changed here. *)
 let final_tolerance = 1e-5
 
 type prior = Uniform_prior | Exponential_prior of float
@@ -252,7 +253,7 @@ let pplacer_core
           try 
             let (like,_,_) as result = 
               prepare_tt loc;
-              ml_optimize_location initial_tolerance loc in
+              ml_optimize_location (initial_tolerance prefs) loc in
             let new_results = (loc, result)::results in
             if List.length results >= t_max_pitches then
               new_results
