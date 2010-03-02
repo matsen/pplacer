@@ -306,9 +306,15 @@ let pplacer_core
     (* do final refinement of branch lengths *)
     let refined_results = 
       List.map
-        (fun (loc, (_, pendant, distal)) ->
+        (fun initial ->
+          let (loc, (_, pendant, distal)) = initial in
           set_tt_edges loc ~pendant ~distal;
-          (loc, ml_optimize_location final_tolerance loc))
+          try
+            (loc, ml_optimize_location final_tolerance loc)
+          with
+          | Gsl_error.Gsl_exn(_,warn_str) ->
+              Printf.printf "Warning: GSL problem with final branch length optimization for location %d. %s\n" loc warn_str;
+              initial)
         keep_results
     in
     let sorted_ml_placements = 
