@@ -145,7 +145,7 @@ let args prefs =
     "Specify the shape parameter for a discrete gamma model.";
     (* like calc parameters *)
     spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.initial_tolerance
-    "Specify the tolerance for the first stage of branch length optimization (the second stage optimizes to 1e-5). Default is %g.";
+    "Specify the tolerance for the 1st stage of branch length optimization (the 2nd stage optimizes to 1e-5). Default is %g.";
     spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
     "Specify the relative error for the posterior probability calculation. Default is %g.";
     "--uniformPrior", Arg.Set prefs.uniform_prior,
