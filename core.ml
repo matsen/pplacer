@@ -15,6 +15,9 @@ let keep_at_most = 7
 let keep_factor = 0.01
 let log_keep_factor = log keep_factor
 
+let initial_tolerance = 0.05
+let final_tolerance = 1e-5
+
 type prior = Uniform_prior | Exponential_prior of float
 
 (* pplacer_core :
@@ -219,13 +222,11 @@ let pplacer_core
           tt_edges_from_placement f
     in
     (* evaluate the location wrt ML *)
-    let ml_evaluate_location loc = 
-      prepare_tt loc;
-      (* optimize *)
+    let ml_optimize_location mlo_tolerance loc = 
       let () = 
         try
           let n_like_calls = 
-            Three_tax.optimize (tolerance prefs) (max_pend prefs) max_iter tt
+            Three_tax.optimize mlo_tolerance (max_pend prefs) max_iter tt
           in
           if 2 < verb_level prefs then
             Printf.printf "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
@@ -250,7 +251,8 @@ let pplacer_core
       | loc::rest -> begin
           try 
             let (like,_,_) as result = 
-              ml_evaluate_location loc in
+              prepare_tt loc;
+              ml_optimize_location initial_tolerance loc in
             let new_results = (loc, result)::results in
             if List.length results >= t_max_pitches then
               new_results
@@ -301,13 +303,21 @@ let pplacer_core
           (get_like r >= log_keep_factor +. best_like)))
         sorted_ml_results
     in
+    (* do final refinement of branch lengths *)
+    let refined_results = 
+      List.map
+        (fun (loc, (_, pendant, distal)) ->
+          set_tt_edges loc ~pendant ~distal;
+          (loc, ml_optimize_location final_tolerance loc))
+        keep_results
+    in
     let sorted_ml_placements = 
       List.map2 
         (fun ml_ratio (loc, (log_like, pend_bl, dist_bl)) -> 
           Placement.make_ml 
             loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
-         (Base.ll_normalized_prob (List.map get_like keep_results))
-         keep_results
+         (Base.ll_normalized_prob (List.map get_like refined_results))
+         refined_results
     in
     result_arr.(query_num) <-
       Pquery.make_ml_sorted
