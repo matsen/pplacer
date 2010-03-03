@@ -91,3 +91,41 @@ CAMLprim value triplewise_prod_c(value dest_value, value x_value, value y_value,
   }
   CAMLreturn(Val_unit);
 }
+
+
+CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, value z_value)
+{
+  CAMLparam4(statd_value,x_value, y_value, z_value);
+  CAMLlocal1(ml_ll_tot);
+  double *statd = Data_bigarray_val(statd_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  double *z = Data_bigarray_val(z_value);
+  int n_states = Bigarray_val(statd_value)->dim[0];
+  int n_sites = (Bigarray_val(x_value)->dim[0]);
+  int n_columns = (Bigarray_val(x_value)->dim[1]);
+  int n_rates = n_columns/n_states;
+  float f_n_rates = (float) n_rates;
+  double site_like, ll_tot;
+  printf("%d states and %d rates and %d sites \n",n_states,n_rates,n_sites);
+  int state, rate, site;
+  double *x_v = x;
+  double *y_v = y;
+  double *z_v = z;
+  for(site=0; site < n_sites; site++) {
+    site_like = 0;
+    for(rate=0; rate < n_rates; rate++) { 
+      for(state=0; state < n_states; state++) {
+	site_like += x_v[state] * y_v[state] * z_v[state];
+      }
+/* the following will take us to the next site as well 
+ * when we "fall off" of the current site */
+      x_v += n_rates;
+      y_v += n_rates;
+      z_v += n_rates;
+    }
+    ll_tot += log(site_like / f_n_rates);
+  }
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}

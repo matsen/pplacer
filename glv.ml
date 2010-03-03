@@ -20,8 +20,6 @@
 open Fam_batteries
 open MapsSets
 
-let float_lower_bound = 1e-100
-
 type glv = Glv_site.glv_site array
 
 let make ~n_sites ~n_rates ~n_states = 

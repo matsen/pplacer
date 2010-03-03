@@ -21,6 +21,10 @@ dispatch begin function
       dep  ["use_pplacer"] ["libpplacercside.a"];
       (* automatically include gsl when the use_gsl tag is given in _tags *)
       ocaml_lib ~extern:true ~dir:"+gsl" "gsl";
+      (* link with atlas given use_gsl tag 
+      flag ["link"; "ocaml"; "use_gsl"]
+        (S[A"-cclib"; A"-lcblas"; A"-cclib"; A"-latlas"; A"-cclib"; A"-L/usr/lib/sse2/";]);
+       *)
   | _ -> ()
 end;;
 

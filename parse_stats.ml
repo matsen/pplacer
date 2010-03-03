@@ -22,7 +22,7 @@ let check_version program version known_versions =
 
 (* ************ RAXML ************* *)
 
-let raxml_header_rex = Str.regexp "^You are using RAxML version \\([^ ]+\\)"
+let raxml_header_rex = Str.regexp ".* RAxML version \\([^ ]+\\)"
 
 let known_raxml_versions = [ "7.2.3"; "7.2.5"; ]
 

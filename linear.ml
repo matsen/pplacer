@@ -15,4 +15,5 @@ external quad_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector 
 external pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> unit = "pairwise_prod_c"
 (* dest x y z *)
 external triplewise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> unit = "triplewise_prod_c"
-
+(* x y z statd *)
+external log_like3 : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> float = "log_like3_c"
