@@ -3,6 +3,7 @@
 */
 
 #include <stdio.h>
+#include <math.h>
 #include <caml/bigarray.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -10,66 +11,59 @@
 #include <caml/custom.h>
 
 
-CAMLprim value dot_c(value x_value, value y_value, value size_value)
-{
-  CAMLparam3(x_value, y_value, size_value);
-  CAMLlocal1(ml_tot);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  int size = Int_val(size_value);
-  double tot = 0;
-  int i;
-  for(i=0; i < size; i++) {
-    tot += x[i] * y[i];
-  }
-  ml_tot = caml_copy_double(tot);
-  CAMLreturn(ml_tot);
-}
 
-
-CAMLprim value triple_dot_c(value x_value, value y_value, value z_value, value size_value)
+CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, value z_value, value util_value)
 {
-  CAMLparam4(x_value, y_value, z_value, size_value);
-  CAMLlocal1(ml_tot);
+  CAMLparam5(statd_value,x_value, y_value, z_value, util_value);
+  CAMLlocal1(ml_ll_tot);
+  double *statd = Data_bigarray_val(statd_value);
   double *x = Data_bigarray_val(x_value);
   double *y = Data_bigarray_val(y_value);
   double *z = Data_bigarray_val(z_value);
-  int size = Int_val(size_value);
-  double tot = 0;
-  int i;
-  for(i=0; i < size; i++) {
-    tot += x[i] * y[i] * z[i];
+  double *util = Data_bigarray_val(util_value);
+  int n_rates = (Bigarray_val(x_value)->dim[0]);
+  int n_sites = (Bigarray_val(x_value)->dim[1]);
+  int n_states = (Bigarray_val(x_value)->dim[2]);
+  int rate, site, state;
+  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
+  double *x_p = x;
+  double *y_p = y;
+  double *z_p = z;
+  double *util_v;
+  for(rate=0; rate < n_rates; rate++) { 
+    // for each rate, start at the top of the util vector 
+    util_v = util;
+    for(site=0; site < n_sites; site++) {
+    // proceed through the util vector and the sites
+      for(state=0; state < n_states; state++) {
+	*util_v += statd[state] * (*x_p) * (*y_p) * (*z_p);
+	x_p++;
+	y_p++;
+	z_p++;
+      }
+      util_v++;
+    }
   }
-  ml_tot = caml_copy_double(tot);
-  CAMLreturn(ml_tot);
+  // now total up the likes from the util vector
+  double ll_tot=0;
+  float f_n_rates = (float) n_rates;
+  for(site=0; site < n_sites; site++) {
+    ll_tot += log(util[site] / f_n_rates);
+  }
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
 }
 
-
-CAMLprim value quad_dot_c(value x_value, value y_value, value z_value, value w_value, value size_value)
+CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value)
 {
-  CAMLparam5(x_value, y_value, z_value, w_value, size_value);
-  CAMLlocal1(ml_tot);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  double *z = Data_bigarray_val(z_value);
-  double *w = Data_bigarray_val(w_value);
-  int size = Int_val(size_value);
-  double tot = 0;
-  int i;
-  for(i=0; i < size; i++) {
-    tot += x[i] * y[i] * z[i] * w[i];
-  }
-  ml_tot = caml_copy_double(tot);
-  CAMLreturn(ml_tot);
-}
-
-CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value, value size_value)
-{
-  CAMLparam4(dest_value, x_value, y_value, size_value);
+  CAMLparam3(dest_value, x_value, y_value);
   double *dest = Data_bigarray_val(dest_value);
   double *x = Data_bigarray_val(x_value);
   double *y = Data_bigarray_val(y_value);
-  int size = Int_val(size_value);
+  int size = 
+    (Bigarray_val(x_value)->dim[0]) 
+    * (Bigarray_val(x_value)->dim[1])
+    * (Bigarray_val(x_value)->dim[2]);
   int i;
   for(i=0; i < size; i++) {
     dest[i] = x[i] * y[i];
@@ -77,55 +71,24 @@ CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value, v
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value triplewise_prod_c(value dest_value, value x_value, value y_value, value z_value, value size_value)
+CAMLprim value glv_print_c(value x_value)
 {
-  CAMLparam5(dest_value, x_value, y_value, z_value, size_value);
-  double *dest = Data_bigarray_val(dest_value);
+  CAMLparam1(x_value);
   double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  double *z = Data_bigarray_val(z_value);
-  int size = Int_val(size_value);
-  int i;
-  for(i=0; i < size; i++) {
-    dest[i] = x[i] * y[i] * z[i];
+  int n_rates = (Bigarray_val(x_value)->dim[0]);
+  int n_sites = (Bigarray_val(x_value)->dim[1]);
+  int n_states = (Bigarray_val(x_value)->dim[2]);
+  double *loc = x;
+  int rate, site, state;
+  for(rate=0; rate < n_rates; rate++) { 
+    for(site=0; site < n_sites; site++) {
+      for(state=0; state < n_states; state++) {
+	printf("%g\t",*loc);
+	loc++;
+      }
+      printf("\n");
+    }
+    printf("--\n");
   }
   CAMLreturn(Val_unit);
-}
-
-
-CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, value z_value)
-{
-  CAMLparam4(statd_value,x_value, y_value, z_value);
-  CAMLlocal1(ml_ll_tot);
-  double *statd = Data_bigarray_val(statd_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  double *z = Data_bigarray_val(z_value);
-  int n_states = Bigarray_val(statd_value)->dim[0];
-  int n_sites = (Bigarray_val(x_value)->dim[0]);
-  int n_columns = (Bigarray_val(x_value)->dim[1]);
-  int n_rates = n_columns/n_states;
-  float f_n_rates = (float) n_rates;
-  double site_like, ll_tot;
-  printf("%d states and %d rates and %d sites \n",n_states,n_rates,n_sites);
-  int state, rate, site;
-  double *x_v = x;
-  double *y_v = y;
-  double *z_v = z;
-  for(site=0; site < n_sites; site++) {
-    site_like = 0;
-    for(rate=0; rate < n_rates; rate++) { 
-      for(state=0; state < n_states; state++) {
-	site_like += x_v[state] * y_v[state] * z_v[state];
-      }
-/* the following will take us to the next site as well 
- * when we "fall off" of the current site */
-      x_v += n_rates;
-      y_v += n_rates;
-      z_v += n_rates;
-    }
-    ll_tot += log(site_like / f_n_rates);
-  }
-  ml_ll_tot = caml_copy_double(ll_tot);
-  CAMLreturn(ml_ll_tot);
 }

@@ -119,9 +119,9 @@ let pplacer_core
       | Alignment.Protein_seq -> Array.map Prot_models.lv_of_aa query_arr
     in
     let query_glv = 
-      Glv.lv_list_to_constant_rate_glv 
+      Glv.lv_arr_to_constant_rate_glv 
         (Model.n_rates model) 
-        (Base.mask_to_list mask_arr query_like)
+        (Array.of_list (Base.mask_to_list mask_arr query_like))
     in
     (* make a masked alignment with just the given query sequence and the
      * reference seqs *)

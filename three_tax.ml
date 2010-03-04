@@ -31,8 +31,8 @@ let make model ~prox ~dist ~pend =
   }
 
 let log_like tt = 
-  Glv.log_like3_statd
-    tt.model 
+  Glv.log_like3
+    tt.model
     (Glv_edge.get_evolv tt.prox) 
     (Glv_edge.get_evolv tt.dist)
     (Glv_edge.get_evolv tt.pend) 

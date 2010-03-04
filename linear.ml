@@ -7,13 +7,11 @@
  * functions will do nothing, and won't complain!
 *)
 
+external glv_print : Tensor.tensor -> unit = "glv_print_c"
 
-external dot : Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "dot_c"
-external triple_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "triple_dot_c"
-external quad_dot : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> float = "quad_dot_c"
+(* statd x y z util *)
+external log_like3 : Gsl_vector.vector -> Tensor.tensor -> Tensor.tensor -> Tensor.tensor -> Gsl_vector.vector -> float = "log_like3_c"
+
 (* dest x y *)
-external pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> unit = "pairwise_prod_c"
-(* dest x y z *)
-external triplewise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> int -> unit = "triplewise_prod_c"
-(* x y z statd *)
-external log_like3 : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> float = "log_like3_c"
+external pairwise_prod : Tensor.tensor -> Tensor.tensor -> Tensor.tensor -> unit = "pairwise_prod_c"
+

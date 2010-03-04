@@ -32,23 +32,22 @@ let deDiagonalize ~dst u lambda uinv =
   with
     | Invalid_argument s -> invalid_arg ("deDiagonalize: "^s)
 
-let multi_exp ~dst u lambda uinv rates bl = 
+(* util should be a vector of the same length as lambda *)
+let multi_exp ~dst u lambda uinv util rates bl = 
   let n = Gsl_vector.length lambda in
-  let exp_lambda = Gsl_vector.create n in
   try 
-    Gsl_matrix.set_all dst 0.;
+    Tensor.set_all dst 0.;
     for r=0 to (Array.length rates)-1 do
       for i=0 to n-1 do
-        set1 exp_lambda i (exp (rates.(r) *. bl *. (get1 lambda i)))
+        set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
       done;
-      let rate_bump = n * r in
+      let dst_mat = Tensor.BA3.slice_left_2 dst r in
       for i=0 to n-1 do
         for j=0 to n-1 do
-          let dst_column = rate_bump+j in
           for k=0 to n-1 do
-            set2 dst i dst_column
-              ((get2 dst i dst_column) +. 
-                 (get1 exp_lambda k) 
+            set2 dst_mat i j
+              ((get2 dst_mat i j) +. 
+                 (get1 util k) 
                    *. (get2 u i k) 
                    *. (get2 uinv k j))
           done;
@@ -106,6 +105,7 @@ class diagd arg =
     with
       | Invalid_argument s -> invalid_arg ("diagd dimension problem: "^s)
   in
+  let util = Gsl_vector.create (Gsl_vector.length eVals) in
 
 object (self)
 
@@ -120,8 +120,8 @@ object (self)
                   (FGM.vecMap (fun lambda -> exp (t *. lambda)) eVals)
                   invEVects
 
-  method multi_exp dst rates bl = 
-    multi_exp ~dst eVects eVals invEVects rates bl
+  method multi_exp (dst:Tensor.tensor) rates bl = 
+    multi_exp ~dst eVects eVals invEVects util rates bl
 
   method normalizeRate statnDist = 
     let q = Gsl_matrix.create (self#size) (self#size) in
