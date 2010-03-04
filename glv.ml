@@ -183,6 +183,7 @@ let perhaps_pull_exponent g =
     done;
     (* now scale if it's needed *)
     if !max_twoexp < min_allowed_twoexp then begin
+      print_endline "*** pulling exponents ***";
       for rate=0 to n_rates-1 do
         (* take the negative so that we "divide" by 2^our_twoexp *)
         Gsl_vector.scale 
@@ -204,10 +205,8 @@ let total_twoexp g =
   done;
   !tot
 
-(* log_like3:
- * take the log like of the product of three things then dot with the stationary
- * distribution. there are lots of things we don't do error checking
- * on. *)
+(* take the log like of the product of three things then dot with the stationary
+ * distribution. *)
 let log_like3 model x y z = 
   assert(dims x = dims y && dims y = dims z);
   (Linear.log_like3 (Model.statd model) 
@@ -218,8 +217,7 @@ let log_like3 model x y z =
     +. (log_of_2 *.
         ((total_twoexp x) +. (total_twoexp y) +. (total_twoexp z)))
 
-(* multiply by a tensor
- *)
+(* multiply by a tensor *)
 let tensor_mul tensor ~dst ~src = 
   (* iter over rates *)
   for i=0 to (Tensor.dim1 src.a)-1 do
@@ -237,6 +235,8 @@ let tensor_mul tensor ~dst ~src =
  * results in dst.
  *)
 let evolve_into model ~dst ~src bl = 
+  (* do the exponents *)
+  BA1.blit src.e dst.e;
   (* prepare the matrices in our matrix cache *)
   Model.prep_tensor_for_bl model bl;
   (* iter over rates *)

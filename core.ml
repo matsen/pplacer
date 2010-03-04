@@ -162,9 +162,9 @@ let pplacer_core
      * start them all with query as a place holder.
      * we are breaking interface by naming them and changing them later, but
      * it would be silly to have setting functions for each edge.  *)
-    let dist_edge = Glv_edge.make model query_glv (start_pend prefs)
+    let dist_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
     and prox_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
-    and pend_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
+    and pend_edge = Glv_edge.make model query_glv (start_pend prefs)
     in
     (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
