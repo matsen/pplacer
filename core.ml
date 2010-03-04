@@ -79,6 +79,15 @@ let pplacer_core
   and num_queries = 
     Fasta_channel.size_checking_for_duplicate_names query_channel
   in
+  (* making glvs which are appropriate for query side of the first placement
+   * stage. in contrast to the second stage query glv, this guy is full length. *)
+  let full_query_orig = 
+    Glv.make ~n_rates:(Model.n_rates model) 
+             ~n_sites:ref_length
+             ~n_states:(Model.n_states model)
+  in
+  let full_query_evolv = Glv.mimic full_query_orig in
+  (* our result array *)
   let result_arr = 
     Array.make num_queries
     (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" [])
@@ -111,18 +120,33 @@ let pplacer_core
     (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
     (* the mask array shows true if it's included *)
-    let mask_arr = 
-      Array.map (fun c -> c <> '?' && c <> '-') query_arr in
-    let query_like = 
+    let informative c = c <> '?' && c <> '-' in
+    let mask_arr = Array.map informative query_arr in
+    let masked_query_arr = 
+      Alignment.array_filteri (fun _ c -> informative c) query_arr in
+    let lv_arr_of_char_arr a = 
       match seq_type with
-      | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc query_arr
-      | Alignment.Protein_seq -> Array.map Prot_models.lv_of_aa query_arr
+      | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
+      | Alignment.Protein_seq -> Array.map Prot_models.lv_of_aa a
     in
+    (* the query glv, which has been masked *)
     let query_glv = 
       Glv.lv_arr_to_constant_rate_glv 
         (Model.n_rates model) 
-        (Array.of_list (Base.mask_to_list mask_arr query_like))
+        (lv_arr_of_char_arr masked_query_arr)
     in
+    (* the full one, which will be used for the first stage only *)
+    Glv.prep_constant_rate_glv_from_lv_arr
+      full_query_orig 
+      (lv_arr_of_char_arr query_arr);
+    Glv.evolve_into 
+      model 
+      ~dst:full_query_evolv 
+      ~src:full_query_orig
+      (start_pend prefs);
+    (* ERICK *)
+    Array.iter Pervasives.print_char masked_query_arr;
+    print_endline "";
     (* make a masked alignment with just the given query sequence and the
      * reference seqs *)
     if write_masked prefs then
@@ -130,24 +154,18 @@ let pplacer_core
         (Alignment.mask_align mask_arr
           (Alignment.stack [|query_name, query_seq|] ref_align))
         (query_name^".mask.fasta");
-   (* mask *) 
+     (* mask *) 
     let curr_time = Sys.time () in
-    let darr_masked = Glv_arr.mask mask_arr darr 
-    and parr_masked = Glv_arr.mask mask_arr parr 
-    and halfd_maskd = Glv_arr.mask mask_arr halfd 
-    and halfp_maskd = Glv_arr.mask mask_arr halfp 
-    in
     if (verb_level prefs) >= 2 then Printf.printf "masking took\t%g\n" ((Sys.time ()) -. curr_time);
     (* make our edges.
+     * ERICK
      * start them all with query as a place holder.
      * we are breaking interface by naming them and changing them later, but
      * it would be silly to have setting functions for each edge.  *)
     let dist_edge = Glv_edge.make model query_glv (start_pend prefs)
-    and prox_edge = Glv_edge.make model query_glv (start_pend prefs)
-    and pend_edge = Glv_edge.make model query_glv (start_pend prefs)
+    and prox_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
+    and pend_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
     in
-    (* get the results from the h_map *)
-    let q_evolved = Glv_edge.get_evolv pend_edge in
     (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
@@ -157,10 +175,10 @@ let pplacer_core
         (List.map
           (fun loc ->
             (loc,
-            Glv.log_like3_statd model 
-              q_evolved 
-              (Glv_arr.get halfd_maskd loc) 
-              (Glv_arr.get halfp_maskd loc)))
+            Glv.log_like3 model 
+              full_query_evolv 
+              (Glv_arr.get halfd loc) 
+              (Glv_arr.get halfp loc)))
           locs)
     in
     if (verb_level prefs) >= 2 then Printf.printf "ranking took\t%g\n" ((Sys.time ()) -. curr_time);
@@ -192,17 +210,17 @@ let pplacer_core
     let set_tt_edges loc ~pendant ~distal = 
       let cut_bl = Gtree.get_bl gtree loc in
       let set_edge edge glv_arr len = 
-        Glv_edge.set_orig_and_bl 
-          model
-          edge
-          (Glv_arr.get glv_arr loc) 
-          len
+        Glv.mask_into 
+          mask_arr
+          ~src:(Glv_arr.get glv_arr loc) 
+          ~dst:(Glv_edge.get_orig edge);
+        Glv_edge.set_bl model edge len
       in
       (* still the same glv for query, but have to set branch length *)
       Glv_edge.set_bl model pend_edge pendant;
       (* need to set the glv and branch length for dist and prox *)
-      set_edge dist_edge darr_masked distal;
-      set_edge prox_edge parr_masked (cut_bl -. distal)
+      set_edge dist_edge darr distal;
+      set_edge prox_edge parr (cut_bl -. distal)
     in
     let tt_edges_from_placement p = 
       let loc = Placement.location p in

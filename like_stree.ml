@@ -36,7 +36,7 @@ let calc_distal_and_evolv_dist model tree like_aln_map
     let () = match t with
     | Stree.Node(_, tL) -> begin
         (* take the product of the below *)
-        Glv.listwise_product distal (List.map calc tL);
+        Glv.listwise_prod distal (List.map calc tL);
         Glv.perhaps_pull_exponent distal
       end
     | Stree.Leaf _ -> 
@@ -81,7 +81,7 @@ let calc_proximal model tree
         List.iter
           (fun (chosen, rest) ->
             let prox_below = glv_from_stree proximal_glv_arr chosen in
-            Glv.listwise_product 
+            Glv.listwise_prod
               prox_below
               (evolved_prox::
                 (List.map (glv_from_stree evolv_dist_glv_arr) rest));

@@ -131,7 +131,7 @@ let mask_into site_mask_arr ~src ~dst =
   assert(!dst_i = dst_n_sites)
 
 (* this is used when we have a pre-allocated GLV and want to fill it with a
- * same-length lv array *)
+ * same-length lv array. zero pulled exponents as well. *)
 let prep_constant_rate_glv_from_lv_arr g lv_arr = 
   assert(lv_arr <> [||]);
   assert(get_n_sites g = Array.length lv_arr);

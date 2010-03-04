@@ -14,9 +14,8 @@ type glv_edge = {
 }
 
 let get_bl e = !(e.bl)
-
-let get_evolv e = 
-  e.evolv
+let get_orig e = !(e.orig)
+let get_evolv e = e.evolv
 
 let recalculate model glve = 
   Glv.evolve_into model 
