@@ -8,9 +8,10 @@
 
 module FGM = Fam_gsl_matvec
 
-let get1 = Bigarray.Array1.unsafe_get
-let get2 = Bigarray.Array2.unsafe_get
-let set2 = Bigarray.Array2.unsafe_set
+let get1 = Bigarray.Array1.get
+let set1 = Bigarray.Array1.set
+let get2 = Bigarray.Array2.get
+let set2 = Bigarray.Array2.set
 
 (* deDiagonalize: multiply out eigenvector (u), eigenvalue (lambda) matrices,
  * and inverse eigenvector (uInv) matrices to get usual matrix rep *)
@@ -30,6 +31,33 @@ let deDiagonalize ~dst u lambda uinv =
     done;
   with
     | Invalid_argument s -> invalid_arg ("deDiagonalize: "^s)
+
+let multi_exp ~dst u lambda uinv rates bl = 
+  let n = Gsl_vector.length lambda in
+  let exp_lambda = Gsl_vector.create n in
+  try 
+    Gsl_matrix.set_all dst 0.;
+    for r=0 to (Array.length rates)-1 do
+      for i=0 to n-1 do
+        set1 exp_lambda i (exp (rates.(r) *. bl *. (get1 lambda i)))
+      done;
+      let rate_bump = n * r in
+      for i=0 to n-1 do
+        for j=0 to n-1 do
+          let dst_column = rate_bump+j in
+          for k=0 to n-1 do
+            set2 dst i dst_column
+              ((get2 dst i dst_column) +. 
+                 (get1 exp_lambda k) 
+                   *. (get2 u i k) 
+                   *. (get2 uinv k j))
+          done;
+        done;
+      done;
+    done;
+  with
+    | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
+
 
 
 class diagd arg = 
@@ -91,6 +119,9 @@ object (self)
                   eVects 
                   (FGM.vecMap (fun lambda -> exp (t *. lambda)) eVals)
                   invEVects
+
+  method multi_exp dst rates bl = 
+    multi_exp ~dst eVects eVals invEVects rates bl
 
   method normalizeRate statnDist = 
     let q = Gsl_matrix.create (self#size) (self#size) in

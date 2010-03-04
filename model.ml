@@ -16,13 +16,13 @@ type model =
    diagdq    :  Diagd.diagd;
    seq_type  :  Alignment.seq_type;
    rates     :  float array;
-   mats      :  Gsl_matrix.matrix array;
+   mat       :  Gsl_matrix.matrix;
   }
 
 let statd    model = model.statd
 let diagdq   model = model.diagdq
 let rates    model = model.rates
-let mats     model = model.mats
+let mat      model = model.mat 
 let seq_type model = model.seq_type
 let n_states model = Alignment.nstates_of_seq_type model.seq_type
 let n_rates  model = Array.length (rates model)
@@ -52,15 +52,10 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
     diagdq = Diagd.normalizedOfExchangeableMat trans statd;
     seq_type = seq_type;
     rates = rates;
-    mats = 
-      Array.init 
-        (Array.length rates)
-        (fun _ -> Gsl_matrix.create n_states n_states);
+    mat = 
+      Gsl_matrix.create n_states (n_states * (Array.length rates))
   }
 
 (* prepare the matrices for a certain branch length *)
-let prep_mats_for_bl model bl = 
-  ArrayFuns.iter2 
-    (fun rate m -> (model.diagdq)#expWithT m (bl *. rate)) 
-    model.rates 
-    model.mats
+let prep_mat_for_bl model bl = 
+  (model.diagdq)#multi_exp model.mat model.rates bl

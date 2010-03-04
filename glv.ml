@@ -7,118 +7,207 @@
  * this abstraction layer means that we should be able to treat any glv like it
  * was a simple likelihood vector.
  *
- * the implementation is as an array (over sites) of Glv_sites.
- *
  * i wanted originally to strictly conform to a very general module signature
  * which would be universal across all types of likelihood type vectors.
  * however, it is necessary to pass some rate information in functions like
  * evolve_into. i think i could have done so by specifying some
  * extra_information type in the signature, but it didn't seem worth it given
  * that i don't know what other sorts of data i would want to support.
+ *
+ * this is designed to avoid underflows in most cases when doing phylogenetics
+ * calculation, although such behavior is not guaranteed.
+ *
+ * the key detail is that a base-two exponent is stored in the e field.
+ * "pulling" the exponent refers to finding a suitable exponent x and then
+ * dividing all of the entries of the site likelihood vectors by 2^x to bring
+ * them back in line, then storing x in field e.
+ *
+ * the exponent x is chosen to be the maximum (over rates) of the maximum (over
+ * entries) of the site_glv. these maximums will be the dominant likelihood
+ * vector entries in the glv, and the most important ones to protect.
  *)
 
 open Fam_batteries
 open MapsSets
 
-type glv = Glv_site.glv_site array
+module BA = Bigarray
+module BA1 = BA.Array1
+module BA2 = BA.Array2
+
+(* below 2^-50 = 1e-15 we pull out the exponent into the int *)
+let min_allowed_twoexp = -50
+let log_of_2 = log 2.
+
+(* integer big arrays *)
+let iba1_create = BA1.create BA.int BA.c_layout
+let iba1_mimic a = iba1_create (BA1.dim a)
+let iba1_copy a = let b = iba1_mimic a in BA1.blit a b; b
+let iba1_to_array a = 
+  let arr = Array.make (BA1.dim a) 0 in
+  for i=0 to (BA1.dim a)-1 do arr.(i) <- a.{i} done;
+  arr
+let iba1_ppr ff a = Ppr.ppr_int_array ff (iba1_to_array a)
+
+(* glvs *)
+type glv = { e : (int, BA.int_elt, BA.c_layout) BA1.t; 
+             a : Gsl_matrix.matrix;
+             n_rates : int }
+
+let dims g = Gsl_matrix.dims g.a
+let get_n_sites g = let (rows,_) = dims g in rows
+let get_n_rates g = g.n_rates
+let get_n_states g = 
+  let (_,cols) = dims g in 
+  assert(cols mod g.n_rates = 0);
+  cols / g.n_rates
+
+let ppr ff g = 
+  Format.fprintf ff "@[{ e = %a; @,a = %a }@]"
+    iba1_ppr g.e
+    Fam_gsl_matvec.ppr_gsl_matrix g.a
 
 let make ~n_sites ~n_rates ~n_states = 
-  Array.init
-    n_sites
-    (fun _ -> Glv_site.make ~n_rates ~n_states)
+  { e = iba1_create n_sites;
+    a = Gsl_matrix.create n_sites (n_states * n_rates);
+    n_rates = n_rates; }
 
-let make_init e_init init ~n_sites ~n_rates ~n_states = 
-  Array.init
-    n_sites
-    (fun _ -> Glv_site.make_init e_init init ~n_rates ~n_states)
-  
 (* deep copy *)
-let copy = Array.map Glv_site.copy
+let copy x = 
+  { e = iba1_copy x.e;
+    a = Gsl_matrix.copy x.a; 
+    n_rates = x.n_rates; }
 
 (* make a glv of the same dimensions *)
-let mimic = Array.map Glv_site.mimic
-
-let iter = Array.iter
+let mimic x = 
+  let (rows,cols) = Gsl_matrix.dims x.a in
+  { e = iba1_mimic x.e;
+    a = Gsl_matrix.create rows cols; 
+    n_rates = x.n_rates; }
 
 (* set all of the entries of the glv to some float *)
 let set_exp_and_all_entries g e x = 
-  iter (fun s -> Glv_site.set_exp_and_all_entries s e x) g
+  BA1.fill g.e e;
+  Gsl_matrix.set_all g.a x
 
-(* mask does *not* copy anything, just gets a subarray *)
-let mask site_mask_arr g = 
-  let len = Array.length g in
-  assert(len = Array.length site_mask_arr);
-  let rec aux sofar i = 
-    if i < 0 then sofar
-    else
-      if site_mask_arr.(i) then 
-        aux (g.(i)::sofar) (i-1)
-      else
-        aux sofar (i-1)
-  in
-  Array.of_list (aux [] (len-1))
+(* set g according to function fe for exponenent and fa for entries *)
+let seti g fe fa = 
+  let n_sites = get_n_sites g 
+  and n_rates = get_n_rates g
+  and n_states = get_n_states g in
+  for site=0 to n_sites-1 do
+    for rate=0 to n_rates-1 do
+      let rate_bump = rate * n_rates in
+      for state=0 to n_states-1 do
+        g.a.{site,rate_bump+state} <- fa ~site ~rate ~state
+      done
+    done;
+    g.e.{site} <- fe site
+  done
+
+(* copy the site information from src to dst *)
+let copy_site ~src_i ~src ~dst_i ~dst = 
+  (dst.e).{dst_i} <- (src.e).{src_i};
+  BA1.blit (BA2.slice_left src.a src_i) 
+           (BA2.slice_left dst.a dst_i)
+
+(* copy the sites marked with true in site_mask_arr from src to dst. the number
+ * of trues in site_mask_arr should be equal to the number of sites in dst. *)
+let mask_into site_mask_arr ~src ~dst = 
+  let dst_n_sites = get_n_sites dst in
+  let dst_i = ref 0 in
+  Array.iteri
+    (fun src_i b ->
+      if b then begin
+        assert(!dst_i < dst_n_sites);
+        copy_site ~src ~src_i ~dst_i:(!dst_i) ~dst;
+        incr dst_i;
+      end)
+    site_mask_arr;
+  assert(!dst_i = dst_n_sites)
+
+(* this is used when we have a pre-allocated GLV and want to fill it with a
+ * same-length lv array *)
+let prep_constant_rate_glv_from_lv_arr g lv_arr = 
+  assert(lv_arr <> [||]);
+  assert(get_n_sites g = Array.length lv_arr);
+  assert(get_n_states g = Gsl_vector.length lv_arr.(0));
+  seti g 
+       (fun _ -> 0)
+       (fun ~site ~rate:_ ~state -> 
+         lv_arr.(site).{state})
 
 (* this is used when we want to make a glv out of a list of likelihood vectors.
  * differs from below because we want to make a new one.
  * *)
-let lv_list_to_constant_rate_glv n_rates lv_list = 
-  Array.map 
-    (Glv_site.constant_rate_of_lv n_rates)
-    (Array.of_list lv_list)
-
-(* this is used when we have a pre-allocated GLV and want to fill it with a
- * same-length lv array *)
-let prep_constant_rate_glv_from_lv_arr glv lv_arr = 
-  assert(Array.length glv = Array.length lv_arr);
-  ArrayFuns.iter2 Glv_site.set_all_lvs_exp_zero glv lv_arr
-
-(* these assume that the GLV is reasonably healthy *)
-let n_states g = assert(g <> [||]); Glv_site.n_states g.(0)
-let n_rates g = assert(g <> [||]); Glv_site.n_rates g.(0)
-let n_sites g = Array.length g
-
-let ppr = Ppr.ppr_array Glv_site.ppr
+let lv_arr_to_constant_rate_glv n_rates lv_arr = 
+  assert(lv_arr <> [||]);
+  let g = make ~n_rates 
+               ~n_sites:(Array.length lv_arr) 
+               ~n_states:(Gsl_vector.length lv_arr.(0)) in
+  prep_constant_rate_glv_from_lv_arr g lv_arr;
+  g
 
 
 (* *** pulling exponent *** *)
 
+(* gets the base two exponent *)
+let get_twoexp x = snd (frexp x)
+
+(* makes a float given a base two exponent. we use 0.5 because:
+# frexp (ldexp 1. 3);;
+- : float * int = (0.5, 4)
+so that's how ocaml interprets 2^i anyway.
+*)
+let of_twoexp i = ldexp 0.5 (i+1)
+
+let ba1_iter f v = 
+  for i=0 to (BA1.dim v)-1 do f (BA1.unsafe_get v i) done
+
+(* find the maximum 2-exponent of a float BA1 *)
+let max_twoexp s = 
+  let max_twoexp = ref (-1024) in
+  ba1_iter
+    (fun x ->
+      let (_, twoexp) = frexp x in
+      if twoexp > !max_twoexp then max_twoexp := twoexp)
+    s;
+  !max_twoexp
+
+(* pull out the exponent if it's below min_allowed_twoexp and return it *)
+let site_perhaps_pull_exponent s = 
+  let our_twoexp = max_twoexp s in
+  if our_twoexp < min_allowed_twoexp then begin
+    (* take the negative so that we "divide" by 2^our_twoexp *)
+    Gsl_vector.scale s (of_twoexp (-our_twoexp));
+    our_twoexp
+  end
+  else 0
+
 let perhaps_pull_exponent g = 
-  iter Glv_site.perhaps_pull_exponent g
+  for i=0 to (get_n_sites g)-1 do
+    g.e.{i} <- g.e.{i} +
+      (site_perhaps_pull_exponent (BA2.slice_left g.a i))
+  done
 
 (* *** likelihood calculations *** *)
 
-(* log_like2_statd:
- * take the log like of the product of two things then dot with the stationary
- * distribution. there are lots of things we don't do error checking
- * on. *)
-let log_like2_statd model x_glv y_glv = 
-  assert(n_rates x_glv = n_rates y_glv);
-  let fn_rates = float_of_int (n_rates x_glv) in
-  let statd = Model.statd model in
-  let our_n_states = Gsl_vector.length statd in
-  ArrayFuns.fold_left2 (* fold over sites *)
-   (fun site_tot x_s y_s -> 
-     site_tot +. 
-     (Glv_site.log_like2_statd 
-        statd fn_rates our_n_states x_s y_s))
-   0. x_glv y_glv
+(* we us a float to avoid overflow *)
+let total_twoexp g = 
+  let tot = ref 0. in
+  for i=0 to (get_n_sites g)-1 do
+    tot := !tot +. float_of_int g.e.{i}
+  done;
+  !tot
 
 (* log_like3_statd:
  * take the log like of the product of three things then dot with the stationary
  * distribution. there are lots of things we don't do error checking
  * on. *)
-let log_like3_statd model x_glv y_glv z_glv = 
-  assert(n_rates x_glv = n_rates y_glv &&
-         n_rates y_glv = n_rates z_glv);
-  let fn_rates = float_of_int (n_rates x_glv) in
-  let statd = Model.statd model in
-  let our_n_states = Gsl_vector.length statd in
-  ArrayFuns.fold_left3 (* fold over sites *)
-   (fun site_tot x_s y_s z_s -> 
-     site_tot +. 
-     (Glv_site.log_like3_statd 
-        statd fn_rates our_n_states x_s y_s z_s))
-   0. x_glv y_glv z_glv
+let log_like3 statd x y z = 
+  assert(dims x = dims y && dims y = dims z);
+  (Linear.log_like3 statd x.a y.a z.a) +.
+    (log_of_2 *.
+      ((total_twoexp x) +. (total_twoexp y) +. (total_twoexp z)))
 
 (* evolve_into:
  * evolve src according to model for branch length bl, then store the
@@ -128,6 +217,12 @@ let evolve_into model ~dst ~src bl =
   (* prepare the matrices in our matrix cache *)
   Model.prep_mats_for_bl model bl;
   (* iter over sites *)
+  Gsl_blas.gemm 
+    ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.Trans 
+    ~alpha:1. ~a:a ~b:b ~beta:0. ~c:dest
+
+
+
   ArrayFuns.iter2 
     (fun dest_site src_site ->
       Glv_site.evolve_into model ~dst:dest_site ~src:src_site)
@@ -135,6 +230,7 @@ let evolve_into model ~dst ~src bl =
     src;
   ()
 
+  (*
 (* functional version *)
 let evolve model src_glv bl = 
   let dest_glv = copy src_glv in
@@ -169,3 +265,4 @@ let listwise_product dst = function
       (* just copy over *)
       memcpy ~dst ~src
   | [] -> assert(false)
+*)
