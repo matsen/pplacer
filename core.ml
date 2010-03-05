@@ -144,9 +144,6 @@ let pplacer_core
       ~dst:full_query_evolv 
       ~src:full_query_orig
       (start_pend prefs);
-    (* ERICK *)
-    Array.iter Pervasives.print_char masked_query_arr;
-    print_endline "";
     (* make a masked alignment with just the given query sequence and the
      * reference seqs *)
     if write_masked prefs then

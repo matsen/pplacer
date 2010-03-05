@@ -183,7 +183,6 @@ let perhaps_pull_exponent g =
     done;
     (* now scale if it's needed *)
     if !max_twoexp < min_allowed_twoexp then begin
-      print_endline "*** pulling exponents ***";
       for rate=0 to n_rates-1 do
         (* take the negative so that we "divide" by 2^our_twoexp *)
         Gsl_vector.scale 
