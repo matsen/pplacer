@@ -59,7 +59,9 @@ let pair_core prefs criterion pr1 pr2 =
   if Mokaphy_prefs.matrix_check prefs then
     Matrix_check.check pr1 pr2;
   if Mokaphy_prefs.heat_tree prefs then
-    Heat_tree.write_heat_tree (Mokaphy_prefs.white_bg prefs) 
+    Heat_tree.write_heat_tree 
+      (Mokaphy_prefs.white_bg prefs) 
+      (Mokaphy_prefs.simple_colors prefs) 
       weighting criterion p pr1 pr2;
   if Mokaphy_prefs.ddensity prefs then
     R_plots.write_ddensity pr1 pr2;

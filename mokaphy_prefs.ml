@@ -16,24 +16,26 @@ type mokaphy_prefs =
     matrix_check: bool ref;
     ddensity: bool ref;
     heat_tree: bool ref;
+    simple_colors: bool ref;
     white_bg: bool ref;
     bary_prefix: string ref;
   }
 
-let verbose      p = !(p.verbose)
-let shuffle      p = !(p.shuffle)
-let out_fname    p = !(p.out_fname)
-let n_samples    p = !(p.n_samples)
-let density      p = !(p.density)
-let p_plot       p = !(p.p_plot)
-let box_plot     p = !(p.box_plot)
-let p_exp        p = !(p.p_exp)
-let weighted     p = !(p.weighted)
-let matrix_check p = !(p.matrix_check)
-let ddensity     p = !(p.ddensity)
-let heat_tree    p = !(p.heat_tree)
-let white_bg    p = !(p.white_bg)
-let bary_prefix  p = !(p.bary_prefix)
+let verbose       p = !(p.verbose)
+let shuffle       p = !(p.shuffle)
+let out_fname     p = !(p.out_fname)
+let n_samples     p = !(p.n_samples)
+let density       p = !(p.density)
+let p_plot        p = !(p.p_plot)
+let box_plot      p = !(p.box_plot)
+let p_exp         p = !(p.p_exp)
+let weighted      p = !(p.weighted)
+let matrix_check  p = !(p.matrix_check)
+let ddensity      p = !(p.ddensity)
+let heat_tree     p = !(p.heat_tree)
+let white_bg      p = !(p.white_bg)
+let simple_colors p = !(p.simple_colors)
+let bary_prefix   p = !(p.bary_prefix)
 
 
 (* defaults *)
@@ -52,6 +54,7 @@ let defaults () =
     ddensity = ref false;
     heat_tree = ref false;
     white_bg = ref false;
+    simple_colors = ref false;
     bary_prefix = ref "";
   }
 
@@ -83,6 +86,8 @@ let args prefs = [
     "Make distance-by-distance densities.";
   "--heat", Arg.Set prefs.heat_tree,
   "Make a heat tree for each pair.";
+  "--simpleColors", Arg.Set prefs.simple_colors,
+  "Use only 100% red and blue to signify the sign of the KR along that edge.";
   "--whitebg", Arg.Set prefs.white_bg,
   "Make colors for the heat tree which are compatible with a white background.";
   "--bary", Arg.Set_string prefs.bary_prefix,

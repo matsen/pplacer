@@ -19,7 +19,7 @@ let parse_args () =
   and prefs = Mokaphy_prefs.defaults ()
   in
   let usage =
-    "mokaphy "^Placerun_io.version_str^"\nmokaphy ex1.place ex2.place...\n"
+    "mokaphy "^Version.version_revision^"\nmokaphy ex1.place ex2.place...\n"
   and anon_arg arg =
     files := arg :: !files
   in
