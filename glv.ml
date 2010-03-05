@@ -45,9 +45,11 @@ let iba1_to_array a =
   arr
 let iba1_ppr ff a = Ppr.ppr_int_array ff (iba1_to_array a)
 let iba1_pairwise_prod dest x y = 
-  for i=0 to (BA1.dim x)-1 do
-    BA1.set 
-      dest i ((BA1.get x i) * (BA1.get y i))
+  let n = BA1.dim x in
+  assert(n = BA1.dim y && n = BA1.dim dest);
+  for i=0 to n-1 do
+    BA1.unsafe_set 
+      dest i ((BA1.unsafe_get x i) * (BA1.unsafe_get y i))
   done
 
 (* glvs *)
