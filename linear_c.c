@@ -30,15 +30,34 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
   for(rate=0; rate < n_rates; rate++) { 
     // for each rate, start at the top of the util vector 
     util_v = util;
-    for(site=0; site < n_sites; site++) {
-    // proceed through the util vector and the sites
-      for(state=0; state < n_states; state++) {
-	*util_v += statd[state] * (*x) * (*y) * (*z);
-	x++;
-	y++;
-	z++;
+    // here we hard code in the limits for some popular choices 
+    // so that loops can get unrolled
+    if(n_states == 4) {
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < 4; state++) {
+          *util_v += statd[state] * (*x) * (*y) * (*z);
+          x++; y++; z++;
+        }
+        util_v++;
       }
-      util_v++;
+    }
+    else if(n_states == 20) {
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < 20; state++) {
+          *util_v += statd[state] * (*x) * (*y) * (*z);
+          x++; y++; z++;
+        }
+        util_v++;
+      }
+    }
+    else {
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < n_states; state++) {
+          *util_v += statd[state] * (*x) * (*y) * (*z);
+          x++; y++; z++;
+        }
+        util_v++;
+      }
     }
   }
   // now total up the likes from the util vector

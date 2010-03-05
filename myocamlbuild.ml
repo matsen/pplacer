@@ -12,8 +12,15 @@ dispatch begin function
       flag ["link"; "ocaml"; "native";] (S[A"-ccopt"; A"-static"]);
 
   | After_rules ->
-      (* choose your compiler *)
-      flag ["compile"; "c"; ] (S[A"-cc"; A"/usr/bin/gcc";]);
+      (* c compilation options *)
+      flag ["compile"; "c"; ] 
+      (S[
+        A"-cc"; A"/usr/bin/gcc";
+        A"-ccopt"; A"-Wall";
+        A"-ccopt"; A"-funroll-loops";
+        A"-ccopt"; A"-O3";
+        A"-ccopt"; A"-fPIC";
+      ]);
 
       (* custom: incorporate libraries into bytecode *)
       flag ["link"; "ocaml"; "byte"; ] (A"-custom");
