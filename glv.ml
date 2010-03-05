@@ -44,12 +44,12 @@ let iba1_to_array a =
   for i=0 to (BA1.dim a)-1 do arr.(i) <- a.{i} done;
   arr
 let iba1_ppr ff a = Ppr.ppr_int_array ff (iba1_to_array a)
-let iba1_pairwise_prod dest x y = 
+let iba1_pairwise_sum dest x y = 
   let n = BA1.dim x in
   assert(n = BA1.dim y && n = BA1.dim dest);
   for i=0 to n-1 do
     BA1.unsafe_set 
-      dest i ((BA1.unsafe_get x i) * (BA1.unsafe_get y i))
+      dest i ((BA1.unsafe_get x i) + (BA1.unsafe_get y i))
   done
 
 (* glvs *)
@@ -76,6 +76,10 @@ let make ~n_rates ~n_sites ~n_states =
 
 let print g = Linear.glv_print g.a
 
+let get_a g ~rate ~site ~state = BA3.get g.a rate site state
+let unsafe_get_a g ~rate ~site ~state = 
+  BA3.unsafe_get g.a rate site state
+
 (* make a glv of the same dimensions *)
 let mimic x = 
   { e = iba1_mimic x.e;
@@ -94,6 +98,10 @@ let memcpy ~dst ~src =
 let set_exp_and_all_entries g e x = 
   BA1.fill g.e e;
   BA3.fill g.a x
+
+let set_all g ve va = 
+  BA1.fill g.e ve;
+  Tensor.set_all g.a va
 
 (* set g according to function fe for exponenent and fa for entries *)
 let seti g fe fa = 
@@ -173,10 +181,10 @@ let of_twoexp i = ldexp 0.5 (i+1)
 let perhaps_pull_exponent g = 
   let n_rates = get_n_rates g
   and n_sites = get_n_sites g in
-  let max_twoexp = ref (-1024) in
+  let max_twoexp = ref (-max_int) in
   (* cycle through sites *)
   for site=0 to n_sites-1 do
-    max_twoexp := (-1024);
+    max_twoexp := (-max_int);
     (* first find the max twoexp *)
     for rate=0 to n_rates-1 do
       let s = BA3.slice_left_1 g.a rate site in
@@ -202,7 +210,7 @@ let perhaps_pull_exponent g =
 let total_twoexp g = 
   let tot = ref 0. in
   for i=0 to (get_n_sites g)-1 do
-    tot := !tot +. float_of_int g.e.{i}
+    tot := !tot +. float_of_int (BA1.unsafe_get g.e i)
   done;
   !tot
 
@@ -246,7 +254,7 @@ let evolve_into model ~dst ~src bl =
 (* take the pairwise product of glvs g1 and g2, then store in dest. *)
 let pairwise_prod ~dst g1 g2 = 
   assert(dims g1 = dims g2);
-  iba1_pairwise_prod dst.e g1.e g2.e;
+  iba1_pairwise_sum dst.e g1.e g2.e;
   Linear.pairwise_prod dst.a g1.a g2.a
 
 (* take the product of all of the GLV's in the list, then store in dst. 
@@ -263,3 +271,27 @@ let listwise_prod dst = function
       (* just copy over *)
       memcpy ~dst ~src
   | [] -> assert(false)
+
+(* for verification purposes *)
+let slow_log_like3 model x y z = 
+  let f_n_rates = float_of_int (Model.n_rates model) 
+  and ll_tot = ref 0.
+  and statd = Model.statd model
+  in
+  for site=0 to (get_n_sites x)-1 do
+    let site_like = ref 0. in
+    for rate=0 to (get_n_rates x)-1 do
+      for state=0 to (get_n_states x)-1 do
+        site_like := !site_like +.
+          statd.{state}
+            *. (get_a x ~rate ~site ~state)
+            *. (get_a y ~rate ~site ~state)
+            *. (get_a z ~rate ~site ~state)
+      done;
+    done;
+   ll_tot := !ll_tot
+     +. log(!site_like /. f_n_rates)
+     +. log_of_2 *. 
+          (float_of_int (x.e.{site} + y.e.{site} + z.e.{site}))
+  done;
+  !ll_tot

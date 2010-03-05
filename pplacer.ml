@@ -136,12 +136,19 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
-    let mem_usage = ref 0. in
     (* pull exponents *)
     List.iter 
       Glv_arr.perhaps_pull_exponent 
       [darr; parr; halfd; halfp; ];
+    (* tree likelihood *)
+    let zero_d = Glv_arr.get_one halfd
+    and zero_p = Glv_arr.get_one halfp in
+    let ones = Glv.mimic zero_d in
+    Glv.set_all ones 0 1.;
+    Printf.printf "tree likelihood is %g\n" 
+                  (Glv.log_like3 model zero_p zero_d ones);
     (* analyze query sequences *)
+    let mem_usage = ref 0. in
     List.iter 
       (fun query_fname ->
         let query_bname = 

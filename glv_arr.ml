@@ -21,8 +21,6 @@ let get a glvi = arr_get a glvi
 
 let get_one a = assert(a <> [||]); a.(0)
 
-(* let mask mask_arr a = Array.map (Glv.mask mask_arr) a *)
-
 let evolve_into model ~src ~dst bl_fun = 
   let n = Array.length src in
   if n <> Array.length dst then
