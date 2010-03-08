@@ -15,6 +15,9 @@
  * placements on those edge to the root is just the included value. if they are
  * serial, then we need to add in the distance from the placement to the
  * proximal side of the placement edge.
+ * NOTE: erick fix!
+ *
+ * the v part gives the distance from the root to the distal side of the edge.
  *
  * NOTE: this function assumes that edges are numbered in a depth first manner,
  * such that edge numbering strictly increases from a leaf to the root.
@@ -24,6 +27,10 @@
 open Fam_batteries
 
 type relation_dist = Parallel of float | Serial of float
+
+type ca_info = 
+  { u : relation_dist Uptri.uptri;
+    v : float array; }
 
 let ppr_relation_dist ff = function
  | Parallel x -> Format.fprintf ff "P%g" x
@@ -37,9 +44,10 @@ let ppr_ca_uptri ff u = Uptri.ppr_uptri ppr_relation_dist ff u
  * note that we assume that there are no placements on the root edge, and so do
  * not have an entry in our uptri for it.
  * *)
-let build_ca_uptri t = 
+let build_ca_info t = 
   let stree = Gtree.get_stree t in
-  let u = Uptri.create (Stree.n_edges stree) (Parallel 0.) in
+  let u = Uptri.create (Stree.n_edges stree) (Parallel 0.)
+  and v = Array.make (Stree.n_edges stree) 0. in
   (* set all pairs of the below with (Parallel curr_dist) *)
   let parallel_set below curr_dist = 
     Base.list_iter_over_pairs_of_single 
@@ -47,6 +55,7 @@ let build_ca_uptri t =
         (fun i j -> Uptri.set u i j (Parallel curr_dist))) 
       below
   in
+  let set_v i x = Array.set v i x in
   let rec aux dist_to_root = function
     | Stree.Node(id, tL) ->
         let curr_dist = dist_to_root +. Gtree.get_bl t id in
@@ -57,26 +66,31 @@ let build_ca_uptri t =
         let flat_below = List.flatten below in
         (* whereas in the serial case we don't want to include current edge *)
         List.iter 
-          (fun i -> Uptri.set u i id (Serial dist_to_root))
+          (fun i -> Uptri.set u i id (Serial curr_dist))
           flat_below;
+        set_v id curr_dist;
         id::flat_below
-    | Stree.Leaf id -> [id]
+    | Stree.Leaf id -> 
+        set_v id (dist_to_root +. Gtree.get_bl t id); 
+        [id]
   in
   (* avoid root edge *)
   match stree with 
-    | Stree.Node(_, tL) -> parallel_set (List.map (aux 0.) tL) 0.; u
+    | Stree.Node(_, tL) -> 
+        parallel_set (List.map (aux 0.) tL) 0.; 
+        { u = u; v = v; }
     | _ -> assert(false)
 
-
-(* find the distance to the common ancestor given two placements *)
-let find_ca ca_uptri (edge1, distal1) (edge2, distal2) = 
-  assert(edge1 <> edge2);
-  match Uptri.get_loose ca_uptri edge1 edge2 with
+(* find the distance to the common ancestor given info from two placements *)
+let find_ca_dist ca_info (edge1, distal1) (edge2, distal2) = 
+  if edge1 = edge2 then
+    ca_info.v.(edge1) -. (max distal1 distal2)
+  else match Uptri.get_loose ca_info.u edge1 edge2 with
   | Parallel x ->
       (* the common ancestor is distal to both *)
       x
   | Serial x ->
-  (* if edge 1 is on top, then we need to add the distal part of its placement
-   * to the common ancestry *)
-      x +. (if edge1 > edge2 then distal1 else distal2)
+  (* if edge 1 is on top, then we need to subtract the distal part of its
+   * placement from the common ancestry *)
+      x -. (if edge1 > edge2 then distal1 else distal2)
 

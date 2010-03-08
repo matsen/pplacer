@@ -70,6 +70,7 @@ manual:
 
 # the following is just a hack so that i can say :make % in vim and have it find the place with an error
 *.ml:
-	ocamlc -o /dev/null $@ && rm `basename $@ .ml`.cmi && rm `basename $@ .ml`.cmo
+	ocamlbuild $*.native
+	#ocamlc -o /dev/null $@ && rm `basename $@ .ml`.cmi && rm `basename $@ .ml`.cmo
 
 .PHONY: $(RELEASE) clean commit version runcaml sync stoke_release bloom_release gollum_release release tags manual
