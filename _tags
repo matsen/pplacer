@@ -2,8 +2,4 @@
 <pplacer>: include
 <*.{byte,native,top,p.native}>: use_str, use_unix, use_gsl, use_bigarray
 <**/*.ml>: warn_Z
-<**/normal_approx.ml>: use_gsl
-<**/fam_gsl_matvec.ml>: use_gsl
-<**/matrix_check.ml>: use_gsl
-<**/top_eig.ml>: use_gsl
-<**/eigen_sig.ml>: use_gsl
+<**/*.ml>: use_gsl

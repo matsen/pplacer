@@ -31,8 +31,11 @@ let () =
     let (fnames, prefs) = parse_args () in
     let parsed = List.map Placerun_io.of_file fnames in
     if parsed = [] then exit 0;
-
-    List.iter Placerun.fail_if_unplaced_seqs parsed;
+    List.iter 
+      (fun p -> 
+        if Placerun.contains_unplaced_queries p then
+          failwith((Placerun.get_name p)^" contains unplaced queries."))
+      parsed;
     let out_ch = 
       if Mokaphy_prefs.out_fname prefs = "" then stdout
       else open_out (Mokaphy_prefs.out_fname prefs)

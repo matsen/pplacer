@@ -50,8 +50,7 @@ let make_x_diff_and_coeff ~tot_n_p ~n_p1 =
 let matrix_version pr1 pr2 = 
   let plm1 = make_pl_map pr1
   and plm2 = make_pl_map pr2 in
-  let t = Placerun.get_ref_tree pr1 in
-  assert(t = Placerun.get_ref_tree pr2);
+  let t = Placerun.get_same_tree pr1 pr2 in
   let (n_p1, ndm1) = 
     Distance_mat.numbered_distal_map_of_placemap 0 plm1 in
   let (tot_n_p, ndm2) = 
@@ -83,5 +82,6 @@ let check pr1 pr2 =
   Printf.printf "%g = usual squared KR_2\n" kr;
   Printf.printf "%g = matrix KR\n\n" mat_kr;
   Printf.printf "%g = difference\n\n" (kr -. mat_kr);
+  Printf.printf "%g = new mat\n\n" ((Eigen_sig.matrix_pvalue false pr1 pr2)**2.);
   ()
 
