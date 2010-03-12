@@ -9,7 +9,6 @@ open MapsSets
 
 type 'a placerun = 
   {
-    (* listed in increasing order of going-to-be-changed *)
     ref_tree  :  'a Gtree.gtree;
     prefs     :  Prefs.prefs;
     name      :  string;

@@ -11,8 +11,13 @@ open Fam_batteries
 
 let min_width = 0.5
 
-let width_of_mass mass_width mass = 
-  Decor.width (min_width +. mass_width *. mass)
+(* log_coeff determines if we should apply a log transformation *)
+let width_of_mass log_coeff mass_width mass = 
+  if log_coeff != 0. then 
+    Decor.width 
+      (min_width +. mass_width *. (log (1. +. log_coeff *. mass)))
+  else 
+    Decor.width (min_width +. mass_width *. mass)
 
 (* writing the .loc.fasta file *)
 let write_loc_file fname_base unplaced_seqs placed_map =
@@ -106,72 +111,86 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
     [num_tree bogus_bl ref_tree placed_map]
 
 (* sing trees *)
-let sing_tree criterion mass_width ref_tree pquery = 
+let sing_tree weighting criterion mass_width ref_tree pquery = 
   let pqname = Pquery.name pquery in
-  Gtree.add_subtrees_by_map
-    ref_tree
-    (IntMapFuns.of_pairlist_listly 
-      (ListFuns.mapi
-        (fun num p -> 
-          let mass = criterion p in
-          (Placement.location p,
+  match weighting with
+  | Mass_map.Weighted ->
+    Gtree.add_subtrees_by_map
+      ref_tree
+      (IntMapFuns.of_pairlist_listly 
+        (ListFuns.mapi
+          (fun num p -> 
+            let mass = criterion p in
+            (Placement.location p,
+              (Placement.distal_bl p,
+              make_zero_leaf 
+                [ Decor.red; 
+                  width_of_mass 0. mass_width mass; ]
+                (Placement.pendant_bl p)
+                (Printf.sprintf 
+                  "%s_#%d_M=%g" 
+                  pqname 
+                  num
+                  mass),
+              decor_bark_of_bl)))
+          (Pquery.place_list pquery)))
+  | Mass_map.Unweighted ->
+      let p = Pquery.best_place criterion pquery in
+      Gtree.add_subtrees_by_map
+        ref_tree
+        (IntMapFuns.of_pairlist_listly 
+          [Placement.location p,
             (Placement.distal_bl p,
             make_zero_leaf 
-              [ Decor.red; 
-                width_of_mass mass_width mass; ]
+              [ Decor.red; ]
               (Placement.pendant_bl p)
-              (Printf.sprintf 
-                "%s_#%d_M=%g" 
-                pqname 
-                num
-                mass),
-            decor_bark_of_bl)))
-        (Pquery.place_list pquery)))
+              (Printf.sprintf "%s" pqname),
+              decor_bark_of_bl)])
 
-let write_sing_file criterion mass_width tree_fmt fname_base ref_tree 
+let write_sing_file weighting criterion mass_width tree_fmt fname_base ref_tree 
                                            placed_pquery_list = 
   trees_to_file 
     tree_fmt 
     (fname_base^".sing") 
     (List.map 
-      (sing_tree criterion mass_width ref_tree) 
+      (sing_tree weighting criterion mass_width ref_tree) 
       placed_pquery_list)
 
 
 (* fat trees *)
-let fat_tree weighting criterion mass_width decor_ref_tree pr =
+let fat_tree weighting criterion mass_width log_coeff decor_ref_tree pr =
   Decor_gtree.add_decor_by_map
     decor_ref_tree
     (IntMap.map
       (fun mass -> 
-        [ width_of_mass mass_width mass; ])
+        [ width_of_mass log_coeff mass_width mass; ])
       (Mass_map.By_edge.of_placerun weighting criterion pr))
 
-let write_fat_tree weighting criterion fat_width fname_base decor_ref_tree placerun = 
+let write_fat_tree weighting criterion fat_width log_coeff fname_base decor_ref_tree placerun = 
   Phyloxml.named_tree_to_file
     (fname_base^".fat")
-    (fat_tree weighting criterion fat_width decor_ref_tree placerun)
+    (fat_tree weighting criterion fat_width log_coeff decor_ref_tree placerun)
     (fname_base^".fat.xml") 
 
 
 (* edpl trees *)
 
 let edpl_tree white_bg
-      weighting criterion ~mass_width max_edpl decor_ref_tree pr = 
+      weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree pr = 
   let gray = if white_bg then Decor.black else Decor.white in
   Decor_gtree.add_decor_by_map
     decor_ref_tree
     (IntMap.map
       (fun (mass, edpl) -> 
-        [ width_of_mass mass_width mass;
+        [ width_of_mass log_coeff mass_width mass;
           if edpl <= max_edpl then
             Decor.color_avg (edpl /. max_edpl) Decor.red gray 
           else
             Decor.orange ])
       (Edpl.weighted_edpl_map_of_pr weighting criterion pr))
 
-let write_edpl_tree white_bg weighting criterion ~mass_width max_edpl fname_base decor_ref_tree placerun = 
+let write_edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl fname_base decor_ref_tree placerun = 
   Phyloxml.named_tree_to_file
     (fname_base^".edpl")
-    (edpl_tree white_bg weighting criterion ~mass_width max_edpl decor_ref_tree placerun)
+    (edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree placerun)
     (fname_base^".edpl.xml") 

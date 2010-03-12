@@ -38,8 +38,8 @@ dispatch begin function
       (* link with atlas given use_gsl tag 
       flag ["link"; "ocaml"; "use_gsl"]
         (S[A"-cclib"; A"-lcblas"; A"-cclib"; A"-latlas"; A"-cclib"; A"-L/usr/lib/sse2/";]);
-        (S[A"-cclib"; A"-lcblas"; A"-cclib"; A"-latlas"; A"-cclib"; A"-L/home/rkodner/erick/atlas/build/lib";]);
-       *)
+        (S[A"-cclib"; A"-lm"; A"-cclib"; A"-lcblas"; A"-cclib"; A"-latlas"; A"-cclib"; A"-L/home/rkodner/erick/atlas/build/lib";]);
+*)
   | _ -> ()
 end;;
 

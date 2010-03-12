@@ -19,6 +19,7 @@ and show_node_numbers = ref false
 and xml = ref false
 and unit_width = ref 1.
 and total_width = ref 0.
+and log_coeff = ref 0.
 and out_dir = ref "."
 
 let parse_args () =
@@ -53,6 +54,8 @@ let parse_args () =
       "Set the number of pixels for a single placement (default setting).";
       "--totalwidth", Arg.Set_float total_width,
       "Set the total number of pixels for all of the mass.";
+      "--log", Arg.Set_float log_coeff,
+      "Set to a nonzero value to perform a logarithmic transform of the branch width.";
       "--outDir", Arg.Set_string out_dir,
       "Specify the directory to write place files to.";
   ] in
@@ -122,15 +125,16 @@ let () =
         (* make the various visualizations *)
         write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-          weighting criterion mass_width fname_base decor_ref_tree placerun;
+          weighting criterion mass_width !log_coeff fname_base decor_ref_tree placerun;
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt criterion fname_base decor_ref_tree placed_map;
         if !max_edpl <> 0. then
           Placeviz_core.write_edpl_tree !white_bg weighting 
-            criterion ~mass_width !max_edpl fname_base decor_ref_tree placerun;
+            criterion ~mass_width !log_coeff !max_edpl fname_base decor_ref_tree placerun;
         if !write_sing then
           Placeviz_core.write_sing_file 
+            weighting
             criterion
             !unit_width
             tree_fmt

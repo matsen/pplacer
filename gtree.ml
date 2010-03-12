@@ -14,6 +14,11 @@
 open Fam_batteries
 open MapsSets
 
+(* these are raised when we are asked for something that isn't in a bark map *)
+exception Lacking_branchlength of int
+exception Lacking_name of int
+exception Lacking_bootstrap of int
+
 type 'a gtree = 
   {stree : Stree.stree;
   bark_map : 'a IntMap.t}
@@ -28,9 +33,16 @@ let get_bark_map t = t.bark_map
 let get_bark t id = IntMap.find id t.bark_map
 let get_bark_opt t id = 
   if IntMap.mem id t.bark_map then Some(get_bark t id) else None
-let get_bl t id = (get_bark t id)#get_bl
-let get_name t id = (get_bark t id)#get_name
-let get_boot t id = (get_bark t id)#get_boot
+
+let get_bl t id = 
+  try (get_bark t id)#get_bl with 
+  | Not_found -> raise (Lacking_branchlength id)
+let get_name t id = 
+  try (get_bark t id)#get_name with
+  | Not_found -> raise (Lacking_name id)
+let get_boot t id = 
+  try (get_bark t id)#get_boot with
+  | Not_found -> raise (Lacking_bootstrap id)
 
 let set_bark_map t bark_map = {t with bark_map = bark_map}
 let add_bark t id bark = 

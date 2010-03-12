@@ -196,3 +196,24 @@ let time_fun f =
 
 let print_time_fun name f = 
   Printf.printf "%s took %g seconds\n" name (time_fun f)
+
+(* iter over all ordered pairs in a list.
+# let print_pair = Printf.printf "(%d,%d) ";;
+val print_pair : int -> int -> unit = <fun>
+# list_iter_over_pairs_of_single print_pair [1;2;3;4];;
+(1,2) (1,3) (1,4) (2,3) (2,4) (3,4) - : unit = ()
+*)
+let rec list_iter_over_pairs_of_single f = function
+  | x::l -> 
+      List.iter (fun y -> f x y) l;
+      list_iter_over_pairs_of_single f l
+  | [] -> ()
+
+(* iter over pairs from two lists.
+# list_iter_over_pairs_of_two print_pair [1;3] [4;5];;
+(1,4) (1,5) (3,4) (3,5) - : unit = ()
+*)
+let list_iter_over_pairs_of_two f l1 l2 = 
+  List.iter (fun x -> List.iter (f x) l2) l1
+
+
