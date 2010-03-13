@@ -14,7 +14,7 @@
 
 CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, value z_value, value util_value)
 {
-  CAMLparam5(statd_value,x_value, y_value, z_value, util_value);
+  CAMLparam5(statd_value, x_value, y_value, z_value, util_value);
   CAMLlocal1(ml_ll_tot);
   double *statd = Data_bigarray_val(statd_value);
   double *x = Data_bigarray_val(x_value);
@@ -34,19 +34,23 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
     // so that loops can get unrolled
     if(n_states == 4) {
       for(site=0; site < n_sites; site++) {
-        for(state=0; state < 4; state++) {
-          *util_v += statd[state] * (*x) * (*y) * (*z);
-          x++; y++; z++;
+	for(state=0; state < 4; state++) {
+	  *util_v += statd[state] * x[state] * y[state] * z[state];
         }
+	x += 4;
+	y += 4;
+	z += 4;
         util_v++;
       }
     }
     else if(n_states == 20) {
       for(site=0; site < n_sites; site++) {
         for(state=0; state < 20; state++) {
-          *util_v += statd[state] * (*x) * (*y) * (*z);
-          x++; y++; z++;
+          *util_v += statd[state] * x[state] * y[state] * z[state];
         }
+	x += 20;
+	y += 20;
+	z += 20;
         util_v++;
       }
     }
@@ -62,10 +66,11 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
   }
   // now total up the likes from the util vector
   double ll_tot=0;
-  float f_n_rates = (float) n_rates;
   for(site=0; site < n_sites; site++) {
-    ll_tot += log(util[site] / f_n_rates);
+    ll_tot += log(util[site]);
   }
+  // subtract once rather than perform division by n_rates n_sites times
+  ll_tot -= ((float) n_sites) * log ((float) n_rates);
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
 }
@@ -105,6 +110,69 @@ CAMLprim value glv_print_c(value x_value)
       printf("\n");
     }
     printf("--\n");
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value gemmish_c(value a_value, value b_value, value c_value)
+{
+  CAMLparam3(a_value, b_value, c_value);
+  double *a = Data_bigarray_val(a_value);
+  double *b = Data_bigarray_val(b_value);
+  double *c = Data_bigarray_val(c_value);
+  int n_states = Bigarray_val(a_value)->dim[0];
+  int n_sites = Bigarray_val(b_value)->dim[0];
+  int site, i, j;
+  double *a_start = a;
+  if( n_states != Bigarray_val(a_value)->dim[1] ||
+      n_sites  != Bigarray_val(c_value)->dim[0] ||
+      n_states != Bigarray_val(c_value)->dim[1] ) {
+    printf("bad input dimensions!");
+  };
+  if(n_states == 4) {
+    for(site=0; site < n_sites; site++) { 
+      // start back at the top of the matrix
+      a = a_start;
+      // going down the matrix a and across c
+      for(i=0; i < 4; i++) { 
+        *c = 0;
+        // going across a
+        for(j=0; j < 4; j++) { *c += a[j] * b[j]; }
+	a += 4;
+        c++;
+      }
+      b += n_states;
+    }
+  }
+  else if(n_states == 20) {
+    for(site=0; site < n_sites; site++) { 
+      // start back at the top of the matrix
+      a = a_start;
+      // going down the matrix a and across c
+      for(i=0; i < 20; i++) { 
+        *c = 0;
+        // going across a
+        for(j=0; j < 20; j++) { *c += a[j] * b[j]; }
+	a += 20;
+        c++;
+      }
+      b += n_states;
+    }
+  }
+  else {
+    for(site=0; site < n_sites; site++) { 
+      // start back at the top of the matrix
+      a = a_start;
+      // going down the matrix a and across c
+      for(i=0; i < n_states; i++) { 
+        *c = 0;
+        // going across a
+        for(j=0; j < n_states; j++) { *c += a[j] * b[j]; }
+	a += n_states;
+        c++;
+      }
+      b += n_states;
+    }
   }
   CAMLreturn(Val_unit);
 }

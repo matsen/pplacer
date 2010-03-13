@@ -15,3 +15,5 @@ external log_like3 : Gsl_vector.vector -> Tensor.tensor -> Tensor.tensor -> Tens
 (* dest x y *)
 external pairwise_prod : Tensor.tensor -> Tensor.tensor -> Tensor.tensor -> unit = "pairwise_prod_c"
 
+(* a * b = dest *)
+external gemmish : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> unit = "gemmish_c"

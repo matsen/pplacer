@@ -20,6 +20,8 @@ dispatch begin function
         A"-ccopt"; A"-funroll-loops";
         A"-ccopt"; A"-O3";
         A"-ccopt"; A"-fPIC";
+        A"-ccopt"; A"-D__SIM_SSE3";
+        A"-ccopt"; A"-msse3";
       ]);
 
       (* custom: incorporate libraries into bytecode *)
@@ -35,11 +37,6 @@ dispatch begin function
       (* automatically include gsl when the use_gsl tag is given in _tags *)
       ocaml_lib ~extern:true ~dir:"+gsl" "gsl";
 
-      (* link with atlas given use_gsl tag 
-      flag ["link"; "ocaml"; "use_gsl"]
-        (S[A"-cclib"; A"-lcblas"; A"-cclib"; A"-latlas"; A"-cclib"; A"-L/usr/lib/sse2/";]);
-        (S[A"-cclib"; A"-lm"; A"-cclib"; A"-lcblas"; A"-cclib"; A"-latlas"; A"-cclib"; A"-L/home/rkodner/erick/atlas/build/lib";]);
-*)
   | _ -> ()
 end;;
 
