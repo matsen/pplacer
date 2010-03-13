@@ -123,10 +123,10 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
   CAMLreturn(ml_ll_tot);
 }
 
-CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value)
+CAMLprim value pairwise_prod_c(value dst_value, value x_value, value y_value)
 {
-  CAMLparam3(dest_value, x_value, y_value);
-  double *dest = Data_bigarray_val(dest_value);
+  CAMLparam3(dst_value, x_value, y_value);
+  double *dst = Data_bigarray_val(dst_value);
   double *x = Data_bigarray_val(x_value);
   double *y = Data_bigarray_val(y_value);
   int size = 
@@ -135,7 +135,7 @@ CAMLprim value pairwise_prod_c(value dest_value, value x_value, value y_value)
     * (Bigarray_val(x_value)->dim[2]);
   int i;
   for(i=0; i < size; i++) {
-    dest[i] = x[i] * y[i];
+    dst[i] = x[i] * y[i];
   }
   CAMLreturn(Val_unit);
 }
@@ -162,32 +162,33 @@ CAMLprim value glv_print_c(value x_value)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value gemmish_c(value a_value, value b_value, value c_value)
+/* stores a times b^T in dst */
+CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
 {
-  CAMLparam3(a_value, b_value, c_value);
+  CAMLparam3(dst_value, a_value, b_value);
+  double *dst = Data_bigarray_val(dst_value);
   double *a = Data_bigarray_val(a_value);
   double *b = Data_bigarray_val(b_value);
-  double *c = Data_bigarray_val(c_value);
   int n_states = Bigarray_val(a_value)->dim[0];
   int n_sites = Bigarray_val(b_value)->dim[0];
   int site, i, j;
   double *a_start = a;
   if( n_states != Bigarray_val(a_value)->dim[1] ||
-      n_sites  != Bigarray_val(c_value)->dim[0] ||
-      n_states != Bigarray_val(c_value)->dim[1] ) {
+      n_sites  != Bigarray_val(dst_value)->dim[0] ||
+      n_states != Bigarray_val(dst_value)->dim[1] ) {
     printf("bad input dimensions!");
   };
   if(n_states == 4) {
     for(site=0; site < n_sites; site++) { 
       // start back at the top of the matrix
       a = a_start;
-      // going down the matrix a and across c
+      // going down the matrix a and across dst
       for(i=0; i < 4; i++) { 
-        *c = 0;
+        *dst = 0;
         // going across a
-        for(j=0; j < 4; j++) { *c += a[j] * b[j]; }
+        for(j=0; j < 4; j++) { *dst += a[j] * b[j]; }
 	a += 4;
-        c++;
+        dst++;
       }
       b += n_states;
     }
@@ -196,13 +197,13 @@ CAMLprim value gemmish_c(value a_value, value b_value, value c_value)
     for(site=0; site < n_sites; site++) { 
       // start back at the top of the matrix
       a = a_start;
-      // going down the matrix a and across c
+      // going down the matrix a and across dst
       for(i=0; i < 20; i++) { 
-        *c = 0;
+        *dst = 0;
         // going across a
-        for(j=0; j < 20; j++) { *c += a[j] * b[j]; }
+        for(j=0; j < 20; j++) { *dst += a[j] * b[j]; }
 	a += 20;
-        c++;
+        dst++;
       }
       b += n_states;
     }
@@ -211,13 +212,13 @@ CAMLprim value gemmish_c(value a_value, value b_value, value c_value)
     for(site=0; site < n_sites; site++) { 
       // start back at the top of the matrix
       a = a_start;
-      // going down the matrix a and across c
+      // going down the matrix a and across dst
       for(i=0; i < n_states; i++) { 
-        *c = 0;
+        *dst = 0;
         // going across a
-        for(j=0; j < n_states; j++) { *c += a[j] * b[j]; }
+        for(j=0; j < n_states; j++) { *dst += a[j] * b[j]; }
 	a += n_states;
-        c++;
+        dst++;
       }
       b += n_states;
     }

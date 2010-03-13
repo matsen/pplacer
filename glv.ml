@@ -234,12 +234,7 @@ let tensor_mul tensor ~dst ~src =
     and evo_mat = BA3.slice_left_2 tensor i
     and dst_mat = BA3.slice_left_2 dst.a i
     in
-    Linear.gemmish evo_mat src_mat dst_mat
-    (*
-    Gsl_blas.gemm 
-      ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.Trans 
-      ~alpha:1. ~a:src_mat ~b:evo_mat ~beta:0. ~c:dst_mat
-      *)
+    Linear.gemmish dst_mat evo_mat src_mat 
   done
 
 (* evolve_into:

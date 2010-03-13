@@ -8,18 +8,18 @@
  *)
 
 type glv_edge = {
-  orig   : Glv.glv ref;
+  orig   : Glv.glv;
   evolv  : Glv.glv;
   bl     : float ref;
 }
 
 let get_bl e = !(e.bl)
-let get_orig e = !(e.orig)
+let get_orig e = e.orig
 let get_evolv e = e.evolv
 
 let recalculate model glve = 
   Glv.evolve_into model 
-                  ~dst:(glve.evolv) ~src:(!(glve.orig)) !(glve.bl)
+                  ~dst:(glve.evolv) ~src:(glve.orig) !(glve.bl)
 
 let set_bl model glve new_bl = 
   glve.bl := new_bl;
@@ -27,14 +27,9 @@ let set_bl model glve new_bl =
 
 let make model orig init_bl = 
   let glve = 
-    { orig  = ref orig;
+    { orig  = orig;
       evolv = Glv.copy orig;
       bl    = ref init_bl } in
   recalculate model glve;
   glve
-
-let set_orig_and_bl model glve new_orig new_bl = 
-  glve.orig := new_orig;
-  glve.bl := new_bl;
-  recalculate model glve
 
