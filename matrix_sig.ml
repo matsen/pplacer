@@ -6,18 +6,19 @@
  * mtilde = \int_u G_i(u) G_j(u) \lambda(du)
  *)
 
+let tol = 1e-5
+let max_iter = 100
 
 module BA1 = Bigarray.Array1
 module BA2 = Bigarray.Array2
 
-let build_mtilde use_pp pr1 pr2 = 
+(* could be made faster by improving the way the matrices are accessed *)
+let build_mtilde weighting criterion pr1 pr2 = 
   let t = Placerun.get_same_tree pr1 pr2 in
   let both = 
     Array.of_list
     ((Placerun.get_pqueries pr1)@(Placerun.get_pqueries pr2)) in
   let n = Array.length both
-  and get_weight = 
-    if use_pp then Placement.post_prob else Placement.ml_ratio
   and ca_info = Camat.build_ca_info t
   in
   let mt = Gsl_matrix.create ~init:0. n n in
@@ -29,19 +30,34 @@ let build_mtilde use_pp pr1 pr2 =
     incr_one i j;
     if i <> j then incr_one j i;
   in
-  for i=0 to n-1 do
-    for j=i to n-1 do
-      Base.list_iter_over_pairs_of_two 
-        (fun p1 p2 ->
-          mt_increment i j 
-            ((get_weight p1) *. (get_weight p2) *.
-              ((Camat.find_ca_dist ca_info
-                (Placement.location p1, Placement.distal_bl p1)
-                (Placement.location p2, Placement.distal_bl p2)))))
-        (Pquery.place_list both.(i))
-        (Pquery.place_list both.(j))
-    done
-  done;
+  let () = match weighting with
+  | Mass_map.Weighted -> 
+    for i=0 to n-1 do
+      for j=i to n-1 do
+        Base.list_iter_over_pairs_of_two 
+          (fun p1 p2 ->
+            mt_increment i j 
+              ((criterion p1) *. (criterion p2) *.
+                ((Camat.find_ca_dist ca_info
+                  (Placement.location p1, Placement.distal_bl p1)
+                  (Placement.location p2, Placement.distal_bl p2)))))
+          (Pquery.place_list both.(i))
+          (Pquery.place_list both.(j))
+      done
+    done;
+  | Mass_map.Unweighted -> 
+    for i=0 to n-1 do
+      for j=i to n-1 do
+        let p1 = Pquery.best_place criterion both.(i)
+        and p2 = Pquery.best_place criterion both.(j)
+        in
+        mt_increment i j 
+          ((Camat.find_ca_dist ca_info
+              (Placement.location p1, Placement.distal_bl p1)
+              (Placement.location p2, Placement.distal_bl p2)))
+      done
+    done;
+  in
   Gsl_matrix.scale mt (1. /. (Gtree.tree_length t));
   mt
 
@@ -54,17 +70,15 @@ let row_avg m =
   Gsl_vector.scale ra (1. /. (float_of_int n_cols));
   ra
 
-let build_m use_pp pr1 pr2 = 
-  let m = build_mtilde use_pp pr1 pr2 in
+(* if m is mtilde then convert it to an m. n1 and n2 are the number of pqueries
+ * in pr1 and pr2 *)
+let m_of_mtilde m n1 n2 = 
   (* it's mtilde so far *)
   let (n,_) = Gsl_matrix.dims m in
+  assert(n = n1+n2);
   let ra = row_avg m in
   let avg = (vec_tot ra) /. (float_of_int n) in
-  let coeff = 
-    (float_of_int n) /.
-    (float_of_int 
-      ((Placerun.n_pqueries pr1) * (Placerun.n_pqueries pr2)))
-  in
+  let coeff = (float_of_int n) /. (float_of_int (n1*n2)) in
   for i=0 to n-1 do
     for j=0 to n-1 do
       BA2.unsafe_set m i j
@@ -74,8 +88,7 @@ let build_m use_pp pr1 pr2 =
           -. (BA1.unsafe_get ra j)
           +. avg))
     done
-  done;
-  m
+  done
 
 let rooted_qform m v = sqrt(Fam_matrix.qform m v)
 
@@ -104,19 +117,24 @@ let w_expectation rng tol m =
   in
   get_expectation (next_expectation ())
 
-let matrix_pvalue use_pp pr1 pr2 = 
+let dist_and_p weighting criterion rng pr1 pr2 = 
   let n1 = Placerun.n_pqueries pr1 
   and n2 = Placerun.n_pqueries pr2 in
+  let inv_n1 = 1. /. (float_of_int n1)
+  and neg_inv_n2 = -. 1. /. (float_of_int n2) in
   let indicator = 
     Fam_vector.init 
       (n1+n2)
-      (fun i -> if i < n1 then 1. else 0.)
+      (fun i -> if i < n1 then inv_n1 else neg_inv_n2)
   in
-  let m = build_m use_pp pr1 pr2 in
-  (* (rooted_qform m indicator, w_expectation rng 1e-5 m) *)
-  rooted_qform m indicator
+  let m = build_mtilde weighting criterion pr1 pr2 in
+  (* first m is mtilde *)
+  let w = rooted_qform m indicator in
+  (* then it actually becomes mtilde *)
+  m_of_mtilde m n1 n2;
+  let ew = sqrt (w_expectation rng tol m) in
+  Printf.printf "W: %g\t E[W]: %g\n" w ew;
+  let t = w -. ew in
+  (w,
+  2. *. exp ( -. t *. t /. (2. *. (Top_eig.top_eig m tol max_iter))))
 
-
-  (* Gsl_blas.dot x (Fam_gsl_matvec.allocMatVecMul a x) *)
-
-  let x = Placerun_io.of_file

@@ -48,16 +48,10 @@ let weighting_of_prefs prefs =
   else Mass_map.Unweighted 
 
 let pair_core prefs criterion pr1 pr2 =
+  let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
+  Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.seed prefs));
   let p = (Mokaphy_prefs.p_exp prefs) in
   let weighting = weighting_of_prefs prefs in
-  let calc_dist = 
-    Kr_distance.pair_distance
-      weighting 
-      criterion 
-      p in
-  let original_dist = calc_dist pr1 pr2 in
-  if Mokaphy_prefs.matrix_check prefs then
-    Matrix_check.check pr1 pr2;
   if Mokaphy_prefs.heat_tree prefs then
     Heat_tree.write_heat_tree 
       (Mokaphy_prefs.white_bg prefs) 
@@ -65,7 +59,18 @@ let pair_core prefs criterion pr1 pr2 =
       weighting criterion p pr1 pr2;
   if Mokaphy_prefs.ddensity prefs then
     R_plots.write_ddensity pr1 pr2;
-  if Mokaphy_prefs.shuffle prefs then begin
+  if Mokaphy_prefs.matrix prefs then begin
+    let (distance, p_value) =
+      Matrix_sig.dist_and_p weighting criterion rng pr1 pr2 in
+    {distance = distance; p_value = Some p_value}
+  end
+  else if Mokaphy_prefs.shuffle prefs then begin
+    let calc_dist = 
+      Kr_distance.pair_distance
+        weighting 
+        criterion 
+        p in
+    let original_dist = calc_dist pr1 pr2 in
     (* shuffle mode *)
     let p_value = 
       if 0 < Mokaphy_prefs.n_samples prefs then begin
@@ -161,11 +166,14 @@ let core prefs criterion ch pr_arr =
             pr_arr.(i) 
             pr_arr.(j))
     in
-    let names = Array.map Placerun.get_name pr_arr in
-    Printf.fprintf ch "Z_%g distances:\n" (Mokaphy_prefs.p_exp prefs);
+    let names = Array.map Placerun.get_name pr_arr 
+    and p_exp = if Mokaphy_prefs.matrix prefs then 2.
+                else Mokaphy_prefs.p_exp prefs 
+    in
+    Printf.fprintf ch "Z_%g distances:\n" p_exp;
     Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
-    if Mokaphy_prefs.n_samples prefs > 0 then begin
-      Printf.fprintf ch "Z_%g p-values:\n" (Mokaphy_prefs.p_exp prefs);
+    if Mokaphy_prefs.matrix prefs || Mokaphy_prefs.n_samples prefs > 0 then begin
+      Printf.fprintf ch "Z_%g p-values:\n" p_exp;
       Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
     end;
   end;

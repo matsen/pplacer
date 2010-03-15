@@ -7,8 +7,6 @@
  * http://en.wikipedia.org/wiki/Power_iteration
 *)
 
-let max_iter = 100
-
 let scale_by_l2 v = Gsl_vector.scale v (1. /. (Gsl_blas.nrm2 v))
 
 let v_diff = Fam_vector.map2_into (-.)
@@ -30,7 +28,6 @@ let stop_time tol v w =
   | Exit -> false
 
 (* find the top eigenvalue of a symmetric matrix by power iteration.
- * mul_fun is a BLAS function for multiplication of a vector times a matrix.
  *)
 let top_eig m tol max_iter = 
   let (rows, cols) = Gsl_matrix.dims m in
@@ -44,7 +41,6 @@ let top_eig m tol max_iter =
     scale_by_l2 dst
   in
   let rec aux iter_n = 
-    Printf.printf "iter %d\n" iter_n;
     if iter_n < max_iter then begin
       mul_and_scale v scratch;
       mul_and_scale scratch v;
