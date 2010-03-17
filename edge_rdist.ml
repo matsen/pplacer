@@ -3,9 +3,8 @@
  *
  * to construct a matrix showing common ancestry on an edge-by-edge basis.
  *
- * let A and B be two edges in a tree. let C be their common ancestor, and R be
- * the root of the tree. we say that A and B are "serial" if C is one of A or B,
- * and "parallel" if not.
+ * let A and B be two edges in a tree. let C be their common ancestor. we say
+ * that A and B are "serial" if C is one of A or B, and "parallel" if not.
  *
  * this module supports two kinds of calculation: length of common ancestry, and
  * pairwise distances. the idea is that we want to be able to compute distances
