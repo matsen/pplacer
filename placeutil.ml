@@ -146,8 +146,21 @@ let () =
     let invocation = String.concat " " (Array.to_list Sys.argv) in
     if List.length fnames <= 1 && 
        List.length placerun_list <= 1 && 
-       not (!print_edpl) then
+       not (!print_edpl) &&
+       not (!edge_distance_mat)then
       print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
     else 
-      List.iter (Placerun_io.to_file invocation ".") placerun_list
+      List.iter (Placerun_io.to_file invocation ".") placerun_list;
+    (* make edge-distance matrices *)
+    if !edge_distance_mat then
+      List.iter
+       (fun pr ->
+         let ch = open_out ((Placerun.get_name pr)^".distmat") in
+         let ff = Format.formatter_of_out_channel ch in
+         Uptri.ppr_lowtri ff 
+           Edge_rdist.ppr_rdist
+           (Edge_rdist.build_pairwise_dist 
+           (Placerun.get_ref_tree pr));
+         close_out ch)
+       placerun_list;
     end

@@ -36,7 +36,7 @@ type relation_dist = Parallel of float | Serial of float
 
 let ppr_rdist ff = function
  | Parallel x -> Format.fprintf ff "P%g" x
- | Serial x -> Format.fprintf ff "S%g" x
+ | Serial x ->   Format.fprintf ff "S%g" x
 
 let ppr_rdist_uptri ff u = Uptri.ppr_uptri ppr_rdist ff u
 
