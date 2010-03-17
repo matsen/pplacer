@@ -125,8 +125,12 @@ let () =
     if (verb_level prefs) >= 2 then
       Printf.printf "memory after reference tree calculation (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
-    if (verb_level prefs) >= 1 then begin
+    (* pull exponents *)
+    List.iter 
+      (Glv_arr.iter (Glv.perhaps_pull_exponent (-10)))
+      [darr; parr;];
     (* baseball calculation *)
+    if (verb_level prefs) >= 1 then begin
       print_string "Preparing the edges for baseball... ";
       flush_all ();
     end;
@@ -136,10 +140,6 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
-    (* pull exponents *)
-    List.iter 
-      Glv_arr.perhaps_pull_exponent 
-      [darr; parr; halfd; halfp; ];
     (* tree likelihood *)
     let zero_d = Glv_arr.get_one halfd
     and zero_p = Glv_arr.get_one halfp in

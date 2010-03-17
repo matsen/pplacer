@@ -31,8 +31,6 @@ module BA1 = BA.Array1
 module BA2 = BA.Array2
 module BA3 = BA.Array3
 
-(* below 2^-50 = 1e-15 we pull out the exponent into the int *)
-let min_allowed_twoexp = -50
 let log_of_2 = log 2.
 
 (* integer big arrays *)
@@ -178,7 +176,7 @@ let of_twoexp i = ldexp 0.5 (i+1)
 (* pull out the exponent if it's below min_allowed_twoexp and return it. this
  * process is a bit complicated by the fact that we are partitioned by rate, as
  * can be seen below. *)
-let perhaps_pull_exponent g = 
+let perhaps_pull_exponent min_allowed_twoexp g = 
   let n_rates = get_n_rates g
   and n_sites = get_n_sites g in
   let max_twoexp = ref (-max_int) in

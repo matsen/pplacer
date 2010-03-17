@@ -29,4 +29,3 @@ let evolve_into model ~src ~dst bl_fun =
     Glv.evolve_into model ~src:src.(i) ~dst:dst.(i) (bl_fun i)
   done
 
-let perhaps_pull_exponent = iter Glv.perhaps_pull_exponent

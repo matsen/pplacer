@@ -9,6 +9,9 @@ open MapsSets
 open Fam_batteries
 open Stree
 
+(* below 2^-50 = 1e-15 we pull out the exponent into the int *)
+let min_allowed_twoexp = -50
+
 let like_aln_map_of_data seq_type align tree = 
   let like_aln = Alignment_funs.like_aln_of_align seq_type align in
   IntMap.map
@@ -37,7 +40,7 @@ let calc_distal_and_evolv_dist model tree like_aln_map
     | Stree.Node(_, tL) -> begin
         (* take the product of the below *)
         Glv.listwise_prod distal (List.map calc tL);
-        Glv.perhaps_pull_exponent distal
+        Glv.perhaps_pull_exponent min_allowed_twoexp distal
       end
     | Stree.Leaf _ -> 
   (* for a leaf, distal is just the LV from the aln for each rate *)
@@ -85,7 +88,7 @@ let calc_proximal model tree
               prox_below
               (evolved_prox::
                 (List.map (glv_from_stree evolv_dist_glv_arr) rest));
-            Glv.perhaps_pull_exponent prox_below)
+            Glv.perhaps_pull_exponent min_allowed_twoexp prox_below)
           (pull_each_out tL);
         List.iter calc tL
     | Stree.Leaf _ -> ()

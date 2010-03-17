@@ -19,6 +19,7 @@ let cutoff = ref cutoff_off_val
 let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
 let print_edpl = ref false
+let edge_distance_mat = ref false
 
 let parse_args () = 
   let files  = ref [] in
@@ -40,6 +41,8 @@ let parse_args () =
      "Warn if a read name matches several regular expressions.";
      "--printEDPL", Arg.Set print_edpl,
      "Print out a table of edpl values for each placement.";
+     "--distmat", Arg.Set edge_distance_mat,
+     "Print out a pairwise distance matrix between the edges.";
    ]
   in
   let usage =
