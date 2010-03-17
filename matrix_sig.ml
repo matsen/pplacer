@@ -22,27 +22,27 @@ let build_mtilde weighting criterion pr1 pr2 =
   and ca_info = Camat.build_ca_info t
   in
   let mt = Gsl_matrix.create ~init:0. n n in
-  (* increment mt[i][j] by x symmetrically *)
-  let mt_increment i j x =
-    let incr_one i j = 
-      BA2.unsafe_set mt i j 
-        ((BA2.unsafe_get mt i j) +. x) in
-    incr_one i j;
-    if i <> j then incr_one j i;
+  (* set mt[i][j] symmetrically *)
+  let mt_set i j x =
+    let set_one i j = BA2.unsafe_set mt i j x in
+    set_one i j;
+    if i <> j then set_one j i
   in
   let () = match weighting with
   | Mass_map.Weighted -> 
     for i=0 to n-1 do
       for j=i to n-1 do
+        let total = ref 0. in
         Base.list_iter_over_pairs_of_two 
           (fun p1 p2 ->
-            mt_increment i j 
+            total := !total +.
               ((criterion p1) *. (criterion p2) *.
                 ((Camat.find_ca_dist ca_info
                   (Placement.location p1, Placement.distal_bl p1)
                   (Placement.location p2, Placement.distal_bl p2)))))
           (Pquery.place_list both.(i))
-          (Pquery.place_list both.(j))
+          (Pquery.place_list both.(j));
+        mt_set i j (!total)
       done
     done;
   | Mass_map.Unweighted -> 
@@ -51,7 +51,7 @@ let build_mtilde weighting criterion pr1 pr2 =
         let p1 = Pquery.best_place criterion both.(i)
         and p2 = Pquery.best_place criterion both.(j)
         in
-        mt_increment i j 
+        mt_set i j 
           ((Camat.find_ca_dist ca_info
               (Placement.location p1, Placement.distal_bl p1)
               (Placement.location p2, Placement.distal_bl p2)))
@@ -78,7 +78,7 @@ let m_of_mtilde m n1 n2 =
   assert(n = n1+n2);
   let ra = row_avg m in
   let avg = (vec_tot ra) /. (float_of_int n) in
-  let coeff = (float_of_int n) /. (float_of_int (n1*n2)) in
+  let coeff = 1. /. (float_of_int (n1*n2)) in
   for i=0 to n-1 do
     for j=0 to n-1 do
       BA2.unsafe_set m i j
@@ -104,12 +104,12 @@ let w_expectation rng tol m =
       v.{i} <- Gsl_randist.gaussian rng ~sigma:1.
     done;
     incr n_samples;
-    sample_total := !sample_total +. (rooted_qform m v);
+    sample_total := !sample_total +. rooted_qform m v;
     (!sample_total) /. (float_of_int (!n_samples))
   in
   (* make sure we get at least 10 (one more below) *)
   for i=1 to 10 do let _ = next_expectation () in () done;
-  (* STEVE: continue until the expectation changes less than tol *)
+  (* continue until the expectation changes less than tol *)
   let rec get_expectation prev = 
     let ew = next_expectation () in
     if abs_float (ew -. prev) > tol then get_expectation ew
@@ -128,11 +128,11 @@ let dist_and_p weighting criterion rng pr1 pr2 =
       (fun i -> if i < n1 then inv_n1 else neg_inv_n2)
   in
   let m = build_mtilde weighting criterion pr1 pr2 in
-  (* first m is mtilde *)
+    (* first m is mtilde *)
   let w = rooted_qform m indicator in
   (* then it actually becomes mtilde *)
   m_of_mtilde m n1 n2;
-  let ew = sqrt (w_expectation rng tol m) in
+  let ew = w_expectation rng tol m in
   Printf.printf "W: %g\t E[W]: %g\n" w ew;
   let t = w -. ew in
   (w,

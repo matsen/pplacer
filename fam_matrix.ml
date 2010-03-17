@@ -13,8 +13,9 @@ let dim_asserting_square m =
 let init n_rows n_cols f =
   let m = Gsl_matrix.create n_rows n_cols in
   for i=0 to n_rows-1 do
+    let row = BA2.slice_left m i in
     for j=0 to n_cols-1 do
-      BA2.unsafe_set m i j (f i j)
+      BA1.unsafe_set row j (f i j)
     done;
   done;
   m
@@ -44,6 +45,14 @@ let qform m v =
   done;
   !x
 
+let trace m = 
+  let n = BA2.dim1 m in
+  assert(n = (BA2.dim2 m));
+  let x = ref 0. in
+  for i=0 to n-1 do
+      x := (!x) +. (BA2.unsafe_get m i i)
+  done;
+  !x
 
 let ppr ff m = 
   let nrows = BA2.dim1 m in
