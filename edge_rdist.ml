@@ -42,9 +42,10 @@ let ppr_rdist_uptri ff u = Uptri.ppr_uptri ppr_rdist ff u
 
 (* ***** DISTANCE ***** *)
 
-(* make an uptri with (i,j) entry equal to the distance from the root to the
- * MRCA of edges numbered i and j with Parallel and Serial as above.
- *
+(* build a matrix of distances between distal sides of edges with Serial and
+ * Parallel labels.
+ * that is, m_ij is the distance between the distal sides of the ith and jth
+ * edges.
  * note that we assume that there are no placements on the root edge, and so do
  * not have an entry in our uptri for it.
  * *)
@@ -64,7 +65,8 @@ let build_pairwise_dist t =
         let below = List.map aux tL in
         parallel_set below;
         let flat_below = List.flatten below in
-        (* whereas in the serial case we don't want to include current edge *)
+    (* note that we don't include the current distance in the serial edge 
+     * (we are calculating to the proximal side) *)
         List.iter 
           (fun (i,d) -> Uptri.set u i id (Serial d))
           flat_below;
