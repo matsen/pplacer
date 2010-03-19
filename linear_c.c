@@ -73,8 +73,8 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
   int n_sites = (Bigarray_val(x_value)->dim[1]);
   int n_states = (Bigarray_val(x_value)->dim[2]);
   int rate, site, state;
-  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
   double *util_v;
+  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
   for(rate=0; rate < n_rates; rate++) { 
     // for each rate, start at the top of the util vector 
     util_v = util;

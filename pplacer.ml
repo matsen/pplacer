@@ -126,9 +126,14 @@ let () =
       Printf.printf "memory after reference tree calculation (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
     (* pull exponents *)
+    if (verb_level prefs) >= 1 then begin
+      print_string "Pulling exponents... ";
+      flush_all ();
+    end;
     List.iter 
       (Glv_arr.iter (Glv.perhaps_pull_exponent (-10)))
       [darr; parr;];
+    print_endline "done.";
     (* baseball calculation *)
     if (verb_level prefs) >= 1 then begin
       print_string "Preparing the edges for baseball... ";

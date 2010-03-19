@@ -51,11 +51,13 @@ let pplacer_core
   (* make the friend profile if required *)
   let friend_prof = 
     if friendly_run then begin
+      print_string "Finding friends. ";
+      flush_all();
       let a = Alignment.read_align query_fname in
       let flen = float_of_int (Alignment.n_seqs a) in
       if (verb_level prefs) >= 1 then begin
         Printf.printf
-          "Finding friends. This will require around %.4g sequence comparisons... "
+          "This will require around %.4g sequence comparisons... "
           (flen *. (flen -. 1.) /. 2.);
         flush_all();
       end;
@@ -151,14 +153,9 @@ let pplacer_core
         (Alignment.mask_align mask_arr
           (Alignment.stack [|query_name, query_seq|] ref_align))
         (query_name^".mask.fasta");
-     (* mask *) 
-    let curr_time = Sys.time () in
-    if (verb_level prefs) >= 2 then Printf.printf "masking took\t%g\n" ((Sys.time ()) -. curr_time);
-    (* make our edges.
-     * ERICK
-     * start them all with query as a place holder.
-     * we are breaking interface by naming them and changing them later, but
-     * it would be silly to have setting functions for each edge.  *)
+    (* make our edges. we are breaking interface by making them then changing
+     * them later, but it would be silly to have setting functions for each
+     * edge. *)
     let dist_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
     and prox_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
     and pend_edge = Glv_edge.make model query_glv (start_pend prefs)
