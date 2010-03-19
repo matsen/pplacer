@@ -111,15 +111,14 @@ let () =
     (* allocate our memory *)
     let darr = Like_stree.glv_arr_for model ref_align ref_tree in
     let parr = Glv_arr.mimic darr
-    and halfd = Glv_arr.mimic darr
-    and halfp = Glv_arr.mimic darr
+    and snodes = Glv_arr.mimic darr
     in
     (* do the reference tree likelihood calculation. we do so using halfd and
      * one glv from halfp as our utility storage *)
-    let util_glv = Glv_arr.get_one halfp in
+    let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
     Like_stree.calc_distal_and_proximal model ref_tree like_aln_map 
       util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr 
-      ~util_glv_arr:halfd;
+      ~util_glv_arr:snodes;
     if (verb_level prefs) >= 1 then
       print_endline "done.";
     if (verb_level prefs) >= 2 then
@@ -135,34 +134,26 @@ let () =
       [darr; parr;];
     print_endline "done.";
     (* baseball calculation *)
+    let half_bl_fun loc = (Gtree.get_bl ref_tree loc) /. 2. in
     if (verb_level prefs) >= 1 then begin
       print_string "Preparing the edges for baseball... ";
       flush_all ();
     end;
-    let half_bl_fun loc = (Gtree.get_bl ref_tree loc) /. 2. in
-    Glv_arr.evolve_into model ~src:darr ~dst:halfd half_bl_fun;
-    Glv_arr.evolve_into model ~src:parr ~dst:halfp half_bl_fun;
-    if (verb_level prefs) >= 1 then begin
-      print_endline "done."
-    end;
-    (* super node! *)
-    if (verb_level prefs) >= 1 then begin
-      print_string "Preparing supernode... ";
-      flush_all ();
-    end;
-    let snodes = Glv_arr.mimic darr in
     Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
-    if (verb_level prefs) >= 1 then begin
-      print_endline "done."
-    end;
-    (* tree likelihood *)
-    let zero_d = Glv_arr.get_one halfd
-    and zero_p = Glv_arr.get_one halfp in
+    if (verb_level prefs) >= 1 then print_endline "done.";
+    (* check tree likelihood *)
+    let zero_d = Glv_arr.get_one darr
+    and zero_p = Glv_arr.get_one parr 
+    and sn = Glv_arr.get_one snodes
+    in
+    let util_d = Glv.mimic zero_d
+    and util_p = Glv.mimic zero_p in
+    Glv.evolve_into model ~src:zero_d ~dst:util_d (half_bl_fun 0);
+    Glv.evolve_into model ~src:zero_p ~dst:util_p (half_bl_fun 0);
     let util = Glv.mimic zero_d in
     Glv.set_all util 0 1.;
     Printf.printf "tree likelihood is %g\n" 
-                  (Glv.log_like3 model zero_p zero_d util);
-    let sn = Glv_arr.get_one snodes in
+                  (Glv.log_like3 model util_d util_p util);
     Printf.printf "supernode likelihood is %g\n" 
                   (Glv.logdot model sn util);
     (* analyze query sequences *)
@@ -181,7 +172,7 @@ let () =
         let results = 
           Core.pplacer_core mem_usage prefs query_fname prior
             model ref_align ref_tree
-            ~darr ~parr ~halfd ~halfp ~snodes locs in
+            ~darr ~parr ~snodes locs in
         (* write output if we aren't in fantasy mode *)
         if fantasy prefs = 0. then
           Placerun_io.to_file
