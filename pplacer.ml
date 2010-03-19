@@ -145,13 +145,26 @@ let () =
     if (verb_level prefs) >= 1 then begin
       print_endline "done."
     end;
+    (* super node! *)
+    if (verb_level prefs) >= 1 then begin
+      print_string "Preparing supernode... ";
+      flush_all ();
+    end;
+    let snodes = Glv_arr.mimic darr in
+    Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
+    if (verb_level prefs) >= 1 then begin
+      print_endline "done."
+    end;
     (* tree likelihood *)
     let zero_d = Glv_arr.get_one halfd
     and zero_p = Glv_arr.get_one halfp in
-    let ones = Glv.mimic zero_d in
-    Glv.set_all ones 0 1.;
+    let util = Glv.mimic zero_d in
+    Glv.set_all util 0 1.;
     Printf.printf "tree likelihood is %g\n" 
-                  (Glv.log_like3 model zero_p zero_d ones);
+                  (Glv.log_like3 model zero_p zero_d util);
+    let sn = Glv_arr.get_one snodes in
+    Printf.printf "supernode likelihood is %g\n" 
+                  (Glv.logdot model sn util);
     (* analyze query sequences *)
     let mem_usage = ref 0. in
     List.iter 
@@ -168,7 +181,7 @@ let () =
         let results = 
           Core.pplacer_core mem_usage prefs query_fname prior
             model ref_align ref_tree
-            ~darr ~parr ~halfd ~halfp locs in
+            ~darr ~parr ~halfd ~halfp ~snodes locs in
         (* write output if we aren't in fantasy mode *)
         if fantasy prefs = 0. then
           Placerun_io.to_file

@@ -25,7 +25,7 @@ type prior = Uniform_prior | Exponential_prior of float
   * actually try the placements, etc. return placement records *)
 let pplacer_core 
       mem_usage prefs query_fname prior model ref_align gtree 
-      ~darr ~parr ~halfd ~halfp locs = 
+      ~darr ~parr ~halfd ~halfp ~snodes locs = 
   let seq_type = Model.seq_type model
   and update_usage () = 
     let c = Memory.curr_gb () in
@@ -126,6 +126,9 @@ let pplacer_core
     let mask_arr = Array.map informative query_arr in
     let masked_query_arr = 
       Alignment.array_filteri (fun _ c -> informative c) query_arr in
+    let first_informative = Base.array_first informative query_arr
+    and last_informative = Base.array_last informative query_arr in
+    Printf.printf "first: %d, last: %d\n" first_informative last_informative;
     let lv_arr_of_char_arr a = 
       match seq_type with
       | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -175,6 +178,24 @@ let pplacer_core
               (Glv_arr.get halfp loc)))
           locs)
     in
+    let h_r2 = 
+      List.sort
+        (fun (_,l1) (_,l2) -> - compare l1 l2)
+        (List.map
+          (fun loc ->
+            (loc,
+            Glv.bounded_logdot model full_query_evolv 
+              (Glv_arr.get snodes loc) first_informative last_informative))
+          locs)
+    in
+    let print l = 
+      Ppr.print_int_list (List.map fst l);
+      (* Ppr.print_float_list (List.map snd l)  *)
+    in
+    print h_r;
+    print h_r2;
+    Ppr.print_int_list (List.map2 (-) (List.map fst h_r) (List.map fst h_r2));
+    assert((List.map fst h_r) = (List.map fst h_r2));
     if (verb_level prefs) >= 2 then Printf.printf "ranking took\t%g\n" ((Sys.time ()) -. curr_time);
     let h_ranking = List.map fst h_r in
     (* first get the results from ML *)

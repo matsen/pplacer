@@ -1,5 +1,9 @@
 /* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * to understand the pointer arithmetic below, it's important to understand 
+ * the layout of the Glv's. they are row-major and indexed in terms of rate,
+ * then site, then state. thus the rate-blocks are n_sites*n_states in size.
 */
 
 #include <stdio.h>
@@ -69,9 +73,9 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
   double *y = Data_bigarray_val(y_value);
   double *z = Data_bigarray_val(z_value);
   double *util = Data_bigarray_val(util_value);
-  int n_rates = (Bigarray_val(x_value)->dim[0]);
-  int n_sites = (Bigarray_val(x_value)->dim[1]);
-  int n_states = (Bigarray_val(x_value)->dim[2]);
+  int n_rates = Bigarray_val(x_value)->dim[0];
+  int n_sites = Bigarray_val(x_value)->dim[1];
+  int n_states = Bigarray_val(x_value)->dim[2];
   int rate, site, state;
   double *util_v;
   for(site=0; site < n_sites; site++) { util[site] = 0.0; }
@@ -225,3 +229,90 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
   }
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value statd_pairwise_prod_c(value statd_value, value dst_value, value a_value, value b_value)
+{
+  CAMLparam4(statd_value, dst_value, a_value, b_value);
+  double *statd = Data_bigarray_val(statd_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *a = Data_bigarray_val(a_value);
+  double *b = Data_bigarray_val(b_value);
+  int n_rates = Bigarray_val(a_value)->dim[0];
+  int n_sites = Bigarray_val(a_value)->dim[1];
+  int n_states = Bigarray_val(a_value)->dim[2];
+  int rate, site, state;
+  for(rate=0; rate < n_rates; rate++) { 
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < n_states; state++) {
+          *dst = statd[state] * (*a) * (*b);
+          dst++; a++; b++;
+	}
+      }
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value, value last_value, value util_value)
+{
+  CAMLparam5(x_value, y_value, first_value, last_value, util_value);
+  CAMLlocal1(ml_ll_tot);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  int first = Int_val(first_value);
+  int last = Int_val(last_value);
+  double *util = Data_bigarray_val(util_value);
+  int n_rates = Bigarray_val(x_value)->dim[0];
+  int n_sites = Bigarray_val(x_value)->dim[1];
+  int n_states = Bigarray_val(x_value)->dim[2];
+  int rate, site, state;
+  int n_used = 1 + last - first;
+  double *x_p, *y_p, *util_v;
+  // now we clear it out to n_used
+  for(site=0; site < n_used; site++) { util[site] = 0.0; }
+  for(rate=0; rate < n_rates; rate++) { 
+    // for each rate, start at the top of the util vector 
+    util_v = util;
+    // 1st term: gets us at top of correct rate cat
+    // 2nd term: gets us "start" entries down that rate cat
+    int boost = rate * n_sites * n_states + first * n_states;
+    x_p = x + boost;
+    y_p = y + boost;
+    if(n_states == 4) {
+      for(site=0; site < n_used; site++) {
+        for(state=0; state < 4; state++) {
+          *util_v += x_p[state] * y_p[state];
+        }
+        x_p += 4; y_p += 4;
+        util_v++;
+      }
+    }
+    else if(n_states == 20) {
+      for(site=0; site < n_used; site++) {
+        for(state=0; state < 20; state++) {
+          *util_v += x_p[state] * y_p[state];
+        }
+        x_p += 20; y_p += 20;
+        util_v++;
+      }
+    }
+    else {
+      for(site=0; site < n_used; site++) {
+        for(state=0; state < n_states; state++) {
+          *util_v += x_p[state] * y_p[state];
+        }
+        x_p += n_states; y_p += n_states;
+        util_v++;
+      }
+    }
+  }
+  // now total up the likes from the util vector
+  double ll_tot=0;
+  for(site=0; site < n_used; site++) {
+    ll_tot += log(util[site]);
+  }
+  // subtract once rather than perform division by n_rates n_sites times
+  ll_tot -= ((float) n_used) * log ((float) n_rates);
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}
+

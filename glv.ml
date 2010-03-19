@@ -212,6 +212,14 @@ let total_twoexp g =
   done;
   !tot
 
+(* total all of the stored exponents in a specified range. *)
+let bounded_total_twoexp g start last = 
+  let tot = ref 0. in
+  for i=start to last do
+    tot := !tot +. float_of_int (BA1.unsafe_get g.e i)
+  done;
+  !tot
+
 (* take the log like of the product of three things then dot with the stationary
  * distribution. *)
 let log_like3 model x y z = 
@@ -223,6 +231,20 @@ let log_like3 model x y z =
                     (Model.util_v model)) 
     +. (log_of_2 *.
         ((total_twoexp x) +. (total_twoexp y) +. (total_twoexp z)))
+
+(* the log "dot" of the likelihood vectors in the 0-indexed interval
+ * [start,last] *)
+let bounded_logdot model x y start last = 
+  assert(dims x = dims y);
+  assert(start >= 0 && start <= last && last < get_n_sites x);
+  (Linear.bounded_logdot
+    x.a y.a start last (Model.util_v model))
+    +. (log_of_2 *. ((bounded_total_twoexp x start last) +. 
+                     (bounded_total_twoexp y start last)))
+
+(* just take the log "dot" of the likelihood vectors *)
+let logdot model x y = 
+  bounded_logdot model x y 0 ((get_n_sites x)-1)
 
 (* multiply by a tensor *)
 let tensor_mul tensor ~dst ~src = 
@@ -252,6 +274,13 @@ let pairwise_prod ~dst g1 g2 =
   assert(dims g1 = dims g2);
   iba1_pairwise_sum dst.e g1.e g2.e;
   Linear.pairwise_prod dst.a g1.a g2.a
+
+(* take the pairwise product of glvs g1 and g2, incorporating the stationary
+ * distribution, then store in dest. *)
+let statd_pairwise_prod model ~dst g1 g2 = 
+  assert(dims g1 = dims g2);
+  iba1_pairwise_sum dst.e g1.e g2.e;
+  Linear.statd_pairwise_prod (Model.statd model) dst.a g1.a g2.a
 
 (* take the product of all of the GLV's in the list, then store in dst. 
  * could probably be implemented more quickly, but typically we are only taking

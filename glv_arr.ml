@@ -29,3 +29,16 @@ let evolve_into model ~src ~dst bl_fun =
     Glv.evolve_into model ~src:src.(i) ~dst:dst.(i) (bl_fun i)
   done
 
+(* for making a collection of nodes for the first (fast) evaluation *)
+let prep_supernodes model ~dst darr parr bl_fun = 
+  let n = Array.length dst in
+  if n <> Array.length darr || n <> Array.length parr then
+    failwith "Glv_arr.prep_supernode: unequal lengths!";
+  let utild = Glv.mimic (get_one darr)
+  and utilp = Glv.mimic (get_one parr) in
+  for i=0 to n-1 do
+    Glv.evolve_into model ~src:darr.(i) ~dst:utild (bl_fun i);
+    Glv.evolve_into model ~src:parr.(i) ~dst:utilp (bl_fun i);
+    Glv.statd_pairwise_prod model ~dst:dst.(i) utild utilp
+  done
+

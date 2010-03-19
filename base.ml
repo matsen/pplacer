@@ -216,4 +216,21 @@ let rec list_iter_over_pairs_of_single f = function
 let list_iter_over_pairs_of_two f l1 l2 = 
   List.iter (fun x -> List.iter (f x) l2) l1
 
+(* find the first element of an array satisfying a predicate *)
+let array_first f a =
+  let n = Array.length a in
+  let rec aux i = 
+    if i >= n then invalid_arg "array_first: no first!"
+    else if f (Array.unsafe_get a i) then i
+    else aux (i+1)
+  in 
+  aux 0
 
+(* find the last element of an array satisfying a predicate *)
+let array_last f a =
+  let rec aux i = 
+    if i < 0 then invalid_arg "array_last: no last!"
+    else if f (Array.unsafe_get a i) then i
+    else aux (i-1)
+  in 
+  aux ((Array.length a)-1)
