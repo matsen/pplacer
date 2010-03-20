@@ -53,7 +53,7 @@ let pplacer_core
     if friendly_run then begin
       print_string "Finding friends. ";
       flush_all();
-      let a = Alignment.read_align query_fname in
+      let a = Alignment.read_fasta query_fname in
       print_string "Read alignment. ";
       flush_all();
       let flen = float_of_int (Alignment.n_seqs a) in
