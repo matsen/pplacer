@@ -54,6 +54,8 @@ let pplacer_core
       print_string "Finding friends. ";
       flush_all();
       let a = Alignment.read_align query_fname in
+      print_string "Read alignment. ";
+      flush_all();
       let flen = float_of_int (Alignment.n_seqs a) in
       if (verb_level prefs) >= 1 then begin
         Printf.printf
