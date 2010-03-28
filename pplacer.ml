@@ -102,8 +102,6 @@ let () =
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
     (* calculate like on ref tree *)
-    if (verb_level prefs) >= 2 then
-      Printf.printf "memory before reference tree calculation (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 1 then begin
       print_string "Caching likelihood information on reference tree... ";
       flush_all ()
@@ -121,8 +119,6 @@ let () =
       ~util_glv_arr:snodes;
     if (verb_level prefs) >= 1 then
       print_endline "done.";
-    if (verb_level prefs) >= 2 then
-      Printf.printf "memory after reference tree calculation (gb): %g\n" (Memory.curr_gb ());
     if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
     (* pull exponents *)
     if (verb_level prefs) >= 1 then begin
@@ -159,7 +155,6 @@ let () =
                   (Glv.logdot model sn util);
     *)
     (* analyze query sequences *)
-    let mem_usage = ref 0. in
     List.iter 
       (fun query_fname ->
         let query_bname = 
@@ -172,7 +167,7 @@ let () =
               (float_of_int (Gtree.n_edges ref_tree))) 
         in
         let results = 
-          Core.pplacer_core mem_usage prefs query_fname prior
+          Core.pplacer_core prefs query_fname prior
             model ref_align ref_tree
             ~darr ~parr ~snodes locs in
         (* write output if we aren't in fantasy mode *)
@@ -189,8 +184,6 @@ let () =
     (* print final info *)
     if verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
-      Printf.printf "maximal observed memory usage (gb): %g\n" 
-                    (!mem_usage);
       Common_base.print_n_compactions ();
     end;
     exit 0

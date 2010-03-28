@@ -23,13 +23,9 @@ type prior = Uniform_prior | Exponential_prior of float
 
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
-let pplacer_core 
-      mem_usage prefs query_fname prior model ref_align gtree 
+let pplacer_core prefs query_fname prior model ref_align gtree 
       ~darr ~parr ~snodes locs = 
   let seq_type = Model.seq_type model
-  and update_usage () = 
-    let c = Memory.curr_gb () in
-    if c > !mem_usage then mem_usage := c
   and prior_fun =
     match prior with
     | Uniform_prior -> (fun _ -> 1.)
@@ -102,7 +98,6 @@ let pplacer_core
     (* we only proceed if fantasy baseball is turned off or if this is one of
      * the sequences used for the fantasy baseball procedure *)
     let query_seq = String.uppercase pre_query_seq in
-    update_usage ();
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
     if (verb_level prefs) >= 1 then begin
@@ -376,6 +371,5 @@ let pplacer_core
       fantasy_mat (!n_fantasies);
       Fantasy.print_optimum fantasy_mat (fantasy prefs) (!n_fantasies);
   end;
-  update_usage ();
   result_arr
 
