@@ -29,7 +29,8 @@ let is_gap c =
  * max_mismatches mismatches) or Similar(n_mismatches, n_matches_to_gap) *)
 let similarity max_mismatches s1 s2 = 
   let l = String.length s1 in
-  assert(l = String.length s2);
+  if l <> String.length s2 then
+    failwith("Query sequences aren't all the same length. Have they been aligned to a reference alignment?");
   let mismatches = ref 0 
   and matches_to_gap = ref 0
   and n_matches = ref 0
