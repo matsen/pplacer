@@ -13,7 +13,7 @@ let min_width = 0.5
 
 (* log_coeff determines if we should apply a log transformation *)
 let width_of_mass log_coeff mass_width mass = 
-  if log_coeff != 0. then 
+  if log_coeff <> 0. then 
     Decor.width 
       (min_width +. mass_width *. (log (1. +. log_coeff *. mass)))
   else 
@@ -36,7 +36,6 @@ let write_loc_file fname_base unplaced_seqs placed_map =
       List.iter print_pquery_seq pquery_list)
     placed_map;
   close_out out_ch
-
 
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees = 
