@@ -64,7 +64,7 @@ let defaults () =
 
 (* arguments *)
 let args prefs = [
-  "-v", Arg.Set prefs.verbose,
+  "--verbose", Arg.Set prefs.verbose,
   "verbose running.";
   "--normal", Arg.Clear prefs.shuffle,
   "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
