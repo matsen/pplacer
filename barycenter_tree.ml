@@ -21,10 +21,12 @@ let make weighting criterion p pr_arr =
                      (Some bl, None, None, [Decor.dot i]))))))
           pr_arr))
   in
+  (* we don't use get_same_tree here because it's a whole array *)
   let ref_tree = 
     let ref_trees = Array.map Placerun.get_ref_tree pr_arr in
     for i=1 to (Array.length pr_arr)-1 do
-      assert(0 = Newick.compare ref_trees.(0) ref_trees.(i))
+      if 0 <> Newick.compare ref_trees.(0) ref_trees.(i) then
+        failwith("barycenter calculation: not all reference trees are the same!");
     done;
     ref_trees.(0)
   in
@@ -35,5 +37,5 @@ let make weighting criterion p pr_arr =
 let write weighting criterion p bary_prefix pr_arr =
   Placeviz_core.trees_to_file
     Placeviz_core.Phyloxml
-    bary_prefix
+    (bary_prefix^".bary")
     [ make weighting criterion p pr_arr ]
