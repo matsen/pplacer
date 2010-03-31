@@ -35,7 +35,8 @@ let make weighting criterion p pr_arr =
     bary_map
 
 let write weighting criterion p bary_prefix pr_arr =
-  Placeviz_core.trees_to_file
-    Placeviz_core.Phyloxml
-    (bary_prefix^".bary")
-    [ make weighting criterion p pr_arr ]
+  let name = bary_prefix^".bary" in
+  Phyloxml.named_tree_to_file
+    name (* tree name *)
+   (make weighting criterion p pr_arr)
+    (name^".xml") (* file name *)
