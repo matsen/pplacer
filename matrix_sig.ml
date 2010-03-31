@@ -6,6 +6,8 @@
  * mtilde = \int_u G_i(u) G_j(u) \lambda(du)
  *)
 
+open Fam_batteries
+
 let tol = 1e-5
 let max_iter = 100
 
@@ -19,7 +21,7 @@ let build_mtilde weighting criterion pr1 pr2 =
     Array.of_list
     ((Placerun.get_pqueries pr1)@(Placerun.get_pqueries pr2)) in
   let n = Array.length both
-  and ca_info = Camat.build_ca_info t
+  and ca_info = Edge_rdist.build_ca_info t
   in
   let mt = Gsl_matrix.create ~init:0. n n in
   (* set mt[i][j] symmetrically *)
@@ -37,7 +39,7 @@ let build_mtilde weighting criterion pr1 pr2 =
           (fun p1 p2 ->
             total := !total +.
               ((criterion p1) *. (criterion p2) *.
-                ((Camat.find_ca_dist ca_info
+                ((Edge_rdist.find_ca_dist ca_info
                   (Placement.location p1, Placement.distal_bl p1)
                   (Placement.location p2, Placement.distal_bl p2)))))
           (Pquery.place_list both.(i))
@@ -52,7 +54,7 @@ let build_mtilde weighting criterion pr1 pr2 =
         and p2 = Pquery.best_place criterion both.(j)
         in
         mt_set i j 
-          ((Camat.find_ca_dist ca_info
+          ((Edge_rdist.find_ca_dist ca_info
               (Placement.location p1, Placement.distal_bl p1)
               (Placement.location p2, Placement.distal_bl p2)))
       done
@@ -117,6 +119,20 @@ let w_expectation rng tol m =
   in
   get_expectation (next_expectation ())
 
+let write_matrix_normal_dist rng name1 name2 m w n_samples = 
+  let n = BA2.dim1 m in
+  let v = Gsl_vector.create n in
+  let normal_ws = 
+    ListFuns.init
+      n_samples
+      (fun _ ->
+        for i=0 to n-1 do 
+          v.{i} <- Gsl_randist.gaussian rng ~sigma:1.
+        done;
+        rooted_qform m v)
+  in
+  R_plots.write_density "matrix_normal" name1 name2 w normal_ws 2.
+
 let dist_and_p weighting criterion rng pr1 pr2 = 
   let n1 = Placerun.n_pqueries pr1 
   and n2 = Placerun.n_pqueries pr2 in
@@ -134,7 +150,20 @@ let dist_and_p weighting criterion rng pr1 pr2 =
   m_of_mtilde m n1 n2;
   let ew = w_expectation rng tol m in
   Printf.printf "W: %g\t E[W]: %g\n" w ew;
+  (*
+  write_matrix_normal_dist rng 
+    (Placerun.get_name pr1) (Placerun.get_name pr2)
+    m w 1000;
+    *)
+  let ch = open_out "eigs.out" in
+  Fam_vector.iter
+    (fun x -> Printf.fprintf ch "%g\n" x)
+    (Gsl_eigen.symm (`M(m)));
+  close_out ch;
   let t = w -. ew in
   (w,
   2. *. exp ( -. t *. t /. (2. *. (Top_eig.top_eig m tol max_iter))))
+
+  (* this is 2 \exp ( \frac{(-t^2}{2 max_eig m} ) *)
+
 

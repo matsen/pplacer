@@ -21,10 +21,15 @@ let fold_left f start v =
   done;
   !x
 
+let iter f a = 
+  let n = Gsl_vector.length a in
+  for i=0 to n-1 do
+    f (BA1.unsafe_get a i)
+  done
 
 let iter2 f a b = 
   let n = Gsl_vector.length a in
-  assert(n = Gsl_vector.length a);
+  assert(n = Gsl_vector.length b);
   for i=0 to n-1 do
     f (BA1.unsafe_get a i) (BA1.unsafe_get b i)
   done
