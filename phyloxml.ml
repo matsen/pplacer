@@ -46,9 +46,11 @@ let write_tree ?name ch gtree =
       | Stree.Leaf id -> write_clade id []
   in
   Printf.fprintf ch "<phylogeny rooted=\"true\">\n";
-  match name with
-  | None -> ()
-  | Some n -> Xml.write_string "name" ch n;
+  let () = 
+    match name with
+    | None -> ()
+    | Some n -> Xml.write_string "name" ch n
+  in
   aux (Gtree.get_stree gtree);
   Printf.fprintf ch "</phylogeny>\n\n"
 
