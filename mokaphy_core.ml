@@ -50,6 +50,7 @@ let weighting_of_prefs prefs =
 let pair_core prefs criterion pr1 pr2 =
   let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
   Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.seed prefs));
+  Printf.printf "uniform random number: %g\n" (Gsl_rng.uniform rng);
   let p = (Mokaphy_prefs.p_exp prefs) in
   let weighting = weighting_of_prefs prefs in
   if Mokaphy_prefs.heat_tree prefs then
@@ -83,7 +84,7 @@ let pair_core prefs criterion pr1 pr2 =
         in
         if Mokaphy_prefs.density prefs then
           R_plots.write_density 
-            "density"
+            "shuffle_density"
             (Placerun.get_name pr1)
             (Placerun.get_name pr2)
             original_dist 
@@ -107,7 +108,7 @@ let pair_core prefs criterion pr1 pr2 =
     if 0 >= Mokaphy_prefs.n_samples prefs then
       failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
     let resampled_dists = 
-      Normal_approx.normal_pair_approx 
+      Normal_approx.normal_pair_approx rng weighting
         criterion (Mokaphy_prefs.n_samples prefs) p pr1 pr2
     in
     (* here we shadow original_dist with one we know is unweighted *)

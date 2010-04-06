@@ -45,7 +45,7 @@ let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
 ('a -> float) -> float -> (float * 'b) list -> ('a -> 'b -> 'c) -> float ->     'a          -> float * 'a
  data_to_r       bl       data_info_list        update_data        prev_subtot  start_data  
  *
- * is what ocaml inferrs, but update_data is actually 'a -> 'b -> unit, as
+ * is what ocaml infers, but update_data is actually 'a -> 'b -> unit, as
  * update_data modifies in place
  * *)
 let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_data = 
@@ -95,7 +95,7 @@ let total_over_tree curried_edge_total
           id
           (List.fold_right ( +. ) (List.map fst below_list) 0.) (* prev subtot *)
           (data_list_sum (List.map snd below_list))) (* total of below kr_infos *)
-      (fun id ->
+      (fun id -> (* the leaf recurrence *)
         curried_edge_total 
           id
           0. 

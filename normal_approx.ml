@@ -6,99 +6,110 @@
 open MapsSets
 open Fam_batteries
 
-exception Total_xi_not_zero of float
+exception Avg_weight_not_one of float
 
-let rng = Gsl_rng.make Gsl_rng.MT19937
+(* these masses are used for downstream calculation *)
+type labeled_mass = { pquery_num: int ;
+                      mass: float }
 
-let standard_normal () = 
-  Gsl_randist.gaussian rng ~sigma:1.
+(* the intermediate things held for calculation; see scan *)
+type calc_intermediate = { omega: float ref;   (* weighted sum of normals *)
+                           sigma: float ref; } (* sum of weights *)
 
-let collect_placement_info pl =
-  List.map
-    (function place ->
-      (Placement.location place,
-      Placement.distal_bl place))
-    pl
+let get_omega i = !(i.omega)
+let get_sigma i = !(i.sigma)
 
-let total_normals n_map = 
-  let tot = ref 0. in
-  IntMap.iter 
-    (fun _ ->
-      List.iter 
-        (fun (_,norm_sample) ->
-          tot := !tot +. norm_sample))
-    n_map;
-  !tot
- 
-(* we do a similar totaling thing as in the KR case, but different. 
- * the two components of the info vector are
- * norm_v.(0): the sum of the normal variables below
- * norm_v.(1): the proportion of the leaves below the edge
- * norm_v just means that it's the vector which is associated with the normal
- * simulation.
- *)
-let normal_pair_approx criterion n_samples p pr1 pr2 = 
-  let int_inv x = 1. /. (float_of_int x)
-  and ref_tree = Placerun.get_same_tree pr1 pr2 in
-  let of_placerun = 
-    Mass_map.Indiv.of_placerun 
-      Mass_map.Unweighted 
-      criterion
-  in
-  let all_pre_norm_map = 
-    IntMap.map
-      (List.map (fun (distal_bl, _) -> distal_bl))
-      (Mass_map.Indiv.sort
-        (Base.combine_list_intmaps 
-          [of_placerun pr1; of_placerun pr2]))
-  in
+let intermediate_sum i1 i2 = 
+  { omega = ref ((get_omega i1) +. (get_omega i2));
+    sigma = ref ((get_sigma i1) +. (get_sigma i2)) }
+
+let intermediate_list_sum = 
+  ListFuns.complete_fold_left intermediate_sum
+                      
+let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 = 
+(* let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =  *)
   let np1 = Placerun.n_pqueries pr1
   and np2 = Placerun.n_pqueries pr2 in
-  let inv_np = int_inv (np1+np2) in
-  let front_coeff = 
-    sqrt (((int_inv np1) +. (int_inv np2)) *. inv_np) in
-  (* decorate the map with normal distribution samples *)
-  let sample_normals () = 
-    IntMap.map 
-      (List.map
-        (fun distal ->
-          (distal, standard_normal ())))
-      all_pre_norm_map
+  let int_inv x = 1. /. (float_of_int x) 
+  and ref_tree = Placerun.get_same_tree pr1 pr2 in
+  let labeled_mass_arr = Array.make (1+Gtree.top_id ref_tree) []
+  and pquery_counter = ref 0
+  and front_coeff = sqrt(int_inv(np1 * np2))
+  and sample = Array.make (np1 + np2) 0. 
   in
-  (* go "past" a placement *)
-  let update_norm_v norm_v sample = 
-    norm_v.(0) <- norm_v.(0) +. sample;
-    norm_v.(1) <- norm_v.(1) +. inv_np;
+  (* initialize the labeled_mass_arr array *)
+  List.iter
+    (fun pr ->
+      List.iter
+        (fun pquery ->
+          (match weighting with
+          | Mass_map.Weighted -> 
+            List.iter 
+              (fun p ->
+                let edge_num = Placement.location p in
+                labeled_mass_arr.(edge_num) <-
+                  (Placement.distal_bl p,
+                  { pquery_num = !pquery_counter;
+                  mass = criterion p })
+                  :: (labeled_mass_arr.(edge_num)))
+              (Pquery.place_list pquery);
+          | Mass_map.Unweighted -> 
+              let p = Pquery.best_place criterion pquery in
+              let edge_num = Placement.location p in
+              labeled_mass_arr.(edge_num) <-
+                (Placement.distal_bl p,
+                { pquery_num = !pquery_counter;
+                mass = 1. })
+                :: (labeled_mass_arr.(edge_num)));
+          incr pquery_counter)
+        (Placerun.get_pqueries pr))
+    [pr1; pr2];
+  for i=0 to (Array.length labeled_mass_arr) - 1 do
+    labeled_mass_arr.(i) <- 
+      List.sort 
+        (fun (a1,_) (a2,_) -> compare a1 a2)
+        labeled_mass_arr.(i)
+  done;
+  (* the sampling routine *)
+  let sample_normals () =
+   Array.iteri
+     (fun i _ -> sample.(i) <- Gsl_randist.gaussian rng ~sigma:1.)
+     sample
   in
-  let starter_norm_v = [|0.; 0.|] in
+  (* go "past" a labeled mass *)
+  let update_data data lm = 
+    data.omega := (get_omega data) +. lm.mass *. sample.(lm.pquery_num);
+    data.sigma := (get_sigma data) +. lm.mass;
+  in
+  (* take the samples and do the calculation *)
   ListFuns.init 
     n_samples
     (fun _ -> 
-      let n_map = sample_normals () in
-      let norm_tot = total_normals n_map in
-      let pre_xi_diff norm_v = 
-        (* parens for emphasis *)
-        norm_v.(0) -. (norm_v.(1) *. norm_tot) in 
-      let to_xi_p p norm_v = 
-        (abs_float (front_coeff *. (pre_xi_diff norm_v))) ** p in
-      (* here we update the norm_v given an eta *)
+      sample_normals ();
+      let sample_avg = 
+        (int_inv (Array.length sample)) *. 
+          (Array.fold_left (+.) 0. sample) in
+      let to_xi_p p data = 
+        (abs_float ((get_omega data) -. (get_sigma data) *. sample_avg)) ** p in
       (* total across all of the edges of the tree *)
-      let norm_edge_total n_map id = 
+      let edge_total id = 
         Kr_distance.total_along_edge 
           (to_xi_p p)
           (Gtree.get_bl ref_tree id)
-          (Base.get_from_list_intmap id n_map)
-          update_norm_v
+          labeled_mass_arr.(id)
+          update_data
       (* make sure that the kr_v totals to zero *)
-      and check_final_norm_v final_norm_v = 
-        let final_norm_diff = pre_xi_diff final_norm_v in
-        if abs_float final_norm_diff > Kr_distance.tol then 
-          raise (Total_xi_not_zero final_norm_diff)
+      and check_final_data data = 
+        let avg_weight = int_inv (np1 + np2) *. (get_sigma data) in
+        Printf.printf "%g\n" (-.1. +. avg_weight);
+        if abs_float (avg_weight -. 1.) > 1e-5 then
+          raise (Avg_weight_not_one (avg_weight-.1.))
       in
-      (Kr_distance.total_over_tree 
-        (norm_edge_total n_map)
-        check_final_norm_v
-        Mokaphy_base.v_list_sum
-        (fun () -> Array.copy starter_norm_v)
-        ref_tree)
-      ** (Kr_distance.outer_exponent p))
+      front_coeff *.
+        (Kr_distance.total_over_tree 
+          edge_total
+          check_final_data
+          intermediate_list_sum
+          (fun () -> { omega = ref 0.; sigma = ref 0.; })
+          ref_tree)
+        ** (Kr_distance.outer_exponent p))

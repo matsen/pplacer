@@ -8,6 +8,7 @@
 
 open Fam_batteries
 
+let sq v = v *. v
 let tol = 1e-5
 let max_iter = 100
 
@@ -133,6 +134,23 @@ let write_matrix_normal_dist rng name1 name2 m w n_samples =
   in
   R_plots.write_density "matrix_normal" name1 name2 w normal_ws 2.
 
+let write_eigs m =
+  let ch = open_out "eigs.out" in
+  Fam_vector.iter
+    (fun x -> Printf.fprintf ch "%g\n" x)
+    (Gsl_eigen.symm (`M(m)));
+  close_out ch
+
+(* trace-msq is the trace of m^2 *)
+let trace_msq m = 
+  let n = BA2.dim1 m in
+  assert(n = (BA2.dim2 m));
+  let x = ref 0. in
+  for i=0 to n-1 do
+    x := (!x) +. sq (BA2.unsafe_get m i i)
+  done;
+  !x
+
 let dist_and_p weighting criterion rng pr1 pr2 = 
   let n1 = Placerun.n_pqueries pr1 
   and n2 = Placerun.n_pqueries pr2 in
@@ -150,20 +168,15 @@ let dist_and_p weighting criterion rng pr1 pr2 =
   m_of_mtilde m n1 n2;
   let ew = w_expectation rng tol m in
   Printf.printf "W: %g\t E[W]: %g\n" w ew;
-  (*
   write_matrix_normal_dist rng 
     (Placerun.get_name pr1) (Placerun.get_name pr2)
     m w 1000;
-    *)
-  let ch = open_out "eigs.out" in
-  Fam_vector.iter
-    (fun x -> Printf.fprintf ch "%g\n" x)
-    (Gsl_eigen.symm (`M(m)));
-  close_out ch;
+  Printf.printf "tr M: %g\n" (Fam_matrix.trace m);
+  Printf.printf "2 tr M^2: %g\n" (2. *. (trace_msq m));
+  Printf.printf "sqrt(2 tr M^2): %g\n" (sqrt (2. *. (trace_msq m)));
   let t = w -. ew in
   (w,
   2. *. exp ( -. t *. t /. (2. *. (Top_eig.top_eig m tol max_iter))))
-
   (* this is 2 \exp ( \frac{(-t^2}{2 max_eig m} ) *)
 
 
