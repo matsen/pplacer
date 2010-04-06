@@ -14,54 +14,6 @@
 #include <caml/alloc.h>
 #include <caml/custom.h>
 
-/*
-#ifdef __SSE__
-#ifndef NO_SSE
-#define USE_SSE3
-#endif
-#endif
-
-#ifdef USE_SSE3
-#define ALIGNED __attribute__((aligned(16)))
-#define IS_ALIGNED(X) ((((unsigned long) new) & 15L) == 0L)
-#include <xmmintrin.h>
-#else
-#define ALIGNED 
-#define IS_ALIGNED(X) 1
-#endif
-
-
-// SSE code more or less copied from FastTree
-// not used yet
-#ifdef USE_SSE3
-inline float mm_sum(register __m128 sum) {
-  float f[4] ALIGNED;
-  _mm_store_ps(f,sum);
-  return(f[0]+f[1]+f[2]+f[3]);
-}
-
-// sum(f1*f2*f3*f4) 
-float vector_multiply4_sum(float *f1, float *f2, float* f3, float* f4, int n) {
-  __m128 sum = _mm_setzero_ps();
-  int i;
-  for (i = 0; i < n; i += 4) {
-    __m128 a1, a2, a3, a4;
-    a1 = _mm_load_ps(f1+i);
-    a2 = _mm_load_ps(f2+i);
-    a3 = _mm_load_ps(f3+i);
-    a4 = _mm_load_ps(f4+i);
-    sum = _mm_add_ps(_mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a1,a2),a3),a4),sum);
-  }
-  return(mm_sum(sum));
-}
-#endif
-
-#ifdef USE_SSE3
-	*util_v += vector_multiply4_sum(statd, x, y, z, 4);
-#else
-#endif
-
-*/
 
 
 CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, value z_value, value util_value)
