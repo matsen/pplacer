@@ -56,30 +56,6 @@ let sort_placecoll criterion pc =
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc
 
-(* decreasing sort of a placecoll
- *)
-let add_to_list_intmap k v m = 
-  if IntMap.mem k m then
-    IntMap.add k (v::(IntMap.find k m)) m
-  else 
-    IntMap.add k [v] m
-
-(* make (m,l), where m is a map
- * (best location for nplacecoll) -> list of nplacecoll at that loc
- * and l is a list of unplaced sequences.
- *)
-let sorted_npcl_map_by_best_loc_of_npc_list criterion npc_list =
-  List.fold_right
-    (fun (name, pc) (unplaced_list, placed_map) ->
-      match sort_placecoll criterion pc with
-      | best::_ as sorted ->
-          (unplaced_list,
-          add_to_list_intmap best.location (name,sorted) placed_map)
-      | [] ->
-          (name::unplaced_list, placed_map))
-    npc_list
-    ([], IntMap.empty)
-
 let by_name_map_of_place_hash place_hash = 
   Hashtbl.fold (
     fun _ (name, place) name_map ->
@@ -88,7 +64,6 @@ let by_name_map_of_place_hash place_hash =
       else
         StringMap.add name place name_map
   ) place_hash StringMap.empty
-
 
 let make_ml_ratio_filter cutoff placement = 
   placement.ml_ratio > cutoff

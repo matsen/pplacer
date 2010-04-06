@@ -194,6 +194,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
       (* set up the function *)
       | Friendly.Friend friend_num -> begin
           let f = result_arr.(friend_num) in
+          Printf.printf "%d's friend is %d\n" query_num friend_num;
           fun loc -> Pquery.opt_place_by_location f loc
       end
     in 
@@ -213,8 +214,15 @@ let pplacer_core prefs query_fname prior model ref_align gtree
       set_edge dist_edge darr distal;
       set_edge prox_edge parr (cut_bl -. distal)
     in
+    let tt_edges_default loc =
+      let cut_bl = Gtree.get_bl gtree loc in
+      set_tt_edges loc 
+      ~pendant:(start_pend prefs)
+      ~distal:(cut_bl /. 2.) 
+    in
     let tt_edges_from_placement p = 
       let loc = Placement.location p in
+      Printf.printf "pendant: %g, distal: %g\n" (Placement.pendant_bl p) (Placement.distal_bl p);
       set_tt_edges loc 
         ~pendant:(Placement.pendant_bl p)
         ~distal:(Placement.distal_bl p)
@@ -224,10 +232,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     (* set up branch lengths, using a friend's branch lengths if we have them *)
       match get_friend_place loc with
       | None -> (* set to usual defaults *)
-          let cut_bl = Gtree.get_bl gtree loc in
-          set_tt_edges loc 
-            ~pendant:(start_pend prefs)
-            ~distal:(cut_bl /. 2.);
+          tt_edges_default loc
       | Some f -> (* use a friend's branch lengths *)
           tt_edges_from_placement f
     in
@@ -254,15 +259,23 @@ let pplacer_core prefs query_fname prior model ref_align gtree
       Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" 
                     loc query_name warn_str;
     in
+    let safe_ml_optimize_location loc = 
+      prepare_tt loc;
+      try ml_optimize_location (initial_tolerance prefs) loc with
+      | Gsl_error.Gsl_exn(_,_) -> begin
+        (* try again with default branch lengths rather than friend ones *)
+        print_endline "trying again";
+        tt_edges_default loc;
+        ml_optimize_location (initial_tolerance prefs) loc
+      end
+    in
     (* in play_ball we go down the h_ranking list and wait until we get
      * strike_limit strikes, i.e. placements that are strike_box below the
      * best one so far. *)
     let rec play_ball like_record n_strikes results = function
       | loc::rest -> begin
           try 
-            let (like,_,_) as result = 
-              prepare_tt loc;
-              ml_optimize_location (initial_tolerance prefs) loc in
+            let (like,_,_) as result = safe_ml_optimize_location loc in
             let new_results = (loc, result)::results in
             if List.length results >= t_max_pitches then
               new_results
