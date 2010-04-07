@@ -44,15 +44,23 @@ let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
         (fun pquery ->
           (match weighting with
           | Mass_map.Weighted -> 
-            List.iter 
-              (fun p ->
-                let edge_num = Placement.location p in
-                labeled_mass_arr.(edge_num) <-
-                  (Placement.distal_bl p,
-                  { pquery_num = !pquery_counter;
-                  mass = criterion p })
-                  :: (labeled_mass_arr.(edge_num)))
-              (Pquery.place_list pquery);
+  (* this is not too elegant. because of roundoff in reading and writing the
+   * placements, we have to re-normalize the masses so that we get a nice tidy
+   * sum*)
+              let pl = Pquery.place_list pquery in
+              ListFuns.iter2
+                (fun p mass ->
+                  let edge_num = Placement.location p in
+                  labeled_mass_arr.(edge_num) <-
+                    (Placement.distal_bl p,
+                    { pquery_num = !pquery_counter;
+                    mass = mass })
+                    :: (labeled_mass_arr.(edge_num)))
+                pl
+                (Base.normalized_prob (List.map criterion pl));
+
+
+
           | Mass_map.Unweighted -> 
               let p = Pquery.best_place criterion pquery in
               let edge_num = Placement.location p in
@@ -101,8 +109,7 @@ let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
       (* make sure that the kr_v totals to zero *)
       and check_final_data data = 
         let avg_weight = int_inv (np1 + np2) *. (get_sigma data) in
-        Printf.printf "%g\n" (-.1. +. avg_weight);
-        if abs_float (avg_weight -. 1.) > 1e-5 then
+        if abs_float (avg_weight -. 1.) > Kr_distance.tol then
           raise (Avg_weight_not_one (avg_weight-.1.))
       in
       front_coeff *.

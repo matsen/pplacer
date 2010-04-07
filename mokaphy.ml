@@ -1,20 +1,11 @@
 (* mokaphy v0.3. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * to do:
- * precedence of normal and matrix modes?
- * fix seeds
- * why only ml_ratio sorting?
- * figure out what to do with respect to normal approx / -s 0
- *
-    if Mokaphy_prefs.n_samples prefs <= 0 then
-      prefs.shuffle := false;
  *)
 
 open Fam_batteries
 open MapsSets
 open Placement
-
 
 let parse_args () =
   let files  = ref [] 
@@ -33,6 +24,7 @@ let () =
     let (fnames, prefs) = parse_args () in
     let parsed = List.map Placerun_io.of_file fnames in
     if parsed = [] then exit 0;
+    Random.init (Mokaphy_prefs.seed prefs);
     List.iter 
       (fun p -> 
         if Placerun.contains_unplaced_queries p then
@@ -42,9 +34,13 @@ let () =
       if Mokaphy_prefs.out_fname prefs = "" then stdout
       else open_out (Mokaphy_prefs.out_fname prefs)
     in
+    let criterion = 
+      if Mokaphy_prefs.use_pp prefs then Placement.post_prob
+      else Placement.ml_ratio
+    in
     Mokaphy_core.core
       prefs
-      Placement.ml_ratio (* sorting criterion *)
+      criterion
       out_ch
       (Array.of_list parsed);
     if Mokaphy_prefs.out_fname prefs <> "" then close_out out_ch

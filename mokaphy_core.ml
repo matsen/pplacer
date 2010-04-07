@@ -50,7 +50,6 @@ let weighting_of_prefs prefs =
 let pair_core prefs criterion pr1 pr2 =
   let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
   Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.seed prefs));
-  Printf.printf "uniform random number: %g\n" (Gsl_rng.uniform rng);
   let p = (Mokaphy_prefs.p_exp prefs) in
   let weighting = weighting_of_prefs prefs in
   if Mokaphy_prefs.heat_tree prefs then
@@ -65,7 +64,38 @@ let pair_core prefs criterion pr1 pr2 =
       Matrix_sig.dist_and_p weighting criterion rng pr1 pr2 in
     {distance = distance; p_value = Some p_value}
   end
-  else if Mokaphy_prefs.shuffle prefs then begin
+  else if Mokaphy_prefs.normal prefs then begin
+    (* normal approx mode *)
+    if 0 >= Mokaphy_prefs.n_samples prefs then
+      failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
+    let resampled_dists = 
+      Normal_approx.normal_pair_approx rng weighting
+        criterion (Mokaphy_prefs.n_samples prefs) p pr1 pr2
+    in
+    (* here we shadow original_dist with one we know is unweighted *)
+    let original_dist = 
+      Kr_distance.pair_distance
+        weighting
+        criterion 
+        p 
+        pr1 
+        pr2
+    in
+    R_plots.write_density 
+      "normal"
+      (Placerun.get_name pr1)
+      (Placerun.get_name pr2)
+      original_dist 
+      resampled_dists
+      p;
+    { distance = original_dist;
+      p_value = 
+        Some 
+          (Mokaphy_base.list_onesided_pvalue 
+            resampled_dists 
+            original_dist)}
+  end
+  else begin
     let calc_dist = 
       Kr_distance.pair_distance
         weighting 
@@ -103,37 +133,7 @@ let pair_core prefs criterion pr1 pr2 =
     in
     {distance = original_dist; p_value = p_value}
   end
-  else begin
-    (* normal approx mode *)
-    if 0 >= Mokaphy_prefs.n_samples prefs then
-      failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
-    let resampled_dists = 
-      Normal_approx.normal_pair_approx rng weighting
-        criterion (Mokaphy_prefs.n_samples prefs) p pr1 pr2
-    in
-    (* here we shadow original_dist with one we know is unweighted *)
-    let original_dist = 
-      Kr_distance.pair_distance
-        Mass_map.Unweighted 
-        criterion 
-        p 
-        pr1 
-        pr2
-    in
-    R_plots.write_density 
-      "normal"
-      (Placerun.get_name pr1)
-      (Placerun.get_name pr2)
-      original_dist 
-      resampled_dists
-      p;
-    { distance = original_dist;
-      p_value = 
-        Some 
-          (Mokaphy_base.list_onesided_pvalue 
-            resampled_dists 
-            original_dist)}
-  end
+
 
 let wrapped_pair_core prefs criterion pr1 pr2 =
   let context = 

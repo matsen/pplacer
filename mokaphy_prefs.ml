@@ -4,8 +4,9 @@
 
 type mokaphy_prefs = 
   {
+    use_pp: bool ref;
     verbose: bool ref;
-    shuffle: bool ref;
+    normal: bool ref;
     matrix: bool ref;
     n_samples: int ref;
     out_fname: string ref;
@@ -22,8 +23,9 @@ type mokaphy_prefs =
     seed: int ref;
   }
 
+let use_pp        p = !(p.use_pp)
 let verbose       p = !(p.verbose)
-let shuffle       p = !(p.shuffle)
+let normal        p = !(p.normal)
 let matrix        p = !(p.matrix)
 let out_fname     p = !(p.out_fname)
 let n_samples     p = !(p.n_samples)
@@ -43,8 +45,9 @@ let seed          p = !(p.seed)
 (* defaults *)
 let defaults () = 
   { 
+    use_pp = ref false;
     verbose = ref false;
-    shuffle = ref true;
+    normal = ref false;
     matrix = ref false;
     out_fname = ref "";
     n_samples = ref 0;
@@ -64,14 +67,16 @@ let defaults () =
 
 (* arguments *)
 let args prefs = [
+  "-p", Arg.Set prefs.use_pp,
+  "Use posterior probability.";
   "--verbose", Arg.Set prefs.verbose,
-  "verbose running.";
-  "--normal", Arg.Clear prefs.shuffle,
+  "Verbose running.";
+  "--normal", Arg.Set prefs.normal,
   "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
   "--matrix", Arg.Set prefs.matrix,
   "Use the matrix formulation to calculate distance and p-value.";
-  "-p", Arg.Set_float prefs.p_exp,
-  "The value of p in Z_p.";
+  "--exp", Arg.Set_float prefs.p_exp,
+  "The exponent for the integration, i.e. the value of p in Z_p.";
   "--unweighted", Arg.Clear prefs.weighted,
       "The unweighted version simply uses the best placement. Default is weighted.";
   "--density", Arg.Set prefs.density,

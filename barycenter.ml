@@ -6,8 +6,6 @@
  * position on that edge. We *could* add edges in then remove them later, but
  * that has its own perils and have settled with a bit of code dup.
  *
- *
- *  options are to 
 *)
 
 open MapsSets
@@ -119,17 +117,6 @@ let find p ref_tree mass_m =
     (proximal_work prox_ml id pos) -. 
     (distal_work dist_ml id pos)
   in
-  (*
-  let print_edge_info id =
-    let our_mass_list = 
-      if IntMap.mem id smass then IntMap.find id smass
-      else []
-    and bl = Gtree.get_bl ref_tree id in
-    Printf.printf "edge id: %d\n" id;
-    Printf.printf "prox: %g\n" (delta ~prox_ml:[] ~dist_ml:our_mass_list id bl);
-    Printf.printf "dist: %g\n" (delta ~prox_ml:our_mass_list ~dist_ml:[] id 0.);
-  in
-  *)
   let get_mass_list id = 
     if IntMap.mem id smass then IntMap.find id smass
     else []
