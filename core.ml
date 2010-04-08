@@ -194,7 +194,6 @@ let pplacer_core prefs query_fname prior model ref_align gtree
       (* set up the function *)
       | Friendly.Friend friend_num -> begin
           let f = result_arr.(friend_num) in
-          Printf.printf "%d's friend is %d\n" query_num friend_num;
           fun loc -> Pquery.opt_place_by_location f loc
       end
     in 
@@ -222,7 +221,6 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     in
     let tt_edges_from_placement p = 
       let loc = Placement.location p in
-      Printf.printf "pendant: %g, distal: %g\n" (Placement.pendant_bl p) (Placement.distal_bl p);
       set_tt_edges loc 
         ~pendant:(Placement.pendant_bl p)
         ~distal:(Placement.distal_bl p)
@@ -259,14 +257,12 @@ let pplacer_core prefs query_fname prior model ref_align gtree
       Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" 
                     loc query_name warn_str;
     in
-    let safe_ml_optimize_location loc = 
-      prepare_tt loc;
-      try ml_optimize_location (initial_tolerance prefs) loc with
+    let safe_ml_optimize_location tol loc = 
+      try ml_optimize_location tol loc with
       | Gsl_error.Gsl_exn(_,_) -> begin
-        (* try again with default branch lengths rather than friend ones *)
-        print_endline "trying again";
+        (* try again starting with default branch lengths *)
         tt_edges_default loc;
-        ml_optimize_location (initial_tolerance prefs) loc
+        ml_optimize_location tol loc
       end
     in
     (* in play_ball we go down the h_ranking list and wait until we get
@@ -275,7 +271,9 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     let rec play_ball like_record n_strikes results = function
       | loc::rest -> begin
           try 
-            let (like,_,_) as result = safe_ml_optimize_location loc in
+            prepare_tt loc;
+            let (like,_,_) as result = 
+              safe_ml_optimize_location (initial_tolerance prefs) loc in
             let new_results = (loc, result)::results in
             if List.length results >= t_max_pitches then
               new_results
@@ -333,7 +331,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
           let (loc, (_, pendant, distal)) = initial in
           set_tt_edges loc ~pendant ~distal;
           try
-            (loc, ml_optimize_location final_tolerance loc)
+            (loc, safe_ml_optimize_location final_tolerance loc)
           with
           | Gsl_error.Gsl_exn(_,warn_str) ->
               Printf.printf "Warning: GSL problem with final branch length optimization for location %d. %s\n" loc warn_str;

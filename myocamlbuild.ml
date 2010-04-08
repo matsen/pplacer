@@ -20,8 +20,6 @@ dispatch begin function
         A"-ccopt"; A"-funroll-loops";
         A"-ccopt"; A"-O3";
         A"-ccopt"; A"-fPIC";
-        A"-ccopt"; A"-D__SIM_SSE3";
-        A"-ccopt"; A"-msse3";
       ]);
 
       (* custom: incorporate libraries into bytecode *)
