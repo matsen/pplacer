@@ -24,6 +24,9 @@ let assert_intensity intensity =
 let simple_color_of_heat heat = 
   if heat >= 0. then Decor.red else Decor.blue
 
+let gray_black_of_heat heat = 
+  if heat >= 0. then Decor.gray 180 else Decor.black
+
 let color_of_heat white_bg ?(p=1.) heat = 
   let intensity = intensity_of_heat ~p heat
   and color = simple_color_of_heat heat
@@ -41,7 +44,7 @@ let width_of_heat ?(p=1.) heat =
   assert_intensity intensity;
   Decor.width (min_width +. width_diff *. intensity)
 
-let color_map white_bg simple_colors weighting criterion p pr1 pr2 = 
+let color_map white_bg simple_colors gray_black_colors weighting criterion p pr1 pr2 = 
   let ref_tree = Placerun.get_same_tree pr1 pr2
   and kr_map = 
     IntMap.map
@@ -84,6 +87,7 @@ let color_map white_bg simple_colors weighting criterion p pr1 pr2 =
   in
   let our_color_of_heat scaled_heat = 
     if simple_colors then simple_color_of_heat scaled_heat
+    else if gray_black_colors then gray_black_of_heat scaled_heat
     else color_of_heat white_bg ~p scaled_heat
   in
   IntMapFuns.of_pairlist
@@ -98,7 +102,7 @@ let color_map white_bg simple_colors weighting criterion p pr1 pr2 =
       heat_list) 
 
 
-let make_heat_tree white_bg simple_colors criterion weighting p pr1 pr2 = 
+let make_heat_tree white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2 = 
   let ref_tree = 
     Placerun.get_same 
       Newick.compare 
@@ -108,9 +112,9 @@ let make_heat_tree white_bg simple_colors criterion weighting p pr1 pr2 =
   in
   Decor_gtree.add_decor_by_map 
     (Decor_gtree.of_newick_gtree ref_tree)
-    (color_map white_bg simple_colors criterion weighting p pr1 pr2)
+    (color_map white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2)
 
-let write_heat_tree white_bg simple_colors criterion weighting p pr1 pr2 =
+let write_heat_tree white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2 =
   let prefix = 
     Printf.sprintf "%s.VS.%s.heat"
       (Placerun.get_name pr1)
@@ -118,5 +122,5 @@ let write_heat_tree white_bg simple_colors criterion weighting p pr1 pr2 =
   in
   Phyloxml.named_tree_to_file
     prefix
-    (make_heat_tree white_bg simple_colors criterion weighting p pr1 pr2)
+    (make_heat_tree white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2)
     (prefix^".xml")

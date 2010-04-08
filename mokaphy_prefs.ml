@@ -18,28 +18,30 @@ type mokaphy_prefs =
     ddensity: bool ref;
     heat_tree: bool ref;
     simple_colors: bool ref;
+    gray_black_colors: bool ref;
     white_bg: bool ref;
     bary_prefix: string ref;
     seed: int ref;
   }
 
-let use_pp        p = !(p.use_pp)
-let verbose       p = !(p.verbose)
-let normal        p = !(p.normal)
-let matrix        p = !(p.matrix)
-let out_fname     p = !(p.out_fname)
-let n_samples     p = !(p.n_samples)
-let density       p = !(p.density)
-let p_plot        p = !(p.p_plot)
-let box_plot      p = !(p.box_plot)
-let p_exp         p = !(p.p_exp)
-let weighted      p = !(p.weighted)
-let ddensity      p = !(p.ddensity)
-let heat_tree     p = !(p.heat_tree)
-let white_bg      p = !(p.white_bg)
-let simple_colors p = !(p.simple_colors)
-let bary_prefix   p = !(p.bary_prefix)
-let seed          p = !(p.seed)
+let use_pp            p = !(p.use_pp)
+let verbose           p = !(p.verbose)
+let normal            p = !(p.normal)
+let matrix            p = !(p.matrix)
+let out_fname         p = !(p.out_fname)
+let n_samples         p = !(p.n_samples)
+let density           p = !(p.density)
+let p_plot            p = !(p.p_plot)
+let box_plot          p = !(p.box_plot)
+let p_exp             p = !(p.p_exp)
+let weighted          p = !(p.weighted)
+let ddensity          p = !(p.ddensity)
+let heat_tree         p = !(p.heat_tree)
+let white_bg          p = !(p.white_bg)
+let simple_colors     p = !(p.simple_colors)
+let gray_black_colors p = !(p.gray_black_colors)
+let bary_prefix       p = !(p.bary_prefix)
+let seed              p = !(p.seed)
 
 
 (* defaults *)
@@ -60,6 +62,7 @@ let defaults () =
     heat_tree = ref false;
     white_bg = ref false;
     simple_colors = ref false;
+    gray_black_colors = ref false;
     bary_prefix = ref "";
     seed = ref 1;
   }
@@ -96,6 +99,8 @@ let args prefs = [
   "Make a heat tree for each pair.";
   "--simpleColors", Arg.Set prefs.simple_colors,
   "Use only 100% red and blue to signify the sign of the KR along that edge.";
+  "--grayBlackColors", Arg.Set prefs.gray_black_colors,
+  "Use gray and black in place of red and blue to signify the sign of the KR along that edge.";
   "--whitebg", Arg.Set prefs.white_bg,
   "Make colors for the heat tree which are compatible with a white background.";
   "--bary", Arg.Set_string prefs.bary_prefix,

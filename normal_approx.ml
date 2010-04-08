@@ -58,9 +58,6 @@ let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
                     :: (labeled_mass_arr.(edge_num)))
                 pl
                 (Base.normalized_prob (List.map criterion pl));
-
-
-
           | Mass_map.Unweighted -> 
               let p = Pquery.best_place criterion pquery in
               let edge_num = Placement.location p in
@@ -106,7 +103,7 @@ let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
           (Gtree.get_bl ref_tree id)
           labeled_mass_arr.(id)
           update_data
-      (* make sure that the kr_v totals to zero *)
+      (* make sure that the average weight totals to one *)
       and check_final_data data = 
         let avg_weight = int_inv (np1 + np2) *. (get_sigma data) in
         if abs_float (avg_weight -. 1.) > Kr_distance.tol then
