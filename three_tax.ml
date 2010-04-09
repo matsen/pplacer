@@ -47,22 +47,26 @@ let set_dist_bl tt dist_bl =
   Glv_edge.set_bl tt.model tt.prox prox_bl
 
 (* we minimize the negative of the log likelihood *)
-let optimize_something tolerance set_fun start_value max_value tt = 
+let optimize_something tolerance set_fun ~start_v ~min_v ~max_v tt = 
   let opt_fun value = 
     incr n_like_calls;
     set_fun value;
     -. (log_like tt)
   in
   Minimization.brent 
-      opt_fun start_value 0. max_value tolerance
+      opt_fun start_v min_v max_v tolerance
 
 let optimize_pend_bl tolerance max_value tt = 
+  print_endline "optimizing pend";
   optimize_something 
-    tolerance (set_pend_bl tt) (get_pend_bl tt) max_value tt 
+    tolerance (set_pend_bl tt) ~start_v:(get_pend_bl tt) 
+    ~min_v:1e-8 ~max_v:max_value tt 
 
 let optimize_dist_bl tolerance tt = 
+  print_endline "optimizing pend";
   optimize_something 
-    tolerance (set_dist_bl tt) (get_dist_bl tt) (get_cut_bl tt) tt 
+    tolerance (set_dist_bl tt) ~start_v:(get_dist_bl tt) 
+    ~min_v:0. ~max_v:(get_cut_bl tt) tt 
 
 let optimize tolerance max_pend_bl max_iter tt = 
   let rec aux which_step prev_pend prev_dist = 

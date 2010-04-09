@@ -253,10 +253,6 @@ let pplacer_core prefs query_fname prior model ref_align gtree
       (* get the results *)
       Three_tax.get_results tt
     in
-    let gsl_warn loc query_name warn_str = 
-      Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" 
-                    loc query_name warn_str;
-    in
     let safe_ml_optimize_location tol loc = 
       try ml_optimize_location tol loc with
       | Gsl_error.Gsl_exn(_,_) -> begin
@@ -290,7 +286,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
           with
 (* we need to handle the exception here so that we continue the baseball recursion *)
           | Gsl_error.Gsl_exn(_,warn_str) ->
-              gsl_warn loc query_name warn_str;
+              Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" loc query_name warn_str;
               play_ball like_record n_strikes results rest
          end
       | [] -> results
