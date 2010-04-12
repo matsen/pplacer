@@ -43,8 +43,7 @@ let write_density
   Printf.fprintf r_ch "data <- read.table(\"%s\")\n" dat_name;
   let all_dists = sample_dist::shuffled_dists in
   Printf.fprintf r_ch 
-    "plot(density(data[,1]), main=\"d(%s,%s) = %f\", xlab=\"KR Z_%g distance\",
-    xlim=c(%g,%g))\n" 
+  "plot(density(data[,1]), main=\"d(%s,%s) = %f\", xlab=expression(KR~Z[%g]~distance, xlim=c(%g,%g))\n" 
     name1 name2 sample_dist p (min_x all_dists) (max_x all_dists);
   Printf.fprintf r_ch "abline(v=%g, col=\"red\")\n" sample_dist;
   Printf.fprintf r_ch "dev.off()\n";
@@ -147,7 +146,7 @@ let write_boxplot criterion weighting pr1 pr2 shuffled_prs =
   Printf.fprintf r_ch "low_bound <- function(v) { median(v) - 1.8 * IQR (v) }\n";
   Printf.fprintf r_ch "our_bounds <- c(low_bound(shuff_data[,2]),max(orig_data[,2]))\n";
   (* outline being false means do not draw outliers *)
-  Printf.fprintf r_ch "boxplot(dist~p, data=shuff_frame, outline=FALSE, xlab=\"p\", ylab=\" rescaled Z_p distance\", ylim = our_bounds)\n";
+  Printf.fprintf r_ch "boxplot(dist~p, data=shuff_frame, outline=FALSE, xlab=\"p\", ylab=expression(rescaled~Z[p]~distance), ylim = our_bounds)\n";
   Printf.fprintf r_ch "points(orig_data[,2])\n";
   Printf.fprintf r_ch "dev.off()\n";
   close_out r_ch;
