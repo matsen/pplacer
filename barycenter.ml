@@ -114,8 +114,7 @@ let find p ref_tree mass_m =
    * the edge. as used below, it is the mass that is proximal to pos on the
    * edge. equivalent for dist_ml. *)
   let delta ~prox_ml ~dist_ml id pos = 
-    (proximal_work prox_ml id pos) -. 
-    (distal_work dist_ml id pos)
+    (proximal_work prox_ml id pos) -. (distal_work dist_ml id pos)
   in
   let get_mass_list id = 
     if IntMap.mem id smass then IntMap.find id smass
@@ -192,6 +191,11 @@ let find p ref_tree mass_m =
       (* the node as at the bottom of the edge *)
       (id, 0.)
   | Found_edge id -> 
+      let pos_classic = find_pos id 
+      and pos_new = 
+        delta ~dist_ml:(get_mass_list id) ~prox_ml:[] id (Gtree.get_bl ref_tree id)
+      in
+      Printf.printf "%g\t%g\n" pos_classic pos_new;
       (id, find_pos id)
 
 let of_placerun weighting criterion p pr = 
