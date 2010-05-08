@@ -57,13 +57,11 @@ let optimize_something tolerance set_fun ~start_v ~min_v ~max_v tt =
       opt_fun start_v min_v max_v tolerance
 
 let optimize_pend_bl tolerance max_value tt = 
-  print_endline "optimizing pend";
   optimize_something 
     tolerance (set_pend_bl tt) ~start_v:(get_pend_bl tt) 
     ~min_v:1e-8 ~max_v:max_value tt 
 
 let optimize_dist_bl tolerance tt = 
-  print_endline "optimizing pend";
   optimize_something 
     tolerance (set_dist_bl tt) ~start_v:(get_dist_bl tt) 
     ~min_v:0. ~max_v:(get_cut_bl tt) tt 

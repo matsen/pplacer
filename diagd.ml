@@ -4,6 +4,21 @@
  * diagd:
  * a class for diagonalized matrices
  *
+ * Time-reversible models are typically speficied by giving the stationary
+ * frequency and the "exchangeability" between states. 
+ * Let D be diag(\pi) and B_{ij} be the exchangeability; note B_{ij} = B_{ji}.
+ * We need to set up the diagonal elements of B such that DB is a transition
+ * rate matrix, i.e. such that the row sums are zero.
+ * Because (DB)_{ij} is \pi_i B_{ij}, we want 
+ * \pi_i B_{ii} + \sum_{j \ne i} pi_j B_{ij} = 0, i.e.
+ * B_{ii} = - (1/pi_i) \sum_{j \ne i} pi_j B_{ij}.
+ *
+ * From there the DB matrix is easily diagonalized; see Felsenstein p. 206 or
+ * pplacer/scans/markov_process_db_diag.pdf.
+ *
+ * In this module an "ExchangeableMat" is a speficication of an exchangeability
+ * matrix (only the off-diagonal elements count) and the stationary distribution.
+ * 
 *)
 
 module FGM = Fam_gsl_matvec
@@ -32,7 +47,10 @@ let deDiagonalize ~dst u lambda uinv =
   with
     | Invalid_argument s -> invalid_arg ("deDiagonalize: "^s)
 
-(* util should be a vector of the same length as lambda *)
+(* here we exponentiate our diagonalized matrix across all the rates.
+ * if D is the diagonal matrix, we get a #rates matrices of the form
+ * U exp(D rate bl) U^{-1}. 
+ * util should be a vector of the same length as lambda *)
 let multi_exp ~dst u lambda uinv util rates bl = 
   let n = Gsl_vector.length lambda in
   try 
@@ -58,18 +76,23 @@ let multi_exp ~dst u lambda uinv util rates bl =
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
 
 
-
 class diagd arg = 
-  (* if we have a matrix of the form B times D, where D is diag and B is symmetric *)
-  let diagdStructureOfBDMatrix b d = 
+(* See Felsenstein p.206. 
+ * Say \Lambda is the diagonal matrix of eigenvalues of
+ * D^{1/2} B D^{1/2}. Then Q is
+ * (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}.
+ * *)
+  let diagdStructureOfDBMatrix d b = 
     let dDiagSqrt = FGM.diagOfVec (FGM.vecMap sqrt d) in
-    let dDiagSqrtInv = FGM.diagOfVec (
-      FGM.vecMap (fun x -> 1. /. (sqrt x)) d) in
-    let (evals, evects) = FGM.symmEigs (
-      FGM.allocMatMatMul dDiagSqrt (FGM.allocMatMatMul b dDiagSqrt)) in
+    let dDiagSqrtInv = 
+      FGM.diagOfVec (FGM.vecMap (fun x -> 1. /. (sqrt x)) d) in
+    let (evals, evects) = 
+      FGM.symmEigs 
+        (FGM.allocMatMatMul dDiagSqrt 
+                            (FGM.allocMatMatMul b dDiagSqrt)) in
     (* make sure that diagonal matrix is all positive *)
     if not (FGM.vecNonneg d) then 
-      failwith("negative element in the diagonal of a BD matrix!");
+      failwith("negative element in the diagonal of a DB matrix!");
     (evals, FGM.allocMatMatMul dDiagSqrtInv evects,
      FGM.allocMatMatMul (FGM.allocMatTranspose evects) dDiagSqrt)
   in
@@ -81,17 +104,18 @@ class diagd arg =
         | `OfSymmMat m -> 
             let evals, evects = FGM.symmEigs m in
             (evals, evects, FGM.allocMatTranspose evects)
-        | `OfBDMatrix(b, d) -> diagdStructureOfBDMatrix b d
+        | `OfDBMatrix(d, b) -> diagdStructureOfDBMatrix d b
         | `OfExchangeableMat(symmPart, statnDist) ->
             let n = Gsl_vector.length statnDist in
             let r = 
               (* here we set up the diagonal entries of the symmetric matrix so
-               * that we get the row sum of the Q matrix is zero *)
+               * that we get the row sum of the Q matrix is zero.
+               * see top of code. *)
               FGM.matInit n n (
                 fun i j ->
                   if i <> j then Gsl_matrix.get symmPart i j
                   else (
-                    (* r_ii = - (pi_i)^{-1} \sum_{j \neq i} r_ij pi_j *)
+                  (* r_ii = - (pi_i)^{-1} \sum_{j \ne i} r_ij pi_j *)
                     let total = ref 0. in
                     for k=0 to n-1 do
                       if k <> i then 
@@ -101,7 +125,7 @@ class diagd arg =
                   )
               )
             in 
-            diagdStructureOfBDMatrix r statnDist
+            diagdStructureOfDBMatrix statnDist r
     with
       | Invalid_argument s -> invalid_arg ("diagd dimension problem: "^s)
   in
@@ -138,7 +162,7 @@ object (self)
 end
 
 let ofSymmMat a = new diagd (`OfSymmMat a)
-let ofBDMatrix b d = new diagd (`OfBDMatrix(b, d))
+let ofDBMatrix d b = new diagd (`OfDBMatrix(d, b))
 let ofExchangeableMat symmPart statnDist = 
   new diagd (`OfExchangeableMat(symmPart, statnDist))
 
