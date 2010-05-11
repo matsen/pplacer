@@ -24,7 +24,7 @@ let write ch pq =
 let parse_pquery = function
   | name::seq::places ->
       Pquery.make_ml_sorted
-      ~name:(Alignment.read_fasta_name name)
+      ~name:(Alignment.name_of_fasta_header name)
       ~seq
       (List.map Placement.placement_of_str places)
   | _ -> 

@@ -4,6 +4,10 @@
  * just the calls for linear_c.
 *)
 
+module BA = Bigarray
+module BA1 = BA.Array1
+module BA2 = BA.Array2
+
 external glv_print : Tensor.tensor -> unit = "glv_print_c"
 
 (* statd x y z util *)

@@ -2,12 +2,10 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-type tensor = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array3.t
-
 module BA = Bigarray
-module BA1 = BA.Array1
-module BA2 = BA.Array2
 module BA3 = BA.Array3
+
+type tensor = (float, BA.float64_elt, BA.c_layout) BA.Array3.t
 
 let dim1 = BA3.dim1
 let dim2 = BA3.dim2

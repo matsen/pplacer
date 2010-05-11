@@ -23,10 +23,10 @@
 
 module FGM = Fam_gsl_matvec
 
-let get1 = Bigarray.Array1.unsafe_get
-let set1 = Bigarray.Array1.unsafe_set
-let get2 = Bigarray.Array2.unsafe_get
-let set2 = Bigarray.Array2.unsafe_set
+let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
+let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
+let get2 a i j = Bigarray.Array2.unsafe_get (a:Gsl_matrix.matrix) i j
+let set2 a i j = Bigarray.Array2.unsafe_set (a:Gsl_matrix.matrix) i j
 
 (* deDiagonalize: multiply out eigenvector (u), eigenvalue (lambda) matrices,
  * and inverse eigenvector (uInv) matrices to get usual matrix rep *)
