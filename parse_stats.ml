@@ -2,6 +2,10 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * parse statistics files from RAxML and Phyml
+ *
+ * Both of these parsing routines return a float array option. Protein models
+ * correspond to a return value of None, and the array if it is given is an
+ * array of transition frequencies.
  *)
 
 open Fam_batteries
@@ -19,20 +23,41 @@ let check_version program version known_versions =
       program
       (String.concat "; " known_versions)
 
+(*
+# list_split [1;2;3;4;5] 2;;  
+- : int list * int list = ([1; 2], [3; 4; 5])
+*)
+let list_split l to_pull = 
+  let rec aux tp left = function
+    | hd::tl as right -> 
+        if tp > 0 then aux (tp-1) (hd::left) tl
+        else (List.rev left, right)
+    | [] -> (List.rev left, [])
+  in
+  aux to_pull [] l
+
+let assert_and_extract_float beginning s = 
+  let beginning_len = String.length beginning in
+  for i=0 to beginning_len - 1 do 
+    if beginning.[i] <> s.[i] then 
+      raise (Stats_parsing_error "assert_and_extract_float: didn't match template!")
+  done;
+  float_of_string 
+    (String.sub s beginning_len ((String.length s) - beginning_len))
+
 
 (* ************ RAXML ************* *)
 
 let raxml_header_rex = Str.regexp ".* RAxML version \\([^ ]+\\)"
 
-let known_raxml_versions = [ "7.2.3"; "7.2.5"; ]
+let known_raxml_versions = [ "7.2.3"; "7.2.5"; "7.2.6"; ]
 
-let parse_raxml_info version lines prefs = 
+let parse_raxml_7_2_3_info lines prefs =
   let partition_rex = Str.regexp "^Partition:"
   and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
   and inference_rex = Str.regexp "^Inference\\[0\\].* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
   and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
   in
-  check_version "RAxML" version known_raxml_versions;
   match 
     (File_parsing.partition_list 
       (str_match partition_rex)
@@ -86,6 +111,86 @@ let parse_raxml_info version lines prefs =
     end
   end
 
+let parse_raxml_7_2_5_info lines prefs =
+  let partition_rex = Str.regexp "^Partition:"
+  and data_type_rex = Str.regexp "^DataType: \\(.*\\)"
+  and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
+  and alpha_rex = Str.regexp "^alpha: \\(.*\\)"
+  in
+  match 
+    (File_parsing.partition_list 
+      (str_match partition_rex)
+      lines) with
+  | [] | [_] -> raise (Stats_parsing_error "couldn't find a partition line")
+  | _::partitions -> begin
+    if List.length partitions > 1 then 
+      raise (Stats_parsing_error "too many partitions. Only one is allowed.")
+    else begin
+      try 
+        let (data_type_line, rest) = 
+          try
+            File_parsing.find_beginning 
+              (str_match data_type_rex) 
+              (List.hd partitions)
+          with
+          | Not_found ->
+              raise (Stats_parsing_error "couldn't find data type line")
+        in
+        let data_type_str = Str.matched_group 1 data_type_line
+        and () = match rest with
+        | subst_matrix_line::_ -> 
+            if str_match subst_matrix_rex subst_matrix_line <> true then
+              raise (Stats_parsing_error "couldn't match substitution matrix line");
+            prefs.Prefs.model_name := Str.matched_group 1 subst_matrix_line;
+        | [] -> raise (Stats_parsing_error "unexpected end of file after subs matrix line")
+        in
+        let (alpha_line, final_lines) = 
+          try
+            File_parsing.find_beginning (str_match alpha_rex) rest 
+          with
+          | Not_found -> 
+              raise (Stats_parsing_error "couldn't find alpha line")
+        in
+        (* raxml gamma always 4 categories *)
+        prefs.Prefs.gamma_n_cat := 4;
+        prefs.Prefs.gamma_alpha := 
+          float_of_string (Str.matched_group 1 alpha_line);
+        match data_type_str with
+        | "DNA" -> begin
+            match final_lines with
+            | _::rate_lines ->
+              Some
+                (ArrayFuns.map2 
+                  assert_and_extract_float
+                  [|
+                    "rate A <-> C:";
+                    "rate A <-> G:";
+                    "rate A <-> T:";
+                    "rate C <-> G:";
+                    "rate C <-> T:";
+                    "rate G <-> T:";
+                  |]
+                  (Array.of_list (fst (list_split rate_lines 6))))
+            | [] -> raise (Stats_parsing_error "unexpected end of file after alpha line")
+          end
+        | "AA" -> None
+        | s -> raise (Stats_parsing_error ("data type unknown: "^s))
+      with
+      | Not_found -> raise (Stats_parsing_error "problem parsing ")
+    end
+  end
+
+
+let parse_raxml_info version lines prefs = 
+  check_version "RAxML" version known_raxml_versions;
+  match version with
+  | "7.2.3" -> parse_raxml_7_2_3_info lines prefs
+  | "7.2.5" 
+  | "7.2.6" -> parse_raxml_7_2_5_info lines prefs
+  | _ -> 
+      print_endline "I'm going to try parsing as if this was version 7.2.5";
+      parse_raxml_7_2_5_info lines prefs
+
 
 
 (* ************ PHYML ************* *)
@@ -93,28 +198,6 @@ let parse_raxml_info version lines prefs =
 let phyml_header_rex = Str.regexp "[ \t]*---  PhyML v\\([^ ]+\\)"
 
 let known_phyml_versions = [ "3.0"; "3.0_246M"; ]
-
-(*
-# list_split [1;2;3;4;5] 2;;  
-- : int list * int list = ([1; 2], [3; 4; 5])
-*)
-let list_split l to_pull = 
-  let rec aux tp left = function
-    | hd::tl as right -> 
-        if tp > 0 then aux (tp-1) (hd::left) tl
-        else (List.rev left, right)
-    | [] -> (List.rev left, [])
-  in
-  aux to_pull [] l
-
-let assert_and_extract_float beginning s = 
-  let beginning_len = String.length beginning in
-  for i=0 to beginning_len - 1 do 
-    if beginning.[i] <> s.[i] then 
-      raise (Stats_parsing_error "assert_and_extract_float: didn't match template!")
-  done;
-  float_of_string 
-    (String.sub s beginning_len ((String.length s) - beginning_len))
 
 let parse_phyml_stats version lines prefs = 
   let model_rex = Str.regexp 
