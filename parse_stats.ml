@@ -50,12 +50,12 @@ let assert_and_extract_float beginning s =
 
 let raxml_header_rex = Str.regexp ".* RAxML version \\([^ ]+\\)"
 
-let known_raxml_versions = [ "7.2.3"; "7.2.5"; "7.2.6"; ]
+let known_raxml_versions = [ "7.0.4"; "7.2.3"; "7.2.5"; "7.2.6"; "7.2.7"; ]
 
 let parse_raxml_7_2_3_info lines prefs =
   let partition_rex = Str.regexp "^Partition:"
   and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
-  and inference_rex = Str.regexp "^Inference\\[0\\].* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
+  and alpha_rex = Str.regexp ".*alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
   and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
   in
   match 
@@ -78,19 +78,19 @@ let parse_raxml_7_2_3_info lines prefs =
               raise (Stats_parsing_error "couldn't find substitution matrix line")
         in
         prefs.Prefs.model_name := Str.matched_group 1 subs_line;
-        let (inference_line,_) = 
+        let (alpha_line,_) = 
           try
             File_parsing.find_beginning 
-              (str_match inference_rex) rest 
+              (str_match alpha_rex) rest 
           with
           | Not_found -> 
-              raise (Stats_parsing_error "couldn't find inference line")
+              raise (Stats_parsing_error "couldn't find alpha line")
         in
         (* raxml gamma always 4 categories *)
         prefs.Prefs.gamma_n_cat := 4;
         prefs.Prefs.gamma_alpha := 
-          float_of_string (Str.matched_group 1 inference_line);
-        let rate_info = Str.matched_group 2 inference_line in
+          float_of_string (Str.matched_group 1 alpha_line);
+        let rate_info = Str.matched_group 2 alpha_line in
         if str_match rates_rex rate_info then begin
           if Prefs.model_name prefs <> "GTR" then
             raise (Stats_parsing_error ("have rates but model is not GTR! GTR is only allowed nucleotide model."));
@@ -111,7 +111,8 @@ let parse_raxml_7_2_3_info lines prefs =
     end
   end
 
-let parse_raxml_7_2_5_info lines prefs =
+(* parse re-estimated RAxML info file *)
+let parse_raxml_re_estimated_info lines prefs =
   let partition_rex = Str.regexp "^Partition:"
   and data_type_rex = Str.regexp "^DataType: \\(.*\\)"
   and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
@@ -184,12 +185,14 @@ let parse_raxml_7_2_5_info lines prefs =
 let parse_raxml_info version lines prefs = 
   check_version "RAxML" version known_raxml_versions;
   match version with
-  | "7.2.3" -> parse_raxml_7_2_3_info lines prefs
+  | "7.0.4" 
+  | "7.2.3" 
   | "7.2.5" 
-  | "7.2.6" -> parse_raxml_7_2_5_info lines prefs
+  | "7.2.6"
+  | "7.2.7" -> parse_raxml_7_2_3_info lines prefs
   | _ -> 
-      print_endline "I'm going to try parsing as if this was version 7.2.5";
-      parse_raxml_7_2_5_info lines prefs
+      print_endline "I'm going to try parsing as if this was version 7.2.3";
+      parse_raxml_7_2_3_info lines prefs
 
 
 
