@@ -14,6 +14,16 @@ exception Stats_parsing_error of string
 
 let str_match rex s = Str.string_match rex s 0
 
+let white_rex = Str.regexp "[ \n\t\r]*"
+
+let remove_whitespace s = Str.global_replace white_rex "" s
+
+let safe_float_of_string s =
+  let no_white = remove_whitespace s in
+  try float_of_string no_white with
+ | Failure _ -> 
+     raise (Stats_parsing_error ("float_of_string failed on: '"^no_white^"'"))
+
 let check_version program version known_versions = 
   if not (List.mem version known_versions) then 
     Printf.printf 
@@ -42,7 +52,7 @@ let assert_and_extract_float beginning s =
     if beginning.[i] <> s.[i] then 
       raise (Stats_parsing_error "assert_and_extract_float: didn't match template!")
   done;
-  float_of_string 
+  safe_float_of_string 
     (String.sub s beginning_len ((String.length s) - beginning_len))
 
 
@@ -89,7 +99,7 @@ let parse_raxml_7_2_3_info lines prefs =
         (* raxml gamma always 4 categories *)
         prefs.Prefs.gamma_n_cat := 4;
         prefs.Prefs.gamma_alpha := 
-          float_of_string (Str.matched_group 1 alpha_line);
+          safe_float_of_string (Str.matched_group 1 alpha_line);
         let rate_info = Str.matched_group 2 alpha_line in
         if str_match rates_rex rate_info then begin
           if Prefs.model_name prefs <> "GTR" then
@@ -97,7 +107,7 @@ let parse_raxml_7_2_3_info lines prefs =
           Some
             (Array.of_list
               (List.map
-                float_of_string
+                safe_float_of_string
                 (Str.split 
                   (Str.regexp "[ ]")
                   (Str.matched_group 1 rate_info))))
@@ -155,7 +165,7 @@ let parse_raxml_re_estimated_info lines prefs =
         (* raxml gamma always 4 categories *)
         prefs.Prefs.gamma_n_cat := 4;
         prefs.Prefs.gamma_alpha := 
-          float_of_string (Str.matched_group 1 alpha_line);
+          safe_float_of_string (Str.matched_group 1 alpha_line);
         match data_type_str with
         | "DNA" -> begin
             match final_lines with
@@ -233,7 +243,7 @@ let parse_phyml_stats version lines prefs =
       if Str.string_match gamma_n_cats_rex cats_str 0 then
         prefs.Prefs.gamma_n_cat := int_of_string (Str.matched_group 1 cats_str);
       if Str.string_match gamma_alpha_rex alpha_str 0 then
-        prefs.Prefs.gamma_alpha := float_of_string (Str.matched_group 1 alpha_str);
+        prefs.Prefs.gamma_alpha := safe_float_of_string (Str.matched_group 1 alpha_str);
     end
     | _ -> raise (Stats_parsing_error "not enough lines after gamma!")
     end;
