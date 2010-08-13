@@ -2,6 +2,10 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
  * parse statistics files from RAxML and Phyml
+ *
+ * Both of these parsing routines return a float array option. Protein models
+ * correspond to a return value of None, and the array if it is given is an
+ * array of transition frequencies.
  *)
 
 open Fam_batteries
@@ -9,6 +13,16 @@ open Fam_batteries
 exception Stats_parsing_error of string
 
 let str_match rex s = Str.string_match rex s 0
+
+let white_rex = Str.regexp "[ \n\t\r]*"
+
+let remove_whitespace s = Str.global_replace white_rex "" s
+
+let safe_float_of_string s =
+  let no_white = remove_whitespace s in
+  try float_of_string no_white with
+ | Failure _ -> 
+     raise (Stats_parsing_error ("float_of_string failed on: '"^no_white^"'"))
 
 let check_version program version known_versions = 
   if not (List.mem version known_versions) then 
@@ -18,81 +32,6 @@ let check_version program version known_versions =
       version
       program
       (String.concat "; " known_versions)
-
-
-(* ************ RAXML ************* *)
-
-let raxml_header_rex = Str.regexp ".* RAxML version \\([^ ]+\\)"
-
-let known_raxml_versions = [ "7.2.3"; "7.2.5"; ]
-
-let parse_raxml_info version lines prefs = 
-  let partition_rex = Str.regexp "^Partition:"
-  and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
-  and inference_rex = Str.regexp "^Inference\\[0\\].* alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
-  and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
-  in
-  check_version "RAxML" version known_raxml_versions;
-  match 
-    (File_parsing.partition_list 
-      (str_match partition_rex)
-      lines) with
-  | [] | [_] -> raise (Stats_parsing_error "couldn't find a partition line")
-  | _::partitions -> begin
-    if List.length partitions > 1 then 
-      raise (Stats_parsing_error "too many partitions. Only one is allowed.")
-    else begin
-      try 
-        let (subs_line, rest) = 
-          try
-            File_parsing.find_beginning 
-              (str_match subst_matrix_rex) 
-              (List.hd partitions)
-          with
-          | Not_found ->
-              raise (Stats_parsing_error "couldn't find substitution matrix line")
-        in
-        prefs.Prefs.model_name := Str.matched_group 1 subs_line;
-        let (inference_line,_) = 
-          try
-            File_parsing.find_beginning 
-              (str_match inference_rex) rest 
-          with
-          | Not_found -> 
-              raise (Stats_parsing_error "couldn't find inference line")
-        in
-        (* raxml gamma always 4 categories *)
-        prefs.Prefs.gamma_n_cat := 4;
-        prefs.Prefs.gamma_alpha := 
-          float_of_string (Str.matched_group 1 inference_line);
-        let rate_info = Str.matched_group 2 inference_line in
-        if str_match rates_rex rate_info then begin
-          if Prefs.model_name prefs <> "GTR" then
-            raise (Stats_parsing_error ("have rates but model is not GTR! GTR is only allowed nucleotide model."));
-          Some
-            (Array.of_list
-              (List.map
-                float_of_string
-                (Str.split 
-                  (Str.regexp "[ ]")
-                  (Str.matched_group 1 rate_info))))
-        end
-        else if Prefs.model_name prefs == "GTR" then
-          raise (Stats_parsing_error "GTR model specified, but no rates found.")
-        else
-          None
-      with
-      | Not_found -> raise (Stats_parsing_error "problem parsing ")
-    end
-  end
-
-
-
-(* ************ PHYML ************* *)
-
-let phyml_header_rex = Str.regexp "[ \t]*---  PhyML v\\([^ ]+\\)"
-
-let known_phyml_versions = [ "3.0"; "3.0_246M"; ]
 
 (*
 # list_split [1;2;3;4;5] 2;;  
@@ -113,8 +52,165 @@ let assert_and_extract_float beginning s =
     if beginning.[i] <> s.[i] then 
       raise (Stats_parsing_error "assert_and_extract_float: didn't match template!")
   done;
-  float_of_string 
+  safe_float_of_string 
     (String.sub s beginning_len ((String.length s) - beginning_len))
+
+
+(* ************ RAXML ************* *)
+
+let raxml_header_rex = Str.regexp ".* RAxML version \\([^ ]+\\)"
+
+let known_raxml_versions = [ "7.0.4"; "7.2.3"; "7.2.5"; "7.2.6"; "7.2.7"; ]
+
+let parse_raxml_7_2_3_info lines prefs =
+  let partition_rex = Str.regexp "^Partition:"
+  and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
+  and alpha_rex = Str.regexp ".*alpha\\[0\\]: \\([^ ]*\\) \\(.*\\)"
+  and rates_rex = Str.regexp "^rates\\[0\\] ac ag at cg ct gt: \\(.*\\)"
+  in
+  match 
+    (File_parsing.partition_list 
+      (str_match partition_rex)
+      lines) with
+  | [] | [_] -> raise (Stats_parsing_error "couldn't find a partition line")
+  | _::partitions -> begin
+    if List.length partitions > 1 then 
+      raise (Stats_parsing_error "too many partitions. Only one is allowed.")
+    else begin
+      try 
+        let (subs_line, rest) = 
+          try
+            File_parsing.find_beginning 
+              (str_match subst_matrix_rex) 
+              (List.hd partitions)
+          with
+          | Not_found ->
+              raise (Stats_parsing_error "couldn't find substitution matrix line")
+        in
+        prefs.Prefs.model_name := Str.matched_group 1 subs_line;
+        let (alpha_line,_) = 
+          try
+            File_parsing.find_beginning 
+              (str_match alpha_rex) rest 
+          with
+          | Not_found -> 
+              raise (Stats_parsing_error "couldn't find alpha line")
+        in
+        (* raxml gamma always 4 categories *)
+        prefs.Prefs.gamma_n_cat := 4;
+        prefs.Prefs.gamma_alpha := 
+          safe_float_of_string (Str.matched_group 1 alpha_line);
+        let rate_info = Str.matched_group 2 alpha_line in
+        if str_match rates_rex rate_info then begin
+          if Prefs.model_name prefs <> "GTR" then
+            raise (Stats_parsing_error ("have rates but model is not GTR! GTR is only allowed nucleotide model."));
+          Some
+            (Array.of_list
+              (List.map
+                safe_float_of_string
+                (Str.split 
+                  (Str.regexp "[ ]")
+                  (Str.matched_group 1 rate_info))))
+        end
+        else if Prefs.model_name prefs == "GTR" then
+          raise (Stats_parsing_error "GTR model specified, but no rates found.")
+        else
+          None
+      with
+      | Not_found -> raise (Stats_parsing_error "problem parsing ")
+    end
+  end
+
+(* parse re-estimated RAxML info file *)
+let parse_raxml_re_estimated_info lines prefs =
+  let partition_rex = Str.regexp "^Partition:"
+  and data_type_rex = Str.regexp "^DataType: \\(.*\\)"
+  and subst_matrix_rex = Str.regexp "^Substitution Matrix: \\(.*\\)"
+  and alpha_rex = Str.regexp "^alpha: \\(.*\\)"
+  in
+  match 
+    (File_parsing.partition_list 
+      (str_match partition_rex)
+      lines) with
+  | [] | [_] -> raise (Stats_parsing_error "couldn't find a partition line")
+  | _::partitions -> begin
+    if List.length partitions > 1 then 
+      raise (Stats_parsing_error "too many partitions. Only one is allowed.")
+    else begin
+      try 
+        let (data_type_line, rest) = 
+          try
+            File_parsing.find_beginning 
+              (str_match data_type_rex) 
+              (List.hd partitions)
+          with
+          | Not_found ->
+              raise (Stats_parsing_error "couldn't find data type line")
+        in
+        let data_type_str = Str.matched_group 1 data_type_line
+        and () = match rest with
+        | subst_matrix_line::_ -> 
+            if str_match subst_matrix_rex subst_matrix_line <> true then
+              raise (Stats_parsing_error "couldn't match substitution matrix line");
+            prefs.Prefs.model_name := Str.matched_group 1 subst_matrix_line;
+        | [] -> raise (Stats_parsing_error "unexpected end of file after subs matrix line")
+        in
+        let (alpha_line, final_lines) = 
+          try
+            File_parsing.find_beginning (str_match alpha_rex) rest 
+          with
+          | Not_found -> 
+              raise (Stats_parsing_error "couldn't find alpha line")
+        in
+        (* raxml gamma always 4 categories *)
+        prefs.Prefs.gamma_n_cat := 4;
+        prefs.Prefs.gamma_alpha := 
+          safe_float_of_string (Str.matched_group 1 alpha_line);
+        match data_type_str with
+        | "DNA" -> begin
+            match final_lines with
+            | _::rate_lines ->
+              Some
+                (ArrayFuns.map2 
+                  assert_and_extract_float
+                  [|
+                    "rate A <-> C:";
+                    "rate A <-> G:";
+                    "rate A <-> T:";
+                    "rate C <-> G:";
+                    "rate C <-> T:";
+                    "rate G <-> T:";
+                  |]
+                  (Array.of_list (fst (list_split rate_lines 6))))
+            | [] -> raise (Stats_parsing_error "unexpected end of file after alpha line")
+          end
+        | "AA" -> None
+        | s -> raise (Stats_parsing_error ("data type unknown: "^s))
+      with
+      | Not_found -> raise (Stats_parsing_error "problem parsing ")
+    end
+  end
+
+
+let parse_raxml_info version lines prefs = 
+  check_version "RAxML" version known_raxml_versions;
+  match version with
+  | "7.0.4" 
+  | "7.2.3" 
+  | "7.2.5" 
+  | "7.2.6"
+  | "7.2.7" -> parse_raxml_7_2_3_info lines prefs
+  | _ -> 
+      print_endline "I'm going to try parsing as if this was version 7.2.3";
+      parse_raxml_7_2_3_info lines prefs
+
+
+
+(* ************ PHYML ************* *)
+
+let phyml_header_rex = Str.regexp "[ \t]*---  PhyML v\\([^ ]+\\)"
+
+let known_phyml_versions = [ "3.0"; "3.0_246M"; ]
 
 let parse_phyml_stats version lines prefs = 
   let model_rex = Str.regexp 
@@ -147,7 +243,7 @@ let parse_phyml_stats version lines prefs =
       if Str.string_match gamma_n_cats_rex cats_str 0 then
         prefs.Prefs.gamma_n_cat := int_of_string (Str.matched_group 1 cats_str);
       if Str.string_match gamma_alpha_rex alpha_str 0 then
-        prefs.Prefs.gamma_alpha := float_of_string (Str.matched_group 1 alpha_str);
+        prefs.Prefs.gamma_alpha := safe_float_of_string (Str.matched_group 1 alpha_str);
     end
     | _ -> raise (Stats_parsing_error "not enough lines after gamma!")
     end;

@@ -78,8 +78,11 @@ let of_lexbuf lexbuf =
 
 let of_string s = 
   check_string s;
-  of_lexbuf 
-  (Lexing.from_string (Str.replace_first (Str.regexp ");") "):0.;" s))
+  try
+    of_lexbuf 
+    (Lexing.from_string (Str.replace_first (Str.regexp ");") "):0.;" s))
+  with
+  | Failure s -> failwith("problem parsing tree: "^s)
 
 let of_file fname = 
   match
