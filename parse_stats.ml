@@ -97,10 +97,10 @@ let parse_raxml_7_2_3_info lines prefs =
               raise (Stats_parsing_error "couldn't find alpha line")
         in
         (* raxml gamma always 4 categories *)
+        let alpha_str = Str.matched_group 1 alpha_line
+        and rate_info = Str.matched_group 2 alpha_line in
         prefs.Prefs.gamma_n_cat := 4;
-        prefs.Prefs.gamma_alpha := 
-          safe_float_of_string (Str.matched_group 1 alpha_line);
-        let rate_info = Str.matched_group 2 alpha_line in
+        prefs.Prefs.gamma_alpha := safe_float_of_string alpha_str;
         if str_match rates_rex rate_info then begin
           if Prefs.model_name prefs <> "GTR" then
             raise (Stats_parsing_error ("have rates but model is not GTR! GTR is only allowed nucleotide model."));
@@ -118,6 +118,7 @@ let parse_raxml_7_2_3_info lines prefs =
           None
       with
       | Not_found -> raise (Stats_parsing_error "problem parsing ")
+      | Invalid_argument s -> raise (Stats_parsing_error ("problem parsing: "^s))
     end
   end
 
