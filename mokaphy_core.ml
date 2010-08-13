@@ -125,6 +125,30 @@ let pair_core prefs criterion pr1 pr2 =
           R_plots.write_p_plot weighting criterion pr1 pr2;
         if Mokaphy_prefs.box_plot prefs then
           R_plots.write_boxplot weighting criterion pr1 pr2 shuffled_list;
+        (* Barycenter stuff *)
+        if Mokaphy_prefs.bary_prefix prefs <> "" then begin
+          let bary_dist xpr1 xpr2 = 
+            Barycenter_dist.calc_dist
+              (weighting_of_prefs prefs)
+              criterion 
+              (Mokaphy_prefs.p_exp prefs)
+              xpr1
+              xpr2
+          in
+          let original_bdist = bary_dist pr1 pr2
+          and shuffled_bdists = 
+            List.map 
+              (fun (spr1,spr2) -> calc_dist spr1 spr2)
+              shuffled_list
+          in
+          R_plots.write_density 
+            "bary_density"
+            (Placerun.get_name pr1)
+            (Placerun.get_name pr2)
+            original_bdist 
+            shuffled_bdists 
+            p;
+        end;
         Some
           (Mokaphy_base.list_onesided_pvalue 
             shuffled_dists 
@@ -180,7 +204,7 @@ let core prefs criterion ch pr_arr =
     end;
   end;
   let bary_prefix = Mokaphy_prefs.bary_prefix prefs in
-  if bary_prefix <> "" then 
+  if bary_prefix <> "" then
     Barycenter_tree.write 
       (weighting_of_prefs prefs)
       criterion 

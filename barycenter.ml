@@ -188,7 +188,7 @@ let find p ref_tree mass_m =
     failwith "failed to find barycenter edge/node!"
   with
   | Found_node id -> 
-      (* the node as at the bottom of the edge *)
+      (* the node is at the bottom of the edge *)
       (id, 0.)
   | Found_edge id -> 
       let pos_classic = find_pos id 

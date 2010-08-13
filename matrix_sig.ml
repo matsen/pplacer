@@ -4,7 +4,10 @@
  * to get significance values using eigenvalues of the common ancestry matrix.
  *
  * mtilde = \int_u G_i(u) G_j(u) \lambda(du)
+ *
+ * see scans: matrix_sig.pdf
  *)
+
 
 open Fam_batteries
 

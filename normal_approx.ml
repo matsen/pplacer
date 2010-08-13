@@ -1,6 +1,7 @@
 (* mokaphy v0.3. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
+ * see scan: normal_approx.pdf
  *)
 
 open MapsSets
@@ -27,7 +28,6 @@ let intermediate_list_sum =
   ListFuns.complete_fold_left intermediate_sum
                       
 let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 = 
-(* let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =  *)
   let np1 = Placerun.n_pqueries pr1
   and np2 = Placerun.n_pqueries pr2 in
   let int_inv x = 1. /. (float_of_int x) 
