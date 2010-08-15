@@ -206,3 +206,31 @@ let of_placerun weighting criterion p pr =
       weighting
       criterion
       pr)
+
+
+(* ** for measuring the difference between two placements ** *)
+
+(* to get the distance between two locations on a tree. a bit of a silly hack to
+ * make a distance matrix then just get a single distance, but it works *)
+let location_distance t (loc1, distal1) (loc2, distal2) = 
+  let make_place loc dist_bl = 
+    Placement.make_ml loc ~ml_ratio:1. ~log_like:1. 
+                          ~dist_bl ~pend_bl:0.
+  in
+  let m = 
+    Distance_mat.of_placement_array t
+      [| make_place loc1 distal1;
+         make_place loc2 distal2; |]
+  in
+  Uptri.get m 0 1
+
+
+let calc_dist weighting criterion p pr1 pr2 =
+  let calc_bary pr = 
+    of_placerun weighting criterion p pr
+  in
+  location_distance 
+    (Placerun.get_same_tree pr1 pr2)
+    (calc_bary pr1)
+    (calc_bary pr2)
+     

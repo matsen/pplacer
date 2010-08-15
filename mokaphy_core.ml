@@ -128,7 +128,7 @@ let pair_core prefs criterion pr1 pr2 =
         (* Barycenter stuff *)
         if Mokaphy_prefs.bary_prefix prefs <> "" then begin
           let bary_dist xpr1 xpr2 = 
-            Barycenter_dist.calc_dist
+            Barycenter.calc_dist
               (weighting_of_prefs prefs)
               criterion 
               (Mokaphy_prefs.p_exp prefs)
