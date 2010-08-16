@@ -33,6 +33,12 @@ let check_version program version known_versions =
       program
       (String.concat "; " known_versions)
 
+let rec find_version_line rex = function
+  | hd :: tl -> 
+      if str_match rex hd then Some (Str.matched_group 1 hd)
+      else find_version_line rex tl
+  | [] -> None
+
 (*
 # list_split [1;2;3;4;5] 2;;  
 - : int list * int list = ([1; 2], [3; 4; 5])
@@ -97,10 +103,10 @@ let parse_raxml_7_2_3_info lines prefs =
               raise (Stats_parsing_error "couldn't find alpha line")
         in
         (* raxml gamma always 4 categories *)
+        let alpha_str = Str.matched_group 1 alpha_line
+        and rate_info = Str.matched_group 2 alpha_line in
         prefs.Prefs.gamma_n_cat := 4;
-        prefs.Prefs.gamma_alpha := 
-          safe_float_of_string (Str.matched_group 1 alpha_line);
-        let rate_info = Str.matched_group 2 alpha_line in
+        prefs.Prefs.gamma_alpha := safe_float_of_string alpha_str;
         if str_match rates_rex rate_info then begin
           if Prefs.model_name prefs <> "GTR" then
             raise (Stats_parsing_error ("have rates but model is not GTR! GTR is only allowed nucleotide model."));
@@ -118,6 +124,7 @@ let parse_raxml_7_2_3_info lines prefs =
           None
       with
       | Not_found -> raise (Stats_parsing_error "problem parsing ")
+      | Invalid_argument s -> raise (Stats_parsing_error ("problem parsing: "^s))
     end
   end
 
@@ -193,13 +200,22 @@ let parse_raxml_re_estimated_info lines prefs =
 
 
 let parse_raxml_info version lines prefs = 
+  (* -f e is re-estimate branch lengths, makes a different info file *)
+  let invocation_line_rex = Str.regexp ".*raxmlHPC.*-f e \\(.*\\)" in
   check_version "RAxML" version known_raxml_versions;
   match version with
   | "7.0.4" 
   | "7.2.3" 
   | "7.2.5" 
   | "7.2.6"
-  | "7.2.7" -> parse_raxml_7_2_3_info lines prefs
+  | "7.2.7" -> begin
+      match find_version_line invocation_line_rex lines with
+        | Some _ -> begin
+            print_endline ("parsing a re-estimated RAxML info file.");
+            parse_raxml_re_estimated_info lines prefs
+        end
+        | None -> parse_raxml_7_2_3_info lines prefs
+      end
   | _ -> 
       print_endline "I'm going to try parsing as if this was version 7.2.3";
       parse_raxml_7_2_3_info lines prefs
@@ -269,12 +285,6 @@ let parse_phyml_stats version lines prefs =
 
 (* ************ BOTH ************* *)
 
-let rec find_version_line rex = function
-  | hd :: tl -> 
-      if str_match rex hd then Some (Str.matched_group 1 hd)
-      else find_version_line rex tl
-  | [] -> None
-
 let parse_stats ref_dir_complete prefs = 
   let lines = 
     File_parsing.string_list_of_file 
@@ -288,7 +298,6 @@ let parse_stats ref_dir_complete prefs =
       | None -> 
           raise (Stats_parsing_error "is this a RAxML v7 info or PHYML v3 statistics file? The header didn't match.")
     end
-
   with
   | Stats_parsing_error s ->
       invalid_arg (Printf.sprintf "Problem parsing info or stats file %s: %s" (Prefs.stats_fname prefs) s)
