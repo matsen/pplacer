@@ -4,14 +4,14 @@
 
 open MapsSets
 
-let make weighting criterion p pr_arr =
+let make weighting criterion pr_arr =
   let bary_map = 
     IntMapFuns.of_pairlist_listly
       (Array.to_list
         (Array.mapi
           (fun i pr ->
             let (loc, pos) = 
-              Barycenter.of_placerun weighting criterion p pr in
+              Barycenter.of_placerun weighting criterion pr in
             (loc,
               (pos, 
               Gtree.Internal_node,
@@ -34,9 +34,9 @@ let make weighting criterion p pr_arr =
     (Decor_gtree.of_newick_gtree ref_tree)
     bary_map
 
-let write weighting criterion p bary_prefix pr_arr =
+let write weighting criterion bary_prefix pr_arr =
   let name = bary_prefix^".bary" in
   Phyloxml.named_tree_to_file
     name (* tree name *)
-   (make weighting criterion p pr_arr)
+   (make weighting criterion pr_arr)
     (name^".xml") (* file name *)

@@ -85,10 +85,10 @@ exception Found_edge of int
 exception Found_node of int
 type action = Continue | Stop
 
-let find p ref_tree mass_m = 
+let find ref_tree mass_m = 
   let smass = Mass_map.Indiv.sort mass_m in
   let work sub_mass id pos = 
-    Kr_distance.dist ref_tree p
+    Kr_distance.dist ref_tree 1.
       sub_mass
       (singleton_map id [pos, total_mass sub_mass])
   in
@@ -198,9 +198,8 @@ let find p ref_tree mass_m =
       Printf.printf "%g\t%g\n" pos_classic pos_new;
       (id, find_pos id)
 
-let of_placerun weighting criterion p pr = 
+let of_placerun weighting criterion pr = 
   find 
-    p 
     (Placerun.get_ref_tree pr)
     (Mass_map.Indiv.of_placerun 
       weighting
@@ -225,9 +224,9 @@ let location_distance t (loc1, distal1) (loc2, distal2) =
   Uptri.get m 0 1
 
 
-let calc_dist weighting criterion p pr1 pr2 =
+let calc_dist weighting criterion pr1 pr2 =
   let calc_bary pr = 
-    of_placerun weighting criterion p pr
+    of_placerun weighting criterion pr
   in
   location_distance 
     (Placerun.get_same_tree pr1 pr2)

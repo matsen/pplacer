@@ -125,13 +125,12 @@ let pair_core prefs criterion pr1 pr2 =
           R_plots.write_p_plot weighting criterion pr1 pr2;
         if Mokaphy_prefs.box_plot prefs then
           R_plots.write_boxplot weighting criterion pr1 pr2 shuffled_list;
-        (* Barycenter stuff *)
+        (* make a barycenter plot of significance *)
         if Mokaphy_prefs.bary_prefix prefs <> "" then begin
           let bary_dist xpr1 xpr2 = 
             Barycenter.calc_dist
               (weighting_of_prefs prefs)
               criterion 
-              (Mokaphy_prefs.p_exp prefs)
               xpr1
               xpr2
           in
@@ -149,6 +148,7 @@ let pair_core prefs criterion pr1 pr2 =
             shuffled_bdists 
             p;
         end;
+        (* return the KR p-value *)
         Some
           (Mokaphy_base.list_onesided_pvalue 
             shuffled_dists 
@@ -208,7 +208,6 @@ let core prefs criterion ch pr_arr =
     Barycenter_tree.write 
       (weighting_of_prefs prefs)
       criterion 
-      (Mokaphy_prefs.p_exp prefs)
       bary_prefix 
       pr_arr;
   ()
