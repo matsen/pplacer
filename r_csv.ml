@@ -22,9 +22,24 @@ let entry_of_str s =
   if s = "NA" then None
   else Some (dequote s)
 
-let of_file fname = 
-  Array.map
+(* returns a list of arrays *)
+let list_list_of_file fname = 
+  List.map
     (fun line ->
-      Array.of_list (List.map entry_of_str 
-                              (Str.split comma_rex line)))
-    (Array.of_list (File_parsing.string_list_of_file fname))
+      List.map entry_of_str (Str.split comma_rex line))
+    (File_parsing.string_list_of_file fname)
+    
+(* if a list list is rectangular *)
+let list_list_is_rectangular = function
+  | x::l -> begin
+      try
+        let x_l = List.length x in
+        List.iter
+          (fun y -> if x_l <> List.length y then raise Exit)
+          l;
+        true
+      with
+      | Exit -> false
+    end
+  | [] -> true
+  
