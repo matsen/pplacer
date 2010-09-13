@@ -22,6 +22,8 @@ class tax_bark arg =
       as super
 
     method get_tax_ido = tax_ido
+    method set_tax_ido tio = {< tax_ido = tio >}
+    method set_tax_id ti = {< tax_ido = Some ti >}
 
     method ppr ff = 
       Format.fprintf ff "@[{%a taxid = %a;}@]" 

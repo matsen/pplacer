@@ -34,7 +34,7 @@ let get_ancestor td ti =
 
 let get_tax_level td ti = 
   try TaxIdMap.find ti td.tax_level_map with
-  | Not_found -> invalid_arg "Tax_data.get_tax_level"
+  | Not_found -> invalid_arg ("Tax_data.get_tax_level: "^(Tax_id.to_string ti))
 
 let add_lineage_to_tree_and_map (t,m) l = 
   let check_add = TaxIdMapFuns.check_add in

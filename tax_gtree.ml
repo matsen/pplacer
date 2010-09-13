@@ -12,6 +12,7 @@ let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
   Gtree.mapi_bark_map (fun _ b -> Tax_bark.of_newick_bark b) t
 *)
 
+(* here t is a newick gtree *)
 let annotate_newick t td = 
   let tips_annotated = 
     IntMap.map
@@ -25,7 +26,27 @@ let annotate_newick t td =
   in
   Gtree.set_bark_map t tips_annotated
 
+(* here t needs taxonomic annotation *)
+let mrcaize t td =
+  let st = Gtree.get_stree t
+  and bmr = ref (Gtree.get_bark_map t) in
+  let _ = 
+    Stree.recur
+      (fun id below_tax_ids ->
+        let mrca = Tax_data.list_mrca td below_tax_ids in
+        bmr := IntMap.add 
+                 id ((Gtree.get_bark t id)#set_tax_id mrca) (!bmr);
+        mrca)
+      (fun id ->
+        match (Gtree.get_bark t id)#get_tax_ido with
+        | Some ti -> ti
+        | None -> failwith (Printf.sprintf "leaf %d lacks taxonomic info" id))
+      st
+  in
+  Gtree.set_bark_map t (!bmr)
 
 
 let f = Tax_data.get_rank_name
+let f = Tax_refdata.empty
 let f = Newick.of_file
+let f = Phyloxml.write_tree

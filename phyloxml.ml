@@ -32,11 +32,6 @@ let write_tree ?name ch gtree =
           (* write the bark *)
           if IntMap.mem id bark_map then
             (IntMap.find id bark_map)#write_xml ch;
-          (* write the id *)
-          Xml.write_long_tag
-            (fun () -> Xml.write_int "id" ch id)
-            "taxonomy"
-            ch;
           List.iter aux tL)
         "clade"
         ch
