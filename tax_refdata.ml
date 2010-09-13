@@ -15,12 +15,23 @@ type seqinfo =
 
 type refdata = 
   {
-    seqinfo_map   :  seqinfo StringMap.t;
-    taxid_map     :  string TaxIdMap.t;
+    seqinfo_map     :  seqinfo StringMap.t;
+    taxid_name_map  :  string TaxIdMap.t;
   }
 
+(* *** reading *** *)
 let empty = 
-  { seqinfo_map = StringMap.empty; taxid_map = TaxIdMap.empty }
+  { seqinfo_map = StringMap.empty; taxid_name_map = TaxIdMap.empty }
+
+let get_seqinfo rd seq_name = 
+  try StringMap.find seq_name rd.seqinfo_map with
+  | Not_found -> failwith ("Don't have info for sequence named"^seq_name)
+  
+let tax_id_by_name rd seq_name = (get_seqinfo rd seq_name).tax_id
+
+let get_taxid_name rd ti = 
+  try TaxIdMap.find ti rd.taxid_name_map with
+  | Not_found -> failwith ("Don't know the name of taxon "^(Tax_id.to_string ti))
 
 (* *** reading *** *)
 (* current headers: 
@@ -43,11 +54,11 @@ let of_csv fname =
                     seqname_str
                     { tax_id = tax_id; accession = accession_str }
                     rd.seqinfo_map;
-                taxid_map = 
+                taxid_name_map = 
                   TaxIdMapFuns.check_add 
                     tax_id 
                     tax_name_str
-                    rd.taxid_map;
+                    rd.taxid_name_map;
               }
               with
               | Failure "check_add" ->

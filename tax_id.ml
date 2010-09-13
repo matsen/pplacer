@@ -6,10 +6,10 @@
  * note use of Pervasives.compare should be redone if speed needed.
 *)
 
-(* type *)
 type tax_id = NCBI of string | NoTax
 
-(* utility *)
+
+(* *** utility *** *)
 let ncbi_of_stro = function
   | Some s -> NCBI s
   | None -> NoTax
@@ -18,10 +18,17 @@ let to_string = function
   | NCBI s -> "ncbi_"^s
   | NoTax -> "none"
 
+
+(* *** I/O *** *)
 let ppr ff ti = 
   Format.pp_print_string ff (to_string ti)
 
-(* Maps and Sets *)
+let write_xml ch = function
+  | NCBI s -> Printf.fprintf ch "<id provider=\"NCBI\">%s</id>" s
+  | NoTax -> ()
+
+
+(* *** Maps and Sets *** *)
 module OrderedTaxId = struct
   type t = tax_id
   let compare = Pervasives.compare
