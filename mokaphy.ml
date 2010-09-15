@@ -8,7 +8,7 @@ open MapsSets
 open Placement
 
 let parse_args () =
-  let files  = ref [] 
+  let files = ref [] 
   and prefs = Mokaphy_prefs.defaults ()
   in
   let usage =

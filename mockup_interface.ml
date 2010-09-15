@@ -4,15 +4,17 @@
 
 open MapsSets
 
-(* regexps and utils *)
-let split_space s = Str.split (Str.regexp "[ \t]+") s
+let version = "v1.0"
+
+(* *** regexps and utils *** *)
+let split_on_space s = Str.split (Str.regexp "[ \t]+") s
 let place_file_rex = Str.regexp ".*\\.place"
 let option_rex = Str.regexp "-.*"
-let demokaphy = function | "mokaphy"::l -> l | l -> l
 let print_need_cmd_error () = 
   print_endline "please specify a mokaphy command, e.g. mokaphy heat [...]";
   exit 1
 
+(* *** accessing placefiles *** *)
 (* our strategy is to load the placefiles in to memory when we need them, but if
   * they are already in memory, then we use them *)
 let placerun_map = ref StringMap.empty
@@ -27,10 +29,7 @@ let placerun_by_name fname =
     pq
   end
 
-let bary prefs datal = 
-  Printf.printf "%s\n" (Mockup_prefs.Bary.out_fname prefs);
-  List.iter print_endline (List.map Placerun.get_name datal)
-
+(* *** wrapped versions of programs *** *)
 (* parse_argv wrapper to factor the drudgery *)
 let wrap_parse_argv argl specl usage = 
   let files = ref [] in
@@ -47,32 +46,64 @@ let wrap_parse_argv argl specl usage =
   | Arg.Bad s -> print_string s; exit 1
   | Arg.Help s -> print_string s; []
 
+(* here are the commands, wrapped up to simply take an argument list. they must
+ * also print out a documentation line when given an empty list argument. *)
+let bary_of_argl = function
+  | [] -> print_endline "draws the barycenter of a placement collection on the reference tree"
+  | argl -> 
+    let prefs = Mockup_prefs.Bary.defaults () in
+    Bary.bary 
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mockup_prefs.Bary.specl_of_prefs prefs)
+        "usage: bary [options] placefiles")
+
+let cmd_map = 
+  List.fold_right 
+    (fun (k,v) -> StringMap.add k v)
+    [
+      "bary", bary_of_argl;
+    ]
+    StringMap.empty
+
+let print_avail_cmds () = 
+  print_endline "Here is a list of commands available using this interface:";
+  StringMap.iter (fun k v -> Printf.printf "\t%s\t" k; v []) cmd_map;
+  print_endline "To get more help about a given command, type mokaphy [program_name] --help";
+  ()
+
+(* *** inner loop *** *)
 let process_cmd = function
-  | "bary"::_ as argl -> begin
-      let prefs = Mockup_prefs.Bary.defaults () in
-      bary 
-        prefs 
-        (wrap_parse_argv
-          argl
-          (Mockup_prefs.Bary.specl_of_prefs prefs)
-          "usage: bary [options] placefiles")
-      end
-  | s::_ -> 
-      if Str.string_match option_rex s 0
-      || Str.string_match place_file_rex s 0 then 
+  | s::_ as argl -> 
+      if StringMap.mem s cmd_map then
+        (StringMap.find s cmd_map) argl
+      else if Str.string_match option_rex s 0
+           || Str.string_match place_file_rex s 0 then 
         print_need_cmd_error ()
       else
         failwith ("unknown command: "^s)
   | [] -> print_need_cmd_error ()
 
-let process_cmd_str s = 
-  process_cmd (demokaphy (split_space s))
+let process_batch_file fname =
+  List.iter 
+    (fun s -> process_cmd (split_on_space s))
+    (File_parsing.string_list_of_file fname)
 
 let () = begin
-  List.iter 
-    process_cmd_str 
-    [
-      "mokaphy bary -o test top_tests/test1.place top_tests/test2.place";
-    ];
-
+    Arg.parse
+      [
+        "-B", Arg.String process_batch_file,
+        "Execute commands from indicated batch file";
+        "-v", Arg.Unit (fun () -> Printf.printf "mokaphy %s\n" version),
+        "Print version and exit";
+        "--cmds", Arg.Unit print_avail_cmds,
+        "Print a list of the available commands.";
+      ]
+      (fun _ -> (* anonymous args. tl to remove "mokaphy" or symlink name *)
+        process_cmd (List.tl (Array.to_list Sys.argv));
+        exit 0) (* need to exit to avoid processing the other anon args as cmds *)
+      "mokaphy can be used as mokaphy [command name] [args] \
+      or -B [batch file] to run a batch analysis; \
+      Type mokaphy --cmds to see the list of commands." 
 end
