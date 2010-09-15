@@ -41,6 +41,10 @@ let wrap_parse_argv argl specl usage =
       specl
       anon_arg
       usage;
+    if !files = [] then begin
+      print_string "No .place files supplied so nothing to do. ";
+      print_endline usage;
+    end;
     List.map placerun_by_name (List.rev !files)
   with
   | Arg.Bad s -> print_string s; exit 1
@@ -52,12 +56,23 @@ let bary_of_argl = function
   | [] -> print_endline "draws the barycenter of a placement collection on the reference tree"
   | argl -> 
     let prefs = Mockup_prefs.Bary.defaults () in
-    Bary.bary 
+    Cmds.bary 
       prefs 
       (wrap_parse_argv
         argl
         (Mockup_prefs.Bary.specl_of_prefs prefs)
-        "usage: bary [options] placefiles")
+        "usage: bary [options] placefile[s]")
+
+let heat_of_argl = function
+  | [] -> print_endline "makes a heat tree given two placefiles"
+  | argl -> 
+    let prefs = Mockup_prefs.Heat.defaults () in
+    Cmds.heat 
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mockup_prefs.Heat.specl_of_prefs prefs)
+        "usage: heat [options] ex1.place ex2.place")
 
 let cmd_map = 
   List.fold_right 
@@ -81,14 +96,18 @@ let process_cmd = function
       else if Str.string_match option_rex s 0
            || Str.string_match place_file_rex s 0 then 
         print_need_cmd_error ()
-      else
-        failwith ("unknown command: "^s)
+      else begin
+        print_endline ("Unknown mokaphy command: "^s);
+        print_avail_cmds ();
+        exit 1
+      end
   | [] -> print_need_cmd_error ()
 
 let process_batch_file fname =
   List.iter 
     (fun s -> process_cmd (split_on_space s))
-    (File_parsing.string_list_of_file fname)
+    (File_parsing.filter_comments 
+      (File_parsing.string_list_of_file fname))
 
 let () = begin
     Arg.parse
@@ -105,5 +124,5 @@ let () = begin
         exit 0) (* need to exit to avoid processing the other anon args as cmds *)
       "mokaphy can be used as mokaphy [command name] [args] \
       or -B [batch file] to run a batch analysis; \
-      Type mokaphy --cmds to see the list of commands." 
+      Type mokaphy --cmds to see the list of available commands." 
 end
