@@ -92,6 +92,7 @@ module KR = struct
       normal: bool ref;
       n_samples: int ref;
       out_fname: string ref;
+      list_output: bool ref;
       density: bool ref;
       p_plot: bool ref;
       box_plot: bool ref;
@@ -108,6 +109,7 @@ module KR = struct
   let normal            p = !(p.normal)
   let n_samples         p = !(p.n_samples)
   let out_fname         p = !(p.out_fname)
+  let list_output       p = !(p.list_output)
   let density           p = !(p.density)
   let p_plot            p = !(p.p_plot)
   let box_plot          p = !(p.box_plot)
@@ -125,6 +127,7 @@ module KR = struct
       normal = ref false;
       n_samples = ref 0;
       out_fname = ref "";
+      list_output = ref false;
       density = ref false;
       p_plot = ref false;
       box_plot = ref false;
@@ -148,6 +151,8 @@ module KR = struct
     "The exponent for the integration, i.e. the value of p in Z_p.";
     "--unweighted", Arg.Clear prefs.weighted,
         "The unweighted version simply uses the best placement. Default is weighted.";
+    "--list_output", Arg.Set prefs.list_output,
+    "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
     "write out a shuffle density data file for each pair.";
     "--pplot", Arg.Set prefs.p_plot,

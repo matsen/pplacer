@@ -190,12 +190,33 @@ let core ch prefs criterion pr_arr =
     let names = Array.map Placerun.get_name pr_arr 
     and p_exp = if Mokaphy_prefs.KR.matrix prefs then 2.
                 else Mokaphy_prefs.KR.p_exp prefs 
+    and print_pvalues = Mokaphy_prefs.KR.matrix prefs 
+                     || Mokaphy_prefs.KR.n_samples prefs > 0
     in
-    Printf.fprintf ch "Z_%g distances:\n" p_exp;
-    Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
-    if Mokaphy_prefs.KR.matrix prefs || Mokaphy_prefs.KR.n_samples prefs > 0 then begin
-      Printf.fprintf ch "Z_%g p-values:\n" p_exp;
-      Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+    if Mokaphy_prefs.KR.list_output prefs then begin
+      String_matrix.write_padded ch
+        (Array.append
+          [|Array.append
+            [|"sample_1"; "sample_2"; Printf.sprintf "Z_%g" p_exp;|]
+            (if print_pvalues then [|"p_values"|] else [||])|]
+          (let m = ref [] in
+          Uptri.iterij
+            (fun i j r -> 
+              m := 
+                (Array.of_list
+                  ([names.(i); names.(j); string_of_float r.distance] @
+                  (if print_pvalues then [string_of_float (get_p_value r)]
+                  else [])))::!m)
+            u;
+          Array.of_list (List.rev !m)))
+    end
+    else begin
+      Printf.fprintf ch "Z_%g distances:\n" p_exp;
+      Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
+      if Mokaphy_prefs.KR.matrix prefs || Mokaphy_prefs.KR.n_samples prefs > 0 then begin
+        Printf.fprintf ch "Z_%g p-values:\n" p_exp;
+        Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+      end
     end;
   end;
   ()
