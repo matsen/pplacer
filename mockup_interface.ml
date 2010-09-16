@@ -74,11 +74,24 @@ let heat_of_argl = function
         (Mockup_prefs.Heat.specl_of_prefs prefs)
         "usage: heat [options] ex1.place ex2.place")
 
+let kr_of_argl = function
+  | [] -> print_endline "runs KR analyses, including significance estimation"
+  | argl -> 
+    let prefs = Mockup_prefs.KR.defaults () in
+    Cmds.kr 
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mockup_prefs.KR.specl_of_prefs prefs)
+        "usage: kr [options] placefiles")
+
 let cmd_map = 
   List.fold_right 
     (fun (k,v) -> StringMap.add k v)
     [
       "bary", bary_of_argl;
+      "heat", heat_of_argl;
+      "kr", kr_of_argl;
     ]
     StringMap.empty
 

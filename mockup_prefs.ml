@@ -83,3 +83,89 @@ module Heat = struct
 ]
 end
 
+
+module KR = struct
+  type mokaphy_prefs = 
+    {
+      use_pp: bool ref;
+      verbose: bool ref;
+      normal: bool ref;
+      n_samples: int ref;
+      out_fname: string ref;
+      density: bool ref;
+      p_plot: bool ref;
+      box_plot: bool ref;
+      p_exp: float ref;
+      weighted: bool ref;
+      seed: int ref;
+      matrix: bool ref;
+      bary_density: bool ref;
+      ddensity: bool ref;
+    }
+  
+  let use_pp            p = !(p.use_pp)
+  let verbose           p = !(p.verbose)
+  let normal            p = !(p.normal)
+  let n_samples         p = !(p.n_samples)
+  let out_fname         p = !(p.out_fname)
+  let density           p = !(p.density)
+  let p_plot            p = !(p.p_plot)
+  let box_plot          p = !(p.box_plot)
+  let p_exp             p = !(p.p_exp)
+  let weighted          p = !(p.weighted)
+  let seed              p = !(p.seed)
+  let matrix            p = !(p.matrix)
+  let bary_density      p = !(p.bary_density)
+  let ddensity          p = !(p.ddensity)
+  
+  let defaults () = 
+    { 
+      use_pp = ref false;
+      verbose = ref false;
+      normal = ref false;
+      n_samples = ref 0;
+      out_fname = ref "";
+      density = ref false;
+      p_plot = ref false;
+      box_plot = ref false;
+      p_exp = ref 1.;
+      weighted = ref true;
+      seed = ref 1;
+      matrix = ref false;
+      bary_density = ref false;
+      ddensity = ref false;
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "-o", Arg.Set_string prefs.out_fname,
+    "Set the filename to write to. Otherwise write to stdout.";
+    "--verbose", Arg.Set prefs.verbose,
+    "Verbose running.";
+    "-p", Arg.Set prefs.use_pp,
+    "Use posterior probability.";
+    "--exp", Arg.Set_float prefs.p_exp,
+    "The exponent for the integration, i.e. the value of p in Z_p.";
+    "--unweighted", Arg.Clear prefs.weighted,
+        "The unweighted version simply uses the best placement. Default is weighted.";
+    "--density", Arg.Set prefs.density,
+    "write out a shuffle density data file for each pair.";
+    "--pplot", Arg.Set prefs.p_plot,
+        "write out a plot of the distances when varying the p for the Z_p calculation";
+    "--box", Arg.Set prefs.box_plot,
+        "write out a box and point plot showing the original sample distances compared to the shuffled ones.";
+    "-s", Arg.Set_int prefs.n_samples,
+        ("Set how many samples to use for significance calculation (0 means \
+        calculate distance only). Default is "^(string_of_int (n_samples prefs)));
+    "--seed", Arg.Set_int prefs.seed,
+    "Set the random seed, an integer > 0.";
+    "--normal", Arg.Set prefs.normal,
+    "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
+    "--bary_density", Arg.Set prefs.bary_density,
+    "Write out a density plot of barycenter distance versus shuffled version for each pair.";
+    "--matrix", Arg.Set prefs.matrix,
+    "Use the matrix formulation to calculate distance and p-value.";
+    "--ddensity", Arg.Set prefs.ddensity,
+      "Make distance-by-distance densities.";
+    ]
+end 
