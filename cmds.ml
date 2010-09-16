@@ -29,7 +29,8 @@ let chop_suffix_if_present s suff =
 
 (* make sure all the trees in the placerun list are the same *)
 let list_get_same_tree = function
-  | [] | [_] -> assert(false)
+  | [] -> assert(false)
+  | [x] -> Placerun.get_ref_tree x
   | hd::tl -> List.hd (List.map (Placerun.get_same_tree hd) tl)
 
 let cat_names prl = 
@@ -59,17 +60,19 @@ let make_bary_tree weighting criterion prl =
     bary_map
 
 let bary prefs prl = 
-  let fname = match Mokaphy_prefs.Bary.out_fname prefs with
-    | "" -> (cat_names prl)^".bary.xml"
-    | s -> s
-  in
-  Phyloxml.named_tree_to_file
-    (chop_suffix_if_present fname ".xml") (* tree name *)
-    (make_bary_tree 
-      (weighting_of_bool (Mokaphy_prefs.Bary.weighted prefs))
-      (criterion_of_bool (Mokaphy_prefs.Bary.use_pp prefs))
-      prl)
-    fname
+  if prl <> [] then begin
+    let fname = match Mokaphy_prefs.Bary.out_fname prefs with
+      | "" -> (cat_names prl)^".bary.xml"
+      | s -> s
+    in
+    Phyloxml.named_tree_to_file
+      (chop_suffix_if_present fname ".xml") (* tree name *)
+      (make_bary_tree 
+        (weighting_of_bool (Mokaphy_prefs.Bary.weighted prefs))
+        (criterion_of_bool (Mokaphy_prefs.Bary.use_pp prefs))
+        prl)
+      fname
+  end
 
 
 
@@ -91,6 +94,7 @@ let heat prefs = function
         (Mokaphy_prefs.Heat.p_exp prefs)
         pr1 pr2)
       fname
+  | [] -> () (* e.g. heat -help *)
   | _ -> failwith "Please specify exactly two place files to make a heat tree."
 
 
