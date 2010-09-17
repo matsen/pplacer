@@ -1,7 +1,14 @@
 (* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This should have no nontrivial dependencies, so that it can be used anywhere.
  *)
 
+let spec_with_default symbol setfun p help = 
+  (symbol, setfun p, Printf.sprintf help !p)
+
+
+(* Bary Bary Bary Bary Bary Bary Bary Bary *)
 module Bary = struct
   type prefs = 
     {
@@ -32,7 +39,7 @@ module Bary = struct
 ]
 end
 
-
+(* Heat Heat Heat Heat Heat Heat Heat Heat *)
 module Heat = struct
   type mokaphy_prefs = 
     {
@@ -43,6 +50,9 @@ module Heat = struct
       simple_colors: bool ref;
       gray_black_colors: bool ref;
       white_bg: bool ref;
+      gray_level : int ref;
+      min_width : float ref;
+      max_width : float ref;
     }
   
   let out_fname         p = !(p.out_fname)
@@ -52,6 +62,9 @@ module Heat = struct
   let simple_colors     p = !(p.simple_colors)
   let gray_black_colors p = !(p.gray_black_colors)
   let white_bg          p = !(p.white_bg)
+  let gray_level        p = !(p.gray_level)
+  let min_width         p = !(p.min_width)
+  let max_width         p = !(p.max_width)
   
   let defaults () = 
     { 
@@ -62,6 +75,9 @@ module Heat = struct
       simple_colors = ref false;
       gray_black_colors = ref false;
       white_bg = ref false;
+      gray_level = ref 5;
+      min_width = ref 0.5;
+      max_width = ref 13.;
     }
   
   let specl_of_prefs prefs = 
@@ -80,10 +96,18 @@ module Heat = struct
 "Use gray and black in place of red and blue to signify the sign of the KR along that edge.";
 "--whitebg", Arg.Set prefs.white_bg,
 "Make colors for the heat tree which are compatible with a white background.";
+spec_with_default "--grayLevel" (fun o -> Arg.Set_int o) prefs.gray_level
+"Specify the amount of gray to mix into the color scheme. Default is %d.";
+spec_with_default "--minWidth" (fun o -> Arg.Set_float o) prefs.min_width
+"Specify the minimum width of the branches in a heat tree. Default is %g.";
+spec_with_default "--maxWidth" (fun o -> Arg.Set_float o) prefs.max_width
+"Specify the maximum width of the branches in a heat tree. Default is %g.";
 ]
 end
 
 
+
+(* KR KR KR KR KR KR KR KR *)
 module KR = struct
   type mokaphy_prefs = 
     {

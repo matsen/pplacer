@@ -192,10 +192,11 @@ let find ref_tree mass_m =
       (id, 0.)
   | Found_edge id -> 
       (* let pos_classic = find_pos id  *)
+      (*
       let pos_new = 
         delta ~dist_ml:(get_mass_list id) ~prox_ml:[] id (Gtree.get_bl ref_tree id)
       in
-      (* Printf.printf "%g\t%g\n" pos_classic pos_new; *)
+      Printf.printf "%g\t%g\n" pos_classic pos_new; *)
       (id, find_pos id)
 
 let of_placerun weighting criterion pr = 

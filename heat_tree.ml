@@ -5,12 +5,7 @@
 open MapsSets
 open Fam_batteries
 
-(* settings *)
-
-let gray_level = 5 (* the strength of gray *)
-let min_width = 0.5
-let max_width = 13.
-
+module MP = Mokaphy_prefs.Heat
 
 (* color utils *)
 
@@ -27,25 +22,28 @@ let simple_color_of_heat heat =
 let gray_black_of_heat heat = 
   if heat >= 0. then Decor.gray 180 else Decor.black
 
-let color_of_heat white_bg ?(p=1.) heat = 
+let color_of_heat prefs ?(p=1.) heat = 
+  let gray_level = MP.gray_level prefs in
   let intensity = intensity_of_heat ~p heat
   and color = simple_color_of_heat heat
   and gray = 
-    Decor.gray (if white_bg then 255-gray_level else gray_level)
+    Decor.gray 
+      (if MP.white_bg prefs then 
+        255-gray_level 
+      else 
+        gray_level)
   in
   assert_intensity intensity;
   Decor.color_avg intensity color gray
 
-(* width utils *)
-let width_diff = max_width -. min_width
-
-let width_of_heat ?(p=1.) heat = 
+let width_of_heat ~min_width ~width_diff ?(p=1.) heat = 
   let intensity = intensity_of_heat ~p heat in
   assert_intensity intensity;
   Decor.width (min_width +. width_diff *. intensity)
 
-let color_map white_bg simple_colors gray_black_colors weighting criterion p pr1 pr2 = 
-  let ref_tree = Placerun.get_same_tree pr1 pr2
+let color_map prefs weighting criterion pr1 pr2 = 
+  let p = MP.p_exp prefs
+  and ref_tree = Placerun.get_same_tree pr1 pr2
   and kr_map = 
     IntMap.map
     (* we don't care about where we are along the edge *)
@@ -86,10 +84,14 @@ let color_map white_bg simple_colors gray_black_colors weighting criterion p pr1
       (-. (ListFuns.complete_fold_left min heat_only))
   in
   let our_color_of_heat scaled_heat = 
-    if simple_colors then simple_color_of_heat scaled_heat
-    else if gray_black_colors then gray_black_of_heat scaled_heat
-    else color_of_heat white_bg ~p scaled_heat
+    if MP.simple_colors prefs then 
+      simple_color_of_heat scaled_heat
+    else if MP.gray_black_colors prefs then 
+      gray_black_of_heat scaled_heat
+    else color_of_heat prefs ~p scaled_heat
   in
+  let min_width = MP.min_width prefs in
+  let width_diff = (MP.max_width prefs) -. min_width in
   IntMapFuns.of_pairlist
     (List.map 
       (fun (id, raw_heat) -> 
@@ -97,12 +99,12 @@ let color_map white_bg simple_colors gray_black_colors weighting criterion p pr1
         (id, 
           [
             our_color_of_heat scaled_heat;
-            width_of_heat ~p scaled_heat;
+            width_of_heat ~min_width ~width_diff ~p scaled_heat;
           ]))
-      heat_list) 
+      heat_list)
 
 
-let make_heat_tree white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2 = 
+let make_heat_tree prefs criterion weighting pr1 pr2 = 
   let ref_tree = 
     Placerun.get_same 
       Newick.compare 
@@ -112,15 +114,4 @@ let make_heat_tree white_bg simple_colors gray_black_colors criterion weighting 
   in
   Decor_gtree.add_decor_by_map 
     (Decor_gtree.of_newick_gtree ref_tree)
-    (color_map white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2)
-
-let write_heat_tree white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2 =
-  let prefix = 
-    Printf.sprintf "%s.VS.%s.heat"
-      (Placerun.get_name pr1)
-      (Placerun.get_name pr2) 
-  in
-  Phyloxml.named_tree_to_file
-    prefix
-    (make_heat_tree white_bg simple_colors gray_black_colors criterion weighting p pr1 pr2)
-    (prefix^".xml")
+    (color_map prefs criterion weighting pr1 pr2)

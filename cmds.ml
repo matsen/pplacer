@@ -86,12 +86,9 @@ let heat prefs = function
     Phyloxml.named_tree_to_file
       (chop_suffix_if_present fname ".xml") (* tree name *)
       (Heat_tree.make_heat_tree 
-        (Mokaphy_prefs.Heat.white_bg prefs)
-        (Mokaphy_prefs.Heat.simple_colors prefs)
-        (Mokaphy_prefs.Heat.gray_black_colors prefs)
+        prefs
         (weighting_of_bool (Mokaphy_prefs.Heat.weighted prefs))
         (criterion_of_bool (Mokaphy_prefs.Heat.use_pp prefs))
-        (Mokaphy_prefs.Heat.p_exp prefs)
         pr1 pr2)
       fname
   | [] -> () (* e.g. heat -help *)
