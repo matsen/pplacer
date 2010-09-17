@@ -17,7 +17,7 @@ let dequote s =
     s
 
 let entry_of_str s = 
-  if s = "NA" then None
+  if s = "NA" || s = "\"\"" then None
   else Some (dequote s)
 
 (* returns a list of arrays *)

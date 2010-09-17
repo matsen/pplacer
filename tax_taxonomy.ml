@@ -26,7 +26,7 @@ type tax_data =
 (* basics *)
 let get_rank_name td i = 
   try td.rank_names.(i) with 
-  | Invalid_argument _ -> invalid_arg "Tax_data.get_rank_name"
+  | Invalid_argument _ -> invalid_arg "Tax_taxonomy.get_rank_name"
 
 let get_ancestor td ti = 
   try TaxIdMap.find ti td.tax_tree with
@@ -34,10 +34,13 @@ let get_ancestor td ti =
 
 let get_tax_level td ti = 
   try TaxIdMap.find ti td.tax_level_map with
-  | Not_found -> invalid_arg ("Tax_data.get_tax_level: "^(Tax_id.to_string ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_level: "^(Tax_id.to_string ti))
 
 let add_lineage_to_tree_and_map (t,m) l = 
-  let check_add = TaxIdMapFuns.check_add in
+  let check_add k v m = 
+    try TaxIdMapFuns.check_add k v m with
+    | Failure s -> failwith (s^" problem with "^(to_string k))
+  in
   let rec aux (t,m) = function
     | (i,x)::((_,y)::_ as l') ->
         aux (check_add y x t, check_add x i m) l'

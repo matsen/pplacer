@@ -20,7 +20,7 @@ let annotate_newick t td =
         Tax_bark.of_newick_bark
           newick_bark
           (match newick_bark#get_name_opt with
-          | Some name -> Some (Tax_refdata.tax_id_by_name td name)
+          | Some name -> Some (Tax_seqinfo.tax_id_by_name td name)
           | None -> None))
       (Gtree.get_bark_map t)
   in
@@ -33,7 +33,7 @@ let mrcaize t td =
   let _ = 
     Stree.recur
       (fun id below_tax_ids ->
-        let mrca = Tax_data.list_mrca td below_tax_ids in
+        let mrca = Tax_taxonomy.list_mrca td below_tax_ids in
         bmr := IntMap.add 
                  id ((Gtree.get_bark t id)#set_tax_id mrca) (!bmr);
         mrca)
@@ -46,7 +46,7 @@ let mrcaize t td =
   Gtree.set_bark_map t (!bmr)
 
 
-let f = Tax_data.get_rank_name
-let f = Tax_refdata.empty
+let f = Tax_taxonomy.get_rank_name
+let f = Tax_seqinfo.empty
 let f = Newick.of_file
 let f = Phyloxml.write_tree
