@@ -48,28 +48,33 @@ let weighting_of_prefs prefs =
   else Mass_map.Unweighted 
 
 let pair_core prefs criterion pr1 pr2 =
+  (*
   let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
   Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.KR.seed prefs));
+  *)
   let p = (Mokaphy_prefs.KR.p_exp prefs) in
   let weighting = weighting_of_prefs prefs in
   if Mokaphy_prefs.KR.ddensity prefs then
     R_plots.write_ddensity pr1 pr2;
+  (*
+   * disabled matrix
   if Mokaphy_prefs.KR.matrix prefs then begin
     let (distance, p_value) =
       Matrix_sig.dist_and_p weighting criterion rng pr1 pr2 in
     {distance = distance; p_value = Some p_value}
   end
-  else if Mokaphy_prefs.KR.normal prefs then begin
-    (* normal approx mode *)
-    if 0 >= Mokaphy_prefs.KR.n_samples prefs then
-      failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
-    let resampled_dists = 
-      Normal_approx.normal_pair_approx rng weighting
+  else 
+    if Mokaphy_prefs.KR.normal prefs then begin
+      (* normal approx mode *)
+      if 0 >= Mokaphy_prefs.KR.n_samples prefs then
+        failwith "Please ask for some number of normal samples greater than zero. If you want to disable sampling do not use the --normal option";
+      let resampled_dists = 
+        Normal_approx.normal_pair_approx rng weighting
         criterion (Mokaphy_prefs.KR.n_samples prefs) p pr1 pr2
-    in
-    (* here we shadow original_dist with one we know is unweighted *)
-    let original_dist = 
-      Kr_distance.pair_distance
+      in
+      (* here we shadow original_dist with one we know is unweighted *)
+      let original_dist = 
+        Kr_distance.pair_distance
         weighting
         criterion 
         p 
@@ -90,7 +95,9 @@ let pair_core prefs criterion pr1 pr2 =
             resampled_dists 
             original_dist)}
   end
-  else begin
+  else 
+    *)
+    begin
     let calc_dist = 
       Kr_distance.pair_distance
         weighting 
@@ -188,10 +195,10 @@ let core ch prefs criterion pr_arr =
     in
     (* matrix funniness *)
     let names = Array.map Placerun.get_name pr_arr 
-    and p_exp = if Mokaphy_prefs.KR.matrix prefs then 2.
-                else Mokaphy_prefs.KR.p_exp prefs 
-    and print_pvalues = Mokaphy_prefs.KR.matrix prefs 
-                     || Mokaphy_prefs.KR.n_samples prefs > 0
+      (* if Mokaphy_prefs.KR.matrix prefs then 2. else  *)
+    and p_exp = Mokaphy_prefs.KR.p_exp prefs
+    and print_pvalues = (* Mokaphy_prefs.KR.matrix prefs || *)
+                        Mokaphy_prefs.KR.n_samples prefs > 0
     in
     if Mokaphy_prefs.KR.list_output prefs then begin
       String_matrix.write_padded ch

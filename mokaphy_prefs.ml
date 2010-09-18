@@ -192,8 +192,10 @@ module KR = struct
     "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
     "--bary_density", Arg.Set prefs.bary_density,
     "Write out a density plot of barycenter distance versus shuffled version for each pair.";
+    (*
     "--matrix", Arg.Set prefs.matrix,
     "Use the matrix formulation to calculate distance and p-value.";
+    *)
     "--ddensity", Arg.Set prefs.ddensity,
       "Make distance-by-distance densities.";
     ]
