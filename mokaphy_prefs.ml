@@ -188,8 +188,10 @@ module KR = struct
         calculate distance only). Default is "^(string_of_int (n_samples prefs)));
     "--seed", Arg.Set_int prefs.seed,
     "Set the random seed, an integer > 0.";
+    (*
     "--normal", Arg.Set prefs.normal,
     "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
+    *)
     "--bary_density", Arg.Set prefs.bary_density,
     "Write out a density plot of barycenter distance versus shuffled version for each pair.";
     (*
