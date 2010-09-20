@@ -7,6 +7,8 @@
 let spec_with_default symbol setfun p help = 
   (symbol, setfun p, Printf.sprintf help !p)
 
+let weighted_help = 
+  "The point version simply uses the best placement, rather than spreading out the probability mass. Default is spread.";
 
 (* Bary Bary Bary Bary Bary Bary Bary Bary *)
 module Bary = struct
@@ -32,8 +34,8 @@ module Bary = struct
 [
   "-p", Arg.Set prefs.use_pp,
   "Use posterior probability.";
-  "--unweighted", Arg.Clear prefs.weighted,
-  "The unweighted version simply uses the best placement. Default is weighted.";
+  "--point", Arg.Clear prefs.weighted,
+  weighted_help;
   "-o", Arg.Set_string prefs.out_fname,
   "Set the filename to write to. Otherwise write to stdout.";
 ]
@@ -88,8 +90,8 @@ module Heat = struct
 "Use posterior probability.";
 "--exp", Arg.Set_float prefs.p_exp,
 "The exponent for the integration, i.e. the value of p in Z_p.";
-"--unweighted", Arg.Clear prefs.weighted,
-    "The unweighted version simply uses the best placement. Default is weighted.";
+"--point", Arg.Clear prefs.weighted,
+weighted_help;
 "--simpleColors", Arg.Set prefs.simple_colors,
 "Use only 100% red and blue to signify the sign of the KR along that edge.";
 "--grayBlackColors", Arg.Set prefs.gray_black_colors,
@@ -174,7 +176,7 @@ module KR = struct
     "--exp", Arg.Set_float prefs.p_exp,
     "The exponent for the integration, i.e. the value of p in Z_p.";
     "--unweighted", Arg.Clear prefs.weighted,
-        "The unweighted version simply uses the best placement. Default is weighted.";
+    weighted_help;
     "--list_output", Arg.Set prefs.list_output,
     "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
@@ -200,5 +202,32 @@ module KR = struct
     *)
     "--ddensity", Arg.Set prefs.ddensity,
       "Make distance-by-distance densities.";
+    ]
+end 
+
+
+(* PD PD PD PD PD PD PD PD *)
+module PD = struct
+  type mokaphy_prefs = 
+    {
+      use_pp: bool ref;
+      out_fname: string ref;
+    }
+  
+  let use_pp            p = !(p.use_pp)
+  let out_fname         p = !(p.out_fname)
+  
+  let defaults () = 
+    { 
+      use_pp = ref false;
+      out_fname = ref "";
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "-o", Arg.Set_string prefs.out_fname,
+    "Set the filename to write to. Otherwise write to stdout.";
+    "-p", Arg.Set prefs.use_pp,
+    "Use posterior probability.";
     ]
 end 

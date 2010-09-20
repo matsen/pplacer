@@ -26,19 +26,22 @@ end
  * numbers to the edge-location of their most distal placement as counted from
  * the proximal side of the edge. *)
 let induced_of_placerun criterion pr = 
-  let placem = Placerun.make_map_by_best_loc criterion pr in
-  let check_edge i = (* look for placements on edge i *)
-    if IntMap.mem i placem then
-      match
-        List.sort (* increasing, to get smallest distal bl *)
-          compare
-          (List.map Placement.distal_bl (IntMap.find i placem))
-      with
-      | hd::_ -> [i, 
-                   (Gtree.get_bl i (Placerun.get_ref_tree pr)) -.
-                     (Placement.distal_bl hd)]
-      | [] -> assert(false)
-    else
+  let distal_spot_map = 
+    IntMap.map
+      (List.sort compare)
+      (List.fold_right
+        (fun pq ->
+          let best = Pquery.best_place criterion pq in
+          IntMapFuns.add_listly
+            (Placement.location best)
+            (Placement.distal_bl best))
+        (Placerun.get_pqueries pr)
+        IntMap.empty)
+  in
+  let check_edge i = 
+    if IntMap.mem i distal_spot_map then
+      [i, List.hd (IntMap.find i distal_spot_map)]
+    else 
       []
   in
   IntMapFuns.of_pairlist
@@ -48,26 +51,40 @@ let induced_of_placerun criterion pr =
           if below = [] then check_edge i
           else below)
       check_edge
-      (Placerun.get_ref_tree pr))
+      (Gtree.get_stree (Placerun.get_ref_tree pr)))
 
 (* returns if at least two of the descendants have things in them *)
 let total_floatol =
   List.fold_left (fun x -> function | Some y -> x+.y | None -> x) 0.
 
-(* compute the PD of an induced tree *)
-let pd t ind = 
-  let total = ref 0 in
-  let add_to_tot x = total := x + !total in
+(* compute the PD of an induced tree. we recursively go through the tree,
+ * returning Some len if there is a placement distal to us, with len being the
+ * length of the path to the last recorded MRCA. *)
+let pd_of_induced t ind = 
+  (* start recording the total branch length from the most distal placement *)
+  let perhaps_start_path id =
+    match IntMapFuns.opt_find id ind with
+    | None -> None (* no path *)
+    | Some x -> Some ((Gtree.get_bl t id) -. x)
+  in
+  let total = ref 0. in
+  let add_to_tot x = total := x +. !total in
   match
-    Stree.recur
+    Gtree.recur
       (fun id below ->
         match List.filter ((<>) None) below with
-        | [] -> IntMap.find_opt id ind (* perhaps start path *)
-        | [Some x] -> Some ((Gtree.get_bl t id) +. x) (*continue path*)
+        | [] -> perhaps_start_path id
+        | [Some x] -> Some ((Gtree.get_bl t id) +. x) (* continue path *)
         | _ as l -> 
             add_to_tot (total_floatol l); (* record lengths from distal paths *)
-            Some (Gtree.get_bl t id)) (* start from mrca of those paths *)
-      (fun id -> IntMap.find_opt id ind) (* perhaps start path *)
+            Some (Gtree.get_bl t id)) (* start recording from mrca of those paths *)
+      perhaps_start_path
+      t
   with
   | Some _ -> !total
   | None -> failwith "empty induced tree"
+
+let pd_of_pr criterion pr =
+  pd_of_induced 
+    (Placerun.get_ref_tree pr) 
+    (induced_of_placerun criterion pr)

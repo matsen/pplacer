@@ -99,14 +99,37 @@ let heat prefs = function
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
   let ch = 
-    open_out 
-      (match Mokaphy_prefs.KR.out_fname prefs with
-      | "" -> (cat_names prl)^".kr.txt"
-      | s -> s)
+    (match Mokaphy_prefs.KR.out_fname prefs with
+    | "" -> stdout
+    | s -> open_out s)
   in
   Kr_core.core 
     ch 
     prefs 
     (criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
     (Array.of_list prl);
-  close_out ch
+  if ch <> stdout then close_out ch
+
+
+
+(* *** PD PD PD PD PD *** *)
+let pd prefs prl = 
+  let ch = 
+    (match Mokaphy_prefs.PD.out_fname prefs with
+    | "" -> stdout
+    | s -> open_out s)
+  in
+  String_matrix.write_padded
+    ch
+    (Array.map
+      (fun pr ->
+        [| 
+        Placerun.get_name pr; 
+        Printf.sprintf 
+          "%g" 
+          (Induced.pd_of_pr
+            (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
+            pr);
+        |])
+    (Array.of_list prl));
+  if ch <> stdout then close_out ch

@@ -24,9 +24,13 @@ let placerun_by_name fname =
   if StringMap.mem fname !placerun_map then
     StringMap.find fname !placerun_map
   else begin
-    let pq = Placerun_io.of_file fname in
-    placerun_map := StringMap.add fname pq !placerun_map;
-    pq
+    let pr = 
+      Placerun.filter_unplaced 
+        ~verbose:true
+        (Placerun_io.of_file fname) 
+    in
+    placerun_map := StringMap.add fname pr !placerun_map;
+    pr
   end
 
 (* *** wrapped versions of programs *** *)
@@ -51,7 +55,12 @@ let wrap_parse_argv argl specl usage =
   | Arg.Help s -> print_string s; []
 
 (* here are the commands, wrapped up to simply take an argument list. they must
- * also print out a documentation line when given an empty list argument. *)
+ * also print out a documentation line when given an empty list argument. 
+ *
+ * we *could* factor these by making a parametrized module but we would need to
+ * supply definition string, preferences module, fundamental command, and usage
+ * string. For now it doesn't seem worth it.
+ * *)
 let bary_of_argl = function
   | [] -> print_endline "draws the barycenter of a placement collection on the reference tree"
   | argl -> 
@@ -85,6 +94,17 @@ let kr_of_argl = function
         (Mokaphy_prefs.KR.specl_of_prefs prefs)
         "usage: kr [options] placefiles")
 
+let pd_of_argl = function
+  | [] -> print_endline "calculates PD of the subtree spanned by the placments"
+  | argl -> 
+    let prefs = Mokaphy_prefs.PD.defaults () in
+    Cmds.pd 
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.PD.specl_of_prefs prefs)
+        "usage: pd [options] placefiles")
+
 let cmd_map = 
   List.fold_right 
     (fun (k,v) -> StringMap.add k v)
@@ -92,6 +112,7 @@ let cmd_map =
       "bary", bary_of_argl;
       "heat", heat_of_argl;
       "kr", kr_of_argl;
+      "pd", pd_of_argl;
     ]
     StringMap.empty
 
