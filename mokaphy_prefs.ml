@@ -92,17 +92,17 @@ module Heat = struct
 "The exponent for the integration, i.e. the value of p in Z_p.";
 "--point", Arg.Clear prefs.weighted,
 weighted_help;
-"--simpleColors", Arg.Set prefs.simple_colors,
+"--simple-colors", Arg.Set prefs.simple_colors,
 "Use only 100% red and blue to signify the sign of the KR along that edge.";
-"--grayBlackColors", Arg.Set prefs.gray_black_colors,
+"--gray-black", Arg.Set prefs.gray_black_colors,
 "Use gray and black in place of red and blue to signify the sign of the KR along that edge.";
-"--whitebg", Arg.Set prefs.white_bg,
+"--white-bg", Arg.Set prefs.white_bg,
 "Make colors for the heat tree which are compatible with a white background.";
-spec_with_default "--grayLevel" (fun o -> Arg.Set_int o) prefs.gray_level
+spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level
 "Specify the amount of gray to mix into the color scheme. Default is %d.";
-spec_with_default "--minWidth" (fun o -> Arg.Set_float o) prefs.min_width
+spec_with_default "--min-width" (fun o -> Arg.Set_float o) prefs.min_width
 "Specify the minimum width of the branches in a heat tree. Default is %g.";
-spec_with_default "--maxWidth" (fun o -> Arg.Set_float o) prefs.max_width
+spec_with_default "--max-width" (fun o -> Arg.Set_float o) prefs.max_width
 "Specify the maximum width of the branches in a heat tree. Default is %g.";
 ]
 end
@@ -177,7 +177,7 @@ module KR = struct
     "The exponent for the integration, i.e. the value of p in Z_p.";
     "--unweighted", Arg.Clear prefs.weighted,
     weighted_help;
-    "--list_output", Arg.Set prefs.list_output,
+    "--list-output", Arg.Set prefs.list_output,
     "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
     "write out a shuffle density data file for each pair.";
@@ -194,7 +194,7 @@ module KR = struct
     "--normal", Arg.Set prefs.normal,
     "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
     *)
-    "--bary_density", Arg.Set prefs.bary_density,
+    "--bary-density", Arg.Set prefs.bary_density,
     "Write out a density plot of barycenter distance versus shuffled version for each pair.";
     (*
     "--matrix", Arg.Set prefs.matrix,
