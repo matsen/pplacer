@@ -23,7 +23,7 @@ let write_string_list ch =
 
 (* output *)
 
-let write_tree ?name ch gtree = 
+let write_tree_gen write_bark ch ?name gtree = 
   let bark_map = Gtree.get_bark_map gtree in
   let rec aux st = 
     let write_clade id tL =
@@ -31,7 +31,7 @@ let write_tree ?name ch gtree =
         (fun () -> 
           (* write the bark *)
           if IntMap.mem id bark_map then
-            (IntMap.find id bark_map)#write_xml ch;
+            write_bark ch (IntMap.find id bark_map);
           List.iter aux tL)
         "clade"
         ch
@@ -49,12 +49,17 @@ let write_tree ?name ch gtree =
   aux (Gtree.get_stree gtree);
   Printf.fprintf ch "</phylogeny>\n\n"
 
-let tree_list_to_file tl fname = 
+let write_tree ch ?name gtree = 
+  write_tree_gen (fun ch b -> b#write_xml ch) ch ?name gtree
+
+let tree_list_to_file_gen write_tree_fn tl fname = 
   let ch = open_out fname in
   write_string_list ch foreword;
-  List.iter (write_tree ch) tl;
+  List.iter (write_tree_fn ch) tl;
   write_string_list ch afterword;
   close_out ch
+
+let tree_list_to_file = tree_list_to_file_gen write_tree
 
 (* tl should be a list of (name_opt, t). thus not all trees have to have a name *)
 let named_tree_list_to_file tl fname = 

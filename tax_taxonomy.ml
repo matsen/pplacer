@@ -30,13 +30,19 @@ let get_rank_name td i =
   try td.rank_names.(i) with 
   | Invalid_argument _ -> invalid_arg "Tax_taxonomy.get_rank_name"
 
+let get_tax_level td ti = 
+  try TaxIdMap.find ti td.tax_level_map with
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_level not known: "^(Tax_id.to_string ti))
+
+let rank_name_of_tax_id td ti = get_rank_name td (get_tax_level td ti)
+
 let get_ancestor td ti = 
   try TaxIdMap.find ti td.tax_tree with
   | Not_found -> raise (NoAncestor ti)
 
-let get_tax_level td ti = 
-  try TaxIdMap.find ti td.tax_level_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_level: "^(Tax_id.to_string ti))
+let get_tax_name td ti = 
+  try TaxIdMap.find ti td.tax_name_map with
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
 
 (* adds a lineage to the tree and the tax_level_map *)
 let add_lineage_to_tree_and_map (t,m) l = 
