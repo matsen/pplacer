@@ -13,14 +13,14 @@ let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
 *)
 
 (* here t is a newick gtree *)
-let annotate_newick t td = 
+let annotate_newick t sim = 
   let tips_annotated = 
     IntMap.map
       (fun newick_bark ->
         Tax_bark.of_newick_bark
           newick_bark
           (match newick_bark#get_name_opt with
-          | Some name -> Some (Tax_seqinfo.tax_id_by_name td name)
+          | Some name -> Some (Tax_seqinfo.tax_id_by_name sim name)
           | None -> None))
       (Gtree.get_bark_map t)
   in
@@ -46,7 +46,5 @@ let mrcaize t td =
   Gtree.set_bark_map t (!bmr)
 
 
-let f = Tax_taxonomy.get_rank_name
-let f = Tax_seqinfo.empty
 let f = Newick.of_file
 let f = Phyloxml.write_tree

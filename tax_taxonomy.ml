@@ -15,12 +15,14 @@ exception NoMRCA of tax_id * tax_id
 
 type tax_tree = tax_id TaxIdMap.t
 type tax_level_map = int TaxIdMap.t
+type tax_name_map = string TaxIdMap.t
 
 type tax_data = 
   { 
     rank_names      : string array;
     tax_tree        : tax_tree; 
     tax_level_map   : tax_level_map;
+    tax_name_map    : tax_name_map;
   }
 
 (* basics *)
@@ -36,6 +38,7 @@ let get_tax_level td ti =
   try TaxIdMap.find ti td.tax_level_map with
   | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_level: "^(Tax_id.to_string ti))
 
+(* adds a lineage to the tree and the tax_level_map *)
 let add_lineage_to_tree_and_map (t,m) l = 
   let check_add k v m = 
     try TaxIdMapFuns.check_add k v m with
@@ -52,19 +55,42 @@ let add_lineage_to_tree_and_map (t,m) l =
             (ListFuns.mapi (fun i x -> (i,x)) l))
 
 (* *** reading *** *)
+type tax_line = 
+  {
+    tax_id_str : string;
+    parent_id_str : string;
+    rank_name : string;
+    taxonomic_name : string;
+    lineage : string option list;
+  }
+
+let tax_line_of_stringol = function 
+    | (Some tax_id_str)::(Some parent_id_str)
+      ::(Some rank_name)::(Some taxonomic_name)
+      ::lineage ->
+        {
+          tax_id_str = tax_id_str;
+          parent_id_str = parent_id_str;
+          rank_name = rank_name;
+          taxonomic_name = taxonomic_name;
+          lineage = lineage;
+        }
+    | _ -> assert(false)
+
 let of_ncbi_file fname = 
-  match R_csv.list_list_of_file fname with
-  | opt_names::indexed_lineage_list as full_list -> 
-      if not (R_csv.list_list_is_rectangular full_list) then
-        invalid_arg ("Array not rectangular: "^fname);
+  let taxid_of_stro = ncbi_of_stro 
+  and full_list = R_csv.list_list_of_file fname in
+  if not (R_csv.list_list_is_rectangular full_list) then
+    invalid_arg ("Array not rectangular: "^fname);
+  match List.map tax_line_of_stringol full_list with
+  | names::lineage_data -> 
       let (tax_tree, tax_level_map) = 
         List.fold_left
-          (fun t -> function 
-            | _::l -> 
-                add_lineage_to_tree_and_map t (List.map ncbi_of_stro l)
-            | [] -> failwith "empty lineage")
+          (fun tam tax_line -> 
+            add_lineage_to_tree_and_map tam
+              (List.map taxid_of_stro tax_line.lineage))
           (TaxIdMap.empty, TaxIdMap.empty)
-          indexed_lineage_list
+          lineage_data
       in
       { 
         rank_names = 
@@ -72,10 +98,16 @@ let of_ncbi_file fname =
             (List.map 
             (function | Some s -> s 
                       | None -> failwith "NA in taxon level name line!")
-            (List.tl opt_names));
-        (* above: just take the actual rank names. know nonempty from rectangular & above *)
+            names.lineage);
         tax_tree = tax_tree;
         tax_level_map = tax_level_map;
+        tax_name_map = 
+          List.fold_right 
+            (fun tline -> 
+              TaxIdMap.add (taxid_of_stro (Some tline.tax_id_str))
+                           tline.taxonomic_name)
+            lineage_data
+            TaxIdMap.empty
       }
   | _ -> invalid_arg ("empty taxonomy: "^fname)
 

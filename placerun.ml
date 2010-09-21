@@ -84,6 +84,15 @@ let warn_about_duplicate_names placerun =
   in
   ()
 
+let filter_unplaced ?verbose:(verbose=false) pr = 
+  let (placed_l, unplaced_l) = 
+    List.partition Pquery.is_placed (get_pqueries pr) in
+  if verbose && placed_l = [] then
+    Printf.printf "Filtering %d unplaced sequences from %s...\n"
+      (List.length unplaced_l)
+      (get_name pr);
+  { pr with pqueries = placed_l }
+
 (* for each entry of a (name, f) list, make a placerun with the given name and
  * the pqueries that satisfy f *)
 let multifilter named_f_list placerun = 

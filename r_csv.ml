@@ -17,8 +17,11 @@ let dequote s =
     s
 
 let entry_of_str s = 
-  if s = "NA" || s = "\"\"" then None
-  else Some (dequote s)
+  if s = "NA" then None
+  else
+    let dq = dequote s in
+    if dq = "" then None
+    else Some (dequote s)
 
 (* returns a list of arrays *)
 let list_list_of_file fname = 
