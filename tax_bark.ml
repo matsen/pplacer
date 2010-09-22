@@ -7,16 +7,18 @@
 open Fam_batteries
 open MapsSets
 
+let write_xml_tax_name ch = Xml.write_tag output_string "scientific_name" ch
 
 class tax_bark arg = 
-  let (bl, name, boot, tax_ido) = 
+  let (bl, name, boot, tax_ido, tax_nameo) = 
     match arg with
-    | `Empty -> (None, None, None, None)
-    | `Of_newick_bark (nb, tax_ido) -> 
-        (nb#get_bl_opt, nb#get_name_opt, nb#get_boot_opt, tax_ido)
+    | `Empty -> (None, None, None, None, None)
+    | `Of_newick_bark (nb, tax_ido, tax_nameo) -> 
+        (nb#get_bl_opt, nb#get_name_opt, nb#get_boot_opt, tax_ido, tax_nameo)
   in
   object (* (self) *)
     val tax_ido = tax_ido
+    val tax_nameo = tax_nameo
     inherit Newick_bark.newick_bark 
       (`Of_bl_name_boot (bl, name, boot))
       as super
@@ -25,21 +27,32 @@ class tax_bark arg =
     method set_tax_ido tio = {< tax_ido = tio >}
     method set_tax_id ti = {< tax_ido = Some ti >}
 
+    method get_tax_nameo = tax_nameo
+    method set_tax_nameo tno = {< tax_nameo = tno >}
+    method set_tax_name tn = {< tax_nameo = Some tn >}
+
     method ppr ff = 
       Format.fprintf ff "@[{%a taxid = %a;}@]" 
         (fun ff () -> super#ppr_inners ff) ()
         (Ppr.ppr_opt Tax_id.ppr) tax_ido
 
     method write_xml ch = 
+      let perhaps_write write_fun xo = 
+        match xo with 
+        | Some x -> write_fun x 
+        | None -> ()
+      in
       super#write_xml ch;
       (* sort so tags are in proper order *)
-      match tax_ido with
-      | Some x -> 
+      match (tax_ido, tax_nameo) with
+      | (None, None) -> ()
+      | _ -> 
           Xml.write_long_tag
-            (fun () -> Tax_id.write_xml ch x)
+            (fun () ->
+              perhaps_write (Tax_id.write_xml ch) tax_ido;
+              perhaps_write (write_xml_tax_name ch) tax_nameo;)
             "taxonomy"
             ch
-      | None -> ()
   end
 
   (*
@@ -52,5 +65,5 @@ let compare b1 b2 =
   | Base.Different c -> c
 *)
 
-let of_newick_bark nb tax_ido = 
-  new tax_bark (`Of_newick_bark(nb, tax_ido))
+let of_newick_bark nb tax_ido tax_nameo = 
+  new tax_bark (`Of_newick_bark(nb, tax_ido, tax_nameo))

@@ -23,15 +23,15 @@ let write_string_list ch =
 
 (* output *)
 
-let write_tree_gen write_bark ch ?name gtree = 
+let write_tree ?name ch gtree =
   let bark_map = Gtree.get_bark_map gtree in
-  let rec aux st = 
+  let rec aux st =
     let write_clade id tL =
       Xml.write_long_tag
-        (fun () -> 
+        (fun () ->
           (* write the bark *)
           if IntMap.mem id bark_map then
-            write_bark ch (IntMap.find id bark_map);
+            (IntMap.find id bark_map)#write_xml ch;
           List.iter aux tL)
         "clade"
         ch
@@ -41,7 +41,7 @@ let write_tree_gen write_bark ch ?name gtree =
       | Stree.Leaf id -> write_clade id []
   in
   Printf.fprintf ch "<phylogeny rooted=\"true\">\n";
-  let () = 
+  let () =
     match name with
     | None -> ()
     | Some n -> Xml.write_string "name" ch n
@@ -49,17 +49,12 @@ let write_tree_gen write_bark ch ?name gtree =
   aux (Gtree.get_stree gtree);
   Printf.fprintf ch "</phylogeny>\n\n"
 
-let write_tree ch ?name gtree = 
-  write_tree_gen (fun ch b -> b#write_xml ch) ch ?name gtree
-
-let tree_list_to_file_gen write_tree_fn tl fname = 
+let tree_list_to_file tl fname =
   let ch = open_out fname in
   write_string_list ch foreword;
-  List.iter (write_tree_fn ch) tl;
+  List.iter (write_tree ch) tl;
   write_string_list ch afterword;
   close_out ch
-
-let tree_list_to_file = tree_list_to_file_gen write_tree
 
 (* tl should be a list of (name_opt, t). thus not all trees have to have a name *)
 let named_tree_list_to_file tl fname = 

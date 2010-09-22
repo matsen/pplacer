@@ -24,7 +24,7 @@ let ppr ff ti =
   Format.pp_print_string ff (to_string ti)
 
 let write_xml ch = function
-  | NCBI s -> Printf.fprintf ch "<id provider=\"NCBI\">%s</id>" s
+  | NCBI s -> Printf.fprintf ch "<id provider=\"ncbi_taxonomy\">%s</id>\n" s
   | NoTax -> ()
 
 

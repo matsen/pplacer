@@ -13,7 +13,7 @@ let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
 *)
 
 (* here we simply annotate the leaves of the newick tree with taxonomic ids *)
-let annotate_newick t sim = 
+let annotate_newick sim t = 
   let tips_annotated = 
     IntMap.map
       (fun newick_bark ->
@@ -21,50 +21,55 @@ let annotate_newick t sim =
           newick_bark
           (match newick_bark#get_name_opt with
           | Some name -> Some (Tax_seqinfo.tax_id_by_name sim name)
-          | None -> None))
+          | None -> None)
+          None)
       (Gtree.get_bark_map t)
   in
   Gtree.set_bark_map t tips_annotated
 
+let get_tax_id t id =
+  match (Gtree.get_bark t id)#get_tax_ido with
+  | Some ti -> ti
+  | None -> failwith (Printf.sprintf "node %d lacks taxonomic info" id)
+
 (* next step is to propogate the taxonomic information up the tree according to
  * common ancestry. here t needs taxonomic annotation *)
-let mrcaize t td =
-  let st = Gtree.get_stree t
-  and bmr = ref (Gtree.get_bark_map t) in
+let mrcaize td t =
+  let bmr = ref (Gtree.get_bark_map t) in
   let _ = 
-    Stree.recur
+    Gtree.recur
       (fun id below_tax_ids ->
         let mrca = Tax_taxonomy.list_mrca td below_tax_ids in
         bmr := IntMap.add 
                  id ((Gtree.get_bark t id)#set_tax_id mrca) (!bmr);
         mrca)
-      (fun id ->
-        match (Gtree.get_bark t id)#get_tax_ido with
-        | Some ti -> ti
-        | None -> failwith (Printf.sprintf "leaf %d lacks taxonomic info" id))
-      st
+      (get_tax_id t)
+      t
   in
   Gtree.set_bark_map t (!bmr)
 
-(* we call this the detailed version because it includes taxonomic names and
- * ranks, in contrast to the default object bark version, which only writes out
- * the tax ids. *)
-let write_detailed_xml td ?name ch t = 
-  Phyloxml.write_tree_gen 
-    (fun ch b ->
-      b#write_xml;
-      match b#get_tax_ido with
-      | Some tax_id -> begin
-        Xml.write_tag 
-          output_string
-          "scientific_name" 
-          ch
-          (Tax_taxonomy.get_tax_name td tax_id);
-        Xml.write_tag 
-          output_string
-          "rank" 
-          ch
-          (Tax_taxonomy.rank_name_of_tax_id td tax_id)
-      end
-      | None -> ())
-    ?name ch t
+(* the next step is to attach names to actual MRCAs in the tree *)
+let mrca_name td t = 
+  let bmr = ref (Gtree.get_bark_map t) in
+  let _ = 
+    Gtree.recur
+      (fun id below ->
+        let our_tax_id = get_tax_id t id in
+        List.iter
+          (fun (below_id, below_tax_id) ->
+            if our_tax_id <> below_tax_id then
+              bmr := 
+                IntMap.add 
+                  below_id 
+                  ((Gtree.get_bark t below_id)#set_tax_name
+                    (Tax_taxonomy.get_tax_name td below_tax_id))
+                  (!bmr))
+          below;
+        (id, our_tax_id))
+      (fun id -> (id, get_tax_id t id))
+      t
+  in
+  Gtree.set_bark_map t (!bmr)
+
+let process sim td t = 
+  mrca_name td (mrcaize td (annotate_newick sim t))
