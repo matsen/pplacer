@@ -17,7 +17,7 @@ type tax_tree = tax_id TaxIdMap.t
 type tax_level_map = int TaxIdMap.t
 type tax_name_map = string TaxIdMap.t
 
-type tax_data = 
+type t = 
   { 
     rank_names      : string array;
     tax_tree        : tax_tree; 

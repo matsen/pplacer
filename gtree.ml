@@ -15,6 +15,7 @@ open Fam_batteries
 open MapsSets
 
 (* these are raised when we are asked for something that isn't in a bark map *)
+exception Lacking_bark of int
 exception Lacking_branchlength of int
 exception Lacking_name of int
 exception Lacking_bootstrap of int
@@ -30,7 +31,9 @@ let of_stree stree = {stree = stree; bark_map = IntMap.empty}
 
 let get_stree t = t.stree
 let get_bark_map t = t.bark_map
-let get_bark t id = IntMap.find id t.bark_map
+let get_bark t id = 
+  try IntMap.find id t.bark_map with 
+  | Not_found -> raise (Lacking_bark id)
 let get_bark_opt t id = 
   if IntMap.mem id t.bark_map then Some(get_bark t id) else None
 

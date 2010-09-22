@@ -12,6 +12,9 @@ let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
   Gtree.mapi_bark_map (fun _ b -> Tax_bark.of_newick_bark b) t
 *)
 
+let get_tax_ido t id = (Gtree.get_bark t id)#get_tax_ido
+let get_tax_nameo t id = (Gtree.get_bark t id)#get_tax_nameo
+
 (* here we simply annotate the leaves of the newick tree with taxonomic ids *)
 let annotate_newick sim t = 
   let tips_annotated = 
@@ -48,7 +51,7 @@ let mrcaize td t =
   in
   Gtree.set_bark_map t (!bmr)
 
-(* the next step is to attach names to actual MRCAs in the tree *)
+(* the next step is to attach names to actual MRCAs in the tree. *)
 let mrca_name td t = 
   let bmr = ref (Gtree.get_bark_map t) in
   let _ = 
@@ -58,6 +61,8 @@ let mrca_name td t =
         List.iter
           (fun (below_id, below_tax_id) ->
             if our_tax_id <> below_tax_id then
+              (* something below is not the same tax_id as us. thus it is an
+               * MRCA and we label it as such *)
               bmr := 
                 IntMap.add 
                   below_id 
@@ -73,3 +78,9 @@ let mrca_name td t =
 
 let process sim td t = 
   mrca_name td (mrcaize td (annotate_newick sim t))
+
+(* here we are using MRCA name as a proxy for being an MRCA *)
+let is_mrca t id = 
+  match (Gtree.get_bark t id)#get_nameo with 
+  | Some _ -> true 
+  | None -> false
