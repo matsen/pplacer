@@ -79,6 +79,11 @@ let mrca_name td t =
 let process sim td t = 
   mrca_name td (mrcaize td (annotate_newick sim t))
 
+let of_refpkg rp = 
+  process (Refpkg.get_seqinfo rp) 
+          (Refpkg.get_taxonomy rp) 
+          (Refpkg.get_ref_tree rp) 
+
 (* here we are using MRCA name as a proxy for being an MRCA *)
 let is_mrca t id = 
   match (Gtree.get_bark t id)#get_nameo with 

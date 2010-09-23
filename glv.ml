@@ -21,6 +21,9 @@
  * "pulling" the exponent refers to finding a suitable exponent x and then
  * dividing all of the entries of the site likelihood vectors by 2^x to bring
  * them back in line, then storing x in field e.
+ *
+ * The first index in the tensor is the gamma rate, the second is the site
+ * index, and the third is the state index.
  *)
 
 open Fam_batteries

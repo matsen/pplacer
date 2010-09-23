@@ -21,9 +21,9 @@ type t =
 
 (* *** basics *** *)
 
-let get_ref_tree rp = Lazy.force rp.ref_tree; rp.ref_tree
-let get_seqinfo rp = Lazy.force rp.seqinfo; rp.seqinfo
-let get_taxonomy rp = Lazy.force rp.seqinfo; rp.taxonomy
+let get_ref_tree rp = Lazy.force rp.ref_tree
+let get_seqinfo rp = Lazy.force rp.seqinfo
+let get_taxonomy rp = Lazy.force rp.taxonomy
 
 (* *** parsing *** *)
 
