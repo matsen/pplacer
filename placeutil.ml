@@ -38,7 +38,7 @@ let parse_args () =
      "--reSepFile", Arg.Set_string re_sep_fname,
      "File name for the regular expression separation file.";
      "--noWarnMultipleRe", Arg.Clear warn_multiple,
-     "Warn if a read name matches several regular expressions.";
+     "Do not warn if a read name matches several regular expressions.";
      "--printEDPL", Arg.Set print_edpl,
      "Print out a table of edpl values for each placement.";
      "--distmat", Arg.Set edge_distance_mat,
