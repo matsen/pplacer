@@ -150,31 +150,8 @@ let () =
     Printf.printf "supernode likelihood is %g\n" 
                   (Glv.logdot model sn util);
     *)
-    (* make the mutpick thing if we were given a refpkg *)
     match refpkgo with 
-    | Some rp -> begin
-        let t = Tax_gtree.of_refpkg rp in
-        let ch = open_out ((Refpkg.get_name rp)^".picks") in
-        let code = match Model.seq_type (Refpkg.get_model rp) with
-        | Alignment.Nucleotide_seq -> Nuc_models.nuc_code
-        | Alignment.Protein_seq -> Prot_models.prot_code
-        in
-        let get_symbol i = 
-          try code.(i) with | Invalid_argument _ -> assert(false)
-        in
-        let to_sym_str ind_arr = 
-          StringFuns.of_char_array (Array.map get_symbol ind_arr)
-        in
-        IntMap.iter
-          (fun id (at_d, at_p) -> 
-            match (Gtree.get_bark t id)#get_tax_nameo with 
-            | Some name -> 
-              Printf.fprintf ch ">%s\n%s\n%s\n" 
-                name (to_sym_str at_d) (to_sym_str at_p)
-            | None -> invalid_arg "unnamed MRCA!")
-          (Mutpick.pickpair_map model t ~darr ~parr (Tax_gtree.mrca_list t));
-        close_out ch;
-      end
+    | Some rp -> Taxpick.write_picks ~darr ~parr rp;
     | None -> ();
     (* analyze query sequences *)
     List.iter 
