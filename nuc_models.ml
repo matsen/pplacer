@@ -47,6 +47,7 @@ let nuc_map =
        '?', [|1.; 1.; 1.; 1.|];
        'X', [|1.; 1.; 1.; 1.|];]))
 
+let nuc_code = [|'A';'C';'G';'T'|]
 
 let lv_of_nuc nuc = 
   try

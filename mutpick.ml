@@ -4,6 +4,8 @@
  * NOTE: rpost stands for rate-posterior
 *)
 
+open MapsSets
+
 let array_maxi a = 
   let best = ref 0.
   and besti = ref (-1)
@@ -37,15 +39,32 @@ let pick_of_rpost g =
   done;
   picks
   
-let get_picks model t ~darr ~parr locs =
-  let evolv = Glv.mimic (Glv_arr.get_one darr)
-  and rpost = Glv.mimic (Glv_arr.get_one darr)
+(* Get the most likely vector at a chosen node id. 
+ * atarr is the Glv_arr which gives the Glv on the side we are interested in,
+ * while neigharr is the neighbor. 
+ * u1 and u2 are utility vectors like Glv.mimic (Glv_arr.get_one darr) *)
+let get_pick u1 u2 model t ~atarr ~neigharr id =
+  Glv.evolve_into model 
+    ~dst:u1 
+    ~src:(Glv_arr.arr_get neigharr id) 
+    (Gtree.get_bl t id);
+  Glv.statd_pairwise_prod 
+    model ~dst:u2 u1 (Glv_arr.arr_get atarr id);
+  pick_of_rpost u2
+
+let get_pickpair u1 u2 model t ~darr ~parr id = 
+  let at_d = get_pick u1 u2 model t ~atarr:darr ~neigharr:parr id
+  and at_p = get_pick u1 u2 model t ~atarr:parr ~neigharr:darr id
   in
-  List.map
-    (fun loc ->
-      Glv.evolve_into model ~dst:evolv 
-        ~src:(Glv_arr.arr_get darr loc) (Gtree.get_bl t loc);
-      Glv.statd_pairwise_prod 
-        model ~dst:rpost evolv (Glv_arr.arr_get parr loc);
-      pick_of_rpost rpost)
-    locs
+  (at_d, at_p)
+
+(* make a map from a list of edge ids to the most likely vectors on either side
+ * of the edge: order is (distal, proximal) *)
+let pickpair_map model t ~darr ~parr ids = 
+  let u1 = Glv.mimic (Glv_arr.get_one darr)
+  and u2 = Glv.mimic (Glv_arr.get_one darr) in
+  List.fold_right
+    (fun id ->
+      IntMap.add id (get_pickpair u1 u2 model t ~darr ~parr id))
+    ids
+    IntMap.empty

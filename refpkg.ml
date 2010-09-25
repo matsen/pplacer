@@ -16,16 +16,19 @@ type t =
     taxonomy    : Tax_taxonomy.t Lazy.t;
     seqinfom    : Tax_seqinfo.seqinfo_map Lazy.t;
     timestamp   : string;
+    name        : string;
   }
 
 
 (* *** basics *** *)
 
-let get_ref_tree rp =  Lazy.force rp.ref_tree
-let get_model rp =     Lazy.force rp.model
+let get_ref_tree  rp = Lazy.force rp.ref_tree
+let get_model     rp = Lazy.force rp.model
 let get_aln_fasta rp = Lazy.force rp.aln_fasta
-let get_taxonomy rp =  Lazy.force rp.taxonomy
-let get_seqinfom rp =  Lazy.force rp.seqinfom
+let get_taxonomy  rp = Lazy.force rp.taxonomy
+let get_seqinfom  rp = Lazy.force rp.seqinfom
+let get_timestamp rp = rp.timestamp
+let get_name      rp = rp.name
 
 (* *** parsing *** *)
 
@@ -54,6 +57,11 @@ let build_model path stats_fname ref_align =
   let ref_dir_complete = path^"/" in
   Model.of_prefs ref_dir_complete prefs ref_align
 
+let remove_terminal_slash s = 
+  let len = String.length s in
+  if s.[len - 1] <> '/' then s
+  else String.sub s 0 (len-1)
+
 let of_path path = 
   if not (Sys.is_directory path) then
     failwith ("Purported refpkg "^path^" is not a directory");
@@ -80,4 +88,6 @@ let of_path path =
     taxonomy    = lazy (Tax_taxonomy.of_ncbi_file (dget "taxonomy"));
     seqinfom    = lazy (Tax_seqinfo.of_csv (dget "seq_info"));
     timestamp   = get "timestamp";
+    name        = Filename.chop_extension 
+                    (Filename.basename (remove_terminal_slash path));
   }
