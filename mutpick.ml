@@ -47,6 +47,5 @@ let get_picks model t ~darr ~parr locs =
         ~src:(Glv_arr.arr_get darr loc) (Gtree.get_bl t loc);
       Glv.statd_pairwise_prod 
         model ~dst:rpost evolv (Glv_arr.arr_get parr loc);
-      pick_of_rpost rpost
-    )
-    (List.hd locs)
+      pick_of_rpost rpost)
+    locs

@@ -7,6 +7,7 @@
 type prefs = 
   {
    (* basics *)
+    refpkg_path : string ref;
     tree_fname : string ref;
     ref_align_fname : string ref;
     stats_fname : string ref;
@@ -37,6 +38,7 @@ type prefs =
     (* other *)
     friendly : bool ref;
     pretend : bool ref;
+    diagnostic : bool ref;
   }
 
 
@@ -44,6 +46,7 @@ type prefs =
 let defaults () = 
   { 
     (* basics *)
+    refpkg_path = ref ""; 
     tree_fname = ref "";
     ref_align_fname = ref "";
     stats_fname = ref "";
@@ -74,6 +77,7 @@ let defaults () =
     (* other *)
     friendly = ref true;
     pretend = ref false;
+    diagnostic = ref false;
   }
 
 
@@ -85,6 +89,7 @@ type mut_param =
 
 
 (* yay visual block! *)
+let refpkg_path       p = !(p.refpkg_path)
 let tree_fname        p = !(p.tree_fname)
 let ref_align_fname   p = !(p.ref_align_fname)
 let stats_fname       p = !(p.stats_fname)
@@ -110,6 +115,7 @@ let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
+let diagnostic        p = !(p.diagnostic)
 
 
 (* arguments and preferences *)
@@ -120,6 +126,8 @@ let spec_with_default symbol setfun p help =
 let args prefs = 
   [
     (* short *)
+    "-c", Arg.Set_string prefs.refpkg_path,
+    "Specify the path to the reference package.";
     "-t", Arg.Set_string prefs.tree_fname,
     "Specify the reference tree filename.";
     "-r", Arg.Set_string prefs.ref_align_fname,
@@ -181,6 +189,8 @@ let args prefs =
     "Specify the directory to write place files to.";
     "--pretend", Arg.Set prefs.pretend,
     "Only check out the files then report. Do not run the analysis.";
+    "--diagnostic", Arg.Set prefs.diagnostic,
+    "Write out a file describing the 'diagnostic' mutations for various clades.";
   ]
 
 (* include a pref here if it should go in the place file *)

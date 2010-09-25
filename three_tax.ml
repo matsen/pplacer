@@ -12,10 +12,10 @@ open Fam_batteries
 let n_like_calls = ref 0
 
 type three_tax = { 
-  model  : Model.model;
-  prox   : Glv_edge.glv_edge;      (* the proximal glv *)
-  dist   : Glv_edge.glv_edge;      (* the distal glv *)
-  pend   : Glv_edge.glv_edge;      (* the pendant, i.e. query glv *)
+  model  : Model.t;
+  prox   : Glv_edge.t;      (* the proximal glv *)
+  dist   : Glv_edge.t;      (* the distal glv *)
+  pend   : Glv_edge.t;      (* the pendant, i.e. query glv *)
 }
 
 let get_pend_bl tt = Glv_edge.get_bl tt.pend

@@ -7,7 +7,7 @@
  * Scary side-effect land! But by keeping with the interface, we should be safe.
  *)
 
-type glv_edge = {
+type t = {
   orig   : Glv.glv;
   evolv  : Glv.glv;
   bl     : float ref;

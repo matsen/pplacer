@@ -81,7 +81,14 @@ let tax_line_of_stringol = function
           taxonomic_name = taxonomic_name;
           lineage = lineage;
         }
-    | _ -> assert(false)
+    | l -> begin
+        Format.fprintf 
+          Format.std_formatter
+          "Error: this tax line didn't fit expectations:@\n%a@\n"
+          (Ppr.ppr_list (Ppr.ppr_opt Format.pp_print_string))
+          l;
+        exit(0);
+    end
 
 let of_ncbi_file fname = 
   let taxid_of_stro = ncbi_of_stro 

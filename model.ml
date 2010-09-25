@@ -10,7 +10,7 @@
 
 open Fam_batteries
 
-type model =
+type t =
   { 
    statd     :  Gsl_vector.vector;
    diagdq    :  Diagd.diagd;
@@ -59,6 +59,25 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
     tensor = Tensor.create (Array.length rates) n_states n_states;
     util_v = Gsl_vector.create (Alignment.length ref_align)
   }
+
+let of_prefs ref_dir_complete prefs ref_align =
+  let opt_transitions = match Prefs.stats_fname prefs with
+  | s when s = "" -> 
+      Printf.printf
+        "NOTE: you have not specified a stats file. I'm using the %s model.\n"
+        (Prefs.model_name prefs);
+      None
+  | _ -> Parse_stats.parse_stats ref_dir_complete prefs
+  in
+  if Alignment_funs.is_nuc_align ref_align && (Prefs.model_name prefs) <> "GTR" then
+    failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
+  build 
+    (Prefs.model_name prefs) 
+    (Prefs.emperical_freqs prefs)
+    opt_transitions 
+    ref_align 
+    (Gamma.discrete_gamma 
+      (Prefs.gamma_n_cat prefs) (Prefs.gamma_alpha prefs))
 
 (* prepare the tensor for a certain branch length *)
 let prep_tensor_for_bl model bl = 
