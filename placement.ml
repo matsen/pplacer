@@ -10,10 +10,11 @@ open MapsSets
 open Stree
 
 exception No_PP
+exception No_classif
 
-let get_pp = function
+let get_some except = function
   | Some pp -> pp
-  | None -> raise No_PP
+  | None -> raise except
 
 type placement = {location: int; 
                   ml_ratio : float;
@@ -21,17 +22,20 @@ type placement = {location: int;
                   log_like: float;
                   marginal_prob: float option;
                   distal_bl: float; 
-                  pendant_bl: float }
+                  pendant_bl: float;
+                  classif: Tax_id.tax_id option}
 
 let location          p = p.location
 let ml_ratio          p = p.ml_ratio
 let post_prob_opt     p = p.post_prob
-let post_prob         p = get_pp p.post_prob
+let post_prob         p = get_some No_PP p.post_prob
 let log_like          p = p.log_like
 let marginal_prob_opt p = p.marginal_prob
-let marginal_prob     p = get_pp p.marginal_prob
+let marginal_prob     p = get_some No_PP p.marginal_prob
 let distal_bl         p = p.distal_bl
 let pendant_bl        p = p.pendant_bl
+let classif_opt       p = p.classif
+let classif           p = get_some No_classif p.classif
 
 let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl =
   {location      =  loc;
@@ -40,12 +44,15 @@ let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl =
   distal_bl      =  dist_bl;
   pendant_bl     =  pend_bl;
   marginal_prob  =  None;
-  post_prob      =  None}
+  post_prob      =  None;
+  classif        =  None;}
 
 let add_pp p ~marginal_prob ~post_prob = 
   {p with 
     post_prob      =  Some post_prob;
     marginal_prob  =  Some marginal_prob}
+
+let add_classif p c = {p with classif = Some c}
 
 let compare_placements criterion rp1 rp2 =
   compare (criterion rp1) (criterion rp2)
@@ -105,5 +112,6 @@ let placement_of_str str =
     log_like = float_of_string strs.(3);
     marginal_prob = float_opt_of_string strs.(4);
     distal_bl = float_of_string strs.(5);
-    pendant_bl = float_of_string strs.(6)}
+    pendant_bl = float_of_string strs.(6);
+    classif = None}
 

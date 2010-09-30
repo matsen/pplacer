@@ -7,6 +7,8 @@
 open Fam_batteries
 open MapsSets
 
+type t = Tax_bark.tax_bark Gtree.gtree
+
 (*
 let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
   Gtree.mapi_bark_map (fun _ b -> Tax_bark.of_newick_bark b) t
@@ -78,11 +80,6 @@ let mrca_name td t =
 
 let process sim td t = 
   mrca_name td (mrcaize td (annotate_newick sim t))
-
-let of_refpkg rp = 
-  process (Refpkg.get_seqinfom rp) 
-          (Refpkg.get_taxonomy rp) 
-          (Refpkg.get_ref_tree rp) 
 
 (* here we are using MRCA name as a proxy for being an MRCA *)
 let is_mrca t id = 

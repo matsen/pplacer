@@ -13,7 +13,7 @@ let underscoreize s =
   s'
 
 let write_picks ~darr ~parr rp = 
-  let t = Tax_gtree.of_refpkg rp 
+  let t = Refpkg.get_tax_gtree rp 
   and name = Refpkg.get_name rp 
   and model = Refpkg.get_model rp in
   Phyloxml.named_tree_to_file name t (name^".xml");

@@ -4,10 +4,26 @@
 
 open MapsSets
 
-let refpkg_str = "refpkg.txt"
+let refpkg_str = "CONTENTS.txt"
+
+(* uptree maps-- could be expanded later and go into a different file *)
+type uptree_map = int IntMap.t
+
+let utm_of_stree t = 
+  let m = ref IntMap.empty in
+  let add_to_m i j = m := IntMapFuns.check_add i j (!m) in
+  let rec aux = function
+    | Stree.Node (i, tL) ->
+        List.iter (fun s -> add_to_m (Stree.top_id s) i; aux s) tL
+    | Stree.Leaf _ -> ()
+  in 
+  aux t;
+  !m
+
 
 type t = 
   {
+    (* specified *)
     ref_tree    : Newick_bark.newick_bark Gtree.gtree Lazy.t;
     model       : Model.t Lazy.t;
     aln_fasta   : Alignment.t Lazy.t;
@@ -17,18 +33,23 @@ type t =
     seqinfom    : Tax_seqinfo.seqinfo_map Lazy.t;
     timestamp   : string;
     name        : string;
+    (* inferred *)
+    tax_gtree   : Tax_gtree.t Lazy.t;
+    uptree_map  : uptree_map Lazy.t;
   }
 
 
 (* *** basics *** *)
 
-let get_ref_tree  rp = Lazy.force rp.ref_tree
-let get_model     rp = Lazy.force rp.model
-let get_aln_fasta rp = Lazy.force rp.aln_fasta
-let get_taxonomy  rp = Lazy.force rp.taxonomy
-let get_seqinfom  rp = Lazy.force rp.seqinfom
-let get_timestamp rp = rp.timestamp
-let get_name      rp = rp.name
+let get_ref_tree   rp = Lazy.force rp.ref_tree
+let get_model      rp = Lazy.force rp.model
+let get_aln_fasta  rp = Lazy.force rp.aln_fasta
+let get_taxonomy   rp = Lazy.force rp.taxonomy
+let get_seqinfom   rp = Lazy.force rp.seqinfom
+let get_timestamp  rp = rp.timestamp
+let get_name       rp = rp.name
+let get_tax_gtree  rp = Lazy.force rp.tax_gtree
+let get_uptree_map rp = Lazy.force rp.tax_gtree
 
 (* *** parsing *** *)
 
@@ -49,19 +70,22 @@ let eqmap_of_strl sl =
     (List.map eqpair_of_str sl)
     StringMap.empty
 
-(* NOTE: temporary kluge *)
-let build_model path stats_fname ref_align = 
+(* NOTE: at a later date, we may want to transition to a system whereby the
+ * stats file is parsed directly, rather than having it set the prefs then doing
+ * an of_prefs. *)
+let build_model stats_fname ref_align = 
   print_endline stats_fname;
   let prefs = Prefs.defaults () in
   prefs.Prefs.stats_fname := stats_fname;
-  let ref_dir_complete = path^"/" in
-  Model.of_prefs ref_dir_complete prefs ref_align
+  Model.of_prefs "" prefs ref_align
 
 let remove_terminal_slash s = 
   let len = String.length s in
   if s.[len - 1] <> '/' then s
   else String.sub s 0 (len-1)
 
+
+(* final product *)
 let of_path path = 
   if not (Sys.is_directory path) then
     failwith ("Purported refpkg "^path^" is not a directory");
@@ -71,23 +95,44 @@ let of_path path =
     | Sys_error _ -> invalid_arg (Printf.sprintf "can't find %s in %s" refpkg_str path)
   in
   let eqmap = eqmap_of_strl (File_parsing.filter_comments refpkg_lines) in
+  (* pull from the eqmap *)
   let get what = 
     try StringMap.find what eqmap with
     | Not_found -> invalid_arg (what^" not found in "^(dirize refpkg_str))
   in
-  let dget what = dirize (get what) in
-  let lazy_fasta_aln = lazy(Alignment.read_fasta(dget "aln_fasta")) in
+  (* for when the what is actually a file *)
+  let dget what = 
+    match get what with
+    | "" -> invalid_arg ("Please specify a "^what^" in your refpkg "^path)
+    | s -> dirize s
+  in
+  (* now we make the inferred things *)
+  let lfasta_aln = lazy (Alignment.read_fasta(dget "aln_fasta")) in
+  let lref_tree = lazy (Newick.of_file (dget "tree_file")) 
+  and lmodel = 
+      lazy (build_model (dget "tree_stats") (Lazy.force lfasta_aln));
+  and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (dget "taxonomy"))
+  and lseqinfom = lazy (Tax_seqinfo.of_csv (dget "seq_info"))
+  in
+  let ltax_gtree = 
+    lazy (Tax_gtree.process 
+           (Lazy.force lseqinfom) 
+           (Lazy.force ltaxonomy)
+           (Lazy.force lref_tree))
+  and luptree_map = 
+    lazy (utm_of_stree (Gtree.get_stree (Lazy.force lref_tree)))
+  in
   {
-    ref_tree = lazy (Newick.of_file (dget "tree_file"));
-    model    = 
-      lazy (build_model path (get "tree_stats") 
-                             (Lazy.force lazy_fasta_aln));
-    aln_fasta   = lazy_fasta_aln;
+    ref_tree    = lref_tree;
+    model       = lmodel;
+    aln_fasta   = lfasta_aln;
     aln_sto     = ();
     aln_profile = ();
-    taxonomy    = lazy (Tax_taxonomy.of_ncbi_file (dget "taxonomy"));
-    seqinfom    = lazy (Tax_seqinfo.of_csv (dget "seq_info"));
+    taxonomy    = ltaxonomy;
+    seqinfom    = lseqinfom;
     timestamp   = get "timestamp";
     name        = Filename.chop_extension 
                     (Filename.basename (remove_terminal_slash path));
+    tax_gtree   = ltax_gtree;
+    uptree_map  = luptree_map;
   }
