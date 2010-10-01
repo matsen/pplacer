@@ -150,9 +150,6 @@ let () =
     Printf.printf "supernode likelihood is %g\n" 
                   (Glv.logdot model sn util);
     *)
-    match refpkgo with 
-    | Some rp -> Taxpick.write_picks ~darr ~parr rp;
-    | None -> ();
     (* analyze query sequences *)
     List.iter 
       (fun query_fname ->
@@ -165,20 +162,25 @@ let () =
             ((Gtree.tree_length ref_tree) /. 
               (float_of_int (Gtree.n_edges ref_tree))) 
         in
-        let results = 
-          Core.pplacer_core prefs query_fname prior
-            model ref_align ref_tree
-            ~darr ~parr ~snodes locs in
+        let pr = 
+          Placerun.make 
+            ref_tree 
+            prefs
+            query_bname 
+            (Array.to_list 
+              (Core.pplacer_core prefs query_fname prior
+                model ref_align ref_tree
+                ~darr ~parr ~snodes locs))
+        in
         (* write output if we aren't in fantasy mode *)
         if fantasy prefs = 0. then
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
             (out_dir prefs)
-            (Placerun.make 
-               ref_tree 
-               prefs
-               query_bname 
-               (Array.to_list results)))
+            (match refpkgo with 
+            | Some rp -> 
+                Tax_classify.refpkg_containment_classify rp pr;
+            | None -> pr))
       files;
     (* print final info *)
     if verb_level prefs >= 1 then begin

@@ -49,7 +49,7 @@ let get_seqinfom   rp = Lazy.force rp.seqinfom
 let get_timestamp  rp = rp.timestamp
 let get_name       rp = rp.name
 let get_tax_gtree  rp = Lazy.force rp.tax_gtree
-let get_uptree_map rp = Lazy.force rp.tax_gtree
+let get_uptree_map rp = Lazy.force rp.uptree_map
 
 (* *** parsing *** *)
 
