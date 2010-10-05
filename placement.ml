@@ -16,14 +16,17 @@ let get_some except = function
   | Some pp -> pp
   | None -> raise except
 
-type placement = {location: int; 
-                  ml_ratio : float;
-                  post_prob : float option;
-                  log_like: float;
-                  marginal_prob: float option;
-                  distal_bl: float; 
-                  pendant_bl: float;
-                  classif: Tax_id.tax_id option}
+type placement = 
+  {
+    location      : int; 
+    ml_ratio      : float;
+    post_prob     : float option;
+    log_like      : float;
+    marginal_prob : float option;
+    distal_bl     : float; 
+    pendant_bl    : float;
+    classif       : Tax_id.tax_id option
+  }
 
 let location          p = p.location
 let ml_ratio          p = p.ml_ratio
@@ -83,8 +86,8 @@ let make_post_prob_filter cutoff placement =
 
 (* to and from strings *)
 
-let opt_to_str fmt = function
-  | Some x -> Printf.sprintf fmt x
+let opt_to_str f = function
+  | Some x -> f x
   | None -> "-"
 
 let float_opt_of_string s = 
@@ -92,14 +95,15 @@ let float_opt_of_string s =
   else Some (float_of_string s)
 
 let placement_to_str place = 
-  Printf.sprintf "%d\t%8f\t%s\t%8g\t%s\t%8g\t%8g" 
+  Printf.sprintf "%d\t%8f\t%s\t%8g\t%s\t%8g\t%8g\t%s" 
   place.location
   place.ml_ratio
-  (opt_to_str "%8f" place.post_prob)
+  (opt_to_str (Printf.sprintf "%8f") place.post_prob)
   place.log_like
-  (opt_to_str "%8g" place.marginal_prob)
+  (opt_to_str (Printf.sprintf "%8f") place.marginal_prob)
   place.distal_bl
   place.pendant_bl
+  (opt_to_str Tax_id.to_string place.classif)
  
 let placement_of_str str = 
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in

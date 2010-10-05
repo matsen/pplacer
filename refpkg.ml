@@ -31,7 +31,7 @@ type t =
     aln_profile : unit;
     taxonomy    : Tax_taxonomy.t Lazy.t;
     seqinfom    : Tax_seqinfo.seqinfo_map Lazy.t;
-    timestamp   : string;
+    create_date : string;
     name        : string;
     (* inferred *)
     tax_gtree   : Tax_gtree.t Lazy.t;
@@ -41,15 +41,15 @@ type t =
 
 (* *** basics *** *)
 
-let get_ref_tree   rp = Lazy.force rp.ref_tree
-let get_model      rp = Lazy.force rp.model
-let get_aln_fasta  rp = Lazy.force rp.aln_fasta
-let get_taxonomy   rp = Lazy.force rp.taxonomy
-let get_seqinfom   rp = Lazy.force rp.seqinfom
-let get_timestamp  rp = rp.timestamp
-let get_name       rp = rp.name
-let get_tax_gtree  rp = Lazy.force rp.tax_gtree
-let get_uptree_map rp = Lazy.force rp.uptree_map
+let get_ref_tree    rp = Lazy.force rp.ref_tree
+let get_model       rp = Lazy.force rp.model
+let get_aln_fasta   rp = Lazy.force rp.aln_fasta
+let get_taxonomy    rp = Lazy.force rp.taxonomy
+let get_seqinfom    rp = Lazy.force rp.seqinfom
+let get_create_date rp = rp.create_date
+let get_name        rp = rp.name
+let get_tax_gtree   rp = Lazy.force rp.tax_gtree
+let get_uptree_map  rp = Lazy.force rp.uptree_map
 
 (* *** parsing *** *)
 
@@ -89,7 +89,8 @@ let remove_terminal_slash s =
 let of_path path = 
   if not (Sys.is_directory path) then
     failwith ("Purported refpkg "^path^" is not a directory");
-  let dirize fname = path^"/"^fname in
+  let noslash = remove_terminal_slash path in
+  let dirize fname = noslash^"/"^fname in
   let refpkg_lines = 
     try File_parsing.string_list_of_file (dirize refpkg_str) with
     | Sys_error _ -> invalid_arg (Printf.sprintf "can't find %s in %s" refpkg_str path)
@@ -130,9 +131,8 @@ let of_path path =
     aln_profile = ();
     taxonomy    = ltaxonomy;
     seqinfom    = lseqinfom;
-    timestamp   = get "timestamp";
-    name        = Filename.chop_extension 
-                    (Filename.basename (remove_terminal_slash path));
+    create_date = get "create_date";
+    name        = Filename.chop_extension (Filename.basename noslash);
     tax_gtree   = ltax_gtree;
     uptree_map  = luptree_map;
   }
