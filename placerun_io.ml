@@ -64,34 +64,16 @@ let to_file invocation out_dir placerun =
 
 (* ***** READING ***** *)
 
-(* returns a placerun
- * conventions for placement files: 
-  * first line is 
-# pplacer [version] run ...
-  * then whatever. last line before placements is
-# reference tree: [ref tre]
-*)
-let of_file place_fname = 
+(* read the header, i.e. the first set of lines in the placefile *)
+let prefs_and_rt_of_header hlines = 
   let reftree_rex = Str.regexp "^# reference tree: \\(.*\\)"
   and invocation_rex = Str.regexp "^# invocation:"
-  and fastaname_rex = Str.regexp "^>"
   and str_match rex str = Str.string_match rex str 0
-  and name = chop_place_extension (Filename.basename place_fname)
   in
-  match 
-  (* split up the file by the fastanames *)
-    File_parsing.partition_list 
-      (str_match fastaname_rex) 
-      (File_parsing.string_list_of_file place_fname) 
-  with
-  | [] -> failwith (place_fname^" empty place file!")
-  | header::placements -> 
-  (* parse the header, getting a ref tree *)
-  let (prefs, ref_tree) = 
-    try 
-      match header with
-      | [] -> failwith (place_fname^" no header!")
-      | version_line::header_tl -> begin
+  try 
+    match hlines with
+    | [] -> failwith ("Place file missing header!")
+    | version_line::header_tl -> begin
       (* make sure we have appropriate versions *)
       Scanf.sscanf version_line "# pplacer %s run" 
         (fun file_vers ->
@@ -116,18 +98,42 @@ let of_file place_fname =
       in
       (prefs,
         Newick.of_string (Str.matched_group 1 tree_line))
-      end
-    with
-    | Scanf.Scan_failure s ->
-      failwith ("problem with the place file: "^s)
-    | Not_found -> failwith "couldn't find ref tree line!"
+    end
+  with
+  | Scanf.Scan_failure s ->
+    failwith ("problem with the place file: "^s)
+  | Not_found -> failwith "couldn't find ref tree line!"
+
+
+(* returns a placerun
+ * conventions for placement files: 
+  * first line is 
+# pplacer [version] run ...
+  * then whatever. last line before placements is
+# reference tree: [ref tre]
+*)
+let of_file place_fname = 
+  let fastaname_rex = Str.regexp "^>"
+  and ch = open_in place_fname 
   in
+  let next_batch () = 
+    File_parsing.read_lines_until ch fastaname_rex 
+  in 
+  let (prefs, ref_tree) = 
+    try prefs_and_rt_of_header (next_batch ()) with
+    | End_of_file -> failwith (place_fname^" empty place file!")
+  in
+  let rec get_pqueries accu =
+    try
+      get_pqueries 
+        ((Pquery_io.parse_pquery 
+          (File_parsing.filter_comments (next_batch ())))::accu)
+    with
+    | End_of_file -> List.rev accu
+  in
+  (* parse the header, getting a ref tree *)
   Placerun.make
     ref_tree
     prefs
-    name
-    (List.map 
-      (fun pquery_lines ->
-        Pquery_io.parse_pquery 
-          (File_parsing.filter_comments pquery_lines))
-      placements)
+    (chop_place_extension (Filename.basename place_fname))
+    (get_pqueries [])
