@@ -31,7 +31,6 @@ type t =
     aln_profile : unit;
     taxonomy    : Tax_taxonomy.t Lazy.t;
     seqinfom    : Tax_seqinfo.seqinfo_map Lazy.t;
-    create_date : string;
     name        : string;
     (* inferred *)
     tax_gtree   : Tax_gtree.t Lazy.t;
@@ -46,7 +45,6 @@ let get_model       rp = Lazy.force rp.model
 let get_aln_fasta   rp = Lazy.force rp.aln_fasta
 let get_taxonomy    rp = Lazy.force rp.taxonomy
 let get_seqinfom    rp = Lazy.force rp.seqinfom
-let get_create_date rp = rp.create_date
 let get_name        rp = rp.name
 let get_tax_gtree   rp = Lazy.force rp.tax_gtree
 let get_uptree_map  rp = Lazy.force rp.uptree_map
@@ -70,6 +68,30 @@ let eqmap_of_strl sl =
     (List.map eqpair_of_str sl)
     StringMap.empty
 
+ (* parsing sectioned files *)
+
+let sechead_rex = Str.regexp "^[ \t]*\\[\\([^]]*\\)\\][ \t]*"
+
+let extract_secheado s = 
+  if not (Str.string_match sechead_rex s 0) then None
+  else Some (Str.matched_group 1 s)
+
+let secmap_of_strl strl = 
+  let rec aux m curr_sec = function
+    | x::l -> 
+        (match extract_secheado x with
+        | Some sec -> aux m sec l
+        | None -> aux (StringMapFuns.add_listly curr_sec x m) curr_sec l)
+    | [] -> m
+  in
+  match File_parsing.filter_empty_lines strl with
+    | x::l ->
+        (match extract_secheado x with
+        | Some sec -> StringMap.map List.rev (aux StringMap.empty sec l)
+        | None -> invalid_arg "You must start config file with a section header!")
+    | [] -> StringMap.empty
+
+
 (* NOTE: at a later date, we may want to transition to a system whereby the
  * stats file is parsed directly, rather than having it set the prefs then doing
  * an of_prefs. *)
@@ -91,14 +113,19 @@ let of_path path =
     failwith ("Purported refpkg "^path^" is not a directory");
   let noslash = remove_terminal_slash path in
   let dirize fname = noslash^"/"^fname in
-  let refpkg_lines = 
-    try File_parsing.string_list_of_file (dirize refpkg_str) with
-    | Sys_error _ -> invalid_arg (Printf.sprintf "can't find %s in %s" refpkg_str path)
+  let secmap = 
+    secmap_of_strl 
+      (try File_parsing.string_list_of_file (dirize refpkg_str) with
+      | Sys_error _ -> invalid_arg (Printf.sprintf "can't find %s in %s" refpkg_str path))
   in
-  let eqmap = eqmap_of_strl (File_parsing.filter_comments refpkg_lines) in
-  (* pull from the eqmap *)
+  let get_sec s = 
+    try StringMap.find s secmap with
+    | Not_found -> invalid_arg ("missing section "^s^" in refpkg "^path) 
+  in
+  let filemap = eqmap_of_strl (get_sec "files") in
+  (* pull from the filemap *)
   let get what = 
-    try StringMap.find what eqmap with
+    try StringMap.find what filemap with
     | Not_found -> invalid_arg (what^" not found in "^(dirize refpkg_str))
   in
   (* for when the what is actually a file *)
@@ -131,7 +158,6 @@ let of_path path =
     aln_profile = ();
     taxonomy    = ltaxonomy;
     seqinfom    = lseqinfom;
-    create_date = get "create_date";
     name        = Filename.chop_extension (Filename.basename noslash);
     tax_gtree   = ltax_gtree;
     uptree_map  = luptree_map;

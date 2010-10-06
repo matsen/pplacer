@@ -152,3 +152,13 @@ let rec mrca td ti1 ti2 =
 let list_mrca td = function
   | hd::tl -> List.fold_left (mrca td) hd tl
   | [] -> assert(false)
+
+(* unused and untested *)
+let count_entries_by_rank td = 
+  let a = Array.make (get_n_ranks td) 0 in
+  TaxIdMap.iter
+    (fun ti _ ->
+      let rk = get_tax_rank td ti in
+      a.(rk) <- a.(rk) + 1)
+    td.tax_name_map;
+  a
