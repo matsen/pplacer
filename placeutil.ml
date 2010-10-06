@@ -20,6 +20,7 @@ let re_sep_fname = ref re_sep_fname_off_val
 let warn_multiple = ref true
 let print_edpl = ref false
 let edge_distance_mat = ref false
+let list_classify_refpkg = ref ""
 
 let parse_args () = 
   let files  = ref [] in
@@ -43,6 +44,8 @@ let parse_args () =
      "Print out a table of edpl values for each placement.";
      "--distmat", Arg.Set edge_distance_mat,
      "Print out a pairwise distance matrix between the edges.";
+     "--list-classify-refpkg", Arg.Set_string list_classify_refpkg,
+     "Classify a placerun using the designated refpkg in a way designed to go into SQL."
    ]
   in
   let usage =
@@ -163,4 +166,8 @@ let () =
            (Placerun.get_ref_tree pr));
          close_out ch)
        placerun_list;
+    if !list_classify_refpkg <> "" then begin
+      let rp = Refpkg.of_path (!list_classify_refpkg) in
+      List_classify.classify criterion rp parsed;
     end
+  end

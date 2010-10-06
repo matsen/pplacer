@@ -3,6 +3,8 @@
  *
  * The tax_tree points from a tax_id to its ancestor
  *
+ * Note that taxonomic ranks decrease as one goes towards the ancestor.
+ * 
  * SPEED: add_lineage_to_tree_and_map could avoid use of pair-redefinitions
  * SPEED: mrca could be made less elegant and faster
 *)
@@ -14,14 +16,14 @@ exception NoAncestor of tax_id
 exception NoMRCA of tax_id * tax_id
 
 type tax_tree = tax_id TaxIdMap.t
-type tax_level_map = int TaxIdMap.t
+type tax_rank_map = int TaxIdMap.t
 type tax_name_map = string TaxIdMap.t
 
 type t = 
   { 
     rank_names      : string array;
     tax_tree        : tax_tree; 
-    tax_level_map   : tax_level_map;
+    tax_rank_map    : tax_rank_map;
     tax_name_map    : tax_name_map;
   }
 
@@ -30,11 +32,13 @@ let get_rank_name td i =
   try td.rank_names.(i) with 
   | Invalid_argument _ -> invalid_arg "Tax_taxonomy.get_rank_name"
 
-let get_tax_level td ti = 
-  try TaxIdMap.find ti td.tax_level_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_level not known: "^(Tax_id.to_string ti))
+let get_n_ranks td = Array.length td.rank_names
 
-let rank_name_of_tax_id td ti = get_rank_name td (get_tax_level td ti)
+let get_tax_rank td ti = 
+  try TaxIdMap.find ti td.tax_rank_map with
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_string ti))
+
+let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
 let get_ancestor td ti = 
   try TaxIdMap.find ti td.tax_tree with
@@ -44,7 +48,7 @@ let get_tax_name td ti =
   try TaxIdMap.find ti td.tax_name_map with
   | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
 
-(* adds a lineage to the tree and the tax_level_map *)
+(* adds a lineage to the tree and the tax_rank_map *)
 let add_lineage_to_tree_and_map (t,m) l = 
   let check_add k v m = 
     try TaxIdMapFuns.check_add k v m with
@@ -97,7 +101,7 @@ let of_ncbi_file fname =
     invalid_arg ("Array not rectangular: "^fname);
   match List.map tax_line_of_stringol full_list with
   | names::lineage_data -> 
-      let (tax_tree, tax_level_map) = 
+      let (tax_tree, tax_rank_map) = 
         List.fold_left
           (fun tam tax_line -> 
             add_lineage_to_tree_and_map tam
@@ -110,10 +114,10 @@ let of_ncbi_file fname =
           Array.of_list 
             (List.map 
             (function | Some s -> s 
-                      | None -> failwith "NA in taxon level name line!")
+                      | None -> failwith "NA in taxon rank name line!")
             names.lineage);
         tax_tree = tax_tree;
-        tax_level_map = tax_level_map;
+        tax_rank_map = tax_rank_map;
         tax_name_map = 
           List.fold_right 
             (fun tline -> 
@@ -127,9 +131,9 @@ let of_ncbi_file fname =
 (* *** writing *** *)
 let ppr_tax_tree = TaxIdMapFuns.ppr_gen Tax_id.ppr
 
-let sort_by_level td ti1 ti2 = 
-  let l1 = get_tax_level td ti1
-  and l2 = get_tax_level td ti2
+let sort_by_rank td ti1 ti2 = 
+  let l1 = get_tax_rank td ti1
+  and l2 = get_tax_rank td ti2
   in
   if l1 < l2 then (ti1,ti2)
   else (ti2,ti1)
@@ -139,7 +143,7 @@ let rec mrca td ti1 ti2 =
   let rec aux ti1 ti2 = 
     if ti1 = ti2 then ti1
     else 
-      let (ti_proximal, ti_distal) = sort_by_level td ti1 ti2 in
+      let (ti_proximal, ti_distal) = sort_by_rank td ti1 ti2 in
       aux (get_ancestor td ti_distal) ti_proximal
   in
   try aux ti1 ti2 with

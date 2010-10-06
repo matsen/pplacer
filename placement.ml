@@ -107,15 +107,16 @@ let placement_to_str place =
  
 let placement_of_str str = 
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in
-  if Array.length strs <> 7 then 
+  if Array.length strs <> 8 then 
     failwith ("placement_of_str : wrong number of entries in "^str)
   else
-    {location = int_of_string strs.(0);
-    ml_ratio = float_of_string strs.(1);
-    post_prob = float_opt_of_string strs.(2);
-    log_like = float_of_string strs.(3);
-    marginal_prob = float_opt_of_string strs.(4);
-    distal_bl = float_of_string strs.(5);
-    pendant_bl = float_of_string strs.(6);
-    classif = None}
-
+    {
+      location       =  int_of_string        strs.(0);
+      ml_ratio       =  float_of_string      strs.(1);
+      post_prob      =  float_opt_of_string  strs.(2);
+      log_like       =  float_of_string      strs.(3);
+      marginal_prob  =  float_opt_of_string  strs.(4);
+      distal_bl      =  float_of_string      strs.(5);
+      pendant_bl     =  float_of_string      strs.(6);
+      classif        =  Some (Tax_id.of_string strs.(7));
+    }

@@ -6,8 +6,11 @@
  * note use of Pervasives.compare should be redone if speed needed.
 *)
 
+exception UnknownTaxIDPrefix of char
+
 type tax_id = NCBI of string | NoTax
 
+let none_str = "none"
 
 (* *** utility *** *)
 let ncbi_of_stro = function
@@ -15,9 +18,17 @@ let ncbi_of_stro = function
   | None -> NoTax
 
 let to_string = function
-  | NCBI s -> "ncbi_"^s
-  | NoTax -> "none"
+  | NCBI s -> "N*"^s
+  | NoTax -> none_str
 
+let of_string id_str = 
+  if id_str = none_str then NoTax
+  else
+    Scanf.sscanf id_str "%c*%s" 
+      (fun c s ->
+        match c with
+        | 'N' -> NCBI s
+        | _ -> raise (UnknownTaxIDPrefix c))
 
 (* *** I/O *** *)
 let ppr ff ti = 
