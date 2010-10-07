@@ -1,3 +1,0 @@
-[submodule "common_src"]
-	path = common_src
-	url = git@github.com:matsen/common_src.git
