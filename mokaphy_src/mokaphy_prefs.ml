@@ -177,7 +177,7 @@ module KR = struct
     "The exponent for the integration, i.e. the value of p in Z_p.";
     "--unweighted", Arg.Clear prefs.weighted,
     weighted_help;
-    "--list-output", Arg.Set prefs.list_output,
+    "--list-out", Arg.Set prefs.list_output,
     "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
     "write out a shuffle density data file for each pair.";

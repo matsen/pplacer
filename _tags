@@ -1,5 +1,4 @@
-<common>: include
-<pplacer>: include
-<*.{byte,native,top,p.native}>: use_str, use_unix, use_gsl, use_bigarray
+<{mokaphy,common,pplacer}_src>: include
+<**/*.{byte,native,top,p.native}>: use_str, use_unix, use_gsl, use_bigarray
 <**/*.ml>: warn_Z
 <**/*.ml>: use_gsl

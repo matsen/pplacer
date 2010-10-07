@@ -25,10 +25,13 @@ let placerun_by_name fname =
     StringMap.find fname !placerun_map
   else begin
     let pr = 
+      (*
       Placerun.filter_unplaced 
         ~verbose:true
+        *)
         (Placerun_io.of_file fname) 
     in
+    if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
     placerun_map := StringMap.add fname pr !placerun_map;
     pr
   end

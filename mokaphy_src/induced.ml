@@ -84,7 +84,22 @@ let pd_of_induced t ind =
   | Some _ -> !total
   | None -> failwith "empty induced tree"
 
-let pd_of_pr criterion pr =
+
+(* later have a lazy data cache with the induceds? *)
+let pd_of_pr criterion pr = 
+  pd_of_induced (Placerun.get_ref_tree pr) 
+                (induced_of_placerun criterion pr)
+  
+
+  (*
+let pdfrac_map_of_inda t inda = 
+  take an edge number and sort the induced spots on it
+  then process the spots on the edge recursively, by having a current location
+  and a current bitstring, then giving the next location and the next bitstring.
+  a global addmap
+  
+
   pd_of_induced 
     (Placerun.get_ref_tree pr) 
     (induced_of_placerun criterion pr)
+  *)
