@@ -15,6 +15,7 @@ $(RELEASE):
 clean:
 	rm -rf bin
 	ocamlbuild -clean
+	rm *.mltop
 
 %.top: %.byte
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
@@ -26,7 +27,4 @@ clean:
 runcaml: 
 	ledit -x -h .toplevel_history ocaml
 
-tags:
-	taggage *.ml
-
-.PHONY: $(RELEASE) clean runcaml tags
+.PHONY: $(RELEASE) clean runcaml
