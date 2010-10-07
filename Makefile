@@ -1,7 +1,9 @@
 RELEASE=placeviz pplacer placeutil 
 MACRELEASE=placeviz placeutil
 
-default: $(RELEASE)
+all: $(RELEASE)
+
+mac: $(MACRELEASE)
 
 $(RELEASE):
 	if [ ! -e bin ]; then mkdir bin; fi
