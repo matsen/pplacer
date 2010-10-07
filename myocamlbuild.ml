@@ -27,10 +27,10 @@ dispatch begin function
 
       (* link with libpplacercside given use_pplacer tag *)
       flag ["link"; "ocaml"; "use_pplacer"; ]
-        (S[A"-cclib"; A"-lpplacercside"; A"-cclib"; A"-L.";]);
+        (S[A"-cclib"; A"-lpplacercside"; A"-cclib"; A"-Lpplacer_src";]);
 
       (* make libpplacercside when needed *)
-      dep ["use_pplacer"; ] ["libpplacercside.a"; ];
+      dep ["use_pplacer"; ] ["pplacer_src/libpplacercside.a"; ];
 
       (* automatically include gsl when the use_gsl tag is given in _tags *)
       ocaml_lib ~extern:true ~dir:"+gsl" "gsl";
