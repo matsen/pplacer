@@ -63,7 +63,7 @@ release:
 	rsync ../distributions/* armbrustlab:/var/www/html/pplacer/distributions/
 
 tags:
-	taggage *.ml ~/pplacer/ocaml/*.ml
+	taggage /home/matsen/mokaphy/ocaml/*/*.ml
 
 manual:
 	xpdf ~/manuals/ocaml*refman* &

@@ -108,6 +108,17 @@ let pd_of_argl = function
         (Mokaphy_prefs.PD.specl_of_prefs prefs)
         "usage: pd [options] placefiles")
 
+let pdfrac_of_argl = function
+  | [] -> print_endline "calculates the pairwise PD fraction of the subtree spanned by the placments"
+  | argl -> 
+    let prefs = Mokaphy_prefs.PDFrac.defaults () in
+    Cmds.pdfrac
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.PDFrac.specl_of_prefs prefs)
+        "usage: pdfrac [options] placefiles")
+
 let cmd_map = 
   List.fold_right 
     (fun (k,v) -> StringMap.add k v)
@@ -116,6 +127,7 @@ let cmd_map =
       "heat", heat_of_argl;
       "kr", kr_of_argl;
       "pd", pd_of_argl;
+      "pdfrac", pdfrac_of_argl;
     ]
     StringMap.empty
 

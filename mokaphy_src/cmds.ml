@@ -23,6 +23,11 @@ let criterion_of_bool = function
   | true -> Placement.post_prob
   | false -> Placement.ml_ratio
 
+(* for out_fname options *)
+let ch_of_fname = function
+  | "" -> stdout
+  | s -> open_out s
+
 let chop_suffix_if_present s suff = 
   if Filename.check_suffix s suff then Filename.chop_suffix s suff
   else s
@@ -98,11 +103,7 @@ let heat prefs = function
 
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
-  let ch = 
-    (match Mokaphy_prefs.KR.out_fname prefs with
-    | "" -> stdout
-    | s -> open_out s)
-  in
+  let ch = ch_of_fname (Mokaphy_prefs.KR.out_fname prefs) in
   Kr_core.core 
     ch 
     prefs 
@@ -114,11 +115,7 @@ let kr prefs prl =
 
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 
-  let ch = 
-    (match Mokaphy_prefs.PD.out_fname prefs with
-    | "" -> stdout
-    | s -> open_out s)
-  in
+  let ch = ch_of_fname (Mokaphy_prefs.PD.out_fname prefs) in
   String_matrix.write_padded
     ch
     (Array.map
@@ -129,6 +126,26 @@ let pd prefs prl =
           "%g" 
           (Induced.pd_of_pr
             (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
+            pr);
+        |])
+    (Array.of_list prl));
+  if ch <> stdout then close_out ch
+
+
+
+(* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
+let pdfrac prefs prl = 
+  let ch = ch_of_fname (Mokaphy_prefs.PDFrac.out_fname prefs) in
+  String_matrix.write_padded
+    ch
+    (Array.map
+      (fun pr ->
+        [| 
+        Placerun.get_name pr; 
+        Printf.sprintf 
+          "%g" 
+          (Induced.pd_of_pr
+            (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs))
             pr);
         |])
     (Array.of_list prl));
