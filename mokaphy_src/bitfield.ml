@@ -16,7 +16,9 @@ type t = int
 
 let max_bits = Nativeint.size - 1
 
-(* casting is done in the mli file *)
+let empty = 0
+
+(* typing is done in the mli file *)
 let of_int i = i
 let to_int b = b
 
@@ -38,6 +40,8 @@ let clear (b:t) i =
   check_bounds i;
   b land (lnot (ei i))
 
+let compare (b:t) (b':t) = b - b'
+
 (* functions *)
 let get_pos_indices (b:t) = 
   let rec aux acc (i:int) = 
@@ -55,3 +59,4 @@ let to_string (b:t) =
   s
 
 let ppr ff (b:t) = Format.pp_print_string ff (to_string b)
+

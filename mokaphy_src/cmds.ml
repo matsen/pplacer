@@ -124,7 +124,7 @@ let pd prefs prl =
         Placerun.get_name pr; 
         Printf.sprintf 
           "%g" 
-          (Induced.pd_of_pr
+          (Pd.pd_of_pr
             (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
             pr);
         |])
@@ -144,7 +144,7 @@ let pdfrac prefs prl =
         Placerun.get_name pr; 
         Printf.sprintf 
           "%g" 
-          (Induced.pd_of_pr
+          (Pd.pd_of_pr
             (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs))
             pr);
         |])
