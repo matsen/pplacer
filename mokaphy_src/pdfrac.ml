@@ -23,15 +23,26 @@ open BitfieldMaps
 
 (* get map from int to bf representing samples on that edge *)
 let bf_intmap_of_inda inda = 
-  let m = ref IntAlgMapBf.M.empty in 
+  let m = ref BfAlgIntMap.M.empty in 
   for i=0 to (Array.length inda)-1 do
     let ei = Bitfield.ei i in
     IntMap.iter
-      (fun loc _ -> m := IntAlgMapBf.max_by loc ei !m)
+      (fun loc _ -> m := BfAlgIntMap.max_by loc ei !m)
       inda.(i);
   done;
   !m
 
+let make_distal_bfs bf_intmap t = 
+  let m = ref IntMap.empty in
+  let add id bf = m := IntMapFuns.check_add id bf !m; bf in
+  let bfget id = BfAlgIntMap.soft_find id bf_intmap in
+  let _ = 
+    Gtree.recur
+      (fun id below -> add id (List.fold_left (lor) (bfget id) below))
+      (fun id -> add id (bfget id))
+      t
+  in
+  !m
 
 
   (*
