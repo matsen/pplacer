@@ -14,7 +14,8 @@
 
 type t = int
 
-let max_bits = Nativeint.size - 1
+let max_bits = 5
+(* let max_bits = Nativeint.size - 1 *)
 
 let empty = 0
 
@@ -26,11 +27,12 @@ let to_int b = b
 let check_bounds i = 
   if i < 0 || i >= max_bits then invalid_arg "index out of bounds"
 
+(* undefined if out of range *)
+let ei i = 1 lsl i
+
 let get (b:t) i = 
   check_bounds i;
-  0 <> ((b lsr i) mod 2)
-
-let ei i = 1 lsl i
+  0 <> (b land (ei i))
 
 let set (b:t) i = 
   check_bounds i;
@@ -54,9 +56,8 @@ let get_pos_indices (b:t) =
 let to_string (b:t) = 
   let s = String.create max_bits in
   for i=0 to max_bits-1 do
-    s.[i] <- if get b i then '0' else '1';
+    s.[i] <- if get b i then '1' else '0';
   done;
   s
 
 let ppr ff (b:t) = Format.pp_print_string ff (to_string b)
-

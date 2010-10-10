@@ -15,38 +15,28 @@
 
 open MapsSets
 open Fam_batteries
+open BitfieldMaps
 
 
-module OrderedBitfield = struct
-  type t = Bitfield.t
-  let compare = Bitfield.compare
-end
+(* here we go! *)
 
-module StringableBitfield = struct
-  type t = Bitfield.t
-  let to_string = Bitfield.to_string
-end
 
-module BFAMR = AlgMap.AlgMapR(OrderedBitfield)
+(* get map from int to bf representing samples on that edge *)
+let bf_intmap_of_inda inda = 
+  let m = ref IntAlgMapBf.M.empty in 
+  for i=0 to (Array.length inda)-1 do
+    let ei = Bitfield.ei i in
+    IntMap.iter
+      (fun loc _ -> m := IntAlgMapBf.max_by loc ei !m)
+      inda.(i);
+  done;
+  !m
 
-(* our strategy here is to attach bitfields representing the colors on the edges
- * (each color represents a subset of the samples) to the tree. at the
- * beginning, each color is a unit vector at the most distal location on the
- * tree for that sample.
- *
- * a pos_bf is a bitfield along with a distal branch length for the edge that it
- * is connected to.
-*)
-type bfd = 
-  {
-    bf      :  Bitfield.t;
-    distal  :  float;
-  }
 
-let ncompare_by_distal a b = - compare a.distal b.distal
 
-let bfdl_intmap_of_inda inda = 
-  let m = ref IntMap.empty in 
+  (*
+let bf_intmap_of_inda inda = 
+  let m = ref BFAMR.M.empty in 
   for i=0 to (Array.length inda)-1 do
     let ei = Bitfield.ei i in
     IntMap.iter
@@ -55,6 +45,18 @@ let bfdl_intmap_of_inda inda =
       inda.(i);
   done;
   !m
+
+  let _ = 
+    Gtree.recur
+      (fun id below -> 
+        assert(below <> []);
+        process_edge id
+          (List.fold_left (lor) (List.hd below) (List.tl below)))
+      (fun id -> process_edge id Bitfield.empty)
+  in
+  m
+
+
 
 (* we put in a bfim from the previous step and get out a map from the various
  * color combinations to the amount of branch length corresponding to that color
@@ -100,3 +102,4 @@ let pd_of_pr criterion pr =
                 (Induced.induced_of_placerun criterion pr)
 
 
+*)

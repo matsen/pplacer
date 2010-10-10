@@ -134,6 +134,9 @@ let pd prefs prl =
 
 
 (* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
+
+let x = Pdfrac.bf_intmap_of_inda
+
 let pdfrac prefs prl = 
   let ch = ch_of_fname (Mokaphy_prefs.PDFrac.out_fname prefs) in
   String_matrix.write_padded
