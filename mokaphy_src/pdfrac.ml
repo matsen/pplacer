@@ -44,6 +44,31 @@ let make_distal_bfs bf_intmap t =
   in
   !m
 
+let make_proximal_bfs distal_bfs t = 
+  let m = ref IntMap.empty in
+  let add k v = m := IntMapFuns.check_add k v !m in
+  let rec aux above = function
+    | Stree.Node(_, tL) ->
+        List.iter
+          (fun (out, rest) ->
+            let union = 
+              List.fold_left 
+                (lor) 
+                above
+                (List.map 
+                  (fun rid -> IntMap.find rid distal_bfs) 
+                  (List.map Stree.top_id rest))
+            in
+            add (Stree.top_id out) union;
+            aux union out)
+          (Base.pull_each_out tL);
+    | Stree.Leaf _ -> ()
+  in
+  let () = try aux Bitfield.empty (Gtree.get_stree t) with
+           | Not_found -> assert(false)
+  in
+  !m
+
 
   (*
 let bf_intmap_of_inda inda = 
