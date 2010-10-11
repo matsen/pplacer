@@ -6,8 +6,24 @@
  * Imagine that each sample is associated with a color, and that we color the
  * tree with each color individually according to the induced tree on that
  * sample.
- * Programmaticially this works as follows: for each color we have a boolean,
- * and when we traverse the tree this bool gets 
+ * We are interested in getting a map such that for each subset of colors, we
+ * get the total branch length on the tree which has exactly those colors along
+ * that edge.
+ * We call this a pdfrac map, because it's the primary storage for what we are
+ * interested in.
+ * 
+ * We record the color sets with bitfields. 
+ * Thus pdfrac maps are float Bitfield maps, in fact their algebraic versions, 
+ * module BFAMR = AlgMapR(OrderedBitfield)
+ *
+ * In order to make those easily, we calculate the color sets which are
+ * represented on either side of each edge, i.e. the distal and proximal bfims.
+ *
+ * Abbreviations:
+ *   inda is an induced array
+ *   bfim is a Bitfield.t IntMap
+ *
+ * 
  *
  * Another implementation would be to use integer sets to keep track of the
  * colors. 
@@ -17,25 +33,36 @@ open MapsSets
 open Fam_batteries
 open BitfieldMaps
 
+(* dbf: distal bitfield *)
+type dbf = 
+  {
+    distal : float;
+    bf : Bitfield.t;
+  }
 
-(* here we go! *)
-
-
-(* get map from int to bf representing samples on that edge *)
-let bf_intmap_of_inda inda = 
-  let m = ref BfAlgIntMap.M.empty in 
+(* the dbf list IntMap of samples on each edge *)
+let dbflim_of_inda inda = 
+  let m = ref IntMap.empty in 
   for i=0 to (Array.length inda)-1 do
     let ei = Bitfield.ei i in
     IntMap.iter
-      (fun loc _ -> m := BfAlgIntMap.max_by loc ei !m)
+      (fun loc distal -> 
+        m := IntMapFuns.add_listly loc {distal=distal; bf=ei} !m)
       inda.(i);
   done;
   !m
 
-let make_distal_bfs bf_intmap t = 
+let union dbfl = 
+  match List.map (fun dbf -> dbf.bf) dbfl with
+  | [] -> Bitfield.empty
+  | x::l -> List.fold_left (lor) x l
+
+let find_listly i m = try IntMap.find i m with | Not_found -> []
+
+let make_distal_bfim dbflim t = 
   let m = ref IntMap.empty in
   let add id bf = m := IntMapFuns.check_add id bf !m; bf in
-  let bfget id = BfAlgIntMap.soft_find id bf_intmap in
+  let bfget id = union (find_listly id dbflim) in
   let _ = 
     Gtree.recur
       (fun id below -> add id (List.fold_left (lor) (bfget id) below))
@@ -44,7 +71,7 @@ let make_distal_bfs bf_intmap t =
   in
   !m
 
-let make_proximal_bfs distal_bfs t = 
+let make_proximal_bfim distal_bfim t = 
   let m = ref IntMap.empty in
   let add k v = m := IntMapFuns.check_add k v !m in
   let rec aux above = function
@@ -56,7 +83,7 @@ let make_proximal_bfs distal_bfs t =
                 (lor) 
                 above
                 (List.map 
-                  (fun rid -> IntMap.find rid distal_bfs) 
+                  (fun rid -> IntMap.find rid distal_bfim) 
                   (List.map Stree.top_id rest))
             in
             add (Stree.top_id out) union;
@@ -71,38 +98,16 @@ let make_proximal_bfs distal_bfs t =
 
 
   (*
-let bf_intmap_of_inda inda = 
-  let m = ref BFAMR.M.empty in 
-  for i=0 to (Array.length inda)-1 do
-    let ei = Bitfield.ei i in
-    IntMap.iter
-      (fun loc distal ->
-        m := IntMapFuns.add_listly loc {bf=ei; distal=distal} !m)
-      inda.(i);
-  done;
-  !m
-
-  let _ = 
-    Gtree.recur
-      (fun id below -> 
-        assert(below <> []);
-        process_edge id
-          (List.fold_left (lor) (List.hd below) (List.tl below)))
-      (fun id -> process_edge id Bitfield.empty)
-  in
-  m
-
-
-
 (* we put in a bfim from the previous step and get out a map from the various
  * color combinations to the amount of branch length corresponding to that color
  * combination *)
-let make_bfmap t bfim = 
+let make_fbfm t bfim = 
   let m = ref BFAMR.M.empty in
-    let add_snip bf snip_len =
-      assert(snip_len >= 0.);
-      m := BFAMR.add_by bf snip_len !m;
-    in
+  let add_snip bf snip_len =
+    assert(snip_len >= 0.);
+    m := BFAMR.add_by bf snip_len !m;
+  in
+  let 
   (* add the bf to the AlgMap and return start_bf union all of the bfs along the
    * edge *)
   let process_edge id start_bf = 
