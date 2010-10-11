@@ -33,40 +33,49 @@ open MapsSets
 open Fam_batteries
 open BitfieldMaps
 
-(* dbf: distal bitfield *)
-type dbf = 
+(* hbf: height bitfield. this is the essential element of on-the-edge
+ * calculation *)
+type hbf = 
   {
-    distal : float;
+    ht : float;
     bf : Bitfield.t;
   }
 
-(* the dbf list IntMap of samples on each edge *)
-let dbflim_of_inda inda = 
+let ncompare_by_height a b = - compare a.ht b.ht
+
+(* the hbf list IntMap of samples on each edge *)
+let hbflim_of_inda inda = 
   let m = ref IntMap.empty in 
   for i=0 to (Array.length inda)-1 do
     let ei = Bitfield.ei i in
     IntMap.iter
-      (fun loc distal -> 
-        m := IntMapFuns.add_listly loc {distal=distal; bf=ei} !m)
+      (fun loc ht -> 
+        m := IntMapFuns.add_listly loc {ht=ht; bf=ei} !m)
       inda.(i);
   done;
   !m
 
-let union dbfl = 
-  match List.map (fun dbf -> dbf.bf) dbfl with
-  | [] -> Bitfield.empty
-  | x::l -> List.fold_left (lor) x l
-
 let find_listly i m = try IntMap.find i m with | Not_found -> []
 
-let make_distal_bfim dbflim t = 
+let make_distal_bfim hbflim t = 
   let m = ref IntMap.empty in
-  let add id bf = m := IntMapFuns.check_add id bf !m; bf in
-  let bfget id = union (find_listly id dbflim) in
+  let add id bf = m := IntMapFuns.check_add id bf !m in
+  let bfget id = 
+    match List.map (fun hbf -> hbf.bf) (find_listly id hbflim) with
+    | [] -> Bitfield.empty
+    | x::l -> List.fold_left (lor) x l
+  in
   let _ = 
     Gtree.recur
-      (fun id below -> add id (List.fold_left (lor) (bfget id) below))
-      (fun id -> add id (bfget id))
+      (fun id below -> 
+        let below_tot = 
+          match below with
+          | hd::tl -> List.fold_left (lor) hd tl
+          | [] -> assert(false)
+        in
+        add id below_tot;
+        (bfget id) lor below_tot)
+      (fun id -> add id Bitfield.empty; bfget id)
       t
   in
   !m
@@ -97,46 +106,54 @@ let make_proximal_bfim distal_bfim t =
   !m
 
 
-  (*
 (* we put in a bfim from the previous step and get out a map from the various
  * color combinations to the amount of branch length corresponding to that color
  * combination *)
-let make_fbfm t bfim = 
+let make_fbfm t inda = 
   let m = ref BFAMR.M.empty in
-  let add_snip bf snip_len =
-    assert(snip_len >= 0.);
-    m := BFAMR.add_by bf snip_len !m;
+  let add_snip ~prox ~dist =
+    Printf.printf "%s\t%s\t%f\t%f\n"
+      (Bitfield.to_string prox.bf)
+      (Bitfield.to_string dist.bf)
+      prox.ht
+      dist.ht;
+    assert(prox.ht >= dist.ht);
+    m := BFAMR.add_by (prox.bf land dist.bf) (prox.ht -. dist.ht) !m
   in
-  let 
-  (* add the bf to the AlgMap and return start_bf union all of the bfs along the
-   * edge *)
-  let process_edge id start_bf = 
-    let bl = Gtree.get_bl t id in
-    let final_bfd = 
-      List.fold_left
-        (fun bfd prev_bfd ->
-          assert(bl >= bfd.distal);
-          (* add current up to the new location *)
-          add_snip prev_bfd.bf (bfd.distal -. prev_bfd.distal);
-          (* "or" to make the next bf *)
-          {bfd with bf = (bfd.bf lor prev_bfd.bf)})
-        {bf=start_bf; distal=0.}
-        (List.sort ncompare_by_distal 
-          (try IntMap.find id bfim with | Not_found -> []))
+  let hbflim = hbflim_of_inda inda in
+  let dist_bfim = make_distal_bfim hbflim t in
+  let prox_bfim = make_proximal_bfim dist_bfim t in
+  let process_edge id = 
+(* given the current proximal bf and a list of hbfs, recur, add the current snip,
+ * then return the distal for things below and the height of things below. *)
+    let rec aux curr_prox_bf = function
+      | [] -> {bf=IntMap.find id dist_bfim; ht=0.}
+      | x::l ->
+          let with_us = curr_prox_bf lor x.bf in
+          let curr_dist = aux with_us l 
+          and curr_prox = {bf=curr_prox_bf; ht=x.ht}
+          in
+          Printf.printf "%d\t" id;
+          add_snip ~prox:curr_prox ~dist:curr_dist;
+          {curr_prox with bf=with_us} (* the distal in the calling recursion *)
     in
-    add_snip final_bfd.bf (bl -. final_bfd.distal);
-    final_bfd.bf
+    let start_prox = {bf=IntMap.find id prox_bfim; ht=(Gtree.get_bl t id)} in
+    let final_dist =
+      aux
+        start_prox.bf
+        (List.sort ncompare_by_height 
+          (try IntMap.find id hbflim with | Not_found -> []))
+    in
+    Printf.printf "%d\t" id;
+    add_snip ~prox:start_prox ~dist:final_dist
   in
-  let _ = 
-    Gtree.recur
-      (fun id below -> 
-        assert(below <> []);
-        process_edge id
-          (List.fold_left (lor) (List.hd below) (List.tl below)))
-      (fun id -> process_edge id Bitfield.empty)
-  in
-  m
+  try
+    List.iter process_edge (Gtree.nonroot_node_ids t);
+    !m
+  with 
+  | Not_found -> assert(false)
 
+  (*
 (* later have a lazy data cache with the induceds? *)
 let pd_of_pr criterion pr = 
   pd_of_induced (Placerun.get_ref_tree pr) 

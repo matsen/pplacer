@@ -60,7 +60,7 @@ let collect_distal_ids stree wanted =
   let rec aux = function
     | Stree.Node(i, tL) ->
         if i = wanted then 
-          List.flatten (List.map Stree.collect_node_numbers tL)
+          List.flatten (List.map Stree.node_ids tL)
         else 
           (let below = List.map aux tL in
 (* make sure we don't have the id appearing multiple places *)
