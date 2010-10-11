@@ -55,17 +55,6 @@ let calc_distal_and_evolv_dist model tree like_aln_map
   in
   let _ = calc (Gtree.get_stree tree) in ()
  
-(* pull_each_out : 
-# pull_each_out [1;2;3];;
-- : (int * int list) list = [(1, [2; 3]); (2, [1; 3]); (3, [1; 2])]
-*)
-let pull_each_out init_list = 
-  let rec aux all_pairs start = function
-    | x::l ->
-        aux ((x, List.rev_append start l)::all_pairs) (x::start) l
-    | [] -> all_pairs
-  in
-  List.rev (aux [] [] init_list)
 
 (* pull out the glv corresponding to the id of the given tree *)
 let glv_from_stree glv_arr t = Glv_arr.get glv_arr (Stree.top_id t)
@@ -89,7 +78,7 @@ let calc_proximal model tree
               (evolved_prox::
                 (List.map (glv_from_stree evolv_dist_glv_arr) rest));
             Glv.perhaps_pull_exponent min_allowed_twoexp prox_below)
-          (pull_each_out tL);
+          (Base.pull_each_out tL);
         List.iter calc tL
     | Stree.Leaf _ -> ()
   in
