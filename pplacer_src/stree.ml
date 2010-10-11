@@ -23,12 +23,14 @@ let n_edges stree =
   in
   (aux stree) - 1   (* exclude root edge *)
 
-let collect_node_numbers stree = 
-  let rec aux = function
-    | Node(i,tL) -> i :: (List.flatten (List.map aux tL))
-    | Leaf(i) -> [i]
-  in
-  List.sort compare (aux stree)
+let rec node_ids_aux = function
+  | Node(i,tL) -> i :: (List.flatten (List.map node_ids_aux tL))
+  | Leaf(i) -> [i]
+
+let node_ids stree = List.sort compare (node_ids_aux stree)
+let nonroot_node_ids stree = 
+  try List.sort compare (List.tl (node_ids_aux stree)) with
+  | Failure "tl" -> invalid_arg "nonroot_node_ids"
 
 let top_id = function
   | Node(i, _) -> i

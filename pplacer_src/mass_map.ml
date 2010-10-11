@@ -93,7 +93,7 @@ module By_edge = struct
     in
     aux 
       mass_map 
-      (Stree.collect_node_numbers (Gtree.get_stree ref_tree))
+      (Stree.node_ids (Gtree.get_stree ref_tree))
 
   let of_placerun_with_zeroes weighting criterion pr = 
     fill_out_zeroes 
