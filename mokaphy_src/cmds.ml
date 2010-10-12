@@ -136,6 +136,7 @@ let pd prefs prl =
 (* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
 
 let x = Pdfrac.hbflim_of_inda
+let x = Full_splits.make_proximal_map
 
 let pdfrac prefs prl = 
   let ch = ch_of_fname (Mokaphy_prefs.PDFrac.out_fname prefs) in
