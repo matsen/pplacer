@@ -1,0 +1,48 @@
+# http://www.gnu.org/software/automake/manual/make/Quick-Reference.html
+# $@ The file name of the target.
+# $% The target member name, when the target is an archive member.
+# $< The name of the first prerequisite.
+# $? The names of all the prerequisites that are newer than the target, with spaces between them. For prerequisites which are archive members, only the member named is used (see Archives).
+# $^ $+ The names of all the prerequisites, with spaces between them. For prerequisites which are archive members, only the member named is used (see Archives). The value of $^ omits duplicate prerequisites, while $+ retains them and preserves their order.
+# $* The stem with which an implicit rule matches (see How Patterns Match). 
+
+
+default:
+	make -f Makefile 
+	cp bin/* $(OCAMLDEST)
+
+tags:
+	taggage /home/matsen/pplacer/ocaml/*/*.ml
+
+%:
+	make -f Makefile $@
+
+stoke_release:
+	make
+	./complete_distr.sh
+	mv *.tar.gz ../distributions
+
+bloom_release:
+	make sync
+	ssh bloom "cd erick/pplacer_ocaml && ./complete_distr.sh"
+	scp bloom:erick/pplacer_ocaml/*.tar.gz ../distributions
+
+voldemort_release:
+	rsync -avz complete_distr.sh *.ml *.mll *.mly *.c _tags makefile --exclude myocamlbuild.ml voldemort:pplacer_ocaml/
+	rsync -avz $(FAMOCAML)/common/*.ml voldemort:ocaml/common/
+	ssh voldemort "cd pplacer_ocaml && make $(MACRELEASE) && ./complete_distr.sh"
+	scp voldemort:pplacer_ocaml/*.tar.gz ../distributions
+
+release:
+	make stoke_release bloom_release voldemort_release
+	scp ../distributions/* mamba.fhcrc.org:www/pplacer/distributions/
+	echo "RELEASE INSTALLED"
+
+hyrax_install:
+	scp bin/* pplacer@hyrax.fhcrc.org:bin/
+
+# the following is just a hack so that i can say :make % in vim and have it find the place with an error
+*.ml:
+	ocamlc -o /dev/null $@ && rm `basename $@ .ml`.cmi && rm `basename $@ .ml`.cmo
+
+.PHONY: $(RELEASE) clean commit version runcaml sync stoke_release bloom_release voldemort_release release manual
