@@ -6,6 +6,25 @@ open Ocamlbuild_plugin;;
 open Command;; 
 
 
+(* the following two functions are a hack to properly include the library
+ * depenencies until GODI upgrades to ocamlbuild 3.12, which works nicely with
+ * ocamlfind. *)
+
+let syscall cmd =
+  let ic, oc = Unix.open_process cmd in
+  let buf = Buffer.create 16 in
+  (try
+    while true do Buffer.add_channel buf ic 1 done
+   with End_of_file -> ());
+  let _ = Unix.close_process (ic, oc) in
+  Filename.chop_suffix (Buffer.contents buf) "\n"
+in
+
+let ocamlfind_query pkg = 
+  syscall (Printf.sprintf "ocamlfind query %s" (Filename.quote pkg))
+in
+
+
 dispatch begin function
   | Before_options ->
       (* use static linking for native binaries *)
@@ -33,8 +52,7 @@ dispatch begin function
       dep ["use_pplacer"; ] ["pplacer_src/libpplacercside.a"; ];
 
       (* automatically include gsl when the use_gsl tag is given in _tags *)
-      ocaml_lib ~extern:true ~dir:"+gsl" "gsl";
-
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
   | _ -> ()
 end;;
 
