@@ -1,0 +1,6 @@
+.ocamlinit
+.toplevel_history
+*.mltop
+common_src/install_common_pprs.txt
+tags
+top_tests/
