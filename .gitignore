@@ -7,5 +7,4 @@ tags
 .toplevel_history
 top_tests
 bin
-version_pre.ml
 common_src/install_common_pprs.txt
