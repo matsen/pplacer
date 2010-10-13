@@ -1,6 +1,6 @@
 # we don't want to push anything
 
-[remote "private"]
+[remote "build"]
   url = not@anythingx.com:/srv/private/git/repo.git
   push = +:
 
