@@ -43,3 +43,5 @@ let of_pr criterion pr =
   of_induced (Placerun.get_ref_tree pr) 
                 (Induced.of_placerun criterion pr)
 
+let normalized_of_pr criterion pr = 
+  (of_pr criterion pr) /. (Gtree.tree_length (Placerun.get_ref_tree pr))
