@@ -9,4 +9,4 @@ open MapsSets
 open Fam_batteries
 
 let of_induceds t ind1 ind2 = 
-  Pd.pd_of_induced t (Induced.intersect t ind1 ind2)
+  Pd.of_induced t (Induced.intersect t ind1 ind2)
