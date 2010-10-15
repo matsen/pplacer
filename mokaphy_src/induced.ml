@@ -41,8 +41,8 @@ let of_placerun criterion pr =
       check_edge
       (Gtree.get_stree (Placerun.get_ref_tree pr)))
 
-(*
-Intersection of induceds:
+(* *** intersection of induceds *** *)
+(* surprisingly tricky!
 * we just have to put down a mark at the first time we see something
 * so if there is a mark in two of the paths below, then we get a mark at the node
 * if there is a mark below and at this edge, then we keep this mark
@@ -62,9 +62,6 @@ let fold_status_or = function
    | x::l -> List.fold_left status_or x l
    | [] -> assert(false)
 
-
-(* intersection of two induceds. 
- * max means that we get the most proxmal placement. *)
 let intersect_on_stree t ind1 ind2 = 
   let m = ref IntMap.empty in
   let add k v = m := IntMap.add k v !m in
@@ -79,6 +76,7 @@ let intersect_on_stree t ind1 ind2 =
       match (ofj ind1, ofj ind2) with
       | (Some p1, Some p2) -> 
           add j (max p1 p2); status_done
+      (* max so we get the most proximal placement *)
       | (Some p, None) -> 
           if status.right then (add j p; status_done)
           else {left=true;right=false}
@@ -100,3 +98,41 @@ let intersect_on_stree t ind1 ind2 =
 
 let intersect t ind1 ind2 = 
   intersect_on_stree (Gtree.get_stree t) ind1 ind2
+
+
+(* *** union of induceds *** *)
+(* much simpler.
+ *)
+
+let fold_bool_or = function
+   | x::l -> List.fold_left (||) x l
+   | [] -> assert(false)
+ 
+(* we just have a bool that says if the given edge already has something below
+ * it.
+ * *)
+let union_on_stree t ind1 ind2 = 
+  let m = ref IntMap.empty in
+  let add k v = m := IntMap.add k v !m in
+  let attempt_add j = 
+    let ofj = IntMapFuns.opt_find j in
+    match (ofj ind1, ofj ind2) with
+    | (Some p1, Some p2) -> 
+        add j (min p1 p2); true
+        (* min so we get the most distal placement *)
+    | (Some p, None) -> add j p; true
+    | (None, Some p) -> add j p; true
+    | (None, None) -> false
+  in
+  let rec aux = function
+    | Stree.Node(id, tL) ->
+        if fold_bool_or (List.map aux tL) then true (* something below *)
+        else attempt_add id
+    | Stree.Leaf id ->
+        attempt_add id
+  in
+  let _ = aux t in
+  !m
+
+let union t ind1 ind2 = 
+  union_on_stree (Gtree.get_stree t) ind1 ind2
