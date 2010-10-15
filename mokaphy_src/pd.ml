@@ -20,6 +20,7 @@ let pd_of_induced t ind =
     | None -> None (* no path *)
     | Some x -> Some ((Gtree.get_bl t id) -. x)
   in
+  (* when we hit an MRCA, we add on the branch lengths here *)
   let total = ref 0. in
   let add_to_tot x = total := x +. !total in
   match
@@ -34,7 +35,7 @@ let pd_of_induced t ind =
       perhaps_start_path
       t
   with
-  | Some _ -> !total
+  | Some x -> x +. !total (* add on the last bit of path *)
   | None -> failwith "empty induced tree"
 
 (* later have a lazy data cache with the induceds? *)
