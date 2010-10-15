@@ -120,6 +120,10 @@ let kr prefs prl =
 
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 
+  let pd_cmd = 
+    if Mokaphy_prefs.PD.normalized prefs then Pd.normalized_of_pr
+    else Pd.of_pr
+  in
   wrap_output (Mokaphy_prefs.PD.out_fname prefs) 
     (fun ch -> 
       String_matrix.write_padded
@@ -130,7 +134,7 @@ let pd prefs prl =
             Placerun.get_name pr; 
             Printf.sprintf 
               "%g" 
-              (Pd.of_pr
+              (pd_cmd
                 (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
                 pr);
             |])
