@@ -28,6 +28,12 @@ let ch_of_fname = function
   | "" -> stdout
   | s -> open_out s
 
+let wrap_output fname f = 
+  let ch = ch_of_fname fname in
+  f ch;
+  if ch <> stdout then close_out ch
+
+
 let chop_suffix_if_present s suff = 
   if Filename.check_suffix s suff then Filename.chop_suffix s suff
   else s
@@ -103,51 +109,48 @@ let heat prefs = function
 
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
-  let ch = ch_of_fname (Mokaphy_prefs.KR.out_fname prefs) in
-  Kr_core.core 
-    ch 
-    prefs 
-    (criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
-    (Array.of_list prl);
-  if ch <> stdout then close_out ch
-
+  wrap_output (Mokaphy_prefs.KR.out_fname prefs)
+  (fun ch ->
+    Kr_core.core 
+      ch 
+      prefs 
+      (criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
+      (Array.of_list prl))
 
 
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 
-  let ch = ch_of_fname (Mokaphy_prefs.PD.out_fname prefs) in
-  String_matrix.write_padded
-    ch
-    (Array.map
-      (fun pr ->
-        [| 
-        Placerun.get_name pr; 
-        Printf.sprintf 
-          "%g" 
-          (Pd.pd_of_pr
-            (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
-            pr);
-        |])
-    (Array.of_list prl));
-  if ch <> stdout then close_out ch
-
+  wrap_output (Mokaphy_prefs.PD.out_fname prefs) 
+  (fun ch -> 
+    String_matrix.write_padded
+      ch
+      (Array.map
+        (fun pr ->
+          [| 
+          Placerun.get_name pr; 
+          Printf.sprintf 
+            "%g" 
+            (Pd.pd_of_pr
+              (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
+              pr);
+          |])
+      (Array.of_list prl)))
 
 
 (* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
-
 let pdfrac prefs prl = 
-  let ch = ch_of_fname (Mokaphy_prefs.PDFrac.out_fname prefs) in
-  String_matrix.write_padded
-    ch
-    (Array.map
-      (fun pr ->
-        [| 
-        Placerun.get_name pr; 
-        Printf.sprintf 
-          "%g" 
-          (Pd.pd_of_pr
-            (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs))
-            pr);
-        |])
-    (Array.of_list prl));
-  if ch <> stdout then close_out ch
+  wrap_output (Mokaphy_prefs.PDFrac.out_fname prefs) 
+  (fun ch ->
+    String_matrix.write_padded
+      ch
+      (Array.map
+        (fun pr ->
+          [| 
+          Placerun.get_name pr; 
+          Printf.sprintf 
+            "%g" 
+            (Pd.pd_of_pr
+              (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs))
+              pr);
+          |])
+      (Array.of_list prl)))
