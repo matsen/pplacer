@@ -110,47 +110,69 @@ let heat prefs = function
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
   wrap_output (Mokaphy_prefs.KR.out_fname prefs)
-  (fun ch ->
-    Kr_core.core 
-      ch 
-      prefs 
-      (criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
-      (Array.of_list prl))
+    (fun ch ->
+      Kr_core.core 
+        ch 
+        prefs 
+        (criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
+        (Array.of_list prl))
 
 
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 
   wrap_output (Mokaphy_prefs.PD.out_fname prefs) 
-  (fun ch -> 
-    String_matrix.write_padded
-      ch
-      (Array.map
-        (fun pr ->
-          [| 
-          Placerun.get_name pr; 
-          Printf.sprintf 
-            "%g" 
-            (Pd.pd_of_pr
-              (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
-              pr);
-          |])
-      (Array.of_list prl)))
+    (fun ch -> 
+      String_matrix.write_padded
+        ch
+        (Array.map
+          (fun pr ->
+            [| 
+            Placerun.get_name pr; 
+            Printf.sprintf 
+              "%g" 
+              (Pd.pd_of_pr
+                (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs))
+                pr);
+            |])
+        (Array.of_list prl)))
 
 
 (* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
 let pdfrac prefs prl = 
+  let t = list_get_same_tree prl
+  and pra = Array.of_list prl
+  in
+  let inda = 
+    Array.map
+      (Induced.of_placerun 
+        (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs)))
+      pra
+  in
   wrap_output (Mokaphy_prefs.PDFrac.out_fname prefs) 
-  (fun ch ->
-    String_matrix.write_padded
-      ch
-      (Array.map
-        (fun pr ->
-          [| 
-          Placerun.get_name pr; 
-          Printf.sprintf 
-            "%g" 
-            (Pd.pd_of_pr
-              (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs))
-              pr);
-          |])
-      (Array.of_list prl)))
+    (fun ch ->
+      if Array.length pra = 1 then 
+        print_endline "can't do pdfrac with fewer than two place files"
+      else begin
+        let u = 
+          Uptri.init
+          (Array.length inda)
+          (fun i j -> Pdfrac.of_induceds t inda.(i) inda.(j))
+        in
+        let ustr = Uptri.map (Printf.sprintf "%g") u
+        and names = Array.map Placerun.get_name pra 
+        in
+        if Mokaphy_prefs.PDFrac.list_output prefs then begin
+          String_matrix.write_padded ch
+            (Array.append
+              [|[|"sample_1"; "sample_2"; "pdfrac";|]|]
+              (let m = ref [] in
+              Uptri.iterij
+                (fun i j s -> m := [|names.(i); names.(j); s|]::!m)
+                ustr;
+              Array.of_list (List.rev !m)))
+        end
+        else begin
+          Printf.fprintf ch "pdfrac distances:\n";
+          Mokaphy_base.write_named_float_uptri ch names u;
+        end;
+      end)

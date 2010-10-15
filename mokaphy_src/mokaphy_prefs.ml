@@ -239,15 +239,18 @@ module PDFrac = struct
     {
       use_pp: bool ref;
       out_fname: string ref;
+      list_output: bool ref;
     }
   
   let use_pp            p = !(p.use_pp)
   let out_fname         p = !(p.out_fname)
+  let list_output       p = !(p.list_output)
   
   let defaults () = 
     { 
       use_pp = ref false;
       out_fname = ref "";
+      list_output = ref false
     }
   
   (* arguments *)
@@ -256,5 +259,7 @@ module PDFrac = struct
     "Set the filename to write to. Otherwise write to stdout.";
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
+    "--list-out", Arg.Set prefs.list_output,
+    "Output the pdfrac results as a list rather than a matrix.";
     ]
 end 

@@ -182,7 +182,9 @@ let wrapped_pair_core prefs criterion pr1 pr2 =
  * run pair_core for each unique pair 
  *)
 let core ch prefs criterion pr_arr = 
-  if Array.length pr_arr > 1 then begin
+  if Array.length pr_arr = 1 then 
+    print_endline "can't do KR with fewer than two place files"
+  else begin
     let u = 
       Uptri.init
         (Array.length pr_arr)

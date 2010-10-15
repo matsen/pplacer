@@ -40,5 +40,5 @@ let pd_of_induced t ind =
 (* later have a lazy data cache with the induceds? *)
 let pd_of_pr criterion pr = 
   pd_of_induced (Placerun.get_ref_tree pr) 
-                (Induced.induced_of_placerun criterion pr)
+                (Induced.of_placerun criterion pr)
 

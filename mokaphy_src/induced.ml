@@ -13,7 +13,7 @@ open MapsSets
 open Fam_batteries
 
 (* induced subtree of placerun *)
-let induced_of_placerun criterion pr = 
+let of_placerun criterion pr = 
   let distal_spot_map = 
     IntMap.map
       (List.sort compare)
