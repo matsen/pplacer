@@ -9,4 +9,9 @@ open MapsSets
 open Fam_batteries
 
 let of_induceds t ind1 ind2 = 
-  Pd.of_induced t (Induced.intersect t ind1 ind2)
+  let isect = Induced.intersect t ind1 ind2
+  and union = Induced.union t ind1 ind2
+  in
+  (* to play it safe for a while *)
+  List.iter (Induced.check t) [ind1; ind2; isect; union;];
+  (Pd.of_induced t isect) /. (Pd.of_induced t union)

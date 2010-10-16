@@ -12,34 +12,30 @@
 open MapsSets
 open Fam_batteries
 
-(* induced subtree of placerun *)
-let of_placerun criterion pr = 
-  let distal_mark_map = 
-    IntMap.map
-      (List.sort compare)
-      (List.fold_right
-        (fun pq ->
-          let best = Pquery.best_place criterion pq in
-          IntMapFuns.add_listly
-            (Placement.location best)
-            (Placement.distal_bl best))
-        (Placerun.get_pqueries pr)
-        IntMap.empty)
-  in
-  let check_edge i = 
-    if IntMap.mem i distal_mark_map then
-      [i, List.hd (IntMap.find i distal_mark_map)]
-    else 
-      []
-  in
-  IntMapFuns.of_pairlist
-    (Stree.recur
-      (fun i belowl ->
-          let below = List.concat belowl in
-          if below = [] then check_edge i
-          else below)
-      check_edge
-      (Gtree.get_stree (Placerun.get_ref_tree pr)))
+exception Invalid_induced
+
+
+let fold_bool_or = function
+   | x::l -> List.fold_left (||) x l
+   | [] -> assert(false)
+
+(* check and make sure there are no extra points on the induced *)
+let check_on_stree t ind = 
+  let rec aux = function
+    | Stree.Node(id, tL) ->
+        let we_have_one = IntMap.mem id ind in
+        if fold_bool_or (List.map aux tL) then begin
+          if we_have_one then raise Invalid_induced
+          else true
+        end
+        else we_have_one
+    | Stree.Leaf id -> IntMap.mem id ind
+  in 
+  let _ = aux t in ()
+
+let check t ind = check_on_stree (Gtree.get_stree t) ind
+
+
 
 (* *** intersection of induceds *** *)
 (* surprisingly tricky!
@@ -103,10 +99,6 @@ let intersect t ind1 ind2 =
 (* *** union of induceds *** *)
 (* much simpler.
  *)
-
-let fold_bool_or = function
-   | x::l -> List.fold_left (||) x l
-   | [] -> assert(false)
  
 (* we just have a bool that says if the given edge already has something below
  * it.
@@ -136,3 +128,35 @@ let union_on_stree t ind1 ind2 =
 
 let union t ind1 ind2 = 
   union_on_stree (Gtree.get_stree t) ind1 ind2
+
+
+
+(* *** IO *** *)
+let of_placerun criterion pr = 
+  let distal_mark_map = 
+    IntMap.map
+      (List.sort compare)
+      (List.fold_right
+        (fun pq ->
+          let best = Pquery.best_place criterion pq in
+          IntMapFuns.add_listly
+            (Placement.location best)
+            (Placement.distal_bl best))
+        (Placerun.get_pqueries pr)
+        IntMap.empty)
+  in
+  let check_edge i = 
+    if IntMap.mem i distal_mark_map then
+      [i, List.hd (IntMap.find i distal_mark_map)]
+    else 
+      []
+  in
+  IntMapFuns.of_pairlist
+    (Stree.recur
+      (fun i belowl ->
+          let below = List.concat belowl in
+          if below = [] then check_edge i
+          else below)
+      check_edge
+      (Gtree.get_stree (Placerun.get_ref_tree pr)))
+
