@@ -21,49 +21,7 @@ module BA2 = Bigarray.Array2
 (* could be made faster by improving the way the matrices are accessed *)
 let build_mtilde weighting criterion pr1 pr2 = 
   let t = Placerun.get_same_tree pr1 pr2 in
-  let both = 
-    Array.of_list
-    ((Placerun.get_pqueries pr1)@(Placerun.get_pqueries pr2)) in
-  let n = Array.length both
-  and ca_info = Edge_rdist.build_ca_info t
-  in
-  let mt = Gsl_matrix.create ~init:0. n n in
-  (* set mt[i][j] symmetrically *)
-  let mt_set i j x =
-    let set_one i j = BA2.unsafe_set mt i j x in
-    set_one i j;
-    if i <> j then set_one j i
-  in
-  let () = match weighting with
-  | Mass_map.Weighted -> 
-    for i=0 to n-1 do
-      for j=i to n-1 do
-        let total = ref 0. in
-        Base.list_iter_over_pairs_of_two 
-          (fun p1 p2 ->
-            total := !total +.
-              ((criterion p1) *. (criterion p2) *.
-                ((Edge_rdist.find_ca_dist ca_info
-                  (Placement.location p1, Placement.distal_bl p1)
-                  (Placement.location p2, Placement.distal_bl p2)))))
-          (Pquery.place_list both.(i))
-          (Pquery.place_list both.(j));
-        mt_set i j (!total)
-      done
-    done;
-  | Mass_map.Unweighted -> 
-    for i=0 to n-1 do
-      for j=i to n-1 do
-        let p1 = Pquery.best_place criterion both.(i)
-        and p2 = Pquery.best_place criterion both.(j)
-        in
-        mt_set i j 
-          ((Edge_rdist.find_ca_dist ca_info
-              (Placement.location p1, Placement.distal_bl p1)
-              (Placement.location p2, Placement.distal_bl p2)))
-      done
-    done;
-  in
+  let mt = Pquery_distances.of_placeruns weighting criterion pr1 pr2 in
   Gsl_matrix.scale mt (1. /. (Gtree.tree_length t));
   mt
 
