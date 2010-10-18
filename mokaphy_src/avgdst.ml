@@ -19,20 +19,23 @@ let of_placerun_gen dist_fun data exponent =
   in
   let total = ref 0. in
   let add_to_tot tl a b = total := !total +. (exp_dist_fun a b) /. tl in
-  let () = match data with
+  match data with
   | Single pr ->
-      let tl = Gtree.tree_length (Placerun.get_ref_tree pr) in
-      Base.list_iter_over_pairs_of_single 
-        (add_to_tot tl)
-        (Placerun.get_pqueries pr)
+      let tl = Gtree.tree_length (Placerun.get_ref_tree pr) 
+      and pql = Placerun.get_pqueries pr in
+      Base.list_iter_over_pairs_of_single (add_to_tot tl) pql;
+      (* now do diagonal *)
+      List.iter (fun pq -> add_to_tot tl pq pq) pql;
+      let n = List.length pql in
+      (!total) /. (float_of_int ((n*(n+1))/2))
   | Pairwise (pr, pr') ->
       let tl = Gtree.tree_length (Placerun.get_same_tree pr pr') in
       Base.list_iter_over_pairs_of_two 
         (add_to_tot tl)
         (Placerun.get_pqueries pr)
-        (Placerun.get_pqueries pr')
-  in
-  !total
+        (Placerun.get_pqueries pr');
+      (!total) /. 
+        (float_of_int ((Placerun.n_pqueries pr)*(Placerun.n_pqueries pr')))
 
 let of_placerun_pair dist_fun exponent pr pr' = 
   of_placerun_gen dist_fun (Pairwise (pr,pr')) exponent
