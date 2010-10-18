@@ -268,3 +268,47 @@ module PDFrac = struct
     "Output the pdfrac results as a list rather than a matrix.";
     ]
 end 
+
+
+
+(* AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST  *)
+module Avgdist = struct
+  type mokaphy_prefs = 
+    {
+      use_pp: bool ref;
+      out_fname: string ref;
+      list_output: bool ref;
+      weighted: bool ref;
+      exponent: float ref;
+    }
+  
+  let use_pp            p = !(p.use_pp)
+  let out_fname         p = !(p.out_fname)
+  let list_output       p = !(p.list_output)
+  let weighted          p = !(p.weighted)
+  let exponent          p = !(p.exponent)
+  
+  let defaults () = 
+    { 
+      use_pp = ref false;
+      out_fname = ref "";
+      list_output = ref false;
+      weighted = ref false;
+      exponent = ref 1.;
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "-o", Arg.Set_string prefs.out_fname,
+    "Set the filename to write to. Otherwise write to stdout.";
+    "-p", Arg.Set prefs.use_pp,
+    "Use posterior probability.";
+    "--list-out", Arg.Set prefs.list_output,
+    "Output the avgdist results as a list rather than a matrix.";
+    "--unweighted", Arg.Clear prefs.weighted,
+    weighted_help;
+    "--exp", Arg.Set_float prefs.exponent,
+    "An exponent applied before summation of distances.";
+    ]
+end 
+

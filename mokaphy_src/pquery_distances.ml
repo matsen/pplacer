@@ -29,8 +29,7 @@ let weighted_pquery_dist criterion ca_info pqa pqb =
             (Placement.location p2, Placement.distal_bl p2)))))
     (Pquery.place_list pqa)
     (Pquery.place_list pqb);
-  total
-
+  !total
 
 (* distance between the best placements *)
 let unweighted_pquery_dist criterion ca_info pqa pqb = 
