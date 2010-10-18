@@ -193,32 +193,32 @@ let pdfrac prefs prl =
 
 let make_dist_fun prefs prl = 
   Pquery_distances.dist_fun_of_w 
-    (weighting_of_bool (Mokaphy_prefs.Avgdist.weighted prefs))
-    (criterion_of_bool (Mokaphy_prefs.Avgdist.use_pp prefs))
+    (weighting_of_bool (Mokaphy_prefs.Avgdst.weighted prefs))
+    (criterion_of_bool (Mokaphy_prefs.Avgdst.use_pp prefs))
     (Edge_rdist.build_ca_info (list_get_same_tree prl))
 
-let uavgdist prefs prl = 
+let uavgdst prefs prl = 
   wrap_output 
-    (Mokaphy_prefs.Avgdist.out_fname prefs) 
+    (Mokaphy_prefs.Avgdst.out_fname prefs) 
     (write_unary
-      (Avgdist.of_placerun 
+      (Avgdst.of_placerun 
         (make_dist_fun prefs prl)
-        (Mokaphy_prefs.Avgdist.exponent prefs))
+        (Mokaphy_prefs.Avgdst.exponent prefs))
       prl)
 
-let bavgdist prefs prl = 
+let bavgdst prefs prl = 
   let pra = Array.of_list prl in
   wrap_output 
-    (Mokaphy_prefs.Avgdist.out_fname prefs) 
+    (Mokaphy_prefs.Avgdst.out_fname prefs) 
     (write_uptri
-      "bavgdist"
-      (Mokaphy_prefs.Avgdist.list_output prefs)
+      "bavgdst"
+      (Mokaphy_prefs.Avgdst.list_output prefs)
       (Array.map Placerun.get_name pra)
       (Uptri.init
         (Array.length pra)
         (fun i j -> 
-          Avgdist.of_placerun_pair 
+          Avgdst.of_placerun_pair 
             (make_dist_fun prefs prl)
-            (Mokaphy_prefs.Avgdist.exponent prefs)
+            (Mokaphy_prefs.Avgdst.exponent prefs)
             pra.(i) 
             pra.(j))))

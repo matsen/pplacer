@@ -272,7 +272,7 @@ end
 
 
 (* AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST  *)
-module Avgdist = struct
+module Avgdst = struct
   type mokaphy_prefs = 
     {
       use_pp: bool ref;

@@ -119,27 +119,27 @@ let pdfrac_of_argl = function
         (Mokaphy_prefs.PDFrac.specl_of_prefs prefs)
         "usage: pdfrac [options] placefiles")
 
-let uavgdist_of_argl = function
+let uavgdst_of_argl = function
   | [] -> print_endline "calculates the unary pairwise distance for each place file"
   | argl -> 
-    let prefs = Mokaphy_prefs.Avgdist.defaults () in
-    Cmds.uavgdist
+    let prefs = Mokaphy_prefs.Avgdst.defaults () in
+    Cmds.uavgdst
       prefs 
       (wrap_parse_argv
         argl
-        (Mokaphy_prefs.Avgdist.specl_of_prefs prefs)
-        "usage: uavgdist [options] placefiles")
+        (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
+        "usage: uavgdst [options] placefiles")
 
-let bavgdist_of_argl = function
+let bavgdst_of_argl = function
   | [] -> print_endline "calculates the binary pairwise distance for each place file"
   | argl -> 
-    let prefs = Mokaphy_prefs.Avgdist.defaults () in
-    Cmds.bavgdist
+    let prefs = Mokaphy_prefs.Avgdst.defaults () in
+    Cmds.bavgdst
       prefs 
       (wrap_parse_argv
         argl
-        (Mokaphy_prefs.Avgdist.specl_of_prefs prefs)
-        "usage: bavgdist [options] placefiles")
+        (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
+        "usage: bavgdst [options] placefiles")
 
 let cmd_map = 
   List.fold_right 
@@ -150,8 +150,8 @@ let cmd_map =
       "kr", kr_of_argl;
       "pd", pd_of_argl;
       "pdfrac", pdfrac_of_argl;
-      "uavgdist", uavgdist_of_argl;
-      "bavgdist", bavgdist_of_argl;
+      "uavgdst", uavgdst_of_argl;
+      "bavgdst", bavgdst_of_argl;
     ]
     StringMap.empty
 
