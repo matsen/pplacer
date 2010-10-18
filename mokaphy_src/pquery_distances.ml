@@ -10,55 +10,55 @@
  *   \sum_{ij} d(x_i, x_j) P(x_i) P(x_j)
  * and in the unweighted case it's simply the distance between the placements
  * with the highest P's.
+ *
+ * Build the ca_info to avoid tree traversal in the main loop.
  *)
 
 module BA1 = Bigarray.Array1
 module BA2 = Bigarray.Array2
 
-(* could be made faster by improving the way the matrices are accessed *)
-let of_placeruns weighting criterion pr1 pr2 = 
-  let t = Placerun.get_same_tree pr1 pr2 in
-  let both = 
-    Array.of_list
-    ((Placerun.get_pqueries pr1)@(Placerun.get_pqueries pr2)) in
-  let n = Array.length both
+(* take the weighted average over placements of the pquery *)
+let weighted_pquery_dist criterion ca_info pqa pqb = 
+  let total = ref 0. in
+  Base.list_iter_over_pairs_of_two 
+    (fun p1 p2 ->
+      total := !total +.
+        ((criterion p1) *. (criterion p2) *.
+          ((Edge_rdist.find_ca_dist ca_info
+            (Placement.location p1, Placement.distal_bl p1)
+            (Placement.location p2, Placement.distal_bl p2)))))
+    (Pquery.place_list pqa)
+    (Pquery.place_list pqb);
+  total
+
+
+(* distance between the best placements *)
+let unweighted_pquery_dist criterion ca_info pqa pqb = 
+  let p1 = Pquery.best_place criterion pqa
+  and p2 = Pquery.best_place criterion pqb
+  in
+  Edge_rdist.find_ca_dist ca_info
+    (Placement.location p1, Placement.distal_bl p1)
+    (Placement.location p2, Placement.distal_bl p2)
+
+let dist_fun_of_w = function
+  | Mass_map.Weighted -> weighted_pquery_dist
+  | Mass_map.Unweighted -> unweighted_pquery_dist
+
+(* could be made faster by pre-processing the above *)
+let matrix_of_pqueries weighting criterion t pqueryl = 
+  let pquerya = Array.of_list pqueryl in
+  let n = Array.length pquerya
   and ca_info = Edge_rdist.build_ca_info t
   in
-  let m = Gsl_matrix.create ~init:0. n n in
-  (* set m[i][j] symmetrically *)
-  let m_set i j x =
-    let set_one i j = BA2.unsafe_set m i j x in
-    set_one i j;
-    if i <> j then set_one j i
+  let m = Gsl_matrix.create n n in
+  let dist_fun = (dist_fun_of_w weighting) criterion ca_info
   in
-  let () = match weighting with
-  | Mass_map.Weighted -> 
-    for i=0 to n-1 do
-      for j=i to n-1 do
-        let total = ref 0. in
-        Base.list_iter_over_pairs_of_two 
-          (fun p1 p2 ->
-            total := !total +.
-              ((criterion p1) *. (criterion p2) *.
-                ((Edge_rdist.find_ca_dist ca_info
-                  (Placement.location p1, Placement.distal_bl p1)
-                  (Placement.location p2, Placement.distal_bl p2)))))
-          (Pquery.place_list both.(i))
-          (Pquery.place_list both.(j));
-        m_set i j (!total)
-      done
-    done;
-  | Mass_map.Unweighted -> 
-    for i=0 to n-1 do
-      for j=i to n-1 do
-        let p1 = Pquery.best_place criterion both.(i)
-        and p2 = Pquery.best_place criterion both.(j)
-        in
-        m_set i j 
-          ((Edge_rdist.find_ca_dist ca_info
-              (Placement.location p1, Placement.distal_bl p1)
-              (Placement.location p2, Placement.distal_bl p2)))
-      done
-    done;
-  in
+  for i=0 to n-1 do
+    for j=i to n-1 do
+      let x = dist_fun pquerya.(i) pquerya.(j) in
+      BA2.unsafe_set m i j x;
+      if i <> j then BA2.unsafe_set m j i x;
+    done
+  done;
   m

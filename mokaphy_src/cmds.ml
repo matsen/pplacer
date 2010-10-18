@@ -180,3 +180,46 @@ let pdfrac prefs prl =
           Mokaphy_base.write_named_float_uptri ch names u;
         end;
       end)
+
+
+(* *** DISTAVG DISTAVG DISTAVG DISTAVG DISTAVG *** 
+let distavg prefs prl = 
+  let t = list_get_same_tree prl
+  and pra = Array.of_list prl
+  in
+  let inda = 
+    Array.map
+      (Induced.of_placerun 
+        (criterion_of_bool (Mokaphy_prefs.Distavg.use_pp prefs)))
+      pra
+  in
+  wrap_output (Mokaphy_prefs.PDFrac.out_fname prefs) 
+    (fun ch ->
+      if Array.length pra = 1 then 
+        print_endline "can't do pdfrac with fewer than two place files"
+      else begin
+        let u = 
+          Uptri.init
+          (Array.length inda)
+          (fun i j -> Pdfrac.of_induceds t inda.(i) inda.(j))
+        in
+        let ustr = Uptri.map (Printf.sprintf "%g") u
+        and names = Array.map Placerun.get_name pra 
+        in
+        if Mokaphy_prefs.PDFrac.list_output prefs then begin
+          String_matrix.write_padded ch
+            (Array.append
+              [|[|"sample_1"; "sample_2"; "pdfrac";|]|]
+              (let m = ref [] in
+              Uptri.iterij
+                (fun i j s -> m := [|names.(i); names.(j); s|]::!m)
+                ustr;
+              Array.of_list (List.rev !m)))
+        end
+        else begin
+          Printf.fprintf ch "pdfrac distances:\n";
+          Mokaphy_base.write_named_float_uptri ch names u;
+        end;
+      end)
+*)
+

@@ -21,7 +21,10 @@ module BA2 = Bigarray.Array2
 (* could be made faster by improving the way the matrices are accessed *)
 let build_mtilde weighting criterion pr1 pr2 = 
   let t = Placerun.get_same_tree pr1 pr2 in
-  let mt = Pquery_distances.of_placeruns weighting criterion pr1 pr2 in
+  let mt = 
+    Pquery_distances.of_pqueries weighting criterion t
+      ((Placerun.get_pqueries pr1)@(Placerun.get_pqueries pr2))
+  in
   Gsl_matrix.scale mt (1. /. (Gtree.tree_length t));
   mt
 
