@@ -35,7 +35,7 @@ let is_nuc_align aln =
   | Not_found -> false
 
 (* makeAlnIndexMap: make a map which maps from the node number to the row number of the
- * alignment. funny old code. *)
+ * alignment. *)
 let makeAlnIndexMap taxonMap alnNameArr = 
   let n_tree = IntMapFuns.nkeys taxonMap 
   and n_aln = Array.length alnNameArr in
@@ -54,7 +54,7 @@ let makeAlnIndexMap taxonMap alnNameArr =
         List.hd outEdges
   ) taxonMap
 
-
+(* a like_aln is just the corresponding array of likelihood vectors *)
 let like_aln_of_align seq_type align = 
   let like_fun = 
     match seq_type with
