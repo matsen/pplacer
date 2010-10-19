@@ -18,37 +18,41 @@ let get_some except = function
 
 type placement = 
   {
-    location      : int; 
-    ml_ratio      : float;
-    post_prob     : float option;
-    log_like      : float;
-    marginal_prob : float option;
-    distal_bl     : float; 
-    pendant_bl    : float;
-    classif       : Tax_id.tax_id option
+    location        : int; 
+    ml_ratio        : float;
+    post_prob       : float option;
+    log_like        : float;
+    marginal_prob   : float option;
+    distal_bl       : float; 
+    pendant_bl      : float;
+    contain_classif : Tax_id.tax_id option;
+    classif         : Tax_id.tax_id option;
   }
 
-let location          p = p.location
-let ml_ratio          p = p.ml_ratio
-let post_prob_opt     p = p.post_prob
-let post_prob         p = get_some No_PP p.post_prob
-let log_like          p = p.log_like
-let marginal_prob_opt p = p.marginal_prob
-let marginal_prob     p = get_some No_PP p.marginal_prob
-let distal_bl         p = p.distal_bl
-let pendant_bl        p = p.pendant_bl
-let classif_opt       p = p.classif
-let classif           p = get_some No_classif p.classif
+let location            p = p.location
+let ml_ratio            p = p.ml_ratio
+let post_prob_opt       p = p.post_prob
+let post_prob           p = get_some No_PP p.post_prob
+let log_like            p = p.log_like
+let marginal_prob_opt   p = p.marginal_prob
+let marginal_prob       p = get_some No_PP p.marginal_prob
+let distal_bl           p = p.distal_bl
+let pendant_bl          p = p.pendant_bl
+let classif_opt         p = p.classif
+let contain_classif_opt p = p.contain_classif
+let contain_classif     p = get_some No_classif p.contain_classif
+let classif             p = get_some No_classif p.classif
 
 let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl =
-  {location      =  loc;
-  ml_ratio       =  ml_ratio;
-  log_like       =  log_like;
-  distal_bl      =  dist_bl;
-  pendant_bl     =  pend_bl;
-  marginal_prob  =  None;
-  post_prob      =  None;
-  classif        =  None;}
+  {location        =  loc;
+  ml_ratio         =  ml_ratio;
+  log_like         =  log_like;
+  distal_bl        =  dist_bl;
+  pendant_bl       =  pend_bl;
+  marginal_prob    =  None;
+  post_prob        =  None;
+  contain_classif  =  None;
+  classif          =  None;}
 
 let add_pp p ~marginal_prob ~post_prob = 
   {p with 
@@ -56,6 +60,7 @@ let add_pp p ~marginal_prob ~post_prob =
     marginal_prob  =  Some marginal_prob}
 
 let add_classif p c = {p with classif = Some c}
+let add_contain_classif p c = {p with contain_classif = Some c}
 
 let compare_placements criterion rp1 rp2 =
   compare (criterion rp1) (criterion rp2)
@@ -95,7 +100,7 @@ let float_opt_of_string s =
   else Some (float_of_string s)
 
 let placement_to_str place = 
-  Printf.sprintf "%d\t%8f\t%s\t%8g\t%s\t%8g\t%8g\t%s" 
+  Printf.sprintf "%d\t%8f\t%s\t%8g\t%s\t%8g\t%8g\t%s\t%s" 
   place.location
   place.ml_ratio
   (opt_to_str (Printf.sprintf "%8f") place.post_prob)
@@ -103,20 +108,22 @@ let placement_to_str place =
   (opt_to_str (Printf.sprintf "%8f") place.marginal_prob)
   place.distal_bl
   place.pendant_bl
+  (opt_to_str Tax_id.to_string place.contain_classif)
   (opt_to_str Tax_id.to_string place.classif)
  
 let placement_of_str str = 
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in
-  if Array.length strs <> 8 then 
+  if Array.length strs <> 9 then 
     failwith ("placement_of_str : wrong number of entries in "^str)
   else
     {
-      location       =  int_of_string        strs.(0);
-      ml_ratio       =  float_of_string      strs.(1);
-      post_prob      =  float_opt_of_string  strs.(2);
-      log_like       =  float_of_string      strs.(3);
-      marginal_prob  =  float_opt_of_string  strs.(4);
-      distal_bl      =  float_of_string      strs.(5);
-      pendant_bl     =  float_of_string      strs.(6);
-      classif        =  Some (Tax_id.of_string strs.(7));
+      location         =  int_of_string        strs.(0);
+      ml_ratio         =  float_of_string      strs.(1);
+      post_prob        =  float_opt_of_string  strs.(2);
+      log_like         =  float_of_string      strs.(3);
+      marginal_prob    =  float_opt_of_string  strs.(4);
+      distal_bl        =  float_of_string      strs.(5);
+      pendant_bl       =  float_of_string      strs.(6);
+      contain_classif  =  Some (Tax_id.of_string strs.(7));
+      classif          =  Some (Tax_id.of_string strs.(8));
     }
