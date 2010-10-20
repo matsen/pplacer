@@ -41,7 +41,7 @@ let tax_set t =
     | [] -> []
   in
   StringSetFuns.of_list 
-    (get_name_list (Gtree.collect_node_numbers t))
+    (get_name_list (Gtree.node_ids t))
     
      
 let () =

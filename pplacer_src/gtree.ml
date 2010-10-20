@@ -59,7 +59,8 @@ let top_id t = Stree.top_id (get_stree t)
 let n_edges t = Stree.n_edges (get_stree t)
 let recur f_node f_leaf t = Stree.recur f_node f_leaf (get_stree t)
 let recur_listly f t = Stree.recur_listly f (get_stree t)
-let collect_node_numbers t = Stree.collect_node_numbers (get_stree t)
+let node_ids t = Stree.node_ids (get_stree t)
+let nonroot_node_ids t = Stree.nonroot_node_ids (get_stree t)
 
 (* bark map related *)
 let add_bark id b t = 
