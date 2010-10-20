@@ -36,7 +36,7 @@ let get_n_ranks td = Array.length td.rank_names
 
 let get_tax_rank td ti = 
   try TaxIdMap.find ti td.tax_rank_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_string ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_str ti))
 
 let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
@@ -46,13 +46,13 @@ let get_ancestor td ti =
 
 let get_tax_name td ti = 
   try TaxIdMap.find ti td.tax_name_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_str ti))
 
 (* adds a lineage to the tree and the tax_rank_map *)
 let add_lineage_to_tree_and_map (t,m) l = 
   let check_add k v m = 
     try TaxIdMapFuns.check_add k v m with
-    | Failure s -> failwith (s^" problem with "^(to_string k))
+    | Failure s -> failwith (s^" problem with "^(to_str k))
   in
   let rec aux (t,m) = function
     | (i,x)::((_,y)::_ as l') ->

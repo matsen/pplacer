@@ -5,6 +5,8 @@
  * we dequote the quoted
 *)
 
+(* *** READING *** *)
+
 (* we just remove the outermost set of quotes, even if there are quotes on the
  * inside *)
 let quote_rex = Str.regexp "[ ]*\"\\(.*\\)\"[ ]*"
@@ -44,3 +46,9 @@ let list_list_is_rectangular = function
     end
   | [] -> true
   
+
+(* *** WRITING *** *)
+
+let quote s = "\""^s^"\""
+let strl_to_str strl = String.concat "," (List.map quote strl)
+let write_strl ch strl = Printf.fprintf ch "%s\n" (strl_to_str strl)

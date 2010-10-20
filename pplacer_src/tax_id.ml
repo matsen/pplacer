@@ -17,8 +17,12 @@ let ncbi_of_stro = function
   | Some s -> NCBI s
   | None -> NoTax
 
-let to_string = function
+let to_str = function
   | NCBI s -> "N*"^s
+  | NoTax -> none_str
+
+let to_bare_str = function
+  | NCBI s -> s
   | NoTax -> none_str
 
 let of_string id_str = 
@@ -32,7 +36,7 @@ let of_string id_str =
 
 (* *** I/O *** *)
 let ppr ff ti = 
-  Format.pp_print_string ff (to_string ti)
+  Format.pp_print_string ff (to_str ti)
 
 let write_xml ch = function
   | NCBI s -> Printf.fprintf ch "<id provider=\"ncbi_taxonomy\">%s</id>\n" s
@@ -47,7 +51,7 @@ end
 
 module StringableTaxId = struct
   type t = tax_id
-  let to_string = to_string
+  let to_string = to_str
 end
 
 module TaxIdMap = Map.Make(OrderedTaxId)

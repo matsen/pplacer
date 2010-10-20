@@ -15,8 +15,13 @@ let write ch pq =
   Printf.fprintf ch "%s\n" (Pquery.seq pq);
   List.iter 
     (fun p -> 
-      Printf.fprintf ch "%s\n" (Placement.placement_to_str p)) 
+      Printf.fprintf ch "%s\n" (Placement.to_str p)) 
     (Pquery.place_list pq)
+
+    (*
+let write_csv ch pq =
+  Placement.
+  *)
 
 
 (* ***** READING ***** *)

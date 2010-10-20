@@ -89,28 +89,12 @@ let make_post_prob_filter cutoff placement =
   | None -> assert(false)
 
 
-(* to and from strings *)
-
-let opt_to_str f = function
-  | Some x -> f x
-  | None -> "-"
+(* *** READING *** *)
 
 let float_opt_of_string s = 
   if s = "-" then None
   else Some (float_of_string s)
 
-let placement_to_str place = 
-  Printf.sprintf "%d\t%8f\t%s\t%8g\t%s\t%8g\t%8g\t%s\t%s" 
-  place.location
-  place.ml_ratio
-  (opt_to_str (Printf.sprintf "%8f") place.post_prob)
-  place.log_like
-  (opt_to_str (Printf.sprintf "%8f") place.marginal_prob)
-  place.distal_bl
-  place.pendant_bl
-  (opt_to_str Tax_id.to_string place.contain_classif)
-  (opt_to_str Tax_id.to_string place.classif)
- 
 let placement_of_str str = 
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in
   if Array.length strs <> 9 then 
@@ -127,3 +111,49 @@ let placement_of_str str =
       contain_classif  =  Some (Tax_id.of_string strs.(7));
       classif          =  Some (Tax_id.of_string strs.(8));
     }
+
+
+(* *** WRITING *** *)
+
+(* usual output *)
+let opt_to_str f = function
+  | Some x -> f x
+  | None -> "-"
+
+let string_of_8float = Printf.sprintf "%8g"
+
+let to_strl_gen fint ffloat ffloato ftaxido place = 
+  [
+    fint place.location;
+    ffloat place.ml_ratio;
+    ffloato place.post_prob;
+    ffloat place.log_like;
+    ffloato place.marginal_prob;
+    ffloat place.distal_bl;
+    ffloat place.pendant_bl;
+    ftaxido place.contain_classif;
+    ftaxido place.classif;
+  ]
+
+let to_strl = 
+  to_strl_gen 
+    string_of_int 
+    string_of_8float 
+    (opt_to_str string_of_8float)
+    (opt_to_str Tax_id.to_str)
+
+let to_str place = String.concat "\t" (to_strl place)
+
+
+(* CSV *)
+let opt_to_csv_str f = function
+  | Some x -> f x
+  | None -> "NA"
+
+let to_csv_strl = 
+  to_strl_gen 
+    string_of_int 
+    string_of_8float 
+    (opt_to_csv_str string_of_8float)
+    (opt_to_csv_str Tax_id.to_bare_str)
+

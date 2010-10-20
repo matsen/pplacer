@@ -137,3 +137,10 @@ let of_file place_fname =
     prefs
     (chop_place_extension (Filename.basename place_fname))
     (get_pqueries [])
+
+    (*
+
+(* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
+let write_csv ch pr = 
+  
+  *)
