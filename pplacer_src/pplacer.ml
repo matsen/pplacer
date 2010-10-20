@@ -173,14 +173,19 @@ let () =
                 ~darr ~parr ~snodes locs))
         in
         (* write output if we aren't in fantasy mode *)
-        if fantasy prefs = 0. then
+        if fantasy prefs = 0. then begin
+          let final_pr = 
+            match refpkgo with 
+            | Some rp -> 
+                Tax_classify.refpkg_containment_classify rp pr;
+            | None -> pr
+          in
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
             (out_dir prefs)
-            (match refpkgo with 
-            | Some rp -> 
-                Tax_classify.refpkg_containment_classify rp pr;
-            | None -> pr))
+            final_pr;
+          if csv prefs then Placerun_io.to_csv_file (out_dir prefs) final_pr;
+        end)
       files;
     (* print final info *)
     if verb_level prefs >= 1 then begin

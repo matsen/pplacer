@@ -120,7 +120,8 @@ let opt_to_str f = function
   | Some x -> f x
   | None -> "-"
 
-let string_of_8float = Printf.sprintf "%8g"
+let string_of_8gfloat = Printf.sprintf "%8g"
+let string_of_gfloat = Printf.sprintf "%g"
 
 let to_strl_gen fint ffloat ffloato ftaxido place = 
   [
@@ -138,8 +139,8 @@ let to_strl_gen fint ffloat ffloato ftaxido place =
 let to_strl = 
   to_strl_gen 
     string_of_int 
-    string_of_8float 
-    (opt_to_str string_of_8float)
+    string_of_8gfloat 
+    (opt_to_str string_of_8gfloat)
     (opt_to_str Tax_id.to_str)
 
 let to_str place = String.concat "\t" (to_strl place)
@@ -153,7 +154,7 @@ let opt_to_csv_str f = function
 let to_csv_strl = 
   to_strl_gen 
     string_of_int 
-    string_of_8float 
-    (opt_to_csv_str string_of_8float)
+    string_of_gfloat 
+    (opt_to_csv_str string_of_gfloat)
     (opt_to_csv_str Tax_id.to_bare_str)
 

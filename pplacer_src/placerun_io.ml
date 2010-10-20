@@ -17,8 +17,9 @@ let chop_place_extension fname =
   else 
     invalid_arg ("this program requires place files ending with .place suffix, unlike "^fname)
 
- 
 (* ***** WRITING ***** *)
+
+let output_fmt_str = "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length, containment classification, classification"
 
 let write_unplaced ch unplaced_list = 
   if unplaced_list <> [] then
@@ -38,16 +39,18 @@ let write_by_best_loc criterion ch placerun =
   write_unplaced ch unplaced_l;
   write_placed_map ch placed_map
 
+let pre_fname out_dir pr = out_dir^"/"^(Placerun.get_name pr)
+
 let to_file invocation out_dir placerun = 
   Placerun.warn_about_duplicate_names placerun;
   let ch = 
-    open_out (out_dir^"/"^(Placerun.get_name placerun)^".place") in
+    open_out ((pre_fname out_dir placerun)^".place") in
   let ref_tree = Placerun.get_ref_tree placerun in
   Printf.fprintf ch "# pplacer %s run, %s\n"        
     Version.version_revision (Base.date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
   Prefs.write ch (Placerun.get_prefs placerun);
-  Printf.fprintf ch "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length\n";
+  Printf.fprintf ch "%s\n" output_fmt_str;
   if not (Stree.multifurcating_at_root (Gtree.get_stree ref_tree)) then
     Printf.fprintf ch "# %s\n" bifurcation_warning;
   (* we do the following to write a tree with the node numbers in place of
@@ -138,9 +141,29 @@ let of_file place_fname =
     (chop_place_extension (Filename.basename place_fname))
     (get_pqueries [])
 
-    (*
 
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
+
+let csv_output_fmt_str = 
+  R_csv.strl_to_str
+    (List.map R_csv.quote
+      [
+        "location";
+        "ml_ratio";
+        "post_prob";
+        "log_like";
+        "marginal_prob";
+        "distal_bl";
+        "pendant_bl";
+        "contain_classif";
+        "classif"
+        ])
+ 
 let write_csv ch pr = 
-  
-  *)
+  Printf.fprintf ch "%s\n" csv_output_fmt_str;
+  List.iter (Pquery_io.write_csv ch) (Placerun.get_pqueries pr)
+
+let to_csv_file out_dir pr = 
+  let ch = open_out ((pre_fname out_dir pr)^".place.csv") in
+  write_csv ch pr;
+  close_out ch

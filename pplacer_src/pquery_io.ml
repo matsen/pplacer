@@ -18,10 +18,11 @@ let write ch pq =
       Printf.fprintf ch "%s\n" (Placement.to_str p)) 
     (Pquery.place_list pq)
 
-    (*
 let write_csv ch pq =
-  Placement.
-  *)
+  let qname = R_csv.quote (Pquery.name pq) in
+  List.iter
+    (fun p -> R_csv.write_strl ch (qname::(Placement.to_csv_strl p)))
+    (Pquery.place_list pq)
 
 
 (* ***** READING ***** *)

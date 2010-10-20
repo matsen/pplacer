@@ -35,6 +35,7 @@ type prefs =
     verb_level : int ref;
     write_masked : bool ref;
     only_write_best : bool ref;
+    csv : bool ref;
     (* other *)
     friendly : bool ref;
     pretend : bool ref;
@@ -74,6 +75,7 @@ let defaults () =
     verb_level = ref 1;
     write_masked = ref false;
     only_write_best = ref false;
+    csv = ref false;
     (* other *)
     friendly = ref true;
     pretend = ref false;
@@ -111,6 +113,7 @@ let gamma_alpha       p = !(p.gamma_alpha)
 let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
+let csv               p = !(p.csv)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let friendly          p = !(p.friendly)
@@ -189,6 +192,8 @@ let args prefs =
     "Specify the directory to write place files to.";
     "--pretend", Arg.Set prefs.pretend,
     "Only check out the files then report. Do not run the analysis.";
+    "--csv", Arg.Set prefs.csv,
+    "Make a CSV file with the results.";
     "--diagnostic", Arg.Set prefs.diagnostic,
     "Write out a file describing the 'diagnostic' mutations for various clades.";
   ]

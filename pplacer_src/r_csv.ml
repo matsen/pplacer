@@ -50,5 +50,5 @@ let list_list_is_rectangular = function
 (* *** WRITING *** *)
 
 let quote s = "\""^s^"\""
-let strl_to_str strl = String.concat "," (List.map quote strl)
+let strl_to_str strl = String.concat "," strl
 let write_strl ch strl = Printf.fprintf ch "%s\n" (strl_to_str strl)
