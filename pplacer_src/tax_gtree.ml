@@ -10,6 +10,9 @@
 
 open Tax_id
 
+exception Multiple_roots of tax_id * tax_id
+exception No_root
+
 let add_list = List.fold_right TaxIdSet.add 
 
 (* get the most distal taxa in the taxonomy which are represented in til. 
@@ -33,5 +36,29 @@ let tax_tips_of_tax_list td til =
   in
   List.rev (aux TaxIdSet.empty [] til)
 
-
+let build_topdown_tree td tips = 
+  (* rooto is the root of the tree, if its been found *)
+  let rec add_ancestry rooto tt ti = 
+    if Tax_taxonomy.has_ancestor td ti then begin
+      let anc = Tax_taxonomy.get_ancestor td ti in
+      let tt' = TaxIdMapFuns.add_listly anc ti tt in
+      (* if anc was already in tt then we don't have to add its lineage *)
+      if TaxIdMap.mem anc tt then (rooto, tt')
+      else add_ancestry rooto tt' anc
+    end
+    else match rooto with
+    | Some root -> 
+        if root = ti then (rooto, tt) else raise (Multiple_roots (root, ti))
+    | None -> (Some ti, tt)
+  in
+  let rec aux rooto tt = function
+    | ti::l -> 
+        assert(not(TaxIdMap.mem ti tt)); (* should be nonredundant list *)
+        let (rooto', tt') = add_ancestry rooto tt ti in
+        aux rooto' (TaxIdMap.add ti [] tt') l (* add ti itself *)
+    | [] -> (rooto, tt)
+  in
+  match aux None TaxIdMap.empty tips with
+  | (Some _, tt) -> TaxIdMap.map List.rev tt
+  | (None, tt) -> tt
 

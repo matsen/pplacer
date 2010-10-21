@@ -1,4 +1,4 @@
-RELEASE=pplacer placeutil placeviz
+RELEASE=placeviz pplacer placeutil
 MACRELEASE=placeviz placeutil
 
 all: $(RELEASE)
