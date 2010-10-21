@@ -66,6 +66,7 @@ let build_topdown_tree td tips =
   | (None, _) -> raise No_root
 
 
+(* the map is a map from edge numbers to taxids *)
 let stree_and_map_of_topdown_tree root tt = 
   let m = ref IntMap.empty in
   let count = ref (-1) in
@@ -86,9 +87,26 @@ let stree_and_map_of_topdown_tree root tt =
   let t = aux root in
   (t, !m)
 
-    (*
-  let bl_of_taxid bl_of_rank rank_map =
-    let bark_of_taxid bl_of_rank td x =
-        new Decor_bark.decor_bark (`Of_bl_name_boot_dlist (Some bl, None, None,
-        [taxid]))
-*)
+let decor_gtree_of_topdown_tree bl_of_rank td root tt = 
+  let bl_of_taxid ti = bl_of_rank (Tax_taxonomy.get_tax_rank td ti) in
+  let (stree, ti_map) = stree_and_map_of_topdown_tree root tt in
+  let bark_of_taxid ti =
+        new Decor_bark.decor_bark 
+          (`Of_bl_name_boot_dlist 
+            (Some (bl_of_taxid ti), None, None, 
+            [Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)]))
+  in
+  Gtree.gtree 
+    stree
+    (IntMap.map bark_of_taxid ti_map)
+
+(* general make a tax_gtree out of Tax_taxonomy.t and a tax_id list *)
+let build_gen bl_of_rank td til = 
+  let (root, tt) = build_topdown_tree td (tax_tips_of_tax_list td til) in
+  decor_gtree_of_topdown_tree bl_of_rank td root tt
+
+let constant_bl c _ = c
+let inverse i = 1. /. (float_of_int i)
+
+let build_unit = build_gen (constant_bl 1.)
+let build_inverse = build_gen inverse

@@ -12,6 +12,7 @@ type decoration =
   | Width of float
   | Color of int * int * int
   | Dot of int
+  | Taxinfo of Tax_id.tax_id * string
 
 let assert_ubyte i = assert(i >= 0 || i <= 255)
 let assert_ubytes = List.iter assert_ubyte
@@ -73,12 +74,18 @@ let scaled_width ~min ~max x =
 let dot i = Dot i
 
 
+(* Taxinfo *)
+
+let taxinfo ti name = Taxinfo (ti, name)
+
+
 (* writing *)
 
 let ppr ff = function
   | Color(r,g,b) -> Format.fprintf ff "Color(%d, %d, %d)" r g b
   | Width w -> Format.fprintf ff "Width(%g)" w
   | Dot i -> Format.fprintf ff "Dot(%d)" i
+  | Taxinfo (ti,name) -> Format.fprintf ff "Taxinfo(%a,%s)" Tax_id.ppr ti name
 
 let write_xml ch = function
   | Color(r,g,b) -> 
@@ -102,3 +109,11 @@ let write_xml ch = function
         (fun () -> Xml.write_int tag_name ch (i+1);)
         "events"
         ch
+  | Taxinfo (ti, name) -> 
+     Xml.write_long_tag
+       (fun () ->
+         Tax_id.write_xml ch ti;
+         Xml.write_string "scientific_name" ch name)
+       "taxonomy"
+       ch
+
