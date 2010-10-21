@@ -8,7 +8,6 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-
 let parse_args () =
   let files  = ref [] 
   and prefs = Prefs.defaults ()
@@ -24,6 +23,9 @@ let parse_args () =
 
 let () =
   if not !Sys.interactive then begin
+    Test_json.test ();
+    exit(0);
+    (*
     let (files, prefs) = parse_args () in 
     Prefs.check prefs;
     (* *********************************************************
@@ -193,4 +195,5 @@ let () =
       Common_base.print_n_compactions ();
     end;
     exit 0
+    *)
   end

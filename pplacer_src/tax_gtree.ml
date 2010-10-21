@@ -90,5 +90,5 @@ let is_mrca t id =
 let mrca_list t = 
   List.filter
     (is_mrca t)
-    (Stree.collect_node_numbers (Gtree.get_stree t))
+    (Stree.node_ids (Gtree.get_stree t))
 

@@ -51,9 +51,9 @@ dispatch begin function
       (* make libpplacercside when needed *)
       dep ["use_pplacer"; ] ["pplacer_src/libpplacercside.a"; ];
 
-      (* automatically include gsl when the use_gsl tag is given in _tags *)
+      (* automatically include <lib> when the use_<lib> tag is given in _tags *)
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
   | _ -> ()
 end;;
-
 
