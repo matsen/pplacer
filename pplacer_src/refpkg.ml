@@ -143,7 +143,7 @@ let of_path path =
   and lseqinfom = lazy (Tax_seqinfo.of_csv (dget "seq_info"))
   in
   let lmrcam = 
-    lazy (Tax_gtree.mrcam_of_data  
+    lazy (Tax_map.mrcam_of_data  
            (Lazy.force lseqinfom) 
            (Lazy.force ltaxonomy)
            (Lazy.force lref_tree))
