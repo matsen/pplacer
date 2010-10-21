@@ -8,6 +8,7 @@ open Placement
 
 let use_pp = ref false
 and weighted = ref true
+and refpkg_path = ref ""
 and write_sing = ref false
 and write_tog = ref false
 and write_loc = ref false
@@ -34,6 +35,8 @@ let parse_args () =
       "Use posterior probability for the weight.";
       "--unweighted", Arg.Clear weighted,
       "Treat every placement as a point mass concentrated on the highest-weight placement.";
+      "-c", Arg.Set_string refpkg_path,
+      "Reference package path";
       "--sing", Arg.Set write_sing,
       "Single placement: make one tree for each placement.";
       "--tog", Arg.Set write_tog,
@@ -141,7 +144,20 @@ let () =
             fname_base 
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
-        let _ = Tax_gtree.add_list in
+        if !refpkg_path <> "" then begin
+          let rp = Refpkg.of_path !refpkg_path in
+          let td = Refpkg.get_taxonomy rp in
+          let sim = Refpkg.get_seqinfom rp in
+          let t = Refpkg.get_ref_tree rp in
+          Phyloxml.named_tree_to_file
+            (fname_base^".tax")
+            (Tax_gtree.build_unit 
+              td
+              (List.map 
+                (fun id -> Tax_seqinfo.tax_id_by_name sim (Gtree.get_name t id))
+                (Gtree.leaf_ids t)))
+            (fname_base^".tax.xml")
+        end;
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with 
       | Sys_error msg -> prerr_endline msg; 2 

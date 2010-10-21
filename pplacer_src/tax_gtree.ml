@@ -14,7 +14,6 @@ open MapsSets
 exception Multiple_roots of tax_id * tax_id
 exception No_root
 
-let add_list = List.fold_right TaxIdSet.add 
 
 (* get the most distal taxa in the taxonomy which are represented in til. 
  * preserve the order of til as much as possible *)
@@ -29,7 +28,7 @@ let tax_tips_of_tax_list td til =
           (* below: we add the lineage of our taxonomy
            * and take our ancestors from accu if present *)
           aux
-            (add_list lin s) 
+            (List.fold_right TaxIdSet.add lin s) 
             (x::(List.filter (fun x -> not (TaxIdSet.mem x removes)) accu))
             l
         end

@@ -32,6 +32,10 @@ let nonroot_node_ids stree =
   try List.sort compare (List.tl (node_ids_aux stree)) with
   | Failure "tl" -> invalid_arg "nonroot_node_ids"
 
+let rec leaf_ids = function
+  | Node(_,tL) -> List.flatten (List.map leaf_ids tL)
+  | Leaf(i) -> [i]
+
 let top_id = function
   | Node(i, _) -> i
   | Leaf(i) -> i
