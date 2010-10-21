@@ -40,6 +40,8 @@ let get_tax_rank td ti =
 
 let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
+let has_ancestor td ti = TaxIdMap.mem ti td.tax_tree
+
 let get_ancestor td ti = 
   try TaxIdMap.find ti td.tax_tree with
   | Not_found -> raise (NoAncestor ti)
@@ -47,6 +49,12 @@ let get_ancestor td ti =
 let get_tax_name td ti = 
   try TaxIdMap.find ti td.tax_name_map with
   | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_str ti))
+
+let get_lineage td ti = 
+  let rec aux accu ti' = 
+    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else accu
+  in
+  aux [] ti
 
 (* adds a lineage to the tree and the tax_rank_map *)
 let add_lineage_to_tree_and_map (t,m) l = 

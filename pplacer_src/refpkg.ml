@@ -21,6 +21,7 @@ let utm_of_stree t =
   !m
 
 
+(* Refpkg.t *)
 type t = 
   {
     (* specified *)

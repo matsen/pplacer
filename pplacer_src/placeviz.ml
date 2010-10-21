@@ -141,6 +141,7 @@ let () =
             fname_base 
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
+        let _ = Tax_gtree.add_list in
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with 
       | Sys_error msg -> prerr_endline msg; 2 
