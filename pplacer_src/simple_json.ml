@@ -16,6 +16,8 @@ let slurp fname = String.concat " " (File_parsing.string_list_of_file fname)
 
 let of_file fname = deserialize (slurp fname)
 
+(*
 let h = get_hashtbl (of_file "json_example.json")
 
 let test () = Printf.printf "%g\n" (get_float (Hashtbl.find h "test"))
+*)

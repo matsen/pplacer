@@ -23,9 +23,6 @@ let parse_args () =
 
 let () =
   if not !Sys.interactive then begin
-    Test_json.test ();
-    exit(0);
-    (*
     let (files, prefs) = parse_args () in 
     Prefs.check prefs;
     (* *********************************************************
@@ -179,7 +176,7 @@ let () =
           let final_pr = 
             match refpkgo with 
             | Some rp -> 
-                Tax_classify.refpkg_containment_classify rp pr;
+                Tax_classify.refpkg_contain_classify rp pr;
             | None -> pr
           in
           Placerun_io.to_file
@@ -195,5 +192,4 @@ let () =
       Common_base.print_n_compactions ();
     end;
     exit 0
-    *)
   end

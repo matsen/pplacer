@@ -8,29 +8,31 @@ open MapsSets
 
 
 (* *** classification *** *)
-let add_classif how p = Placement.add_classif p (how p)
+let add_classif what how p = what p (how p)
 
-let classify_pq how pq = 
+let classify_pq what how pq = 
   { pq with Pquery.place_list = 
-    List.map (add_classif how) pq.Pquery.place_list }
+    List.map (add_classif what how) pq.Pquery.place_list }
 
-let classify_pr how pr = 
+let classify_pr what how pr = 
   Placerun.set_pqueries pr
-    (List.map (classify_pq how) (Placerun.get_pqueries pr))
+    (List.map (classify_pq what how) (Placerun.get_pqueries pr))
 
 (* classification types *)
-let containment_classify t utm p = 
+let containment_classify mrcam utm p = 
   let rec aux i = 
-    if Tax_gtree.is_mrca t i then Tax_gtree.get_tax_id t i
+    if IntMap.mem i mrcam then IntMap.find i mrcam
     else aux (IntMap.find i utm)
   in
   try aux (Placement.location p) with
   | Not_found -> raise (NoMRCA p)
 
 (* applied to classification types *)
-let refpkg_containment_classify rp pr = 
+let refpkg_contain_classify rp pr = 
   classify_pr 
+    Placement.add_contain_classif
     (containment_classify 
-      (Refpkg.get_tax_gtree rp) 
+      (Refpkg.get_mrcam rp) 
       (Refpkg.get_uptree_map rp))
     pr
+

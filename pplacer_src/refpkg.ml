@@ -33,7 +33,7 @@ type t =
     seqinfom    : Tax_seqinfo.seqinfo_map Lazy.t;
     name        : string;
     (* inferred *)
-    tax_gtree   : Tax_gtree.t Lazy.t;
+    mrcam       : Tax_id.tax_id IntMap.t Lazy.t;
     uptree_map  : uptree_map Lazy.t;
   }
 
@@ -46,7 +46,7 @@ let get_aln_fasta   rp = Lazy.force rp.aln_fasta
 let get_taxonomy    rp = Lazy.force rp.taxonomy
 let get_seqinfom    rp = Lazy.force rp.seqinfom
 let get_name        rp = rp.name
-let get_tax_gtree   rp = Lazy.force rp.tax_gtree
+let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
 (* *** parsing *** *)
@@ -142,8 +142,8 @@ let of_path path =
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (dget "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (dget "seq_info"))
   in
-  let ltax_gtree = 
-    lazy (Tax_gtree.process 
+  let lmrcam = 
+    lazy (Tax_gtree.mrcam_of_data  
            (Lazy.force lseqinfom) 
            (Lazy.force ltaxonomy)
            (Lazy.force lref_tree))
@@ -159,6 +159,6 @@ let of_path path =
     taxonomy    = ltaxonomy;
     seqinfom    = lseqinfom;
     name        = Filename.chop_extension (Filename.basename noslash);
-    tax_gtree   = ltax_gtree;
+    mrcam       = lmrcam;
     uptree_map  = luptree_map;
   }
