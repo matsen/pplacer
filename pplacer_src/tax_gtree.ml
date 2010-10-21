@@ -9,6 +9,7 @@
 *)
 
 open Tax_id
+open MapsSets
 
 exception Multiple_roots of tax_id * tax_id
 exception No_root
@@ -36,6 +37,8 @@ let tax_tips_of_tax_list td til =
   in
   List.rev (aux TaxIdSet.empty [] til)
 
+(* now we build a tree represented by a series of maps from ancestors to
+ * descendants *)
 let build_topdown_tree td tips = 
   (* rooto is the root of the tree, if its been found *)
   let rec add_ancestry rooto tt ti = 
@@ -59,6 +62,33 @@ let build_topdown_tree td tips =
     | [] -> (rooto, tt)
   in
   match aux None TaxIdMap.empty tips with
-  | (Some _, tt) -> TaxIdMap.map List.rev tt
-  | (None, tt) -> tt
+  | (Some root, tt) -> (root, TaxIdMap.map List.rev tt)
+  | (None, _) -> raise No_root
 
+
+let stree_and_map_of_topdown_tree root tt = 
+  let m = ref IntMap.empty in
+  let count = ref (-1) in
+  (* side effects heh heh *)
+  let add ti = 
+    incr count;
+    m := IntMap.add (!count) ti !m
+  in
+  (* note that the order of events below is important *)
+  let rec aux ti = 
+    match TaxIdMap.find ti tt with
+    | [] -> add ti; Stree.Leaf (!count)
+    | below -> 
+        let tL = List.map aux below in
+        add ti; 
+        Stree.Node(!count, tL)
+  in
+  let t = aux root in
+  (t, !m)
+
+    (*
+  let bl_of_taxid bl_of_rank rank_map =
+    let bark_of_taxid bl_of_rank td x =
+        new Decor_bark.decor_bark (`Of_bl_name_boot_dlist (Some bl, None, None,
+        [taxid]))
+*)
