@@ -1,0 +1,13 @@
+.ocamlinit
+.toplevel_history
+_build/
+common
+*.top
+*.mltop
+*.native
+tags
+*.place
+common_src
+pplacer_src
+bin
+top_tests
