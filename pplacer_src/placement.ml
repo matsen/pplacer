@@ -95,6 +95,10 @@ let float_opt_of_string s =
   if s = "-" then None
   else Some (float_of_string s)
 
+let taxid_opt_of_string s = 
+  if s = "-" then None
+  else Some (Tax_id.of_string s)
+
 let placement_of_str str = 
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in
   if Array.length strs <> 9 then 
@@ -108,8 +112,8 @@ let placement_of_str str =
       marginal_prob    =  float_opt_of_string  strs.(4);
       distal_bl        =  float_of_string      strs.(5);
       pendant_bl       =  float_of_string      strs.(6);
-      contain_classif  =  Some (Tax_id.of_string strs.(7));
-      classif          =  Some (Tax_id.of_string strs.(8));
+      contain_classif  =  taxid_opt_of_string  strs.(7);
+      classif          =  taxid_opt_of_string  strs.(8);
     }
 
 

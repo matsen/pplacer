@@ -28,11 +28,14 @@ let to_bare_str = function
 let of_string id_str = 
   if id_str = none_str then NoTax
   else
-    Scanf.sscanf id_str "%c*%s" 
-      (fun c s ->
-        match c with
-        | 'N' -> NCBI s
-        | _ -> raise (UnknownTaxIDPrefix c))
+    try
+      Scanf.sscanf id_str "%c*%s" 
+        (fun c s ->
+          match c with
+          | 'N' -> NCBI s
+          | _ -> raise (UnknownTaxIDPrefix c))
+    with
+    | End_of_file -> invalid_arg (id_str^" is not a valid tax id!")
 
 (* *** I/O *** *)
 let ppr ff ti = 
