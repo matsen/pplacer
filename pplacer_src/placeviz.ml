@@ -126,9 +126,11 @@ let () =
           Placeviz_core.write_loc_file 
             fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
+        let place_massm = 
+          Mass_map.By_edge.of_placerun weighting criterion placerun in
         write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-          weighting criterion mass_width !log_coeff fname_base decor_ref_tree placerun;
+          mass_width !log_coeff fname_base decor_ref_tree place_massm;
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt criterion fname_base decor_ref_tree placed_map;

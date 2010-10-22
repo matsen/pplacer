@@ -157,23 +157,22 @@ let write_sing_file weighting criterion mass_width tree_fmt fname_base ref_tree
 
 
 (* fat trees *)
-let fat_tree weighting criterion mass_width log_coeff decor_ref_tree pr =
+let fat_tree mass_width log_coeff decor_ref_tree massm =
   Decor_gtree.add_decor_by_map
     decor_ref_tree
     (IntMap.map
       (fun mass -> 
         [ width_of_mass log_coeff mass_width mass; ])
-      (Mass_map.By_edge.of_placerun weighting criterion pr))
+      massm)
 
-let write_fat_tree weighting criterion fat_width log_coeff fname_base decor_ref_tree placerun = 
+let write_fat_tree fat_width log_coeff fname_base decor_ref_tree massm = 
   Phyloxml.named_tree_to_file
     (fname_base^".fat")
-    (fat_tree weighting criterion fat_width log_coeff decor_ref_tree placerun)
+    (fat_tree fat_width log_coeff decor_ref_tree massm)
     (fname_base^".fat.xml") 
 
 
 (* edpl trees *)
-
 let edpl_tree white_bg
       weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree pr = 
   let gray = if white_bg then Decor.black else Decor.white in
