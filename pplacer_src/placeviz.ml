@@ -114,7 +114,6 @@ let () =
         (* set up the coefficient for the width *)
         let n_placed = 
           (List.length pqueries) - (List.length unplaced_seqs) in
-        Printf.printf "%d\n" n_placed;
         let mass_width = 
           if !total_width = 0. then (* total width not specified *)
             (!unit_width) *. (float_of_int n_placed)
