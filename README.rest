@@ -7,17 +7,28 @@ In fact, it actually compares collections of phylogenetic placements, such as th
 
 Currently implemented
 =====================
-* comparisons using the `phylogenetic Kantorovich-Rubinstein metric`_ which is a generalization of UniFrac_.
-* \(L^p\) generalizations thereof
+* comparisons using the `phylogenetic Kantorovich-Rubinstein metric`_ which is a generalization of weighted UniFrac_.
+* L^p generalizations thereof
+* a generalization of unweighted UniFrac_.
+* `Heat trees`_ in phyloXML format, which graphically show the difference between two collections of placements.
 
+Coming soon
+===========
+* average pairwise distance within and between placements
+* comparison using taxonomic classification *using the structure of the taxonomic tree*
 
-
-Code is currently undergoing a major overhaul. 
-Perhaps not quite ready for general consumption.
+And...
+======
+Code is currently undergoing a major overhaul, and is not quite ready for general consumption, but have at it if you are keen.
+Compilation_ is like for pplacer, and the manual is this repos wiki_.
+Feel free to send me any questions.
 
 Mokaphy is free software under the GPL v3.
 
 .. _pplacer: http://matsen.fhcrc.org/pplacer/
 .. _RAxML: http://wwwkramer.in.tum.de/exelixis/software.html
-.. _phylogenetic Kantorovich-Rubinstein metric: 
+.. _phylogenetic Kantorovich-Rubinstein metric: http://arxiv.org/abs/1005.1699
 .. _UniFrac: http://128.138.212.43/unifrac/help.psp
+.. _Compilation: http://matsen.fhcrc.org/pplacer/compile.html
+.. _wiki: http://github.com/matsen/mokaphy/wiki
+.. _Heat trees: http://matsen.fhcrc.org/research.html
