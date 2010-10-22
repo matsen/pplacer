@@ -144,20 +144,11 @@ let () =
             fname_base 
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
-        if !refpkg_path <> "" then begin
-          let rp = Refpkg.of_path !refpkg_path in
-          let td = Refpkg.get_taxonomy rp in
-          let sim = Refpkg.get_seqinfom rp in
-          let t = Refpkg.get_ref_tree rp in
+        if !refpkg_path <> "" then 
           Phyloxml.named_tree_to_file
             (fname_base^".tax")
-            (Tax_gtree.build_unit 
-              td
-              (List.map 
-                (fun id -> Tax_seqinfo.tax_id_by_name sim (Gtree.get_name t id))
-                (Gtree.leaf_ids t)))
-            (fname_base^".tax.xml")
-        end;
+            (Tax_gtree.of_refpkg_unit (Refpkg.of_path !refpkg_path))
+            (fname_base^".tax.xml");
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with 
       | Sys_error msg -> prerr_endline msg; 2 

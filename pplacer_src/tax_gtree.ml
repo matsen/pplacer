@@ -105,7 +105,27 @@ let build_gen bl_of_rank td til =
   decor_gtree_of_topdown_tree bl_of_rank td root tt
 
 let constant_bl c _ = c
+let unit_bl = constant_bl 1.
 let inverse i = 1. /. (float_of_int i)
 
-let build_unit = build_gen (constant_bl 1.)
+let build_unit = build_gen unit_bl
 let build_inverse = build_gen inverse
+
+
+(* *** Refpkg interface *** *)
+(* can be pulled out if desired later *)
+
+let of_refpkg_gen bl_of_rank rp = 
+  let td = Refpkg.get_taxonomy rp 
+  and sim = Refpkg.get_seqinfom rp
+  and t = Refpkg.get_ref_tree rp 
+  in
+  build_gen
+    bl_of_rank
+    td
+    (List.map 
+      (fun id -> Tax_seqinfo.tax_id_by_name sim (Gtree.get_name t id))
+      (Gtree.leaf_ids t))
+
+let of_refpkg_unit = of_refpkg_gen unit_bl
+let of_refpkg_inverse = of_refpkg_gen inverse
