@@ -1,11 +1,6 @@
 (* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
-   For each x we consider the lineage of x, and Fold_left over the taxtree: fun
-     (x, anc) -> ListFuns.add_listly (anc, x)
-  keep track of the ones without ancestors.
-    make sure that there is only one at the end, and keep it.
-      Then we List.rev the maps.
 *)
 
 open Tax_id
@@ -86,18 +81,20 @@ let stree_and_map_of_topdown_tree root tt =
   let t = aux root in
   (t, !m)
 
+(* also get a map from the indices of the tree to tax_ids *)
 let decor_gtree_of_topdown_tree bl_of_rank td root tt = 
   let bl_of_taxid ti = bl_of_rank (Tax_taxonomy.get_tax_rank td ti) in
-  let (stree, ti_map) = stree_and_map_of_topdown_tree root tt in
+  let (stree, ti_imap) = stree_and_map_of_topdown_tree root tt in
   let bark_of_taxid ti =
         new Decor_bark.decor_bark 
           (`Of_bl_name_boot_dlist 
             (Some (bl_of_taxid ti), None, None, 
             [Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)]))
   in
-  Gtree.gtree 
+  (Gtree.gtree 
     stree
-    (IntMap.map bark_of_taxid ti_map)
+    (IntMap.map bark_of_taxid ti_imap),
+  ti_imap)
 
 (* general make a tax_gtree out of Tax_taxonomy.t and a tax_id list *)
 let build_gen bl_of_rank td til = 
@@ -129,3 +126,24 @@ let of_refpkg_gen bl_of_rank rp =
 
 let of_refpkg_unit = of_refpkg_gen unit_bl
 let of_refpkg_inverse = of_refpkg_gen inverse
+
+
+(* *** Mass maps *** *)
+
+let hashtbl_find_zero h k = if Hashtbl.mem h k then Hashtbl.find h k else 0.
+
+(* here we build the mass map which is appropriate for the tax_gtree
+ * *)
+let tax_mass_map tax_id_of_place criterion ti_imap pr =  
+  (* guess that the number of occupied taxids is one third of the number of
+   * nodes in the reference tree *)
+  let h = Hashtbl.create ((IntMapFuns.nkeys ti_imap)/3) in
+  let addto ti x = Hashtbl.replace h ti (x+.(hashtbl_find_zero h ti)) in
+  List.iter
+    (fun pq ->
+      List.iter 
+        (fun p -> addto (tax_id_of_place p) (criterion p))
+        (Pquery.place_list pq))
+    (Placerun.get_pqueries pr);
+  IntMap.map (hashtbl_find_zero h) ti_imap
+

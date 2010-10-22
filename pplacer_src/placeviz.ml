@@ -109,12 +109,12 @@ let () =
         let fname_base = 
           (!out_dir)^"/"^
             (Filename.basename 
-              (Placerun_io.chop_place_extension fname))^
-            (if !use_pp then ".PP" else ".ML")
+              (Placerun_io.chop_place_extension fname))
         in
         (* set up the coefficient for the width *)
         let n_placed = 
           (List.length pqueries) - (List.length unplaced_seqs) in
+        Printf.printf "%d\n" n_placed;
         let mass_width = 
           if !total_width = 0. then (* total width not specified *)
             (!unit_width) *. (float_of_int n_placed)
@@ -146,11 +146,34 @@ let () =
             fname_base 
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
-        if !refpkg_path <> "" then 
-          Phyloxml.named_tree_to_file
-            (fname_base^".tax")
-            (Tax_gtree.of_refpkg_unit (Refpkg.of_path !refpkg_path))
-            (fname_base^".tax.xml");
+        if !refpkg_path <> "" then begin
+          let prname = 
+            (Placerun.get_name placerun)^
+              (if !use_pp then ".PP" else ".ML")
+          and (taxt, ti_imap) = 
+            Tax_gtree.of_refpkg_unit (Refpkg.of_path !refpkg_path) 
+          and my_fat = Placeviz_core.fat_tree mass_width !log_coeff in
+          Phyloxml.named_tree_list_to_file
+            ([
+              Some (prname^".ref"),
+              decor_ref_tree;
+              Some (prname^".ref.fat"),
+              my_fat decor_ref_tree place_massm;
+              Some (prname^".tax"),
+              taxt;
+            ]
+            @
+            (try
+              [
+                Some (prname^".tax.fat"),
+                my_fat taxt
+                  (Tax_gtree.tax_mass_map Placement.contain_classif 
+                    Placement.ml_ratio ti_imap placerun)
+              ]
+            with
+            | Placement.No_classif -> []))
+            (fname_base^".xml")
+        end;
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with 
       | Sys_error msg -> prerr_endline msg; 2 

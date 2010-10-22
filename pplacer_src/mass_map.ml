@@ -100,5 +100,6 @@ module By_edge = struct
       (of_placerun weighting criterion pr)
       (Placerun.get_ref_tree pr)
 
+  let total_mass m = IntMap.fold (fun _ v -> ( +. ) v) m 0.
 
 end
