@@ -19,6 +19,7 @@ Coming soon
 
 And...
 ======
+mokaphy is short for *MOnge KAntorovich applied to PHYlogenetics*, although its first name was Kantorovich Rubinstein Applied to Phylogenetics (KRAP).
 Code is currently undergoing a major overhaul, and is not quite ready for general consumption, but have at it if you are keen.
 Compilation_ is like for pplacer, and the manual is this repos wiki_.
 Feel free to send me any questions.

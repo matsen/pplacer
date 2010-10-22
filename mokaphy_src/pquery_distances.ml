@@ -44,6 +44,7 @@ let dist_fun_of_w = function
   | Mass_map.Weighted -> weighted_pquery_dist
   | Mass_map.Unweighted -> unweighted_pquery_dist
 
+  (*
 (* could be made faster by pre-processing the above *)
 let matrix_of_pqueries weighting criterion t pqueryl = 
   let pquerya = Array.of_list pqueryl in
@@ -61,3 +62,4 @@ let matrix_of_pqueries weighting criterion t pqueryl =
     done
   done;
   m
+  *)
