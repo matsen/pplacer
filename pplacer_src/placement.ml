@@ -99,22 +99,34 @@ let taxid_opt_of_string s =
   if s = "-" then None
   else Some (Tax_id.of_string s)
 
+(* we allow either 7 entry lines (no classification) or 9 entry lines *)
 let placement_of_str str = 
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in
-  if Array.length strs <> 9 then 
+  let len = Array.length strs in
+  if len <> 7 && len <> 9 then 
     failwith ("placement_of_str : wrong number of entries in "^str)
-  else
-    {
-      location         =  int_of_string        strs.(0);
-      ml_ratio         =  float_of_string      strs.(1);
-      post_prob        =  float_opt_of_string  strs.(2);
-      log_like         =  float_of_string      strs.(3);
-      marginal_prob    =  float_opt_of_string  strs.(4);
-      distal_bl        =  float_of_string      strs.(5);
-      pendant_bl       =  float_of_string      strs.(6);
-      contain_classif  =  taxid_opt_of_string  strs.(7);
-      classif          =  taxid_opt_of_string  strs.(8);
-    }
+  else begin
+    let basic = 
+      {
+        location         =  int_of_string        strs.(0);
+        ml_ratio         =  float_of_string      strs.(1);
+        post_prob        =  float_opt_of_string  strs.(2);
+        log_like         =  float_of_string      strs.(3);
+        marginal_prob    =  float_opt_of_string  strs.(4);
+        distal_bl        =  float_of_string      strs.(5);
+        pendant_bl       =  float_of_string      strs.(6);
+        contain_classif  =  None;
+        classif          =  None;
+      }
+    in
+    if len = 7 then basic
+    else
+      { 
+        basic with
+        contain_classif  =  taxid_opt_of_string  strs.(7);
+        classif          =  taxid_opt_of_string  strs.(8);
+      }
+  end
 
 
 (* *** WRITING *** *)
