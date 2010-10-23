@@ -14,9 +14,6 @@ default:
 tags:
 	taggage /home/matsen/pplacer/ocaml/*/*.ml
 
-%:
-	make -f Makefile $@
-
 mamba_release:
 	rsync -avz --exclude .git --exclude _build --delete /home/matsen/pplacer/ocaml/ mamba:pplacer_ocaml
 	ssh mamba "export PATH=/home/matsen/src/godi/bin:/usr/bin:/bin && cd pplacer_ocaml && make && ./complete_distr.sh"
@@ -38,8 +35,7 @@ release:
 hyrax_install:
 	scp bin/* pplacer@hyrax.fhcrc.org:bin/
 
-# the following is just a hack so that i can say :make % in vim and have it find the place with an error
-*.ml:
-	ocamlc -o /dev/null $@ && rm `basename $@ .ml`.cmi && rm `basename $@ .ml`.cmo
+%:
+	make -f Makefile $@
 
-.PHONY: $(RELEASE) clean commit version runcaml sync stoke_release bloom_release voldemort_release release manual
+.PHONY: $(RELEASE) clean commit runcaml mamba_release voldemort_release release 
