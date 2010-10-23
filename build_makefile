@@ -17,25 +17,22 @@ tags:
 %:
 	make -f Makefile $@
 
-stoke_release:
-	make
-	./complete_distr.sh
-	mv *.tar.gz ../distributions
-
-bloom_release:
-	make sync
-	ssh bloom "cd erick/pplacer_ocaml && ./complete_distr.sh"
-	scp bloom:erick/pplacer_ocaml/*.tar.gz ../distributions
+mamba_release:
+	rsync -avz --exclude .git --exclude _build --delete /home/matsen/pplacer/ocaml/ mamba:pplacer_ocaml
+	ssh mamba "export PATH=/home/matsen/src/godi/bin:/usr/bin:/bin && cd pplacer_ocaml && make && ./complete_distr.sh"
+	scp mamba:pplacer_ocaml/*.tar.gz ../builds
 
 voldemort_release:
-	rsync -avz complete_distr.sh *.ml *.mll *.mly *.c _tags makefile --exclude myocamlbuild.ml voldemort:pplacer_ocaml/
-	rsync -avz $(FAMOCAML)/common/*.ml voldemort:ocaml/common/
-	ssh voldemort "cd pplacer_ocaml && make $(MACRELEASE) && ./complete_distr.sh"
-	scp voldemort:pplacer_ocaml/*.tar.gz ../distributions
+	rsync -avz --exclude _build --exclude .git --exclude myocamlbuild.ml --exclude _tags --delete /home/matsen/pplacer/ocaml/ voldemort:pplacer_ocaml
+	ssh voldemort "cd pplacer_ocaml && rm -rf bin && make mac && ./complete_distr.sh"
+	scp voldemort:pplacer_ocaml/*.tar.gz ../builds
+
+install_builds:
+	scp ../builds/* mamba.fhcrc.org:www/pplacer/builds/
 
 release:
-	make stoke_release bloom_release voldemort_release
-	scp ../distributions/* mamba.fhcrc.org:www/pplacer/distributions/
+	make mamba_release voldemort_release
+	make install_builds
 	echo "RELEASE INSTALLED"
 
 hyrax_install:
