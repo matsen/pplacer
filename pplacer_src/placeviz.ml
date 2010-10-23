@@ -18,8 +18,8 @@ and bogus_bl = ref 0.1
 and print_tree_info = ref false
 and show_node_numbers = ref false
 and xml = ref false
-and unit_width = ref 1.
-and total_width = ref 0.
+and unit_width = ref 0.
+and total_width = ref 400.
 and log_coeff = ref 0.
 and out_dir = ref "."
 
@@ -53,10 +53,10 @@ let parse_args () =
       "Put the node numbers in where the bootstraps usually go.";
       "--xml", Arg.Set xml,
       "Write phyloXML (with colors) for all visualizations.";
-      "--width", Arg.Set_float unit_width,
-      "Set the number of pixels for a single placement (default setting).";
-      "--totalwidth", Arg.Set_float total_width,
-      "Set the total number of pixels for all of the mass.";
+      "--total-width", Arg.Set_float total_width,
+      "Set the total number of pixels for all of the mass (Default is 400).";
+      "--unit-width", Arg.Set_float unit_width,
+      "Set the number of pixels for a single placement (will override total-width if set).";
       "--log", Arg.Set_float log_coeff,
       "Set to a nonzero value to perform a logarithmic transform of the branch width.";
       "--outDir", Arg.Set_string out_dir,
@@ -115,7 +115,7 @@ let () =
         let n_placed = 
           (List.length pqueries) - (List.length unplaced_seqs) in
         let mass_width = 
-          if !total_width = 0. then (* total width not specified *)
+          if !unit_width <> 0. then (* unit width specified *)
             (!unit_width) *. (float_of_int n_placed)
           else (* split up the mass according to the number of queries *)
             !total_width
