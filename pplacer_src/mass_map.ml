@@ -102,4 +102,8 @@ module By_edge = struct
 
   let total_mass m = IntMap.fold (fun _ v -> ( +. ) v) m 0.
 
+  let normalize_mass m = 
+    let tot = total_mass m in
+    IntMap.map (fun x -> x /. tot) m
+
 end

@@ -163,3 +163,13 @@ let of_path path =
     mrcam       = lmrcam;
     uptree_map  = luptree_map;
   }
+
+
+(* *** ACCESSORIES *** *)
+
+(* mrca tax decor, that is *)
+let get_tax_decor_map rp = 
+  let td = get_taxonomy rp in
+  IntMap.map
+    (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
+    (get_mrcam rp)

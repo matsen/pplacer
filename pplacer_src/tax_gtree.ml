@@ -145,5 +145,5 @@ let tax_mass_map tax_id_of_place criterion ti_imap pr =
         (fun p -> addto (tax_id_of_place p) (criterion p))
         (Pquery.place_list pq))
     (Placerun.get_pqueries pr);
-  IntMap.map (hashtbl_find_zero h) ti_imap
+  Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
 

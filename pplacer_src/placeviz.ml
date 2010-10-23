@@ -114,11 +114,12 @@ let () =
         (* set up the coefficient for the width *)
         let n_placed = 
           (List.length pqueries) - (List.length unplaced_seqs) in
+        (* mass width is the amount of mass per unit *)
         let mass_width = 
           if !unit_width <> 0. then (* unit width specified *)
-            (!unit_width) *. (float_of_int n_placed)
+            !unit_width *. (float_of_int n_placed)
           else (* split up the mass according to the number of queries *)
-            !total_width
+            !total_width 
         in
         (* write loc file *)
         if !write_loc then
@@ -146,18 +147,23 @@ let () =
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
         if !refpkg_path <> "" then begin
+          let rp = Refpkg.of_path !refpkg_path in
           let prname = 
             (Placerun.get_name placerun)^
               (if !use_pp then ".PP" else ".ML")
-          and (taxt, ti_imap) = 
-            Tax_gtree.of_refpkg_unit (Refpkg.of_path !refpkg_path) 
-          and my_fat = Placeviz_core.fat_tree mass_width !log_coeff in
+          and (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp
+          and my_fat = Placeviz_core.fat_tree mass_width !log_coeff 
+          and tax_ref_tree =  
+            Decor_gtree.add_decor_by_map
+              decor_ref_tree
+              (IntMap.map (fun x -> [x]) (Refpkg.get_tax_decor_map rp))
+          in
           Phyloxml.named_tree_list_to_file
             ([
               Some (prname^".ref"),
-              decor_ref_tree;
+              tax_ref_tree;
               Some (prname^".ref.fat"),
-              my_fat decor_ref_tree place_massm;
+              my_fat tax_ref_tree place_massm;
               Some (prname^".tax"),
               taxt;
             ]
