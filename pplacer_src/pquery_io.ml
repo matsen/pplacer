@@ -20,8 +20,9 @@ let write ch pq =
 
 let write_csv ch pq =
   let qname = R_csv.quote (Pquery.name pq) in
-  List.iter
-    (fun p -> R_csv.write_strl ch (qname::(Placement.to_csv_strl p)))
+  ListFuns.iteri
+    (fun i p -> 
+      R_csv.write_strl ch (qname::(string_of_int i)::(Placement.to_csv_strl p)))
     (Pquery.place_list pq)
 
 

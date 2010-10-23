@@ -149,6 +149,7 @@ let csv_output_fmt_str =
     (List.map R_csv.quote
       [
         "name";
+        "hit";
         "location";
         "ml_ratio";
         "post_prob";
