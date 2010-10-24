@@ -127,23 +127,3 @@ let of_refpkg_gen bl_of_rank rp =
 let of_refpkg_unit = of_refpkg_gen unit_bl
 let of_refpkg_inverse = of_refpkg_gen inverse
 
-
-(* *** Mass maps *** *)
-
-let hashtbl_find_zero h k = if Hashtbl.mem h k then Hashtbl.find h k else 0.
-
-(* here we build the mass map which is appropriate for the tax_gtree
- * *)
-let tax_mass_map tax_id_of_place criterion ti_imap pr =  
-  (* guess that the number of occupied taxids is one third of the number of
-   * nodes in the reference tree *)
-  let h = Hashtbl.create ((IntMapFuns.nkeys ti_imap)/3) in
-  let addto ti x = Hashtbl.replace h ti (x+.(hashtbl_find_zero h ti)) in
-  List.iter
-    (fun pq ->
-      List.iter 
-        (fun p -> addto (tax_id_of_place p) (criterion p))
-        (Pquery.place_list pq))
-    (Placerun.get_pqueries pr);
-  Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
-

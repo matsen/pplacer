@@ -12,6 +12,11 @@ type weighting_choice = Weighted | Unweighted
  * for each placement *)
 module Indiv = struct
 
+  type t = (float * float) IntMap.t
+
+  let get_distal_bl = fst
+  let get_weight = snd
+
   (* we just return the top one if unweighted *)
   let place_list_of_pquery weighting criterion pquery = 
     match weighting with
@@ -75,6 +80,8 @@ end
 
 (* By_edge just considers the weight per edge *)
 module By_edge = struct
+
+  type t = float IntMap.t
 
   let of_placerun weighting criterion pr = 
     IntMap.map

@@ -172,7 +172,7 @@ let () =
               [
                 Some (prname^".tax.fat"),
                 my_fat taxt
-                  (Tax_gtree.tax_mass_map Placement.contain_classif 
+                  (Tax_mass.edgem Placement.contain_classif 
                     Placement.ml_ratio ti_imap placerun)
               ]
             with
