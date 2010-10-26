@@ -16,8 +16,136 @@ let get_p_value r = match r.p_value with
   | Some p -> p
   | None -> failwith "no p-value!"
 
+let make_shuffled_pres n_shuffles pre1 pre2 = 
+  let pre_arr = Array.of_list (pre1 @ pre2)
+  and n1 = List.length pre1
+  and n2 = List.length pre2
+  in
+  let pquery_sub start len = 
+    Mass_map.Pre.normalize_mass  
+      (Array.to_list (Array.sub pre_arr start len)) 
+  in
+  ListFuns.init 
+    n_shuffles
+    (fun _ ->
+      Mokaphy_base.shuffle pre_arr;
+      (pquery_sub 0 n1, pquery_sub n1 n2))
+
+let pair_core p n_samples t pre1 pre2 =
+  let calc_dist = Kr_distance.dist_of_pres p t in
+  let original_dist = calc_dist pre1 pre2 in
+  {
+    distance = original_dist; 
+    p_value = 
+      if 0 < n_samples then begin
+        let shuffled_dists = 
+          List.map 
+            (fun (spre1,spre2) -> calc_dist spre1 spre2)
+            (make_shuffled_pres n_samples pre1 pre2)
+        in
+        Some
+          (Mokaphy_base.list_onesided_pvalue 
+            shuffled_dists 
+            original_dist)
+      end
+      else None;
+  }
+
+let wrapped_pair_core context p n_samples t pre1 pre2 =
+  try pair_core p n_samples t pre1 pre2 with
+  | Kr_distance.Invalid_place_loc a -> 
+      invalid_arg
+        (Printf.sprintf 
+          "%g is not a valid placement location when %s" a context)
+  | Kr_distance.Total_kr_not_zero tkr ->
+      failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
+
+
+
+(* NOTE:: cut *)
+(* make sure all the trees in the placerun list are the same *)
+let list_get_same_tree = function
+  | [] -> assert(false)
+  | [x] -> Placerun.get_ref_tree x
+  | hd::tl -> List.hd (List.map (Placerun.get_same_tree hd) tl)
+
+
+
+
+(* core
+ * run pair_core for each unique pair 
+ *)
+let core ch prefs prl = 
+  let n_samples = Mokaphy_prefs.KR.n_samples prefs in
+  let my_pre_of_pr = 
+    Mass_map.Pre.of_placerun
+      (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.KR.weighted prefs))
+      (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
+  in
+  let pra = Array.of_list prl in
+  let prea = Array.map my_pre_of_pr pra in
+  if Array.length prea <= 1 then 
+    print_endline "can't do KR with fewer than two place files"
+  else begin
+    let context pr1 pr2 = 
+      Printf.sprintf "comparing %s with %s" 
+        (Placerun.get_name pr1) (Placerun.get_name pr2)
+    and p = Mokaphy_prefs.KR.p_exp prefs
+    and t = list_get_same_tree prl
+    in
+    let u = 
+      Uptri.init
+        (Array.length prea)
+        (fun i j ->
+          wrapped_pair_core
+            (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j))
+    in
+    (* matrix funniness *)
+    let names = Array.map Placerun.get_name pra
+      (* if Mokaphy_prefs.KR.matrix prefs then 2. else  *)
+    and print_pvalues = (* Mokaphy_prefs.KR.matrix prefs || *)
+                        n_samples > 0
+    in
+    if Mokaphy_prefs.KR.list_output prefs then begin
+      String_matrix.write_padded ch
+        (Array.append
+          [|Array.append
+            [|"sample_1"; "sample_2"; Printf.sprintf "Z_%g" p;|]
+            (if print_pvalues then [|"p_values"|] else [||])|]
+          (let m = ref [] in
+          Uptri.iterij
+            (fun i j r -> 
+              m := 
+                (Array.of_list
+                  ([names.(i); names.(j); string_of_float r.distance] @
+                  (if print_pvalues then [string_of_float (get_p_value r)]
+                  else [])))::!m)
+            u;
+          Array.of_list (List.rev !m)))
+    end
+    else begin
+      Printf.fprintf ch "Z_%g distances:\n" p;
+      Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
+      if Mokaphy_prefs.KR.matrix prefs || Mokaphy_prefs.KR.n_samples prefs > 0 then begin
+        Printf.fprintf ch "Z_%g p-values:\n" p;
+        Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
+      end
+    end;
+  end;
+  ()
+
+
+
+ (* DEPRECATED *)
+ (* DEPRECATED *)
+ (* DEPRECATED *)
+ (* DEPRECATED *)
+
+(*
+
 (* makes an array of shuffled placeruns (identity of being in first or second
- * one shuffled randomly, but number in each the same) *)
+ * one shuffled randomly, but number in each the same) 
+ * *)
 let make_shuffled_prs n_shuffles pr1 pr2 = 
   let pq1 = Placerun.get_pqueries pr1
   and pq2 = Placerun.get_pqueries pr2
@@ -47,7 +175,8 @@ let weighting_of_prefs prefs =
   if Mokaphy_prefs.KR.weighted prefs then Mass_map.Weighted 
   else Mass_map.Unweighted 
 
-let pair_core prefs criterion pr1 pr2 =
+(* this is now disabled *)
+let old_pair_core prefs criterion pr1 pr2 =
   (*
   let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
   Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.KR.seed prefs));
@@ -160,73 +289,4 @@ let pair_core prefs criterion pr1 pr2 =
     {distance = original_dist; p_value = p_value}
   end
 
-
-let wrapped_pair_core prefs criterion pr1 pr2 =
-  let context = 
-    Printf.sprintf "comparing %s with %s" 
-      (Placerun.get_name pr1) (Placerun.get_name pr2)
-  in
-  try
-    pair_core prefs criterion pr1 pr2
-  with
-  | Kr_distance.Invalid_place_loc a -> 
-      invalid_arg
-        (Printf.sprintf 
-          "%g is not a valid placement location when %s" a context)
-  | Pquery.Unplaced_pquery s ->
-      invalid_arg (s^" unplaced when "^context)
-  | Kr_distance.Total_kr_not_zero tkr ->
-      failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
-
-(* core
- * run pair_core for each unique pair 
- *)
-let core ch prefs criterion pr_arr = 
-  if Array.length pr_arr = 1 then 
-    print_endline "can't do KR with fewer than two place files"
-  else begin
-    let u = 
-      Uptri.init
-        (Array.length pr_arr)
-        (fun i j ->
-          wrapped_pair_core
-            prefs
-            criterion
-            pr_arr.(i) 
-            pr_arr.(j))
-    in
-    (* matrix funniness *)
-    let names = Array.map Placerun.get_name pr_arr 
-      (* if Mokaphy_prefs.KR.matrix prefs then 2. else  *)
-    and p_exp = Mokaphy_prefs.KR.p_exp prefs
-    and print_pvalues = (* Mokaphy_prefs.KR.matrix prefs || *)
-                        Mokaphy_prefs.KR.n_samples prefs > 0
-    in
-    if Mokaphy_prefs.KR.list_output prefs then begin
-      String_matrix.write_padded ch
-        (Array.append
-          [|Array.append
-            [|"sample_1"; "sample_2"; Printf.sprintf "Z_%g" p_exp;|]
-            (if print_pvalues then [|"p_values"|] else [||])|]
-          (let m = ref [] in
-          Uptri.iterij
-            (fun i j r -> 
-              m := 
-                (Array.of_list
-                  ([names.(i); names.(j); string_of_float r.distance] @
-                  (if print_pvalues then [string_of_float (get_p_value r)]
-                  else [])))::!m)
-            u;
-          Array.of_list (List.rev !m)))
-    end
-    else begin
-      Printf.fprintf ch "Z_%g distances:\n" p_exp;
-      Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_distance u);
-      if Mokaphy_prefs.KR.matrix prefs || Mokaphy_prefs.KR.n_samples prefs > 0 then begin
-        Printf.fprintf ch "Z_%g p-values:\n" p_exp;
-        Mokaphy_base.write_named_float_uptri ch names (Uptri.map get_p_value u);
-      end
-    end;
-  end;
-  ()
-
+    *)

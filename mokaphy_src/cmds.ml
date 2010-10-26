@@ -10,15 +10,6 @@ open Fam_batteries
 
 (* *** common *** *)
 
-(* weighted option *)
-let weighting_of_bool = function
-  | true -> Mass_map.Weighted 
-  | false -> Mass_map.Unweighted 
-
-(* use_pp option *)
-let criterion_of_bool = function
-  | true -> Placement.post_prob
-  | false -> Placement.ml_ratio
 
 (* for out_fname options *)
 let ch_of_fname = function
@@ -45,8 +36,8 @@ let cat_names prl =
 
 let pre_of_pr ~is_weighted ~use_pp pr = 
   Mass_map.Pre.of_placerun 
-    (weighting_of_bool is_weighted)
-    (criterion_of_bool use_pp)
+    (Mokaphy_prefs.weighting_of_bool is_weighted)
+    (Mokaphy_prefs.criterion_of_bool use_pp)
     pr
 
 let prel_of_prl ~is_weighted ~use_pp prl = 
@@ -153,13 +144,7 @@ let heat prefs = function
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
   wrap_output (Mokaphy_prefs.KR.out_fname prefs)
-    (fun ch ->
-      Kr_core.core 
-        ch 
-        prefs 
-        (criterion_of_bool (Mokaphy_prefs.KR.use_pp prefs))
-        (Array.of_list prl))
-
+    (fun ch -> Kr_core.core ch prefs prl)
 
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 
@@ -170,7 +155,7 @@ let pd prefs prl =
   wrap_output 
     (Mokaphy_prefs.PD.out_fname prefs) 
     (write_unary 
-      (pd_cmd (criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs)))
+      (pd_cmd (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs)))
       prl)
 
 
@@ -182,7 +167,7 @@ let pdfrac prefs prl =
   let inda = 
     Array.map
       (Induced.of_placerun 
-        (criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs)))
+        (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs)))
       pra
   in
   wrap_output 
@@ -201,8 +186,8 @@ let pdfrac prefs prl =
 
 let make_dist_fun prefs prl = 
   Pquery_distances.dist_fun_of_w 
-    (weighting_of_bool (Mokaphy_prefs.Avgdst.weighted prefs))
-    (criterion_of_bool (Mokaphy_prefs.Avgdst.use_pp prefs))
+    (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Avgdst.weighted prefs))
+    (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Avgdst.use_pp prefs))
     (Edge_rdist.build_ca_info (list_get_same_tree prl))
 
 let uavgdst prefs prl = 

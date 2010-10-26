@@ -8,7 +8,21 @@ let spec_with_default symbol setfun p help =
   (symbol, setfun p, Printf.sprintf help !p)
 
 let weighted_help = 
-  "The point version simply uses the best placement, rather than spreading out the probability mass. Default is spread.";
+  "The point version simply uses the best placement, rather than spreading out the probability mass. Default is spread."
+
+(* the following two options are common between many prefs *)
+
+(* weighted option *)
+let weighting_of_bool = function
+  | true -> Mass_map.Weighted 
+  | false -> Mass_map.Unweighted 
+
+(* use_pp option *)
+let criterion_of_bool = function
+  | true -> Placement.post_prob
+  | false -> Placement.ml_ratio
+
+
 
 (* Bary Bary Bary Bary Bary Bary Bary Bary *)
 module Bary = struct

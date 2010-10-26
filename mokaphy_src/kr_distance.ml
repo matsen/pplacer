@@ -140,10 +140,10 @@ let dist ref_tree p m1 m2 =
     ref_tree)
   ** (outer_exponent p)
 
-let pair_distance weighting criterion p pr1 pr2 = 
+let dist_of_pres p t pre1 pre2 = 
   dist
-    (Placerun.get_same_tree pr1 pr2)
+    t
     p
-    (Mass_map.Indiv.of_placerun weighting criterion pr1)
-    (Mass_map.Indiv.of_placerun weighting criterion pr2)
+    (Mass_map.Indiv.of_pre pre1)
+    (Mass_map.Indiv.of_pre pre2)
 
