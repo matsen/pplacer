@@ -43,14 +43,16 @@ let list_get_same_tree = function
 let cat_names prl = 
   String.concat "." (List.map Placerun.get_name prl)
 
-let prel_of_prl is_weighted use_pp prl = 
-  List.map 
-    (Mass_map.Pre.of_placerun 
-      (weighting_of_bool is_weighted)
-      (criterion_of_bool use_pp))
-    prl
+let pre_of_pr ~is_weighted ~use_pp pr = 
+  Mass_map.Pre.of_placerun 
+    (weighting_of_bool is_weighted)
+    (criterion_of_bool use_pp)
+    pr
 
+let prel_of_prl ~is_weighted ~use_pp prl = 
+  List.map (pre_of_pr ~is_weighted ~use_pp) prl
 
+  
 (* *** output tools *** *)
 (* there is a lack of parallelism here, as write_unary takes placeruns, while
  * uptri takes an uptri, but uptri needs to be more general. *)
@@ -108,8 +110,8 @@ let bary prefs prl =
   let t = list_get_same_tree prl in
   let prel = 
     prel_of_prl 
-      (Mokaphy_prefs.Bary.weighted prefs)
-      (Mokaphy_prefs.Bary.use_pp prefs)
+      ~is_weighted:(Mokaphy_prefs.Bary.weighted prefs)
+      ~use_pp:(Mokaphy_prefs.Bary.use_pp prefs)
       prl
   in
   if prl <> [] then begin
@@ -129,17 +131,20 @@ let bary prefs prl =
 let heat prefs = function
   | [pr1; pr2] as prl ->
       let fname = match Mokaphy_prefs.Heat.out_fname prefs with
-      | "" -> (cat_names prl)^".heat.xml"
-      | s -> s
+        | "" -> (cat_names prl)^".heat.xml"
+        | s -> s
       in
-    Phyloxml.named_tree_to_file
-      (chop_suffix_if_present fname ".xml") (* tree name *)
-      (Heat_tree.make_heat_tree 
-        prefs
-        (weighting_of_bool (Mokaphy_prefs.Heat.weighted prefs))
-        (criterion_of_bool (Mokaphy_prefs.Heat.use_pp prefs))
-        pr1 pr2)
-      fname
+      let my_pre_of_pr = 
+        pre_of_pr
+          ~is_weighted:(Mokaphy_prefs.Heat.weighted prefs)
+          ~use_pp:(Mokaphy_prefs.Heat.use_pp prefs)
+      in
+      Phyloxml.named_tree_to_file
+        (chop_suffix_if_present fname ".xml") (* tree name *)
+        (Heat_tree.make_heat_tree prefs 
+          (Placerun.get_same_tree pr1 pr2)
+          (my_pre_of_pr pr1) (my_pre_of_pr pr2))
+        fname
   | [] -> () (* e.g. heat -help *)
   | _ -> failwith "Please specify exactly two place files to make a heat tree."
 

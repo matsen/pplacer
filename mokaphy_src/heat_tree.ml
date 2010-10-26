@@ -41,16 +41,15 @@ let width_of_heat ~min_width ~width_diff ?(p=1.) heat =
   assert_intensity intensity;
   Decor.width (min_width +. width_diff *. intensity)
 
-let color_map prefs weighting criterion pr1 pr2 = 
+let color_map prefs t pre1 pre2 = 
   let p = MP.p_exp prefs
-  and ref_tree = Placerun.get_same_tree pr1 pr2
   and kr_map = 
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd) 
       (Kr_distance.make_kr_map 
-        (Mass_map.Indiv.of_placerun weighting criterion pr1)
-        (Mass_map.Indiv.of_placerun weighting criterion pr2)) in
+        (Mass_map.Indiv.of_pre pre1)
+        (Mass_map.Indiv.of_pre pre2)) in
   let sum_over_krs_of_id id = 
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
@@ -72,7 +71,7 @@ let color_map prefs weighting criterion pr1 pr2 =
               0.
               below)))
         :: (List.flatten below))
-      (Gtree.get_stree ref_tree)
+      (Gtree.get_stree t)
   in
   let heat_only = List.map snd heat_list in
   let top_heat = List.hd heat_only in
@@ -103,15 +102,7 @@ let color_map prefs weighting criterion pr1 pr2 =
           ]))
       heat_list)
 
-
-let make_heat_tree prefs criterion weighting pr1 pr2 = 
-  let ref_tree = 
-    Placerun.get_same 
-      Newick.compare 
-      Placerun.get_ref_tree 
-      "Reference tree" 
-      pr1 pr2
-  in
+let make_heat_tree prefs t pre1 pre2 = 
   Decor_gtree.add_decor_by_map 
-    (Decor_gtree.of_newick_gtree ref_tree)
-    (color_map prefs criterion weighting pr1 pr2)
+    (Decor_gtree.of_newick_gtree t)
+    (color_map prefs t pre1 pre2)
