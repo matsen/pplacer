@@ -47,10 +47,13 @@ let weighted_edpl_map weighting criterion t pquery_list =
     (fun pq ->
       let b = (raw_edpl_of_pquery criterion t pq) /. tree_len in
       List.iter
-        (fun (i, (_,mass)) ->
-            mass_a.(i) <- mass_a.(i) +. mass;
-            edpl_a.(i) <- edpl_a.(i) +. mass *. b)
-        (Mass_map.Indiv.split_pquery_mass weighting criterion 
+        (fun mu ->
+          let i = mu.Mass_map.Pre.loc
+          and mass = mu.Mass_map.Pre.mass
+          in
+          mass_a.(i) <- mass_a.(i) +. mass;
+          edpl_a.(i) <- edpl_a.(i) +. mass *. b)
+        (Mass_map.Pre.mul_of_pquery weighting criterion 
            mass_per_pquery pq))
     pquery_list;
   let rec make_map accu i = 

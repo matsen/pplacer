@@ -45,7 +45,8 @@ let get_real    = get_gen _get_real
 
 let find o k = 
   match o with
-  | Object h ->
+  | Object h -> begin
       try Hashtbl.find h k with
       | Not_found -> raise (Unknown_key k)
+  end
   | _ -> raise Not_object

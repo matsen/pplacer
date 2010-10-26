@@ -4,8 +4,63 @@
 
 open MapsSets
 
-
 type weighting_choice = Weighted | Unweighted
+
+
+(* we just return the top one if unweighted *)
+let place_list_of_pquery weighting criterion pquery = 
+  match weighting with
+  | Weighted -> Pquery.place_list pquery
+  | Unweighted -> [ Pquery.best_place criterion pquery ]
+
+
+(* Pre as in pre-mass-map *)
+module Pre = struct
+
+  type mass_unit = 
+    {
+      loc : int;
+      distal_bl : float;
+      mass : float;
+    }
+  type mul = mass_unit list
+  type t = mul list
+  (* first list is across pqueries, second list is the mass for a given
+   * placement *)
+
+(* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.
+ *)
+  let mul_of_pquery weighting criterion mass_per_pquery pq = 
+    let pc = place_list_of_pquery weighting criterion pq in
+    List.map2
+      (fun place weight ->
+        {
+          loc = Placement.location place;
+          distal_bl = Placement.distal_bl place;
+          mass = mass_per_pquery *. weight
+        })
+      pc
+      (Base.normalized_prob (List.map criterion pc))
+
+(* assume that the list of pqueries in have unit mass. split that mass up to
+ * each of the pqueries, breaking it up by weighted placements if desired.
+ *)
+  let of_pquery_list weighting criterion pql = 
+    let mass_per_pquery = 1. /. (float_of_int (List.length pql)) in
+    List.map
+      (mul_of_pquery weighting criterion mass_per_pquery)
+       pql
+
+  let of_placerun weighting criterion pr = 
+    try
+      of_pquery_list 
+        weighting
+        criterion
+        (Placerun.get_pqueries pr)
+    with 
+    | Pquery.Unplaced_pquery s ->
+      invalid_arg (s^" unplaced in "^(Placerun.get_name pr))
+end
 
 
 (* indiv makes the weighting for a given edge as a list of (distal_bl, weight)
@@ -14,51 +69,19 @@ module Indiv = struct
 
   type t = (float * float) IntMap.t
 
-  let get_distal_bl = fst
-  let get_weight = snd
-
-  (* we just return the top one if unweighted *)
-  let place_list_of_pquery weighting criterion pquery = 
-    match weighting with
-    | Weighted -> Pquery.place_list pquery
-    | Unweighted -> [ Pquery.best_place criterion pquery ]
-
-(* return a list of (id, (distal_bl, mass)).
- * will raise Pquery.Unplaced_pquery if finds unplaced pqueries.
- *)
-  let split_pquery_mass weighting criterion mass_per_pquery pq = 
-    let pc = place_list_of_pquery weighting criterion pq in
-    List.map2
-      (fun place weight ->
-        (Placement.location place,
-        (Placement.distal_bl place, 
-        mass_per_pquery *. weight)))
-      pc
-      (Base.normalized_prob (List.map criterion pc))
-
-(* assume that the list of pqueries in have unit mass. split that mass up to
- * each of the pqueries, breaking it up by weighted placements if desired.
- *)
-  let mass_list_of_pquery_list weighting criterion pql = 
-    let mass_per_pquery = 1. /. (float_of_int (List.length pql)) in
-    List.flatten
-      (List.map
-        (split_pquery_mass weighting criterion mass_per_pquery)
-         pql)
-
-  let mass_list_of_placerun weighting criterion pr = 
-    try
-      mass_list_of_pquery_list 
-        weighting
-        criterion
-        (Placerun.get_pqueries pr)
-    with 
-    | Pquery.Unplaced_pquery s ->
-      invalid_arg (s^" unplaced in "^(Placerun.get_name pr))
+  let of_pre pmm = 
+    List.fold_left
+      (fun m' mul ->
+        (List.fold_left 
+          (fun m mu -> 
+            IntMapFuns.add_listly mu.Pre.loc (mu.Pre.distal_bl, mu.Pre.mass) m)
+          m'
+          mul))
+      IntMap.empty
+      pmm
 
   let of_placerun weighting criterion pr = 
-      (IntMapFuns.of_pairlist_listly 
-        (mass_list_of_placerun weighting criterion pr))
+    of_pre (Pre.of_placerun weighting criterion pr)
 
 (* sort the placements along a given edge according to their location on
  * the edge in an increasing manner. *)
