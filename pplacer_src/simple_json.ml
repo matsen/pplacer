@@ -1,23 +1,51 @@
 open Json
 
-exception Type_mismatch
+exception Type_mismatch_wanted of string
+exception Type_mismatch of string
+exception Unknown_key of string
+exception Not_object
 
-let get_bool = function | Bool b -> b | _ -> raise Type_mismatch
-let get_int = function | Int i -> i | _ -> raise Type_mismatch
-let get_float = function | Float i -> i | _ -> raise Type_mismatch
-let get_string = function | String s -> s | _ -> raise Type_mismatch
-let get_hashtbl = function | Object h -> h | _ -> raise Type_mismatch
-let get_array = function | Array a -> a | _ -> raise Type_mismatch
+let name_type = function
+  | Bool _ -> "boolean"
+  | Int _ -> "integer"
+  | Float _ -> "float"
+  | String _ -> "string"
+  | Object _ -> "object"
+  | Array _ -> "array"
+  | Null -> "null"
 
-let full = " { \"firstName\": \"John\", \"lastName\": \"Smith\", \"age\": 25, \"address\": { \"streetAddress\": \"21 2nd Street\", \"city\": \"New York\", \"state\": \"NY\", \"postalCode\": \"10021\" }, \"phoneNumber\": [ { \"type\": \"home\", \"number\": \"212 555-1234\" }, { \"type\": \"fax\", \"number\": \"646 555-4567\" } ] } "
-let small = " { \"firstName\": \"John\" } "
+let _get_bool = function | Bool b -> b | _ -> raise (Type_mismatch_wanted "boolean")
+let _get_int = function | Int i -> i | _ -> raise (Type_mismatch_wanted "integer")
+let _get_float = function | Float x -> x | _ -> raise (Type_mismatch_wanted "float")
+let _get_string = function | String s -> s | _ -> raise (Type_mismatch_wanted "string")
+let _get_hashtbl = function | Object h -> h | _ -> raise (Type_mismatch_wanted "object")
+let _get_array = function | Array a -> a | _ -> raise (Type_mismatch_wanted "array")
+
+let _get_real = function
+  | Int i -> float_of_int i
+  | Float x -> x
+  | _ -> raise (Type_mismatch_wanted "real")
 
 let slurp fname = String.concat " " (File_parsing.string_list_of_file fname)
 
 let of_file fname = deserialize (slurp fname)
 
-(*
-let h = get_hashtbl (of_file "json_example.json")
+let get_gen f x = 
+  try f x with
+  | Type_mismatch_wanted wanted ->
+      raise (Type_mismatch ("expected "^wanted^", got "^(name_type x)))
 
-let test () = Printf.printf "%g\n" (get_float (Hashtbl.find h "test"))
-*)
+let get_bool    = get_gen _get_bool   
+let get_int     = get_gen _get_int    
+let get_float   = get_gen _get_float  
+let get_string  = get_gen _get_string 
+let get_hashtbl = get_gen _get_hashtbl
+let get_array   = get_gen _get_array  
+let get_real    = get_gen _get_real  
+
+let find o k = 
+  match o with
+  | Object h ->
+      try Hashtbl.find h k with
+      | Not_found -> raise (Unknown_key k)
+  | _ -> raise Not_object
