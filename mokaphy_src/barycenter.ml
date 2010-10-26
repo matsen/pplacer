@@ -199,6 +199,9 @@ let find ref_tree mass_m =
       Printf.printf "%g\t%g\n" pos_classic pos_new; *)
       (id, find_pos id)
 
+(* pre means pre mass map *)
+let of_pre t pmm = find t (Mass_map.Indiv.of_pre pmm)
+
 let of_placerun weighting criterion pr = 
   find 
     (Placerun.get_ref_tree pr)

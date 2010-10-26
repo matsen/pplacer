@@ -3,9 +3,6 @@
  *
  * Applying preferences and running commands.
  *
- * le menu:
-   * bary
-   *
  *)
 
 open MapsSets
@@ -46,6 +43,12 @@ let list_get_same_tree = function
 let cat_names prl = 
   String.concat "." (List.map Placerun.get_name prl)
 
+let prel_of_prl is_weighted use_pp prl = 
+  List.map 
+    (Mass_map.Pre.of_placerun 
+      (weighting_of_bool is_weighted)
+      (criterion_of_bool use_pp))
+    prl
 
 
 (* *** output tools *** *)
@@ -84,13 +87,12 @@ let write_uptri fun_name list_output namea u ch =
 
 
 (* *** BARY BARY BARY BARY BARY *** *)
-let make_bary_tree weighting criterion prl =
+let make_bary_tree t prel =
   let bary_map = 
     IntMapFuns.of_pairlist_listly
       (ListFuns.mapi
-        (fun i pr ->
-          let (loc, pos) = 
-            Barycenter.of_placerun weighting criterion pr in
+        (fun i pre ->
+          let (loc, pos) = Barycenter.of_pre t pre in
           (loc,
             (pos, 
             Gtree.Internal_node,
@@ -98,14 +100,18 @@ let make_bary_tree weighting criterion prl =
               new Decor_bark.decor_bark 
                 (`Of_bl_name_boot_dlist 
                    (Some bl, None, None, [Decor.dot i]))))))
-        prl)
+        prel)
   in
-  (* we don't use get_same_tree here because it's a whole array *)
-  Gtree.add_subtrees_by_map
-    (Decor_gtree.of_newick_gtree (list_get_same_tree prl))
-    bary_map
+  Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
 
 let bary prefs prl = 
+  let t = list_get_same_tree prl in
+  let prel = 
+    prel_of_prl 
+      (Mokaphy_prefs.Bary.weighted prefs)
+      (Mokaphy_prefs.Bary.use_pp prefs)
+      prl
+  in
   if prl <> [] then begin
     let fname = match Mokaphy_prefs.Bary.out_fname prefs with
       | "" -> (cat_names prl)^".bary.xml"
@@ -113,10 +119,7 @@ let bary prefs prl =
     in
     Phyloxml.named_tree_to_file
       (chop_suffix_if_present fname ".xml") (* tree name *)
-      (make_bary_tree 
-        (weighting_of_bool (Mokaphy_prefs.Bary.weighted prefs))
-        (criterion_of_bool (Mokaphy_prefs.Bary.use_pp prefs))
-        prl)
+      (make_bary_tree t prel)
       fname
   end
 
