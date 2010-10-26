@@ -23,13 +23,14 @@ module Pre = struct
       distal_bl : float;
       mass : float;
     }
-  type mul = mass_unit list
-  type t = mul list
-  (* first list is across pqueries, second list is the mass for a given
-   * placement *)
 
-(* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.
- *)
+  (* list across mass for a given placement *)
+  type mul = mass_unit list
+
+  (* list across pqueries *)
+  type t = mul list
+
+(* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
   let mul_of_pquery weighting criterion mass_per_pquery pq = 
     let pc = place_list_of_pquery weighting criterion pq in
     List.map2
@@ -60,6 +61,15 @@ module Pre = struct
     with 
     | Pquery.Unplaced_pquery s ->
       invalid_arg (s^" unplaced in "^(Placerun.get_name pr))
+
+  let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0. 
+
+  let total_mass = List.fold_left (fun x mul -> x +. mul_total_mass mul) 0. 
+
+  let normalize_mass pre = 
+    let tot = total_mass pre in
+    List.map (List.map (fun mu -> {mu with mass = mu.mass /. tot})) pre
+
 end
 
 
