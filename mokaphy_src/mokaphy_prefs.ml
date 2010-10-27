@@ -10,6 +10,9 @@ let spec_with_default symbol setfun p help =
 let weighted_help = 
   "The point version simply uses the best placement, rather than spreading out the probability mass. Default is spread."
 
+let refpkg_help fors = 
+  "Specify a reference package to use the taxonomic version of "^fors^"."
+
 (* the following two options are common between many prefs *)
 
 (* weighted option *)
@@ -69,6 +72,7 @@ module Heat = struct
       gray_level : int ref;
       min_width : float ref;
       max_width : float ref;
+      refpkg_path : string ref;
     }
   
   let out_fname         p = !(p.out_fname)
@@ -81,6 +85,7 @@ module Heat = struct
   let gray_level        p = !(p.gray_level)
   let min_width         p = !(p.min_width)
   let max_width         p = !(p.max_width)
+  let refpkg_path       p = !(p.refpkg_path)
   
   let defaults () = 
     { 
@@ -94,6 +99,7 @@ module Heat = struct
       gray_level = ref 5;
       min_width = ref 0.5;
       max_width = ref 13.;
+      refpkg_path = ref "";
     }
   
   let specl_of_prefs prefs = 
@@ -102,6 +108,8 @@ module Heat = struct
 "Set the filename to write to. Otherwise write to stdout.";
 "-p", Arg.Set prefs.use_pp,
 "Use posterior probability.";
+"-c", Arg.Set_string prefs.refpkg_path,
+(refpkg_help "heat");
 "--exp", Arg.Set_float prefs.p_exp,
 "The exponent for the integration, i.e. the value of p in Z_p.";
 "--point", Arg.Clear prefs.weighted,

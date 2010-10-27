@@ -102,7 +102,7 @@ let color_map prefs t pre1 pre2 =
           ]))
       heat_list)
 
-let make_heat_tree prefs t pre1 pre2 = 
+let make_heat_tree prefs decor_t pre1 pre2 = 
   Decor_gtree.add_decor_by_map 
-    (Decor_gtree.of_newick_gtree t)
-    (color_map prefs t pre1 pre2)
+    decor_t
+    (color_map prefs decor_t pre1 pre2)

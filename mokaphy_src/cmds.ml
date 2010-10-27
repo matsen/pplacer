@@ -8,8 +8,9 @@
 open MapsSets
 open Fam_batteries
 
-(* *** common *** *)
+exception Refpkg_tree_and_ref_tree_mismatch
 
+(* *** COMMON *** *)
 
 (* for out_fname options *)
 let ch_of_fname = function
@@ -34,6 +35,7 @@ let list_get_same_tree = function
 let cat_names prl = 
   String.concat "." (List.map Placerun.get_name prl)
 
+(* *** making pres *** *)
 let pre_of_pr ~is_weighted ~use_pp pr = 
   Mass_map.Pre.of_placerun 
     (Mokaphy_prefs.weighting_of_bool is_weighted)
@@ -43,6 +45,20 @@ let pre_of_pr ~is_weighted ~use_pp pr =
 let prel_of_prl ~is_weighted ~use_pp prl = 
   List.map (pre_of_pr ~is_weighted ~use_pp) prl
 
+let make_tax_pre use_pp ti_imap pr =
+  Tax_mass.pre Placement.contain_classif 
+    (Mokaphy_prefs.criterion_of_bool use_pp) ti_imap pr
+
+(* *** refpkgs *** *)
+let refpkgo_of_fname = function
+  | "" -> None
+  | path -> Some (Refpkg.of_path path)
+
+let check_refpkgo_tree ref_tree = function
+  | None -> ()
+  | Some rp -> 
+      if 0 <> Newick.compare ref_tree (Refpkg.get_ref_tree rp) then
+        raise Refpkg_tree_and_ref_tree_mismatch
   
 (* *** output tools *** *)
 (* there is a lack of parallelism here, as write_unary takes placeruns, while
@@ -58,7 +74,6 @@ let write_unary pr_to_float prl ch =
          Printf.sprintf "%g" (pr_to_float pr);
        |])
    (Array.of_list prl))
-
 
 let write_uptri fun_name list_output namea u ch = 
   if Uptri.get_dim u = 0 then 
@@ -117,7 +132,6 @@ let bary prefs prl =
   end
 
 
-
 (* *** HEAT HEAT HEAT HEAT HEAT *** *)
 let heat prefs = function
   | [pr1; pr2] as prl ->
@@ -125,26 +139,43 @@ let heat prefs = function
         | "" -> (cat_names prl)^".heat.xml"
         | s -> s
       in
-      let my_pre_of_pr = 
-        pre_of_pr
-          ~is_weighted:(Mokaphy_prefs.Heat.weighted prefs)
-          ~use_pp:(Mokaphy_prefs.Heat.use_pp prefs)
+      let ref_tree = Placerun.get_same_tree pr1 pr2 
+      and is_weighted = Mokaphy_prefs.Heat.weighted prefs
+      and use_pp = Mokaphy_prefs.Heat.use_pp prefs
       in
-      Phyloxml.named_tree_to_file
-        (chop_suffix_if_present fname ".xml") (* tree name *)
-        (Heat_tree.make_heat_tree prefs 
-          (Placerun.get_same_tree pr1 pr2)
-          (my_pre_of_pr pr1) (my_pre_of_pr pr2))
+      let tree_name = chop_suffix_if_present fname ".xml"
+      and my_pre_of_pr = pre_of_pr ~is_weighted ~use_pp
+      and refpkgo = refpkgo_of_fname (Mokaphy_prefs.Heat.refpkg_path prefs) 
+      in
+      check_refpkgo_tree ref_tree refpkgo;
+      Phyloxml.named_tree_list_to_file
+        ([Some tree_name,
+          Heat_tree.make_heat_tree prefs 
+            (match refpkgo with
+            | None -> Decor_gtree.of_newick_gtree ref_tree 
+            | Some rp -> Refpkg.get_tax_ref_tree rp)
+            (my_pre_of_pr pr1) 
+            (my_pre_of_pr pr2)]
+        @ match refpkgo with
+        | None -> []
+        | Some rp -> begin
+            let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+            let my_make_tax_pre = make_tax_pre use_pp ti_imap in
+            [Some (tree_name^".tax"),
+            Heat_tree.make_heat_tree prefs taxt 
+              (my_make_tax_pre pr1)
+              (my_make_tax_pre pr2)]
+        end)
         fname
   | [] -> () (* e.g. heat -help *)
   | _ -> failwith "Please specify exactly two place files to make a heat tree."
-
 
 
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
   wrap_output (Mokaphy_prefs.KR.out_fname prefs)
     (fun ch -> Kr_core.core ch prefs prl)
+
 
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 

@@ -5,26 +5,29 @@
 open Ocamlbuild_plugin;; 
 open Command;; 
 
+(* the following two functions are a hack to properly include the library
+ * depenencies until GODI upgrades to ocamlbuild 3.12, which works nicely with
+ * ocamlfind. *)
+
+let syscall cmd =
+  let ic, oc = Unix.open_process cmd in
+  let buf = Buffer.create 16 in
+  (try
+    while true do Buffer.add_channel buf ic 1 done
+   with End_of_file -> ());
+  let _ = Unix.close_process (ic, oc) in
+  Filename.chop_suffix (Buffer.contents buf) "\n"
+in
+
+let ocamlfind_query pkg = 
+  syscall (Printf.sprintf "ocamlfind query %s" (Filename.quote pkg))
+in
 
 dispatch begin function
   | After_rules ->
       (* custom: incorporate libraries into bytecode *)
       flag ["link"; "ocaml"; "byte"] (A"-custom");
       (* automatically include gsl when the use_gsl tag is given in _tags *)
-      ocaml_lib ~extern:true ~dir:"+gsl" "gsl";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
   | _ -> ()
 end;;
-
-
-(*
-dep tags deps:
-  Will build deps when all tags will be activated.
-
-flag tags command_spec:
-  Will inject the given piece of command (command_spec) when all tags are activated.
-
-ocaml_lib <options> library_pathname:
-  Declare an ocaml library.
-Example: ocaml_lib "foo/bar" This will setup the tag use_bar tag. At link time it will include: foo/bar.cma or foo/bar.cmxa If you supply the ~dir:"boo" option -I boo will be added at link and compile time. Use ~extern:true for non-ocamlbuild handled libraries. Use ~byte:false or ~native:false to disable byte or native mode. Use ~tag_name:"usebar" to override the default tag name.
-
-*)
