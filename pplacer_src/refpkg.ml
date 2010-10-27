@@ -167,9 +167,16 @@ let of_path path =
 
 (* *** ACCESSORIES *** *)
 
+(* these should be light enough that it's not worth making them lazy *)
+
 (* mrca tax decor, that is *)
 let get_tax_decor_map rp = 
   let td = get_taxonomy rp in
   IntMap.map
     (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
     (get_mrcam rp)
+
+let get_tax_ref_tree rp =  
+  Decor_gtree.add_decor_by_map
+    (Decor_gtree.of_newick_gtree (get_ref_tree rp))
+    (IntMap.map (fun x -> [x]) (get_tax_decor_map rp))

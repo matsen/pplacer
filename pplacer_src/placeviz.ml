@@ -151,12 +151,9 @@ let () =
           let prname = 
             (Placerun.get_name placerun)^
               (if !use_pp then ".PP" else ".ML")
-          and (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp
           and my_fat = Placeviz_core.fat_tree mass_width !log_coeff 
-          and tax_ref_tree =  
-            Decor_gtree.add_decor_by_map
-              decor_ref_tree
-              (IntMap.map (fun x -> [x]) (Refpkg.get_tax_decor_map rp))
+          and (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp
+          and tax_ref_tree = Refpkg.get_tax_ref_tree rp 
           in
           Phyloxml.named_tree_list_to_file
             ([
