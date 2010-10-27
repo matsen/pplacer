@@ -347,5 +347,6 @@ let parse_stats ref_dir_complete prefs =
           raise (Stats_parsing_error "is this a RAxML v7 info or PHYML v3 statistics file? The header didn't match.")
     end
   with
-  | Stats_parsing_error s ->
-      invalid_arg (Printf.sprintf "Problem parsing info or stats file %s: %s" (Prefs.stats_fname prefs) s)
+  | ex ->
+      print_endline ("Problem parsing info or stats file"^(Prefs.stats_fname prefs));
+      raise ex
