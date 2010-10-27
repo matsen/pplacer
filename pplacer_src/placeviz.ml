@@ -172,8 +172,9 @@ let () =
               [
                 Some (prname^".tax.fat"),
                 my_fat taxt
-                  (Tax_mass.edgem Placement.contain_classif 
-                    Placement.ml_ratio ti_imap placerun)
+                  (Mass_map.By_edge.of_pre
+                    (Tax_mass.pre Placement.contain_classif 
+                      Placement.ml_ratio ti_imap placerun))
               ]
             with
             | Placement.No_classif -> []))

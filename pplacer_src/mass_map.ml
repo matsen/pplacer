@@ -30,6 +30,10 @@ module Pre = struct
   (* list across pqueries *)
   type t = mul list
 
+  let mass_unit loc ~distal_bl ~mass = 
+    {loc=loc; distal_bl=distal_bl; mass=mass}
+  let distal_mass_unit loc mass = mass_unit loc ~distal_bl:0. ~mass
+
 (* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
   let mul_of_pquery weighting criterion mass_per_pquery pq = 
     let pc = place_list_of_pquery weighting criterion pq in
@@ -116,10 +120,27 @@ module By_edge = struct
 
   type t = float IntMap.t
 
+  let of_indiv = 
+    IntMap.map (List.fold_left (fun tot (_,weight) -> tot +. weight) 0.)
+
+  (* SPEED 
+   * 
+   * a faster version would be like
+   *
+   let h = Hashtbl.create ((IntMapFuns.nkeys ti_imap)/3) in
+    let addto ti x = Hashtbl.replace h ti (x+.(hashtbl_find_zero h ti)) in
+    List.iter
+    (fun pq ->
+      List.iter
+      (fun p -> addto (tax_id_of_place p) (criterion p))
+        (Pquery.place_list pq))
+    (Placerun.get_pqueries pr);
+      Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
+   * *)
+  let of_pre pre = of_indiv (Indiv.of_pre pre)
+
   let of_placerun weighting criterion pr = 
-    IntMap.map
-      (List.fold_left (fun tot (_,weight) -> tot +. weight) 0.)
-      (Indiv.of_placerun weighting criterion pr)
+    of_indiv (Indiv.of_placerun weighting criterion pr)
 
   (* we add zeroes in where things are empty *)
   let fill_out_zeroes mass_map ref_tree = 

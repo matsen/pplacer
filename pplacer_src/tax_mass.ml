@@ -3,28 +3,30 @@
  *)
 
 open MapsSets
+open Tax_id
 
+exception Tax_id_not_in_tree of tax_id
 
 let hashtbl_find_zero h k = if Hashtbl.mem h k then Hashtbl.find h k else 0.
 
-(* here we build the mass map which is appropriate for the tax_gtree. ti_imap
- * takes us from the locations on the tree to taxids *)
-let edgem tax_id_of_place criterion ti_imap pr =  
-  (* guess that the number of occupied taxids is one third of the number of
-   * nodes in the reference tree *)
-  let h = Hashtbl.create ((IntMapFuns.nkeys ti_imap)/3) in
-  let addto ti x = Hashtbl.replace h ti (x+.(hashtbl_find_zero h ti)) in
-  List.iter
-    (fun pq ->
-      List.iter 
-        (fun p -> addto (tax_id_of_place p) (criterion p))
-        (Pquery.place_list pq))
-    (Placerun.get_pqueries pr);
-  Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
+let reverse_ti_imap start = 
+  IntMap.fold (fun k v -> TaxIdMapFuns.check_add v k) start TaxIdMap.empty
 
-let to_bottm weight = (0., weight)
-
-(* just get a MassMap.Indiv version of the map with all of the mass on the
- * bottom of the edge *)
-let bottm tax_id_of_place criterion ti_imap pr = 
-  IntMap.map to_bottm (edgem tax_id_of_place criterion ti_imap pr)
+(* here we build the pre mass map which is appropriate for the tax_gtree.
+ * ti_imap takes us from the locations on the tree to taxids *)
+let pre tax_id_of_place criterion ti_imap pr =  
+  let revm = reverse_ti_imap ti_imap in
+  Mass_map.Pre.normalize_mass 
+    (List.map
+      (fun pq ->
+        List.map 
+          (fun p -> 
+            let ti = tax_id_of_place p in
+            try
+              Mass_map.Pre.distal_mass_unit 
+                (TaxIdMap.find ti revm)
+                (criterion p)
+            with
+            | Not_found -> raise (Tax_id_not_in_tree ti))
+          (Pquery.place_list pq))
+      (Placerun.get_pqueries pr))
