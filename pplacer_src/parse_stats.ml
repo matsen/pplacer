@@ -283,13 +283,61 @@ let parse_phyml_stats version lines prefs =
     None
 
 
-(* ************ BOTH ************* *)
+(* JSON! *)
+
+open Simple_json
+
+exception Unknown_ras_model of string
+exception Wrong_field_type of string
+exception Unknown_datatype of string
+exception Unsupported_model of string
+
+let parse_json prefs path =
+  let root = of_file path in
+  let subs_model = find_string root "subs_model" in
+  prefs.Prefs.model_name := subs_model;
+  let () = 
+    match (find root "ras_model") with
+    | Json.Null -> ()
+    | Json.String "gamma" -> begin
+        let gamma_obj = find root "gamma" in
+        prefs.Prefs.gamma_n_cat := find_int gamma_obj "n_cats";
+        prefs.Prefs.gamma_alpha := find_float gamma_obj "alpha";
+      end
+    | Json.String ras_string -> raise (Unknown_ras_model ras_string)
+    | _ -> raise (Wrong_field_type "ras_model")
+  in
+  match (find_string root "datatype") with
+  | "DNA" -> begin
+    match subs_model with
+    | "GTR" as name -> begin
+      prefs.Prefs.model_name := name;
+      let subs_rates = find root "subs_rates" in
+      Some (Array.map (find_float subs_rates) [|"ac";"ag";"at";"cg";"ct";"gt"|])
+    end
+    | s -> raise (Unsupported_model s)
+  end
+  | "AA" -> begin
+    match subs_model with
+    | "WAG" -> None
+    | s -> begin
+        Printf.printf "We don't currently support %s. If you want it incorporated, email Erick." s;
+        raise (Unsupported_model s)
+    end
+  end
+  | s -> raise (Unknown_datatype s)
+
+
+
+(* ************ main fun ************* *)
 
 let parse_stats ref_dir_complete prefs = 
-  let lines = 
-    File_parsing.string_list_of_file 
-      (ref_dir_complete^(Prefs.stats_fname prefs)) in
-  try
+  let path = ref_dir_complete^(Prefs.stats_fname prefs) in
+  if Filename.check_suffix path ".json" then parse_json prefs path
+  else try
+    let lines = 
+      File_parsing.string_list_of_file 
+        (ref_dir_complete^(Prefs.stats_fname prefs)) in
     match find_version_line raxml_header_rex lines with
     | Some v -> parse_raxml_info v lines prefs
     | None -> begin

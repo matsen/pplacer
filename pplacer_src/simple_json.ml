@@ -2,7 +2,7 @@ open Json
 
 exception Type_mismatch_wanted of string
 exception Type_mismatch of string
-exception Unknown_key of string
+exception Undefined_key of string
 exception Not_object
 
 let name_type = function
@@ -43,10 +43,24 @@ let get_hashtbl = get_gen _get_hashtbl
 let get_array   = get_gen _get_array  
 let get_real    = get_gen _get_real  
 
-let find o k = 
+let find_gen what o k = 
   match o with
   | Object h -> begin
-      try Hashtbl.find h k with
-      | Not_found -> raise (Unknown_key k)
+      try what (Hashtbl.find h k) with
+      | Not_found -> raise (Undefined_key k)
+      | Type_mismatch_wanted wanted ->
+          raise (Type_mismatch ("expected "^wanted^" when looking for "^k))
   end
   | _ -> raise Not_object
+
+let find = find_gen (fun o -> o)
+
+let find_bool    = find_gen _get_bool   
+let find_int     = find_gen _get_int    
+let find_float   = find_gen _get_float  
+let find_string  = find_gen _get_string 
+let find_hashtbl = find_gen _get_hashtbl
+let find_array   = find_gen _get_array  
+let find_real    = find_gen _get_real  
+
+
