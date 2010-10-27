@@ -171,7 +171,7 @@ let () =
                 my_fat taxt
                   (Mass_map.By_edge.of_pre
                     (Tax_mass.pre Placement.contain_classif 
-                      Placement.ml_ratio ti_imap placerun))
+                      criterion ti_imap placerun))
               ]
             with
             | Placement.No_classif -> []))

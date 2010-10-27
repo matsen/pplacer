@@ -176,6 +176,7 @@ let get_tax_decor_map rp =
     (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
     (get_mrcam rp)
 
+(* tax ref tree is the usual ref tree with but with taxonomic annotation *)
 let get_tax_ref_tree rp =  
   Decor_gtree.add_decor_by_map
     (Decor_gtree.of_newick_gtree (get_ref_tree rp))
