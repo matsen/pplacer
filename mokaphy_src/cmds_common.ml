@@ -42,7 +42,7 @@ let prel_of_prl ~is_weighted ~use_pp prl =
   List.map (pre_of_pr ~is_weighted ~use_pp) prl
 
 let make_tax_pre ~is_weighted ~use_pp ti_imap pr =
-  Tax_mass.of_placerun 
+  Tax_mass.pre 
     Placement.contain_classif 
     (Mokaphy_prefs.weighting_of_bool is_weighted)
     (Mokaphy_prefs.criterion_of_bool use_pp) 

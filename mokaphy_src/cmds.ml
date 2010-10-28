@@ -3,11 +3,11 @@
  *
  * Applying preferences and running commands.
  *
+ * The fact that kr_core is in its own file is simply because it's big.
  *)
 
 open MapsSets
 open Fam_batteries
-
 
 
 (* *** BARY BARY BARY BARY BARY *** *)

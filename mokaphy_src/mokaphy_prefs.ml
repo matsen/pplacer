@@ -150,6 +150,7 @@ module KR = struct
       matrix: bool ref;
       bary_density: bool ref;
       ddensity: bool ref;
+      refpkg_path : string ref;
     }
   
   let use_pp            p = !(p.use_pp)
@@ -167,6 +168,7 @@ module KR = struct
   let matrix            p = !(p.matrix)
   let bary_density      p = !(p.bary_density)
   let ddensity          p = !(p.ddensity)
+  let refpkg_path       p = !(p.refpkg_path)
   
   let defaults () = 
     { 
@@ -185,14 +187,15 @@ module KR = struct
       matrix = ref false;
       bary_density = ref false;
       ddensity = ref false;
+      refpkg_path = ref "";
     }
   
   (* arguments *)
   let specl_of_prefs prefs = [
     "-o", Arg.Set_string prefs.out_fname,
     "Set the filename to write to. Otherwise write to stdout.";
-    "--verbose", Arg.Set prefs.verbose,
-    "Verbose running.";
+    "-c", Arg.Set_string prefs.refpkg_path,
+    (refpkg_help "kr");
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
     "--exp", Arg.Set_float prefs.p_exp,
@@ -224,6 +227,8 @@ module KR = struct
     *)
     "--ddensity", Arg.Set prefs.ddensity,
       "Make distance-by-distance densities.";
+    "--verbose", Arg.Set prefs.verbose,
+    "Verbose running.";
     ]
 end 
 

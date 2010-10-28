@@ -60,18 +60,6 @@ let wrapped_pair_core context p n_samples t pre1 pre2 =
   | Kr_distance.Total_kr_not_zero tkr ->
       failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
 
-
-
-(* NOTE:: cut *)
-(* make sure all the trees in the placerun list are the same *)
-let list_get_same_tree = function
-  | [] -> assert(false)
-  | [x] -> Placerun.get_ref_tree x
-  | hd::tl -> List.hd (List.map (Placerun.get_same_tree hd) tl)
-
-
-
-
 (* core
  * run pair_core for each unique pair 
  *)
@@ -82,14 +70,22 @@ let core ch prefs prl =
   and is_weighted = Mokaphy_prefs.KR.weighted prefs
   and use_pp = Mokaphy_prefs.KR.use_pp prefs
   in
-  let my_pre_of_pr = Cmds_common.pre_of_pr ~is_weighted ~use_pp
+  let (t, my_pre_of_pr) = 
+    match Mokaphy_prefs.KR.refpkg_path prefs with
+    | "" ->
+        (Cmds_common.list_get_same_tree prl, Cmds_common.pre_of_pr ~is_weighted ~use_pp)
+    | path -> begin
+        let rp = Refpkg.of_path path in
+        let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+        (Decor_gtree.to_newick_gtree taxt, 
+        Cmds_common.make_tax_pre ~is_weighted ~use_pp ti_imap)
+    end
   and pra = Array.of_list prl in
   let prea = Array.map my_pre_of_pr pra in
   let context pr1 pr2 = 
     Printf.sprintf "comparing %s with %s" 
       (Placerun.get_name pr1) (Placerun.get_name pr2)
   and p = Mokaphy_prefs.KR.p_exp prefs
-  and t = list_get_same_tree prl
   in
   let u = 
     Uptri.init
