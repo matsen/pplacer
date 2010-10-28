@@ -38,11 +38,12 @@ let () =
     Check.directory (Prefs.out_dir prefs);
     let ref_dir_complete =
       match Prefs.ref_dir prefs with
-      | s when s = "" -> ""
-      | s ->
+      | "" -> ""
+      | s -> begin
           Check.directory s;
           if s.[(String.length s)-1] = '/' then s
           else s^"/"
+      end
     in
     let rp = 
       Refpkg.of_strmap

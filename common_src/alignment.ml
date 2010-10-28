@@ -91,7 +91,7 @@ let name_of_fasta_header s =
 let read_fasta fname = 
   (* first count the number of careted lines in the alignment *)
   let ch = open_in fname in
-  let is_name s = s.[0] = '>' in
+  let is_name s = if s = "" then false else s.[0] = '>' in
   let n_seqs = ref 0 in
   (* count the number of entries *)
   let () = 
@@ -100,6 +100,7 @@ let read_fasta fname =
     with
     | End_of_file -> ()
   in
+  if !n_seqs = 0 then failwith ("is "^fname^" a FASTA file? I don't see any >'s");
   (* read fasta entries *)
   let a = Array.make (!n_seqs) ("","") in
   seek_in ch 0;
@@ -108,16 +109,18 @@ let read_fasta fname =
     try
       while true do
         let line = input_line ch in
-        if is_name line then begin
-          incr count;
-          assert(!count < !n_seqs);
-          (* we have a new current sequence *)
-          a.(!count) <- (name_of_fasta_header line,"");
-        end
-        else begin
-          let (name,seq) = a.(!count) in
-          (* append to current sequence *)
-          a.(!count) <- (name, seq^line);
+        if line <> "" then begin
+          if is_name line then begin
+            incr count;
+            assert(!count < !n_seqs);
+            (* we have a new current sequence *)
+            a.(!count) <- (name_of_fasta_header line,"");
+          end
+          else begin
+            let (name,seq) = a.(!count) in
+            (* append to current sequence *)
+            a.(!count) <- (name, seq^line);
+          end
         end
       done;
     with
@@ -128,11 +131,11 @@ let read_fasta fname =
 
 (* read an alignment, type unspecified *)
 let read_align fname = 
-  let suffix = Str.replace_first (Str.regexp ".*\\.") "" fname in
-  if suffix = "fasta" || suffix = "fa" then read_fasta fname 
+  if Filename.check_suffix fname "fasta" || Filename.check_suffix fname "fa" then 
+    read_fasta fname 
   else begin
     print_endline "This program only accepts FASTA files with .fa or .fasta suffix";
-    raise (Unknown_format suffix)
+    raise (Unknown_format fname)
   end
 
 (* alternate, for wrapped fasta
