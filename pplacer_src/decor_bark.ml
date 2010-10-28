@@ -51,4 +51,4 @@ let compare b1 b2 =
 let of_newick_bark nb = new decor_bark (`Of_newick_bark nb)
 let to_newick_bark db = 
   new Newick_bark.newick_bark 
-        (`Of_bl_name_boot (db#get_bl, db#get_name, db#get_boot))
+        (`Of_bl_name_boot (db#get_bl_opt, db#get_name_opt, db#get_boot_opt))
