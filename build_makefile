@@ -28,8 +28,8 @@ install_builds:
 	scp ../builds/* mamba.fhcrc.org:www/pplacer/builds/
 
 release:
-	make mamba_release voldemort_release
-	make install_builds
+	make -f build_makefile mamba_release voldemort_release
+	make -f build_makefile install_builds
 	echo "RELEASE INSTALLED"
 
 hyrax_install:
