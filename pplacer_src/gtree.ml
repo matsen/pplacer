@@ -66,8 +66,8 @@ let leaf_ids t = Stree.leaf_ids (get_stree t)
 (* bark map related *)
 let add_bark id b t = 
   { t with bark_map = (IntMap.add id b (get_bark_map t)) }
-let mapi_bark_map f t = 
-  {t with bark_map = IntMap.mapi f (get_bark_map t)}
+let map_bark_map f t = {t with bark_map = IntMap.map f (get_bark_map t)}
+let mapi_bark_map f t = {t with bark_map = IntMap.mapi f (get_bark_map t)}
 
 (* general *)
 

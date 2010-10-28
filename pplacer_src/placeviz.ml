@@ -70,13 +70,12 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    (* set up params *)
-    let criterion = 
-      if !use_pp then Placement.post_prob
-      else Placement.ml_ratio
-    and weighting = 
+    let weighting = 
       if !weighted then Mass_map.Weighted
       else Mass_map.Unweighted
+    and criterion = 
+      if !use_pp then Placement.post_prob
+      else Placement.ml_ratio
     in
     let tree_fmt = 
       if !xml then Placeviz_core.Phyloxml 
@@ -171,7 +170,7 @@ let () =
                 my_fat taxt
                   (Mass_map.By_edge.of_pre
                     (Tax_mass.pre Placement.contain_classif 
-                      criterion ti_imap placerun))
+                      weighting criterion ti_imap placerun))
               ]
             with
             | Placement.No_classif -> []))

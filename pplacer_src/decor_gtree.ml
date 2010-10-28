@@ -10,8 +10,8 @@ open MapsSets
 
 let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
 
-let of_newick_gtree t = 
-  Gtree.mapi_bark_map (fun _ b -> Decor_bark.of_newick_bark b) t
+let of_newick_gtree t = Gtree.map_bark_map Decor_bark.of_newick_bark t
+let to_newick_gtree t = Gtree.map_bark_map Decor_bark.to_newick_bark t
 
 (* decor_map is an IntMap to a Decor.decoration list *)
 let add_decor_by_map t decor_map = 
@@ -26,3 +26,5 @@ let add_decor_by_map t decor_map =
             #append_decor decor_list))
       decor_map
       bark_map)
+
+

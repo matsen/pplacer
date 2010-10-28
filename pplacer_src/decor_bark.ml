@@ -49,3 +49,6 @@ let compare b1 b2 =
   | Base.Different c -> c
 
 let of_newick_bark nb = new decor_bark (`Of_newick_bark nb)
+let to_newick_bark db = 
+  new Newick_bark.newick_bark 
+        (`Of_bl_name_boot (db#get_bl, db#get_name, db#get_boot))
