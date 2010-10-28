@@ -63,9 +63,7 @@ let of_strmap m =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
-  (* now we make the inferred things *)
-  let lfasta_aln = 
-    lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
+  let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
   let lref_tree = lazy (Newick.of_file (get "tree_file")) 
   and lmodel = 
       lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));

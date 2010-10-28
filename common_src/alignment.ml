@@ -1,7 +1,8 @@
-(* Copyright (C) 2009  Frederick A Matsen.
+(* Copyright (C) 2009-10  Frederick A Matsen.
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  *)
+
+exception Unknown_format of string
 
 open Fam_batteries
 open MapsSets
@@ -125,33 +126,14 @@ let read_fasta fname =
   close_in ch;
   a
 
-(* splits the line into two *)
-let splitPhylipLine str = 
-  let splitLine = Str.split (Str.regexp "[ \t]+") str in
-  if List.length splitLine <> 2 then
-    failwith ("is this line a proper non-interleaved phylip line? "^str)
-      else
-  (List.nth splitLine 0, List.nth splitLine 1)
-
-(* only non-interleaved phylip *)
-let readPhylip fname = 
-  let lines = File_parsing.string_list_of_file fname in
-  if lines = [] then failwith (fname^": empty file?")
-  else (
-    Array.of_list (
-      List.map splitPhylipLine (List.tl lines) (*forget that first line*)
-    )
-  )
-
 (* read an alignment, type unspecified *)
 let read_align fname = 
   let suffix = Str.replace_first (Str.regexp ".*\\.") "" fname in
-  if suffix = "fasta" || suffix = "fa" then
-    read_fasta fname 
-  else if suffix = "phy" || suffix = "phylip" then
-    readPhylip fname 
-  else 
-    failwith ( "read_align: file type "^suffix^" is unknown!" )
+  if suffix = "fasta" || suffix = "fa" then read_fasta fname 
+  else begin
+    print_endline "This program only accepts FASTA files with .fa or .fasta suffix";
+    raise (Unknown_format suffix)
+  end
 
 (* alternate, for wrapped fasta
    List.iter 
