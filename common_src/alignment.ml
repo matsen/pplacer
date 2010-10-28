@@ -1,7 +1,8 @@
-(* Copyright (C) 2009  Frederick A Matsen.
+(* Copyright (C) 2009-10  Frederick A Matsen.
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  *)
+
+exception Unknown_format of string
 
 open Fam_batteries
 open MapsSets
@@ -90,7 +91,7 @@ let name_of_fasta_header s =
 let read_fasta fname = 
   (* first count the number of careted lines in the alignment *)
   let ch = open_in fname in
-  let is_name s = s.[0] = '>' in
+  let is_name s = if s = "" then false else s.[0] = '>' in
   let n_seqs = ref 0 in
   (* count the number of entries *)
   let () = 
@@ -99,6 +100,7 @@ let read_fasta fname =
     with
     | End_of_file -> ()
   in
+  if !n_seqs = 0 then failwith ("is "^fname^" a FASTA file? I don't see any >'s");
   (* read fasta entries *)
   let a = Array.make (!n_seqs) ("","") in
   seek_in ch 0;
@@ -107,16 +109,18 @@ let read_fasta fname =
     try
       while true do
         let line = input_line ch in
-        if is_name line then begin
-          incr count;
-          assert(!count < !n_seqs);
-          (* we have a new current sequence *)
-          a.(!count) <- (name_of_fasta_header line,"");
-        end
-        else begin
-          let (name,seq) = a.(!count) in
-          (* append to current sequence *)
-          a.(!count) <- (name, seq^line);
+        if line <> "" then begin
+          if is_name line then begin
+            incr count;
+            assert(!count < !n_seqs);
+            (* we have a new current sequence *)
+            a.(!count) <- (name_of_fasta_header line,"");
+          end
+          else begin
+            let (name,seq) = a.(!count) in
+            (* append to current sequence *)
+            a.(!count) <- (name, seq^line);
+          end
         end
       done;
     with
@@ -125,33 +129,14 @@ let read_fasta fname =
   close_in ch;
   a
 
-(* splits the line into two *)
-let splitPhylipLine str = 
-  let splitLine = Str.split (Str.regexp "[ \t]+") str in
-  if List.length splitLine <> 2 then
-    failwith ("is this line a proper non-interleaved phylip line? "^str)
-      else
-  (List.nth splitLine 0, List.nth splitLine 1)
-
-(* only non-interleaved phylip *)
-let readPhylip fname = 
-  let lines = File_parsing.string_list_of_file fname in
-  if lines = [] then failwith (fname^": empty file?")
-  else (
-    Array.of_list (
-      List.map splitPhylipLine (List.tl lines) (*forget that first line*)
-    )
-  )
-
 (* read an alignment, type unspecified *)
 let read_align fname = 
-  let suffix = Str.replace_first (Str.regexp ".*\\.") "" fname in
-  if suffix = "fasta" || suffix = "fa" then
+  if Filename.check_suffix fname "fasta" || Filename.check_suffix fname "fa" then 
     read_fasta fname 
-  else if suffix = "phy" || suffix = "phylip" then
-    readPhylip fname 
-  else 
-    failwith ( "read_align: file type "^suffix^" is unknown!" )
+  else begin
+    print_endline "This program only accepts FASTA files with .fa or .fasta suffix";
+    raise (Unknown_format fname)
+  end
 
 (* alternate, for wrapped fasta
    List.iter 
