@@ -50,10 +50,10 @@ let () =
       match refpkg_path prefs with
       | "" -> 
           let ref_tree = match tree_fname prefs with
-          | s when s = "" -> failwith "please specify a reference tree.";
+          | "" -> failwith "please specify a reference tree.";
           | s -> Newick.of_file (ref_dir_complete^s)
           and ref_align = match ref_align_fname prefs with
-          | s when s = "" -> failwith "please specify a reference alignment."
+          | "" -> failwith "please specify a reference alignment."
           | s -> 
               Alignment.uppercase 
               (Alignment.read_align (ref_dir_complete^s))

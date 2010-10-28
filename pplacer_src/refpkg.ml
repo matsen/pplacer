@@ -4,7 +4,7 @@
 
 open MapsSets
 
-let refpkg_str = "CONTENTS.txt"
+exception Missing_element of string
 
 (* uptree maps-- could be expanded later and go into a different file *)
 type uptree_map = int IntMap.t
@@ -50,98 +50,26 @@ let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
-(* *** parsing *** *)
-
-(* (nonempty) then space then = then (nothing or something ending in something
- * nonempty) then space *)
-let equality_rex = 
-  Str.regexp "\\([^ \t]+\\)[ \t]+=[ \t]*\\(\\|.*[^ \t]\\)[ \t]*$"
-
-let eqpair_of_str s = 
-  if Str.string_match equality_rex s 0 then
-    (Str.matched_group 1 s, Str.matched_group 2 s)
-  else
-    failwith ("equality_pair_of_str: malformed string: "^s)
-
-let eqmap_of_strl sl = 
-  List.fold_right
-    (fun (k,v) -> StringMap.add k v)
-    (List.map eqpair_of_str sl)
-    StringMap.empty
-
- (* parsing sectioned files *)
-
-let sechead_rex = Str.regexp "^[ \t]*\\[\\([^]]*\\)\\][ \t]*"
-
-let extract_secheado s = 
-  if not (Str.string_match sechead_rex s 0) then None
-  else Some (Str.matched_group 1 s)
-
-let secmap_of_strl strl = 
-  let rec aux m curr_sec = function
-    | x::l -> 
-        (match extract_secheado x with
-        | Some sec -> aux m sec l
-        | None -> aux (StringMapFuns.add_listly curr_sec x m) curr_sec l)
-    | [] -> m
-  in
-  match File_parsing.filter_empty_lines strl with
-    | x::l ->
-        (match extract_secheado x with
-        | Some sec -> StringMap.map List.rev (aux StringMap.empty sec l)
-        | None -> invalid_arg "You must start config file with a section header!")
-    | [] -> StringMap.empty
-
-
-(* NOTE: at a later date, we may want to transition to a system whereby the
- * stats file is parsed directly, rather than having it set the prefs then doing
- * an of_prefs. *)
+(* NOTE: once parsing of stats files is deprecated, we can set the prefs
+ * directly, rather than doing this. *)
 let build_model stats_fname ref_align = 
   print_endline stats_fname;
   let prefs = Prefs.defaults () in
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
-let remove_terminal_slash s = 
-  let len = String.length s in
-  if s.[len - 1] <> '/' then s
-  else String.sub s 0 (len-1)
-
-
-(* final product *)
-let of_path path = 
-  if not (Sys.is_directory path) then
-    failwith ("Purported refpkg "^path^" is not a directory");
-  let noslash = remove_terminal_slash path in
-  let dirize fname = noslash^"/"^fname in
-  let secmap = 
-    secmap_of_strl 
-      (try File_parsing.string_list_of_file (dirize refpkg_str) with
-      | Sys_error _ -> invalid_arg (Printf.sprintf "can't find %s in %s" refpkg_str path))
-  in
-  let get_sec s = 
-    try StringMap.find s secmap with
-    | Not_found -> invalid_arg ("missing section "^s^" in refpkg "^path) 
-  in
-  let filemap = eqmap_of_strl (get_sec "files") in
-  (* pull from the filemap *)
+let of_strmap m = 
   let get what = 
-    try StringMap.find what filemap with
-    | Not_found -> invalid_arg (what^" not found in "^(dirize refpkg_str))
-  in
-  (* for when the what is actually a file *)
-  let dget what = 
-    match get what with
-    | "" -> invalid_arg ("Please specify a "^what^" in your refpkg "^path)
-    | s -> dirize s
+    try StringMap.find what m with
+    | Not_found -> raise (Missing_element what)
   in
   (* now we make the inferred things *)
-  let lfasta_aln = lazy (Alignment.read_fasta(dget "aln_fasta")) in
-  let lref_tree = lazy (Newick.of_file (dget "tree_file")) 
+  let lfasta_aln = lazy (Alignment.read_fasta(get "aln_fasta")) in
+  let lref_tree = lazy (Newick.of_file (get "tree_file")) 
   and lmodel = 
-      lazy (build_model (dget "tree_stats") (Lazy.force lfasta_aln));
-  and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (dget "taxonomy"))
-  and lseqinfom = lazy (Tax_seqinfo.of_csv (dget "seq_info"))
+      lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));
+  and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
+  and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in
   let lmrcam = 
     lazy (Tax_map.mrcam_of_data  
@@ -159,11 +87,12 @@ let of_path path =
     aln_profile = ();
     taxonomy    = ltaxonomy;
     seqinfom    = lseqinfom;
-    name        = Filename.chop_extension (Filename.basename noslash);
+    name        = (get "name");
     mrcam       = lmrcam;
     uptree_map  = luptree_map;
   }
 
+let of_path path = of_strmap (Refpkg_parse.strmap_of_path path)
 
 (* *** ACCESSORIES *** *)
 
