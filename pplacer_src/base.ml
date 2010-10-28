@@ -18,6 +18,9 @@ let date_time_str () =
     the_time.Unix.tm_min
     the_time.Unix.tm_sec
 
+let safe_chop_extension s = 
+  try Filename.chop_extension s with | Invalid_argument _ -> s
+
 
 (* pull_each_out : 
 # pull_each_out [1;2;3];;

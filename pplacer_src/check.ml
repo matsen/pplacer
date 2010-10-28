@@ -14,8 +14,10 @@ let pretend model ref_align query_fnames =
     (Alignment.n_seqs ref_align) len;
   let base_map = 
     match Model.seq_type model with
-    | Alignment.Nucleotide_seq -> Nuc_models.nuc_map 
-    | Alignment.Protein_seq -> Prot_models.prot_map
+    | Alignment.Nucleotide_seq -> 
+        print_endline "nucleotide sequences"; Nuc_models.nuc_map 
+    | Alignment.Protein_seq -> 
+        print_endline "amino acid sequences"; Prot_models.prot_map
   in
   List.iter
     (fun fname -> 

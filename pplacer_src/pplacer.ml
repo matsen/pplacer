@@ -4,7 +4,6 @@
 
 open Fam_batteries
 open MapsSets
-open Prefs
 
 let parse_args () =
   let files  = ref [] 
@@ -29,48 +28,50 @@ let () =
       exit 0;
     end;
     *)
-    if (verb_level prefs) >= 1 then 
+    if (Prefs.verb_level prefs) >= 1 then 
       Printf.printf 
         "Running pplacer %s analysis...\n"
         Version.version_revision;
     (* initialize the GSL error handler *)
     Gsl_error.init ();
     (* check that the directories exist and get a good in path *)
-    Check.directory (out_dir prefs);
+    Check.directory (Prefs.out_dir prefs);
     let ref_dir_complete =
-      match ref_dir prefs with
+      match Prefs.ref_dir prefs with
       | s when s = "" -> ""
       | s ->
           Check.directory s;
           if s.[(String.length s)-1] = '/' then s
           else s^"/"
     in
-    (* pull information from the reference package *)
-    let (refpkgo, ref_tree, ref_align, model) = 
-      match refpkg_path prefs with
-      | "" -> 
-          let ref_tree = match tree_fname prefs with
-          | "" -> failwith "please specify a reference tree.";
-          | s -> Newick.of_file (ref_dir_complete^s)
-          and ref_align = match ref_align_fname prefs with
-          | "" -> failwith "please specify a reference alignment."
-          | s -> 
-              Alignment.uppercase 
-              (Alignment.read_align (ref_dir_complete^s))
-          in
-          let model = Model.of_prefs ref_dir_complete prefs ref_align in
-          (None, ref_tree, ref_align, model)
-      | path -> 
-          let rp = Refpkg.of_path path in
-          (Some rp, 
-          Refpkg.get_ref_tree rp, 
-          Refpkg.get_aln_fasta rp,
-          Refpkg.get_model rp)
+    let rp = 
+      Refpkg.of_strmap
+        (List.fold_right
+    (* only set if the option string is non empty. 
+     * override the contents of the reference package. *)
+          (fun (k,v) m -> 
+            if v = "" then m
+            else StringMap.add k (ref_dir_complete^v) m)
+          [
+            "tree_file", Prefs.tree_fname prefs;
+            "aln_fasta", Prefs.ref_align_fname prefs;
+            "tree_stats", Prefs.stats_fname prefs;
+          ]
+          (match Prefs.refpkg_path prefs with
+          | "" -> 
+              StringMap.add "name" 
+                (Base.safe_chop_extension (Prefs.ref_align_fname prefs))
+                StringMap.empty
+          | path -> Refpkg_parse.strmap_of_path path))
     in
-    if (verb_level prefs) > 0 && 
+    let ref_tree  = Refpkg.get_ref_tree  rp
+    and ref_align = Refpkg.get_aln_fasta rp
+    and model     = Refpkg.get_model     rp
+    in
+    if (Prefs.verb_level prefs) > 0 && 
       not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
          print_endline Placerun_io.bifurcation_warning;
-    if (verb_level prefs) > 1 then begin
+    if (Prefs.verb_level prefs) > 1 then begin
       print_endline "found in reference alignment: ";
       Array.iter (
         fun (name,_) -> print_endline ("\t'"^name^"'")
@@ -82,7 +83,7 @@ let () =
        (Model.seq_type model) ref_align ref_tree 
     in
     (* pretending *)
-    if pretend prefs then begin
+    if Prefs.pretend prefs then begin
       Check.pretend model ref_align files;
       print_endline "everything looks OK.";
       exit 0;
@@ -95,7 +96,7 @@ let () =
     if locs = [] then failwith("problem with reference tree: no placement locations.");
     let curr_time = Sys.time () in
     (* calculate like on ref tree *)
-    if (verb_level prefs) >= 1 then begin
+    if (Prefs.verb_level prefs) >= 1 then begin
       print_string "Caching likelihood information on reference tree... ";
       flush_all ()
     end;
@@ -110,11 +111,11 @@ let () =
     Like_stree.calc_distal_and_proximal model ref_tree like_aln_map 
       util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr 
       ~util_glv_arr:snodes;
-    if (verb_level prefs) >= 1 then
+    if (Prefs.verb_level prefs) >= 1 then
       print_endline "done.";
-    if (verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
+    if (Prefs.verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
     (* pull exponents *)
-    if (verb_level prefs) >= 1 then begin
+    if (Prefs.verb_level prefs) >= 1 then begin
       print_string "Pulling exponents... ";
       flush_all ();
     end;
@@ -124,12 +125,12 @@ let () =
     print_endline "done.";
     (* baseball calculation *)
     let half_bl_fun loc = (Gtree.get_bl ref_tree loc) /. 2. in
-    if (verb_level prefs) >= 1 then begin
+    if (Prefs.verb_level prefs) >= 1 then begin
       print_string "Preparing the edges for baseball... ";
       flush_all ();
     end;
     Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
-    if (verb_level prefs) >= 1 then print_endline "done.";
+    if (Prefs.verb_level prefs) >= 1 then print_endline "done.";
     (*
     (* check tree likelihood *)
     let zero_d = Glv_arr.get_one darr
@@ -153,7 +154,7 @@ let () =
         let query_bname = 
           Filename.basename (Filename.chop_extension query_fname) in
         let prior = 
-          if uniform_prior prefs then Core.Uniform_prior
+          if Prefs.uniform_prior prefs then Core.Uniform_prior
           else Core.Exponential_prior 
             (* exponential with mean = average branch length *)
             ((Gtree.tree_length ref_tree) /. 
@@ -170,22 +171,21 @@ let () =
                 ~darr ~parr ~snodes locs))
         in
         (* write output if we aren't in fantasy mode *)
-        if fantasy prefs = 0. then begin
+        if Prefs.fantasy prefs = 0. then begin
           let final_pr = 
-            match refpkgo with 
-            | Some rp -> 
-                Tax_classify.refpkg_contain_classify rp pr;
-            | None -> pr
+            if not (Refpkg.tax_equipped rp) then pr
+            else Tax_classify.refpkg_contain_classify rp pr
           in
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
-            (out_dir prefs)
+            (Prefs.out_dir prefs)
             final_pr;
-          if csv prefs then Placerun_io.to_csv_file (out_dir prefs) final_pr;
+          if Prefs.csv prefs then 
+            Placerun_io.to_csv_file (Prefs.out_dir prefs) final_pr;
         end)
       files;
     (* print final info *)
-    if verb_level prefs >= 1 then begin
+    if Prefs.verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
       Common_base.print_n_compactions ();
     end;

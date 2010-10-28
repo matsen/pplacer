@@ -64,7 +64,8 @@ let of_strmap m =
     | Not_found -> raise (Missing_element what)
   in
   (* now we make the inferred things *)
-  let lfasta_aln = lazy (Alignment.read_fasta(get "aln_fasta")) in
+  let lfasta_aln = 
+    lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
   let lref_tree = lazy (Newick.of_file (get "tree_file")) 
   and lmodel = 
       lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));
@@ -94,6 +95,7 @@ let of_strmap m =
 
 let of_path path = of_strmap (Refpkg_parse.strmap_of_path path)
 
+
 (* *** ACCESSORIES *** *)
 
 (* these should be light enough that it's not worth making them lazy *)
@@ -110,3 +112,9 @@ let get_tax_ref_tree rp =
   Decor_gtree.add_decor_by_map
     (Decor_gtree.of_newick_gtree (get_ref_tree rp))
     (IntMap.map (fun x -> [x]) (get_tax_decor_map rp))
+
+(* if the rp is equipped with a taxonomy *)
+let tax_equipped rp = 
+  try let _ = get_taxonomy rp and _ = get_seqinfom rp in true with
+  | Missing_element _ -> false
+

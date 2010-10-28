@@ -69,4 +69,5 @@ let strmap_of_path path =
     try StringMap.find s secmap with
     | Not_found -> invalid_arg ("missing section "^s^" in refpkg "^path) 
   in
-  eqmap_of_strl (get_sec "files")
+  StringMap.add "name" (Filename.basename noslash) 
+                (StringMap.map dirize (eqmap_of_strl (get_sec "files")))
