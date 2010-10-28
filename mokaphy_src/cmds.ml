@@ -45,9 +45,13 @@ let pre_of_pr ~is_weighted ~use_pp pr =
 let prel_of_prl ~is_weighted ~use_pp prl = 
   List.map (pre_of_pr ~is_weighted ~use_pp) prl
 
-let make_tax_pre use_pp ti_imap pr =
-  Tax_mass.pre Placement.contain_classif 
-    (Mokaphy_prefs.criterion_of_bool use_pp) ti_imap pr
+let make_tax_pre ~is_weighted ~use_pp ti_imap pr =
+  Tax_mass.of_placerun 
+    Placement.contain_classif 
+    (Mokaphy_prefs.weighting_of_bool is_weighted)
+    (Mokaphy_prefs.criterion_of_bool use_pp) 
+    ti_imap 
+    pr
 
 (* *** refpkgs *** *)
 let refpkgo_of_fname = function
@@ -160,7 +164,7 @@ let heat prefs = function
         | None -> []
         | Some rp -> begin
             let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-            let my_make_tax_pre = make_tax_pre use_pp ti_imap in
+            let my_make_tax_pre = make_tax_pre ~is_weighted ~use_pp ti_imap in
             [Some (tree_name^".tax"),
             Heat_tree.make_heat_tree prefs taxt 
               (my_make_tax_pre pr1)
