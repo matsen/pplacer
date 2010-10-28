@@ -8,94 +8,6 @@
 open MapsSets
 open Fam_batteries
 
-exception Refpkg_tree_and_ref_tree_mismatch
-
-(* *** COMMON *** *)
-
-(* for out_fname options *)
-let ch_of_fname = function
-  | "" -> stdout
-  | s -> open_out s
-
-let wrap_output fname f = 
-  let ch = ch_of_fname fname in
-  f ch;
-  if ch <> stdout then close_out ch
-
-let chop_suffix_if_present s suff = 
-  if Filename.check_suffix s suff then Filename.chop_suffix s suff
-  else s
-
-(* make sure all the trees in the placerun list are the same *)
-let list_get_same_tree = function
-  | [] -> assert(false)
-  | [x] -> Placerun.get_ref_tree x
-  | hd::tl -> List.hd (List.map (Placerun.get_same_tree hd) tl)
-
-let cat_names prl = 
-  String.concat "." (List.map Placerun.get_name prl)
-
-(* *** making pres *** *)
-let pre_of_pr ~is_weighted ~use_pp pr = 
-  Mass_map.Pre.of_placerun 
-    (Mokaphy_prefs.weighting_of_bool is_weighted)
-    (Mokaphy_prefs.criterion_of_bool use_pp)
-    pr
-
-let prel_of_prl ~is_weighted ~use_pp prl = 
-  List.map (pre_of_pr ~is_weighted ~use_pp) prl
-
-let make_tax_pre ~is_weighted ~use_pp ti_imap pr =
-  Tax_mass.of_placerun 
-    Placement.contain_classif 
-    (Mokaphy_prefs.weighting_of_bool is_weighted)
-    (Mokaphy_prefs.criterion_of_bool use_pp) 
-    ti_imap 
-    pr
-
-(* *** refpkgs *** *)
-let refpkgo_of_fname = function
-  | "" -> None
-  | path -> Some (Refpkg.of_path path)
-
-let check_refpkgo_tree ref_tree = function
-  | None -> ()
-  | Some rp -> 
-      if 0 <> Newick.compare ref_tree (Refpkg.get_ref_tree rp) then
-        raise Refpkg_tree_and_ref_tree_mismatch
-  
-(* *** output tools *** *)
-(* there is a lack of parallelism here, as write_unary takes placeruns, while
- * uptri takes an uptri, but uptri needs to be more general. *)
-
-let write_unary pr_to_float prl ch = 
-  String_matrix.write_padded
-   ch
-   (Array.map
-     (fun pr ->
-       [| 
-         Placerun.get_name pr; 
-         Printf.sprintf "%g" (pr_to_float pr);
-       |])
-   (Array.of_list prl))
-
-let write_uptri fun_name list_output namea u ch = 
-  if Uptri.get_dim u = 0 then 
-    failwith(Printf.sprintf "can't do %s with fewer than two place files" fun_name);
-  if list_output then begin
-    String_matrix.write_padded ch
-      (Array.of_list
-        ([|"sample_1"; "sample_2"; fun_name;|]::
-          (let m = ref [] in
-          Uptri.iterij
-            (fun i j s -> m := [|namea.(i); namea.(j); s|]::!m)
-            (Uptri.map (Printf.sprintf "%g") u);
-          List.rev !m)))
-  end
-  else begin
-    Printf.fprintf ch "%s distances:\n" fun_name;
-    Mokaphy_base.write_named_float_uptri ch namea u;
-  end
 
 
 (* *** BARY BARY BARY BARY BARY *** *)
@@ -117,20 +29,20 @@ let make_bary_tree t prel =
   Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
 
 let bary prefs prl = 
-  let t = list_get_same_tree prl in
+  let t = Cmds_common.list_get_same_tree prl in
   let prel = 
-    prel_of_prl 
+    Cmds_common.prel_of_prl 
       ~is_weighted:(Mokaphy_prefs.Bary.weighted prefs)
       ~use_pp:(Mokaphy_prefs.Bary.use_pp prefs)
       prl
   in
   if prl <> [] then begin
     let fname = match Mokaphy_prefs.Bary.out_fname prefs with
-      | "" -> (cat_names prl)^".bary.xml"
+      | "" -> (Cmds_common.cat_names prl)^".bary.xml"
       | s -> s
     in
     Phyloxml.named_tree_to_file
-      (chop_suffix_if_present fname ".xml") (* tree name *)
+      (Cmds_common.chop_suffix_if_present fname ".xml") (* tree name *)
       (make_bary_tree t prel)
       fname
   end
@@ -140,18 +52,19 @@ let bary prefs prl =
 let heat prefs = function
   | [pr1; pr2] as prl ->
       let fname = match Mokaphy_prefs.Heat.out_fname prefs with
-        | "" -> (cat_names prl)^".heat.xml"
+        | "" -> (Cmds_common.cat_names prl)^".heat.xml"
         | s -> s
       in
       let ref_tree = Placerun.get_same_tree pr1 pr2 
       and is_weighted = Mokaphy_prefs.Heat.weighted prefs
       and use_pp = Mokaphy_prefs.Heat.use_pp prefs
       in
-      let tree_name = chop_suffix_if_present fname ".xml"
-      and my_pre_of_pr = pre_of_pr ~is_weighted ~use_pp
-      and refpkgo = refpkgo_of_fname (Mokaphy_prefs.Heat.refpkg_path prefs) 
+      let tree_name = Cmds_common.chop_suffix_if_present fname ".xml"
+      and my_pre_of_pr = Cmds_common.pre_of_pr ~is_weighted ~use_pp
+      and refpkgo = 
+        Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Heat.refpkg_path prefs) 
       in
-      check_refpkgo_tree ref_tree refpkgo;
+      Cmds_common.check_refpkgo_tree ref_tree refpkgo;
       Phyloxml.named_tree_list_to_file
         ([Some tree_name,
           Heat_tree.make_heat_tree prefs 
@@ -164,7 +77,8 @@ let heat prefs = function
         | None -> []
         | Some rp -> begin
             let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-            let my_make_tax_pre = make_tax_pre ~is_weighted ~use_pp ti_imap in
+            let my_make_tax_pre = 
+              Cmds_common.make_tax_pre ~is_weighted ~use_pp ti_imap in
             [Some (tree_name^".tax"),
             Heat_tree.make_heat_tree prefs taxt 
               (my_make_tax_pre pr1)
@@ -177,7 +91,7 @@ let heat prefs = function
 
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
-  wrap_output (Mokaphy_prefs.KR.out_fname prefs)
+  Cmds_common.wrap_output (Mokaphy_prefs.KR.out_fname prefs)
     (fun ch -> Kr_core.core ch prefs prl)
 
 
@@ -187,16 +101,16 @@ let pd prefs prl =
     if Mokaphy_prefs.PD.normalized prefs then Pd.normalized_of_pr
     else Pd.of_pr
   in
-  wrap_output 
+  Cmds_common.wrap_output 
     (Mokaphy_prefs.PD.out_fname prefs) 
-    (write_unary 
+    (Cmds_common.write_unary 
       (pd_cmd (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs)))
       prl)
 
 
 (* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
 let pdfrac prefs prl = 
-  let t = list_get_same_tree prl
+  let t = Cmds_common.list_get_same_tree prl
   and pra = Array.of_list prl
   in
   let inda = 
@@ -205,9 +119,9 @@ let pdfrac prefs prl =
         (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs)))
       pra
   in
-  wrap_output 
+  Cmds_common.wrap_output 
     (Mokaphy_prefs.PDFrac.out_fname prefs) 
-    (write_uptri
+    (Cmds_common.write_uptri
       "pdfrac"
       (Mokaphy_prefs.PDFrac.list_output prefs)
       (Array.map Placerun.get_name pra)
@@ -223,12 +137,12 @@ let make_dist_fun prefs prl =
   Pquery_distances.dist_fun_of_w 
     (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Avgdst.weighted prefs))
     (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Avgdst.use_pp prefs))
-    (Edge_rdist.build_ca_info (list_get_same_tree prl))
+    (Edge_rdist.build_ca_info (Cmds_common.list_get_same_tree prl))
 
 let uavgdst prefs prl = 
-  wrap_output 
+  Cmds_common.wrap_output 
     (Mokaphy_prefs.Avgdst.out_fname prefs) 
-    (write_unary
+    (Cmds_common.write_unary
       (Avgdst.of_placerun 
         (make_dist_fun prefs prl)
         (Mokaphy_prefs.Avgdst.exponent prefs))
@@ -236,9 +150,9 @@ let uavgdst prefs prl =
 
 let bavgdst prefs prl = 
   let pra = Array.of_list prl in
-  wrap_output 
+  Cmds_common.wrap_output 
     (Mokaphy_prefs.Avgdst.out_fname prefs) 
-    (write_uptri
+    (Cmds_common.write_uptri
       "bavgdst"
       (Mokaphy_prefs.Avgdst.list_output prefs)
       (Array.map Placerun.get_name pra)
