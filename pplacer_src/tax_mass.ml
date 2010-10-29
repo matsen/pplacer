@@ -14,7 +14,7 @@ let reverse_ti_imap start =
 
 (* here we build the pre mass map which is appropriate for the tax_gtree.
  * ti_imap takes us from the locations on the tree to taxids *)
-let pre tax_id_of_place weighting criterion ti_imap pr =  
+let pre root_id tax_id_of_place weighting criterion ti_imap pr =  
   let revm = reverse_ti_imap ti_imap in
   Mass_map.Pre.normalize_mass 
     (List.map
@@ -24,7 +24,7 @@ let pre tax_id_of_place weighting criterion ti_imap pr =
             let ti = tax_id_of_place p in
             try
               Mass_map.Pre.distal_mass_unit 
-                (TaxIdMap.find ti revm)
+                (if ti = Tax_id.NoTax then root_id else TaxIdMap.find ti revm)
                 (criterion p)
             with
             | Not_found -> raise (Tax_id_not_in_tree ti))

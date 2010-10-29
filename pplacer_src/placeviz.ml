@@ -9,6 +9,7 @@ open Placement
 let use_pp = ref false
 and weighted = ref true
 and refpkg_path = ref ""
+and write_classic = ref false
 and write_sing = ref false
 and write_tog = ref false
 and write_loc = ref false
@@ -37,6 +38,8 @@ let parse_args () =
       "Treat every placement as a point mass concentrated on the highest-weight placement.";
       "-c", Arg.Set_string refpkg_path,
       "Reference package path";
+      "--classic", Arg.Set write_classic,
+      "Write the fat and num trees in their individual files.";
       "--sing", Arg.Set write_sing,
       "Single placement: make one tree for each placement.";
       "--tog", Arg.Set write_tog,
@@ -127,9 +130,11 @@ let () =
         (* make the various visualizations *)
         let place_massm = 
           Mass_map.By_edge.of_placerun weighting criterion placerun in
-        write_num_file fname_base decor_ref_tree placed_map;
-        Placeviz_core.write_fat_tree 
-          mass_width !log_coeff fname_base decor_ref_tree place_massm;
+        if !write_classic then begin
+          write_num_file fname_base decor_ref_tree placed_map;
+          Placeviz_core.write_fat_tree 
+            mass_width !log_coeff fname_base decor_ref_tree place_massm
+        end;
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt criterion fname_base decor_ref_tree placed_map;
@@ -169,7 +174,7 @@ let () =
                 Some (prname^".tax.fat"),
                 my_fat taxt
                   (Mass_map.By_edge.of_pre
-                    (Tax_mass.pre Placement.contain_classif 
+                    (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif 
                       weighting criterion ti_imap placerun))
               ]
             with
