@@ -36,10 +36,10 @@ let color_of_heat prefs ?(p=1.) heat =
   assert_intensity intensity;
   Decor.color_avg intensity color gray
 
-let width_of_heat ~min_width ~width_diff ?(p=1.) heat = 
+let width_value_of_heat ~width_diff ?(p=1.) heat = 
   let intensity = intensity_of_heat ~p heat in
   assert_intensity intensity;
-  Decor.width (min_width +. width_diff *. intensity)
+  width_diff *. intensity
 
 let color_map prefs t pre1 pre2 = 
   let p = MP.p_exp prefs
@@ -95,10 +95,12 @@ let color_map prefs t pre1 pre2 =
     (List.map 
       (fun (id, raw_heat) -> 
         let scaled_heat = raw_heat /. max_abs_heat in
+        let wv = width_value_of_heat ~width_diff ~p scaled_heat in
         (id, 
-          [
+        if wv < min_width then []
+        else [
             our_color_of_heat scaled_heat;
-            width_of_heat ~min_width ~width_diff ~p scaled_heat;
+            Decor.width wv
           ]))
       heat_list)
 
