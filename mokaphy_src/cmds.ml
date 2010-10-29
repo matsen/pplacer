@@ -122,9 +122,9 @@ let pdfrac prefs prl =
   Cmds_common.wrap_output 
     (Mokaphy_prefs.PDFrac.out_fname prefs) 
     (Cmds_common.write_uptri
-      "pdfrac"
       (Mokaphy_prefs.PDFrac.list_output prefs)
       (Array.map Placerun.get_name pra)
+      "pdfrac"
       (Uptri.init
         (Array.length inda)
         (fun i j -> Pdfrac.of_induceds t inda.(i) inda.(j))))
@@ -153,9 +153,9 @@ let bavgdst prefs prl =
   Cmds_common.wrap_output 
     (Mokaphy_prefs.Avgdst.out_fname prefs) 
     (Cmds_common.write_uptri
-      "bavgdst"
       (Mokaphy_prefs.Avgdst.list_output prefs)
       (Array.map Placerun.get_name pra)
+      "bavgdst"
       (Uptri.init
         (Array.length pra)
         (fun i j -> 

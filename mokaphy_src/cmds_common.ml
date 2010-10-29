@@ -6,6 +6,7 @@
  *)
 
 exception Refpkg_tree_and_ref_tree_mismatch
+exception Uptri_dim_mismatch
 
 
 (* for out_fname options *)
@@ -79,7 +80,7 @@ let write_unary pr_to_float prl ch =
        |])
    (Array.of_list prl))
 
-let write_uptri fun_name list_output namea u ch = 
+let write_uptri list_output namea fun_name u ch = 
   if Uptri.get_dim u = 0 then 
     failwith(Printf.sprintf "can't do %s with fewer than two place files" fun_name);
   if list_output then begin
@@ -97,3 +98,35 @@ let write_uptri fun_name list_output namea u ch =
     Mokaphy_base.write_named_float_uptri ch namea u;
   end
 
+
+let write_uptril list_output namea fun_namel ul ch = 
+  match ul with
+  | [] -> ()
+  | hd::tl -> 
+  if 0 = 
+    List.fold_left 
+      (fun d u -> if d = Uptri.get_dim u then d else raise Uptri_dim_mismatch)
+      (Uptri.get_dim hd)
+      tl
+  then
+    failwith "can't do anything interesting with fewer than two place files";
+  if list_output then begin
+    let make_line i j = 
+      Array.of_list 
+        ([namea.(i); namea.(j)] @
+          (List.map (fun u -> Printf.sprintf "%g" (Uptri.get u i j)) ul))
+    in
+    String_matrix.write_padded ch
+      (Array.of_list
+        ((Array.of_list (["sample_1";"sample_2"] @ fun_namel))::
+          (let m = ref [] in
+          Uptri.iterij (fun i j _ -> m := ((make_line i j)::!m)) hd;
+          List.rev !m)))
+  end
+  else begin
+    List.iter2
+      (fun fun_name u -> 
+        Printf.fprintf ch "%s distances:\n" fun_name;
+        Mokaphy_base.write_named_float_uptri ch namea u;)
+      fun_namel ul
+  end
