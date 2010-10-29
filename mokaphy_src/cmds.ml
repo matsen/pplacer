@@ -78,7 +78,7 @@ let heat prefs = function
         | Some rp -> begin
             let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
             let my_make_tax_pre = 
-              Cmds_common.make_tax_pre ~is_weighted ~use_pp ti_imap in
+              Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap in
             [Some (tree_name^".tax"),
             Heat_tree.make_heat_tree prefs taxt 
               (my_make_tax_pre pr1)

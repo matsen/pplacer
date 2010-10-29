@@ -41,8 +41,9 @@ let pre_of_pr ~is_weighted ~use_pp pr =
 let prel_of_prl ~is_weighted ~use_pp prl = 
   List.map (pre_of_pr ~is_weighted ~use_pp) prl
 
-let make_tax_pre ~is_weighted ~use_pp ti_imap pr =
+let make_tax_pre taxt ~is_weighted ~use_pp ti_imap pr =
   Tax_mass.pre 
+    (Gtree.top_id taxt)
     Placement.contain_classif 
     (Mokaphy_prefs.weighting_of_bool is_weighted)
     (Mokaphy_prefs.criterion_of_bool use_pp) 
@@ -57,7 +58,10 @@ let refpkgo_of_fname = function
 let check_refpkgo_tree ref_tree = function
   | None -> ()
   | Some rp -> 
-      if 0 <> Newick.compare ref_tree (Refpkg.get_ref_tree rp) then
+      if 0 <> compare 
+                (Gtree.get_stree ref_tree) 
+                (Gtree.get_stree (Refpkg.get_ref_tree rp))
+      then
         raise Refpkg_tree_and_ref_tree_mismatch
   
 (* *** output tools *** *)

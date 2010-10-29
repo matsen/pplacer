@@ -78,7 +78,7 @@ let core ch prefs prl =
         let rp = Refpkg.of_path path in
         let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
         (Decor_gtree.to_newick_gtree taxt, 
-        Cmds_common.make_tax_pre ~is_weighted ~use_pp ti_imap)
+        Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap)
     end
   and pra = Array.of_list prl in
   let prea = Array.map my_pre_of_pr pra in
