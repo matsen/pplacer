@@ -60,6 +60,7 @@ let wrapped_pair_core context p n_samples t pre1 pre2 =
   | Kr_distance.Total_kr_not_zero tkr ->
       failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
 
+
 (* core
  * run pair_core for each unique pair 
  *)
@@ -81,14 +82,23 @@ let core ch prefs prl =
         if Refpkg.tax_equipped rp then Some rp
         else None
   in
+  (* in the next section, pre_f is a function which takes a pr and makes a pre,
+   * and t is a gtree *)
   let uptri_of_t_pre_f (t, pre_f) = 
     let prea = Array.map pre_f pra in
     Uptri.init
       (Array.length prea)
       (fun i j ->
         wrapped_pair_core
-          (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j));
+          (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j))
+  (* here we make one of these pairs from a function which tells us how to
+   * assign a branch length to a tax rank *)
+  and t_pre_f_of_bl_of_rank rp bl_of_rank = 
+    let (taxt, ti_imap) = Tax_gtree.of_refpkg_gen bl_of_rank rp in
+    (Decor_gtree.to_newick_gtree taxt, 
+    Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap)
   in
+  (* here we make a list of uptris, which are to get printed *)
   let uptris =
     List.map 
       uptri_of_t_pre_f
@@ -96,13 +106,18 @@ let core ch prefs prl =
       Cmds_common.pre_of_pr ~is_weighted ~use_pp] @
       (match tax_refpkgo with
       | None -> []
-      | Some rp ->
-      let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-      [Decor_gtree.to_newick_gtree taxt, 
-      Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap]))
+      | Some rp -> 
+          List.map (t_pre_f_of_bl_of_rank rp)
+                   [Tax_gtree.unit_bl; Tax_gtree.inverse]))
+  (* here are a list of function names to go with those uptris *)
   and fun_names = 
-    List.map (fun s -> Printf.sprintf "%s%g" s p)
-    (["Z_"] @ (match tax_refpkgo with | Some _ -> ["tax_Z_"] | None -> []))
+    List.map 
+      (fun s -> Printf.sprintf "%s%g" s p)
+      (["Z_"] @ 
+      (match tax_refpkgo with 
+      | Some _ -> ["unit_tax_Z_"; "inv_tax_Z_"] 
+      | None -> []))
+  (* the names of the placeruns *)
   and names = Array.map Placerun.get_name pra
     (* if Mokaphy_prefs.KR.matrix prefs then 2. else  *)
   and print_pvalues = (* Mokaphy_prefs.KR.matrix prefs || *)
