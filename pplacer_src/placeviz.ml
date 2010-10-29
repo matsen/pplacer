@@ -168,7 +168,8 @@ let () =
             (try
               [
                 Some (prname^".tax.fat"),
-                my_fat taxt
+                Placeviz_core.fat_tree (mass_width/.2.) !log_coeff taxt
+                (* NOTE: we don't use my_fat taxt here *)
                   (Mass_map.By_edge.of_pre
                     (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif 
                       weighting criterion ti_imap placerun))
