@@ -69,42 +69,45 @@ let core ch prefs prl =
   let n_samples = Mokaphy_prefs.KR.n_samples prefs 
   and is_weighted = Mokaphy_prefs.KR.weighted prefs
   and use_pp = Mokaphy_prefs.KR.use_pp prefs
-  in
-  let (t, my_pre_of_pr) = 
-    match Mokaphy_prefs.KR.refpkg_path prefs with
-    | "" ->
-        (Cmds_common.list_get_same_tree prl, Cmds_common.pre_of_pr ~is_weighted ~use_pp)
-    | path -> begin
-        let rp = Refpkg.of_path path in
-        let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-        (Decor_gtree.to_newick_gtree taxt, 
-        Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap)
-    end
-  and pra = Array.of_list prl in
-  let prea = Array.map my_pre_of_pr pra in
-  let context pr1 pr2 = 
+  and pra = Array.of_list prl 
+  and context pr1 pr2 = 
     Printf.sprintf "comparing %s with %s" 
       (Placerun.get_name pr1) (Placerun.get_name pr2)
   and p = Mokaphy_prefs.KR.p_exp prefs
+  and tax_refpkgo = match Mokaphy_prefs.KR.refpkg_path prefs with
+      | "" -> None
+      | path -> 
+        let rp = Refpkg.of_path path in
+        if Refpkg.tax_equipped rp then Some rp
+        else None
   in
-  (* refactor this into something which takes a list of uptris and a list of names,
-   * and decides what to do based on list output or not. *)
-  let uptris =
-    [
+  let uptri_of_t_pre_f (t, pre_f) = 
+    let prea = Array.map pre_f pra in
     Uptri.init
       (Array.length prea)
       (fun i j ->
         wrapped_pair_core
-          (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j))
-    ]
+          (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j));
   in
-  let names = Array.map Placerun.get_name pra
+  let uptris =
+    List.map 
+      uptri_of_t_pre_f
+      ([Cmds_common.list_get_same_tree prl, 
+      Cmds_common.pre_of_pr ~is_weighted ~use_pp] @
+      (match tax_refpkgo with
+      | None -> []
+      | Some rp ->
+      let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+      [Decor_gtree.to_newick_gtree taxt, 
+      Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap]))
+  and fun_names = 
+    List.map (fun s -> Printf.sprintf "%s%g" s p)
+    (["Z_"] @ (match tax_refpkgo with | Some _ -> ["tax_Z_"] | None -> []))
+  and names = Array.map Placerun.get_name pra
     (* if Mokaphy_prefs.KR.matrix prefs then 2. else  *)
   and print_pvalues = (* Mokaphy_prefs.KR.matrix prefs || *)
                       n_samples > 0
-  in
-  let neighborly f l = List.flatten (List.map f l)
-  and fun_names = [Printf.sprintf "Z_%g" p]
+  and neighborly f l = List.flatten (List.map f l)
   in
   Cmds_common.write_uptril 
     (Mokaphy_prefs.KR.list_output prefs)
