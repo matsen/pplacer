@@ -161,13 +161,9 @@ let () =
           in
           Phyloxml.named_tree_list_to_file
             ([
-              Some (prname^".ref"),
-              tax_ref_tree;
               Some (prname^".ref.fat"),
               my_fat tax_ref_tree place_massm;
-              Some (prname^".tax"),
-              taxt;
-            ]
+             ]
             @
             (try
               [
