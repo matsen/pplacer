@@ -168,6 +168,6 @@ let () =
        placerun_list;
     if !list_classify_refpkg <> "" then begin
       let rp = Refpkg.of_path (!list_classify_refpkg) in
-      List_classify.classify criterion rp parsed;
+      List_classify.classify Placement.contain_classif criterion rp parsed;
     end
   end

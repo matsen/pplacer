@@ -37,7 +37,7 @@ let classif_stral td name desired_rank m =
       |])
     (Tax_id.TaxIdMapFuns.to_pairs m)
 
-let classify criterion rp prl =
+let classify how criterion rp prl =
   let td = Refpkg.get_taxonomy rp in
   let n_ranks = Tax_taxonomy.get_n_ranks td in
   List.iter 
@@ -51,7 +51,7 @@ let classify criterion rp prl =
               (List.fold_right
                 (fun p ->
                   TIAMR.add_by
-                    (Placement.classif p)
+                    (how p)
                     (criterion p))
                 (Pquery.place_list pq)
                 (TIAMR.M.empty))
