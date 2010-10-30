@@ -5,50 +5,14 @@
 open MapsSets
 
 
-let refpkg_str = "CONTENTS.txt"
+let refpkg_str = "CONTENTS.json"
 
+let sstringMap_of_Sjobj o = 
+  Hashtbl.fold (fun k v -> StringMap.add k (Simple_json.get_string v)) 
+               (Simple_json.get_hashtbl o) 
+               StringMap.empty
 
 (* *** parsing *** *)
-
-(* (nonempty) then space then = then (nothing or something ending in something
- * nonempty) then space *)
-let equality_rex = 
-  Str.regexp "\\([^ \t]+\\)[ \t]+=[ \t]*\\(\\|.*[^ \t]\\)[ \t]*$"
-
-let eqpair_of_str s = 
-  if Str.string_match equality_rex s 0 then
-    (Str.matched_group 1 s, Str.matched_group 2 s)
-  else
-    failwith ("equality_pair_of_str: malformed string: "^s)
-
-let eqmap_of_strl sl = 
-  List.fold_right
-    (fun (k,v) -> StringMap.add k v)
-    (List.map eqpair_of_str sl)
-    StringMap.empty
-
- (* parsing sectioned files *)
-
-let sechead_rex = Str.regexp "^[ \t]*\\[\\([^]]*\\)\\][ \t]*"
-
-let extract_secheado s = 
-  if not (Str.string_match sechead_rex s 0) then None
-  else Some (Str.matched_group 1 s)
-
-let secmap_of_strl strl = 
-  let rec aux m curr_sec = function
-    | x::l -> 
-        (match extract_secheado x with
-        | Some sec -> aux m sec l
-        | None -> aux (StringMapFuns.add_listly curr_sec x m) curr_sec l)
-    | [] -> m
-  in
-  match File_parsing.filter_empty_lines strl with
-    | x::l ->
-        (match extract_secheado x with
-        | Some sec -> StringMap.map List.rev (aux StringMap.empty sec l)
-        | None -> invalid_arg "You must start config file with a section header!")
-    | [] -> StringMap.empty
 
 let remove_terminal_slash s = 
   let len = String.length s in
@@ -60,14 +24,10 @@ let strmap_of_path path =
     failwith ("Purported refpkg "^path^" is not a directory");
   let noslash = remove_terminal_slash path in
   let dirize fname = noslash^"/"^fname in
-  let secmap = 
-    secmap_of_strl 
-      (try File_parsing.string_list_of_file (dirize refpkg_str) with
-      | Sys_error _ -> invalid_arg (Printf.sprintf "can't find %s in %s" refpkg_str path))
+  let contents = Simple_json.of_file (dirize refpkg_str)
   in
-  let get_sec s = 
-    try StringMap.find s secmap with
-    | Not_found -> invalid_arg ("missing section "^s^" in refpkg "^path) 
-  in
-  StringMap.add "name" (Filename.basename noslash) 
-                (StringMap.map dirize (eqmap_of_strl (get_sec "files")))
+  StringMap.add
+    "name" 
+    (Base.safe_chop_suffix (Filename.basename noslash) ".refpkg")
+    (StringMap.map dirize 
+      (sstringMap_of_Sjobj (Simple_json.find contents "files")))

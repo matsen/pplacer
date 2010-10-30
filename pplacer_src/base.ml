@@ -21,6 +21,9 @@ let date_time_str () =
 let safe_chop_extension s = 
   try Filename.chop_extension s with | Invalid_argument _ -> s
 
+let safe_chop_suffix name suff = 
+  if Filename.check_suffix name suff then Filename.chop_suffix name suff
+  else name
 
 (* pull_each_out : 
 # pull_each_out [1;2;3];;
