@@ -103,7 +103,7 @@ let build_gen bl_of_rank td til =
 
 let constant_bl c _ = c
 let unit_bl = constant_bl 1.
-let inverse i = 1. /. (float_of_int i)
+let inverse i = 1. /. (float_of_int (i+1))
 
 let build_unit = build_gen unit_bl
 let build_inverse = build_gen inverse
