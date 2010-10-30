@@ -150,34 +150,44 @@ let () =
             fname_base 
             decor_ref_tree 
             (List.filter Pquery.is_placed pqueries);
-        if !refpkg_path <> "" then begin
-          let rp = Refpkg.of_path !refpkg_path in
-          let prname = 
-            (Placerun.get_name placerun)^
-              (if !use_pp then ".PP" else ".ML")
-          and my_fat = Placeviz_core.fat_tree mass_width !log_coeff 
-          and (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp
-          and tax_ref_tree = Refpkg.get_tax_ref_tree rp 
-          in
-          Phyloxml.named_tree_list_to_file
-            ([
-              Some (prname^".ref.fat"),
-              my_fat tax_ref_tree place_massm;
-             ]
-            @
-            (try
+
+        (* new version code *)
+        let prname = 
+          (Placerun.get_name placerun)^
+            (if !use_pp then ".PP" else ".ML")
+        and my_fat = Placeviz_core.fat_tree mass_width !log_coeff 
+        in
+        let (tax_rp_opt, final_rt) = 
+          match Refpkg.refpkgo_of_path !refpkg_path with
+          | None -> (None, decor_ref_tree)
+          | Some rp -> 
+              if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
+              else (None, decor_ref_tree)
+        in
+        Phyloxml.named_tree_list_to_file
+          ([
+            Some (prname^".ref.fat"),
+            my_fat final_rt place_massm;
+           ]
+          @
+          (try
+            match tax_rp_opt with
+            | None -> []
+            | Some rp -> begin
+              let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
               [
                 Some (prname^".tax.fat"),
-                Placeviz_core.fat_tree (mass_width/.2.) !log_coeff taxt
+                Placeviz_core.fat_tree (mass_width /. 2.) !log_coeff taxt
                 (* NOTE: we don't use my_fat taxt here *)
                   (Mass_map.By_edge.of_pre
                     (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif 
                       weighting criterion ti_imap placerun))
               ]
-            with
-            | Placement.No_classif -> []))
-            (fname_base^".xml")
-        end;
+              end
+          with
+          | Placement.No_classif -> []))
+          (fname_base^".xml");
+
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with 
       | Sys_error msg -> prerr_endline msg; 2 

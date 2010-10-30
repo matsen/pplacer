@@ -93,6 +93,10 @@ let of_strmap m =
 
 let of_path path = of_strmap (Refpkg_parse.strmap_of_path path)
 
+let refpkgo_of_path = function
+  | "" -> None
+  | path -> Some (of_path path)
+
 
 (* *** ACCESSORIES *** *)
 
