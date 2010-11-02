@@ -67,13 +67,12 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    (* set up params *)
-    let criterion = 
-      if !use_pp then Placement.post_prob
-      else Placement.ml_ratio
-    and weighting = 
+    let weighting = 
       if !weighted then Mass_map.Weighted
       else Mass_map.Unweighted
+    and criterion = 
+      if !use_pp then Placement.post_prob
+      else Placement.ml_ratio
     in
     let tree_fmt = 
       if !xml then Placeviz_core.Phyloxml 
@@ -112,20 +111,23 @@ let () =
         (* set up the coefficient for the width *)
         let n_placed = 
           (List.length pqueries) - (List.length unplaced_seqs) in
+        (* mass width is the amount of mass per unit *)
         let mass_width = 
           if !unit_width <> 0. then (* unit width specified *)
-            (!unit_width) *. (float_of_int n_placed)
+            !unit_width *. (float_of_int n_placed)
           else (* split up the mass according to the number of queries *)
-            !total_width
+            !total_width 
         in
         (* write loc file *)
         if !write_loc then
           Placeviz_core.write_loc_file 
             fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
+        let place_massm = 
+          Mass_map.By_edge.of_placerun weighting criterion placerun in
         write_num_file fname_base decor_ref_tree placed_map;
         Placeviz_core.write_fat_tree 
-          weighting criterion mass_width !log_coeff fname_base decor_ref_tree placerun;
+          mass_width !log_coeff fname_base decor_ref_tree place_massm;
         if !write_tog then
           Placeviz_core.write_tog_file 
             tree_fmt criterion fname_base decor_ref_tree placed_map;
