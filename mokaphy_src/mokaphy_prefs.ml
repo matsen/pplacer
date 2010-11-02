@@ -93,7 +93,7 @@ module Heat = struct
       use_pp = ref false;
       p_exp = ref 1.;
       weighted = ref true;
-      simple_colors = ref false;
+      simple_colors = ref true;
       gray_black_colors = ref false;
       white_bg = ref false;
       gray_level = ref 5;
@@ -114,8 +114,8 @@ module Heat = struct
 "The exponent for the integration, i.e. the value of p in Z_p.";
 "--point", Arg.Clear prefs.weighted,
 weighted_help;
-"--simple-colors", Arg.Set prefs.simple_colors,
-"Use only 100% red and blue to signify the sign of the KR along that edge.";
+"--color-gradation", Arg.Clear prefs.simple_colors,
+"Use color gradation as well as thickness to represent mass transport.";
 "--gray-black", Arg.Set prefs.gray_black_colors,
 "Use gray and black in place of red and blue to signify the sign of the KR along that edge.";
 "--white-bg", Arg.Set prefs.white_bg,
