@@ -5,7 +5,7 @@
 open Fam_batteries
 open MapsSets
 
-let compatible_versions = [ "v0.3"; "v1.0"; ]
+let compatible_versions = [ "v0.3"; "v1.0"; "v1.1"; ]
 
 let bifurcation_warning = 
   "Warning: pplacer results make the most sense when the \
