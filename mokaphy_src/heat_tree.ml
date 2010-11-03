@@ -97,11 +97,11 @@ let color_map prefs t pre1 pre2 =
         let scaled_heat = raw_heat /. max_abs_heat in
         let wv = width_value_of_heat ~width_diff ~p scaled_heat in
         (id, 
-        if wv < min_width then []
-        else [
-            our_color_of_heat scaled_heat;
-            Decor.width wv
-          ]))
+        if wv = 0. then []
+        else 
+          ( our_color_of_heat scaled_heat ) ::
+          ( if wv < min_width then []
+            else [ Decor.width wv ])))
       heat_list)
 
 let make_heat_tree prefs decor_t pre1 pre2 = 
