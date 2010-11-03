@@ -11,11 +11,11 @@ Currently implemented
 * L^p generalizations thereof
 * a generalization of unweighted UniFrac_.
 * `Heat trees`_ in phyloXML format, which graphically show the difference between two collections of placements.
+* KR comparison and heat trees on the taxonomic tree
 
 Coming soon
 ===========
-* average pairwise distance within and between placements
-* comparison using taxonomic classification *using the structure of the taxonomic tree*
+* (testing for) average pairwise distance within and between placements
 
 And...
 ======
