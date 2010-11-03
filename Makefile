@@ -8,7 +8,7 @@ mac: $(MACRELEASE)
 $(RELEASE):
 	if [ ! -e bin ]; then mkdir bin; fi
 	make $@.native
-	cp `readlink -f $@.native` bin/$@
+	cp `readlink $@.native` bin/$@
 	rm $@.native
 
 %.native %.byte %.p.native:
