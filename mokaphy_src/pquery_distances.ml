@@ -43,23 +43,3 @@ let unweighted_pquery_dist criterion ca_info pqa pqb =
 let dist_fun_of_w = function
   | Mass_map.Weighted -> weighted_pquery_dist
   | Mass_map.Unweighted -> unweighted_pquery_dist
-
-  (*
-(* could be made faster by pre-processing the above *)
-let matrix_of_pqueries weighting criterion t pqueryl = 
-  let pquerya = Array.of_list pqueryl in
-  let n = Array.length pquerya
-  and ca_info = Edge_rdist.build_ca_info t
-  in
-  let m = Gsl_matrix.create n n in
-  let dist_fun = (dist_fun_of_w weighting) criterion ca_info
-  in
-  for i=0 to n-1 do
-    for j=i to n-1 do
-      let x = dist_fun pquerya.(i) pquerya.(j) in
-      BA2.unsafe_set m i j x;
-      if i <> j then BA2.unsafe_set m j i x;
-    done
-  done;
-  m
-  *)
