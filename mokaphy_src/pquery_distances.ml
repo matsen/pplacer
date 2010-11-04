@@ -17,6 +17,11 @@
 module BA1 = Bigarray.Array1
 module BA2 = Bigarray.Array2
 
+
+let exponentiate_function exponent f = 
+  if exponent = 1. then f
+  else (fun crit cai a b -> (f crit cai a b) ** exponent)
+
 (* take the weighted average over placements of the pquery *)
 let weighted_pquery_dist criterion ca_info pqa pqb = 
   let total = ref 0. in
@@ -40,6 +45,9 @@ let unweighted_pquery_dist criterion ca_info pqa pqb =
     (Placement.location p1, Placement.distal_bl p1)
     (Placement.location p2, Placement.distal_bl p2)
 
-let dist_fun_of_w = function
-  | Mass_map.Weighted -> weighted_pquery_dist
-  | Mass_map.Unweighted -> unweighted_pquery_dist
+let dist_fun_of_expon_weight exponent weighting = 
+  exponentiate_function 
+    exponent
+    (match weighting with
+    | Mass_map.Weighted -> weighted_pquery_dist
+    | Mass_map.Unweighted -> unweighted_pquery_dist)

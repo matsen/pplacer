@@ -12,13 +12,9 @@ type 'a data_t =
   | Pairwise of 'a Placerun.placerun * 'a Placerun.placerun 
   | Single of 'a Placerun.placerun
 
-let of_placerun_gen dist_fun data exponent = 
-  let exp_dist_fun = 
-    if exponent = 1. then dist_fun
-    else (fun a b -> (dist_fun a b) ** exponent)
-  in
+let of_placerun_gen dist_fun data = 
   let total = ref 0. in
-  let add_to_tot tl a b = total := !total +. (exp_dist_fun a b) /. tl in
+  let add_to_tot tl a b = total := !total +. (dist_fun a b) /. tl in
   match data with
   | Single pr ->
       let tl = Gtree.tree_length (Placerun.get_ref_tree pr) 
@@ -37,8 +33,8 @@ let of_placerun_gen dist_fun data exponent =
       (!total) /. 
         (float_of_int ((Placerun.n_pqueries pr)*(Placerun.n_pqueries pr')))
 
-let of_placerun_pair dist_fun exponent pr pr' = 
-  of_placerun_gen dist_fun (Pairwise (pr,pr')) exponent
+let of_placerun_pair dist_fun pr pr' = 
+  of_placerun_gen dist_fun (Pairwise (pr,pr')) 
 
-let of_placerun dist_fun exponent pr = 
-  of_placerun_gen dist_fun (Single pr) exponent
+let of_placerun dist_fun pr = 
+  of_placerun_gen dist_fun (Single pr) 

@@ -134,7 +134,8 @@ let pdfrac prefs prl =
 (* *** AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST  *** *)
 
 let make_dist_fun prefs prl = 
-  Pquery_distances.dist_fun_of_w 
+  Pquery_distances.dist_fun_of_expon_weight 
+    (Mokaphy_prefs.Avgdst.exponent prefs)
     (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Avgdst.weighted prefs))
     (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Avgdst.use_pp prefs))
     (Edge_rdist.build_ca_info (Cmds_common.list_get_same_tree prl))
@@ -144,8 +145,7 @@ let uavgdst prefs prl =
     (Mokaphy_prefs.Avgdst.out_fname prefs) 
     (Cmds_common.write_unary
       (Avgdst.of_placerun 
-        (make_dist_fun prefs prl)
-        (Mokaphy_prefs.Avgdst.exponent prefs))
+        (make_dist_fun prefs prl))
       prl)
 
 let bavgdst prefs prl = 
@@ -161,6 +161,5 @@ let bavgdst prefs prl =
         (fun i j -> 
           Avgdst.of_placerun_pair 
             (make_dist_fun prefs prl)
-            (Mokaphy_prefs.Avgdst.exponent prefs)
             pra.(i) 
             pra.(j))))
