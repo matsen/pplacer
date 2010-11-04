@@ -17,12 +17,31 @@ Coming soon
 ===========
 * (testing for) average pairwise distance within and between placements
 
+Documentation
+=============
+The manual is this repos wiki_.
+
+Compilation
+===========
+First `install pplacer`_.
+Then-- yes, laugh at the kluge-- make symlinks of the pplacer_src and common_src directories into your mokaphy build directory.
+For me that looks like::
+
+  matsen@puffadder ls
+  bin  _build  common_src  Makefile  mokaphy_src  myocamlbuild.ml  pplacer_src  README.rest  tags  _tags  test  top_tests
+  matsen@puffadder ls -l common_src pplacer_src
+  lrwxrwxrwx 1 matsen matsen 38 2010-10-07 06:02 common_src -> /home/matsen/pplacer/ocaml/common_src/
+  lrwxrwxrwx 1 matsen matsen 39 2010-10-07 06:02 pplacer_src -> /home/matsen/pplacer/ocaml/pplacer_src/
+
+Then make.
+(It's like this because eventually mokaphy will get merged into the pplacer tree...)
+
+
 And...
 ======
 mokaphy is short for *MOnge KAntorovich applied to PHYlogenetics*.
 Its original name was Kantorovich Rubinstein Applied to Phylogenetics, deemed unacceptable by a coauthor.
 Code is currently undergoing a major overhaul, and is not quite ready for general consumption, but have at it if you are keen.
-Compilation_ is like for pplacer, and the manual is this repos wiki_.
 Feel free to send me any questions.
 
 Mokaphy is free software under the GPL v3.
@@ -31,6 +50,6 @@ Mokaphy is free software under the GPL v3.
 .. _RAxML: http://wwwkramer.in.tum.de/exelixis/software.html
 .. _phylogenetic Kantorovich-Rubinstein metric: http://arxiv.org/abs/1005.1699
 .. _UniFrac: http://128.138.212.43/unifrac/help.psp
-.. _Compilation: http://matsen.fhcrc.org/pplacer/compile.html
+.. _install pplacer: http://matsen.fhcrc.org/pplacer/compile.html
 .. _wiki: http://github.com/matsen/mokaphy/wiki
 .. _Heat trees: http://matsen.fhcrc.org/research.html
