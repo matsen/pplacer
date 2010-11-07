@@ -162,7 +162,9 @@ let fat_tree mass_width log_coeff decor_ref_tree massm =
   Decor_gtree.add_decor_by_map
     decor_ref_tree
     (IntMap.map
-      (widthl_of_mass log_coeff mass_width)
+      (fun m ->
+        [ Decor.sand ] @
+        (widthl_of_mass log_coeff mass_width m))
       massm)
 
 let write_fat_tree fat_width log_coeff fname_base decor_ref_tree massm = 

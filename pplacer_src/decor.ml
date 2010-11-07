@@ -21,6 +21,7 @@ let assert_unit_interval x = assert(0. <= x && x <= 1.)
 (* colors! 255 is the most saturated. *)
 let color (r, g, b) = assert_ubytes [r; g; b]; Color(r, g, b)
 
+(* basic colors *)
 let white = color (255,255,255)
 let black = color (0,0,0)
 let red = color (255,0,0)
@@ -28,6 +29,9 @@ let orange = color (255, 165, 0)
 let yellow = color (255, 255, 0)
 let green = color (0, 255, 0)
 let blue = color (0, 0, 255)
+
+(* interesting colors *)
+let sand = color (237, 201, 175)
 
 (* white is 255, black is 0 *)
 let gray intensity = color (intensity, intensity, intensity)

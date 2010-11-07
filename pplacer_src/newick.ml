@@ -7,6 +7,8 @@
 open MapsSets
 open Fam_batteries
 
+type t = Newick_bark.newick_bark Gtree.gtree
+
 (* use *)
 
 let compare t1 t2 = Gtree.compare Newick_bark.compare t1 t2
