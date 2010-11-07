@@ -167,4 +167,24 @@ let bavgdst prefs prl =
 
 (* *** CLUSTER CLUSTER CLUSTER CLUSTER CLUSTER *** *)
 
-module X = Clusterfunc.PreBlob
+open Clusterfunc
+
+let pre_of_pr prefs pr =
+  Mass_map.Pre.of_placerun 
+    (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Cluster.weighted prefs))
+    (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Cluster.use_pp prefs))
+    pr
+
+let cluster prefs prl = 
+  let rt = Cmds_common.list_get_same_tree prl
+  and blobl = 
+    List.map
+      (fun pr -> 
+        Printf.printf "reading %s\n" (Placerun.get_name pr);
+        (Placerun.get_name pr, pre_of_pr prefs pr))
+      prl
+  in
+  Cmds_common.wrap_output 
+    (Mokaphy_prefs.Cluster.out_fname prefs) 
+    (fun ch -> Newick.write ch (PreCluster.of_named_blobl rt blobl))
+

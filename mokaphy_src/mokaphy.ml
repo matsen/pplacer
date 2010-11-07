@@ -141,6 +141,17 @@ let bavgdst_of_argl = function
         (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
         "usage: bavgdst [options] placefiles")
 
+let cluster_of_argl = function
+  | [] -> print_endline "makes a heirarchical cluster of the placeruns"
+  | argl -> 
+    let prefs = Mokaphy_prefs.Cluster.defaults () in
+    Cmds.cluster
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.Cluster.specl_of_prefs prefs)
+        "usage: cluster [options] placefiles")
+
 let cmd_map = 
   List.fold_right 
     (fun (k,v) -> StringMap.add k v)
@@ -152,6 +163,7 @@ let cmd_map =
       "pdfrac", pdfrac_of_argl;
       "uavgdst", uavgdst_of_argl;
       "bavgdst", bavgdst_of_argl;
+      "cluster", cluster_of_argl;
     ]
     StringMap.empty
 

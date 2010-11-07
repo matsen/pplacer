@@ -50,11 +50,23 @@ module Cluster (B: BLOB) =
       let (small, big) = if compare b b' < 0 then (b, b') else (b', b) in
       { dist = B.distf rt b b'; small = small; big = big; }
 
+    let blob_in_cble b c = b = c.small || b = c.big
+    let cble_overlap c c' = (blob_in_cble c.small c')||(blob_in_cble c.big c')
+
     (* be completely sure that we sort by dist first *)
     let compare_cble a b =
       let cdist = compare a.dist b.dist in
       if cdist <> 0 then cdist
       else Pervasives.compare a b
+
+    let replace_blob rt oldb newb c = 
+      if c.small = oldb then cble_of_blobs rt c.big newb
+      else if c.big = oldb then cble_of_blobs rt c.small newb
+      else invalid_arg "replace_blob: blob not found"
+
+    let perhaps_replace_blob rt ~oldb ~newb c = 
+      if blob_in_cble oldb c then replace_blob rt oldb newb c
+      else c
 
     module OrderedCble = 
       struct
@@ -64,13 +76,14 @@ module Cluster (B: BLOB) =
 
     module CSet = Set.Make (OrderedCble)
 
+    let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
+
     let ingreds_of_named_blobl rt blobl = 
       let counter = ref 0 
       and barkm = ref IntMap.empty
       and bmap = ref BMap.empty
       and cset = ref CSet.empty
       in 
-      (* let set_bl id bl = barkm := Newick_bark.map_set_bl id bl (!barkm) *)
       let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
       in
       print_endline "making the leaves";
@@ -92,8 +105,68 @@ module Cluster (B: BLOB) =
       Printf.printf "making the cble set...";
       aux blobl;
       print_endline "done.";
-      (!bmap, !cset)
-  
+      (!bmap, !cset, !barkm, !counter)
+
+
+    (* BEGIN crazy work around until ocaml 3.12 *)
+    exception First of B.t
+
+    let first_key m = 
+      try 
+        BMap.iter (fun k _ -> raise (First k)) m; 
+        invalid_arg "empty map given to first_key"
+      with
+      | First k -> k
+
+    let get_only_binding m = 
+      let k = first_key m in
+      match BMap.remove k m with
+      | m' when m' = BMap.empty -> (k, BMap.find k m)
+      | _ -> invalid_arg "get_only_binding: more than one binding"
+    (* END crazy work around until 3.12 *)
+      
+    let of_ingreds rt start_bmap start_cset start_barkm start_free_index = 
+      let barkm = ref start_barkm
+      and n_blobs = BMap.fold (fun _ _ i -> i+1) start_bmap 0 
+      in
+      assert (n_blobs > 0);
+      let rec aux bmap cset free_index = 
+        Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
+        let set_bl_for b bl = 
+          barkm := Newick_bark.map_set_bl 
+                     (Stree.top_id (BMap.find b bmap)) bl (!barkm)
+        in
+        if CSet.cardinal cset = 0 then begin
+          let (_, stree) = get_only_binding bmap in
+          Gtree.gtree stree (!barkm)
+        end
+        else begin
+          let next = CSet.min_elt cset in
+          let tsmall = BMap.find next.small bmap
+          and tbig = BMap.find next.big bmap
+          and merged = B.merge next.small next.big
+          in
+          set_bl_for next.small (B.distf rt next.small merged);
+          set_bl_for next.big (B.distf rt next.big merged);
+          aux 
+            (BMap.add
+              merged
+              (Stree.node free_index [tsmall; tbig])
+              (BMap.remove next.small (BMap.remove next.big bmap)))
+            (cset_map (perhaps_replace_blob rt ~oldb:(next.small) ~newb:merged)
+              (cset_map (perhaps_replace_blob rt ~oldb:(next.big) ~newb:merged)
+                (CSet.remove next cset)))
+            (free_index+1)
+        end
+      in
+      aux start_bmap start_cset start_free_index
+
+    let of_named_blobl rt blobl =
+      let (start_bmap, start_cset, start_barkm, start_free_index) = 
+        ingreds_of_named_blobl rt blobl
+      in
+      of_ingreds rt start_bmap start_cset start_barkm start_free_index
+
   end
 
 module PreBlob = 
@@ -103,18 +176,9 @@ module PreBlob =
     let compare = Pervasives.compare
     let distf = Kr_distance.dist_of_pres 1.
     let to_string = Newick.to_string
-    let merge = ( @ )
+    let merge b1 b2 = Mass_map.Pre.normalize_mass (b1 @ b2)
     let hook _ = ()
   end
 
 module PreCluster = Cluster (PreBlob)
-
-let t_named_prel_of_prl prl = 
-  (Cmds_common.list_get_same_tree prl,
-  List.map
-    (fun pr -> 
-      Printf.printf "reading %s\n" (Placerun.get_name pr);
-      (Placerun.get_name pr,
-      Mass_map.Pre.of_placerun Mass_map.Unweighted Placement.ml_ratio pr))
-    prl)
 
