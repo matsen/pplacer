@@ -22,6 +22,7 @@ sig
   type tree
   val compare: t -> t -> int
   val distf: tree -> t -> t -> float
+  val normf: t -> float
   val to_string: tree -> string
   val merge: t -> t -> t
   val hook: tree -> t -> string -> unit
@@ -46,12 +47,11 @@ module Cluster (B: BLOB) =
         big : B.t;
       }
 
-    let cble_of_blobs rt b b' = 
+    let cble_of_blobs distf b b' = 
       let (small, big) = if compare b b' < 0 then (b, b') else (b', b) in
-      { dist = B.distf rt b b'; small = small; big = big; }
+      { dist = distf b b'; small = small; big = big; }
 
     let blob_in_cble b c = b = c.small || b = c.big
-    let cble_overlap c c' = (blob_in_cble c.small c')||(blob_in_cble c.big c')
 
     (* be completely sure that we sort by dist first *)
     let compare_cble a b =
@@ -59,13 +59,13 @@ module Cluster (B: BLOB) =
       if cdist <> 0 then cdist
       else Pervasives.compare a b
 
-    let replace_blob rt oldb newb c = 
-      if c.small = oldb then cble_of_blobs rt c.big newb
-      else if c.big = oldb then cble_of_blobs rt c.small newb
+    let replace_blob distf oldb newb c = 
+      if c.small = oldb then cble_of_blobs distf c.big newb
+      else if c.big = oldb then cble_of_blobs distf c.small newb
       else invalid_arg "replace_blob: blob not found"
 
-    let perhaps_replace_blob rt ~oldb ~newb c = 
-      if blob_in_cble oldb c then replace_blob rt oldb newb c
+    let perhaps_replace_blob distf ~oldb ~newb c = 
+      if blob_in_cble oldb c then replace_blob distf oldb newb c
       else c
 
     module OrderedCble = 
@@ -98,7 +98,8 @@ module Cluster (B: BLOB) =
       let rec aux = function 
         | (_, b)::l -> 
             List.iter 
-              (fun (_, b') -> cset := CSet.add (cble_of_blobs rt b b') (!cset))
+              (fun (_, b') -> 
+                cset := CSet.add (cble_of_blobs (B.distf rt) b b') (!cset))
               l;
             aux l
         | [] -> ()
@@ -128,13 +129,19 @@ module Cluster (B: BLOB) =
       
     let of_ingreds rt start_bmap start_cset start_barkm start_free_index = 
       let barkm = ref start_barkm
+      and normm = ref (BMap.mapi (fun b _ -> 
+        Printf.printf "%g\n" (B.normf b); 
+        B.normf b) start_bmap)
       and n_blobs = BMap.fold (fun _ _ i -> i+1) start_bmap 0 
+      in
+      let distf b b' = 
+        (BMap.find b !normm) *. (BMap.find b' !normm) *. (B.distf rt b b')
       in
       assert (n_blobs > 0);
       let rec aux bmap cset free_index = 
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
+        flush_all ();
         let set_bl_for b bl = 
-          Printf.printf "setting bl for %d\n" (Stree.top_id (BMap.find b bmap));
           barkm := Newick_bark.map_set_bl 
                      (Stree.top_id (BMap.find b bmap)) bl (!barkm)
         in
@@ -148,16 +155,17 @@ module Cluster (B: BLOB) =
           and tbig = BMap.find next.big bmap
           and merged = B.merge next.small next.big
           in
+          normm := BMap.add merged (B.normf merged) (!normm);
           B.hook rt merged (Printf.sprintf "%d.tre" free_index);
-          set_bl_for next.small (next.dist /. 2.);
-          set_bl_for next.big (next.dist /. 2.);
+          set_bl_for next.small (distf next.small merged);
+          set_bl_for next.big (distf next.big merged);
           aux 
             (BMap.add
               merged
               (Stree.node free_index [tsmall; tbig])
               (BMap.remove next.small (BMap.remove next.big bmap)))
-            (cset_map (perhaps_replace_blob rt ~oldb:(next.small) ~newb:merged)
-              (cset_map (perhaps_replace_blob rt ~oldb:(next.big) ~newb:merged)
+            (cset_map (perhaps_replace_blob distf ~oldb:(next.small) ~newb:merged)
+              (cset_map (perhaps_replace_blob distf ~oldb:(next.big) ~newb:merged)
                 (CSet.remove next cset)))
             (free_index+1)
         end
@@ -172,14 +180,18 @@ module Cluster (B: BLOB) =
 
   end
 
+
+(* NOTE: mass should be normalized when making PreBlobs! *)
+
 module PreBlob = 
   struct
     type t = Mass_map.Pre.t
     type tree = Decor_gtree.t
     let compare = Pervasives.compare
     let distf = Kr_distance.dist_of_pres 1.
+    let normf a = 1. /. (Mass_map.Pre.total_mass a)
     let to_string = Newick.to_string
-    let merge b1 b2 = Mass_map.Pre.normalize_mass (b1 @ b2)
+    let merge b1 b2 = b1 @ b2
     let hook rt pre name = 
       Placeviz_core.write_fat_tree
        400. (* mass width *)

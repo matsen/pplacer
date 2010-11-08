@@ -141,9 +141,13 @@ let dist ref_tree p m1 m2 =
   ** (outer_exponent p)
 
 let dist_of_pres p t pre1 pre2 = 
+  let tot1 = Mass_map.Pre.total_mass pre1
+  and tot2 = Mass_map.Pre.total_mass pre2
+  in
+  assert(tot1 > 0. && tot2 > 0.);
   dist
     t
     p
-    (Mass_map.Indiv.of_pre pre1)
-    (Mass_map.Indiv.of_pre pre2)
+    (Mass_map.Indiv.of_pre ~factor:(1. /. tot1) pre1)
+    (Mass_map.Indiv.of_pre ~factor:(1. /. tot2) pre2)
 
