@@ -193,12 +193,14 @@ module PreBlob =
     let to_string = Newick.to_string
     let merge b1 b2 = b1 @ b2
     let hook rt pre name = 
+      let tot = Mass_map.Pre.total_mass pre in
+      assert(tot > 0.);
       Placeviz_core.write_fat_tree
        400. (* mass width *)
        1.   (* log coeff *)
        name
        rt
-       (Mass_map.By_edge.of_pre pre)
+       (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
   end
 
 module PreCluster = Cluster (PreBlob)
