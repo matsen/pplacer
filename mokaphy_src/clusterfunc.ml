@@ -24,7 +24,7 @@ sig
   val distf: tree -> t -> t -> float
   val to_string: tree -> string
   val merge: t -> t -> t
-  val hook: t -> unit
+  val hook: tree -> t -> string -> unit
 end
 
 module Cluster (B: BLOB) =
@@ -91,6 +91,7 @@ module Cluster (B: BLOB) =
         (fun (name, b) ->
           set_name (!counter) name;
           bmap := BMap.add b (Stree.leaf (!counter)) (!bmap);
+          B.hook rt b (Printf.sprintf "%d.tre" (!counter));
           incr counter;
         )
         blobl;
@@ -133,6 +134,7 @@ module Cluster (B: BLOB) =
       let rec aux bmap cset free_index = 
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
         let set_bl_for b bl = 
+          Printf.printf "setting bl for %d\n" (Stree.top_id (BMap.find b bmap));
           barkm := Newick_bark.map_set_bl 
                      (Stree.top_id (BMap.find b bmap)) bl (!barkm)
         in
@@ -146,8 +148,9 @@ module Cluster (B: BLOB) =
           and tbig = BMap.find next.big bmap
           and merged = B.merge next.small next.big
           in
-          set_bl_for next.small (B.distf rt next.small merged);
-          set_bl_for next.big (B.distf rt next.big merged);
+          B.hook rt merged (Printf.sprintf "%d.tre" free_index);
+          set_bl_for next.small (next.dist /. 2.);
+          set_bl_for next.big (next.dist /. 2.);
           aux 
             (BMap.add
               merged
@@ -177,7 +180,13 @@ module PreBlob =
     let distf = Kr_distance.dist_of_pres 1.
     let to_string = Newick.to_string
     let merge b1 b2 = Mass_map.Pre.normalize_mass (b1 @ b2)
-    let hook _ = ()
+    let hook rt pre name = 
+      Placeviz_core.write_fat_tree
+       400. (* mass width *)
+       1.   (* log coeff *)
+       name
+       (Decor_gtree.of_newick_gtree rt)
+       (Mass_map.By_edge.of_pre pre)
   end
 
 module PreCluster = Cluster (PreBlob)

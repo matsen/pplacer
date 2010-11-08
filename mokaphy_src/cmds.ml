@@ -181,10 +181,15 @@ let cluster prefs prl =
     List.map
       (fun pr -> 
         Printf.printf "reading %s\n" (Placerun.get_name pr);
-        (Placerun.get_name pr, pre_of_pr prefs pr))
+        (Placerun.get_name pr, 
+          Mass_map.Pre.normalize_mass (pre_of_pr prefs pr)))
       prl
   in
   Cmds_common.wrap_output 
     (Mokaphy_prefs.Cluster.out_fname prefs) 
-    (fun ch -> Newick.write ch (PreCluster.of_named_blobl rt blobl))
+    (fun ch -> 
+      let t = PreCluster.of_named_blobl rt blobl in
+      Newick.write ch t;
+      Printf.fprintf ch "%s;\n" (Stree.plain_to_newick (Gtree.get_stree t));
+    )
 
