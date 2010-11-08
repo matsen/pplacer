@@ -175,7 +175,7 @@ module Cluster (B: BLOB) =
 module PreBlob = 
   struct
     type t = Mass_map.Pre.t
-    type tree = Newick.t
+    type tree = Decor_gtree.t
     let compare = Pervasives.compare
     let distf = Kr_distance.dist_of_pres 1.
     let to_string = Newick.to_string
@@ -185,7 +185,7 @@ module PreBlob =
        400. (* mass width *)
        1.   (* log coeff *)
        name
-       (Decor_gtree.of_newick_gtree rt)
+       rt
        (Mass_map.By_edge.of_pre pre)
   end
 

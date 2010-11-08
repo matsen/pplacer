@@ -188,7 +188,7 @@ let cluster prefs prl =
   Cmds_common.wrap_output 
     (Mokaphy_prefs.Cluster.out_fname prefs) 
     (fun ch -> 
-      let t = PreCluster.of_named_blobl rt blobl in
+      let t = PreCluster.of_named_blobl (Decor_gtree.of_newick_gtree rt) blobl in
       Newick.write ch t;
       Printf.fprintf ch "%s;\n" (Stree.plain_to_newick (Gtree.get_stree t));
     )
