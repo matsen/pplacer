@@ -169,27 +169,41 @@ let bavgdst prefs prl =
 
 open Clusterfunc
 
-let pre_of_pr prefs pr =
-  Mass_map.Pre.of_placerun 
-    (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Cluster.weighted prefs))
-    (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Cluster.use_pp prefs))
-    pr
+let t_prel_of_prl ~is_weighted ~use_pp prl = 
+  (Cmds_common.list_get_same_tree prl,
+    List.map (Cmds_common.pre_of_pr ~is_weighted ~use_pp) prl)
+
+let tax_t_prel_of_prl ~is_weighted ~use_pp rp prl = 
+  let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+  (taxt,
+    List.map (Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
 
 let cluster prefs prl = 
-  let rt = Cmds_common.list_get_same_tree prl
-  and blobl = 
-    List.map
-      (fun pr -> 
-        Printf.printf "reading %s\n" (Placerun.get_name pr);
-        (Placerun.get_name pr, 
-          Mass_map.Pre.normalize_mass (pre_of_pr prefs pr)))
-      prl
+  let namel = List.map Placerun.get_name prl
+  and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
+  and use_pp = Mokaphy_prefs.Cluster.use_pp prefs
+  and refpkgo = 
+    Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Cluster.refpkg_path prefs) 
+  in
+  let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
+  in
+  Cmds_common.check_refpkgo_tree rt refpkgo;
+  let t = 
+    match refpkgo with
+    | None -> 
+      PreCluster.of_named_blobl 
+        (Decor_gtree.of_newick_gtree rt) 
+        (List.combine namel (List.map Mass_map.Pre.normalize_mass prel)) 
+    | Some rp -> begin
+      let (taxt, tax_prel) = tax_t_prel_of_prl ~is_weighted ~use_pp rp prl in
+      PreCluster.of_named_blobl 
+        taxt
+        (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel))
+    end
   in
   Cmds_common.wrap_output 
     (Mokaphy_prefs.Cluster.out_fname prefs) 
     (fun ch -> 
-      let t = PreCluster.of_named_blobl (Decor_gtree.of_newick_gtree rt) blobl in
       Newick.write ch t;
-      Printf.fprintf ch "%s;\n" (Stree.plain_to_newick (Gtree.get_stree t));
-    )
-
+      Printf.fprintf ch "%s;\n" 
+        (Stree.plain_to_newick (Gtree.get_stree t)))

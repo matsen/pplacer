@@ -348,17 +348,20 @@ module Cluster = struct
       use_pp: bool ref;
       out_fname: string ref;
       weighted: bool ref;
+      refpkg_path : string ref;
     }
   
   let use_pp            p = !(p.use_pp)
   let out_fname         p = !(p.out_fname)
   let weighted          p = !(p.weighted)
+  let refpkg_path       p = !(p.refpkg_path)
   
   let defaults () = 
     { 
       use_pp = ref false;
       out_fname = ref "";
       weighted = ref false;
+      refpkg_path = ref "";
     }
   
   (* arguments *)
@@ -367,6 +370,8 @@ module Cluster = struct
     "Set the filename to write to. Otherwise write to stdout.";
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
+    "-c", Arg.Set_string prefs.refpkg_path,
+    (refpkg_help "cluster");
     "--unweighted", Arg.Clear prefs.weighted,
     weighted_help;
     ]
