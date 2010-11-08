@@ -21,7 +21,7 @@ sig
   type t 
   type tree
   val compare: t -> t -> int
-  val distf: tree -> t -> t -> float
+  val distf: tree -> ?x1:float -> ?x2:float -> t -> t -> float
   val normf: t -> float
   val to_string: tree -> string
   val merge: t -> t -> t
@@ -91,7 +91,7 @@ module Cluster (B: BLOB) =
         (fun (name, b) ->
           set_name (!counter) name;
           bmap := BMap.add b (Stree.leaf (!counter)) (!bmap);
-          B.hook rt b (Printf.sprintf "%d.tre" (!counter));
+          B.hook rt b (Printf.sprintf "%04d.tre" (!counter));
           incr counter;
         )
         blobl;
@@ -99,7 +99,8 @@ module Cluster (B: BLOB) =
         | (_, b)::l -> 
             List.iter 
               (fun (_, b') -> 
-                cset := CSet.add (cble_of_blobs (B.distf rt) b b') (!cset))
+                cset := 
+                  CSet.add (cble_of_blobs (B.distf rt) b b') (!cset))
               l;
             aux l
         | [] -> ()
@@ -129,13 +130,11 @@ module Cluster (B: BLOB) =
       
     let of_ingreds rt start_bmap start_cset start_barkm start_free_index = 
       let barkm = ref start_barkm
-      and normm = ref (BMap.mapi (fun b _ -> 
-        Printf.printf "%g\n" (B.normf b); 
-        B.normf b) start_bmap)
+      and normm = ref (BMap.mapi (fun b _ -> B.normf b) start_bmap)
       and n_blobs = BMap.fold (fun _ _ i -> i+1) start_bmap 0 
       in
       let distf b b' = 
-        (BMap.find b !normm) *. (BMap.find b' !normm) *. (B.distf rt b b')
+        B.distf rt ~x1:(BMap.find b !normm) ~x2:(BMap.find b' !normm) b b'
       in
       assert (n_blobs > 0);
       let rec aux bmap cset free_index = 
@@ -188,7 +187,9 @@ module PreBlob =
     type t = Mass_map.Pre.t
     type tree = Decor_gtree.t
     let compare = Pervasives.compare
-    let distf = Kr_distance.dist_of_pres 1.
+    let distf rt ?x1 ?x2 b1 b2 = 
+      Kr_distance.dist_of_pres 
+        1. rt ?x1 ?x2 ~pre1:b1 ~pre2:b2
     let normf a = 1. /. (Mass_map.Pre.total_mass a)
     let to_string = Newick.to_string
     let merge b1 b2 = b1 @ b2
