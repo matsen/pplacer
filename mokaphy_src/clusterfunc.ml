@@ -78,6 +78,8 @@ module Cluster (B: BLOB) =
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
 
+    let tree_fname_of_index i = Printf.sprintf "%04d.tre" i
+
     let ingreds_of_named_blobl rt blobl = 
       let counter = ref 0 
       and barkm = ref IntMap.empty
@@ -91,7 +93,7 @@ module Cluster (B: BLOB) =
         (fun (name, b) ->
           set_name (!counter) name;
           bmap := BMap.add b (Stree.leaf (!counter)) (!bmap);
-          B.hook rt b (Printf.sprintf "%04d.tre" (!counter));
+          B.hook rt b (tree_fname_of_index (!counter));
           incr counter;
         )
         blobl;
@@ -155,7 +157,7 @@ module Cluster (B: BLOB) =
           and merged = B.merge next.small next.big
           in
           normm := BMap.add merged (B.normf merged) (!normm);
-          B.hook rt merged (Printf.sprintf "%d.tre" free_index);
+          B.hook rt merged (tree_fname_of_index free_index);
           set_bl_for next.small (distf next.small merged);
           set_bl_for next.big (distf next.big merged);
           aux 
