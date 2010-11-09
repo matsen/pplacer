@@ -81,6 +81,14 @@ module Cluster (B: BLOB) =
     let zeropad i = Printf.sprintf "%04d" i
     let tree_fname_of_index i = (zeropad i)^".tre"
 
+    type ingreds = 
+      {
+        bmap : Stree.stree BMap.t;
+        cset : CSet.t;
+        barkm : Newick_bark.newick_bark IntMap.t;
+        free_index : int;
+      }
+        
     let ingreds_of_named_blobl rt blobl = 
       let counter = ref 0 
       and barkm = ref IntMap.empty
@@ -109,9 +117,10 @@ module Cluster (B: BLOB) =
         | [] -> ()
       in
       Printf.printf "making the cble set...";
+      flush_all ();
       aux blobl;
       print_endline "done.";
-      (!bmap, !cset, !barkm, !counter)
+      {bmap = !bmap; cset = !cset; barkm = !barkm; free_index = !counter}
 
 
     (* BEGIN crazy work around until ocaml 3.12 *)
@@ -131,10 +140,10 @@ module Cluster (B: BLOB) =
       | _ -> invalid_arg "get_only_binding: more than one binding"
     (* END crazy work around until 3.12 *)
       
-    let of_ingreds rt start_bmap start_cset start_barkm start_free_index = 
-      let barkm = ref start_barkm
-      and normm = ref (BMap.mapi (fun b _ -> B.normf b) start_bmap)
-      and n_blobs = BMap.fold (fun _ _ i -> i+1) start_bmap 0 
+    let of_ingreds rt ingreds = 
+      let barkm = ref ingreds.barkm
+      and normm = ref (BMap.mapi (fun b _ -> B.normf b) ingreds.bmap)
+      and n_blobs = BMap.fold (fun _ _ i -> i+1) ingreds.bmap 0 
       in
       let distf b b' = 
         B.distf rt ~x1:(BMap.find b !normm) ~x2:(BMap.find b' !normm) b b'
@@ -174,13 +183,10 @@ module Cluster (B: BLOB) =
             (free_index+1)
         end
       in
-      aux start_bmap start_cset start_free_index
+      aux ingreds.bmap ingreds.cset ingreds.free_index
 
     let of_named_blobl rt blobl =
-      let (start_bmap, start_cset, start_barkm, start_free_index) = 
-        ingreds_of_named_blobl rt blobl
-      in
-      of_ingreds rt start_bmap start_cset start_barkm start_free_index
+      of_ingreds rt (ingreds_of_named_blobl rt blobl)
 
   end
 
