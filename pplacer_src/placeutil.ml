@@ -21,6 +21,7 @@ let warn_multiple = ref true
 let print_edpl = ref false
 let edge_distance_mat = ref false
 let list_classify_refpkg = ref ""
+let tax_exclude_fname = ref ""
 
 let parse_args () = 
   let files  = ref [] in
@@ -45,7 +46,9 @@ let parse_args () =
      "--distmat", Arg.Set edge_distance_mat,
      "Print out a pairwise distance matrix between the edges.";
      "--list-classify-refpkg", Arg.Set_string list_classify_refpkg,
-     "Classify a placerun using the designated refpkg in a way designed to go into SQL."
+     "Classify a placerun using the designated refpkg in a way designed to go into SQL.";
+     "--tax-exclude", Arg.Set_string tax_exclude_fname,
+     "Supply a file (one taxid per line) which specifies taxids to exclude from the placefile.";
    ]
   in
   let usage =
@@ -130,6 +133,25 @@ let () =
       else
         [placerun]
     in
+    let filter_by_taxids pr = 
+      if !tax_exclude_fname <> "" then
+        let removes = 
+          Tax_id.TaxIdSetFuns.of_list
+            (List.map Tax_id.of_string 
+              (File_parsing.string_list_of_file (!tax_exclude_fname)))
+        in
+        Placerun.multifilter
+          [(Placerun.get_name pr)^"."^(Filename.basename (!tax_exclude_fname)),
+            (fun pq -> 
+              not (Tax_id.TaxIdSet.mem
+                    (Placement.contain_classif 
+                      (Pquery.best_place criterion pq))
+                    removes))]
+          pr
+      else
+        [pr]
+    in
+
     (* splitting *)
     let flat_split split_fun placerun_list = 
       List.flatten ((List.map split_fun) placerun_list)
@@ -140,7 +162,7 @@ let () =
           (fun f a -> f a)
           (List.map 
             flat_split 
-            [split_by_cutoff; split_by_re])
+            [split_by_cutoff; split_by_re; filter_by_taxids])
           [combined]
       with
       | Placement.No_PP -> failwith "Posterior probability use requested but some or all files were calculated without PP switched on."
@@ -150,7 +172,10 @@ let () =
     if List.length fnames <= 1 && 
        List.length placerun_list <= 1 && 
        not (!print_edpl) &&
-       not (!edge_distance_mat)then
+       not (!edge_distance_mat) &&
+       !list_classify_refpkg = "" &&
+       !tax_exclude_fname = "" 
+        then
       print_endline "hmm... I am not combining any files, and I don't have to split up the data in any way, so i'm not doing anything."
     else 
       List.iter (Placerun_io.to_file invocation ".") placerun_list;
