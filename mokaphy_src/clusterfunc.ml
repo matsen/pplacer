@@ -78,7 +78,8 @@ module Cluster (B: BLOB) =
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
 
-    let tree_fname_of_index i = Printf.sprintf "%04d.tre" i
+    let zeropad i = Printf.sprintf "%04d" i
+    let tree_fname_of_index i = (zeropad i)^".tre"
 
     let ingreds_of_named_blobl rt blobl = 
       let counter = ref 0 
@@ -160,6 +161,8 @@ module Cluster (B: BLOB) =
           B.hook rt merged (tree_fname_of_index free_index);
           set_bl_for next.small (distf next.small merged);
           set_bl_for next.big (distf next.big merged);
+          barkm := 
+            Newick_bark.map_set_name free_index (zeropad free_index) (!barkm);
           aux 
             (BMap.add
               merged

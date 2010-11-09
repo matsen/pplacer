@@ -203,7 +203,4 @@ let cluster prefs prl =
   in
   Cmds_common.wrap_output 
     (Mokaphy_prefs.Cluster.out_fname prefs) 
-    (fun ch -> 
-      Newick.write ch t;
-      Printf.fprintf ch "%s;\n" 
-        (Stree.plain_to_newick (Gtree.get_stree t)))
+    (fun ch -> Newick.write ch t)
