@@ -157,7 +157,9 @@ let write_sing_file weighting criterion mass_width tree_fmt fname_base ref_tree
       placed_pquery_list)
 
 
-(* fat trees *)
+(* fat trees.
+ * massm are By_edge mass maps.
+ * *)
 let fat_tree mass_width log_coeff decor_ref_tree massm =
   Decor_gtree.add_decor_by_map
     decor_ref_tree
@@ -167,10 +169,10 @@ let fat_tree mass_width log_coeff decor_ref_tree massm =
         (widthl_of_mass log_coeff mass_width m))
       massm)
 
-let write_fat_tree fat_width log_coeff fname_base decor_ref_tree massm = 
+let write_fat_tree mass_width log_coeff fname_base decor_ref_tree massm = 
   Phyloxml.named_tree_to_file
     (fname_base^".fat")
-    (fat_tree fat_width log_coeff decor_ref_tree massm)
+    (fat_tree mass_width log_coeff decor_ref_tree massm)
     (fname_base^".fat.xml") 
 
 

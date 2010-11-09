@@ -83,12 +83,18 @@ module Indiv = struct
 
   type t = (float * float) IntMap.t
 
-  let of_pre pmm = 
+  let of_pre ?factor pmm = 
+    let mass_of_mu = 
+      match factor with
+      | None -> (fun mu -> mu.Pre.mass)
+      | Some x -> (fun mu -> x *. mu.Pre.mass)
+    in
     List.fold_left
       (fun m' mul ->
         (List.fold_left 
           (fun m mu -> 
-            IntMapFuns.add_listly mu.Pre.loc (mu.Pre.distal_bl, mu.Pre.mass) m)
+            IntMapFuns.add_listly mu.Pre.loc 
+                                  (mu.Pre.distal_bl, mass_of_mu mu) m)
           m'
           mul))
       IntMap.empty
@@ -137,7 +143,7 @@ module By_edge = struct
     (Placerun.get_pqueries pr);
       Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
    * *)
-  let of_pre pre = of_indiv (Indiv.of_pre pre)
+  let of_pre ?factor pre = of_indiv (Indiv.of_pre ?factor pre)
 
   let of_placerun weighting criterion pr = 
     of_indiv (Indiv.of_placerun weighting criterion pr)

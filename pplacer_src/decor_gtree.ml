@@ -7,6 +7,7 @@
 open Fam_batteries
 open MapsSets
 
+type t = Decor_bark.decor_bark Gtree.gtree
 
 let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
 
