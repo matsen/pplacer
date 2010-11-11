@@ -12,6 +12,10 @@
     * note that we will have to keep track of the next available index
   * recalculate distances
 
+
+  normf can be specified as an arbitrary t -> float function whose results get
+  passed as optional argument to compare.
+
 *)
 
 open MapsSets
@@ -19,11 +23,8 @@ open MapsSets
 module type BLOB = 
 sig 
   type t 
-  type tree
-  val compare: t -> t -> int
-  val distf: tree -> ?x1:float -> ?x2:float -> t -> t -> float
-  val normf: t -> float
   val merge: t -> t -> t
+  val compare: t -> t -> int
 end
 
 module Cluster (B: BLOB) =
@@ -45,6 +46,8 @@ module Cluster (B: BLOB) =
         big : B.t;
       }
 
+    (* we require distf to be passed in here, so that we can perform some normm
+     * fun as below *)
     let cble_of_blobs distf b b' = 
       let (small, big) = if compare b b' < 0 then (b, b') else (b', b) in
       { dist = distf b b'; small = small; big = big; }
@@ -76,51 +79,6 @@ module Cluster (B: BLOB) =
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
 
-    type ingreds = 
-      {
-        bmap : Stree.stree BMap.t;
-        cset : CSet.t;
-        barkm : Newick_bark.newick_bark IntMap.t;
-        free_index : int;
-        blobim : B.t IntMap.t;
-      }
-        
-    let ingreds_of_named_blobl rt blobl = 
-      let counter = ref 0 
-      and barkm = ref IntMap.empty
-      and bmap = ref BMap.empty
-      and cset = ref CSet.empty
-      and blobim = ref IntMap.empty
-      in 
-      let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
-      in
-      print_endline "making the leaves";
-      List.iter
-        (fun (name, b) ->
-          set_name (!counter) name;
-          bmap := BMap.add b (Stree.leaf (!counter)) (!bmap);
-          blobim := IntMap.add (!counter) b (!blobim);
-          incr counter;
-        )
-        blobl;
-      let rec aux = function 
-        | (_, b)::l -> 
-            List.iter 
-              (fun (_, b') -> 
-                cset := 
-                  CSet.add (cble_of_blobs (B.distf rt) b b') (!cset))
-              l;
-            aux l
-        | [] -> ()
-      in
-      Printf.printf "making the cble set...";
-      flush_all ();
-      aux blobl;
-      print_endline "done.";
-      {bmap = !bmap; cset = !cset; barkm = !barkm; free_index = !counter;
-      blobim = !blobim}
-
-
     (* BEGIN crazy work around until ocaml 3.12 *)
     exception First of B.t
 
@@ -137,18 +95,45 @@ module Cluster (B: BLOB) =
       | m' when m' = BMap.empty -> (k, BMap.find k m)
       | _ -> invalid_arg "get_only_binding: more than one binding"
     (* END crazy work around until 3.12 *)
-      
-    let of_ingreds rt ingreds = 
-      let barkm = ref ingreds.barkm
-      and blobim = ref ingreds.blobim
-      and normm = ref (BMap.mapi (fun b _ -> B.normf b) ingreds.bmap)
-      and n_blobs = BMap.fold (fun _ _ i -> i+1) ingreds.bmap 0 
+
+    let of_named_blobl given_distf normf blobl = 
+      let counter = ref 0 
+      and barkm = ref IntMap.empty
+      and bmapr = ref BMap.empty
+      and csetr = ref CSet.empty
+      and blobim = ref IntMap.empty
+      in 
+      let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
       in
+      List.iter
+        (fun (name, b) ->
+          set_name (!counter) name;
+          bmapr := BMap.add b (Stree.leaf (!counter)) (!bmapr);
+          blobim := IntMap.add (!counter) b (!blobim);
+          incr counter;
+        )
+        blobl;
+      (* we store our normf results in normm *)
+      let normm = ref (BMap.mapi (fun b _ -> normf b) (!bmapr)) in
       let distf b b' = 
-        B.distf rt ~x1:(BMap.find b !normm) ~x2:(BMap.find b' !normm) b b'
+        given_distf ~x1:(BMap.find b !normm) ~x2:(BMap.find b' !normm) b b'
       in
+      let rec init_aux = function 
+        | b::l -> 
+            List.iter 
+              (fun b' -> csetr := CSet.add (cble_of_blobs distf b b') (!csetr))
+              l;
+              init_aux l
+        | [] -> ()
+      in
+      Printf.printf "making the cble set...";
+      flush_all ();
+      init_aux (List.map snd blobl);
+      print_endline "done.";
+      (* now actually perform the clustering *)
+      let n_blobs = BMap.fold (fun _ _ i -> i+1) (!bmapr) 0 in
       assert (n_blobs > 0);
-      let rec aux bmap cset free_index = 
+      let rec merge_aux bmap cset free_index = 
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
         flush_all ();
         let set_bl_for b bl = 
@@ -165,13 +150,13 @@ module Cluster (B: BLOB) =
           and tbig = BMap.find next.big bmap
           and merged = B.merge next.small next.big
           in
-          normm := BMap.add merged (B.normf merged) (!normm);
+          normm := BMap.add merged (normf merged) (!normm);
           blobim := IntMap.add free_index merged (!blobim);
           set_bl_for next.small (distf next.small merged);
           set_bl_for next.big (distf next.big merged);
           barkm := 
             Newick_bark.map_set_name free_index (string_of_int free_index) (!barkm);
-          aux 
+          merge_aux 
             (BMap.add
               merged
               (Stree.node free_index [tsmall; tbig])
@@ -182,26 +167,15 @@ module Cluster (B: BLOB) =
             (free_index+1)
         end
       in
-      let t = aux ingreds.bmap ingreds.cset ingreds.free_index in
+      let t = merge_aux (!bmapr) (!csetr) (!counter) in
       (t, !blobim)
-
-    let of_named_blobl rt blobl =
-      of_ingreds rt (ingreds_of_named_blobl rt blobl)
-
   end
 
-
-(* NOTE: mass should be normalized when making PreBlobs! *)
 
 module PreBlob = 
   struct
     type t = Mass_map.Pre.t
-    type tree = Decor_gtree.t
     let compare = Pervasives.compare
-    let distf rt ?x1 ?x2 b1 b2 = 
-      Kr_distance.dist_of_pres 
-        1. rt ?x1 ?x2 ~pre1:b1 ~pre2:b2
-    let normf a = 1. /. (Mass_map.Pre.total_mass a)
     let merge b1 b2 = b1 @ b2
   end
 

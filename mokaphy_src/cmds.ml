@@ -194,6 +194,7 @@ let mkdir path =
   if 0 <> Sys.command ("mkdir "^path) then
     failwith ("unable to make directory "^path)
 
+
 let cluster prefs prl = 
   let namel = List.map Placerun.get_name prl
   and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
@@ -204,6 +205,9 @@ let cluster prefs prl =
     match Mokaphy_prefs.Cluster.out_fname prefs with
     | "" -> failwith "please supply an output directory name"
     | s -> mkdir s; s
+  and distf rt ~x1 ~x2 b1 b2 = 
+    Kr_distance.dist_of_pres 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
+  and normf a = 1. /. (Mass_map.Pre.total_mass a)
   in
   let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
   in
@@ -211,13 +215,11 @@ let cluster prefs prl =
   let (t, blobim) = 
     match refpkgo with
     | None -> 
-      PreCluster.of_named_blobl 
-        (Decor_gtree.of_newick_gtree rt) 
+      PreCluster.of_named_blobl (distf rt) normf
         (List.combine namel (List.map Mass_map.Pre.normalize_mass prel)) 
     | Some rp -> begin
       let (taxt, tax_prel) = tax_t_prel_of_prl ~is_weighted ~use_pp rp prl in
-      PreCluster.of_named_blobl 
-        taxt
+      PreCluster.of_named_blobl (distf taxt) normf
         (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel))
     end
   in
