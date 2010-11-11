@@ -24,7 +24,6 @@ sig
   val distf: tree -> ?x1:float -> ?x2:float -> t -> t -> float
   val normf: t -> float
   val merge: t -> t -> t
-  val hook: tree -> t -> string -> unit
 end
 
 module Cluster (B: BLOB) =
@@ -77,16 +76,13 @@ module Cluster (B: BLOB) =
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
 
-    let zeropad i = Printf.sprintf "%04d" i
-    let tree_fname_of_index i = (zeropad i)^".tre"
-
     type ingreds = 
       {
         bmap : Stree.stree BMap.t;
         cset : CSet.t;
         barkm : Newick_bark.newick_bark IntMap.t;
         free_index : int;
-        (* blobim : B.t IntMap.t *)
+        blobim : B.t IntMap.t;
       }
         
     let ingreds_of_named_blobl rt blobl = 
@@ -94,10 +90,7 @@ module Cluster (B: BLOB) =
       and barkm = ref IntMap.empty
       and bmap = ref BMap.empty
       and cset = ref CSet.empty
-      (* 
-       * NOHOOK 
-       * and blobim = ref IntMap.empty
-       *)
+      and blobim = ref IntMap.empty
       in 
       let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
       in
@@ -106,10 +99,7 @@ module Cluster (B: BLOB) =
         (fun (name, b) ->
           set_name (!counter) name;
           bmap := BMap.add b (Stree.leaf (!counter)) (!bmap);
-          (* NOHOOK
-            * IntMap.add (!counter) b
-            * *)
-          B.hook rt b (tree_fname_of_index (!counter));
+          blobim := IntMap.add (!counter) b (!blobim);
           incr counter;
         )
         blobl;
@@ -127,7 +117,8 @@ module Cluster (B: BLOB) =
       flush_all ();
       aux blobl;
       print_endline "done.";
-      {bmap = !bmap; cset = !cset; barkm = !barkm; free_index = !counter}
+      {bmap = !bmap; cset = !cset; barkm = !barkm; free_index = !counter;
+      blobim = !blobim}
 
 
     (* BEGIN crazy work around until ocaml 3.12 *)
@@ -149,6 +140,7 @@ module Cluster (B: BLOB) =
       
     let of_ingreds rt ingreds = 
       let barkm = ref ingreds.barkm
+      and blobim = ref ingreds.blobim
       and normm = ref (BMap.mapi (fun b _ -> B.normf b) ingreds.bmap)
       and n_blobs = BMap.fold (fun _ _ i -> i+1) ingreds.bmap 0 
       in
@@ -174,14 +166,11 @@ module Cluster (B: BLOB) =
           and merged = B.merge next.small next.big
           in
           normm := BMap.add merged (B.normf merged) (!normm);
-          (* NOHOOK
-            * IntMap.add (!counter) b
-            * *)
-          B.hook rt merged (tree_fname_of_index free_index);
+          blobim := IntMap.add free_index merged (!blobim);
           set_bl_for next.small (distf next.small merged);
           set_bl_for next.big (distf next.big merged);
           barkm := 
-            Newick_bark.map_set_name free_index (zeropad free_index) (!barkm);
+            Newick_bark.map_set_name free_index (string_of_int free_index) (!barkm);
           aux 
             (BMap.add
               merged
@@ -193,14 +182,11 @@ module Cluster (B: BLOB) =
             (free_index+1)
         end
       in
-      aux ingreds.bmap ingreds.cset ingreds.free_index
+      let t = aux ingreds.bmap ingreds.cset ingreds.free_index in
+      (t, !blobim)
 
     let of_named_blobl rt blobl =
       of_ingreds rt (ingreds_of_named_blobl rt blobl)
-
-          (* NOHOOK
-            * return blobintm
-            * *)
 
   end
 
@@ -217,15 +203,6 @@ module PreBlob =
         1. rt ?x1 ?x2 ~pre1:b1 ~pre2:b2
     let normf a = 1. /. (Mass_map.Pre.total_mass a)
     let merge b1 b2 = b1 @ b2
-    let hook rt pre name = 
-      let tot = Mass_map.Pre.total_mass pre in
-      assert(tot > 0.);
-      Placeviz_core.write_fat_tree
-       400. (* mass width *)
-       1.   (* log coeff *)
-       name
-       rt
-       (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
   end
 
 module PreCluster = Cluster (PreBlob)

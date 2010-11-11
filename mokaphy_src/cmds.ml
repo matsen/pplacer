@@ -178,17 +178,37 @@ let tax_t_prel_of_prl ~is_weighted ~use_pp rp prl =
   (taxt,
     List.map (Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
 
+let zeropad i = Printf.sprintf "%04d" i
+
+let write_pre_tree drt id pre = 
+  let tot = Mass_map.Pre.total_mass pre in
+  assert(tot > 0.);
+  Placeviz_core.write_fat_tree
+   400. (* mass width *)
+   1.   (* log coeff *)
+   ((zeropad id)^".tre")
+   drt
+   (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
+
+let mkdir path = 
+  if 0 <> Sys.command ("mkdir "^path) then
+    failwith ("unable to make directory "^path)
+
 let cluster prefs prl = 
   let namel = List.map Placerun.get_name prl
   and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
   and use_pp = Mokaphy_prefs.Cluster.use_pp prefs
   and refpkgo = 
     Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Cluster.refpkg_path prefs) 
+  and outdir = 
+    match Mokaphy_prefs.Cluster.out_fname prefs with
+    | "" -> failwith "please supply an output directory name"
+    | s -> mkdir s; s
   in
   let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
   in
   Cmds_common.check_refpkgo_tree rt refpkgo;
-  let t = 
+  let (t, blobim) = 
     match refpkgo with
     | None -> 
       PreCluster.of_named_blobl 
@@ -201,6 +221,11 @@ let cluster prefs prl =
         (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel))
     end
   in
-  Cmds_common.wrap_output 
-    (Mokaphy_prefs.Cluster.out_fname prefs) 
-    (fun ch -> Newick.write ch t)
+  Sys.chdir outdir;
+  let ch = open_out "cluster.tre" in
+  Newick.write ch t;
+  close_out ch;
+  mkdir "mass_trees";
+  Sys.chdir "mass_trees";
+  IntMap.iter (write_pre_tree (Decor_gtree.of_newick_gtree rt)) blobim;
+  ()
