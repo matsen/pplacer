@@ -23,7 +23,6 @@ sig
   val compare: t -> t -> int
   val distf: tree -> ?x1:float -> ?x2:float -> t -> t -> float
   val normf: t -> float
-  val to_string: tree -> string
   val merge: t -> t -> t
   val hook: tree -> t -> string -> unit
 end
@@ -87,6 +86,7 @@ module Cluster (B: BLOB) =
         cset : CSet.t;
         barkm : Newick_bark.newick_bark IntMap.t;
         free_index : int;
+        (* blobim : B.t IntMap.t *)
       }
         
     let ingreds_of_named_blobl rt blobl = 
@@ -94,6 +94,10 @@ module Cluster (B: BLOB) =
       and barkm = ref IntMap.empty
       and bmap = ref BMap.empty
       and cset = ref CSet.empty
+      (* 
+       * NOHOOK 
+       * and blobim = ref IntMap.empty
+       *)
       in 
       let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
       in
@@ -102,6 +106,9 @@ module Cluster (B: BLOB) =
         (fun (name, b) ->
           set_name (!counter) name;
           bmap := BMap.add b (Stree.leaf (!counter)) (!bmap);
+          (* NOHOOK
+            * IntMap.add (!counter) b
+            * *)
           B.hook rt b (tree_fname_of_index (!counter));
           incr counter;
         )
@@ -167,6 +174,9 @@ module Cluster (B: BLOB) =
           and merged = B.merge next.small next.big
           in
           normm := BMap.add merged (B.normf merged) (!normm);
+          (* NOHOOK
+            * IntMap.add (!counter) b
+            * *)
           B.hook rt merged (tree_fname_of_index free_index);
           set_bl_for next.small (distf next.small merged);
           set_bl_for next.big (distf next.big merged);
@@ -188,6 +198,10 @@ module Cluster (B: BLOB) =
     let of_named_blobl rt blobl =
       of_ingreds rt (ingreds_of_named_blobl rt blobl)
 
+          (* NOHOOK
+            * return blobintm
+            * *)
+
   end
 
 
@@ -202,7 +216,6 @@ module PreBlob =
       Kr_distance.dist_of_pres 
         1. rt ?x1 ?x2 ~pre1:b1 ~pre2:b2
     let normf a = 1. /. (Mass_map.Pre.total_mass a)
-    let to_string = Newick.to_string
     let merge b1 b2 = b1 @ b2
     let hook rt pre name = 
       let tot = Mass_map.Pre.total_mass pre in

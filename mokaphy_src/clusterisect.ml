@@ -24,7 +24,7 @@ type isect =
   {
     size : int;
     factor : float;
-    is : StringSet.t;
+    inter : StringSet.t;
     s1 : StringSet.t;
     s2 : StringSet.t;
     v1 : int;
@@ -35,25 +35,38 @@ let make_factor i a b =
   (float_of_int i) /. (sqrt (float_of_int (a*b)))
 
 let build_isect s1 s2 v1 v2 = 
-  let is = StringSet.inter s1 s2 in
-  let size = StringSet.cardinal is in
+  let inter = StringSet.inter s1 s2 in
+  let size = StringSet.cardinal inter in
   {
     size = size;
     factor = make_factor size (StringSet.cardinal s1) (StringSet.cardinal s2);
-    is = is;
+    inter = inter;
     s1 = s1;
     s2 = s2;
     v1 = v1;
     v2 = v2;
   } 
 
-let summarize_isect is = 
-  Printf.printf "%d\t%g\t%d\t%d\n" is.size is.factor is.v1 is.v2
+let size_first is = [float_of_int is.size; is.factor]
+let factor_first is = [is.factor; float_of_int is.size]
+
+let two_tier_compare via a b = 
+  let first = compare (via a) (via b) in
+  if first <> 0 then first
+  else compare a b
 
 module OrderedIsect = struct
   type t = isect
-  let compare = Pervasives.compare
+  let compare = two_tier_compare size_first
 end
+
+
+(*
+ * First construct all subsets, and order them according to compare.
+ * Do the following recursively, given a set :
+   * Take the biggest one and save it to our list.
+   * Then look for any overlap of that and another
+*)
 
 module IsectSet = Set.Make(OrderedIsect)
 
@@ -75,9 +88,6 @@ let ssim_of_tree t =
   let _ = aux (Gtree.get_stree t) in
   !m
 
-let ssim1 = ssim_of_tree t1
-let ssim2 = ssim_of_tree t2
-
 let build_isects m1 m2 = 
   IntMap.fold
     (fun v1 s1 iss ->
@@ -89,7 +99,7 @@ let build_isects m1 m2 =
     IsectSet.empty
 
 let overlap is1 is2 = 
-  (is1.is = is2.is) || (is1.s1 = is2.s1) || (is1.s2 = is2.s2) 
+  (is1.inter = is2.inter) || (is1.s1 = is2.s1) || (is1.s2 = is2.s2) 
 
 let no_overlap is1 is2 = not (overlap is1 is2)
 
@@ -117,20 +127,37 @@ let pick_all start_iss =
   in
   aux [] start_iss
 
-let summarize isl = 
-  List.iter summarize_isect isl
+let write_isect_contents ch is = 
+  StringSet.iter
+    (fun s -> Printf.fprintf ch "%s\t%d\t%d\n" s is.v1 is.v2)
+    is.inter
 
-let iss = build_isects ssim1 ssim2 
-let alll = pick_all iss
+let isect_contents_to_file fname isl = 
+  let ch = open_out fname in
+  Printf.fprintf ch "sample_id\tphy\ttax\n";
+  List.iter (write_isect_contents ch) isl;
+  close_out ch
+
+let write_isect_stats ch is = 
+  Printf.fprintf ch "%d\t%d\t%d\t%g\n" is.v1 is.v2 is.size is.factor
+
+let isect_stats_to_file fname isl = 
+  let ch = open_out fname in
+  Printf.fprintf ch "phy\ttax\tsize\tfactor\n";
+  List.iter (write_isect_stats ch) isl;
+  close_out ch
 
 let filter_by_factor cutoff isectl = 
   List.filter (fun isect -> isect.factor > cutoff) isectl
 
-let filtered95 = filter_by_factor 0.95 alll
-
-let () = summarize filtered95
-
+(* data munching *)
+let ssim1 = ssim_of_tree t1
+let ssim2 = ssim_of_tree t2
+let iss = build_isects ssim1 ssim2 
+let alll = pick_all iss
 let by_v1_map = List.fold_right (fun is -> IntMap.add is.v1 is) alll IntMap.empty
-
 let g i = IntMap.find i by_v1_map
+let filtered90 = filter_by_factor 0.90 alll
 
+let () = isect_contents_to_file "bv.90.contents.tab" filtered90
+let () = isect_stats_to_file "bv.90.stats.tab" filtered90
