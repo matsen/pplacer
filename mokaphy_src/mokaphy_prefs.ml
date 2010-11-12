@@ -378,9 +378,9 @@ module Cluster = struct
 end 
 
 
-(* SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER
- * SEECLUSTER *)
-module Seecluster = struct
+(* CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND
+ * CLUSTERFIND CLUSTERFIND *)
+module Clusterfind = struct
   type mokaphy_prefs = 
     {
       out_prefix: string ref;

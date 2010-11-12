@@ -234,18 +234,18 @@ let cluster prefs prl =
   ()
 
 
-(* *** SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER *** *)
-let seecluster prefs = function
+(* *** CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND *** *)
+let clusterfind prefs = function
   | [dirname1; dirname2] ->
-      let prefix = Mokaphy_prefs.Seecluster.out_prefix prefs in
-      if prefix = "" then failwith "Please specify an out prefix for seecluster"; 
-      Seecluster.seecluster 
+      let prefix = Mokaphy_prefs.Clusterfind.out_prefix prefs in
+      if prefix = "" then failwith "Please specify an out prefix for clusterfind"; 
+      Clusterfind.clusterfind 
         prefix
-        (Mokaphy_prefs.Seecluster.cutoff prefs)
+        (Mokaphy_prefs.Clusterfind.cutoff prefs)
         (dirname1^"/cluster.tre") 
         (dirname2^"/cluster.tre") 
   | [] -> () (* e.g. -help *)
-  | _ -> failwith "Please specify exactly two trees for seecluster."
+  | _ -> failwith "Please specify exactly two trees for clusterfind."
 
 
 (* *** CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ *** *)

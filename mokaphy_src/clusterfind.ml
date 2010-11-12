@@ -147,7 +147,7 @@ let isect_stats_to_file fname isl =
 let filter_by_factor cutoff isectl = 
   List.filter (fun isect -> isect.factor > cutoff) isectl
 
-let seecluster prefix cutoff treefname1 treefname2 = 
+let clusterfind prefix cutoff treefname1 treefname2 = 
   let t1 = Newick.of_file treefname1
   and t2 = Newick.of_file treefname2
   in
