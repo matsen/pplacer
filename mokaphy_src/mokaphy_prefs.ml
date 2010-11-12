@@ -377,3 +377,30 @@ module Cluster = struct
     ]
 end 
 
+
+(* SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER
+ * SEECLUSTER *)
+module Seecluster = struct
+  type mokaphy_prefs = 
+    {
+      out_prefix: string ref;
+      cutoff: float ref;
+    }
+  
+  let out_prefix         p = !(p.out_prefix)
+  let cutoff            p = !(p.cutoff)
+  
+  let defaults () = 
+    { 
+      out_prefix = ref "";
+      cutoff = ref 0.9;
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "-o", Arg.Set_string prefs.out_prefix,
+    "Set the filename to write to. Otherwise write to stdout.";
+    "--cutoff", Arg.Set_float prefs.cutoff,
+    "The cutoff for writing to the file.";
+    ]
+end 

@@ -194,7 +194,6 @@ let mkdir path =
   if 0 <> Sys.command ("mkdir "^path) then
     failwith ("unable to make directory "^path)
 
-
 let cluster prefs prl = 
   let namel = List.map Placerun.get_name prl
   and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
@@ -231,3 +230,15 @@ let cluster prefs prl =
   Sys.chdir "mass_trees";
   IntMap.iter (write_pre_tree (Decor_gtree.of_newick_gtree rt)) blobim;
   ()
+
+
+(* *** SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER *** *)
+
+let seecluster prefs = function
+  | [treefname1; treefname2] ->
+      Seecluster.seecluster 
+        (Mokaphy_prefs.Seecluster.out_prefix prefs)
+        (Mokaphy_prefs.Seecluster.cutoff prefs)
+        treefname1 treefname2
+  | [] -> () (* e.g. heat -help *)
+  | _ -> failwith "Please specify exactly two place files to make a heat tree."

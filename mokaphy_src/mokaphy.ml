@@ -52,10 +52,13 @@ let wrap_parse_argv argl specl usage =
       print_string "No .place files supplied so nothing to do. ";
       print_endline usage;
     end;
-    List.map placerun_by_name (List.rev !files)
+    List.rev !files
   with
   | Arg.Bad s -> print_string s; exit 1
   | Arg.Help s -> print_string s; []
+
+let pr_wrap_parse_argv argl specl usage = 
+  List.map placerun_by_name (wrap_parse_argv argl specl usage)
 
 (* here are the commands, wrapped up to simply take an argument list. they must
  * also print out a documentation line when given an empty list argument. 
@@ -70,7 +73,7 @@ let bary_of_argl = function
     let prefs = Mokaphy_prefs.Bary.defaults () in
     Cmds.bary 
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.Bary.specl_of_prefs prefs)
         "usage: bary [options] placefile[s]")
@@ -81,7 +84,7 @@ let heat_of_argl = function
     let prefs = Mokaphy_prefs.Heat.defaults () in
     Cmds.heat 
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.Heat.specl_of_prefs prefs)
         "usage: heat [options] ex1.place ex2.place")
@@ -92,7 +95,7 @@ let kr_of_argl = function
     let prefs = Mokaphy_prefs.KR.defaults () in
     Cmds.kr 
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.KR.specl_of_prefs prefs)
         "usage: kr [options] placefiles")
@@ -103,7 +106,7 @@ let pd_of_argl = function
     let prefs = Mokaphy_prefs.PD.defaults () in
     Cmds.pd 
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.PD.specl_of_prefs prefs)
         "usage: pd [options] placefiles")
@@ -114,7 +117,7 @@ let pdfrac_of_argl = function
     let prefs = Mokaphy_prefs.PDFrac.defaults () in
     Cmds.pdfrac
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.PDFrac.specl_of_prefs prefs)
         "usage: pdfrac [options] placefiles")
@@ -125,7 +128,7 @@ let uavgdst_of_argl = function
     let prefs = Mokaphy_prefs.Avgdst.defaults () in
     Cmds.uavgdst
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
         "usage: uavgdst [options] placefiles")
@@ -136,7 +139,7 @@ let bavgdst_of_argl = function
     let prefs = Mokaphy_prefs.Avgdst.defaults () in
     Cmds.bavgdst
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
         "usage: bavgdst [options] placefiles")
@@ -147,10 +150,21 @@ let cluster_of_argl = function
     let prefs = Mokaphy_prefs.Cluster.defaults () in
     Cmds.cluster
       prefs 
-      (wrap_parse_argv
+      (pr_wrap_parse_argv
         argl
         (Mokaphy_prefs.Cluster.specl_of_prefs prefs)
         "usage: cluster [options] placefiles")
+
+let seecluster_of_argl = function
+  | [] -> print_endline "finds overlap between taxonomic and phylogenetically derived clusters"
+  | argl -> 
+    let prefs = Mokaphy_prefs.Seecluster.defaults () in
+    Cmds.seecluster
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.Seecluster.specl_of_prefs prefs)
+        "usage: seecluster [options] clusterdir1 clusterdir2")
 
 let cmd_map = 
   List.fold_right 
@@ -164,6 +178,7 @@ let cmd_map =
       "uavgdst", uavgdst_of_argl;
       "bavgdst", bavgdst_of_argl;
       "cluster", cluster_of_argl;
+      "seecluster", seecluster_of_argl;
     ]
     StringMap.empty
 

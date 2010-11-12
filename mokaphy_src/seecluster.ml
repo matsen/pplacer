@@ -1,12 +1,9 @@
 (*
- * here we find clusters for Sujatha.
- * we take the 
- *)
+ * mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
+ * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
+*)
 
 open MapsSets
-
-let t1 = Newick.of_file "nontrivial_cluster.tre"
-let t2 = Newick.of_file "tax_nontrivial_cluster.tre"
 
 let check_add x s =
   if StringSet.mem x s then invalid_arg "check_add"
@@ -150,14 +147,16 @@ let isect_stats_to_file fname isl =
 let filter_by_factor cutoff isectl = 
   List.filter (fun isect -> isect.factor > cutoff) isectl
 
-(* data munching *)
-let ssim1 = ssim_of_tree t1
-let ssim2 = ssim_of_tree t2
-let iss = build_isects ssim1 ssim2 
-let alll = pick_all iss
-let by_v1_map = List.fold_right (fun is -> IntMap.add is.v1 is) alll IntMap.empty
-let g i = IntMap.find i by_v1_map
-let filtered90 = filter_by_factor 0.90 alll
-
-let () = isect_contents_to_file "bv.90.contents.tab" filtered90
-let () = isect_stats_to_file "bv.90.stats.tab" filtered90
+let seecluster prefix cutoff treefname1 treefname2 = 
+  let t1 = Newick.of_file treefname1
+  and t2 = Newick.of_file treefname2
+  in
+  let ssim1 = ssim_of_tree t1
+  and ssim2 = ssim_of_tree t2
+  in
+  let iss = build_isects ssim1 ssim2 in
+  let alll = pick_all iss in
+  let filtered = filter_by_factor cutoff alll in
+  isect_contents_to_file (prefix^".contents.tab") filtered;
+  isect_stats_to_file (prefix^".stats.tab") filtered;
+  ()
