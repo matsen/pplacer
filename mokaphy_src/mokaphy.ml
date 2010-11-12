@@ -166,6 +166,18 @@ let seecluster_of_argl = function
         (Mokaphy_prefs.Seecluster.specl_of_prefs prefs)
         "usage: seecluster [options] clusterdir1 clusterdir2")
 
+let clusterviz_of_argl = function
+  | [] -> print_endline "makes a nice tree for visualization of results"
+  | argl -> 
+    let prefs = Mokaphy_prefs.Clusterviz.defaults () in
+    Cmds.clusterviz
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.Clusterviz.specl_of_prefs prefs)
+        "usage: clusterviz [options] tree1 tree2")
+
+
 let cmd_map = 
   List.fold_right 
     (fun (k,v) -> StringMap.add k v)
@@ -179,6 +191,7 @@ let cmd_map =
       "bavgdst", bavgdst_of_argl;
       "cluster", cluster_of_argl;
       "seecluster", seecluster_of_argl;
+      "clusterviz", clusterviz_of_argl;
     ]
     StringMap.empty
 

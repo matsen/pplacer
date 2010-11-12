@@ -387,8 +387,8 @@ module Seecluster = struct
       cutoff: float ref;
     }
   
-  let out_prefix         p = !(p.out_prefix)
-  let cutoff            p = !(p.cutoff)
+  let out_prefix p = !(p.out_prefix)
+  let cutoff p = !(p.cutoff)
   
   let defaults () = 
     { 
@@ -399,8 +399,31 @@ module Seecluster = struct
   (* arguments *)
   let specl_of_prefs prefs = [
     "-o", Arg.Set_string prefs.out_prefix,
-    "Set the filename to write to. Otherwise write to stdout.";
+    "Specify a prefix for the clusters (required).";
     "--cutoff", Arg.Set_float prefs.cutoff,
     "The cutoff for writing to the file.";
+    ]
+end 
+
+
+(* CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ
+ * CLUSTERVIZ *)
+module Clusterviz = struct
+  type mokaphy_prefs = 
+    {
+      cluster_file: string ref;
+    }
+  
+  let cluster_file p = !(p.cluster_file)
+  
+  let defaults () = 
+    { 
+      cluster_file = ref "";
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "--cluster-file", Arg.Set_string prefs.cluster_file,
+    "The file containing your favorite clusters.";
     ]
 end 
