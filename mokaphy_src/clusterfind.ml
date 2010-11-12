@@ -54,7 +54,7 @@ let two_tier_compare via a b =
 
 module OrderedIsect = struct
   type t = isect
-  let compare = two_tier_compare size_first
+  let compare = two_tier_compare factor_first
 end
 
 
