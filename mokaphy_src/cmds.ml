@@ -211,34 +211,45 @@ let cluster prefs prl =
   let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
   in
   Cmds_common.check_refpkgo_tree rt refpkgo;
-  let (t, blobim) = 
+  let (drt, (cluster_t, blobim)) = 
     match refpkgo with
     | None -> 
+      (Decor_gtree.of_newick_gtree rt,
       PreCluster.of_named_blobl (distf rt) normf
-        (List.combine namel (List.map Mass_map.Pre.normalize_mass prel)) 
+        (List.combine namel (List.map Mass_map.Pre.normalize_mass prel)))
     | Some rp -> begin
       let (taxt, tax_prel) = tax_t_prel_of_prl ~is_weighted ~use_pp rp prl in
+      (taxt,
       PreCluster.of_named_blobl (distf taxt) normf
-        (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel))
+        (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel)))
     end
   in
   Sys.chdir outdir;
   let ch = open_out "cluster.tre" in
-  Newick.write ch t;
+  Newick.write ch cluster_t;
   close_out ch;
   mkdir "mass_trees";
   Sys.chdir "mass_trees";
-  IntMap.iter (write_pre_tree (Decor_gtree.of_newick_gtree rt)) blobim;
+  IntMap.iter (write_pre_tree drt) blobim;
   ()
 
 
 (* *** SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER SEECLUSTER *** *)
-
 let seecluster prefs = function
   | [treefname1; treefname2] ->
       Seecluster.seecluster 
         (Mokaphy_prefs.Seecluster.out_prefix prefs)
         (Mokaphy_prefs.Seecluster.cutoff prefs)
         treefname1 treefname2
-  | [] -> () (* e.g. heat -help *)
-  | _ -> failwith "Please specify exactly two place files to make a heat tree."
+  | [] -> () (* e.g. -help *)
+  | _ -> failwith "Please specify exactly two trees for seecluster."
+
+
+(* *** CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ *** *)
+let clusterviz prefs = function
+  | [dirname1; dirname2] ->
+      Clusterviz.clusterviz 
+        (Mokaphy_prefs.Clusterviz.cluster_file prefs)
+        dirname1 dirname2
+  | [] -> () (* e.g. -help *)
+  | _ -> failwith "Please specify exactly two cluster directories for clusterviz."
