@@ -64,17 +64,6 @@ let parse_args () =
     failwith "negative cutoff value?";
   List.rev !files
 
-let boot_placerun pr bootnum = 
-  {
-    pr with
-    Placerun.name = (Placerun.get_name pr)^".boot."^(string_of_int bootnum);
-    Placerun.pqueries = 
-      Bootstrap.boot_list
-        (fun i pq -> 
-          { pq with Pquery.name = (Pquery.name pq)^"_boot_"^(string_of_int i) })
-        (Placerun.get_pqueries pr);
-  }
-
 let () =
   if not !Sys.interactive then begin
     let fnames = parse_args () in
@@ -166,7 +155,7 @@ let () =
         [pr]
     in
     let boot pr =
-      if !nboot <> 0 then ListFuns.init (!nboot) (boot_placerun pr)
+      if !nboot <> 0 then ListFuns.init (!nboot) (Bootstrap.boot_placerun pr)
       else [pr]
     in
     (* splitting *)
