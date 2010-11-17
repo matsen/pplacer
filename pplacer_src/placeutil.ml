@@ -22,6 +22,7 @@ let print_edpl = ref false
 let edge_distance_mat = ref false
 let list_classify_refpkg = ref ""
 let tax_exclude_fname = ref ""
+let nboot = ref 0
 
 let parse_args () = 
   let files  = ref [] in
@@ -49,6 +50,8 @@ let parse_args () =
      "Classify a placerun using the designated refpkg in a way designed to go into SQL.";
      "--tax-exclude", Arg.Set_string tax_exclude_fname,
      "Supply a file (one taxid per line) which specifies taxids to exclude from the placefile.";
+     "--boot", Arg.Set_int nboot,
+     "Specify the number of bootstrapped placeruns to create.";
    ]
   in
   let usage =
@@ -60,6 +63,17 @@ let parse_args () =
   if is_on cutoff cutoff_off_val && (!cutoff) < 0. then
     failwith "negative cutoff value?";
   List.rev !files
+
+let boot_placerun pr bootnum = 
+  {
+    pr with
+    Placerun.name = (Placerun.get_name pr)^".boot."^(string_of_int bootnum);
+    Placerun.pqueries = 
+      Bootstrap.boot_list
+        (fun i pq -> 
+          { pq with Pquery.name = (Pquery.name pq)^"_boot_"^(string_of_int i) })
+        (Placerun.get_pqueries pr);
+  }
 
 let () =
   if not !Sys.interactive then begin
@@ -151,7 +165,10 @@ let () =
       else
         [pr]
     in
-
+    let boot pr =
+      if !nboot <> 0 then ListFuns.init (!nboot) (boot_placerun pr)
+      else [pr]
+    in
     (* splitting *)
     let flat_split split_fun placerun_list = 
       List.flatten ((List.map split_fun) placerun_list)
@@ -162,7 +179,7 @@ let () =
           (fun f a -> f a)
           (List.map 
             flat_split 
-            [split_by_cutoff; split_by_re; filter_by_taxids])
+            [split_by_cutoff; split_by_re; filter_by_taxids; boot])
           [combined]
       with
       | Placement.No_PP -> failwith "Posterior probability use requested but some or all files were calculated without PP switched on."
