@@ -42,16 +42,19 @@ class newick_bark arg =
     method get_bl_opt = bl
     method get_bl = 
       match bl with | Some x -> x | None -> raise No_bl
+    method set_bl_opt xo = {< bl = xo >}
     method set_bl (x:float) = {< bl = Some x >}
 
     method get_name_opt = name
     method get_name = 
       match name with | Some s -> s | None -> raise No_name
+    method set_name_opt so = {< name = so >}
     method set_name s = {< name = Some s >}
 
     method get_boot_opt = boot
     method get_boot =
       match boot with | Some x -> x | None -> raise No_boot
+    method set_boot_opt xo = {< boot = xo >}
     method set_boot x = {< boot = Some x >}
 
     method to_newick_string = 

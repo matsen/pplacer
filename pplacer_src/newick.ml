@@ -42,6 +42,8 @@ let tree_list_to_file trees fname =
   List.iter (write ch) trees;
   close_out ch
 
+let to_file t fname = tree_list_to_file [t] fname
+
 let ppr ff t = 
   let ppr_bark ff id = 
     Format.pp_print_string ff (string_of_bark t id) in 
