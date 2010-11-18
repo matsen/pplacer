@@ -73,6 +73,7 @@ let add_lineage_to_tree_and_map (t,m) l =
             (ListFuns.mapi (fun i x -> (i,x)) l))
 
 (* *** reading *** *)
+  
 type tax_line = 
   {
     tax_id_str : string;
@@ -82,7 +83,7 @@ type tax_line =
     lineage : string option list;
   }
 
-let tax_line_of_stringol = function 
+let tax_line_of_strol = function 
     | (Some tax_id_str)::(Some parent_id_str)
       ::(Some rank_name)::(Some taxonomic_name)
       ::lineage ->
@@ -107,7 +108,7 @@ let of_ncbi_file fname =
   and full_list = R_csv.list_list_of_file fname in
   if not (R_csv.list_list_is_rectangular full_list) then
     invalid_arg ("Array not rectangular: "^fname);
-  match List.map tax_line_of_stringol full_list with
+  match List.map tax_line_of_strol full_list with
   | names::lineage_data -> 
       let (tax_tree, tax_rank_map) = 
         List.fold_left

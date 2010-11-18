@@ -18,32 +18,32 @@ type seqinfo_map = t StringMap.t
 let tax_id_by_name sim s = 
   try (StringMap.find s sim).tax_id with
   | Not_found -> failwith ("tax_id for "^s^" not found!")
- 
 
+
+ 
 (* *** reading *** *)
-(* current headers: 
-  * "seqname","accession","tax_id","tax_name","isType","ok","i","outlier","selected","label" *)
+(* requires "seqname" and "tax_id" columns, "accession"
+ * "tax_name","isType","ok","i","outlier","selected","label" *)
 let of_csv fname = 
-  match R_csv.list_list_of_file fname with
-  | _::l  -> 
-      List.fold_left 
-        (fun sim -> function
-          | (Some seqname_str)
-            ::accession_stro
-            ::(Some tax_id_str)
-            ::_ -> begin
-              let tax_id = NCBI tax_id_str in
-              try
-                StringMapFuns.check_add 
-                  seqname_str
-                  { tax_id = tax_id; accession = accession_stro }
-                  sim
-              with
-              | Failure "check_add" ->
-                  failwith 
-                  (Printf.sprintf "Tax_refdata.of_csv: contradictory line for %s\n" seqname_str)
-            end
-          | _ -> failwith ("malformed line in "^fname^"... NA present or wrong number of fields"))
-        StringMap.empty
-        l
-  | _ -> invalid_arg ("empty refdata: "^fname)
+  List.fold_left 
+    (fun sim al -> 
+      let seqname_str = List.assoc "seqname" al in
+      try
+        StringMapFuns.check_add 
+          seqname_str
+          { 
+            tax_id = NCBI (List.assoc "tax_id" al);
+            accession = 
+              try R_csv.entry_of_str (List.assoc "accession" al) with 
+              | Not_found -> None 
+          }
+          sim
+      with
+      | Failure "check_add" ->
+          failwith 
+          (Printf.sprintf "Tax_refdata.of_csv: contradictory line for %s\n" seqname_str)
+      | Not_found -> failwith ("seq_name and/or tax_id fields missing in "^fname))
+    StringMap.empty
+    (match Csv.load fname with
+    | header :: data -> Csv.associate header data
+    | [] -> invalid_arg ("empty refdata: "^fname))
