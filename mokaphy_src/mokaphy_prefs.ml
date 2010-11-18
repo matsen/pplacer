@@ -349,12 +349,16 @@ module Cluster = struct
       out_fname: string ref;
       weighted: bool ref;
       refpkg_path : string ref;
+      nboot : int ref;
+      seed : int ref;
     }
   
   let use_pp            p = !(p.use_pp)
   let out_fname         p = !(p.out_fname)
   let weighted          p = !(p.weighted)
   let refpkg_path       p = !(p.refpkg_path)
+  let nboot             p = !(p.nboot)
+  let seed              p = !(p.seed)
   
   let defaults () = 
     { 
@@ -362,6 +366,8 @@ module Cluster = struct
       out_fname = ref "";
       weighted = ref false;
       refpkg_path = ref "";
+      nboot = ref 0;
+      seed = ref 0;
     }
   
   (* arguments *)
@@ -374,6 +380,10 @@ module Cluster = struct
     (refpkg_help "cluster");
     "--unweighted", Arg.Clear prefs.weighted,
     weighted_help;
+    "--bootstrap", Arg.Set_int prefs.nboot,
+    "the number of bootstrap replicates to run";
+    "--seed", Arg.Set_int prefs.seed,
+    "Random seed for bootstrap";
     ]
 end 
 

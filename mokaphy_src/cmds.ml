@@ -194,16 +194,12 @@ let mkdir path =
   if 0 <> Sys.command ("mkdir "^path) then
     failwith ("unable to make directory "^path)
 
-let cluster prefs prl = 
+let make_cluster prefs prl = 
   let namel = List.map Placerun.get_name prl
   and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
   and use_pp = Mokaphy_prefs.Cluster.use_pp prefs
   and refpkgo = 
     Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Cluster.refpkg_path prefs) 
-  and outdir = 
-    match Mokaphy_prefs.Cluster.out_fname prefs with
-    | "" -> failwith "please supply an output directory name"
-    | s -> mkdir s; s
   and distf rt ~x1 ~x2 b1 b2 = 
     Kr_distance.dist_of_pres 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
   and normf a = 1. /. (Mass_map.Pre.total_mass a)
@@ -224,15 +220,35 @@ let cluster prefs prl =
         (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel)))
     end
   in
-  Sys.chdir outdir;
-  let ch = open_out "cluster.tre" in
-  Newick.write ch cluster_t;
-  close_out ch;
-  mkdir "mass_trees";
-  Sys.chdir "mass_trees";
-  IntMap.iter (write_pre_tree drt) blobim;
-  ()
+  (drt, cluster_t, blobim)
 
+let cluster prefs prl = 
+  let () = 
+    match Mokaphy_prefs.Cluster.out_fname prefs with
+    | "" -> failwith "please supply an output directory name"
+    | s -> mkdir s; Sys.chdir s
+  in
+  let nboot = Mokaphy_prefs.Cluster.nboot prefs in
+  let width = Base.find_zero_pad_width nboot in
+  let pad_str_of_int i = 
+    String_matrix.pad_to_width '0' width (string_of_int i)
+  in
+  if 0 = nboot then begin
+    let (drt, cluster_t, blobim) = make_cluster prefs prl in
+    Newick.to_file cluster_t "cluster.tre";
+    mkdir "mass_trees";
+    Sys.chdir "mass_trees";
+    IntMap.iter (write_pre_tree drt) blobim;
+  end
+  else begin
+    let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) in
+    for i=1 to nboot do
+      Printf.printf "running bootstrap %d of %d\n" i nboot;
+      let boot_prl = List.map (fun pr -> Bootstrap.boot_placerun pr i) prl in
+      let (_, cluster_t, _) = make_cluster prefs boot_prl in
+      Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
+    done
+  end
 
 (* *** CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND CLUSTERFIND *** *)
 let clusterfind prefs = function
