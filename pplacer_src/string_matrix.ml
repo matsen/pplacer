@@ -8,8 +8,8 @@ open Fam_batteries
 
 let range n = Array.init n (fun i -> i)
 
-let pad_to_width width s = 
-  StringFuns.left_pad (width - String.length s) ' ' s
+let pad_to_width c width s = 
+  StringFuns.left_pad (width - String.length s) c s
 
 let column_widths m =
   MatrixFuns.assert_rectangular m;
@@ -29,7 +29,7 @@ let column_widths m =
 let pad m = 
   let widths = column_widths m in
   MatrixFuns.mapij 
-    (fun _ j s -> pad_to_width widths.(j) s)
+    (fun _ j s -> pad_to_width ' ' widths.(j) s)
     m
 
 (*

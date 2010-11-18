@@ -1,7 +1,12 @@
 (* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * some basic functions
+ * some basic functions.
+ *
+ * This definitely needs some cleaning out, as much functionality isn't used or
+ * duplicated somewhere else. 
+ *
+ * Some of the code here is not very good!
 *)
 
 open MapsSets
@@ -247,3 +252,9 @@ let array_last f a =
     else aux (i-1)
   in 
   aux ((Array.length a)-1)
+
+let rec find_zero_pad_width n = 
+  assert(n>=0);
+  if n <= 9 then 1
+  else 1+(find_zero_pad_width (n/10))
+

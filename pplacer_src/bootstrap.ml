@@ -3,7 +3,6 @@
  *
 *)
 
-let () = Random.self_init ()
 
 (* bootstrap a list, with an option to modify the elements of the list through f
  * # boot_list (fun i x -> i+100*x) [1;2;3;4;5;6];;
@@ -11,6 +10,8 @@ let () = Random.self_init ()
  *
  * We check that the number of elements in the list is less than max_int, which is
  * 4,611,686,018,427,387,903 on a 64 bit machine.
+ *
+ * Run your Random.init before using this!
  *)
 let boot_list f l = 
   let n = List.length l in
@@ -36,7 +37,7 @@ let boot_list f l =
 let boot_placerun pr bootnum = 
   {
     pr with
-    Placerun.name = (Placerun.get_name pr)^"_boot_"^(string_of_int bootnum);
+    Placerun.name = (Placerun.get_name pr)^".boot"^(string_of_int bootnum);
     Placerun.pqueries = 
       boot_list
         (fun i pq -> 
