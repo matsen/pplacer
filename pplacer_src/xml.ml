@@ -7,13 +7,19 @@
  * write_long_tag.
 *)
 
-let write_tag write_data_inners tag_name ch data = 
-  Printf.fprintf ch "<%s>" tag_name;
+let write_tag ?attrib write_data_inners tag_name ch data = 
+  let attrib_str = 
+    match attrib with
+    | None -> ""
+    | Some s -> " "^s
+  in
+  Printf.fprintf ch "<%s%s>" tag_name attrib_str;
   write_data_inners ch data;
   Printf.fprintf ch "</%s>\n" tag_name
 
-let write_long_tag write_inners tag_name ch = 
+let write_long_tag ?attrib write_inners tag_name ch = 
   write_tag
+    ?attrib
     (fun _ _ ->
       Printf.fprintf ch "\n";
       write_inners ())
@@ -21,8 +27,8 @@ let write_long_tag write_inners tag_name ch =
     ch 
     ()
 
-let write_float = write_tag (fun ch x -> Printf.fprintf ch "%g" x)
-let write_int = write_tag (fun ch x -> Printf.fprintf ch "%d" x)
-let write_string = write_tag (fun ch x -> Printf.fprintf ch "%s" x)
+let write_float ?attrib = write_tag ?attrib (fun ch x -> Printf.fprintf ch "%g" x)
+let write_int ?attrib = write_tag ?attrib (fun ch x -> Printf.fprintf ch "%d" x)
+let write_string ?attrib = write_tag ?attrib (fun ch x -> Printf.fprintf ch "%s" x)
 
 
