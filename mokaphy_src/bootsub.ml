@@ -35,18 +35,18 @@ module Bootsub
   
   (* given a StringSetSet, find the StringSet with the smallest symmetric
    * difference with chosen_s *)
-  let smallest_symmdiff strs sss = 
-    find_fsmallest S.cardinal (List.map (symmdiff strs) (SS.elements sss))
+  let smallest_symmdiff s ss = 
+    find_fsmallest S.cardinal (List.map (symmdiff s) (SS.elements ss))
   
   (* given a list of string sets, most_pop finds the element which is most
    * commonly seen *)
-  let most_pop ssl = 
-    let h = Hashtbl.create ((S.cardinal (List.hd ssl)) / 4) in
-    let boost s = 
-      if Hashtbl.mem h s then Hashtbl.replace h s (1 + (Hashtbl.find h s))
-      else Hashtbl.add h s 1
+  let most_pop sl = 
+    let h = Hashtbl.create ((S.cardinal (List.hd sl)) / 4) in
+    let boost x = 
+      if Hashtbl.mem h x then Hashtbl.replace h x (1 + (Hashtbl.find h x))
+      else Hashtbl.add h x 1
     in
-    List.iter (S.iter boost) ssl;
+    List.iter (S.iter boost) sl;
     let fk = first_key h in
     let (bk, bv) = 
       Hashtbl.fold 
@@ -57,17 +57,15 @@ module Bootsub
     (bk, bv)
   
   (* remove x from every elememnt of sss *)
-  let sssremove x sss = 
+  let ssremove x ss = 
     SS.fold
-      (fun ss -> SS.add (if S.mem x ss then S.remove x ss else ss))
-      sss
-      SS.empty
+      (fun s -> SS.add (if S.mem x s then S.remove x s else s)) ss SS.empty
   
   (* the score is how many of the SSets in our list will contain a set identical
-   * to start_strs upon removal of the naughty elements *)
-  let perform cutoff start_strs start_sssl = 
-    let rec aux strs sssl accu =
-      let symdiffl = List.map (smallest_symmdiff strs) sssl in
+   * to start_s upon removal of the naughty elements *)
+  let perform cutoff start_s start_ssl = 
+    let rec aux s ssl accu =
+      let symdiffl = List.map (smallest_symmdiff s) ssl in
       let (naughty,_) = most_pop symdiffl in
       let nsingle = S.singleton naughty in
       let score = 
@@ -80,11 +78,11 @@ module Bootsub
       if score > cutoff then accu'
       else
         aux
-          (S.remove naughty strs)
-          (List.map (sssremove naughty) sssl)
+          (S.remove naughty s)
+          (List.map (ssremove naughty) ssl)
           accu'
     in
-    aux start_strs start_sssl []
+    aux start_s start_ssl []
 
 end
 
