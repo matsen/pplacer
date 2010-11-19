@@ -56,7 +56,7 @@ module Bootsub
     in
     (bk, bv)
   
-  (* remove x from every elememnt of sss *)
+  (* remove x from every elememnt of ss *)
   let ssremove x ss = 
     SS.fold
       (fun s -> SS.add (if S.mem x s then S.remove x s else s)) ss SS.empty
@@ -66,35 +66,62 @@ module Bootsub
   let perform cutoff start_s start_ssl = 
     let rec aux s ssl accu =
       let symdiffl = List.map (smallest_symmdiff s) ssl in
-      let (naughty,_) = most_pop symdiffl in
-      let nsingle = S.singleton naughty in
       let score = 
         List.fold_right 
-          (fun s -> (+) (if s = S.empty || s = nsingle then 1 else 0))
+          (fun s -> (+) (if s = S.empty then 1 else 0))
           symdiffl
           0
       in
-      let accu' = (naughty, score)::accu in
-      if score > cutoff then accu'
-      else
-        aux
-          (S.remove naughty s)
-          (List.map (ssremove naughty) ssl)
-          accu'
+      if score >= cutoff then accu
+      else begin
+        let (naughty,_) = most_pop symdiffl in
+          aux
+            (S.remove naughty s)
+            (List.map (ssremove naughty) ssl)
+            ((naughty, score)::accu)
+      end
     in
     aux start_s start_ssl []
 
 end
 
-
 module StrBootsub = 
   Bootsub (MapsSets.OrderedString) (MapsSets.StringSet) (StringSetSet)
 
-let chosen_s = IntMap.find 407 ssim
+let my_perform i = StrBootsub.perform 95 (IntMap.find i ssim) boot_sssl
 
-let x = StrBootsub.perform 90 chosen_s boot_sssl
+let no_p2z1r79 = List.map (StrBootsub.ssremove "p2z1r79") boot_sssl
+
+let no_perform i = 
+  StrBootsub.perform 95 (StringSet.remove "p2z1r79" (IntMap.find i ssim))
+  no_p2z1r79
+
+let go i = (i, (IntMap.find i ssim, no_perform i))
 
   (*
+let _ = 
+  List.map build
+  [
+    413;
+    327;
+    433;
+    388;
+    370;
+    424;
+    386;
+    356;
+    418;
+    430;
+    331;
+    389;
+    387;
+    308;
+    412;
+    309;
+    314;
+    322;
+  ]
+
 let remove_list = List.fold_right StringSet.remove 
 
 let naughtyl = List.map fst x

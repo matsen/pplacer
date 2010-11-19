@@ -39,6 +39,8 @@ let count_mem ss =
 
 let bootval_im = IntMap.map count_mem ssim
 
+(* 70 or higher show, 90 or higher *)
+
 let boot_decorated = 
   Gtree.set_bark_map
     ct
@@ -49,7 +51,10 @@ let boot_decorated =
         | None ->
             (let cnode_num = int_of_float b#get_boot in
               (b#set_name (string_of_int cnode_num))
-                #set_boot (float_of_int (IntMap.find cnode_num bootval_im))))
+                #set_boot_opt 
+                  (let boot_val = IntMap.find cnode_num bootval_im in
+                  if boot_val >= 80 then Some (float_of_int boot_val) 
+                  else None)))
       (Gtree.get_bark_map ct))
 
 let () = Phyloxml.tree_to_file boot_decorated "cluster_boot.xml" 

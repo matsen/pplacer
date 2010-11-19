@@ -15,7 +15,8 @@ Currently implemented
 
 Coming soon
 ===========
-* (testing for) average pairwise distance within and between placements
+* average pairwise distance within and between placements (in testing)
+* clustering (available in script form...)
 
 Documentation
 =============

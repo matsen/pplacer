@@ -1,6 +1,6 @@
 (* crazy script to group fat trees by cluster *)
 
-let viz_dir = "/home/bvdiversity/working/matsen/complete/viz_nontrivial"
+let viz_dir = "/home/bvdiversity/working/matsen/complete/nontrivial"
 (* let cluster_dir = "/home/bvdiversity/working/matsen/complete/cluster/tax"  *)
 let cluster_dir = "/home/bvdiversity/working/matsen/complete/cluster/phy"
 let cluster_fname = "/cluster.tre"
