@@ -30,5 +30,6 @@ dispatch begin function
       (* automatically include gsl when the use_gsl tag is given in _tags *)
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
   | _ -> ()
 end;;
