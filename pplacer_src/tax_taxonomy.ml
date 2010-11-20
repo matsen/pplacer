@@ -126,7 +126,7 @@ let of_ncbi_file fname =
                       | None -> failwith "NA in taxon rank name line!")
             names.lineage);
         tax_tree = tax_tree;
-        tax_rank_map = tax_rank_map;
+        tax_rank_map = TaxIdMap.add NoTax 0 tax_rank_map;
         tax_name_map = 
           List.fold_right 
             (fun tline -> 
