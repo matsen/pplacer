@@ -252,20 +252,44 @@ let cluster prefs prl =
 
 (* *** CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ *** *)
 let clusterviz prefs = function
-  | [dirname] ->
-      Cmds_common.wrap_output (Mokaphy_prefs.Clusterviz.out_fname prefs)
-        (fun ch ->
-          match Mokaphy_prefs.Clusterviz.name_csv prefs with
-          | "" -> failwith "please specify a cluster file";
-          | cluster_fname -> 
-            try
-              let nameim = Clusterviz.nameim_of_csv cluster_fname 
-              and out_tree_name = 
-                Cmds_common.chop_suffix_if_present cluster_fname ".csv"
-              in
-              let nt = Clusterviz.build_name_tree dirname nameim in
-              Phyloxml.write_named_tree_list ch [Some out_tree_name, nt]
-            with Clusterviz.Numbering_mismatch ->
-              failwith ("numbering mismatch with "^dirname^" and "^cluster_fname))
+  | [dirname] -> begin
+      match (Mokaphy_prefs.Clusterviz.name_csv prefs,
+             Mokaphy_prefs.Clusterviz.out_fname prefs) with
+        | "", _ -> failwith "please specify a cluster CSV file"
+        | _, "" -> failwith "please specify an out file name"
+        | (cluster_fname, out_fname) -> 
+          try
+            let nameim = Clusterviz.nameim_of_csv cluster_fname 
+            and out_tree_name = 
+              Cmds_common.chop_suffix_if_present cluster_fname ".csv"
+            in
+            let nt = Clusterviz.build_name_tree dirname nameim in
+            (* write it out, and read it back in for the combination *)
+            let ch = open_out out_fname in
+            Phyloxml.write_named_tree_list ch [Some out_tree_name, nt];
+            close_out ch;
+            let named_tree = 
+              match (Xphyloxml.load out_fname).Xphyloxml.trees with
+              | [t] -> t
+              | _ -> assert(false)
+            in
+            let _ = named_tree in
+            (* now we read in the cluster trees *)
+            let mass_trees = 
+              List.map 
+                (fun i -> 
+                  List.hd
+                    (Xphyloxml.load
+                      (dirname^"/"^Cluster_common.mass_trees_dirname^"/"^
+                      (zeropad i)^".tre.fat.xml")).Xphyloxml.trees)
+                (IntMapFuns.keys nameim)
+            in
+            let _ = mass_trees in
+            Xphyloxml.pxdata_to_file out_fname 
+            { Xphyloxml.trees = (named_tree::mass_trees); 
+            Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; }
+          with Clusterviz.Numbering_mismatch ->
+            failwith ("numbering mismatch with "^dirname^" and "^cluster_fname)
+  end
   | [] -> () (* e.g. -help *)
   | _ -> failwith "Please specify exactly one cluster directory for clusterviz."

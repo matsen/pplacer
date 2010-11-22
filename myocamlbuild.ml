@@ -27,9 +27,9 @@ dispatch begin function
   | After_rules ->
       (* custom: incorporate libraries into bytecode *)
       flag ["link"; "ocaml"; "byte"] (A"-custom");
-      (* automatically include gsl when the use_gsl tag is given in _tags *)
-      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
   | _ -> ()
 end;;
