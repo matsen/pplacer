@@ -6,72 +6,63 @@
 
 open MapsSets
 
-let cluster_tree_name = "/cluster.tre"
-let named_cluster_tree_name = "/named_cluster.tre"
+exception Numbering_mismatch
 
-type stats = 
-  {
-    size : int;
-    factor : float;
-    ind1 : int;
-    ind2 : int;
-    name : string;
-  }
+let nameim_of_csv fname = 
+  List.fold_right 
+    (fun l -> 
+      IntMap.add 
+        (int_of_string (List.assoc "number" l)) 
+        (List.assoc "name" l))
+    (match (Csv.load fname) with 
+    | h :: d -> Csv.associate h d
+    | [] -> assert false)
+    IntMap.empty 
 
-let stats_of_strl = function
-  | [ sizes; factors; ind1s; ind2s; names ] ->
-      {
-        size = int_of_string sizes;
-        factor = float_of_string factors;
-        ind1 = int_of_string ind1s;
-        ind2 = int_of_string ind2s;
-        name = names;
-      }
-  | _ -> failwith "clusterviz expects five inputs per line in the cluster file"
-
-let whitespace_rex = Str.regexp "[ \t]+"
-
-let stats_of_line line = 
-  stats_of_strl (Str.split whitespace_rex line)
-
-let read_cluster_stats fname = 
-  let lines = File_parsing.string_list_of_file fname in
-  List.map stats_of_line lines
-
-(* we assume that the tree is labeled in the bootstrap positions *)
+(* makes a map from node labels (in bootstrap positions) to the node numbers *)
 let nodemap_of_tree t = 
   IntMap.fold
     (fun i b -> 
       match b#get_boot_opt with
       | None -> fun m -> m
-      | Some boot -> IntMap.add (int_of_float boot) i)
+      | Some boot -> begin
+          if boot <> float_of_int (int_of_float boot) then
+            invalid_arg "non-integer label for a purported cluster tree";
+          IntMap.add (int_of_float boot) i
+        end)
     (Gtree.get_bark_map t)
     IntMap.empty
 
-let statmap_of_statl index_of_stat statl = 
-  List.fold_right (fun s -> IntMap.add (index_of_stat s) s) statl IntMap.empty 
-
-let make_name_bark sm t = 
+(* given a tree with node numbering in the bootstrap location, and a map from
+ * those numbers to strings, naming those nodes, make a tree with names in the
+ * appropriate locations and no bootstraps. *)
+let make_named_tree sm t = 
   Gtree.set_bark_map t 
     (IntMap.map
       (fun b ->
         match b#get_boot_opt with
         | None -> b
         | Some boot ->
-          let node_id = int_of_float boot in
-          if not (IntMap.mem node_id sm) then b#set_boot_opt None
-          else b#set_name (IntMap.find node_id sm).name)
+          let no_boot_b = b#set_boot_opt None
+          and node_id = int_of_float boot in
+          if not (IntMap.mem node_id sm) then no_boot_b
+          else no_boot_b#set_name (IntMap.find node_id sm))
       (Gtree.get_bark_map t))
 
-let clusterviz cluster_file dirname1 dirname2 = 
-  let t1 = Newick.of_file (dirname1^cluster_tree_name)
-  and t2 = Newick.of_file (dirname2^cluster_tree_name)
-  and statl = read_cluster_stats cluster_file
+let build_name_tree dirname nameim = 
+  let t = Newick.of_file (Cluster_common.tree_name_of_dirname dirname) in
+  let nodeim = nodemap_of_tree t in
+  (* shifted_nameim uses the numbering within the tree rather than that given by
+   * the labels (as nameim does) *)
+  let shifted_nameim = 
+    try
+      IntMap.fold
+        (fun cluster_num name -> 
+          Printf.printf "%d\t%s\n" cluster_num name;
+          IntMap.add (IntMap.find cluster_num nodeim) name)
+        IntMap.empty
+        nameim
+    with
+    | Not_found -> raise Numbering_mismatch
   in
-  let sm1 = statmap_of_statl (fun s -> s.ind1) statl
-  and sm2 = statmap_of_statl (fun s -> s.ind2) statl
-  in
-  Newick.to_file (make_name_bark sm1 t1) (dirname1^named_cluster_tree_name);
-  Newick.to_file (make_name_bark sm2 t2) (dirname2^named_cluster_tree_name);
-  ()
-
+  make_named_tree shifted_nameim t

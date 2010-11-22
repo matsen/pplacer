@@ -421,19 +421,24 @@ end
 module Clusterviz = struct
   type mokaphy_prefs = 
     {
-      cluster_file: string ref;
+      out_fname: string ref;
+      name_csv: string ref;
     }
   
-  let cluster_file p = !(p.cluster_file)
+  let out_fname p = !(p.out_fname)
+  let name_csv p = !(p.name_csv)
   
   let defaults () = 
     { 
-      cluster_file = ref "";
+      out_fname = ref "";
+      name_csv = ref "";
     }
   
   (* arguments *)
   let specl_of_prefs prefs = [
-    "--cluster-file", Arg.Set_string prefs.cluster_file,
-    "The file containing your favorite clusters.";
+    "-o", Arg.Set_string prefs.out_fname,
+    "Specify a prefix for the clusters (required).";
+    "--name-csv", Arg.Set_string prefs.name_csv,
+    "A CSV file containing two columns: \"numbers\", which are node numbers in the clustered tree, and \"names\", which are names for those nodes.";
     ]
 end 

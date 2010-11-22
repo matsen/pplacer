@@ -235,9 +235,9 @@ let cluster prefs prl =
   in
   if 0 = nboot then begin
     let (drt, cluster_t, blobim) = make_cluster prefs prl in
-    Newick.to_file cluster_t "cluster.tre";
-    mkdir "mass_trees";
-    Sys.chdir "mass_trees";
+    Newick.to_file cluster_t Cluster_common.cluster_tree_name;
+    mkdir Cluster_common.mass_trees_dirname;
+    Sys.chdir Cluster_common.mass_trees_dirname;
     IntMap.iter (write_pre_tree drt) blobim;
   end
   else begin
@@ -266,9 +266,20 @@ let clusterfind prefs = function
 
 (* *** CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ *** *)
 let clusterviz prefs = function
-  | [dirname1; dirname2] ->
-      let cluster_fname = Mokaphy_prefs.Clusterviz.cluster_file prefs in
-      if cluster_fname = "" then failwith "please specify a cluster file";
-      Clusterviz.clusterviz cluster_fname dirname1 dirname2
+  | [dirname] ->
+      Cmds_common.wrap_output (Mokaphy_prefs.Clusterviz.out_fname prefs)
+        (fun ch ->
+          match Mokaphy_prefs.Clusterviz.name_csv prefs with
+          | "" -> failwith "please specify a cluster file";
+          | cluster_fname -> 
+            try
+              let nameim = Clusterviz.nameim_of_csv cluster_fname 
+              and out_tree_name = 
+                Cmds_common.chop_suffix_if_present cluster_fname ".csv"
+              in
+              let nt = Clusterviz.build_name_tree dirname nameim in
+              Phyloxml.write_named_tree_list ch [Some out_tree_name, nt]
+            with Clusterviz.Numbering_mismatch ->
+              failwith ("numbering mismatch with "^dirname^" and "^cluster_fname))
   | [] -> () (* e.g. -help *)
-  | _ -> failwith "Please specify exactly two cluster directories for clusterviz."
+  | _ -> failwith "Please specify exactly one cluster directory for clusterviz."
