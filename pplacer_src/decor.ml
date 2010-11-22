@@ -93,15 +93,15 @@ let ppr ff = function
 
 let write_xml ch = function
   | Color(r,g,b) -> 
-      Xml.write_long_tag
+      Myxml.write_long_tag
         (fun () -> 
-          Xml.write_int "red" ch r;
-          Xml.write_int "green" ch g;
-          Xml.write_int "blue" ch b;)
+          Myxml.write_int "red" ch r;
+          Myxml.write_int "green" ch g;
+          Myxml.write_int "blue" ch b;)
         "color"
         ch
   | Width w -> 
-      Xml.write_float "width" ch w
+      Myxml.write_float "width" ch w
   | Dot i -> 
       let tag_name = 
         let r = i mod 3 in
@@ -109,15 +109,15 @@ let write_xml ch = function
         else if r = 1 then "speciations"
         else "losses"
       in
-      Xml.write_long_tag
-        (fun () -> Xml.write_int tag_name ch (i+1);)
+      Myxml.write_long_tag
+        (fun () -> Myxml.write_int tag_name ch (i+1);)
         "events"
         ch
   | Taxinfo (ti, name) -> 
-     Xml.write_long_tag
+     Myxml.write_long_tag
        (fun () ->
          Tax_id.write_xml ch ti;
-         Xml.write_string "scientific_name" ch name)
+         Myxml.write_string "scientific_name" ch name)
        "taxonomy"
        ch
 

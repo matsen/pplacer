@@ -7,7 +7,7 @@
 open Fam_batteries
 open MapsSets
 
-let write_xml_tax_name ch = Xml.write_tag output_string "scientific_name" ch
+let write_xml_tax_name ch = Myxml.write_tag output_string "scientific_name" ch
 
 class tax_bark arg = 
   let (bl, name, boot, tax_ido, tax_nameo) = 
@@ -47,7 +47,7 @@ class tax_bark arg =
       match (tax_ido, tax_nameo) with
       | (None, None) -> ()
       | _ -> 
-          Xml.write_long_tag
+          Myxml.write_long_tag
             (fun () ->
               perhaps_write (Tax_id.write_xml ch) tax_ido;
               perhaps_write (write_xml_tax_name ch) tax_nameo;)

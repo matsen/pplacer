@@ -27,7 +27,7 @@ let write_tree ?name ch gtree =
   let bark_map = Gtree.get_bark_map gtree in
   let rec aux st =
     let write_clade id tL =
-      Xml.write_long_tag
+      Myxml.write_long_tag
         (fun () ->
           (* write the bark *)
           if IntMap.mem id bark_map then
@@ -44,7 +44,7 @@ let write_tree ?name ch gtree =
   let () =
     match name with
     | None -> ()
-    | Some n -> Xml.write_string "name" ch n
+    | Some n -> Myxml.write_string "name" ch n
   in
   aux (Gtree.get_stree gtree);
   Printf.fprintf ch "</phylogeny>\n\n"
