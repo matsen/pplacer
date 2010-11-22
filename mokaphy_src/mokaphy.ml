@@ -155,17 +155,6 @@ let cluster_of_argl = function
         (Mokaphy_prefs.Cluster.specl_of_prefs prefs)
         "usage: cluster [options] placefiles")
 
-let clusterfind_of_argl = function
-  | [] -> print_endline "finds overlap between taxonomic and phylogenetically derived clusters"
-  | argl -> 
-    let prefs = Mokaphy_prefs.Clusterfind.defaults () in
-    Cmds.clusterfind
-      prefs 
-      (wrap_parse_argv
-        argl
-        (Mokaphy_prefs.Clusterfind.specl_of_prefs prefs)
-        "usage: clusterfind [options] clusterdir1 clusterdir2")
-
 let clusterviz_of_argl = function
   | [] -> print_endline "makes a nice tree for visualization of results"
   | argl -> 
@@ -190,7 +179,6 @@ let cmd_map =
       "uavgdst", uavgdst_of_argl;
       "bavgdst", bavgdst_of_argl;
       "cluster", cluster_of_argl;
-      "clusterfind", clusterfind_of_argl;
       "clusterviz", clusterviz_of_argl;
     ]
     StringMap.empty
