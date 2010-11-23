@@ -27,15 +27,20 @@ type pxdata =
 let assert_phylogeny t = assert("phylogeny" = Xml.tag t)
 let assert_clade x = assert("clade" = Xml.tag x)
 
+let pcdata_inners_of_xml x = 
+  match Xml.children x with
+  | [pcd] -> Xml.pcdata pcd
+  | _ -> assert false
+
 let pxtree_of_xml x = 
   assert_phylogeny x;
   match Xml.children x with
   | [namex; clade] ->
       assert("name" = Xml.tag namex);
       assert_clade(clade);
-      { name = None; clade = clade; attribs = Xml.attribs x; }
-      (* { name = Some (Xml.pcdata namex); clade = clade; attribs = Xml.attribs
-       * x; } *)
+      { name = Some (pcdata_inners_of_xml namex); 
+        clade = clade; 
+        attribs = Xml.attribs x; }
   | [clade] -> 
       assert_clade(clade);
       { name = None; clade = clade; attribs = Xml.attribs x; }
