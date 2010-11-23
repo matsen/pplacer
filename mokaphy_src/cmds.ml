@@ -277,12 +277,15 @@ let clusterviz prefs = function
             (* now we read in the cluster trees *)
             let mass_trees = 
               List.map 
-                (fun i -> 
-                  List.hd
-                    (Xphyloxml.load
-                      (dirname^"/"^Cluster_common.mass_trees_dirname^"/"^
-                      (zeropad i)^".tre.fat.xml")).Xphyloxml.trees)
-                (IntMapFuns.keys nameim)
+                (fun (i, name) -> 
+                  {
+                    (List.hd
+                      (Xphyloxml.load
+                        (dirname^"/"^Cluster_common.mass_trees_dirname^"/"^
+                        (zeropad i)^".tre.fat.xml")).Xphyloxml.trees)
+                    with Xphyloxml.name = Some name
+                  })
+                (IntMapFuns.to_pairs nameim)
             in
             let _ = mass_trees in
             Xphyloxml.pxdata_to_file out_fname 
