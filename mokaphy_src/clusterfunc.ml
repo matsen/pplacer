@@ -88,6 +88,8 @@ module Cluster (B: BLOB) =
       | _ -> invalid_arg "get_only_binding: more than one binding"
     (* END crazy work around until 3.12 *)
 
+    (* note that the blobls can be non normalized as we call normf on them from
+     * the beginning and pass those on to distf *)
     let of_named_blobl given_distf normf blobl = 
       let counter = ref 0 
       and barkm = ref IntMap.empty

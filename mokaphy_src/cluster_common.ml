@@ -6,7 +6,44 @@
 
 open MapsSets
 
+module StringSetSet = 
+  Set.Make(struct type t = StringSet.t let compare = StringSet.compare end)
+
 let cluster_tree_name = "/cluster.tre"
 let mass_trees_dirname = "mass_trees"
 
 let tree_name_of_dirname dirname = dirname^cluster_tree_name
+
+let check_add x s =
+  if StringSet.mem x s then invalid_arg "check_add"
+  else StringSet.add x s
+
+let disj_union s1 s2 =
+  if StringSet.empty = StringSet.inter s1 s2 then 
+    StringSet.union s1 s2
+  else
+    invalid_arg "disj_union"
+
+let list_disj_union = List.fold_left disj_union StringSet.empty
+
+(* 
+ * map from boot value to sets below.
+ * note that we only store non-singletons.
+ * *)
+let ssim_of_tree t = 
+  let m = ref IntMap.empty in
+  let my_add k v = m := IntMap.add k v !m in
+  let rec aux = function
+    | Stree.Node(id, tL) ->
+        let below = list_disj_union (List.map aux tL) in
+        my_add (int_of_float (Gtree.get_boot t id)) below;
+        below
+    | Stree.Leaf(id) ->
+        StringSet.singleton (Gtree.get_name t id)
+  in
+  let _ = aux (Gtree.get_stree t) in
+  !m
+
+let sss_of_tree t = 
+  IntMap.fold (fun _ s -> StringSetSet.add s) (ssim_of_tree t)
+    StringSetSet.empty

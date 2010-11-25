@@ -63,10 +63,9 @@ let pr_wrap_parse_argv argl specl usage =
 (* here are the commands, wrapped up to simply take an argument list. they must
  * also print out a documentation line when given an empty list argument. 
  *
- * we *could* factor these by making a parametrized module but we would need to
- * supply definition string, preferences module, fundamental command, and usage
- * string. For now it doesn't seem worth it.
- * *)
+ * can't wait for first class modules in 3.12!!!
+ * that will make all of this quite slick...
+ *)
 let bary_of_argl = function
   | [] -> print_endline "draws the barycenter of a placement collection on the reference tree"
   | argl -> 
@@ -166,6 +165,16 @@ let clusterviz_of_argl = function
         (Mokaphy_prefs.Clusterviz.specl_of_prefs prefs)
         "usage: clusterviz [options] tree1 tree2")
 
+let bootviz_of_argl = function
+  | [] -> print_endline "makes a tree which shows the bootstrap values"
+  | argl -> 
+    let prefs = Mokaphy_prefs.Bootviz.defaults () in
+    Cmds.bootviz
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.Bootviz.specl_of_prefs prefs)
+        "usage: bootviz [options] -b boot_trees cluster_tree")
 
 let cmd_map = 
   List.fold_right 
@@ -180,6 +189,7 @@ let cmd_map =
       "bavgdst", bavgdst_of_argl;
       "cluster", cluster_of_argl;
       "clusterviz", clusterviz_of_argl;
+      "bootviz", bootviz_of_argl;
     ]
     StringMap.empty
 

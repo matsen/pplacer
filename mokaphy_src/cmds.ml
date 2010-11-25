@@ -186,7 +186,7 @@ let write_pre_tree drt id pre =
   Placeviz_core.write_fat_tree
    400. (* mass width *)
    1.   (* log coeff *)
-   ((zeropad id)^".tre")
+   (zeropad id)
    drt
    (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
 
@@ -239,6 +239,8 @@ let cluster prefs prl =
     mkdir Cluster_common.mass_trees_dirname;
     Sys.chdir Cluster_common.mass_trees_dirname;
     IntMap.iter (write_pre_tree drt) blobim;
+    (* if we are given a refpkg, then we should make a tax tree here then
+      * run mimic on it *)
   end
   else begin
     let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) in
@@ -296,3 +298,21 @@ let clusterviz prefs = function
   end
   | [] -> () (* e.g. -help *)
   | _ -> failwith "Please specify exactly one cluster directory for clusterviz."
+
+
+(* *** BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ  BOOTVIZ *** *)
+
+let bootviz prefs = function
+  | [ct_fname] ->
+      let out_fname = match Mokaphy_prefs.Bootviz.out_fname prefs with
+        | "" -> "cluster_boot.xml" 
+        | s -> s
+      in
+      Phyloxml.tree_to_file
+        (Bootviz.decorate_tree 
+          (Mokaphy_prefs.Bootviz.cutoff prefs) 
+          (Mokaphy_prefs.Bootviz.boot_fname prefs)
+          ct_fname)
+        out_fname
+  | [] -> () (* e.g. -help *)
+  | _ -> failwith "Please specify exactly one cluster tree for bootviz."

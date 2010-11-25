@@ -414,3 +414,35 @@ module Clusterviz = struct
     "A CSV file containing two columns: \"numbers\", which are node numbers in the clustered tree, and \"names\", which are names for those nodes.";
     ]
 end 
+
+
+(* BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ *)
+module Bootviz = struct
+  type mokaphy_prefs = 
+    {
+      boot_fname: string ref;
+      out_fname: string ref;
+      cutoff: float ref;
+    }
+  
+  let boot_fname p = !(p.boot_fname)
+  let out_fname p = !(p.out_fname)
+  let cutoff p = !(p.cutoff)
+  
+  let defaults () = 
+    { 
+      boot_fname = ref "";
+      out_fname = ref "";
+      cutoff = ref 0.;
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "-b", Arg.Set_string prefs.boot_fname,
+    "The file containing the bootstrapped trees, one per line.";
+    "-o", Arg.Set_string prefs.out_fname,
+    "Specify a prefix for the clusters (required).";
+    "--cutoff", Arg.Set_float prefs.cutoff,
+    "Specify the cutoff for writing out the bootstrap value.";
+    ]
+end 
