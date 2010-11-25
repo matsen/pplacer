@@ -3,7 +3,6 @@ open MapsSets
 
 let ct_fname = "/home/bvdiversity/working/matsen/complete/cluster/phy/cluster.tre"
 let boot_fname = "/home/bvdiversity/working/matsen/complete/cluster/boot/all.tre"
-let xboot_fname = "/home/bvdiversity/working/matsen/complete/cluster/boot/some.tre"
 
 module StringSetSet = 
   Set.Make(struct type t = StringSet.t let compare = StringSet.compare end)
@@ -38,8 +37,6 @@ let count_mem ss =
     0
 
 let bootval_im = IntMap.map count_mem ssim
-
-(* 70 or higher show, 90 or higher *)
 
 let boot_decorated = 
   Gtree.set_bark_map

@@ -1,24 +1,16 @@
 (* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
 
-* goal: greedy algorithm which minimizes the distance between sibling pairs in the tree
-* we calculate all pairwise distances
 * inner loop
   * find minimally distant pair of samples i and j by folding over map
   * coalesce them to make k, and normalize
   * remove those pairs from the distance map, then add
   * calcualate distances between i and k and j and k
-  * coalesce in the tree map
-    * note that we will have to keep track of the next available index
   * recalculate distances
-
-
-  normf can be specified as an arbitrary t -> float function whose results get
-  passed as optional argument to compare.
-
 *)
 
 open MapsSets
+open Fam_batteries
 
 module type BLOB = 
 sig 
@@ -169,6 +161,23 @@ module Cluster (B: BLOB) =
       in
       let t = merge_aux (!bmapr) (!csetr) (!counter) in
       (t, !blobim)
+
+    (* mimic clusters blobl with the same steps as in the supplied tree, and
+     * spit out a blobim which represents what would have resulted had we done
+     * the clustering in that way. *)
+    let mimic t blobl = 
+      let blobim = ref IntMap.empty in 
+      let set_blob i b = blobim := IntMapFuns.check_add i b (!blobim) in
+      ListFuns.iteri set_blob blobl;
+      let _ = 
+        Gtree.recur
+          (fun i -> function
+            | [b1; b2] -> let m = B.merge b1 b2 in set_blob i m; m
+            | _ -> assert false)
+          (fun i -> IntMap.find i (!blobim))
+          t
+      in
+      !blobim
   end
 
 
@@ -180,4 +189,6 @@ module PreBlob =
   end
 
 module PreCluster = Cluster (PreBlob)
+
+
 
