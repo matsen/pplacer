@@ -115,7 +115,7 @@ let prefs_and_rt_of_header hlines =
   * then whatever. last line before placements is
 # reference tree: [ref tre]
 *)
-let of_file place_fname = 
+let of_file ?load_seq:(load_seq=true) place_fname = 
   let fastaname_rex = Str.regexp "^>"
   and ch = open_in place_fname 
   in
@@ -130,6 +130,7 @@ let of_file place_fname =
     try
       get_pqueries 
         ((Pquery_io.parse_pquery 
+          ~load_seq
           (File_parsing.filter_comments (next_batch ())))::accu)
     with
     | End_of_file -> List.rev accu
