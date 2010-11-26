@@ -29,7 +29,7 @@ let placerun_by_name fname =
       Placerun.filter_unplaced 
         ~verbose:true
         *)
-        (Placerun_io.of_file fname) 
+        (Placerun_io.of_file ~load_seq:false fname) 
     in
     if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
     placerun_map := StringMap.add fname pr !placerun_map;
