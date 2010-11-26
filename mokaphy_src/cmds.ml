@@ -257,9 +257,15 @@ let cluster prefs prl =
     let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) in
     for i=1 to nboot do
       Printf.printf "running bootstrap %d of %d\n" i nboot;
-      let boot_prl = List.map (fun pr -> Bootstrap.boot_placerun pr i) prl in
+      let boot_prl = List.map Bootstrap.boot_placerun prl in
       let (_, cluster_t, _) = make_cluster prefs boot_prl in
       Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
+      (* run distance on bootstraps *)
+      let kr_prefs = Mokaphy_prefs.KR.defaults () in
+      kr_prefs.Mokaphy_prefs.KR.list_output := true;
+      kr_prefs.Mokaphy_prefs.KR.out_fname := 
+        ("dist."^(pad_str_of_int i)^".tab");
+      kr kr_prefs boot_prl;
     done
   end
 

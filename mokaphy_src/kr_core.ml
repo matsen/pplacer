@@ -119,9 +119,7 @@ let core ch prefs prl =
       | None -> []))
   (* the names of the placeruns *)
   and names = Array.map Placerun.get_name pra
-    (* if Mokaphy_prefs.KR.matrix prefs then 2. else  *)
-  and print_pvalues = (* Mokaphy_prefs.KR.matrix prefs || *)
-                      n_samples > 0
+  and print_pvalues = n_samples > 0
   and neighborly f l = List.flatten (List.map f l)
   in
   Cmds_common.write_uptril 
