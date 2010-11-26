@@ -351,6 +351,7 @@ module Cluster = struct
       refpkg_path : string ref;
       nboot : int ref;
       seed : int ref;
+      tax_cluster_mode : string ref;
     }
   
   let use_pp            p = !(p.use_pp)
@@ -359,6 +360,7 @@ module Cluster = struct
   let refpkg_path       p = !(p.refpkg_path)
   let nboot             p = !(p.nboot)
   let seed              p = !(p.seed)
+  let tax_cluster_mode  p = !(p.tax_cluster_mode)
   
   let defaults () = 
     { 
@@ -368,6 +370,7 @@ module Cluster = struct
       refpkg_path = ref "";
       nboot = ref 0;
       seed = ref 0;
+      tax_cluster_mode = ref "";
     }
   
   (* arguments *)
@@ -384,6 +387,9 @@ module Cluster = struct
     "the number of bootstrap replicates to run";
     "--seed", Arg.Set_int prefs.seed,
     "Random seed for bootstrap";
+    "--tax-cluster", Arg.Set_string prefs.tax_cluster_mode,
+    "Perform taxonomic clustering rather than phylogenetic.\
+    Specify \"unit\" or \"inv\" for the two different modes.";
     ]
 end 
 

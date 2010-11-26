@@ -173,8 +173,12 @@ let t_prel_of_prl ~is_weighted ~use_pp prl =
   (Cmds_common.list_get_same_tree prl,
     List.map (Cmds_common.pre_of_pr ~is_weighted ~use_pp) prl)
 
-let tax_t_prel_of_prl ~is_weighted ~use_pp rp prl = 
-  let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+let tax_t_prel_of_prl mode_str ~is_weighted ~use_pp rp prl = 
+  let (taxt, ti_imap) = match mode_str with
+  | "unit" -> Tax_gtree.of_refpkg_unit rp 
+  | "inv" -> Tax_gtree.of_refpkg_inverse rp 
+  | _ -> failwith ("unknown tax cluster mode: "^mode_str)
+  in
   (taxt,
     List.map (Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
 
@@ -206,18 +210,25 @@ let make_cluster prefs prl =
   in
   let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
   in
+  let mode_str = Mokaphy_prefs.Cluster.tax_cluster_mode prefs in
   Cmds_common.check_refpkgo_tree rt refpkgo;
   let (drt, (cluster_t, blobim)) = 
-    match refpkgo with
-    | None -> 
+    if mode_str = "" then begin
+      (* phylogenetic clustering *)
       (Decor_gtree.of_newick_gtree rt,
       PreCluster.of_named_blobl (distf rt) normf
         (List.combine namel (List.map Mass_map.Pre.normalize_mass prel)))
-    | Some rp -> begin
-      let (taxt, tax_prel) = tax_t_prel_of_prl ~is_weighted ~use_pp rp prl in
-      (taxt,
-      PreCluster.of_named_blobl (distf taxt) normf
-        (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel)))
+    end
+    else
+      (* taxonomic clustering *)
+      match refpkgo with
+      | None -> failwith "taxonomic clustering requested but no reference package supplied"
+      | Some rp -> begin
+        let (taxt, tax_prel) = 
+          tax_t_prel_of_prl mode_str ~is_weighted ~use_pp rp prl in
+        (taxt,
+          PreCluster.of_named_blobl (distf taxt) normf
+          (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel)))
     end
   in
   (drt, cluster_t, blobim)
