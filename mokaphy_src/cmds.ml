@@ -169,28 +169,29 @@ let bavgdst prefs prl =
 
 open Clusterfunc
 
+let classify_mode_str = function
+  | "unit" -> Tax_gtree.of_refpkg_unit
+  | "inv" -> Tax_gtree.of_refpkg_inverse
+  | s -> failwith ("unknown tax cluster mode: "^s)
+
 let t_prel_of_prl ~is_weighted ~use_pp prl = 
   (Cmds_common.list_get_same_tree prl,
     List.map (Cmds_common.pre_of_pr ~is_weighted ~use_pp) prl)
 
-let tax_t_prel_of_prl mode_str ~is_weighted ~use_pp rp prl = 
-  let (taxt, ti_imap) = match mode_str with
-  | "unit" -> Tax_gtree.of_refpkg_unit rp 
-  | "inv" -> Tax_gtree.of_refpkg_inverse rp 
-  | _ -> failwith ("unknown tax cluster mode: "^mode_str)
-  in
+let tax_t_prel_of_prl tgt_fun ~is_weighted ~use_pp rp prl = 
+  let (taxt, ti_imap) = tgt_fun rp in
   (taxt,
     List.map (Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
 
 let zeropad i = Printf.sprintf "%04d" i
 
-let write_pre_tree drt id pre = 
+let write_pre_tree infix drt id pre = 
   let tot = Mass_map.Pre.total_mass pre in
   assert(tot > 0.);
   Placeviz_core.write_fat_tree
    400. (* mass width *)
    1.   (* log coeff *)
-   (zeropad id)
+   ((zeropad id)^"."^infix)
    drt
    (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
 
@@ -198,12 +199,8 @@ let mkdir path =
   if 0 <> Sys.command ("mkdir "^path) then
     failwith ("unable to make directory "^path)
 
-let make_cluster prefs prl = 
+let make_cluster ~is_weighted ~use_pp refpkgo prefs prl = 
   let namel = List.map Placerun.get_name prl
-  and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
-  and use_pp = Mokaphy_prefs.Cluster.use_pp prefs
-  and refpkgo = 
-    Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Cluster.refpkg_path prefs) 
   and distf rt ~x1 ~x2 b1 b2 = 
     Kr_distance.dist_of_pres 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
   and normf a = 1. /. (Mass_map.Pre.total_mass a)
@@ -225,11 +222,11 @@ let make_cluster prefs prl =
       | None -> failwith "taxonomic clustering requested but no reference package supplied"
       | Some rp -> begin
         let (taxt, tax_prel) = 
-          tax_t_prel_of_prl mode_str ~is_weighted ~use_pp rp prl in
+          tax_t_prel_of_prl 
+            (classify_mode_str mode_str)
+            ~is_weighted ~use_pp rp prl in
         (taxt,
-          PreCluster.of_named_blobl (distf taxt) normf
-          (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel)))
-    end
+          PreCluster.of_named_blobl (distf taxt) normf (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel))) end
   in
   (drt, cluster_t, blobim)
 
@@ -238,6 +235,10 @@ let cluster prefs prl =
     match Mokaphy_prefs.Cluster.out_fname prefs with
     | "" -> failwith "please supply an output directory name"
     | s -> mkdir s; Sys.chdir s
+  and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
+  and use_pp = Mokaphy_prefs.Cluster.use_pp prefs
+  and refpkgo = 
+    Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Cluster.refpkg_path prefs) 
   in
   let nboot = Mokaphy_prefs.Cluster.nboot prefs in
   let width = Base.find_zero_pad_width nboot in
@@ -245,20 +246,30 @@ let cluster prefs prl =
     String_matrix.pad_to_width '0' width (string_of_int i)
   in
   if 0 = nboot then begin
-    let (drt, cluster_t, blobim) = make_cluster prefs prl in
+    (* bootstrap turned off *)
+    let (drt, cluster_t, blobim) = 
+      make_cluster ~is_weighted ~use_pp refpkgo prefs prl in
     Newick.to_file cluster_t Cluster_common.cluster_tree_name;
     mkdir Cluster_common.mass_trees_dirname;
     Sys.chdir Cluster_common.mass_trees_dirname;
-    IntMap.iter (write_pre_tree drt) blobim;
-    (* if we are given a refpkg, then we should make a tax tree here then
-      * run mimic on it *)
+    IntMap.iter (write_pre_tree "phy" drt) blobim;
+    (* make a tax tree here then run mimic on it *)
+    match refpkgo with
+    | None -> ()
+    | Some rp ->
+      let (taxt, tax_prel) = 
+        tax_t_prel_of_prl 
+          Tax_gtree.of_refpkg_unit ~is_weighted ~use_pp rp prl in
+      let tax_blobim = PreCluster.mimic cluster_t tax_prel in
+      IntMap.iter (write_pre_tree "tax" taxt) tax_blobim 
   end
   else begin
     let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) in
     for i=1 to nboot do
       Printf.printf "running bootstrap %d of %d\n" i nboot;
       let boot_prl = List.map Bootstrap.boot_placerun prl in
-      let (_, cluster_t, _) = make_cluster prefs boot_prl in
+      let (_, cluster_t, _) = 
+        make_cluster ~is_weighted ~use_pp refpkgo prefs boot_prl in
       Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
       (* run distance on bootstraps *)
       let kr_prefs = Mokaphy_prefs.KR.defaults () in

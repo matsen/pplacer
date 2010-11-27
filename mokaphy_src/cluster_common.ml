@@ -9,10 +9,10 @@ open MapsSets
 module StringSetSet = 
   Set.Make(struct type t = StringSet.t let compare = StringSet.compare end)
 
-let cluster_tree_name = "/cluster.tre"
+let cluster_tree_name = "cluster.tre"
 let mass_trees_dirname = "mass_trees"
 
-let tree_name_of_dirname dirname = dirname^cluster_tree_name
+let tree_name_of_dirname dirname = dirname^"/"^cluster_tree_name
 
 let check_add x s =
   if StringSet.mem x s then invalid_arg "check_add"
