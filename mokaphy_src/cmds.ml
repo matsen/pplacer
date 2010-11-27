@@ -303,23 +303,28 @@ let clusterviz prefs = function
               | [t] -> t
               | _ -> assert(false)
             in
-            let _ = named_tree in
             (* now we read in the cluster trees *)
             let mass_trees = 
               List.map 
                 (fun (i, name) -> 
-                  {
-                    (List.hd
-                      (Xphyloxml.load
-                        (dirname^"/"^Cluster_common.mass_trees_dirname^"/"^
-                        (zeropad i)^".tre.fat.xml")).Xphyloxml.trees)
-                    with Xphyloxml.name = Some name
-                  })
+                  List.flatten
+                    (List.map
+                      (fun infix ->
+                        let fname = 
+                          dirname^"/"^Cluster_common.mass_trees_dirname
+                            ^"/"^(zeropad i)^infix^".fat.xml" in
+                        if Sys.file_exists fname then
+                          [{
+                            (List.hd
+                              (Xphyloxml.load fname).Xphyloxml.trees)
+                            with Xphyloxml.name = Some (name^infix)
+                          }]
+                        else [])
+                      [".phy"; ".tax"]))
                 (IntMapFuns.to_pairs nameim)
             in
-            let _ = mass_trees in
             Xphyloxml.pxdata_to_file out_fname 
-            { Xphyloxml.trees = (named_tree::mass_trees); 
+            { Xphyloxml.trees = (named_tree::(List.flatten mass_trees)); 
             Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; }
           with Clusterviz.Numbering_mismatch ->
             failwith ("numbering mismatch with "^dirname^" and "^cluster_fname)

@@ -12,7 +12,10 @@ module StringSetSet =
 let cluster_tree_name = "cluster.tre"
 let mass_trees_dirname = "mass_trees"
 
-let tree_name_of_dirname dirname = dirname^"/"^cluster_tree_name
+let path_join_two a b = if a.[(String.length a)-1] = '/' then a^b else a^"/"^b
+let rec path_join = function [] -> "" | h::t -> path_join_two h (path_join t)
+
+let tree_name_of_dirname dirname = path_join_two dirname cluster_tree_name
 
 let check_add x s =
   if StringSet.mem x s then invalid_arg "check_add"
