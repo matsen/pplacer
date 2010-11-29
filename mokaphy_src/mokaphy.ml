@@ -163,7 +163,7 @@ let clusterviz_of_argl = function
       (wrap_parse_argv
         argl
         (Mokaphy_prefs.Clusterviz.specl_of_prefs prefs)
-        "usage: clusterviz [options] tree1 tree2")
+        "usage: clusterviz [options] --name-csv my.csv tree")
 
 let bootviz_of_argl = function
   | [] -> print_endline "makes a tree which shows the bootstrap values"
@@ -175,6 +175,17 @@ let bootviz_of_argl = function
         argl
         (Mokaphy_prefs.Bootviz.specl_of_prefs prefs)
         "usage: bootviz [options] -b boot_trees cluster_tree")
+
+let bootsub_of_argl = function
+  | [] -> print_endline "makes a tree which shows the bootstrap values"
+  | argl -> 
+    let prefs = Mokaphy_prefs.Bootsub.defaults () in
+    Cmds.bootsub
+      prefs 
+      (wrap_parse_argv
+        argl
+        (Mokaphy_prefs.Bootsub.specl_of_prefs prefs)
+        "usage: bootsub [options] -b boot_trees --name-csv my.csv cluster_tree")
 
 let cmd_map = 
   List.fold_right 
@@ -190,6 +201,7 @@ let cmd_map =
       "cluster", cluster_of_argl;
       "clusterviz", clusterviz_of_argl;
       "bootviz", bootviz_of_argl;
+      "bootsub", bootsub_of_argl;
     ]
     StringMap.empty
 

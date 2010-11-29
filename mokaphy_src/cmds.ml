@@ -289,7 +289,7 @@ let clusterviz prefs = function
         | _, "" -> failwith "please specify an out file name"
         | (cluster_fname, out_fname) -> 
           try
-            let nameim = Clusterviz.nameim_of_csv cluster_fname 
+            let nameim = Cluster_common.nameim_of_csv cluster_fname 
             and out_tree_name = 
               Cmds_common.chop_suffix_if_present cluster_fname ".csv"
             in
@@ -333,8 +333,7 @@ let clusterviz prefs = function
   | _ -> failwith "Please specify exactly one cluster directory for clusterviz."
 
 
-(* *** BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ  BOOTVIZ *** *)
-
+(* *** BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ *** *)
 let bootviz prefs = function
   | [ct_fname] ->
       let out_fname = match Mokaphy_prefs.Bootviz.out_fname prefs with
@@ -349,3 +348,24 @@ let bootviz prefs = function
         out_fname
   | [] -> () (* e.g. -help *)
   | _ -> failwith "Please specify exactly one cluster tree for bootviz."
+
+
+(* *** BOOTSUB BOOTSUB BOOTSUB BOOTSUB BOOTSUB BOOTSUB *** *)
+let bootsub prefs = function
+  | [ct_fname] -> begin
+      match (Mokaphy_prefs.Bootsub.boot_fname prefs,
+            Mokaphy_prefs.Bootsub.name_csv prefs) with
+        | "",_ -> failwith "please supply a file of bootstrapped trees"
+        | _,"" -> failwith "please supply a cluster CSV file"
+        | (boot_fname, csv_fname) -> 
+            Cmds_common.wrap_output (Mokaphy_prefs.Bootsub.out_fname prefs)
+              (fun ch ->
+                Bootsub.perform 
+                  ch
+                  (Mokaphy_prefs.Bootsub.cutoff prefs) 
+                  ~csv_fname
+                  ~boot_fname
+                  ~ct_fname)
+      end
+  | [] -> () (* e.g. -help *)
+  | _ -> failwith "Please specify exactly one cluster tree for bootsub."

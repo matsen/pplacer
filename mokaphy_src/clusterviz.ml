@@ -8,16 +8,6 @@ open MapsSets
 
 exception Numbering_mismatch
 
-let nameim_of_csv fname = 
-  List.fold_right 
-    (fun l -> 
-      IntMap.add 
-        (int_of_string (List.assoc "number" l)) 
-        (List.assoc "name" l))
-    (match (Csv.load fname) with 
-    | h :: d -> Csv.associate h d
-    | [] -> assert false)
-    IntMap.empty 
 
 (* makes a map from node labels (in bootstrap positions) to the node numbers *)
 let nodemap_of_tree t = 

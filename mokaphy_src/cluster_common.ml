@@ -50,3 +50,20 @@ let ssim_of_tree t =
 let sss_of_tree t = 
   IntMap.fold (fun _ s -> StringSetSet.add s) (ssim_of_tree t)
     StringSetSet.empty
+
+(* fname has two columns, "number", which has the nodes of the internal nodes of
+ * the tree, and "name", which has names for those internal nodes *)
+let numnamel_of_csv fname = 
+  List.map 
+    (fun l -> 
+      int_of_string (List.assoc "number" l), 
+      List.assoc "name" l)
+    (match (Csv.load fname) with 
+    | h :: d -> Csv.associate h d
+    | [] -> assert false)
+
+let nameim_of_csv fname = 
+  List.fold_right 
+    (fun (i,n) -> IntMap.add i n)
+    (numnamel_of_csv fname)
+    IntMap.empty 
