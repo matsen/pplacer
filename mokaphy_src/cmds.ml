@@ -281,6 +281,24 @@ let cluster prefs prl =
   end
 
 (* *** CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ *** *)
+
+(* get mass tree(s) and name them with name *)
+let get_named_mass_tree dirname i name = 
+  List.flatten
+    (List.map
+      (fun infix ->
+        let fname = 
+          dirname^"/"^Cluster_common.mass_trees_dirname
+            ^"/"^(zeropad i)^infix^".fat.xml" in
+        if Sys.file_exists fname then
+          [{
+            (List.hd
+              (Xphyloxml.load fname).Xphyloxml.trees)
+            with Xphyloxml.name = Some (name^infix)
+          }]
+        else [])
+      [".phy"; ".tax"])
+
 let clusterviz prefs = function
   | [dirname] -> begin
       match (Mokaphy_prefs.Clusterviz.name_csv prefs,
@@ -306,26 +324,14 @@ let clusterviz prefs = function
             (* now we read in the cluster trees *)
             let mass_trees = 
               List.map 
-                (fun (i, name) -> 
-                  List.flatten
-                    (List.map
-                      (fun infix ->
-                        let fname = 
-                          dirname^"/"^Cluster_common.mass_trees_dirname
-                            ^"/"^(zeropad i)^infix^".fat.xml" in
-                        if Sys.file_exists fname then
-                          [{
-                            (List.hd
-                              (Xphyloxml.load fname).Xphyloxml.trees)
-                            with Xphyloxml.name = Some (name^infix)
-                          }]
-                        else [])
-                      [".phy"; ".tax"]))
+                (fun (i, name) -> get_named_mass_tree dirname i name)
                 (IntMapFuns.to_pairs nameim)
             in
+          (* write out the average masses corresponding to the named clusters *)
             Xphyloxml.pxdata_to_file out_fname 
-            { Xphyloxml.trees = (named_tree::(List.flatten mass_trees)); 
-            Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; }
+              { Xphyloxml.trees = (named_tree::(List.flatten mass_trees)); 
+                Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; }
+
           with Clusterviz.Numbering_mismatch ->
             failwith ("numbering mismatch with "^dirname^" and "^cluster_fname)
   end

@@ -8,15 +8,17 @@ In fact, it actually compares collections of phylogenetic placements, such as th
 Currently implemented
 =====================
 * comparisons using the `phylogenetic Kantorovich-Rubinstein metric`_ which is a generalization of weighted UniFrac_.
-* L^p generalizations thereof
+* \( L^p \) generalizations thereof
 * a generalization of unweighted UniFrac_.
 * `Heat trees`_ in phyloXML format, which graphically show the difference between two collections of placements.
 * KR comparison and heat trees on the taxonomic tree
+* "merge" clustering 
+* bootstrapping thereof
+* finding "wandering" samples in clustering
 
 Coming soon
 ===========
 * average pairwise distance within and between placements (in testing)
-* clustering (available in script form...)
 
 Documentation
 =============
