@@ -189,11 +189,12 @@ let write_pre_tree infix drt id pre =
   let tot = Mass_map.Pre.total_mass pre in
   assert(tot > 0.);
   Placeviz_core.write_fat_tree
-   400. (* mass width *)
-   1.   (* log coeff *)
-   ((zeropad id)^"."^infix)
-   drt
-   (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
+    ~min_bl:2e-2
+    400. (* mass width *)
+    1.   (* log coeff *)
+    ((zeropad id)^"."^infix)
+    drt 
+    (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
 
 let mkdir path = 
   if 0 <> Sys.command ("mkdir "^path) then
