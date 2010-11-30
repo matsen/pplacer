@@ -252,11 +252,13 @@ let cluster prefs prl =
     Newick.to_file cluster_t Cluster_common.cluster_tree_name;
     mkdir Cluster_common.mass_trees_dirname;
     Sys.chdir Cluster_common.mass_trees_dirname;
-    IntMap.iter (write_pre_tree "phy" drt) blobim;
     (* make a tax tree here then run mimic on it *)
     match refpkgo with
-    | None -> ()
+    | None -> IntMap.iter (write_pre_tree "phy" drt) blobim
     | Some rp ->
+(* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
+      let tdrt = Refpkg.get_tax_ref_tree rp in
+      IntMap.iter (write_pre_tree "phy" tdrt) blobim;
       let (taxt, tax_prel) = 
         tax_t_prel_of_prl 
           Tax_gtree.of_refpkg_unit ~is_weighted ~use_pp rp prl in

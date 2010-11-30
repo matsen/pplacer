@@ -3,7 +3,7 @@
 
 * inner loop
   * find minimally distant pair of samples i and j by folding over map
-  * coalesce them to make k, and normalize
+  * merge them to make k, and normalize
   * remove those pairs from the distance map, then add
   * calcualate distances between i and k and j and k
   * recalculate distances
