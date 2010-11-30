@@ -163,7 +163,7 @@ let clusterviz_of_argl = function
       (wrap_parse_argv
         argl
         (Mokaphy_prefs.Clusterviz.specl_of_prefs prefs)
-        "usage: clusterviz [options] --name-csv my.csv tree")
+        "usage: clusterviz [options] --name-csv my.csv cluster_dir")
 
 let bootviz_of_argl = function
   | [] -> print_endline "makes a tree which shows the bootstrap values"
