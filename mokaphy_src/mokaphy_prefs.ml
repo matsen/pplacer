@@ -448,9 +448,9 @@ module Bootviz = struct
     "-b", Arg.Set_string prefs.boot_fname,
     "The file containing the bootstrapped trees, one per line.";
     "-o", Arg.Set_string prefs.out_fname,
-    "Specify a prefix for the clusters (required).";
+    "Specify an out file (default cluster_boot.xml).";
     "--cutoff", Arg.Set_float prefs.cutoff,
-    "Specify the cutoff for writing out the bootstrap value.";
+    "Specify the cutoff for writing out the bootstrap value (default 0).";
     ]
 end 
 

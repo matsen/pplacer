@@ -1,10 +1,15 @@
 (* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Here we read in t
  *)
 
 open MapsSets
 module SSS = Cluster_common.StringSetSet
 
+(* Read in two files: boot_fname, which contains a collection of bootstrapped
+ * trees, and ct_fname, which is the tree with the full data.
+ * Write out an XML file with those bootstrap values. *)
 let decorate_tree cutoff boot_fname ct_fname = 
   let ct = Newick.of_file ct_fname
   and boot_tl = Newick.list_of_file boot_fname
@@ -21,6 +26,8 @@ let decorate_tree cutoff boot_fname ct_fname =
     (fun ss -> if 0 <> StringSet.compare taxs ss then 
                  invalid_arg "taxon sets not identical")
     boot_ssl;
+  (* we count up bootstraps for a clade by seeing if that same taxon subset
+   * exists in the bootstrap set set list. *)
   let bootval_im = 
     IntMap.map 
       (fun ss -> 

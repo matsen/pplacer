@@ -1,7 +1,8 @@
 (* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * A way to add names to internal nodes based on clustering results.
+ * Note that for much of this clustering work we assume that trees have
+ * numberings in their internal nodes, where the bootstrap values go. 
  *)
 
 open MapsSets
@@ -30,7 +31,7 @@ let disj_union s1 s2 =
 let list_disj_union = List.fold_left disj_union StringSet.empty
 
 (* 
- * map from boot value to sets below.
+ * Make a map from boot value to sets below.
  * note that we only store non-singletons.
  * *)
 let ssim_of_tree t = 
@@ -47,6 +48,8 @@ let ssim_of_tree t =
   let _ = aux (Gtree.get_stree t) in
   !m
 
+(* In a rooted tree, each internal node gives a taxon set, which is the set of
+ * taxa below that node. Here we collect the set of such (non-singleton) sets. *)
 let sss_of_tree t = 
   IntMap.fold (fun _ s -> StringSetSet.add s) (ssim_of_tree t)
     StringSetSet.empty
