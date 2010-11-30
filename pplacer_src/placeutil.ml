@@ -156,7 +156,7 @@ let () =
     in
     let boot pr =
       let () = Random.self_init () in
-      if !nboot <> 0 then ListFuns.init (!nboot) (Bootstrap.boot_placerun pr)
+      if !nboot <> 0 then ListFuns.init (!nboot) (fun _ -> Bootstrap.boot_placerun pr)
       else [pr]
     in
     (* splitting *)

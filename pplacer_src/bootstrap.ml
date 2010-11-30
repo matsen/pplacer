@@ -33,15 +33,12 @@ let boot_list f l =
   assert(n = List.length out);
   List.rev out
 
-
-let boot_placerun pr bootnum = 
+let boot_placerun pr = 
   {
     pr with
-    Placerun.name = (Placerun.get_name pr)^".boot"^(string_of_int bootnum);
     Placerun.pqueries = 
       boot_list
-        (fun i pq -> 
-          { pq with Pquery.name = (Pquery.name pq)^"_boot_"^(string_of_int i) })
+        (fun _ pq -> pq)
         (Placerun.get_pqueries pr);
   }
 
