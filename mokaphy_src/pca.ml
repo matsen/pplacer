@@ -106,13 +106,18 @@ let heat_tree_of_floatim t m =
   Placeviz_core.spread_short_fat 1e-2
     (Decor_gtree.add_decor_by_map t (heat_map_of_floatim m))
 
-let pca_complete weighting criterion write_n out_fname prl = 
-  let t = Decor_gtree.of_newick_gtree (Cmds_common.list_get_same_tree prl)
+let pca_complete weighting criterion write_n rp out_fname prl = 
+  let refpkgo = Some rp
+  in
+  let t = Refpkg.get_tax_ref_tree rp 
   and (eval, evect) = 
     gen_pca 
       (Array.of_list 
         (List.map (splitify_placerun weighting criterion) prl))
   in
+  Cmds_common.check_refpkgo_tree 
+    (Decor_gtree.of_newick_gtree (Cmds_common.list_get_same_tree prl))
+    refpkgo;
   let to_write = 
     Base.list_sub ~len:write_n 
       (List.combine (Array.to_list eval) (Array.to_list evect))
@@ -125,8 +130,10 @@ let pca_complete weighting criterion write_n out_fname prl =
       to_write)
     out_fname
 
+let rp = Refpkg.of_path "/home/bvdiversity/working/matsen/vaginal_16s.refpkg"
+
 let () = 
-  pca_complete Mass_map.Weighted Placement.ml_ratio 5 "test_pca.xml" prl
+  pca_complete Mass_map.Weighted Placement.ml_ratio 5 rp "test_pca.xml" prl
 
     (*
 let prl = 
