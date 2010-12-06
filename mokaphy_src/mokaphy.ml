@@ -187,6 +187,18 @@ let bootsub_of_argl = function
         (Mokaphy_prefs.Bootsub.specl_of_prefs prefs)
         "usage: bootsub [options] -b boot_trees --name-csv my.csv cluster_tree")
 
+let pca_of_argl = function
+  | [] -> print_endline "does PCA, and makes lovely trees"
+  | argl -> 
+    let prefs = Mokaphy_prefs.Pca.defaults () in
+    Cmds.pca
+      prefs 
+      (pr_wrap_parse_argv
+        argl
+        (Mokaphy_prefs.Pca.specl_of_prefs prefs)
+        "usage: pca [options] placefiles")
+
+
 let cmd_map = 
   List.fold_right 
     (fun (k,v) -> StringMap.add k v)
@@ -202,6 +214,7 @@ let cmd_map =
       "clusterviz", clusterviz_of_argl;
       "bootviz", bootviz_of_argl;
       "bootsub", bootsub_of_argl;
+      "pca", pca_of_argl;
     ]
     StringMap.empty
 

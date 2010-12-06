@@ -378,3 +378,9 @@ let bootsub prefs = function
       end
   | [] -> () (* e.g. -help *)
   | _ -> failwith "Please specify exactly one cluster tree for bootsub."
+
+
+(* *** PCA PCA PCA PCA PCA *** *)
+let pca _ prl = 
+  Pca.pca_normal prl
+

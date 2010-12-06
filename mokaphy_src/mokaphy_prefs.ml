@@ -490,3 +490,25 @@ module Bootsub = struct
     "Specify the cutoff for writing out the bootstrap value.";
     ]
 end 
+
+
+(* PCA PCA PCA PCA PCA PCA PCA PCA *)
+module Pca = struct
+  type mokaphy_prefs = 
+    {
+      out_fname: string ref;
+    }
+  
+  let out_fname p = !(p.out_fname)
+  
+  let defaults () = 
+    { 
+      out_fname = ref "";
+    }
+  
+  (* arguments *)
+  let specl_of_prefs prefs = [
+    "-o", Arg.Set_string prefs.out_fname,
+    "Specify an out filename.";
+    ]
+end 
