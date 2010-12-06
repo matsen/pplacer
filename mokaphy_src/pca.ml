@@ -35,9 +35,9 @@ let covariance_matrix faa =
   done;
   m
 
+(* make an array of (eval, evect) tuples *)
 let gen_pca faa = 
   my_symmv (covariance_matrix faa)
-
 
 
 (* *** splitify *** *)
@@ -81,9 +81,52 @@ let splitify_placerun weighting criterion pr =
       splitify 
       (below_mass_map (Mass_map.By_edge.of_pre preim) t))
 
-let pca weighting criterion prl = 
-  gen_pca 
-    (Array.of_list (List.map (splitify_placerun weighting criterion) prl))
+let map_filter f m = 
+  IntMap.fold
+    (fun k v m -> if f k v then IntMap.add k v m else m)
+    m
+    IntMap.empty
+
+let heat_map_of_floatim m = 
+  let multiplier = 50. 
+  and min_width = 1.
+  in 
+  IntMap.map
+    (fun v ->
+      if v = 0. then []
+      else begin
+        let width = multiplier *. v in
+        (Heat_tree.simple_color_of_heat v)::
+          (if width < min_width then []
+           else [Decor.width width])
+      end)
+    m
+
+let heat_tree_of_floatim t m =
+  Placeviz_core.spread_short_fat 1e-2
+    (Decor_gtree.add_decor_by_map t (heat_map_of_floatim m))
+
+let pca_complete weighting criterion write_n out_fname prl = 
+  let t = Decor_gtree.of_newick_gtree (Cmds_common.list_get_same_tree prl)
+  and (eval, evect) = 
+    gen_pca 
+      (Array.of_list 
+        (List.map (splitify_placerun weighting criterion) prl))
+  in
+  let to_write = 
+    Base.list_sub ~len:write_n 
+      (List.combine (Array.to_list eval) (Array.to_list evect))
+  in
+  Phyloxml.named_tree_list_to_file
+    (List.map
+      (fun (eval, evect) ->
+        (Some (string_of_float eval),
+        heat_tree_of_floatim t (map_of_arr evect)))
+      to_write)
+    out_fname
+
+let () = 
+  pca_complete Mass_map.Weighted Placement.ml_ratio 5 "test_pca.xml" prl
 
     (*
 let prl = 
@@ -95,11 +138,10 @@ let prl =
   "/home/bvdiversity/working/matsen/interesting/p4z1r2/p4z1r2.place";
   "/home/bvdiversity/working/matsen/interesting/p4z2r22/p4z2r22.place";
 ])
-*)
 
 let out = pca Mass_map.Weighted Placement.ml_ratio prl
 
-let (eval, evect) = out
+*)
 
 (*
 a <- c(9,3,5)

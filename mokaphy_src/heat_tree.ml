@@ -77,6 +77,7 @@ let color_map prefs t pre1 pre2 =
   let top_heat = List.hd heat_only in
   if top_heat > Kr_distance.tol then
     raise (Kr_distance.Total_kr_not_zero top_heat);
+  (* why do I do it like this rather than mapping abs first? *)
   let max_abs_heat = 
     max
       (ListFuns.complete_fold_left max heat_only)
