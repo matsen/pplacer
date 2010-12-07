@@ -3,8 +3,13 @@
  *)
 
 open MapsSets
+open Fam_batteries
+
+let tolerance = 1e-3
 
 (* *** general PCA stuff *** *)
+
+let dot = ArrayFuns.fold_left2 (fun x1 x2 -> ( +. ) (x1 *. x2)) 0. 
 
 (* returns array of values, and then array of vectors (i.e. left eigenmatrix if
   * considered as a matrix) *)
@@ -20,24 +25,40 @@ let column aa j = Array.init (Array.length aa) (fun i -> aa.(i).(j))
 (* pass in an a by n array of arrays, and make the corresponding n by n
  * covariance matrix. this is the standard way, such that rows represent
  * observations and columns represent variables. 
- * Assuming rectangularity, etc. 
+ * Assuming rectangularity, etc, and clearly not highly optimized.
  * *)
-let covariance_matrix faa = 
+let covariance_matrix ?scale faa = 
   let n = Array.length faa.(0) in 
-  let m = Gsl_matrix.create n n in
-  let col = Array.init n (column faa) in
+  let m = Gsl_matrix.create n n 
+  and col = Array.init n (column faa)
+  in
+  let base_cov i j = Gsl_stats.covariance col.(i) col.(j) in
+  let f = match scale with
+    | None | Some false -> base_cov
+    | Some true -> 
+        let dia = Array.init n (fun i -> sqrt(base_cov i i)) in
+        (fun i j -> 
+          let num = base_cov i j
+          and denom = dia.(i) *. dia.(j) 
+          in
+          if denom = 0. then (assert (num = 0.); 0.)
+          else num /. denom)
+  in
   for i=0 to n-1 do
     for j=i to n-1 do
-      let cov = Gsl_stats.covariance col.(i) col.(j) in
+      let cov = f i j in
       m.{i,j} <- cov;
       m.{j,i} <- cov;
     done;
   done;
   m
 
-(* make an array of (eval, evect) tuples *)
-let gen_pca faa = 
-  my_symmv (covariance_matrix faa)
+(* make an array of (eval, evect) tuples. Keep only the top n_keep. *)
+let gen_pca ?n_keep ?scale faa = 
+  let (vals, vects) as system = my_symmv (covariance_matrix ?scale faa) in
+  match n_keep with
+  | None -> system
+  | Some n -> (Array.sub vals 0 n, Array.sub vects 0 n)
 
 
 (* *** splitify *** *)
@@ -46,6 +67,19 @@ let gen_pca faa =
 let splitify x = abs_float (1. -. 2. *. x)
 
 let soft_find i m = if IntMap.mem i m then IntMap.find i m else 0.
+
+let arr_of_map len m = Array.init len (fun i -> soft_find i m)
+
+let map_of_arr a = 
+  let m = ref IntMap.empty in
+  Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
+  !m
+
+let map_filter f m = 
+  IntMap.fold
+    (fun k v m -> if f k v then IntMap.add k v m else m)
+    m
+    IntMap.empty
 
 (* get the mass below the given edge, excluding that edge *)
 let below_mass_map edgem t = 
@@ -59,18 +93,10 @@ let below_mass_map edgem t =
       (fun i -> soft_find i edgem)
       t
   in 
-  assert(abs_float(1. -. total) < 1e-3);
+  assert(abs_float(1. -. total) < tolerance);
   !m
 
-let arr_of_map len m = 
-  Array.init len (fun i -> soft_find i m)
-
-let map_of_arr a = 
-  let m = ref IntMap.empty in
-  Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
-  !m
-
-(* later we may cut the edge mass in half *)
+(* later we may cut the edge mass in half; right now we don't do anything with it. *)
 let splitify_placerun weighting criterion pr = 
   let preim = Mass_map.Pre.of_placerun weighting criterion pr
   and t = Placerun.get_ref_tree pr
@@ -80,12 +106,6 @@ let splitify_placerun weighting criterion pr =
     (IntMap.map 
       splitify 
       (below_mass_map (Mass_map.By_edge.of_pre preim) t))
-
-let map_filter f m = 
-  IntMap.fold
-    (fun k v m -> if f k v then IntMap.add k v m else m)
-    m
-    IntMap.empty
 
 let heat_map_of_floatim m = 
   let multiplier = 50. 
@@ -106,31 +126,45 @@ let heat_tree_of_floatim t m =
   Placeviz_core.spread_short_fat 1e-2
     (Decor_gtree.add_decor_by_map t (heat_map_of_floatim m))
 
-let pca_complete weighting criterion write_n rp out_fname prl = 
-  let refpkgo = Some rp
-  in
-  let t = Refpkg.get_tax_ref_tree rp 
-  and (eval, evect) = 
-    gen_pca 
-      (Array.of_list 
-        (List.map (splitify_placerun weighting criterion) prl))
-  in
+let save_named_fal fname nvl = 
+  Csv.save 
+    fname
+    (List.map
+      (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
+      nvl)
+
+let pca_complete weighting criterion write_n rp out_prefix prl = 
+  let refpkgo = Some rp in
+  let t = Refpkg.get_tax_ref_tree rp in
   Cmds_common.check_refpkgo_tree 
     (Decor_gtree.of_newick_gtree (Cmds_common.list_get_same_tree prl))
     refpkgo;
-  let to_write = 
-    Base.list_sub ~len:write_n 
-      (List.combine (Array.to_list eval) (Array.to_list evect))
+  let data = List.map (splitify_placerun weighting criterion) prl
+  in
+  let (eval, evect) = gen_pca ~scale:true ~n_keep:write_n (Array.of_list data)
+  in
+  let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
+  and names = (List.map Placerun.get_name prl)
   in
   Phyloxml.named_tree_list_to_file
     (List.map
       (fun (eval, evect) ->
         (Some (string_of_float eval),
         heat_tree_of_floatim t (map_of_arr evect)))
-      to_write)
-    out_fname
+      combol)
+    (out_prefix^".xml");
+  save_named_fal
+    (out_prefix^".rot")
+    (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
+  save_named_fal
+    (out_prefix^".trans")
+    (List.combine 
+      names 
+      (List.map (fun d -> Array.map (dot d) evect) data));
+  ()
+  
 
 let rp = Refpkg.of_path "/home/bvdiversity/working/matsen/vaginal_16s.refpkg"
 
 let pca_normal prl = 
-  pca_complete Mass_map.Weighted Placement.ml_ratio 5 rp "test_pca.xml" prl
+  pca_complete Mass_map.Weighted Placement.ml_ratio 5 rp "test_pca" prl
