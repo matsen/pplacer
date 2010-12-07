@@ -9,7 +9,7 @@ let tolerance = 1e-3
 
 (* *** general PCA stuff *** *)
 
-let dot = ArrayFuns.fold_left2 (fun x1 x2 -> ( +. ) (x1 *. x2)) 0. 
+let dot = ArrayFuns.fold_left2 (fun s x1 x2 -> s +. (x1 *. x2)) 0. 
 
 (* returns array of values, and then array of vectors (i.e. left eigenmatrix if
   * considered as a matrix) *)
@@ -115,7 +115,7 @@ let heat_map_of_floatim m =
     (fun v ->
       if v = 0. then []
       else begin
-        let width = multiplier *. v in
+        let width = multiplier *. (abs_float v) in
         (Heat_tree.simple_color_of_heat v)::
           (if width < min_width then []
            else [Decor.width width])
@@ -133,7 +133,7 @@ let save_named_fal fname nvl =
       (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
       nvl)
 
-let pca_complete weighting criterion write_n rp out_prefix prl = 
+let pca_complete ?scale weighting criterion write_n rp out_prefix prl = 
   let refpkgo = Some rp in
   let t = Refpkg.get_tax_ref_tree rp in
   Cmds_common.check_refpkgo_tree 
@@ -141,7 +141,7 @@ let pca_complete weighting criterion write_n rp out_prefix prl =
     refpkgo;
   let data = List.map (splitify_placerun weighting criterion) prl
   in
-  let (eval, evect) = gen_pca ~scale:true ~n_keep:write_n (Array.of_list data)
+  let (eval, evect) = gen_pca ?scale ~n_keep:write_n (Array.of_list data)
   in
   let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
   and names = (List.map Placerun.get_name prl)
@@ -161,6 +161,9 @@ let pca_complete weighting criterion write_n rp out_prefix prl =
     (List.combine 
       names 
       (List.map (fun d -> Array.map (dot d) evect) data));
+  save_named_fal
+    (out_prefix^".data")
+    (List.combine names data);
   ()
   
 
