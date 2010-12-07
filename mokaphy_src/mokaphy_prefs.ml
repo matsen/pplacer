@@ -502,6 +502,7 @@ module Pca = struct
       write_n: int ref;
       refpkg_path : string ref;
       scale: bool ref;
+      multiplier: float ref;
     }
   
   let out_prefix  p = !(p.out_prefix)
@@ -510,6 +511,7 @@ module Pca = struct
   let write_n     p = !(p.write_n)
   let refpkg_path p = !(p.refpkg_path)
   let scale       p = !(p.scale)
+  let multiplier  p = !(p.multiplier)
   
   let defaults () = 
     { 
@@ -519,6 +521,7 @@ module Pca = struct
       write_n = ref 5;
       refpkg_path = ref "";
       scale = ref false;
+      multiplier = ref 50.;
     }
   
   (* arguments *)
@@ -535,5 +538,7 @@ module Pca = struct
     "The number of principal coordinates to write out (default is 5).";
     "--scale", Arg.Set prefs.scale,
     "Scale variances to one before performing principal components.";
+    "--multiplier", Arg.Set_float prefs.multiplier,
+    "The factor by which we multiply the principal component eigenvectors to get branch thickness.";
     ]
 end 

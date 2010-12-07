@@ -391,6 +391,7 @@ let pca prefs = function
         ~scale:(Mokaphy_prefs.Pca.scale prefs)
         (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Pca.weighted prefs))
         (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Pca.use_pp prefs))
+        (Mokaphy_prefs.Pca.multiplier prefs)
         (Mokaphy_prefs.Pca.write_n prefs)
         (Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Pca.refpkg_path prefs))
         prefix

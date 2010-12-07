@@ -107,10 +107,8 @@ let splitify_placerun weighting criterion pr =
       splitify 
       (below_mass_map (Mass_map.By_edge.of_pre preim) t))
 
-let heat_map_of_floatim m = 
-  let multiplier = 50. 
-  and min_width = 1.
-  in 
+let heat_map_of_floatim multiplier m = 
+  let min_width = 1. in 
   IntMap.map
     (fun v ->
       if v = 0. then []
@@ -122,9 +120,9 @@ let heat_map_of_floatim m =
       end)
     m
 
-let heat_tree_of_floatim t m =
+let heat_tree_of_floatim multiplier t m =
   Placeviz_core.spread_short_fat 1e-2
-    (Decor_gtree.add_decor_by_map t (heat_map_of_floatim m))
+    (Decor_gtree.add_decor_by_map t ((heat_map_of_floatim multiplier) m))
 
 let save_named_fal fname nvl = 
   Csv.save 
@@ -133,7 +131,8 @@ let save_named_fal fname nvl =
       (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
       nvl)
 
-let pca_complete ?scale weighting criterion write_n refpkgo out_prefix prl = 
+let pca_complete ?scale 
+      weighting criterion multiplier write_n refpkgo out_prefix prl = 
   let prt = Cmds_common.list_get_same_tree prl in
   let t = match refpkgo with 
   | None -> Decor_gtree.of_newick_gtree prt
@@ -152,7 +151,7 @@ let pca_complete ?scale weighting criterion write_n refpkgo out_prefix prl =
     (List.map
       (fun (eval, evect) ->
         (Some (string_of_float eval),
-        heat_tree_of_floatim t (map_of_arr evect)))
+        heat_tree_of_floatim multiplier t (map_of_arr evect)))
       combol)
     (out_prefix^".xml");
   save_named_fal
@@ -167,5 +166,3 @@ let pca_complete ?scale weighting criterion write_n refpkgo out_prefix prl =
     (out_prefix^".edgediff")
     (List.combine names data);
   ()
-  
-
