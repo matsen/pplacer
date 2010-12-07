@@ -345,8 +345,8 @@ end
 module Cluster = struct
   type mokaphy_prefs = 
     {
-      use_pp: bool ref;
       out_fname: string ref;
+      use_pp: bool ref;
       weighted: bool ref;
       refpkg_path : string ref;
       nboot : int ref;
@@ -354,8 +354,8 @@ module Cluster = struct
       tax_cluster_mode : string ref;
     }
   
-  let use_pp            p = !(p.use_pp)
   let out_fname         p = !(p.out_fname)
+  let use_pp            p = !(p.use_pp)
   let weighted          p = !(p.weighted)
   let refpkg_path       p = !(p.refpkg_path)
   let nboot             p = !(p.nboot)
@@ -364,8 +364,8 @@ module Cluster = struct
   
   let defaults () = 
     { 
-      use_pp = ref false;
       out_fname = ref "";
+      use_pp = ref false;
       weighted = ref false;
       refpkg_path = ref "";
       nboot = ref 0;
@@ -496,19 +496,44 @@ end
 module Pca = struct
   type mokaphy_prefs = 
     {
-      out_fname: string ref;
+      out_prefix: string ref;
+      use_pp: bool ref;
+      weighted: bool ref;
+      write_n: int ref;
+      refpkg_path : string ref;
+      scale: bool ref;
     }
   
-  let out_fname p = !(p.out_fname)
+  let out_prefix  p = !(p.out_prefix)
+  let use_pp      p = !(p.use_pp)
+  let weighted    p = !(p.weighted)
+  let write_n     p = !(p.write_n)
+  let refpkg_path p = !(p.refpkg_path)
+  let scale       p = !(p.scale)
   
   let defaults () = 
     { 
-      out_fname = ref "";
+      out_prefix = ref "";
+      use_pp = ref false;
+      weighted = ref false;
+      write_n = ref 5;
+      refpkg_path = ref "";
+      scale = ref false;
     }
   
   (* arguments *)
   let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_fname,
+    "-o", Arg.Set_string prefs.out_prefix,
     "Specify an out filename.";
+    "-p", Arg.Set prefs.use_pp,
+    "Use posterior probability.";
+    "-c", Arg.Set_string prefs.refpkg_path,
+    (refpkg_help "cluster");
+    "--unweighted", Arg.Clear prefs.weighted,
+    weighted_help;
+    "--write-n", Arg.Set_int prefs.write_n,
+    "The number of principal coordinates to write out (default is 5).";
+    "--scale", Arg.Set prefs.scale,
+    "Scale variances to one before performing principal components.";
     ]
 end 

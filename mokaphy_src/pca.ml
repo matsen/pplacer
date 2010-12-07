@@ -133,12 +133,14 @@ let save_named_fal fname nvl =
       (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
       nvl)
 
-let pca_complete ?scale weighting criterion write_n rp out_prefix prl = 
-  let refpkgo = Some rp in
-  let t = Refpkg.get_tax_ref_tree rp in
-  Cmds_common.check_refpkgo_tree 
-    (Decor_gtree.of_newick_gtree (Cmds_common.list_get_same_tree prl))
-    refpkgo;
+let pca_complete ?scale weighting criterion write_n refpkgo out_prefix prl = 
+  let prt = Cmds_common.list_get_same_tree prl in
+  let t = match refpkgo with 
+  | None -> Decor_gtree.of_newick_gtree prt
+  | Some rp -> 
+      Cmds_common.check_refpkgo_tree prt refpkgo;
+      Refpkg.get_tax_ref_tree rp
+  in
   let data = List.map (splitify_placerun weighting criterion) prl
   in
   let (eval, evect) = gen_pca ?scale ~n_keep:write_n (Array.of_list data)
@@ -162,12 +164,8 @@ let pca_complete ?scale weighting criterion write_n rp out_prefix prl =
       names 
       (List.map (fun d -> Array.map (dot d) evect) data));
   save_named_fal
-    (out_prefix^".data")
+    (out_prefix^".edgediff")
     (List.combine names data);
   ()
   
 
-let rp = Refpkg.of_path "/home/bvdiversity/working/matsen/vaginal_16s.refpkg"
-
-let pca_normal prl = 
-  pca_complete Mass_map.Weighted Placement.ml_ratio 5 rp "test_pca" prl

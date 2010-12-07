@@ -381,6 +381,17 @@ let bootsub prefs = function
 
 
 (* *** PCA PCA PCA PCA PCA *** *)
-let pca _ prl = 
-  Pca.pca_normal prl
-
+let pca prefs = function
+  | [] -> ()
+  | prl ->
+      match Mokaphy_prefs.Pca.out_prefix prefs with 
+      | "" -> failwith "Please specify an out prefix for pca with -o"
+      | prefix ->
+      Pca.pca_complete 
+        ~scale:(Mokaphy_prefs.Pca.scale prefs)
+        (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Pca.weighted prefs))
+        (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Pca.use_pp prefs))
+        (Mokaphy_prefs.Pca.write_n prefs)
+        (Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Pca.refpkg_path prefs))
+        prefix
+        prl
