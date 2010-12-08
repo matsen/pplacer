@@ -67,7 +67,7 @@ module Make
   let smallest_symmdiff s ss = 
     find_fsmallest S.cardinal (List.map (symmdiff s) (SS.elements ss))
   
-  (* given a list of string sets, most_pop finds the element which is most
+  (* given a list of S.t's, most_pop finds the element which is most
    * commonly seen *)
   let most_pop sl = 
     let h = Hashtbl.create ((S.cardinal (List.hd sl)) / 4) in
@@ -77,13 +77,10 @@ module Make
     in
     List.iter (S.iter boost) sl;
     let fk = first_key h in
-    let (bk, bv) = 
-      Hashtbl.fold 
-        (fun k v ((_, bv) as p) -> if v > bv then (k, v) else p) 
-        h
-        (fk, Hashtbl.find h fk)
-    in
-    (bk, bv)
+    Hashtbl.fold 
+      (fun k v ((_, bv) as p) -> if v > bv then (k, v) else p) 
+      h
+      (fk, Hashtbl.find h fk)
   
   (* remove x from every elememnt of ss *)
   let ssremove x ss = 
@@ -130,4 +127,3 @@ module Make
     let (final_score, l) = aux start_s start_ssl [] in
     bump_down final_score l
 end
-

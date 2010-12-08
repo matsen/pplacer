@@ -314,7 +314,7 @@ let clusterviz prefs = function
             and out_tree_name = 
               Cmds_common.chop_suffix_if_present cluster_fname ".csv"
             in
-            let nt = Clusterviz.build_name_tree dirname nameim in
+            let (nt, ssm) = Clusterviz.name_tree_and_subsets_map dirname nameim in
             (* write it out, and read it back in for the combination *)
             let ch = open_out out_fname in
             Phyloxml.write_named_tree_list ch [Some out_tree_name, nt];
@@ -330,11 +330,18 @@ let clusterviz prefs = function
                 (fun (i, name) -> get_named_mass_tree dirname i name)
                 (IntMapFuns.to_pairs nameim)
             in
-          (* write out the average masses corresponding to the named clusters *)
+            (* write out the average masses corresponding to the named clusters *)
             Xphyloxml.pxdata_to_file out_fname 
               { Xphyloxml.trees = (named_tree::(List.flatten mass_trees)); 
-                Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; }
-
+                Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; };
+            (* write out CSV file showing the cluster contents *)
+            let subsets_fname = Mokaphy_prefs.Clusterviz.subsets_fname prefs in
+            if subsets_fname <> "" then 
+              Csv.save subsets_fname 
+                (StringMap.fold
+                  (fun name s l -> (name::(StringSet.elements s))::l)
+                  ssm
+                  [])
           with Clusterviz.Numbering_mismatch ->
             failwith ("numbering mismatch with "^dirname^" and "^cluster_fname)
   end

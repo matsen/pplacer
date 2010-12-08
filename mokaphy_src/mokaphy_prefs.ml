@@ -402,15 +402,18 @@ module Clusterviz = struct
     {
       out_fname: string ref;
       name_csv: string ref;
+      subsets_fname: string ref;
     }
   
   let out_fname p = !(p.out_fname)
   let name_csv p = !(p.name_csv)
+  let subsets_fname p = !(p.subsets_fname)
   
   let defaults () = 
     { 
       out_fname = ref "";
       name_csv = ref "";
+      subsets_fname = ref "";
     }
   
   (* arguments *)
@@ -418,7 +421,9 @@ module Clusterviz = struct
     "-o", Arg.Set_string prefs.out_fname,
     "Specify a prefix for the clusters (required).";
     "--name-csv", Arg.Set_string prefs.name_csv,
-    "A CSV file containing two columns: \"numbers\", which are node numbers in the clustered tree, and \"names\", which are names for those nodes."
+    "A CSV file containing two columns: \"numbers\", which are node numbers in the clustered tree, and \"names\", which are names for those nodes.";
+    "--subsets", Arg.Set_string prefs.subsets_fname,
+    "Specify a file to write out subset membership.";
     ]
 end 
 

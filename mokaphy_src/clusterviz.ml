@@ -39,20 +39,24 @@ let make_named_tree sm t =
           else no_boot_b#set_name (IntMap.find node_id sm))
       (Gtree.get_bark_map t))
 
-let build_name_tree dirname nameim = 
+let name_tree_and_subsets_map dirname nameim = 
   let t = Newick.of_file (Cluster_common.tree_name_of_dirname dirname) in
   let nodeim = nodemap_of_tree t in
-  (* shifted_nameim uses the numbering within the tree rather than that given by
-   * the labels (as nameim does) *)
-  let shifted_nameim = 
-    try
+  (* shifted_nameim uses the Stree numbering rather than that given by
+   * the bootstrap labels (as nameim does) *)
+  try
+    let shifted_nameim = 
       IntMap.fold
         (fun cluster_num name -> 
-          Printf.printf "%d\t%s\n" cluster_num name;
           IntMap.add (IntMap.find cluster_num nodeim) name)
         IntMap.empty
         nameim
-    with
-    | Not_found -> raise Numbering_mismatch
-  in
-  make_named_tree shifted_nameim t
+    in
+    let ssim = Cluster_common.ssim_of_tree t in
+    (make_named_tree shifted_nameim t,
+      IntMap.fold
+        (fun cluster_num name -> StringMap.add name (IntMap.find cluster_num ssim))
+        nameim
+        StringMap.empty)
+  with
+  | Not_found -> raise Numbering_mismatch
