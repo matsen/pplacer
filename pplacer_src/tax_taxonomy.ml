@@ -1,7 +1,7 @@
 (* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
- * The tax_tree points from a tax_id to its ancestor
+ * The tax_tree points from a tax_id to its ancestor.
  *
  * Note that taxonomic ranks decrease as one goes towards the ancestor.
  * 
@@ -60,7 +60,11 @@ let get_lineage td ti =
 let add_lineage_to_tree_and_map (t,m) l = 
   let check_add k v m = 
     try TaxIdMapFuns.check_add k v m with
-    | Failure s -> failwith (s^" problem with "^(to_str k))
+    | Failure _ -> 
+        failwith 
+          ("Tax table broken: either "^(to_str k)^
+          "is defined to have multiple ancestors, or it is found at multiple \
+          taxonomic ranks.")
   in
   let rec aux (t,m) = function
     | (i,x)::((_,y)::_ as l') ->

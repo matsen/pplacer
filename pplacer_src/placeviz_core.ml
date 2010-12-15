@@ -160,21 +160,43 @@ let write_sing_file weighting criterion mass_width tree_fmt fname_base ref_tree
 (* fat trees.
  * massm are By_edge mass maps.
  * *)
-let fat_tree mass_width log_coeff decor_ref_tree massm =
-  Decor_gtree.add_decor_by_map
-    decor_ref_tree
-    (IntMap.map
-      (fun m ->
-        [ Decor.sand ] @
-        (widthl_of_mass log_coeff mass_width m))
-      massm)
 
-let write_fat_tree mass_width log_coeff fname_base decor_ref_tree massm = 
+(* make edges which have a nonzero width at least a certain length *)
+let spread_short_fat min_bl t = 
+  Gtree.set_bark_map t
+    (IntMap.map
+      (fun b ->
+        try 
+          List.iter 
+            (function (Decor.Width _) -> raise Exit | _ -> ()) b#get_decor; b 
+        with
+        | Exit -> begin
+            (* it has some width *)
+            match b#get_bl_opt with
+            | None -> b#set_bl min_bl 
+            | Some bl -> if bl > min_bl then b else b#set_bl min_bl
+          end)
+      (Gtree.get_bark_map t))
+
+let fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm =
+  let t = 
+    Decor_gtree.add_decor_by_map
+      decor_ref_tree
+      (IntMap.map
+        (fun m ->
+          [ Decor.sand ] @
+          (widthl_of_mass log_coeff mass_width m))
+        massm)
+  in
+  match min_bl with Some mb -> spread_short_fat mb t | None -> t
+
+(* min_bl is the bl that will be fed to spread_short_fat above *)
+let write_fat_tree 
+      ?min_bl mass_width log_coeff fname_base decor_ref_tree massm = 
   Phyloxml.named_tree_to_file
     (fname_base^".fat")
-    (fat_tree mass_width log_coeff decor_ref_tree massm)
+    (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
     (fname_base^".fat.xml") 
-
 
 (* edpl trees *)
 let edpl_tree white_bg

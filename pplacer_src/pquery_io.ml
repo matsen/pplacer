@@ -7,6 +7,8 @@
 open Fam_batteries
 open MapsSets
 
+let no_seq_str = "<sequence not loaded>"
+
  
 (* ***** WRITING ***** *)
 
@@ -28,11 +30,12 @@ let write_csv ch pq =
 
 (* ***** READING ***** *)
 
-let parse_pquery = function
+let parse_pquery ?load_seq:(load_seq=true) = function
   | name::seq::places ->
+      let my_seq = if load_seq then seq else no_seq_str in
       Pquery.make_ml_sorted
       ~name:(Alignment.name_of_fasta_header name)
-      ~seq
+      ~seq:my_seq
       (List.map Placement.placement_of_str places)
   | _ -> 
       invalid_arg "problem with place file. missing sequence data?"

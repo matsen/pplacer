@@ -16,6 +16,7 @@ and write_loc = ref false
 and max_edpl = ref 0.
 and white_bg = ref false
 and bogus_bl = ref 0.1
+and min_fat_bl = ref 1e-2
 and print_tree_info = ref false
 and show_node_numbers = ref false
 and xml = ref false
@@ -52,6 +53,8 @@ let parse_args () =
       "Make colors appropriate for a white background.";
       "--numBl", Arg.Set_float bogus_bl,
       "Set the branch length for visualization in the number tree.";
+      "--min-fat", Arg.Set_float min_fat_bl,
+      "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0.";
       "--nodeNumbers", Arg.Set show_node_numbers,
       "Put the node numbers in where the bootstraps usually go.";
       "--xml", Arg.Set xml,
@@ -112,10 +115,11 @@ let () =
           (!out_dir)^"/"^
             (Filename.basename 
               (Placerun_io.chop_place_extension fname))
-        in
         (* set up the coefficient for the width *)
-        let n_placed = 
-          (List.length pqueries) - (List.length unplaced_seqs) in
+        and n_placed = 
+          (List.length pqueries) - (List.length unplaced_seqs) 
+        and min_bl = match !min_fat_bl with 0. -> None | x -> Some x 
+        in
         (* mass width is the amount of mass per unit *)
         let mass_width = 
           if !unit_width <> 0. then (* unit width specified *)
@@ -132,7 +136,7 @@ let () =
           Mass_map.By_edge.of_placerun weighting criterion placerun in
         if !write_classic then begin
           write_num_file fname_base decor_ref_tree placed_map;
-          Placeviz_core.write_fat_tree 
+          Placeviz_core.write_fat_tree ?min_bl
             mass_width !log_coeff fname_base decor_ref_tree place_massm
         end;
         if !write_tog then
@@ -155,7 +159,7 @@ let () =
         let prname = 
           (Placerun.get_name placerun)^
             (if !use_pp then ".PP" else ".ML")
-        and my_fat = Placeviz_core.fat_tree mass_width !log_coeff 
+        and my_fat = Placeviz_core.fat_tree ?min_bl mass_width !log_coeff 
         in
         let (tax_rp_opt, final_rt) = 
           match Refpkg.refpkgo_of_path !refpkg_path with

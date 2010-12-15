@@ -27,7 +27,7 @@ let write_tree ?name ch gtree =
   let bark_map = Gtree.get_bark_map gtree in
   let rec aux st =
     let write_clade id tL =
-      Xml.write_long_tag
+      Myxml.write_long_tag
         (fun () ->
           (* write the bark *)
           if IntMap.mem id bark_map then
@@ -44,27 +44,31 @@ let write_tree ?name ch gtree =
   let () =
     match name with
     | None -> ()
-    | Some n -> Xml.write_string "name" ch n
+    | Some n -> Myxml.write_string "name" ch n
   in
   aux (Gtree.get_stree gtree);
   Printf.fprintf ch "</phylogeny>\n\n"
 
-let tree_list_to_file tl fname =
-  let ch = open_out fname in
+let write_tree_list ch tl = 
   write_string_list ch foreword;
   List.iter (write_tree ch) tl;
-  write_string_list ch afterword;
+  write_string_list ch afterword
+
+let tree_list_to_file tl fname =
+  let ch = open_out fname in
+  write_tree_list ch tl;
   close_out ch
 
+let write_named_tree_list ch tl = 
+  write_string_list ch foreword;
+  List.iter (fun (name_opt, t) -> write_tree ?name:name_opt ch t) tl;
+  write_string_list ch afterword
+
 (* tl should be a list of (name_opt, t). thus not all trees have to have a name *)
+(* one more like this and i'm gonna factor to higher order! *)
 let named_tree_list_to_file tl fname = 
   let ch = open_out fname in
-  write_string_list ch foreword;
-  List.iter 
-    (fun (name_opt, t) ->
-      write_tree ?name:name_opt ch t) 
-    tl;
-  write_string_list ch afterword;
+  write_named_tree_list ch tl;
   close_out ch
   
 let tree_to_file t = tree_list_to_file [t]

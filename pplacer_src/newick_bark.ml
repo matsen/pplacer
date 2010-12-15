@@ -71,10 +71,10 @@ class newick_bark arg =
       Format.fprintf ff "@[{%a}@]" (fun ff () -> self#ppr_inners ff) ()
 
     method write_xml ch = 
-      write_something_opt (Xml.write_string "name") ch name;
-      write_something_opt (Xml.write_float "branch_length") ch bl;
+      write_something_opt (Myxml.write_string "name") ch name;
+      write_something_opt (Myxml.write_float "branch_length") ch bl;
       write_something_opt 
-        (Xml.write_float ~attrib:"type=\"bootstrap\"" "confidence") ch boot
+        (Myxml.write_float ~attrib:"type=\"bootstrap\"" "confidence") ch boot
 
     method to_numbered id = 
       {< name = Some

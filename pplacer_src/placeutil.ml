@@ -138,13 +138,18 @@ let () =
     in
     let filter_by_taxids pr = 
       if !tax_exclude_fname <> "" then
+        let filter_prefix = match !out_prefix with
+        | "" ->
+          (Placerun.get_name pr)^"."^(Filename.basename (!tax_exclude_fname))
+        | s -> s
+        in
         let removes = 
           Tax_id.TaxIdSetFuns.of_list
             (List.map Tax_id.of_string 
               (File_parsing.string_list_of_file (!tax_exclude_fname)))
         in
         Placerun.multifilter
-          [(Placerun.get_name pr)^"."^(Filename.basename (!tax_exclude_fname)),
+          [filter_prefix,
             (fun pq -> 
               not (Tax_id.TaxIdSet.mem
                     (Placement.contain_classif 
@@ -156,7 +161,7 @@ let () =
     in
     let boot pr =
       let () = Random.self_init () in
-      if !nboot <> 0 then ListFuns.init (!nboot) (Bootstrap.boot_placerun pr)
+      if !nboot <> 0 then ListFuns.init (!nboot) (fun _ -> Bootstrap.boot_placerun pr)
       else [pr]
     in
     (* splitting *)
