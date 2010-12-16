@@ -175,7 +175,7 @@ let () =
         if Prefs.fantasy prefs = 0. then begin
           let final_pr = 
             if not (Refpkg.tax_equipped rp) then pr
-            else Tax_classify.refpkg_contain_classify rp pr
+            else Refpkg.contain_classify rp pr
           in
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
