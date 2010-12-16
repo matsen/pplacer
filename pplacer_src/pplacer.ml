@@ -6,6 +6,9 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
+Unix.
+Bigarray.
+
 
 let parse_args () =
   let files  = ref [] 
@@ -137,7 +140,6 @@ let () =
     end;
     Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
     if (verb_level prefs) >= 1 then print_endline "done.";
-    (*
     (* check tree likelihood *)
     let zero_d = Glv_arr.get_one darr
     and zero_p = Glv_arr.get_one parr 
@@ -153,7 +155,6 @@ let () =
                   (Glv.log_like3 model util_d util_p util);
     Printf.printf "supernode likelihood is %g\n" 
                   (Glv.logdot model sn util);
-    *)
     (* analyze query sequences *)
     List.iter 
       (fun query_fname ->

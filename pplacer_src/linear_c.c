@@ -218,6 +218,8 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
   int n_states = Bigarray_val(x_value)->dim[2];
   int rate, site, state;
   int n_used = 1 + last - first;
+  /* we make pointers to x, y, and util so that we can do pointer arithmetic
+   * and then return to where we started. */
   double *x_p, *y_p, *util_v;
   // now we clear it out to n_used
   for(site=0; site < n_used; site++) { util[site] = 0.0; }
@@ -266,5 +268,33 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
   ll_tot -= ((float) n_used) * log ((float) n_rates);
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
+}
+
+CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value, value uit_value)
+{
+  CAMLparam4(dst_value, u_value, lambda_value, uit_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *u = Data_bigarray_val(u_value);
+  double *lambda = Data_bigarray_val(lambda_value);
+  double *uit = Data_bigarray_val(uit_value);
+  int n = Bigarray_val(lambda)->dim[0];
+  /*
+  int n_sites = Bigarray_val(x_value)->dim[1];
+  int n_states = Bigarray_val(x_value)->dim[2];
+  */
+  int i, j, k;
+  /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
+      for(i=0; i < n; i++) {
+	for(j=0; j < n; j++) {
+	  *dst = 0;
+	  for(k=0; k < n; k++) {
+	    *dst += lambda[k] * u[k] * uit[k];
+	  }
+	  dst++; // dst.{i,j}
+	  uit += n; // uit.{j,k}
+	}
+	u += n; // u.{i,k}
+      }
+  CAMLreturn(Val_unit);
 }
 

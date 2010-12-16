@@ -60,17 +60,8 @@ let multi_exp ~dst u lambda uinv util rates bl =
         set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      for i=0 to n-1 do
-        for j=0 to n-1 do
-          for k=0 to n-1 do
-            set2 dst_mat i j
-              ((get2 dst_mat i j) +. 
-                 (get1 util k) 
-                   *. (get2 u i k) 
-                   *. (get2 uinv k j))
-          done;
-        done;
-      done;
+      deDiagonalize dst_mat u util uinv
+      (* Linear.dediagonalize dst_mat u util uinv *)
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
