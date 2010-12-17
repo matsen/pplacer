@@ -286,18 +286,48 @@ CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value
   int n = Bigarray_val(lambda_value)->dim[0];
   int i, j, k;
   /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
-      for(i=0; i < n; i++) {
-	uit_p = uit;
-	for(j=0; j < n; j++) {
-	  *dst = 0;
-	  for(k=0; k < n; k++) {
-	    *dst += lambda[k] * u[k] * uit_p[k];
-	  }
-	  dst++; // dst.{i,j}
-	  uit_p += n; // uit.{j,k}
-	}
-	u += n; // u.{i,k}
+  if(n == 4) {
+    for(i=0; i < 4; i++) {
+      uit_p = uit;
+      for(j=0; j < 4; j++) {
+        *dst = 0;
+        for(k=0; k < 4; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += 4; // uit.{j,k}
       }
+      u += 4; // u.{i,k}
+    }
+  }
+  else if(n == 20) {
+    for(i=0; i < 20; i++) {
+      uit_p = uit;
+      for(j=0; j < 20; j++) {
+        *dst = 0;
+        for(k=0; k < 20; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += 20; // uit.{j,k}
+      }
+      u += 20; // u.{i,k}
+    }
+  }
+  else {
+    for(i=0; i < n; i++) {
+      uit_p = uit;
+      for(j=0; j < n; j++) {
+        *dst = 0;
+        for(k=0; k < n; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += n; // uit.{j,k}
+      }
+      u += n; // u.{i,k}
+    }
+  }
   CAMLreturn(Val_unit);
 }
 
