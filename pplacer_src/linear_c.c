@@ -4,6 +4,11 @@
  * to understand the pointer arithmetic below, it's important to understand 
  * the layout of the Glv's. they are row-major and indexed in terms of rate,
  * then site, then state. thus the rate-blocks are n_sites*n_states in size.
+ *
+ * Also, the c_layout used by bigarray means that by incrementing a pointer,
+ * we first go across the array in the farthest right index, then increment 
+ * the next index when we go past the end on that index. E.g., we go from
+ * (i,n-1) to (i+1,0).
 */
 
 #include <stdio.h>
@@ -218,6 +223,8 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
   int n_states = Bigarray_val(x_value)->dim[2];
   int rate, site, state;
   int n_used = 1 + last - first;
+  /* we make pointers to x, y, and util so that we can do pointer arithmetic
+   * and then return to where we started. */
   double *x_p, *y_p, *util_v;
   // now we clear it out to n_used
   for(site=0; site < n_used; site++) { util[site] = 0.0; }
@@ -266,5 +273,61 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
   ll_tot -= ((float) n_used) * log ((float) n_rates);
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
+}
+
+CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value, value uit_value)
+{
+  CAMLparam4(dst_value, u_value, lambda_value, uit_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *u = Data_bigarray_val(u_value);
+  double *lambda = Data_bigarray_val(lambda_value);
+  double *uit = Data_bigarray_val(uit_value);
+  double *uit_p;
+  int n = Bigarray_val(lambda_value)->dim[0];
+  int i, j, k;
+  /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
+  if(n == 4) {
+    for(i=0; i < 4; i++) {
+      uit_p = uit;
+      for(j=0; j < 4; j++) {
+        *dst = 0;
+        for(k=0; k < 4; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += 4; // uit.{j,k}
+      }
+      u += 4; // u.{i,k}
+    }
+  }
+  else if(n == 20) {
+    for(i=0; i < 20; i++) {
+      uit_p = uit;
+      for(j=0; j < 20; j++) {
+        *dst = 0;
+        for(k=0; k < 20; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += 20; // uit.{j,k}
+      }
+      u += 20; // u.{i,k}
+    }
+  }
+  else {
+    for(i=0; i < n; i++) {
+      uit_p = uit;
+      for(j=0; j < n; j++) {
+        *dst = 0;
+        for(k=0; k < n; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += n; // uit.{j,k}
+      }
+      u += n; // u.{i,k}
+    }
+  }
+  CAMLreturn(Val_unit);
 }
 

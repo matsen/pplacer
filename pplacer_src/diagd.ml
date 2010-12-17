@@ -16,42 +16,21 @@
  * From there the DB matrix is easily diagonalized; see Felsenstein p. 206 or
  * pplacer/scans/markov_process_db_diag.pdf.
  *
- * In this module an "ExchangeableMat" is a speficication of an exchangeability
- * matrix (only the off-diagonal elements count) and the stationary distribution.
- * 
-*)
+ * For this module, u and lambdav are such that u diag(lambdav) u^{-1} is the
+ * matrix being diagonalized.
+ * uit is the inverse transpose of u, which is handy for speedy computations.
+ *)
 
 module FGM = Fam_gsl_matvec
 
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
-let get2 a i j = Bigarray.Array2.unsafe_get (a:Gsl_matrix.matrix) i j
-let set2 a i j = Bigarray.Array2.unsafe_set (a:Gsl_matrix.matrix) i j
-
-(* deDiagonalize: multiply out eigenvector (u), eigenvalue (lambda) matrices,
- * and inverse eigenvector (uInv) matrices to get usual matrix rep *)
-let deDiagonalize ~dst u lambda uinv = 
-  let n = Gsl_vector.length lambda in
-  try 
-    Gsl_matrix.set_all dst 0.;
-    for i=0 to n-1 do
-      for j=0 to n-1 do
-        for k=0 to n-1 do
-          (* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uInv.{k,j}) *)
-          set2 dst i j 
-               ((get2 dst i j) +. 
-                  (get1 lambda k) *. (get2 u i k) *. (get2 uinv k j))
-        done;
-      done;
-    done;
-  with
-    | Invalid_argument s -> invalid_arg ("deDiagonalize: "^s)
 
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
  * U exp(D rate bl) U^{-1}. 
  * util should be a vector of the same length as lambda *)
-let multi_exp ~dst u lambda uinv util rates bl = 
+let multi_exp ~dst u lambda uit util rates bl = 
   let n = Gsl_vector.length lambda in
   try 
     Tensor.set_all dst 0.;
@@ -60,17 +39,7 @@ let multi_exp ~dst u lambda uinv util rates bl =
         set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      for i=0 to n-1 do
-        for j=0 to n-1 do
-          for k=0 to n-1 do
-            set2 dst_mat i j
-              ((get2 dst_mat i j) +. 
-                 (get1 util k) 
-                   *. (get2 u i k) 
-                   *. (get2 uinv k j))
-          done;
-        done;
-      done;
+      Linear.dediagonalize dst_mat u util uit
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
@@ -78,9 +47,8 @@ let multi_exp ~dst u lambda uinv util rates bl =
 
 class diagd arg = 
 (* See Felsenstein p.206. 
- * Say \Lambda is the diagonal matrix of eigenvalues of
- * D^{1/2} B D^{1/2}. Then Q is
- * (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}.
+ * Say that E \Lambda E^{-1} = D^{1/2} B D^{1/2}.
+ * Then DB = (D^{1/2} E) \Lambda (D^{1/2} E)^{-1}
  * *)
   let diagdStructureOfDBMatrix d b = 
     let dDiagSqrt = FGM.diagOfVec (FGM.vecMap sqrt d) in
@@ -94,16 +62,16 @@ class diagd arg =
     if not (FGM.vecNonneg d) then 
       failwith("negative element in the diagonal of a DB matrix!");
     (evals, FGM.allocMatMatMul dDiagSqrtInv evects,
-     FGM.allocMatMatMul (FGM.allocMatTranspose evects) dDiagSqrt)
+       FGM.allocMatMatMul dDiagSqrt evects)
   in
 
-  let (eVals, eVects, invEVects) = 
+  let (lambdav, u, uit) = 
     try
       match arg with
-        | `OfData (evals, evects, invEVects) -> (evals, evects, invEVects)
+        | `OfData (lambdav, u, uit) -> (lambdav, u, uit)
         | `OfSymmMat m -> 
             let evals, evects = FGM.symmEigs m in
-            (evals, evects, FGM.allocMatTranspose evects)
+            (evals, evects, evects)
         | `OfDBMatrix(d, b) -> diagdStructureOfDBMatrix d b
         | `OfExchangeableMat(symmPart, statnDist) ->
             let n = Gsl_vector.length statnDist in
@@ -129,33 +97,33 @@ class diagd arg =
     with
       | Invalid_argument s -> invalid_arg ("diagd dimension problem: "^s)
   in
-  let util = Gsl_vector.create (Gsl_vector.length eVals) in
+  let util = Gsl_vector.create (Gsl_vector.length lambdav) in
 
 object (self)
 
-  method size = 
-    Gsl_vector.length eVals
+  method size = Gsl_vector.length lambdav
 
-  method toMatrix dst = deDiagonalize ~dst eVects eVals invEVects
+  method toMatrix dst = Linear.dediagonalize dst u lambdav uit
 
   method expWithT dst t = 
-    deDiagonalize ~dst
-                  eVects 
-                  (FGM.vecMap (fun lambda -> exp (t *. lambda)) eVals)
-                  invEVects
+    Linear.dediagonalize 
+                  dst
+                  u 
+                  (FGM.vecMap (fun lambda -> exp (t *. lambda)) lambdav)
+                  uit
 
   method multi_exp (dst:Tensor.tensor) rates bl = 
-    multi_exp ~dst eVects eVals invEVects util rates bl
+    multi_exp ~dst u lambdav uit util rates bl
 
   method normalizeRate statnDist = 
     let q = Gsl_matrix.create (self#size) (self#size) in
     self#toMatrix q;
     let rate = ref 0. in
-    for i=0 to (Gsl_vector.length eVals)-1 do
+    for i=0 to (Gsl_vector.length lambdav)-1 do
       rate := !rate -. q.{i,i} *. (Gsl_vector.get statnDist i)
     done;
-    for i=0 to (Gsl_vector.length eVals)-1 do
-      eVals.{i} <- eVals.{i} /. !rate
+    for i=0 to (Gsl_vector.length lambdav)-1 do
+      lambdav.{i} <- lambdav.{i} /. !rate
     done;
     ()
 
