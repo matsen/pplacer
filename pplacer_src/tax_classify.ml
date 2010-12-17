@@ -17,20 +17,14 @@ let classify_pr what how pr =
     (List.map (classify_pq what how) (Placerun.get_pqueries pr))
 
 (* classification types *)
-let containment_classify mrcam utm p = 
+let contain_classify_loc mrcam utm loc = 
   let rec aux i = 
     if IntMap.mem i mrcam then IntMap.find i mrcam
     else aux (IntMap.find i utm)
   in
-  try aux (Placement.location p) with
-  | Not_found -> Tax_id.NoTax
+  try aux loc with | Not_found -> Tax_id.NoTax
 
-(* applied to classification types *)
-let refpkg_contain_classify rp pr = 
-  classify_pr 
-    Placement.add_contain_classif
-    (containment_classify 
-      (Refpkg.get_mrcam rp) 
-      (Refpkg.get_uptree_map rp))
-    pr
+let contain_classify mrcam utm p = 
+  contain_classify_loc mrcam utm (Placement.location p)
+
 

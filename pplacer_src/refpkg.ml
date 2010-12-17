@@ -120,3 +120,43 @@ let tax_equipped rp =
   try let _ = get_taxonomy rp and _ = get_seqinfom rp in true with
   | Missing_element _ -> false
 
+let contain_classify rp pr = 
+  Tax_classify.classify_pr 
+    Placement.add_contain_classif
+    (Tax_classify.contain_classify
+      (get_mrcam rp) 
+      (get_uptree_map rp))
+    pr
+
+(* make sure all of the tax maps etc are set up *)
+let check_refpkg_classification rp = 
+  print_endline "checking MRCA map...";
+  let mrcam = get_mrcam rp in
+  print_endline "checking uptree map...";
+  let utm = get_uptree_map rp in
+  print_endline "trying classifications...";
+  let _ = 
+    List.map 
+      (Tax_classify.contain_classify_loc mrcam utm) 
+      (Gtree.nonroot_node_ids (get_ref_tree rp))
+  in
+  print_endline "ok.";
+  ()
+
+let check rp name what = 
+  print_endline ("checking "^name^"...");
+  let _ = what rp in ()
+
+let check_refpkg rp = 
+  print_endline ("Checking refpkg"^(get_name rp)^"...");
+  check rp "tree" get_ref_tree;
+  check rp "model" get_model;
+  check rp "alignment" get_aln_fasta;
+  check rp "name"get_name;
+  try
+    check rp "taxonomy" get_taxonomy;
+    check rp "seqinfom" get_seqinfom;
+    check_refpkg_classification rp;
+  with 
+    | Missing_element _ -> () (* no taxomomy *)
+

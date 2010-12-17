@@ -25,14 +25,18 @@ let tax_id_by_name sim s =
 (* requires "seqname" and "tax_id" columns, "accession"
  * "tax_name","isType","ok","i","outlier","selected","label" *)
 let of_csv fname = 
+  let safe_assoc k l = 
+    try List.assoc k l with 
+      | Not_found -> failwith ("couldn't find "^k^" column in "^fname)
+  in
   List.fold_left 
     (fun sim al -> 
-      let seqname_str = List.assoc "seqname" al in
+      let seqname_str = safe_assoc "seqname" al in
       try
         StringMapFuns.check_add 
           seqname_str
           { 
-            tax_id = NCBI (List.assoc "tax_id" al);
+            tax_id = NCBI (safe_assoc "tax_id" al);
             accession = 
               try R_csv.entry_of_str (List.assoc "accession" al) with 
               | Not_found -> None 
