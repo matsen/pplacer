@@ -25,27 +25,6 @@ module FGM = Fam_gsl_matvec
 
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
-let get2 a i j = Bigarray.Array2.unsafe_get (a:Gsl_matrix.matrix) i j
-let set2 a i j = Bigarray.Array2.unsafe_set (a:Gsl_matrix.matrix) i j
-
-(* dediagonalize: multiply out eigenvector (u), eigenvalue (lambda) matrices,
- * and inverse transpose eigenvector (uit) matrices to get usual matrix rep *)
-let dediagonalize ~dst u lambda uit = 
-  let n = Gsl_vector.length lambda in
-  try 
-    Gsl_matrix.set_all dst 0.;
-    for i=0 to n-1 do
-      for j=0 to n-1 do
-        for k=0 to n-1 do
-          (* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) *)
-          set2 dst i j 
-               ((get2 dst i j) +. 
-                  (get1 lambda k) *. (get2 u i k) *. (get2 uit j k))
-        done;
-      done;
-    done;
-  with
-    | Invalid_argument s -> invalid_arg ("dediagonalize: "^s)
 
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
@@ -124,10 +103,11 @@ object (self)
 
   method size = Gsl_vector.length lambdav
 
-  method toMatrix dst = dediagonalize ~dst u lambdav uit
+  method toMatrix dst = Linear.dediagonalize dst u lambdav uit
 
   method expWithT dst t = 
-    dediagonalize ~dst
+    Linear.dediagonalize 
+                  dst
                   u 
                   (FGM.vecMap (fun lambda -> exp (t *. lambda)) lambdav)
                   uit
