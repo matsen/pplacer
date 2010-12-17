@@ -6,9 +6,6 @@ open Fam_batteries
 open MapsSets
 open Prefs
 
-Unix.
-Bigarray.
-
 
 let parse_args () =
   let files  = ref [] 

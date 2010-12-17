@@ -4,6 +4,11 @@
  * to understand the pointer arithmetic below, it's important to understand 
  * the layout of the Glv's. they are row-major and indexed in terms of rate,
  * then site, then state. thus the rate-blocks are n_sites*n_states in size.
+ *
+ * Also, the c_layout used by bigarray means that by incrementing a pointer,
+ * we first go across the array in the farthest right index, then increment 
+ * the next index when we go past the end on that index. E.g., we go from
+ * (i,n-1) to (i+1,0).
 */
 
 #include <stdio.h>
@@ -277,21 +282,19 @@ CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value
   double *u = Data_bigarray_val(u_value);
   double *lambda = Data_bigarray_val(lambda_value);
   double *uit = Data_bigarray_val(uit_value);
-  int n = Bigarray_val(lambda)->dim[0];
-  /*
-  int n_sites = Bigarray_val(x_value)->dim[1];
-  int n_states = Bigarray_val(x_value)->dim[2];
-  */
+  double *uit_p;
+  int n = Bigarray_val(lambda_value)->dim[0];
   int i, j, k;
   /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
       for(i=0; i < n; i++) {
+	uit_p = uit;
 	for(j=0; j < n; j++) {
 	  *dst = 0;
 	  for(k=0; k < n; k++) {
-	    *dst += lambda[k] * u[k] * uit[k];
+	    *dst += lambda[k] * u[k] * uit_p[k];
 	  }
 	  dst++; // dst.{i,j}
-	  uit += n; // uit.{j,k}
+	  uit_p += n; // uit.{j,k}
 	}
 	u += n; // u.{i,k}
       }

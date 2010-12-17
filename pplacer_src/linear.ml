@@ -29,5 +29,7 @@ external statd_pairwise_prod : Gsl_vector.vector -> Tensor.tensor -> Tensor.tens
 external bounded_logdot : Tensor.tensor -> Tensor.tensor -> int -> int -> Gsl_vector.vector -> float = "bounded_logdot_c"
 
 (* dst u lambda uit
- * where uit is u inverse transpose *)
-external dediagonalize : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_vector.vector -> Gsl_matrix.matrix -> unit = "gemmish_c"
+ * where uit is u inverse transpose 
+ * dst_ij = sum_k (lambda_k *. u_ik *. uit_jk)
+ * *)
+external dediagonalize : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_vector.vector -> Gsl_matrix.matrix -> unit = "dediagonalize"
