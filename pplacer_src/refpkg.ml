@@ -128,23 +128,25 @@ let contain_classify rp pr =
       (get_uptree_map rp))
     pr
 
+let print_OK start rp = 
+  print_endline (start^(get_name rp)^" checks OK!")
+
 (* make sure all of the tax maps etc are set up *)
 let check_refpkg_classification rp = 
-  print_endline "checking MRCA map...";
+  print_endline "Checking MRCA map...";
   let mrcam = get_mrcam rp in
-  print_endline "checking uptree map...";
+  print_endline "Checking uptree map...";
   let utm = get_uptree_map rp in
-  print_endline "trying classifications...";
+  print_endline "Crying classifications...";
   let _ = 
     List.map 
       (Tax_classify.contain_classify_loc mrcam utm) 
       (Gtree.nonroot_node_ids (get_ref_tree rp))
   in
-  print_endline "ok.";
   ()
 
 let check rp name what = 
-  print_endline ("checking "^name^"...");
+  print_endline ("Checking "^name^"...");
   let _ = what rp in ()
 
 let check_refpkg rp = 
@@ -152,11 +154,13 @@ let check_refpkg rp =
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
   check rp "alignment" get_aln_fasta;
-  check rp "name"get_name;
   try
     check rp "taxonomy" get_taxonomy;
     check rp "seqinfom" get_seqinfom;
     check_refpkg_classification rp;
+    print_OK "Taxonomically-informed reference package " rp
   with 
-    | Missing_element _ -> () (* no taxomomy *)
+    | Missing_element _ -> 
+        print_OK "Non-taxonomically-informed reference package " rp
+
 
