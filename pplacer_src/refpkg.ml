@@ -53,7 +53,6 @@ let get_uptree_map  rp = Lazy.force rp.uptree_map
 (* NOTE: once parsing of stats files is deprecated, we can set the prefs
  * directly, rather than doing this. *)
 let build_model stats_fname ref_align = 
-  print_endline stats_fname;
   let prefs = Prefs.defaults () in
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
@@ -150,7 +149,7 @@ let check rp name what =
   let _ = what rp in ()
 
 let check_refpkg rp = 
-  print_endline ("Checking refpkg"^(get_name rp)^"...");
+  print_endline ("Checking refpkg "^(get_name rp)^"...");
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
   check rp "alignment" get_aln_fasta;
