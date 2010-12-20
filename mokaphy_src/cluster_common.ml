@@ -48,10 +48,20 @@ let ssim_of_tree t =
   let _ = aux (Gtree.get_stree t) in
   !m
 
+(* put in boot numbers into the bootstrap vals for functions that use it *)
+let number_tree t = 
+  Gtree.set_bark_map t
+    (IntMap.mapi 
+    (fun i b -> b#set_boot (float_of_int i))
+  (Gtree.get_bark_map t))
+
 (* In a rooted tree, each internal node gives a taxon set, which is the set of
- * taxa below that node. Here we collect the set of such (non-singleton) sets. *)
+ * taxa below that node. Here we collect the set of such (non-singleton) sets. 
+ * We use number_tree because the internal numbering scheme doesn't matter here. *)
 let sss_of_tree t = 
-  IntMap.fold (fun _ s -> StringSetSet.add s) (ssim_of_tree t)
+  IntMap.fold 
+    (fun _ s -> StringSetSet.add s) 
+    (ssim_of_tree (number_tree t))
     StringSetSet.empty
 
 (* fname has two columns, "number", which has the nodes of the internal nodes of
