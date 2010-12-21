@@ -63,8 +63,7 @@ let gen_pca ?n_keep ?scale faa =
 
 (* *** splitify *** *)
 
-(* abs(x - (1-x)) *)
-let splitify x = abs_float (1. -. 2. *. x)
+let splitify x = x -. (1. -. x)
 
 let soft_find i m = if IntMap.mem i m then IntMap.find i m else 0.
 
