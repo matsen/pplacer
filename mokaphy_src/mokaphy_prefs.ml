@@ -532,7 +532,7 @@ module Pca = struct
   (* arguments *)
   let specl_of_prefs prefs = [
     "-o", Arg.Set_string prefs.out_prefix,
-    "Specify an out filename.";
+    "Specify an out prefix.";
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
     "-c", Arg.Set_string prefs.refpkg_path,
