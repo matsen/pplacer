@@ -15,11 +15,11 @@ def main():
     reference_package = arguments.refpkg[0]
     sequence_files = arguments.seqfiles
 
-    # Create alignment with hammer for all sequence files.
-    hammer_align(reference_package, sequence_files, out_prefix)
+    # Create alignment with hmmer for all sequence files.
+    hmmer_align(reference_package, sequence_files, out_prefix)
 
 
-def hammer_align(reference_package, sequence_files, out_prefix):
+def hmmer_align(reference_package, sequence_files, out_prefix):
     """
     """
   
