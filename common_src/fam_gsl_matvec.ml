@@ -10,7 +10,7 @@
  *
  *)
 
-let tolerance = 1e-15
+let tolerance = 1e-13
 
 
 (* making vectors and matrices *)
@@ -103,7 +103,8 @@ let assertSymm m =
       if (abs_float(m.{i,j} -. m.{j,i}) > tolerance) then
         failwith (
           Printf.sprintf 
-            "matrix not symmetric: %f vs %f" m.{i,j} m.{j,i})
+            "matrix not symmetric: %f vs %f, difference of %g" 
+            m.{i,j} m.{j,i} (m.{i,j} -. m.{j,i}))
     done
   done
 
