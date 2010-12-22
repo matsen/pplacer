@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os, string, argparse, re, subprocess
+import sys, os, string, argparse, subprocess
 from string import Template
 from Bio import SeqIO, AlignIO
 from Bio.Seq import Seq, SeqRecord
@@ -33,13 +33,10 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
     # Set default prefix if unspecified.
     out_prefix_arg = out_prefix
     if out_prefix is None:
-        out_prefix = os.path.join(reference_package, reference_package_name_prefix) + '.' # Sequence file name will be appended within for loop.
-        
-        
+        # Sequence file name will be appended within for loop.
+        out_prefix = os.path.join(reference_package, reference_package_name_prefix) + '.'
     
     # hmmalign must be in PATH for this to work.
-
-    command_regex = re.compile(r'\s+')
     hmmer_template = Template('hmmalign --outformat afa -o $tmp_file' + ' --mapali ' + \
                               '$reference_package/$reference_package_name_prefix' + \
                               '.ref.sth $reference_package/$reference_package_name_prefix' + \
@@ -66,7 +63,7 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
         
             # If return code was not 1, split off the reference sequences from the fragments.
             if not return_code:
-                # Determine output file names.  Set to default if --outprefix was not specified.
+                # Determine output file names.  Set to default if -o was not specified.
                 out_refs, out_frags = [os.path.join(reference_package, out_prefix + '.ref.fasta'), 
                                        os.path.join(reference_package, out_prefix + '.frag.fasta')]
                 if not out_prefix_arg:
@@ -75,12 +72,14 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
  
                 frag_names = names(SeqIO.parse(sequence_file, "fasta"))
                 in_seqs = SeqIO.parse(tmp_file, "fasta")
+                # Two separate files are written out, so iterator + generator are used twice.
                 SeqIO.write(id_filter(in_seqs, lambda(idstr): idstr not in frag_names), out_refs, "fasta")
                 in_seqs = SeqIO.parse(tmp_file, "fasta")
                 SeqIO.write(id_filter(in_seqs, lambda(idstr): idstr in frag_names), out_frags, "fasta")
         except:
             raise
         finally:
+            # Always remove the temporary alignment file.
             os.remove(tmp_file)
 
 
@@ -95,10 +94,12 @@ def names(records):
 
 
 def id_filter(in_seqs, f):
+    """
+    Generator function to filter out sequences.
+    """
     for record in in_seqs:
         if (f(record.id)):
             yield record
-
     
 
 def parse_arguments():
@@ -125,8 +126,6 @@ def reference_package(reference_package):
         return reference_package
     else:
         raise Exception, 'Path to reference package does not exist: ' + reference_package
-
-
     
 
 if __name__ == '__main__':
