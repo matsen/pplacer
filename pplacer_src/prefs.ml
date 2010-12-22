@@ -37,6 +37,7 @@ type prefs =
     (* other *)
     friendly : bool ref;
     pretend : bool ref;
+    check_like : bool ref;
   }
 
 
@@ -74,6 +75,7 @@ let defaults () =
     (* other *)
     friendly = ref true;
     pretend = ref false;
+    check_like = ref false;
   }
 
 
@@ -110,6 +112,7 @@ let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
+let check_like        p = !(p.check_like)
 
 
 (* arguments and preferences *)
@@ -181,6 +184,8 @@ let args prefs =
     "Specify the directory to write place files to.";
     "--pretend", Arg.Set prefs.pretend,
     "Only check out the files then report. Do not run the analysis.";
+    "--check-like", Arg.Set prefs.check_like,
+    "Print out the likelihood of the tree without placements.";
   ]
 
 (* include a pref here if it should go in the place file *)
