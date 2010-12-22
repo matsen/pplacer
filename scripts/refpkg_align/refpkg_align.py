@@ -46,7 +46,7 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
         # Determine a name for the temporary output file.
         tmp_file = sequence_file + '.' + str(os.getppid()) + '.afa'
         sequence_file_name = list(os.path.split(sequence_file)).pop()
-        sequence_file_name_prefix = os.path.splitext(sequence_file_name)[0]
+        sequence_file_name_prefix = string.join(list(os.path.splitext(sequence_file_name))[0:-1])
 
         hmmalign_command = hmmer_template.substitute(reference_package=reference_package, 
                                                      sequence_file=sequence_file,
