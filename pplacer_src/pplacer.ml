@@ -24,7 +24,7 @@ let () =
   if not !Sys.interactive then begin
     let (files, prefs) = parse_args () in 
     Prefs.check prefs;
-    if files = [] then begin
+    if files = [] && not (check_like prefs) then begin
       print_endline "Please specify some query sequences."; 
       exit 0;
     end;
@@ -138,20 +138,13 @@ let () =
     Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
     if (verb_level prefs) >= 1 then print_endline "done.";
     (* check tree likelihood *)
-    let zero_d = Glv_arr.get_one darr
-    and zero_p = Glv_arr.get_one parr 
-    and sn = Glv_arr.get_one snodes
-    in
-    let util_d = Glv.mimic zero_d
-    and util_p = Glv.mimic zero_p in
-    Glv.evolve_into model ~src:zero_d ~dst:util_d (half_bl_fun 0);
-    Glv.evolve_into model ~src:zero_p ~dst:util_p (half_bl_fun 0);
-    let util = Glv.mimic zero_d in
-    Glv.set_all util 0 1.;
-    Printf.printf "tree likelihood is %g\n" 
-                  (Glv.log_like3 model util_d util_p util);
-    Printf.printf "supernode likelihood is %g\n" 
-                  (Glv.logdot model sn util);
+    if check_like prefs then begin
+      let sn = Glv_arr.get_one snodes
+      and util = Glv.mimic (Glv_arr.get_one darr) in
+      Glv.set_all util 0 1.;
+      Printf.printf "tree likelihood is %g\n" 
+                    (Glv.logdot model sn util);
+    end;
     (* analyze query sequences *)
     List.iter 
       (fun query_fname ->
