@@ -54,8 +54,7 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
         sequence_file_name = list(os.path.split(sequence_file)).pop()
         sequence_file_name_prefix = string.join(list(os.path.splitext(sequence_file_name))[0:-1])
 
-        hmmalign_command = hmmer_template.substitute(reference_package=reference_package, 
-                                                     sequence_file=sequence_file,
+        hmmalign_command = hmmer_template.substitute(sequence_file=sequence_file,
                                                      aln_sto=aln_sto,
                                                      profile=profile,
                                                      tmp_file=tmp_file,
