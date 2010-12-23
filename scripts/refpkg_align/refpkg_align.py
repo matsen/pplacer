@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys, os, string, argparse, subprocess
+import json, sys, os, string, argparse, subprocess
 from string import Template
 from Bio import SeqIO, AlignIO
 from Bio.Seq import Seq, SeqRecord
@@ -30,6 +30,14 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
     reference_package_name = list(os.path.split(reference_package)).pop()
     reference_package_name_prefix = os.path.splitext(reference_package_name)[0]
 
+    # Read in CONTENTS.json and setup aln_sto and profile.
+    json_file = os.path.join(reference_package, 'CONTENTS.json')
+    aln_sto, profile = [reference_package, reference_package]
+    with open(json_file, 'r') as contents:
+        json_contents = json.load(contents)
+        aln_sto = os.path.join(aln_sto, json_contents['files']['aln_sto'])
+        profile = os.path.join(profile, json_contents['files']['profile'])
+
     # Set default prefix if unspecified.
     out_prefix_arg = out_prefix
     if out_prefix is None:
@@ -38,9 +46,7 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
     
     # hmmalign must be in PATH for this to work.
     hmmer_template = Template('hmmalign --outformat afa -o $tmp_file' + ' --mapali ' + \
-                              '$reference_package/$reference_package_name_prefix' + \
-                              '.ref.sth $reference_package/$reference_package_name_prefix' + \
-                              '.ref.hmm $sequence_file')
+                              aln_sto + ' ' + profile + ' $sequence_file')
     for sequence_file in sequence_files:
         
         # Determine a name for the temporary output file.
@@ -50,9 +56,11 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
 
         hmmalign_command = hmmer_template.substitute(reference_package=reference_package, 
                                                      sequence_file=sequence_file,
-                                                     reference_package_name_prefix=reference_package_name_prefix,
+                                                     aln_sto=aln_sto,
+                                                     profile=profile,
                                                      tmp_file=tmp_file,
                                                     )
+
         try:
             child = subprocess.Popen(hmmalign_command,
                                      stdin=None,
