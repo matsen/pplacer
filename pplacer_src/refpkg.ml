@@ -137,7 +137,7 @@ let check_refpkg_classification rp =
   let mrcam = get_mrcam rp in
   print_endline "Checking uptree map...";
   let utm = get_uptree_map rp in
-  print_endline "Crying classifications...";
+  print_endline "Trying classifications...";
   let _ = 
     List.map 
       (Tax_classify.contain_classify_loc mrcam utm) 
