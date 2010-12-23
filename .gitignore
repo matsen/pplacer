@@ -10,5 +10,4 @@ tags
 common_src
 pplacer_src
 bin
-top_tests
 mokaphy_src/makefile
