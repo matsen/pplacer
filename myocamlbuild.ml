@@ -24,9 +24,31 @@ let ocamlfind_query pkg =
 in
 
 dispatch begin function
+  | Before_options ->
+      (* use static linking for native binaries *)
+      flag ["link"; "ocaml"; "native";] (S[A"-ccopt"; A"-static"]);
+
   | After_rules ->
+      (* c compilation options *)
+      flag ["compile"; "c"; ] 
+      (S[
+        A"-cc"; A"/usr/bin/gcc";
+        A"-ccopt"; A"-Wall";
+        A"-ccopt"; A"-funroll-loops";
+        A"-ccopt"; A"-O3";
+        A"-ccopt"; A"-fPIC";
+      ]);
+
       (* custom: incorporate libraries into bytecode *)
-      flag ["link"; "ocaml"; "byte"] (A"-custom");
+      flag ["link"; "ocaml"; "byte"; ] (A"-custom");
+
+      (* link with libpplacercside given use_pplacer tag *)
+      flag ["link"; "ocaml"; "use_pplacer"; ]
+        (S[A"-cclib"; A"-lpplacercside"; A"-cclib"; A"-Lpplacer_src";]);
+
+      (* make libpplacercside when needed *)
+      dep ["use_pplacer"; ] ["pplacer_src/libpplacercside.a"; ];
+
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
