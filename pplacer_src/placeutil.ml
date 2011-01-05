@@ -24,6 +24,7 @@ let list_classify_refpkg = ref ""
 let tax_exclude_fname = ref ""
 let nboot = ref 0
 let check_refpkg = ref ""
+let dummy_place_refpkg = ref ""
 
 let parse_args () = 
   let files  = ref [] in
@@ -54,7 +55,9 @@ let parse_args () =
      "--boot", Arg.Set_int nboot,
      "Specify the number of bootstrapped placeruns to create.";
      "--check-refpkg", Arg.Set_string check_refpkg,
-     "Check the given ref pkg."
+     "Check the given ref pkg.";
+     "--dummy-place", Arg.Set_string dummy_place_refpkg,
+     "Make an empty place file of the given ref pkg.";
    ]
   in
   let usage =
@@ -72,6 +75,17 @@ let () =
     let fnames = parse_args () in
     if !check_refpkg <> "" then 
       Refpkg.check_refpkg (Refpkg.of_path (!check_refpkg));
+    if !dummy_place_refpkg <> "" then begin
+      let rp = Refpkg.of_path (!dummy_place_refpkg) in
+      Placerun_io.to_file 
+        "dummy" 
+        "."
+        (Placerun.make 
+          (Refpkg.get_ref_tree rp)
+          (Prefs.defaults ())
+          (Refpkg.get_name rp)
+          [])
+    end;
     if fnames = [] then exit 0;
     (* parse the placements *)
     let parsed = List.map Placerun_io.of_file fnames in
