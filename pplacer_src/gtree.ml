@@ -20,6 +20,13 @@ exception Lacking_branchlength of int
 exception Lacking_name of int
 exception Lacking_bootstrap of int
 
+exception Attachment_distal_bl_out_of_range of int * float
+
+(* Rounding errors crop up when subtracting branch lengths. 
+ * This is our tolerance. *)
+let bl_arithmetic_tol = 1e-10
+
+
 type 'a gtree = 
   {stree : Stree.stree;
   bark_map : 'a IntMap.t}
@@ -162,17 +169,24 @@ let opt_join t t_opt new_id bark =
  *)
 let add_boosted_subtree_above bark_of_bl ~t ~new_t where boost_by = 
   let our_top_id = top_id t in
-  let new_top_bl = (get_bl t our_top_id) -. where in
   let boosted_new_t = boost boost_by new_t in
   let new_id = 1 + boost_by + (addition_n_edges new_t) in
-  (* if new_top_bl is neg then highest_distal was bigger than top edge *)
-  if new_top_bl < 0. then
-    failwith ("Attachment distal branch length is out of range when attaching a subtree to "^(string_of_int our_top_id));
+  let final_top_bl = 
+    let new_top_bl = (get_bl t our_top_id) -. where in
+    if new_top_bl >= 0. then new_top_bl
+    else begin
+      (* new_top_bl is neg then highest_distal was bigger than top edge *)
+      if abs_float new_top_bl < bl_arithmetic_tol then 
+        0. (* ignore it if it's within tolerance *)
+      else
+        raise (Attachment_distal_bl_out_of_range (our_top_id, new_top_bl))
+    end
+  in
   opt_join
     (set_bl t our_top_id where)
     boosted_new_t
     new_id
-    (bark_of_bl new_top_bl)
+    (bark_of_bl final_top_bl)
 
 (* add a collection of subtrees given a list of (where, tree) pairs; where
  * describes where the tree should be glued in. pos is the "where" of the
@@ -224,11 +238,18 @@ let add_subtrees_by_map ref_tree where_subtree_map =
   (* add the info from ref tree back in and then add above subtrees *)
   let our_add_above below = 
     let id = top_id below in
-    globalized_id_add_subtrees_above 
-      (copy_bark ~src:ref_tree ~dest:below id)
-      (if IntMap.mem id where_subtree_map then 
-        IntMap.find id where_subtree_map
-      else [])
+    try
+      globalized_id_add_subtrees_above 
+        (copy_bark ~src:ref_tree ~dest:below id)
+        (if IntMap.mem id where_subtree_map then 
+          IntMap.find id where_subtree_map
+        else [])
+    with
+    | Attachment_distal_bl_out_of_range(_, new_top_bl) ->
+        failwith 
+          (Printf.sprintf 
+            "Internal edge became %g when attaching subtrees to %d"
+            new_top_bl id)
   in
   (* fill the stree skeleton back in with info and add subtrees *)
   let rec aux = function
