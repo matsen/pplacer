@@ -75,13 +75,17 @@ let sss_of_tree t =
 (* fname has two columns, "number", which has the nodes of the internal nodes of
  * the tree, and "name", which has names for those internal nodes *)
 let numnamel_of_csv fname = 
-  List.map 
-    (fun l -> 
-      int_of_string (List.assoc "number" l), 
-      List.assoc "name" l)
-    (match (Csv.load fname) with 
-    | h :: d -> Csv.associate h d
-    | [] -> assert false)
+  try
+    List.map 
+      (fun l -> 
+        int_of_string (List.assoc "number" l), 
+        List.assoc "name" l)
+      (match (Csv.load fname) with 
+      | h :: d -> Csv.associate h d
+      | [] -> assert false)
+  with
+  | Not_found -> 
+      failwith ("Couldn't find 'name' and 'number' column headers in "^fname)
 
 let nameim_of_csv fname = 
   List.fold_right 
