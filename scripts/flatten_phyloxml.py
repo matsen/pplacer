@@ -14,6 +14,5 @@ def print_flat_tree(tree_fname):
 
 for tree_fname in sys.argv[1:]:
     print "# "+tree_fname
-    print "name,boot"
     print_flat_tree(tree_fname)
     print ""

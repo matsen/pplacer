@@ -11,7 +11,7 @@ module SSS = Cluster_common.StringSetSet
  * trees, and ct_fname, which is the tree with the full data.
  * Write out an XML file with those bootstrap values. *)
 let decorate_tree cutoff boot_fname ct_fname = 
-  let ct = Cluster_common.number_tree (Newick.of_file ct_fname)
+  let ct = Cluster_common.ensure_numbered (Newick.of_file ct_fname)
   and boot_tl = Newick.list_of_file boot_fname
   in
   let boot_sssl = List.map Cluster_common.sss_of_tree boot_tl

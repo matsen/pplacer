@@ -53,7 +53,15 @@ let number_tree t =
   Gtree.set_bark_map t
     (IntMap.mapi 
     (fun i b -> b#set_boot (float_of_int i))
-  (Gtree.get_bark_map t))
+    (Gtree.get_bark_map t))
+
+(* make sure that there are boot numberings everywhere. if not, then adopt
+ * them a la number_tree. *)
+let ensure_numbered t = 
+  try
+    IntMap.iter (fun _ b -> let _ = b#get_boot in ()) (Gtree.get_bark_map t); t
+  with
+  | Newick_bark.No_boot -> number_tree t
 
 (* In a rooted tree, each internal node gives a taxon set, which is the set of
  * taxa below that node. Here we collect the set of such (non-singleton) sets. 
