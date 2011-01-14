@@ -339,7 +339,8 @@ let clusterviz prefs = function
             if subsets_fname <> "" then 
               Csv.save subsets_fname 
                 (StringMap.fold
-                  (fun name s l -> (name::(StringSet.elements s))::l)
+                  (fun name s l -> 
+                    [name; String.concat "," (StringSet.elements s)]::l)
                   ssm
                   [])
           with Clusterviz.Numbering_mismatch ->
