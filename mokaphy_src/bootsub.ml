@@ -22,6 +22,11 @@ let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname =
   let taxs = taxon_set ct
   and ssim = Cluster_common.ssim_of_tree ct
   in
+  let ssim_find id ssim = 
+    try IntMap.find id ssim with
+    | Not_found -> 
+        failwith (Printf.sprintf "Could not find %d in %s" id ct_fname)
+  in
   List.iter 
     (fun ss -> if 0 <> StringSet.compare taxs ss then 
                  invalid_arg "taxon sets not identical")
@@ -34,5 +39,5 @@ let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname =
             (fun (score, stro) ->
               [string_of_float score;
               match stro with None -> "" | Some s -> s])
-            (StrBootsub.perform cutoff (IntMap.find id ssim) boot_sssl))))
+            (StrBootsub.perform cutoff (ssim_find id ssim) boot_sssl))))
     (Cluster_common.numnamel_of_csv csv_fname)
