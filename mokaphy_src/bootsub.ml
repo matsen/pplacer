@@ -11,6 +11,8 @@ module StrBootsub =
     (Cluster_common.StringSetSet)
 
 let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname = 
+  if cutoff < 0. || cutoff > 1. then 
+    failwith "bootsub cutoff must be between zero and one";
   let ct = Newick.of_file ct_fname
   and boot_tl = Newick.list_of_file boot_fname
   in

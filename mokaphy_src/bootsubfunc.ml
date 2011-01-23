@@ -35,8 +35,9 @@ module Make
 
   (* madness *)
   exception First of O.t
+  exception Empty_hash
   let first_key h = 
-    try Hashtbl.iter (fun k _ -> raise (First k)) h; raise Not_found with 
+    try Hashtbl.iter (fun k _ -> raise (First k)) h; raise Empty_hash with 
     | First k -> k
 
   let s_of_list l = List.fold_right S.add l S.empty
@@ -68,7 +69,7 @@ module Make
     find_fsmallest S.cardinal (List.map (symmdiff s) (SS.elements ss))
   
   (* given a list of S.t's, most_pop finds the element which is most
-   * commonly seen *)
+   * commonly seen. if all S.t's are empty, then return None. *)
   let most_pop sl = 
     let h = Hashtbl.create ((S.cardinal (List.hd sl)) / 4) in
     let boost x = 
@@ -76,11 +77,15 @@ module Make
       else Hashtbl.add h x 1
     in
     List.iter (S.iter boost) sl;
-    let fk = first_key h in
-    Hashtbl.fold 
-      (fun k v ((_, bv) as p) -> if v > bv then (k, v) else p) 
-      h
-      (fk, Hashtbl.find h fk)
+    try
+      let fk = first_key h in
+      Some
+        (Hashtbl.fold 
+          (fun k v ((_, bv) as p) -> if v > bv then (k, v) else p) 
+          h
+          (fk, Hashtbl.find h fk))
+    with
+    | Empty_hash -> None
   
   (* remove x from every elememnt of ss *)
   let ssremove x ss = 
@@ -111,11 +116,14 @@ module Make
       if score >= cutoff then 
         score, accu
       else begin
-        let (naughty,_) = most_pop symdiffl in
-          aux
-            (S.remove naughty s)
-            (List.map (ssremove naughty) ssl)
-            ((score, naughty)::accu)
+        match most_pop symdiffl with
+        | Some (naughty,_) ->
+            aux
+              (S.remove naughty s)
+              (List.map (ssremove naughty) ssl)
+              ((score, naughty)::accu)
+        | None ->
+            failwith("cutoff score of greater than one given to Bootsubfunc.perform")
       end
     in
     (* then we have to bump them down, so the score is paired with the element
