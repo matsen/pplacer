@@ -123,6 +123,8 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     let mask_arr = Array.map informative query_arr in
     let masked_query_arr = 
       Alignment.array_filteri (fun _ c -> informative c) query_arr in
+    if masked_query_arr = [||] then
+      failwith (query_name^" has no informative sites.");
     let first_informative = Base.array_first informative query_arr
     and last_informative = Base.array_last informative query_arr in
     let lv_arr_of_char_arr a = 
