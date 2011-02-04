@@ -1,9 +1,6 @@
-RELEASE=placeviz pplacer placeutil
-MACRELEASE=placeviz placeutil
+RELEASE=placeviz pplacer placeutil mokaphy
 
 all: $(RELEASE)
-
-mac: $(MACRELEASE)
 
 $(RELEASE):
 	if [ ! -e bin ]; then mkdir bin; fi
