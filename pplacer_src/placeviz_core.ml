@@ -21,6 +21,7 @@ let widthl_of_mass log_coeff mass_width mass =
   if final_width >= min_width then [Decor.width (mass_width *. mass)] else []
 
 (* writing the .loc.fasta file *)
+(* MULTI: remove *)
 let write_loc_file fname_base unplaced_seqs placed_map =
   let out_ch = open_out (fname_base^".loc.fasta") in
   let print_pquery_seq pq =
@@ -79,6 +80,7 @@ let tog_tree criterion ref_tree placed_map =
           make_zero_leaf 
             [ Decor.red ]
             (Placement.pendant_bl best)
+            (* MULTI: concatenate names *)
             (Pquery.name pquery),
          decor_bark_of_bl)))
     ref_tree
@@ -112,6 +114,7 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
 
 (* sing trees *)
 let sing_tree weighting criterion mass_width ref_tree pquery = 
+  (* MULTI: concat names *)
   let pqname = Pquery.name pquery in
   match weighting with
   | Mass_map.Weighted ->

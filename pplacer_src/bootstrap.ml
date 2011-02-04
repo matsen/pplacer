@@ -33,6 +33,13 @@ let boot_list f l =
   assert(n = List.length out);
   List.rev out
 
+(* MULTI: we boot a placerun by using 
+ * Gsl_randist.discrete_preproc with a float array of weights
+ * then discrete to sample from that distribution
+ * val discrete_preproc : float array -> discrete
+ * val discrete : Gsl_rng.t -> discrete -> int
+ * *)
+
 let boot_placerun pr = 
   {
     pr with

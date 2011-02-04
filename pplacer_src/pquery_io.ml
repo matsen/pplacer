@@ -13,6 +13,7 @@ let no_seq_str = "<sequence not loaded>"
 (* ***** WRITING ***** *)
 
 let write ch pq = 
+  (* MULTI: concat names *)
   Printf.fprintf ch ">%s\n" (Pquery.name pq);
   Printf.fprintf ch "%s\n" (Pquery.seq pq);
   List.iter 
@@ -21,6 +22,7 @@ let write ch pq =
     (Pquery.place_list pq)
 
 let write_csv ch pq =
+  (* MULTI: not sure *)
   let qname = R_csv.quote (Pquery.name pq) in
   ListFuns.iteri
     (fun i p -> 

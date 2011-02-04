@@ -16,6 +16,7 @@ let get_p_value r = match r.p_value with
   | Some p -> p
   | None -> failwith "no p-value!"
 
+(* MULTI: this is going to be trouble. *)
 let make_shuffled_pres n_shuffles pre1 pre2 = 
   let pre_arr = Array.of_list (pre1 @ pre2)
   and n1 = List.length pre1

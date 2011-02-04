@@ -28,13 +28,25 @@ module Pre = struct
   type mul = mass_unit list
 
   (* list across pqueries *)
+  (*
+   * MULTI
+  type multimul = {
+    multi : int; (* multiplicity *)
+    mul : mul;
+    }
+  type t = multimul list
+
+  let mass_of_multimul = 
+  *)
+
   type t = mul list
 
   let mass_unit loc ~distal_bl ~mass = 
     {loc=loc; distal_bl=distal_bl; mass=mass}
   let distal_mass_unit loc mass = mass_unit loc ~distal_bl:0. ~mass
 
-(* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
+  (* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
+  (* MULTI will become multimul_of_pquery *)
   let mul_of_pquery weighting criterion mass_per_pquery pq = 
     let pc = place_list_of_pquery weighting criterion pq in
     List.map2
@@ -47,9 +59,9 @@ module Pre = struct
       pc
       (Base.normalized_prob (List.map criterion pc))
 
-(* assume that the list of pqueries in have unit mass. split that mass up to
- * each of the pqueries, breaking it up by weighted placements if desired.
- *)
+  (* assume that the list of pqueries in have unit mass. split that mass up to
+   * each of the pqueries, breaking it up by weighted placements if desired.
+   *)
   let of_pquery_list weighting criterion pql = 
     let mass_per_pquery = 1. /. (float_of_int (List.length pql)) in
     List.map
@@ -68,8 +80,10 @@ module Pre = struct
 
   let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0. 
 
+  (* MULTI: multimul_total_mass takes multiplicity into account. *)
   let total_mass = List.fold_left (fun x mul -> x +. mul_total_mass mul) 0. 
 
+  (* MULTI: normalize the multiplicity rather than the mass? *)
   let normalize_mass pre = 
     let tot = total_mass pre in
     List.map (List.map (fun mu -> {mu with mass = mu.mass /. tot})) pre
@@ -77,7 +91,8 @@ module Pre = struct
 end
 
 
-(* indiv makes the weighting for a given edge as a list of (distal_bl, weight)
+(* Indiv meanins that each unit of mass is considered individually on the tree. 
+ * Indiv makes the weighting for a given edge as a list of (distal_bl, weight)
  * for each placement *)
 module Indiv = struct
 
@@ -89,6 +104,7 @@ module Indiv = struct
       | None -> (fun mu -> mu.Pre.mass)
       | Some x -> (fun mu -> x *. mu.Pre.mass)
     in
+  (* MULTI: use mass_of_multimul *)
     List.fold_left
       (fun m' mul ->
         (List.fold_left 

@@ -65,6 +65,7 @@ let () =
         let out_ch = open_out ((Filename.chop_extension place_fname)^".err") in
         List.iter (
           fun pq ->
+            (* MULTI: print out lots of names *)
             Printf.fprintf out_ch ">%s\n" (Pquery.name pq);
             List.iter (
               fun place ->

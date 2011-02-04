@@ -107,6 +107,7 @@ let () =
         in
         if unplaced_seqs <> [] then begin
           print_endline "Found the following unplaced sequences:";
+          (* MULTI: print them all out *)
           List.iter 
             (fun pq -> print_endline (Pquery.name pq))
             unplaced_seqs;

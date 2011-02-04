@@ -67,6 +67,7 @@ let write_edpl_list criterion ch pr =
         [| 
           string_of_float 
             ((Edpl.raw_edpl_of_pquery criterion t pq) /. tl);
+            (* MULTI: raise not implemented *)
           Pquery.name pq; 
         |]) 
       (Array.of_list (Placerun.get_pqueries pr)))
