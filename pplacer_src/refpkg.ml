@@ -149,7 +149,7 @@ let check rp name what =
   let _ = what rp in ()
 
 let check_refpkg rp = 
-  print_endline ("Checking refpkg"^(get_name rp)^"...");
+  print_endline ("Checking refpkg "^(get_name rp)^"...");
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
   check rp "alignment" get_aln_fasta;
