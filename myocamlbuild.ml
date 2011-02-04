@@ -17,7 +17,9 @@ let syscall cmd =
     while true do Buffer.add_channel buf ic 1 done
    with End_of_file -> ());
   let _ = Unix.close_process (ic, oc) in
-  Filename.chop_suffix (Buffer.contents buf) "\n"
+  let contents = (Buffer.contents buf) in
+  if contents = "" then ""
+  else Filename.chop_suffix contents "\n"
 in
 
 let ocamlfind_query pkg =

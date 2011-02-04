@@ -12,7 +12,7 @@ $(RELEASE):
 	ocamlbuild $@
 
 clean:
-	rm -rf bin
+	rm -rf bin libs
 	ocamlbuild -clean
 	rm *.mltop
 
@@ -23,7 +23,7 @@ clean:
 %.runtop: %.top
 	ledit -x -h .toplevel_history ./$*.top
 
-runcaml: 
+runcaml:
 	ledit -x -h .toplevel_history ocaml
 
 .PHONY: $(RELEASE) clean runcaml
