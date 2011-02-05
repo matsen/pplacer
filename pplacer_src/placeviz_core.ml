@@ -20,25 +20,6 @@ let widthl_of_mass log_coeff mass_width mass =
   in
   if final_width >= min_width then [Decor.width (mass_width *. mass)] else []
 
-(* writing the .loc.fasta file *)
-(* MULTI: remove *)
-let write_loc_file fname_base unplaced_seqs placed_map =
-  let out_ch = open_out (fname_base^".loc.fasta") in
-  let print_pquery_seq pq =
-    Printf.fprintf out_ch ">%s\n%s\n" 
-      (Pquery.name pq) 
-      (Pquery.seq pq)
-  in
-  if unplaced_seqs <> [] then
-    Printf.fprintf out_ch ">unplaced_sequences\n\n";
-  List.iter print_pquery_seq unplaced_seqs;
-  IntMap.iter
-    (fun loc pquery_list ->
-      Printf.fprintf out_ch ">placed_at_%d\n\n" loc;
-      List.iter print_pquery_seq pquery_list)
-    placed_map;
-  close_out out_ch
-
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees = 
   match tree_fmt with
@@ -80,8 +61,7 @@ let tog_tree criterion ref_tree placed_map =
           make_zero_leaf 
             [ Decor.red ]
             (Placement.pendant_bl best)
-            (* MULTI: concatenate names *)
-            (Pquery.name pquery),
+            (String.concat "_" pquery.Pquery.namel),
          decor_bark_of_bl)))
     ref_tree
     placed_map
@@ -114,8 +94,7 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
 
 (* sing trees *)
 let sing_tree weighting criterion mass_width ref_tree pquery = 
-  (* MULTI: concat names *)
-  let pqname = Pquery.name pquery in
+  let pqname = String.concat "_" pquery.Pquery.namel in
   match weighting with
   | Mass_map.Weighted ->
     Gtree.add_subtrees_by_map

@@ -90,7 +90,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
   (* our result array *)
   let result_arr = 
     Array.make num_queries
-    (Pquery.make Placement.ml_ratio ~name:"" ~seq:"" [])
+    (Pquery.make Placement.ml_ratio ~namel:[] ~seq:"" [])
   in
   (* *** the main query loop *** *)
   let process_query query_num (query_name, pre_query_seq) = 
@@ -113,7 +113,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     match friend with
     | Friendly.Identical j ->
         result_arr.(query_num) <-
-          Pquery.set_name result_arr.(j) query_name
+          Pquery.set_namel result_arr.(j) [query_name]
     (* otherwise, start the evaluation *)
     | _ -> begin
     (* prepare the query glv *)
@@ -346,7 +346,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     in
     result_arr.(query_num) <-
       Pquery.make_ml_sorted
-        ~name:query_name 
+        ~namel:[query_name]
         ~seq:query_seq
         (if (calc_pp prefs) then begin
           (* pp calculation *)

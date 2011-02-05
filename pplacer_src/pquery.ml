@@ -7,7 +7,7 @@
 
 open MapsSets
 
-exception Unplaced_pquery of string
+exception Unplaced_pquery of string list
 
 let sort_placement_list criterion pl =
   List.sort 
@@ -22,14 +22,18 @@ let rec is_decreasing criterion = function
 
 type pquery = 
   {
-    name       : string;
+    namel      : string list;
     seq        : string;
     place_list : Placement.placement list;
   }
 
-let name p       = p.name
+let namel p      = p.namel
 let seq p        = p.seq
 let place_list p = p.place_list
+
+let multiplicity p = List.length p.namel
+let total_multiplicity = 
+  List.fold_left (fun acc x -> acc + (multiplicity x)) 0
 
 let opt_best_something thing criterion pq =
   match place_list pq with
@@ -63,7 +67,7 @@ let opt_place_by_location pq loc =
 let best_something thing criterion pq = 
   match opt_best_place criterion pq with
   | Some place -> thing place
-  | None -> raise (Unplaced_pquery (name pq))
+  | None -> raise (Unplaced_pquery (namel pq))
 
 let best_place criterion pq = 
   best_something (fun p -> p) criterion pq
@@ -75,9 +79,9 @@ let is_placed pq =
   | [] -> false
   | _ -> true
 
-let make criterion ~name ~seq pl = 
+let make criterion ~namel ~seq pl = 
   { 
-    name = name; 
+    namel = namel; 
     seq = seq; 
     place_list = sort_placement_list criterion pl
   }
@@ -85,7 +89,7 @@ let make criterion ~name ~seq pl =
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
-let set_name pq name = { pq with name = name }
+let set_namel pq namel = { pq with namel = namel }
 
 let apply_to_place_list f pq = 
   { pq with place_list = f (pq.place_list) }

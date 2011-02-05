@@ -9,6 +9,8 @@
  * Some of the code here is not very good!
 *)
 
+exception Unimplemented of string
+
 open MapsSets
 
 let round x = int_of_float (floor (x +. 0.5))

@@ -59,6 +59,9 @@ let partition_by_cutoff infix_str criterion use_edpl cutoff placerun =
   Placerun.cutoff_filter make_name geq_cutoff placerun
 
 let write_edpl_list criterion ch pr = 
+  let _ = (criterion, ch, pr) in
+  raise (Base.Unimplemented "write_edpl_list")
+  (*
   let t = Placerun.get_ref_tree pr in
   let tl = Gtree.tree_length t in
   String_matrix.write_padded ch
@@ -67,8 +70,8 @@ let write_edpl_list criterion ch pr =
         [| 
           string_of_float 
             ((Edpl.raw_edpl_of_pquery criterion t pq) /. tl);
-            (* MULTI: raise not implemented *)
           Pquery.name pq; 
         |]) 
       (Array.of_list (Placerun.get_pqueries pr)))
+  *)
 

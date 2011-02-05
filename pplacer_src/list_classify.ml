@@ -56,11 +56,14 @@ let classify how criterion rp prl =
                 (Pquery.place_list pq)
                 (TIAMR.M.empty))
             in
-            (* MULTI: iterate over names *)
             for desired_rank=(n_ranks-1) downto 0 do
               m := keymap_add_by (classify_at_rank td desired_rank) !m;
               outl := 
-                (classif_stral td (Pquery.name pq) desired_rank !m) @ (!outl);
+                (List.flatten 
+                  (List.map
+                    (fun name -> classif_stral td name desired_rank !m)
+                    (Pquery.namel pq)))
+                @ (!outl);
             done;
             String_matrix.write_padded ch (Array.of_list (!outl));)
           (Placerun.get_pqueries pr);

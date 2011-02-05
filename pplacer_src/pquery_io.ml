@@ -9,12 +9,14 @@ open MapsSets
 
 let no_seq_str = "<sequence not loaded>"
 
+let space_concat sl = String.concat " " sl
+let space_split = Str.split (Str.regexp "[ \t]+")
+
  
 (* ***** WRITING ***** *)
 
 let write ch pq = 
-  (* MULTI: concat names *)
-  Printf.fprintf ch ">%s\n" (Pquery.name pq);
+  Printf.fprintf ch ">%s\n" (space_concat (Pquery.namel pq));
   Printf.fprintf ch "%s\n" (Pquery.seq pq);
   List.iter 
     (fun p -> 
@@ -22,8 +24,7 @@ let write ch pq =
     (Pquery.place_list pq)
 
 let write_csv ch pq =
-  (* MULTI: not sure *)
-  let qname = R_csv.quote (Pquery.name pq) in
+  let qname = R_csv.quote (space_concat (Pquery.namel pq)) in
   ListFuns.iteri
     (fun i p -> 
       R_csv.write_strl ch (qname::(string_of_int i)::(Placement.to_csv_strl p)))
@@ -33,10 +34,10 @@ let write_csv ch pq =
 (* ***** READING ***** *)
 
 let parse_pquery ?load_seq:(load_seq=true) = function
-  | name::seq::places ->
+  | header::seq::places ->
       let my_seq = if load_seq then seq else no_seq_str in
       Pquery.make_ml_sorted
-      ~name:(Alignment.name_of_fasta_header name)
+      ~namel:(space_split (Alignment.remove_fasta_gt header))
       ~seq:my_seq
       (List.map Placement.placement_of_str places)
   | _ -> 

@@ -75,6 +75,18 @@ let to_map_by_name aln =
 
 (* ***** reading alignments ***** *)
 
+(* FASTA *)
+let remove_fasta_gt s = 
+  assert(s.[0] == '>');
+  String.sub s 1 ((String.length s)-1)
+
+let firstname s = 
+  let last_index = 
+    try String.index s ' ' with 
+    | Not_found -> String.length s
+  in
+  String.sub s 0 last_index
+
 (*
 # Alignment.name_of_fasta_header ">dfd adfad" ;;
 - : string = "dfd"
@@ -82,11 +94,7 @@ let to_map_by_name aln =
 - : string = "dfd"
 *)
 let name_of_fasta_header s = 
-  let last = 
-    try String.index s ' ' with 
-    | Not_found -> String.length s
-  in
-  String.sub s 1 (last-1)
+  firstname (remove_fasta_gt s)
 
 let read_fasta fname = 
   (* first count the number of careted lines in the alignment *)

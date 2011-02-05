@@ -71,17 +71,17 @@ let combine name pr1 pr2 =
     ((get_pqueries pr1) @ (get_pqueries pr2))
 
 let warn_about_duplicate_names placerun = 
-  let name_set = StringSet.empty in
   let _ = 
     List.fold_left
-      (fun accu pquery ->
-        (* MULTI: just add in every name *)
-        let name = Pquery.name pquery in
+      (fun accu name ->
         if StringSet.mem name accu then
           Printf.printf "Warning: query name %s appears multiple times.\n" name;
         StringSet.add name accu)
-      name_set
-      (get_pqueries placerun)
+      StringSet.empty
+      (List.flatten 
+        (List.map 
+          (fun pq -> pq.Pquery.namel) 
+          (get_pqueries placerun)))
   in
   ()
 
@@ -118,21 +118,27 @@ let cutoff_filter make_name cutoff_fun =
 let re_matches rex s = Str.string_match rex s 0
 
 let warn_about_multiple_matches rex_list placerun = 
+  let (_,_) = (rex_list, placerun) in
+  raise (Base.Unimplemented "warn_about_multiple_matches")
+  (*
   List.iter
     (fun s -> 
       Printf.printf "Warning: multiple match on %s\n" s)
     (Base.find_multiple_matches
       (List.map re_matches rex_list)
-      (* MULTI: take a union of sets here *)
       (List.map Pquery.name (get_pqueries placerun)))
+*)
 
 let multifilter_by_regex named_regex_list placerun = 
+  let _ = (placerun,named_regex_list) in
+  raise (Base.Unimplemented "multifilter_by_regex")
+  (*
   multifilter 
     (List.map 
       (fun (name, rex) -> 
-        (* MULTI: raise unimplemented exception *)
         (name, fun pq -> re_matches rex (Pquery.name pq)))
       named_regex_list)
     placerun
+    *)
 
 

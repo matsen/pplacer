@@ -19,14 +19,19 @@ let pre root_id tax_id_of_place weighting criterion ti_imap pr =
   Mass_map.Pre.normalize_mass 
     (List.map
       (fun pq ->
-        List.map 
+        {Mass_map.Pre.multi = 1;
+         mul = List.map 
           (fun p -> 
             let ti = tax_id_of_place p in
             try
-              Mass_map.Pre.distal_mass_unit 
-                (if ti = Tax_id.NoTax then root_id else TaxIdMap.find ti revm)
-                (criterion p)
+              {
+                Mass_map.Pre.loc =
+                  (if ti=Tax_id.NoTax then root_id 
+                  else TaxIdMap.find ti revm);
+                distal_bl = 0.; 
+                mass = criterion p;
+              }
             with
             | Not_found -> raise (Tax_id_not_in_tree ti))
-          (Mass_map.place_list_of_pquery weighting criterion pq))
+          (Mass_map.place_list_of_pquery weighting criterion pq)})
       (Placerun.get_pqueries pr))

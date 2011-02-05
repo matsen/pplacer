@@ -14,7 +14,7 @@ $(RELEASE):
 clean:
 	rm -rf bin
 	ocamlbuild -clean
-	rm *.mltop
+	rm -f *.mltop
 
 %.top: %.byte
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop

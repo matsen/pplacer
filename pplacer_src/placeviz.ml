@@ -107,9 +107,8 @@ let () =
         in
         if unplaced_seqs <> [] then begin
           print_endline "Found the following unplaced sequences:";
-          (* MULTI: print them all out *)
           List.iter 
-            (fun pq -> print_endline (Pquery.name pq))
+            (fun pq -> print_endline (String.concat " " (Pquery.namel pq)))
             unplaced_seqs;
         end;
         let fname_base = 
@@ -128,10 +127,6 @@ let () =
           else (* split up the mass according to the number of queries *)
             !total_width 
         in
-        (* write loc file *)
-        if !write_loc then
-          Placeviz_core.write_loc_file 
-            fname_base unplaced_seqs placed_map;
         (* make the various visualizations *)
         let place_massm = 
           Mass_map.By_edge.of_placerun weighting criterion placerun in

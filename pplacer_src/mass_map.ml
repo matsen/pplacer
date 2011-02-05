@@ -1,5 +1,7 @@
 (* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * We keep track of the multiplicities so that we can use them in bootstrapping.
 *)
 
 open MapsSets
@@ -24,49 +26,51 @@ module Pre = struct
       mass : float;
     }
 
-  (* list across mass for a given placement *)
-  type mul = mass_unit list
+  let scale_mu scalar mu = {mu with mass = scalar *. mu.mass}
+
+  type multimul = {
+    (* multiplicity *)
+    multi : int; 
+    (* mul is Mass Unit List *)
+    (* list across mass for a given placement. *)
+    mul : mass_unit list; 
+    }
+
+  let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0.
+  let multimul_total_mass mumu = 
+    (float_of_int mumu.multi) *. (mul_total_mass mumu.mul)
+  let scale_multimul scalar mumu = 
+    {mumu with mul = List.map (scale_mu scalar) mumu.mul}
+
 
   (* list across pqueries *)
-  (*
-   * MULTI
-  type multimul = {
-    multi : int; (* multiplicity *)
-    mul : mul;
-    }
   type t = multimul list
 
-  let mass_of_multimul = 
-  *)
-
-  type t = mul list
-
-  let mass_unit loc ~distal_bl ~mass = 
-    {loc=loc; distal_bl=distal_bl; mass=mass}
-  let distal_mass_unit loc mass = mass_unit loc ~distal_bl:0. ~mass
-
   (* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
-  (* MULTI will become multimul_of_pquery *)
-  let mul_of_pquery weighting criterion mass_per_pquery pq = 
+  let multimul_of_pquery weighting criterion mass_per_read pq = 
     let pc = place_list_of_pquery weighting criterion pq in
-    List.map2
-      (fun place weight ->
-        {
-          loc = Placement.location place;
-          distal_bl = Placement.distal_bl place;
-          mass = mass_per_pquery *. weight
-        })
-      pc
-      (Base.normalized_prob (List.map criterion pc))
+    {
+      multi = Pquery.multiplicity pq;
+      mul = 
+        List.map2
+          (fun place weight ->
+            {
+              loc = Placement.location place;
+              distal_bl = Placement.distal_bl place;
+              mass = mass_per_read *. weight
+            })
+          pc
+          (Base.normalized_prob (List.map criterion pc));
+    }
 
   (* assume that the list of pqueries in have unit mass. split that mass up to
    * each of the pqueries, breaking it up by weighted placements if desired.
    *)
   let of_pquery_list weighting criterion pql = 
-    let mass_per_pquery = 1. /. (float_of_int (List.length pql)) in
+    let mass_per_read = 1. /. (float_of_int (Pquery.total_multiplicity pql)) in
     List.map
-      (mul_of_pquery weighting criterion mass_per_pquery)
-       pql
+      (multimul_of_pquery weighting criterion mass_per_read)
+      pql
 
   let of_placerun weighting criterion pr = 
     try
@@ -76,17 +80,14 @@ module Pre = struct
         (Placerun.get_pqueries pr)
     with 
     | Pquery.Unplaced_pquery s ->
-      invalid_arg (s^" unplaced in "^(Placerun.get_name pr))
+      invalid_arg ((String.concat " " s)^" unplaced in "^
+                     (Placerun.get_name pr))
 
-  let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0. 
+  let total_mass = List.fold_left (fun x mm -> x +. multimul_total_mass mm) 0. 
 
-  (* MULTI: multimul_total_mass takes multiplicity into account. *)
-  let total_mass = List.fold_left (fun x mul -> x +. mul_total_mass mul) 0. 
-
-  (* MULTI: normalize the multiplicity rather than the mass? *)
   let normalize_mass pre = 
-    let tot = total_mass pre in
-    List.map (List.map (fun mu -> {mu with mass = mu.mass /. tot})) pre
+    let scalar = 1. /. (total_mass pre) in
+    List.map (scale_multimul scalar) pre
 
 end
 
@@ -104,15 +105,17 @@ module Indiv = struct
       | None -> (fun mu -> mu.Pre.mass)
       | Some x -> (fun mu -> x *. mu.Pre.mass)
     in
-  (* MULTI: use mass_of_multimul *)
     List.fold_left
-      (fun m' mul ->
+      (fun m' multimul ->
+        let fmulti = float_of_int (multimul.Pre.multi) in
         (List.fold_left 
           (fun m mu -> 
-            IntMapFuns.add_listly mu.Pre.loc 
-                                  (mu.Pre.distal_bl, mass_of_mu mu) m)
+            IntMapFuns.add_listly 
+              mu.Pre.loc 
+              (mu.Pre.distal_bl, fmulti *. (mass_of_mu mu))
+              m)
           m'
-          mul))
+          multimul.Pre.mul))
       IntMap.empty
       pmm
 
