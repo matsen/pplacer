@@ -15,6 +15,17 @@ open MapsSets
 
 let round x = int_of_float (floor (x +. 0.5))
 
+(*
+# int_pow 10. 3;;              
+- : float = 1000.
+# int_pow 10. 0;;              
+- : float = 1.
+*)
+let int_pow x n = 
+  assert(n >= 0);
+  let rec aux accu i = if i=0 then accu else aux (x*.accu) (i-1) in
+  aux 1. n
+
 let date_time_str () = 
   let the_time = Unix.localtime (Unix.time ()) in
   Printf.sprintf "%02d/%02d/%d %02d:%02d:%02d" 
