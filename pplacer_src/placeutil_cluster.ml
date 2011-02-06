@@ -57,7 +57,7 @@ let round_pquery_list sig_figs pql =
     (fun pql ->
       {(List.hd pql) with Pquery.namel = 
         List.flatten (List.map (fun pq -> pq.Pquery.namel) pql)})
-    (RPQMap.fold (fun _ v l -> v::l) m [])
+    (RPQMap.fold (fun _ v l -> (List.rev v)::l) m []) (* the clustered ones *)
 
 let round_placerun out_name sig_figs pr = 
   {pr with 
