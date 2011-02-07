@@ -15,7 +15,7 @@ clean:
 	rm -rf bin libs
 	rm -f tests.native
 	ocamlbuild -clean
-	rm *.mltop
+	rm -f *.mltop
 
 %.top: %.byte
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
