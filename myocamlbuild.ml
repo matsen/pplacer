@@ -17,7 +17,9 @@ let syscall cmd =
     while true do Buffer.add_channel buf ic 1 done
    with End_of_file -> ());
   let _ = Unix.close_process (ic, oc) in
-  Filename.chop_suffix (Buffer.contents buf) "\n"
+  let contents = (Buffer.contents buf) in
+  if contents = "" then ""
+  else Filename.chop_suffix contents "\n"
 in
 
 let ocamlfind_query pkg =
@@ -78,6 +80,7 @@ dispatch begin function
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "ounit") "ounit";
   | _ -> ()
 end;;
 

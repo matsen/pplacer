@@ -1,0 +1,30 @@
+# pplacer v0.3 run, 04/16/2009 07:25:33
+# invocation: pplacer --verbosity 2 -t small.tre -r smallRefAlign.phy fragment.fasta
+# reference tree file: small.tre
+# reference alignment file: smallRefAlign.phy
+# statistics file: 
+# reference data directory: .
+# substitution model: LG
+# use emperical frequencies: true
+# number of gamma categories: 1
+# gamma alpha: 1
+# max number of strikes: 6
+# strike box: 3
+# max number of pitches: 40
+# calculate PP: false
+# uniform prior: false
+# starting pendant length: 0.5
+# maximal pendant length: 2
+# ML tolerance: 0.01
+# relative error for PP: 0.01
+# ML ratio cutoff for writing: 0.05
+# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length
+# Warning: pplacer results make the most sense when the given tree is multifurcating at the root. See manual for details.
+# numbered reference tree: ((Mpus@0:0.212167,Ascosaera@1:0.947379)2:0.072755,(Otau@3:0.050707,Olum@4:0.07181)5:0.1)6:0;
+# reference tree: ((A:2,B:9):7,C:5,D:1):0;
+>two_x
+seq
+3	1.000000	-	-1309.83	-   4    	10.
+>two_y
+seq
+3	1.000000	-	-1309.83	-   0    	10.
