@@ -41,11 +41,11 @@ let write_by_best_loc criterion ch placerun =
 
 let pre_fname out_dir pr = out_dir^"/"^(Placerun.get_name pr)
 
-let to_file invocation out_dir placerun = 
+let to_file invocation out_fname placerun = 
   Placerun.warn_about_duplicate_names placerun;
-  let ch = 
-    open_out ((pre_fname out_dir placerun)^".place") in
-  let ref_tree = Placerun.get_ref_tree placerun in
+  let ch = open_out out_fname 
+  and ref_tree = Placerun.get_ref_tree placerun 
+  in
   Printf.fprintf ch "# pplacer %s run, %s\n"        
     Version.version_revision (Base.date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
@@ -166,7 +166,7 @@ let write_csv ch pr =
   Printf.fprintf ch "%s\n" csv_output_fmt_str;
   List.iter (Pquery_io.write_csv ch) (Placerun.get_pqueries pr)
 
-let to_csv_file out_dir pr = 
-  let ch = open_out ((pre_fname out_dir pr)^".place.csv") in
+let to_csv_file out_fname pr = 
+  let ch = open_out out_fname in
   write_csv ch pr;
   close_out ch

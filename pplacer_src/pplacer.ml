@@ -176,13 +176,14 @@ let () =
           let final_pr = 
             if not (Refpkg.tax_equipped rp) then pr
             else Refpkg.contain_classify rp pr
+          and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
           in
           Placerun_io.to_file
             (String.concat " " (Array.to_list Sys.argv))
-            (Prefs.out_dir prefs)
+            (out_prefix^".place")
             final_pr;
           if Prefs.csv prefs then 
-            Placerun_io.to_csv_file (Prefs.out_dir prefs) final_pr;
+            Placerun_io.to_csv_file (out_prefix^".csv") final_pr;
         end)
       files;
     (* print final info *)

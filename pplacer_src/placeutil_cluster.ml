@@ -40,6 +40,8 @@ let add_listly k v m =
   if RPQMap.mem k m then RPQMap.add k (v::(RPQMap.find k m)) m
   else RPQMap.add k [v] m
 
+(* given a list of pqueries, we round them, then cluster the pqueries which are
+ * identical after the rounding step. *)
 let round_pquery_list sig_figs pql = 
   assert(sig_figs > 0);
   let multiplier = Base.int_pow 10. sig_figs 
