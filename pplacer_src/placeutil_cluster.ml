@@ -95,14 +95,15 @@ end
 
 let cluster_cmd prefs invocation fnamel = 
   let out_prefix = Prefs.out_prefix prefs in
-  assert(out_prefix <> "");
+  if out_prefix = "" then 
+    invalid_arg "Please specify an output prefix with -o";
   List.iter
     (fun fname ->
       let pr = Placerun_io.of_file fname in
       let out_name = (out_prefix^(pr.Placerun.name)) in
       Placerun_io.to_file
         invocation
-        "." (* directory. must change. *)
+        (out_name^".place")
         (round_placerun out_name (Prefs.sig_figs prefs) pr))
     fnamel
 
