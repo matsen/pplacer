@@ -5,7 +5,6 @@
 type rounded_placement = 
   {
     location: int;
-    ml_ratio: int;
     distal_bl: int;
     pendant_bl: int;
   }
@@ -14,7 +13,6 @@ let rounded_placement_of_placement multiplier p =
   let round x = Base.round (multiplier *. x) in
   {
     location = p.Placement.location;
-    ml_ratio = round p.Placement.ml_ratio;
     distal_bl = round p.Placement.distal_bl;
     pendant_bl = round p.Placement.pendant_bl;
   }
