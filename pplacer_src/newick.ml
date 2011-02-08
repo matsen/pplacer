@@ -21,10 +21,13 @@ let make_boot_id t =
 
 (* output *)
 
-let string_of_bark t id =
-    match Gtree.get_bark_opt t id with
+let string_of_bark ?(with_edge_labels = false) t id =
+  let base = match Gtree.get_bark_opt t id with
     | Some b -> b#to_newick_string
     | None -> ""
+  in if with_edge_labels
+    then Printf.sprintf "%s[%d]" base id
+    else base
 
 let to_string_gen f t =
     (Gtree.recur
@@ -33,7 +36,7 @@ let to_string_gen f t =
       (f t)
       t)^";"
 
-let to_string t = to_string_gen string_of_bark t
+let to_string ?(with_edge_labels = false) t = to_string_gen (string_of_bark ~with_edge_labels) t
 
 let write ch t = Printf.fprintf ch "%s\n" (to_string t)
 
