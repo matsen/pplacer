@@ -6,25 +6,6 @@ open MapsSets
 
 let option_rex = Str.regexp "-.*"
 
-let wrap_parse_argv argl specl usage = 
-  let files = ref [] in
-  let anon_arg s = files := s::!files in
-  try
-    Arg.parse_argv 
-      ~current:(ref 0) (* start from beginning *)
-      (Array.of_list argl) 
-      specl
-      anon_arg
-      usage;
-    if !files = [] then begin
-      print_string "No files supplied so nothing to do. ";
-      print_endline usage;
-    end;
-    List.rev !files
-  with
-  | Arg.Bad s -> print_string s; exit 1
-  | Arg.Help s -> print_string s; []
-
 let print_avail_cmds prg_name cmd_map = 
   print_endline "Here is a list of commands available using this interface:";
   StringMap.iter (fun k v -> Printf.printf "\t%s\t" k; v []) cmd_map;
@@ -56,14 +37,43 @@ let process_cmd prg_name cmd_map argl =
     | [] -> print_need_cmd_error ()
 
 
+
 (* externally facing *)
 
+(* this takes an argument list, a specification list, and a usage string, does
+ * the relevant parsing, and then spits out a list of anonymous arguments (those
+ * not associated with command line flags *)
+let wrap_parse_argv argl specl usage = 
+  let anonymous = ref [] in
+  try
+    Arg.parse_argv 
+      ~current:(ref 0) (* start from beginning *)
+      (Array.of_list argl) 
+      specl
+      (fun s -> anonymous := s::!anonymous)
+      usage;
+    (* we assume that some anonymous argument are needed *)
+    if !anonymous = [] then begin
+      print_endline usage;
+      exit 0;
+    end;
+    List.rev !anonymous
+  with
+  | Arg.Bad s -> print_string s; exit 1
+  | Arg.Help s -> print_string s; []
+
+
+(* makes a specification with a default value *)
 let spec_with_default symbol setfun p help = 
   (symbol, setfun p, Printf.sprintf help !p)
 
+
+(* given a (string, f) list, make a map of it *)
 let cmd_map_of_list l = 
   List.fold_right (fun (k,v) -> StringMap.add k v) l StringMap.empty
 
+
+(* intended to be the inner loop of a function *)
 let inner_loop ~prg_name ~version cmd_map = 
   Arg.parse
     [
