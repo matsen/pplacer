@@ -14,6 +14,10 @@
     assert(s.[0] = '\'' && s.[len-1] = '\'');
     String.sub s 1 (len-2)
 
+  let untag s =
+    let start = if s.[1] = 'I' then 2 else 1 in
+    int_of_string (String.sub s start ((String.length s) - start - 1))
+
 }
 
 let colon = ':'
@@ -30,16 +34,16 @@ let unquotedchar = [^ ' ' '\t' '\n' '(' ')' '[' ']' '\'' ':' ';' ',']
 let unquotedlabel = unquotedchar+
 let quotedchar = [^ ' ' '\'']
 let quotedlabel = '\'' quotedchar+ '\''
-let comment = '[' [^ ' ' '\t' '\n' '[' ']']* ']'
+let edgelabel = '[' 'I'? digit+ ']'
 
 rule token = parse
   | [' ' '\t']      { token lexbuf }
-  | comment         { token lexbuf }
   | '\n'            { incr line; CR }
   (* because taxnames can be floats, we have to have float first *)
-  | floating        { REAL(Lexing.lexeme lexbuf) }
+  | floating        { REAL(float_of_string(Lexing.lexeme lexbuf)) }
   | unquotedlabel   { LABEL(Lexing.lexeme lexbuf) }
   | quotedlabel     { LABEL(dequote(Lexing.lexeme lexbuf)) }
+  | edgelabel       { EDGE_LABEL(untag(Lexing.lexeme lexbuf)) }
   | colon           { COLON }
   | semicolon       { SEMICOLON }
   | comma           { COMMA }

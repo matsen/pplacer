@@ -12,6 +12,10 @@ type stree = Node of int * stree list | Leaf of int
 let node i tL = Node(i, tL)
 let leaf i = Leaf i
 
+let of_id i = function
+  | Node(_, tL) -> Node(i, tL)
+  | Leaf(_) -> Leaf(i)
+
 let rec n_taxa = function
   | Node(_,tL) -> List.fold_left ( + ) 0 (List.map n_taxa tL)
   | Leaf(_) -> 1
