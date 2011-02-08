@@ -9,7 +9,7 @@ let () =
     ~version:"v1.1"
     (Subcommand.cmd_map_of_list
       [
-        "cluster", Placeutil_cluster.of_argl;
+        "round", Placeutil_round.of_argl;
       ]
     )
 
