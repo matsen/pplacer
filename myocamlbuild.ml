@@ -80,7 +80,7 @@ dispatch begin function
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
-      ocaml_lib ~extern:true ~dir:(ocamlfind_query "ounit") "ounit";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "oUnit") "oUnit";
   | _ -> ()
 end;;
 

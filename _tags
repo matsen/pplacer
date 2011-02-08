@@ -1,8 +1,8 @@
 <{mokaphy,common,pplacer}_src>: include
 <tests>: include
 <tests/{mokaphy,common,pplacer}>: include
-<tests/**/*.{ml,byte,native,top,p.native}>: use_ounit
-<tests.{top,native}>: use_ounit
+<tests/**/*.{ml,byte,native,top,p.native}>: use_oUnit
+<tests.{top,native}>: use_oUnit
 <**/*.{byte,native,top,p.native}>: use_str, use_unix, use_bigarray, use_gsl, use_json, use_csv, use_xml-light, use_pplacer
 <**/*.ml>: warn_Z, annot, use_gsl, use_json, use_csv, use_xml-light, use_pplacer
 <libs/*.a>: precious
