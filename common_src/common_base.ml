@@ -27,3 +27,14 @@ let print_memory_usage () =
 let print_n_compactions () = 
   Printf.printf "number of garbage compactions: %d\n" 
                 ((Gc.quick_stat ()).Gc.compactions)
+
+let get_dir_contents ?(pred = (fun _ -> true)) dir_name =
+  let dirh = Unix.opendir dir_name in
+  let rec iter accum =
+    try
+      let fname = Unix.readdir dirh in
+      if pred fname then iter ((dir_name ^ "/" ^ fname) :: accum)
+      else iter accum
+    with
+      | End_of_file -> (Unix.closedir dirh; accum) in
+  iter []

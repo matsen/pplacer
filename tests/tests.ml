@@ -1,9 +1,9 @@
-open OUnit;;
+open OUnit
 
 let suite = "all tests" >::: [
-    "mokaphy" >::: Test_all_mokaphy.suite;
-];;
+  "mokaphy" >::: Test_all_mokaphy.suite;
+]
 
 let _ =
   run_test_tt_main suite
-;;
+

@@ -170,3 +170,7 @@ let to_csv_file out_fname pr =
   let ch = open_out out_fname in
   write_csv ch pr;
   close_out ch
+
+let ppr_placerun ff pr =
+  Format.fprintf ff "Placerun %s" pr.Placerun.name
+
