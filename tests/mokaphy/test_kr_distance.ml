@@ -6,17 +6,44 @@ let simple_expected = [
     ("test1", "test2", 0.686887);
     ("test1", "test3", 0.319036);
     ("test2", "test3", 0.367851);
-   ]);
+  ]);
   (1.0, [
     ("test1", "test2", 0.583333);
     ("test1", "test3", 0.25);
     ("test2", "test3", 0.333333);
-   ]);
+  ]);
   (2.0, [
     ("test1", "test2", 0.677003);
     ("test1", "test3", 0.408248);
     ("test2", "test3", 0.540062);
-   ]);
+  ]);
+]
+
+let psbA_expected = [
+  (0.5, [
+    ("DCM", "coastal", 0.085899);
+    ("DCM", "surface", 0.0679409);
+    ("DCM", "upwelling", 0.0777173);
+    ("coastal", "surface", 0.0910193);
+    ("coastal", "upwelling", 0.0400257);
+    ("surface", "upwelling", 0.0850928);
+  ]);
+  (1.0, [
+    ("DCM", "coastal", 0.0341428);
+    ("DCM", "surface", 0.014255);
+    ("DCM", "upwelling", 0.0278099);
+    ("coastal", "surface", 0.032223);
+    ("coastal", "upwelling", 0.00951196);
+    ("surface", "upwelling", 0.0270792);
+  ]);
+  (2.0, [
+    ("DCM", "coastal", 0.120893);
+    ("DCM", "surface", 0.0396716);
+    ("DCM", "upwelling", 0.104636);
+    ("coastal", "surface", 0.0971287);
+    ("coastal", "upwelling", 0.0277832);
+    ("surface", "upwelling", 0.0827712);
+  ]);
 ]
 
 let generate_tests which expected =
@@ -34,4 +61,5 @@ let generate_tests which expected =
 
 let suite = [
   generate_tests "simple" simple_expected;
+  generate_tests "psbA" psbA_expected;
 ]
