@@ -26,7 +26,7 @@
   let combine = MapsSets.IntMap.fold MapsSets.IntMap.add
 
   let node_num = ref (-1)
-  let add_bark add_fun ?(label = None) x s =
+  let add_bark add_fun ?label x s =
     let label =
       match label with
         | None -> Stree.top_id s.stree
