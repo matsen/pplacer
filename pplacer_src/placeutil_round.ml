@@ -39,7 +39,7 @@ let rounded_pquery_of_pquery cutoff multiplier pq =
       compare_by_ml_ratio
       (List.filter
         (fun p -> p.Placement.ml_ratio >= cutoff)
-        (pq.Pquery.place_list)))
+        pq.Pquery.place_list))
 
 module RPQMap = 
   Map.Make
@@ -104,7 +104,7 @@ module Prefs = struct
   let specl_of_prefs prefs = 
 [
   "-o", Arg.Set_string prefs.out_prefix,
-  "Set the filename to write to. Otherwise write to stdout.";
+  "Set the prefix to write to. Required.";
   "--sig-figs", Arg.Set_int prefs.sig_figs,
   "Set the number of significant figures used for rounding (default 3).";
   "--cutoff", Arg.Set_float prefs.cutoff,
@@ -112,29 +112,28 @@ module Prefs = struct
 ]
 end
 
-let round_cmd prefs invocation fnamel = 
-  let out_prefix = Prefs.out_prefix prefs in
-  if out_prefix = "" then 
-    invalid_arg "Please specify an output prefix with -o";
-  List.iter
-    (fun fname ->
-      let pr = Placerun_io.of_file fname in
-      let out_name = (out_prefix^(pr.Placerun.name)) in
-      Placerun_io.to_file
-        invocation
-        (out_name^".place")
-        (round_placerun out_name (Prefs.cutoff prefs) (Prefs.sig_figs prefs) pr))
-    fnamel
-
 let of_argl = function
   | [] -> print_endline "clusters the placements by rounding"
   | argl -> 
     let prefs = Prefs.defaults () in
-    round_cmd
-      prefs 
-      (String.concat " " ("placeutil"::argl))
-      (Subcommand.wrap_parse_argv
+    (* note-- the command below mutates prefs (so order important) *)
+    let fnamel = 
+      Subcommand.wrap_parse_argv
         argl
         (Prefs.specl_of_prefs prefs)
-        "usage: round [options] placefile[s]")
+        "usage: round [options] placefile[s]"
+    in
+    let out_prefix = Prefs.out_prefix prefs in
+    if out_prefix = "" then 
+      invalid_arg "Please specify an output prefix with -o";
+    List.iter
+      (fun fname ->
+        let pr = Placerun_io.of_file fname in
+        let out_name = (out_prefix^(pr.Placerun.name)) in
+        Placerun_io.to_file
+          (String.concat " " ("placeutil"::argl))
+          (out_name^".place")
+          (round_placerun out_name (Prefs.cutoff prefs) (Prefs.sig_figs prefs) pr))
+      fnamel
+
 
