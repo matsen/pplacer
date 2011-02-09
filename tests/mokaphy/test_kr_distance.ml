@@ -11,6 +11,7 @@ let simple_expected = [
     ("test1", "test2", 0.583333);
     ("test1", "test3", 0.25);
     ("test2", "test3", 0.333333);
+    ("test4", "test4_demulti", 0.);
   ]);
   (2.0, [
     ("test1", "test2", 0.677003);

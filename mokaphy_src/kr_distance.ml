@@ -4,10 +4,6 @@
  * Here we have the core agorithm, which takes two placement collection lists
  * and calculates their weighted KR distance.
  *
- * A placement collection list (pcl) is a list (queries) of placement lists
- * (list of placements for a given query). 
- *
- * A "KR info" is a vector which gives the weight of an individual placement.
  * Each query is allocated 1/(num queries), and this get broken up by the
  * different placements according to their weight. Note that if a placement
  * collection has only one entry (list of length one) then all of the weight
@@ -139,7 +135,6 @@ let dist ref_tree p m1 m2 =
     (fun () -> Array.copy starter_kr_v)
     ref_tree)
   ** (outer_exponent p)
-
 
 let dist_of_pres p t ?x1 ?x2 ~pre1 ~pre2 = 
   dist
