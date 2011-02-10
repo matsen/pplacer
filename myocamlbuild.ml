@@ -75,9 +75,7 @@ dispatch begin function
       dep ["use_pplacer"; ] ["pplacer_src/libpplacercside.a"; ];
 
       (* automatically include <lib> when the use_<lib> tag is given in _tags *)
-      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
-      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "oUnit") "oUnit";
