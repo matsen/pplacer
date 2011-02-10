@@ -6,6 +6,7 @@ let simple_expected = [
     ("test1", "test2", 0.686887);
     ("test1", "test3", 0.319036);
     ("test2", "test3", 0.367851);
+    ("test4", "test4_demulti", 0.);
   ]);
   (1.0, [
     ("test1", "test2", 0.583333);
@@ -17,6 +18,7 @@ let simple_expected = [
     ("test1", "test2", 0.677003);
     ("test1", "test3", 0.408248);
     ("test2", "test3", 0.540062);
+    ("test4", "test4_demulti", 0.);
   ]);
 ]
 
@@ -47,8 +49,28 @@ let psbA_expected = [
   ]);
 ]
 
+let moran_expected = [
+  (1.0, [
+    ("control","de_rounded_control",5.29902e-07);
+    ("control","de_rounded_dmsp",0.00660102);
+    ("control","dmsp",0.00660101);
+    ("control","rounded_control",5.29902e-07);
+    ("control","rounded_dmsp",0.00660102);
+    ("de_rounded_control","de_rounded_dmsp",0.00660069);
+    ("de_rounded_control","dmsp",0.00660068);
+    ("de_rounded_control","rounded_control",2.00699e-17);
+    ("de_rounded_control","rounded_dmsp",0.00660069);
+    ("de_rounded_dmsp","dmsp",3.09241e-08);
+    ("de_rounded_dmsp","rounded_control",0.00660069);
+    ("de_rounded_dmsp","rounded_dmsp",1.15665e-17);
+    ("dmsp","rounded_control",0.00660068);
+    ("dmsp","rounded_dmsp",3.09241e-08);
+    ("rounded_control","rounded_dmsp",0.00660069);
+  ]);
+]
+
 let generate_tests which expected =
-  let data = read_data which in
+  let data = pres_of_dir which in
   which >::: List.map (fun (p, pairs) ->
     (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
       let (pr1, mass1), (pr2, mass2) = Hashtbl.find data pr_name1, Hashtbl.find data pr_name2 in
@@ -63,4 +85,5 @@ let generate_tests which expected =
 let suite = [
   generate_tests "simple" simple_expected;
   generate_tests "psbA" psbA_expected;
+  generate_tests "moran" moran_expected;
 ]

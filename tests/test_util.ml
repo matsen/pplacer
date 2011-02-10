@@ -2,7 +2,7 @@
    better than this. *)
 let tests_dir = "./tests/"
 
-let read_data which =
+let pres_of_dir which =
   let files = Common_base.get_dir_contents
     ~pred:(fun name -> Filename.check_suffix name "place")
     (tests_dir ^ "mokaphy/data/" ^ which) in
