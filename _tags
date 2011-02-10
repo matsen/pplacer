@@ -1,4 +1,4 @@
-<{mokaphy,common,pplacer}_src>: include
+<{common,pplacer}_src>: include
 <tests>: include
 <tests/{mokaphy,common,pplacer}>: include
 <tests/**/*.{ml,byte,native,top,p.native}>: use_oUnit
