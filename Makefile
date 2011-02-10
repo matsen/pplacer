@@ -20,6 +20,7 @@ clean:
 %.top: %.byte
 	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
 	ocamlbuild $@
+	rm $*.mltop
 
 %.runtop: %.top
 	ledit -x -h .toplevel_history ./$*.top
