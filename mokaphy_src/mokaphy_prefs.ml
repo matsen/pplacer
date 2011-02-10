@@ -13,6 +13,10 @@ let weighted_help =
 let refpkg_help fors = 
   "Specify a reference package to use the taxonomic version of "^fors^"."
 
+let transform_help =
+    "A transform to apply to the read multiplicities before calculating. \
+    Options are 'log' and 'unit'. Default is no transform."
+
 (* the following two options are common between many prefs *)
 
 (* weighted option *)
@@ -34,17 +38,20 @@ module Bary = struct
       out_fname: string ref;
       use_pp: bool ref;
       weighted: bool ref;
+      transform: string ref;
     }
 
   let out_fname         p = !(p.out_fname)
   let use_pp            p = !(p.use_pp)
   let weighted          p = !(p.weighted)
+  let transform         p = !(p.transform)
 
   let defaults () =
     {
       out_fname = ref "";
       use_pp = ref false;
       weighted = ref true;
+      transform = ref "";
     }
 
   let specl_of_prefs prefs = 
@@ -55,6 +62,8 @@ module Bary = struct
   weighted_help;
   "-o", Arg.Set_string prefs.out_fname,
   "Set the filename to write to. Otherwise write to stdout.";
+  "--transform", Arg.Set_string prefs.transform,
+  transform_help;
 ]
 end
 
@@ -151,6 +160,7 @@ module KR = struct
       bary_density: bool ref;
       ddensity: bool ref;
       refpkg_path : string ref;
+      transform : string ref;
     }
   
   let use_pp            p = !(p.use_pp)
@@ -169,6 +179,7 @@ module KR = struct
   let bary_density      p = !(p.bary_density)
   let ddensity          p = !(p.ddensity)
   let refpkg_path       p = !(p.refpkg_path)
+  let transform         p = !(p.transform)
   
   let defaults () = 
     { 
@@ -188,6 +199,7 @@ module KR = struct
       bary_density = ref false;
       ddensity = ref false;
       refpkg_path = ref "";
+      transform = ref "";
     }
   
   (* arguments *)
@@ -229,7 +241,10 @@ module KR = struct
       "Make distance-by-distance densities.";
     "--verbose", Arg.Set prefs.verbose,
     "Verbose running.";
-    ]
+    "--transform", Arg.Set_string prefs.transform,
+    transform_help;
+]
+
 end 
 
 
@@ -352,6 +367,7 @@ module Cluster = struct
       nboot : int ref;
       seed : int ref;
       tax_cluster_mode : string ref;
+      transform : string ref;
     }
   
   let out_fname         p = !(p.out_fname)
@@ -361,6 +377,7 @@ module Cluster = struct
   let nboot             p = !(p.nboot)
   let seed              p = !(p.seed)
   let tax_cluster_mode  p = !(p.tax_cluster_mode)
+  let transform         p = !(p.transform)
   
   let defaults () = 
     { 
@@ -371,6 +388,7 @@ module Cluster = struct
       nboot = ref 0;
       seed = ref 0;
       tax_cluster_mode = ref "";
+      transform = ref "";
     }
   
   (* arguments *)
@@ -390,6 +408,8 @@ module Cluster = struct
     "--tax-cluster", Arg.Set_string prefs.tax_cluster_mode,
     "Perform taxonomic clustering rather than phylogenetic.\
     Specify \"unit\" or \"inv\" for the two different modes.";
+    "--transform", Arg.Set_string prefs.transform,
+    transform_help;
     ]
 end 
 
@@ -508,6 +528,7 @@ module Pca = struct
       refpkg_path : string ref;
       scale: bool ref;
       multiplier: float ref;
+      transform: string ref;
     }
   
   let out_prefix  p = !(p.out_prefix)
@@ -517,6 +538,7 @@ module Pca = struct
   let refpkg_path p = !(p.refpkg_path)
   let scale       p = !(p.scale)
   let multiplier  p = !(p.multiplier)
+  let transform   p = !(p.transform)
   
   let defaults () = 
     { 
@@ -527,6 +549,7 @@ module Pca = struct
       refpkg_path = ref "";
       scale = ref false;
       multiplier = ref 50.;
+      transform = ref "";
     }
   
   (* arguments *)
@@ -545,5 +568,7 @@ module Pca = struct
     "Scale variances to one before performing principal components.";
     "--multiplier", Arg.Set_float prefs.multiplier,
     "The factor by which we multiply the principal component eigenvectors to get branch thickness.";
+    "--transform", Arg.Set_string prefs.transform,
+    transform_help;
     ]
 end 

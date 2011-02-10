@@ -16,13 +16,13 @@ let get_p_value r = match r.p_value with
   | Some p -> p
   | None -> failwith "no p-value!"
 
-let make_shuffled_pres n_shuffles pre1 pre2 = 
+let make_shuffled_pres transform n_shuffles pre1 pre2 = 
   let pre_arr = Array.of_list (pre1 @ pre2)
   and n1 = List.length pre1
   and n2 = List.length pre2
   in
   let pquery_sub start len = 
-    Mass_map.Pre.normalize_mass  
+    Mass_map.Pre.normalize_mass transform
       (Array.to_list (Array.sub pre_arr start len)) 
   in
   ListFuns.init 
@@ -31,8 +31,8 @@ let make_shuffled_pres n_shuffles pre1 pre2 =
       Mokaphy_base.shuffle pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
-let pair_core p n_samples t pre1 pre2 =
-  let calc_dist = Kr_distance.dist_of_pres p t in
+let pair_core transform p n_samples t pre1 pre2 =
+  let calc_dist = Kr_distance.dist_of_pres transform p t in
   let original_dist = calc_dist pre1 pre2 in
   {
     distance = original_dist; 
@@ -41,7 +41,7 @@ let pair_core p n_samples t pre1 pre2 =
         let shuffled_dists = 
           List.map 
             (fun (spre1,spre2) -> calc_dist spre1 spre2)
-            (make_shuffled_pres n_samples pre1 pre2)
+            (make_shuffled_pres transform n_samples pre1 pre2)
         in
         Some
           (Mokaphy_base.list_onesided_pvalue 
@@ -51,8 +51,8 @@ let pair_core p n_samples t pre1 pre2 =
       else None;
   }
 
-let wrapped_pair_core context p n_samples t pre1 pre2 =
-  try pair_core p n_samples t pre1 pre2 with
+let wrapped_pair_core transform context p n_samples t pre1 pre2 =
+  try pair_core transform p n_samples t pre1 pre2 with
   | Kr_distance.Invalid_place_loc a -> 
       invalid_arg
         (Printf.sprintf 
@@ -75,6 +75,7 @@ let core ch prefs prl =
     Printf.sprintf "comparing %s with %s" 
       (Placerun.get_name pr1) (Placerun.get_name pr2)
   and p = Mokaphy_prefs.KR.p_exp prefs
+  and transform = Mass_map.transform_of_str (Mokaphy_prefs.KR.transform prefs)
   and tax_refpkgo = match Mokaphy_prefs.KR.refpkg_path prefs with
       | "" -> None
       | path -> 
@@ -89,7 +90,7 @@ let core ch prefs prl =
     Uptri.init
       (Array.length prea)
       (fun i j ->
-        wrapped_pair_core
+        wrapped_pair_core transform
           (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j))
   (* here we make one of these pairs from a function which tells us how to
    * assign a branch length to a tax rank *)

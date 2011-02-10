@@ -42,14 +42,15 @@ let width_value_of_heat ~width_diff ?(p=1.) heat =
   width_diff *. intensity
 
 let color_map prefs t pre1 pre2 = 
+  let transform = Mass_map.transform_of_str "" in
   let p = MP.p_exp prefs
   and kr_map = 
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd) 
       (Kr_distance.make_kr_map 
-        (Mass_map.Indiv.of_pre pre1)
-        (Mass_map.Indiv.of_pre pre2)) in
+        (Mass_map.Indiv.of_pre transform pre1)
+        (Mass_map.Indiv.of_pre transform pre2)) in
   let sum_over_krs_of_id id = 
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))

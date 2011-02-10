@@ -200,12 +200,13 @@ let find ref_tree mass_m =
       (id, find_pos id)
 
 (* pre means pre mass map *)
-let of_pre t pmm = find t (Mass_map.Indiv.of_pre pmm)
+let of_pre transform t pmm = find t (Mass_map.Indiv.of_pre transform pmm)
 
-let of_placerun weighting criterion pr = 
+let of_placerun transform weighting criterion pr = 
   find 
     (Placerun.get_ref_tree pr)
     (Mass_map.Indiv.of_placerun 
+      transform 
       weighting
       criterion
       pr)
@@ -228,9 +229,9 @@ let location_distance t (loc1, distal1) (loc2, distal2) =
   Uptri.get m 0 1
 
 
-let calc_dist weighting criterion pr1 pr2 =
+let calc_dist transform weighting criterion pr1 pr2 =
   let calc_bary pr = 
-    of_placerun weighting criterion pr
+    of_placerun transform weighting criterion pr
   in
   location_distance 
     (Placerun.get_same_tree pr1 pr2)

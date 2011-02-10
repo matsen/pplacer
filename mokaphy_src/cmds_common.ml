@@ -64,7 +64,7 @@ let check_refpkgo_tree ref_tree = function
                 (Gtree.get_stree (Refpkg.get_ref_tree rp))
       then
         raise Refpkg_tree_and_ref_tree_mismatch
-  
+
 (* *** output tools *** *)
 (* there is a lack of parallelism here, as write_unary takes placeruns, while
  * uptri takes an uptri, but uptri needs to be more general. *)

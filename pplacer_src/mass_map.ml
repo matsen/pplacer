@@ -2,6 +2,10 @@
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
  *
  * We keep track of the multiplicities so that we can use them in bootstrapping.
+ * Note that one option would be to make the Pres have a float multiplicity,
+ * which would mean that we could decide on a transform once and then have that
+ * be fixed for the life of the Pre. That would be convenient, but would make
+ * bootstrapping, etc, impossible.
 *)
 
 open MapsSets
@@ -37,8 +41,8 @@ module Pre = struct
     }
 
   let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0.
-  let multimul_total_mass mumu = 
-    (float_of_int mumu.multi) *. (mul_total_mass mumu.mul)
+  let multimul_total_mass transform mumu = 
+    (transform mumu.multi) *. (mul_total_mass mumu.mul)
   let scale_multimul scalar mumu = 
     {mumu with mul = List.map (scale_mu scalar) mumu.mul}
 
@@ -83,10 +87,12 @@ module Pre = struct
       invalid_arg ((String.concat " " s)^" unplaced in "^
                      (Placerun.get_name pr))
 
-  let total_mass = List.fold_left (fun x mm -> x +. multimul_total_mass mm) 0. 
+  let total_mass transform = 
+    let f = multimul_total_mass transform in
+    List.fold_left (fun x mm -> x +. f mm) 0. 
 
-  let normalize_mass pre = 
-    let scalar = 1. /. (total_mass pre) in
+  let normalize_mass transform pre = 
+    let scalar = 1. /. (total_mass transform pre) in
     List.map (scale_multimul scalar) pre
 
 end
@@ -100,21 +106,17 @@ module Indiv = struct
   type t = (float * float) IntMap.t
 
   (* factor is a multiplicative factor to multiply the mass by.
-   * transform is an int -> float map which given a multiplicity spits out a
-   * float weight as a multiple for the mass. *)
-  let of_pre ?factor ?transform pmm = 
+   * transform is an int -> float function which given a multiplicity spits out
+   * a float weight as a multiple for the mass. *)
+  let of_pre transform ?factor pmm = 
     let mass_of_mu = 
       match factor with
       | None -> (fun mu -> mu.Pre.mass)
       | Some x -> (fun mu -> x *. mu.Pre.mass)
-    and weight_of_multi = 
-      match transform with
-      | None -> float_of_int
-      | Some f -> f
     in
     List.fold_left
       (fun m' multimul ->
-        let fmulti = weight_of_multi (multimul.Pre.multi) in
+        let fmulti = transform (multimul.Pre.multi) in
         (List.fold_left 
           (fun m mu -> 
             IntMapFuns.add_listly 
@@ -126,8 +128,8 @@ module Indiv = struct
       IntMap.empty
       pmm
 
-  let of_placerun weighting criterion pr = 
-    of_pre (Pre.of_placerun weighting criterion pr)
+  let of_placerun transform weighting criterion pr = 
+    of_pre transform (Pre.of_placerun weighting criterion pr)
 
 (* sort the placements along a given edge according to their location on
  * the edge in an increasing manner. *)
@@ -170,11 +172,11 @@ module By_edge = struct
       Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
    * *)
 
-  let of_pre ?factor ?transform pre = 
-    of_indiv (Indiv.of_pre ?factor ?transform pre)
+  let of_pre transform ?factor pre = 
+    of_indiv (Indiv.of_pre transform ?factor pre)
 
-  let of_placerun weighting criterion pr = 
-    of_indiv (Indiv.of_placerun weighting criterion pr)
+  let of_placerun transform weighting criterion pr = 
+    of_indiv (Indiv.of_placerun transform weighting criterion pr)
 
   (* we add zeroes in where things are empty *)
   let fill_out_zeroes mass_map ref_tree = 
@@ -190,9 +192,9 @@ module By_edge = struct
       mass_map 
       (Stree.node_ids (Gtree.get_stree ref_tree))
 
-  let of_placerun_with_zeroes weighting criterion pr = 
+  let of_placerun_with_zeroes transform weighting criterion pr = 
     fill_out_zeroes 
-      (of_placerun weighting criterion pr)
+      (of_placerun transform weighting criterion pr)
       (Placerun.get_ref_tree pr)
 
   let total_mass m = IntMap.fold (fun _ v -> ( +. ) v) m 0.
@@ -204,5 +206,20 @@ module By_edge = struct
 end
 
 (* multiplicity transforms for of_pre *)
+let no_transform = float_of_int
 let unit_transform _ = 1.
 let log_transform x = log (float_of_int x)
+
+let transform_map = 
+  List.fold_right 
+    (fun (k,v) -> StringMap.add k v)
+    [
+      "", no_transform;
+      "unit", unit_transform;
+      "log", log_transform;
+    ]
+    StringMap.empty
+
+let transform_of_str s = 
+  try StringMap.find s transform_map with
+  | Not_found -> failwith ("Transform "^s^" not known.")

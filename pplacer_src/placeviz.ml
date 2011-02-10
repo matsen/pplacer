@@ -24,6 +24,7 @@ and unit_width = ref 0.
 and total_width = ref 400.
 and log_coeff = ref 0.
 and out_dir = ref "."
+and transform = ref ""
 
 let parse_args () =
   let files  = ref [] in
@@ -67,6 +68,8 @@ let parse_args () =
       "Set to a nonzero value to perform a logarithmic transform of the branch width.";
       "--outDir", Arg.Set_string out_dir,
       "Specify the directory to write place files to.";
+      "--transform", Arg.Set_string transform,
+      Mokaphy_prefs.transform_help;
   ] in
   Arg.parse args anon_arg usage;
   List.rev !files
@@ -127,9 +130,10 @@ let () =
           else (* split up the mass according to the number of queries *)
             !total_width 
         in
+        let transform = Mass_map.transform_of_str !transform in
         (* make the various visualizations *)
         let place_massm = 
-          Mass_map.By_edge.of_placerun weighting criterion placerun in
+          Mass_map.By_edge.of_placerun transform weighting criterion placerun in
         if !write_classic then begin
           write_num_file fname_base decor_ref_tree placed_map;
           Placeviz_core.write_fat_tree ?min_bl
@@ -179,7 +183,7 @@ let () =
                 Some (prname^".tax.fat"),
                 Placeviz_core.fat_tree (mass_width /. 2.) !log_coeff taxt
                 (* NOTE: we don't use my_fat taxt here *)
-                  (Mass_map.By_edge.of_pre
+                  (Mass_map.By_edge.of_pre transform
                     (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif 
                       weighting criterion ti_imap placerun))
               ]

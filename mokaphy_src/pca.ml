@@ -95,8 +95,10 @@ let below_mass_map edgem t =
   assert(abs_float(1. -. total) < tolerance);
   !m
 
-(* later we may cut the edge mass in half; right now we don't do anything with it. *)
-let splitify_placerun weighting criterion pr = 
+(* Take a placerun and turn it into a vector which is indexed by the edges of
+ * the tree.
+ * Later we may cut the edge mass in half; right now we don't do anything with it. *)
+let splitify_placerun transform weighting criterion pr = 
   let preim = Mass_map.Pre.of_placerun weighting criterion pr
   and t = Placerun.get_ref_tree pr
   in 
@@ -104,7 +106,7 @@ let splitify_placerun weighting criterion pr =
     (1+(Gtree.top_id t))
     (IntMap.map 
       splitify 
-      (below_mass_map (Mass_map.By_edge.of_pre preim) t))
+      (below_mass_map (Mass_map.By_edge.of_pre transform preim) t))
 
 let heat_map_of_floatim multiplier m = 
   let min_width = 1. in 
@@ -130,7 +132,7 @@ let save_named_fal fname nvl =
       (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
       nvl)
 
-let pca_complete ?scale 
+let pca_complete ?scale transform
       weighting criterion multiplier write_n refpkgo out_prefix prl = 
   let prt = Cmds_common.list_get_same_tree prl in
   let t = match refpkgo with 
@@ -139,7 +141,7 @@ let pca_complete ?scale
       Cmds_common.check_refpkgo_tree prt refpkgo;
       Refpkg.get_tax_ref_tree rp
   in
-  let data = List.map (splitify_placerun weighting criterion) prl
+  let data = List.map (splitify_placerun transform weighting criterion) prl
   in
   let (eval, evect) = gen_pca ?scale ~n_keep:write_n (Array.of_list data)
   in

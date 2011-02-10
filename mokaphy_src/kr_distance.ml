@@ -136,9 +136,9 @@ let dist ref_tree p m1 m2 =
     ref_tree)
   ** (outer_exponent p)
 
-let dist_of_pres p t ?x1 ?x2 ~pre1 ~pre2 = 
+let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 = 
   dist
     t
     p
-    (Mass_map.Indiv.of_pre ?factor:x1 pre1)
-    (Mass_map.Indiv.of_pre ?factor:x2 pre2)
+    (Mass_map.Indiv.of_pre transform ?factor:x1 pre1)
+    (Mass_map.Indiv.of_pre transform ?factor:x2 pre2)

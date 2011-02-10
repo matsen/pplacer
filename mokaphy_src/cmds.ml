@@ -11,12 +11,12 @@ open Fam_batteries
 
 
 (* *** BARY BARY BARY BARY BARY *** *)
-let make_bary_tree t prel =
+let make_bary_tree transform t prel =
   let bary_map = 
     IntMapFuns.of_pairlist_listly
       (ListFuns.mapi
         (fun i pre ->
-          let (loc, pos) = Barycenter.of_pre t pre in
+          let (loc, pos) = Barycenter.of_pre transform t pre in
           (loc,
             (pos, 
             Gtree.Internal_node,
@@ -29,7 +29,9 @@ let make_bary_tree t prel =
   Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
 
 let bary prefs prl = 
-  let t = Cmds_common.list_get_same_tree prl in
+  let t = Cmds_common.list_get_same_tree prl 
+  and transform = Mass_map.transform_of_str (Mokaphy_prefs.Bary.transform prefs)
+  in
   let prel = 
     Cmds_common.prel_of_prl 
       ~is_weighted:(Mokaphy_prefs.Bary.weighted prefs)
@@ -43,7 +45,7 @@ let bary prefs prl =
     in
     Phyloxml.named_tree_to_file
       (Cmds_common.chop_suffix_if_present fname ".xml") (* tree name *)
-      (make_bary_tree t prel)
+      (make_bary_tree transform t prel)
       fname
   end
 
@@ -185,8 +187,8 @@ let tax_t_prel_of_prl tgt_fun ~is_weighted ~use_pp rp prl =
 
 let zeropad i = Printf.sprintf "%04d" i
 
-let write_pre_tree infix drt id pre = 
-  let tot = Mass_map.Pre.total_mass pre in
+let write_pre_tree transform infix drt id pre = 
+  let tot = Mass_map.Pre.total_mass transform pre in
   assert(tot > 0.);
   Placeviz_core.write_fat_tree
     ~min_bl:2e-2
@@ -194,17 +196,17 @@ let write_pre_tree infix drt id pre =
     1.   (* log coeff *)
     ((zeropad id)^"."^infix)
     drt 
-    (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre)
+    (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre)
 
 let mkdir path = 
   if 0 <> Sys.command ("mkdir "^path) then
     failwith ("unable to make directory "^path)
 
-let make_cluster ~is_weighted ~use_pp refpkgo prefs prl = 
+let make_cluster transform ~is_weighted ~use_pp refpkgo prefs prl = 
   let namel = List.map Placerun.get_name prl
   and distf rt ~x1 ~x2 b1 b2 = 
-    Kr_distance.dist_of_pres 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
-  and normf a = 1. /. (Mass_map.Pre.total_mass a)
+    Kr_distance.dist_of_pres transform 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
+  and normf a = 1. /. (Mass_map.Pre.total_mass transform a)
   in
   let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
   in
@@ -215,7 +217,9 @@ let make_cluster ~is_weighted ~use_pp refpkgo prefs prl =
       (* phylogenetic clustering *)
       (Decor_gtree.of_newick_gtree rt,
       PreCluster.of_named_blobl (distf rt) normf
-        (List.combine namel (List.map Mass_map.Pre.normalize_mass prel)))
+        (List.combine 
+          namel 
+          (List.map (Mass_map.Pre.normalize_mass transform) prel)))
     end
     else
       (* taxonomic clustering *)
@@ -227,7 +231,13 @@ let make_cluster ~is_weighted ~use_pp refpkgo prefs prl =
             (classify_mode_str mode_str)
             ~is_weighted ~use_pp rp prl in
         (taxt,
-          PreCluster.of_named_blobl (distf taxt) normf (List.combine namel (List.map Mass_map.Pre.normalize_mass tax_prel))) end
+          PreCluster.of_named_blobl 
+            (distf taxt) 
+            normf 
+            (List.combine 
+              namel 
+              (List.map (Mass_map.Pre.normalize_mass transform) tax_prel))) 
+    end
   in
   (drt, cluster_t, blobim)
 
@@ -238,6 +248,8 @@ let cluster prefs prl =
     | s -> mkdir s; Sys.chdir s
   and is_weighted = Mokaphy_prefs.Cluster.weighted prefs
   and use_pp = Mokaphy_prefs.Cluster.use_pp prefs
+  and transform = 
+    Mass_map.transform_of_str (Mokaphy_prefs.Cluster.transform prefs)
   and refpkgo = 
     Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Cluster.refpkg_path prefs) 
   in
@@ -249,22 +261,22 @@ let cluster prefs prl =
   if 0 = nboot then begin
     (* bootstrap turned off *)
     let (drt, cluster_t, blobim) = 
-      make_cluster ~is_weighted ~use_pp refpkgo prefs prl in
+      make_cluster transform ~is_weighted ~use_pp refpkgo prefs prl in
     Newick.to_file cluster_t Cluster_common.cluster_tree_name;
     mkdir Cluster_common.mass_trees_dirname;
     Sys.chdir Cluster_common.mass_trees_dirname;
     (* make a tax tree here then run mimic on it *)
     match refpkgo with
-    | None -> IntMap.iter (write_pre_tree "phy" drt) blobim
+    | None -> IntMap.iter (write_pre_tree transform "phy" drt) blobim
     | Some rp ->
 (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
       let tdrt = Refpkg.get_tax_ref_tree rp in
-      IntMap.iter (write_pre_tree "phy" tdrt) blobim;
+      IntMap.iter (write_pre_tree transform "phy" tdrt) blobim;
       let (taxt, tax_prel) = 
         tax_t_prel_of_prl 
           Tax_gtree.of_refpkg_unit ~is_weighted ~use_pp rp prl in
       let tax_blobim = PreCluster.mimic cluster_t tax_prel in
-      IntMap.iter (write_pre_tree "tax" taxt) tax_blobim 
+      IntMap.iter (write_pre_tree Mass_map.no_transform "tax" taxt) tax_blobim 
   end
   else begin
     let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) 
@@ -275,7 +287,7 @@ let cluster prefs prl =
       Printf.printf "running bootstrap %d of %d\n" i nboot;
       let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
       let (_, cluster_t, _) = 
-        make_cluster ~is_weighted ~use_pp refpkgo prefs boot_prl in
+        make_cluster transform ~is_weighted ~use_pp refpkgo prefs boot_prl in
       Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
       (* run distance on bootstraps *)
       let kr_prefs = Mokaphy_prefs.KR.defaults () in
@@ -400,6 +412,7 @@ let pca prefs = function
       | prefix ->
       Pca.pca_complete 
         ~scale:(Mokaphy_prefs.Pca.scale prefs)
+        (Mass_map.transform_of_str (Mokaphy_prefs.Pca.transform prefs))
         (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Pca.weighted prefs))
         (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Pca.use_pp prefs))
         (Mokaphy_prefs.Pca.multiplier prefs)

@@ -17,6 +17,7 @@ let reverse_ti_imap start =
 let pre root_id tax_id_of_place weighting criterion ti_imap pr =  
   let revm = reverse_ti_imap ti_imap in
   Mass_map.Pre.normalize_mass 
+    Mass_map.no_transform
     (List.map
       (fun pq ->
         {Mass_map.Pre.multi = 1;
