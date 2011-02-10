@@ -1,11 +1,16 @@
 (* Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * A specl is a specification list, which gets passed to Arg.parse_argv or
+ * wrap_parse_argv. It specifies the options and the actions which are assocated
+ * with those options.
 *)
 
 open MapsSets
 
 let option_rex = Str.regexp "-.*"
 
+(* print the commands available through cmd_map *)
 let print_avail_cmds prg_name cmd_map = 
   print_endline "Here is a list of commands available using this interface:";
   StringMap.iter (fun k v -> Printf.printf "\t%s\t" k; v []) cmd_map;
@@ -14,7 +19,7 @@ let print_avail_cmds prg_name cmd_map =
     prg_name;
   ()
 
-
+(* given an argl, process a subcommand *)
 let process_cmd prg_name cmd_map argl = 
   let print_need_cmd_error () = 
     Printf.printf 
@@ -42,7 +47,10 @@ let process_cmd prg_name cmd_map argl =
 
 (* this takes an argument list, a specification list, and a usage string, does
  * the relevant parsing, and then spits out a list of anonymous arguments (those
- * not associated with command line flags *)
+ * not associated with command line flags. Note that one of the purposes here is
+ * to mutate the prefs that are in specl, so this needs to get run first before
+ * actually using any prefs. 
+ * *)
 let wrap_parse_argv argl specl usage = 
   let anonymous = ref [] in
   try
@@ -62,16 +70,16 @@ let wrap_parse_argv argl specl usage =
   | Arg.Bad s -> print_string s; exit 1
   | Arg.Help s -> print_string s; []
 
-
-(* makes a specification with a default value *)
+(* Makes a specification with a default value. 
+spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level
+"Specify the amount of gray to mix into the color scheme. Default is %d.";
+ * *)
 let spec_with_default symbol setfun p help = 
   (symbol, setfun p, Printf.sprintf help !p)
-
 
 (* given a (string, f) list, make a map of it *)
 let cmd_map_of_list l = 
   List.fold_right (fun (k,v) -> StringMap.add k v) l StringMap.empty
-
 
 (* intended to be the inner loop of a function *)
 let inner_loop ~prg_name ~version cmd_map = 
