@@ -3,6 +3,7 @@
  *
 *)
 
+open Fam_batteries
 
 (* bootstrap a list, with an option to modify the elements of the list through f
  * # boot_list (fun i x -> i+100*x) [1;2;3;4;5;6];;
@@ -33,19 +34,51 @@ let boot_list f l =
   assert(n = List.length out);
   List.rev out
 
-(* MULTI: we boot a placerun by using 
- * Gsl_randist.discrete_preproc with a float array of weights
- * then discrete to sample from that distribution
- * val discrete_preproc : float array -> discrete
- * val discrete : Gsl_rng.t -> discrete -> int
- * *)
+(* given an array of integers, resample from that array in proportion to the
+ * number of entries in the array.
+ * # multiplicity_boot rng [|1;10;100;1000;|];;
+ * - : int array = [|1; 7; 91; 1012|]
+*)
+let multiplicity_boot rng int_arr = 
+  let total = Array.fold_left (+) 0 int_arr 
+  and disc = Gsl_randist.discrete_preproc (Array.map float_of_int int_arr)
+  and out = Array.create (Array.length int_arr) 0
+  in
+  for i=1 to total do
+    let picked = Gsl_randist.discrete rng disc in
+    out.(picked) <- out.(picked) + 1
+  done;
+  out
 
-let boot_placerun pr = 
-  {
-    pr with
-    Placerun.pqueries = 
-      boot_list
-        (fun _ pq -> pq)
-        (Placerun.get_pqueries pr);
-  }
+(* stretch (by repeating) or shrink a list to a desired length 
+ * # Bootstrap.rubber_list [1;2;3] 8;;
+ * - : int list = [1; 2; 3; 1; 2; 3; 1; 2]
+ * # Bootstrap.rubber_list [1;2;3] 2;;
+ * - : int list = [1; 2]
+ * *)
+let rubber_list l desired_len = 
+  let len = List.length l in
+  let rec aux accu to_add =
+    if to_add <= 0 then accu
+    else if to_add >= len then aux (accu @ l) (to_add - len)
+    else accu @ (ListFuns.sublist 0 (to_add-1) l)
+  in
+  aux [] desired_len
+
+let boot_placerun rng pr = 
+  let pqa = Array.of_list (Placerun.get_pqueries pr) in
+  let multa = multiplicity_boot rng (Array.map Pquery.multiplicity pqa)
+  and pql = ref []
+  in
+  let rubber_pquery pq desired_multi =
+    assert(desired_multi > 0);
+    {pq with Pquery.namel = rubber_list pq.Pquery.namel desired_multi}
+  in
+  for i=(Array.length pqa)-1 downto 0 do
+    if multa.(i) > 0 then
+      pql := (rubber_pquery pqa.(i) multa.(i))::(!pql)
+  done;
+  let new_pr = { pr with Placerun.pqueries = !pql } in
+  assert(Placerun.total_multiplicity pr = Placerun.total_multiplicity new_pr);
+  new_pr
 

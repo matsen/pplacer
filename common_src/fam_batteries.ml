@@ -177,6 +177,14 @@ let mapi f l =
   in
   aux 0 l
 
+(* from a Pascal Cuoq post on stack overflow *)
+let rec sublist begini endi l = 
+  match l with
+  | [] -> failwith "sublist"
+  | h :: t -> 
+      let tail = if endi=0 then [] else sublist (begini-1) (endi-1) t in
+      if begini>0 then tail else h :: tail
+
 let rec iter2 f l1 l2 =
   match (l1, l2) with
   | ([], []) -> ()

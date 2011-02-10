@@ -99,15 +99,22 @@ module Indiv = struct
 
   type t = (float * float) IntMap.t
 
-  let of_pre ?factor pmm = 
+  (* factor is a multiplicative factor to multiply the mass by.
+   * transform is an int -> float map which given a multiplicity spits out a
+   * float weight as a multiple for the mass. *)
+  let of_pre ?factor ?transform pmm = 
     let mass_of_mu = 
       match factor with
       | None -> (fun mu -> mu.Pre.mass)
       | Some x -> (fun mu -> x *. mu.Pre.mass)
+    and weight_of_multi = 
+      match transform with
+      | None -> float_of_int
+      | Some f -> f
     in
     List.fold_left
       (fun m' multimul ->
-        let fmulti = float_of_int (multimul.Pre.multi) in
+        let fmulti = weight_of_multi (multimul.Pre.multi) in
         (List.fold_left 
           (fun m mu -> 
             IntMapFuns.add_listly 
@@ -162,7 +169,9 @@ module By_edge = struct
     (Placerun.get_pqueries pr);
       Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
    * *)
-  let of_pre ?factor pre = of_indiv (Indiv.of_pre ?factor pre)
+
+  let of_pre ?factor ?transform pre = 
+    of_indiv (Indiv.of_pre ?factor ?transform pre)
 
   let of_placerun weighting criterion pr = 
     of_indiv (Indiv.of_placerun weighting criterion pr)
@@ -193,3 +202,7 @@ module By_edge = struct
     IntMap.map (fun x -> x /. tot) m
 
 end
+
+(* multiplicity transforms for of_pre *)
+let unit_transform _ = 1.
+let log_transform x = log (float_of_int x)

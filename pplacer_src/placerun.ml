@@ -34,6 +34,8 @@ let set_name p name = {p with name = name}
 let set_pqueries p pqueries = {p with pqueries = pqueries}
 
 let n_pqueries p = List.length p.pqueries
+let total_multiplicity p = Pquery.total_multiplicity p.pqueries
+
 let make_map_by_best_loc criterion pr =
   Pquery.make_map_by_best_loc criterion (get_pqueries pr)
 

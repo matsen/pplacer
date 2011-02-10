@@ -267,10 +267,13 @@ let cluster prefs prl =
       IntMap.iter (write_pre_tree "tax" taxt) tax_blobim 
   end
   else begin
-    let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) in
+    let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) 
+    and rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002
+    in
+    Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.Cluster.seed prefs));
     for i=1 to nboot do
       Printf.printf "running bootstrap %d of %d\n" i nboot;
-      let boot_prl = List.map Bootstrap.boot_placerun prl in
+      let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
       let (_, cluster_t, _) = 
         make_cluster ~is_weighted ~use_pp refpkgo prefs boot_prl in
       Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
