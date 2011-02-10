@@ -18,7 +18,7 @@ clean:
 	rm -f *.mltop
 
 %.top: %.byte
-	find _build -regex .*cmo | sed 's/_build\///; s/.cmo//' > $*.mltop
+	find _build -name '*.cmo' -print0 | xargs -0I% basename % .cmo > $*.mltop
 	ocamlbuild $@
 
 %.runtop: %.top
