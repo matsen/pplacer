@@ -204,7 +204,7 @@ end
 (* multiplicity transforms for of_pre *)
 let no_transform = float_of_int
 let unit_transform _ = 1.
-let log_transform x = log (float_of_int x)
+let asinh_transform x = Gsl_math.asinh (float_of_int x)
 
 let transform_map = 
   List.fold_right 
@@ -212,7 +212,7 @@ let transform_map =
     [
       "", no_transform;
       "unit", unit_transform;
-      "log", log_transform;
+      "asinh", asinh_transform;
     ]
     StringMap.empty
 
