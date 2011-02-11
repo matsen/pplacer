@@ -109,19 +109,15 @@ module Indiv = struct
    * transform is an int -> float function which given a multiplicity spits out
    * a float weight as a multiple for the mass. *)
   let of_pre transform ?factor pmm = 
-    let mass_of_mu = 
-      match factor with
-      | None -> (fun mu -> mu.Pre.mass)
-      | Some x -> (fun mu -> x *. mu.Pre.mass)
-    in
+    let factorf = match factor with | None -> 1. | Some x -> x in
     List.fold_left
       (fun m' multimul ->
-        let fmulti = transform (multimul.Pre.multi) in
+        let scalar = factorf *. (transform multimul.Pre.multi) in
         (List.fold_left 
           (fun m mu -> 
             IntMapFuns.add_listly 
               mu.Pre.loc 
-              (mu.Pre.distal_bl, fmulti *. (mass_of_mu mu))
+              (mu.Pre.distal_bl, scalar *. mu.Pre.mass)
               m)
           m'
           multimul.Pre.mul))
