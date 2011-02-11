@@ -85,6 +85,8 @@ let core ch prefs prl =
         if Refpkg.tax_equipped rp then Some rp
         else None
   in
+  (* below is for make_shuffled_pres *)
+  Random.init (Mokaphy_prefs.KR.seed prefs);
   (* in the next section, pre_f is a function which takes a pr and makes a pre,
    * and t is a gtree *)
   let uptri_of_t_pre_f (t, pre_f) = 

@@ -279,9 +279,7 @@ let cluster prefs prl =
       IntMap.iter (write_pre_tree Mass_map.no_transform "tax" taxt) tax_blobim 
   end
   else begin
-    let () = Random.init (Mokaphy_prefs.Cluster.seed prefs) 
-    and rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002
-    in
+    let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
     Gsl_rng.set rng (Nativeint.of_int (Mokaphy_prefs.Cluster.seed prefs));
     for i=1 to nboot do
       Printf.printf "running bootstrap %d of %d\n" i nboot;
