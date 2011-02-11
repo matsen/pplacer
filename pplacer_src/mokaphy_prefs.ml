@@ -145,6 +145,7 @@ module KR = struct
   type mokaphy_prefs = 
     {
       use_pp: bool ref;
+      transform : string ref;
       verbose: bool ref;
       normal: bool ref;
       n_samples: int ref;
@@ -160,10 +161,10 @@ module KR = struct
       bary_density: bool ref;
       ddensity: bool ref;
       refpkg_path : string ref;
-      transform : string ref;
     }
   
   let use_pp            p = !(p.use_pp)
+  let transform         p = !(p.transform)
   let verbose           p = !(p.verbose)
   let normal            p = !(p.normal)
   let n_samples         p = !(p.n_samples)
@@ -179,7 +180,6 @@ module KR = struct
   let bary_density      p = !(p.bary_density)
   let ddensity          p = !(p.ddensity)
   let refpkg_path       p = !(p.refpkg_path)
-  let transform         p = !(p.transform)
   
   let defaults () = 
     { 
@@ -214,6 +214,8 @@ module KR = struct
     "The exponent for the integration, i.e. the value of p in Z_p.";
     "--unweighted", Arg.Clear prefs.weighted,
     weighted_help;
+    "--transform", Arg.Set_string prefs.transform,
+    transform_help;
     "--list-out", Arg.Set prefs.list_output,
     "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
@@ -225,8 +227,8 @@ module KR = struct
     "-s", Arg.Set_int prefs.n_samples,
         ("Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is "^(string_of_int (n_samples prefs)));
-    "--seed", Arg.Set_int prefs.seed,
-    "Set the random seed, an integer > 0.";
+    spec_with_default "--seed" (fun o -> Arg.Set_int o) prefs.seed
+    "Set the random seed, an integer > 0. Default is %d.";
     (*
     "--normal", Arg.Set prefs.normal,
     "Use the normal approximation rather than shuffling. This disables the --pplot and --box options if set.";
@@ -241,8 +243,6 @@ module KR = struct
       "Make distance-by-distance densities.";
     "--verbose", Arg.Set prefs.verbose,
     "Verbose running.";
-    "--transform", Arg.Set_string prefs.transform,
-    transform_help;
 ]
 
 end 

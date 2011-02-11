@@ -65,7 +65,9 @@ let wrapped_pair_core transform context p n_samples t pre1 pre2 =
  * run pair_core for each unique pair 
  *)
 let core ch prefs prl = 
-  if List.length prl <= 1 then 
+  if List.length prl = 0 then 
+    exit 0; (* zero mokaphy --help *)
+  if List.length prl = 1 then 
     invalid_arg "can't do KR with fewer than two place files";
   let n_samples = Mokaphy_prefs.KR.n_samples prefs 
   and is_weighted = Mokaphy_prefs.KR.weighted prefs

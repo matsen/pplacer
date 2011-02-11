@@ -123,6 +123,7 @@ let of_argl = function
         (Prefs.specl_of_prefs prefs)
         "usage: round [options] placefile[s]"
     in
+    if fnamel = [] then exit 0;
     let out_prefix = Prefs.out_prefix prefs in
     if out_prefix = "" then 
       invalid_arg "Please specify an output prefix with -o";
@@ -135,5 +136,4 @@ let of_argl = function
           (out_name^".place")
           (round_placerun out_name (Prefs.cutoff prefs) (Prefs.sig_figs prefs) pr))
       fnamel
-
 
