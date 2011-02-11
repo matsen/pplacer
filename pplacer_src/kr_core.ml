@@ -32,7 +32,7 @@ let make_shuffled_pres transform n_shuffles pre1 pre2 =
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
 let pair_core transform p n_samples t pre1 pre2 =
-  let calc_dist = Kr_distance.dist_of_pres transform p t in
+  let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
   let original_dist = calc_dist pre1 pre2 in
   {
     distance = original_dist; 

@@ -136,9 +136,16 @@ let dist ref_tree p m1 m2 =
     ref_tree)
   ** (outer_exponent p)
 
+(* x1 and x2 are factors which get multiplied by the mass *)
 let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 = 
   dist
     t
     p
     (Mass_map.Indiv.of_pre transform ?factor:x1 pre1)
     (Mass_map.Indiv.of_pre transform ?factor:x2 pre2)
+
+let scaled_dist_of_pres transform p t pre1 pre2 = 
+  dist_of_pres transform p t 
+    ~x1:(1. /. Mass_map.Pre.total_mass transform pre1)
+    ~x2:(1. /. Mass_map.Pre.total_mass transform pre2)
+    ~pre1 ~pre2
