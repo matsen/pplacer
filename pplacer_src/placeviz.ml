@@ -69,7 +69,7 @@ let parse_args () =
       "--outDir", Arg.Set_string out_dir,
       "Specify the directory to write place files to.";
       "--transform", Arg.Set_string transform,
-      Mokaphy_prefs.transform_help;
+      Mokaphy_common.transform_help;
   ] in
   Arg.parse args anon_arg usage;
   List.rev !files

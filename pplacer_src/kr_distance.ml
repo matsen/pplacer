@@ -17,7 +17,7 @@
 
 open Fam_batteries
 open MapsSets
-open Mokaphy_prefs
+open Mokaphy_common
 
 exception Invalid_place_loc of float
 exception Total_kr_not_zero of float

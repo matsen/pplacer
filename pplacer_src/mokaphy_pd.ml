@@ -35,10 +35,10 @@ let pd prefs prl =
     if Prefs.normalized prefs then Pd.normalized_of_pr
     else Pd.of_pr
   in
-  Cmds_common.wrap_output 
+  Mokaphy_common.wrap_output 
     (Prefs.out_fname prefs) 
-    (Cmds_common.write_unary 
-      (pd_cmd (Mokaphy_prefs.criterion_of_bool (Prefs.use_pp prefs)))
+    (Mokaphy_common.write_unary 
+      (pd_cmd (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs)))
       prl)
 
 

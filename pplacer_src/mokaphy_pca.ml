@@ -40,9 +40,9 @@ module Prefs = struct
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
     "-c", Arg.Set_string prefs.refpkg_path,
-    (Mokaphy_prefs.refpkg_help "cluster");
+    (Mokaphy_common.refpkg_help "cluster");
     "--unweighted", Arg.Clear prefs.weighted,
-    Mokaphy_prefs.weighted_help;
+    Mokaphy_common.weighted_help;
     "--write-n", Arg.Set_int prefs.write_n,
     "The number of principal coordinates to write out (default is 5).";
     "--scale", Arg.Set prefs.scale,
@@ -50,7 +50,7 @@ module Prefs = struct
     "--multiplier", Arg.Set_float prefs.multiplier,
     "The factor by which we multiply the principal component eigenvectors to get branch thickness.";
     "--transform", Arg.Set_string prefs.transform,
-    Mokaphy_prefs.transform_help;
+    Mokaphy_common.transform_help;
     ]
 end 
 
@@ -134,11 +134,11 @@ let save_named_fal fname nvl =
 
 let pca_complete ?scale transform
       weighting criterion multiplier write_n refpkgo out_prefix prl = 
-  let prt = Cmds_common.list_get_same_tree prl in
+  let prt = Mokaphy_common.list_get_same_tree prl in
   let t = match refpkgo with 
   | None -> Decor_gtree.of_newick_gtree prt
   | Some rp -> 
-      Cmds_common.check_refpkgo_tree prt refpkgo;
+      Mokaphy_common.check_refpkgo_tree prt refpkgo;
       Refpkg.get_tax_ref_tree rp
   in
   let data = List.map (splitify_placerun transform weighting criterion) prl
@@ -178,10 +178,10 @@ let pca prefs = function
       pca_complete 
         ~scale:(Prefs.scale prefs)
         (Mass_map.transform_of_str (Prefs.transform prefs))
-        (Mokaphy_prefs.weighting_of_bool (Prefs.weighted prefs))
-        (Mokaphy_prefs.criterion_of_bool (Prefs.use_pp prefs))
+        (Mokaphy_common.weighting_of_bool (Prefs.weighted prefs))
+        (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs))
         (Prefs.multiplier prefs)
         (Prefs.write_n prefs)
-        (Cmds_common.refpkgo_of_fname (Prefs.refpkg_path prefs))
+        (Mokaphy_common.refpkgo_of_fname (Prefs.refpkg_path prefs))
         prefix
         prl

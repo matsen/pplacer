@@ -36,7 +36,7 @@ module Prefs = struct
     "--list-out", Arg.Set prefs.list_output,
     "Output the avgdist results as a list rather than a matrix.";
     "--unweighted", Arg.Clear prefs.weighted,
-    Mokaphy_prefs.weighted_help;
+    Mokaphy_common.weighted_help;
     "--exp", Arg.Set_float prefs.exponent,
     "An exponent applied before summation of distances.";
     ]
@@ -77,23 +77,23 @@ let of_placerun dist_fun pr =
 let make_dist_fun prefs prl = 
   Pquery_distances.dist_fun_of_expon_weight 
     (Prefs.exponent prefs)
-    (Mokaphy_prefs.weighting_of_bool (Prefs.weighted prefs))
-    (Mokaphy_prefs.criterion_of_bool (Prefs.use_pp prefs))
-    (Edge_rdist.build_ca_info (Cmds_common.list_get_same_tree prl))
+    (Mokaphy_common.weighting_of_bool (Prefs.weighted prefs))
+    (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs))
+    (Edge_rdist.build_ca_info (Mokaphy_common.list_get_same_tree prl))
 
 let uavgdist prefs prl = 
-  Cmds_common.wrap_output 
+  Mokaphy_common.wrap_output 
     (Prefs.out_fname prefs) 
-    (Cmds_common.write_unary
+    (Mokaphy_common.write_unary
       (of_placerun 
         (make_dist_fun prefs prl))
       prl)
 
 let bavgdist prefs prl = 
   let pra = Array.of_list prl in
-  Cmds_common.wrap_output 
+  Mokaphy_common.wrap_output 
     (Prefs.out_fname prefs) 
-    (Cmds_common.write_uptri
+    (Mokaphy_common.write_uptri
       (Prefs.list_output prefs)
       (Array.map Placerun.get_name pra)
       "bavgdst"

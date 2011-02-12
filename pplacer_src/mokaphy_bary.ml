@@ -28,11 +28,11 @@ module Prefs = struct
   "-p", Arg.Set prefs.use_pp,
   "Use posterior probability.";
   "--point", Arg.Clear prefs.weighted,
-  Mokaphy_prefs.weighted_help;
+  Mokaphy_common.weighted_help;
   "-o", Arg.Set_string prefs.out_fname,
   "Set the filename to write to. Otherwise write to stdout.";
   "--transform", Arg.Set_string prefs.transform,
-  Mokaphy_prefs.transform_help;
+  Mokaphy_common.transform_help;
 ]
 end
 
@@ -55,22 +55,22 @@ let make_bary_tree transform t prel =
   Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
 
 let bary prefs prl = 
-  let t = Cmds_common.list_get_same_tree prl 
+  let t = Mokaphy_common.list_get_same_tree prl 
   and transform = Mass_map.transform_of_str (Prefs.transform prefs)
   in
   let prel = 
-    Cmds_common.prel_of_prl 
+    Mokaphy_common.prel_of_prl 
       ~is_weighted:(Prefs.weighted prefs)
       ~use_pp:(Prefs.use_pp prefs)
       prl
   in
   if prl <> [] then begin
     let fname = match Prefs.out_fname prefs with
-      | "" -> (Cmds_common.cat_names prl)^".bary.xml"
+      | "" -> (Mokaphy_common.cat_names prl)^".bary.xml"
       | s -> s
     in
     Phyloxml.named_tree_to_file
-      (Cmds_common.chop_suffix_if_present fname ".xml") (* tree name *)
+      (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
       (make_bary_tree transform t prel)
       fname
   end

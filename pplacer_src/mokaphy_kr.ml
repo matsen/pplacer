@@ -67,15 +67,15 @@ module Prefs = struct
     "-o", Arg.Set_string prefs.out_fname,
     "Set the filename to write to. Otherwise write to stdout.";
     "-c", Arg.Set_string prefs.refpkg_path,
-    (Mokaphy_prefs.refpkg_help "kr");
+    (Mokaphy_common.refpkg_help "kr");
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
     "--exp", Arg.Set_float prefs.p_exp,
     "The exponent for the integration, i.e. the value of p in Z_p.";
     "--unweighted", Arg.Clear prefs.weighted,
-    Mokaphy_prefs.weighted_help;
+    Mokaphy_common.weighted_help;
     "--transform", Arg.Set_string prefs.transform,
-    Mokaphy_prefs.transform_help;
+    Mokaphy_common.transform_help;
     "--list-out", Arg.Set prefs.list_output,
     "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
@@ -87,7 +87,7 @@ module Prefs = struct
     "-s", Arg.Set_int prefs.n_samples,
         ("Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is "^(string_of_int (n_samples prefs)));
-    Mokaphy_prefs.spec_with_default "--seed" (fun o -> Arg.Set_int o) prefs.seed
+    Mokaphy_common.spec_with_default "--seed" (fun o -> Arg.Set_int o) prefs.seed
     "Set the random seed, an integer > 0. Default is %d.";
     (*
     "--normal", Arg.Set prefs.normal,
@@ -203,14 +203,14 @@ let core ch prefs prl =
   and t_pre_f_of_bl_of_rank rp bl_of_rank = 
     let (taxt, ti_imap) = Tax_gtree.of_refpkg_gen bl_of_rank rp in
     (Decor_gtree.to_newick_gtree taxt, 
-    Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap)
+    Mokaphy_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap)
   in
   (* here we make a list of uptris, which are to get printed *)
   let uptris =
     List.map 
       uptri_of_t_pre_f
-      ([Cmds_common.list_get_same_tree prl, 
-      Cmds_common.pre_of_pr ~is_weighted ~use_pp] @
+      ([Mokaphy_common.list_get_same_tree prl, 
+      Mokaphy_common.pre_of_pr ~is_weighted ~use_pp] @
       (match tax_refpkgo with
       | None -> []
       | Some rp -> 
@@ -229,7 +229,7 @@ let core ch prefs prl =
   and print_pvalues = n_samples > 0
   and neighborly f l = List.flatten (List.map f l)
   in
-  Cmds_common.write_uptril 
+  Mokaphy_common.write_uptril 
     (Prefs.list_output prefs)
     names
     (if print_pvalues then neighborly (fun s -> [s;s^"_p_value"]) fun_names 
@@ -241,6 +241,6 @@ let core ch prefs prl =
 
 
 let kr prefs prl = 
-  Cmds_common.wrap_output (Prefs.out_fname prefs)
+  Mokaphy_common.wrap_output (Prefs.out_fname prefs)
     (fun ch -> core ch prefs prl)
 

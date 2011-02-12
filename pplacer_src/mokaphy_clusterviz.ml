@@ -58,7 +58,7 @@ let clusterviz prefs = function
           try
             let nameim = Cluster_common.nameim_of_csv cluster_fname 
             and out_tree_name = 
-              Cmds_common.chop_suffix_if_present cluster_fname ".csv"
+              Mokaphy_common.chop_suffix_if_present cluster_fname ".csv"
             in
             let (nt, ssm) = Clusterviz.name_tree_and_subsets_map dirname nameim in
             (* write it out, and read it back in for the combination *)

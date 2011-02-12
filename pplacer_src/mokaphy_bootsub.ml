@@ -86,7 +86,7 @@ let bootsub prefs = function
         | "",_ -> failwith "please supply a file of bootstrapped trees"
         | _,"" -> failwith "please supply a cluster CSV file"
         | (boot_fname, csv_fname) -> 
-            Cmds_common.wrap_output (Prefs.out_fname prefs)
+            Mokaphy_common.wrap_output (Prefs.out_fname prefs)
               (fun ch ->
                 perform 
                   ch

@@ -41,18 +41,18 @@ let of_induceds t ind1 ind2 =
   (Pd.of_induced t isect) /. (Pd.of_induced t union)
 
 let unifrac prefs prl = 
-  let t = Cmds_common.list_get_same_tree prl
+  let t = Mokaphy_common.list_get_same_tree prl
   and pra = Array.of_list prl
   in
   let inda = 
     Array.map
       (Induced.of_placerun 
-        (Mokaphy_prefs.criterion_of_bool (Prefs.use_pp prefs)))
+        (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs)))
       pra
   in
-  Cmds_common.wrap_output 
+  Mokaphy_common.wrap_output 
     (Prefs.out_fname prefs) 
-    (Cmds_common.write_uptri
+    (Mokaphy_common.write_uptri
       (Prefs.list_output prefs)
       (Array.map Placerun.get_name pra)
       "unifrac"

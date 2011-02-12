@@ -51,22 +51,22 @@ module Prefs = struct
 "-p", Arg.Set prefs.use_pp,
 "Use posterior probability.";
 "-c", Arg.Set_string prefs.refpkg_path,
-(Mokaphy_prefs.refpkg_help "heat");
+(Mokaphy_common.refpkg_help "heat");
 "--exp", Arg.Set_float prefs.p_exp,
 "The exponent for the integration, i.e. the value of p in Z_p.";
 "--point", Arg.Clear prefs.weighted,
-Mokaphy_prefs.weighted_help;
+Mokaphy_common.weighted_help;
 "--color-gradation", Arg.Clear prefs.simple_colors,
 "Use color gradation as well as thickness to represent mass transport.";
 "--gray-black", Arg.Set prefs.gray_black_colors,
 "Use gray and black in place of red and blue to signify the sign of the KR along that edge.";
 "--white-bg", Arg.Set prefs.white_bg,
 "Make colors for the heat tree which are compatible with a white background.";
-Mokaphy_prefs.spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level
+Mokaphy_common.spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level
 "Specify the amount of gray to mix into the color scheme. Default is %d.";
-Mokaphy_prefs.spec_with_default "--min-width" (fun o -> Arg.Set_float o) prefs.min_width
+Mokaphy_common.spec_with_default "--min-width" (fun o -> Arg.Set_float o) prefs.min_width
 "Specify the minimum width of the branches in a heat tree. Default is %g.";
-Mokaphy_prefs.spec_with_default "--max-width" (fun o -> Arg.Set_float o) prefs.max_width
+Mokaphy_common.spec_with_default "--max-width" (fun o -> Arg.Set_float o) prefs.max_width
 "Specify the maximum width of the branches in a heat tree. Default is %g.";
 ]
 end
@@ -183,19 +183,19 @@ let make_heat_tree prefs decor_t pre1 pre2 =
 let heat prefs = function
   | [pr1; pr2] as prl ->
       let fname = match Prefs.out_fname prefs with
-        | "" -> (Cmds_common.cat_names prl)^".heat.xml"
+        | "" -> (Mokaphy_common.cat_names prl)^".heat.xml"
         | s -> s
       in
       let ref_tree = Placerun.get_same_tree pr1 pr2 
       and is_weighted = Prefs.weighted prefs
       and use_pp = Prefs.use_pp prefs
       in
-      let tree_name = Cmds_common.chop_suffix_if_present fname ".xml"
-      and my_pre_of_pr = Cmds_common.pre_of_pr ~is_weighted ~use_pp
+      let tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml"
+      and my_pre_of_pr = Mokaphy_common.pre_of_pr ~is_weighted ~use_pp
       and refpkgo = 
-        Cmds_common.refpkgo_of_fname (Prefs.refpkg_path prefs) 
+        Mokaphy_common.refpkgo_of_fname (Prefs.refpkg_path prefs) 
       in
-      Cmds_common.check_refpkgo_tree ref_tree refpkgo;
+      Mokaphy_common.check_refpkgo_tree ref_tree refpkgo;
       Phyloxml.named_tree_list_to_file
         ([Some tree_name,
           make_heat_tree prefs 
@@ -209,7 +209,7 @@ let heat prefs = function
         | Some rp -> begin
             let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
             let my_make_tax_pre = 
-              Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap in
+              Mokaphy_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap in
             [Some (tree_name^".tax"),
             make_heat_tree prefs taxt 
               (my_make_tax_pre pr1)

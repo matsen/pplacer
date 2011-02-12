@@ -44,9 +44,9 @@ module Prefs = struct
     "-p", Arg.Set prefs.use_pp,
     "Use posterior probability.";
     "-c", Arg.Set_string prefs.refpkg_path,
-    (Mokaphy_prefs.refpkg_help "cluster");
+    (Mokaphy_common.refpkg_help "cluster");
     "--unweighted", Arg.Clear prefs.weighted,
-    Mokaphy_prefs.weighted_help;
+    Mokaphy_common.weighted_help;
     "--bootstrap", Arg.Set_int prefs.nboot,
     "the number of bootstrap replicates to run";
     "--seed", Arg.Set_int prefs.seed,
@@ -55,7 +55,7 @@ module Prefs = struct
     "Perform taxonomic clustering rather than phylogenetic.\
     Specify \"unit\" or \"inv\" for the two different modes.";
     "--transform", Arg.Set_string prefs.transform,
-    Mokaphy_prefs.transform_help;
+    Mokaphy_common.transform_help;
     ]
 end 
 
@@ -66,13 +66,13 @@ let classify_mode_str = function
   | s -> failwith ("unknown tax cluster mode: "^s)
 
 let t_prel_of_prl ~is_weighted ~use_pp prl = 
-  (Cmds_common.list_get_same_tree prl,
-    List.map (Cmds_common.pre_of_pr ~is_weighted ~use_pp) prl)
+  (Mokaphy_common.list_get_same_tree prl,
+    List.map (Mokaphy_common.pre_of_pr ~is_weighted ~use_pp) prl)
 
 let tax_t_prel_of_prl tgt_fun ~is_weighted ~use_pp rp prl = 
   let (taxt, ti_imap) = tgt_fun rp in
   (taxt,
-    List.map (Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
+    List.map (Mokaphy_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
 
 let zeropad i = Printf.sprintf "%04d" i
 
@@ -100,7 +100,7 @@ let make_cluster transform ~is_weighted ~use_pp refpkgo prefs prl =
   let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
   in
   let mode_str = Prefs.tax_cluster_mode prefs in
-  Cmds_common.check_refpkgo_tree rt refpkgo;
+  Mokaphy_common.check_refpkgo_tree rt refpkgo;
   let (drt, (cluster_t, blobim)) = 
     if mode_str = "" then begin
       (* phylogenetic clustering *)
@@ -140,7 +140,7 @@ let cluster prefs prl =
   and transform = 
     Mass_map.transform_of_str (Prefs.transform prefs)
   and refpkgo = 
-    Cmds_common.refpkgo_of_fname (Prefs.refpkg_path prefs) 
+    Mokaphy_common.refpkgo_of_fname (Prefs.refpkg_path prefs) 
   in
   let nboot = Prefs.nboot prefs in
   let width = Base.find_zero_pad_width nboot in
