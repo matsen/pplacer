@@ -11,27 +11,6 @@ open Fam_batteries
 
 
 
-(* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
-let pdfrac prefs prl = 
-  let t = Cmds_common.list_get_same_tree prl
-  and pra = Array.of_list prl
-  in
-  let inda = 
-    Array.map
-      (Induced.of_placerun 
-        (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.PDFrac.use_pp prefs)))
-      pra
-  in
-  Cmds_common.wrap_output 
-    (Mokaphy_prefs.PDFrac.out_fname prefs) 
-    (Cmds_common.write_uptri
-      (Mokaphy_prefs.PDFrac.list_output prefs)
-      (Array.map Placerun.get_name pra)
-      "pdfrac"
-      (Uptri.init
-        (Array.length inda)
-        (fun i j -> Pdfrac.of_induceds t inda.(i) inda.(j))))
-
 
 (* *** AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST  *** *)
 

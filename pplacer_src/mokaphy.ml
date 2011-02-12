@@ -110,16 +110,16 @@ let pd_of_argl = function
         (Mokaphy_pd.Prefs.specl_of_prefs prefs)
         "usage: pd [options] placefiles")
 
-let pdfrac_of_argl = function
+let unifrac_of_argl = function
   | [] -> print_endline "calculates the pairwise PD fraction of the subtree spanned by the placments"
   | argl -> 
-    let prefs = Mokaphy_prefs.PDFrac.defaults () in
-    Cmds.pdfrac
+    let prefs = Mokaphy_unifrac.Prefs.defaults () in
+    Mokaphy_unifrac.unifrac
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.PDFrac.specl_of_prefs prefs)
-        "usage: pdfrac [options] placefiles")
+        (Mokaphy_unifrac.Prefs.specl_of_prefs prefs)
+        "usage: unifrac [options] placefiles")
 
 let uavgdst_of_argl = function
   | [] -> print_endline "calculates the unary pairwise distance for each place file"
@@ -207,7 +207,7 @@ let cmd_map =
       "heat", heat_of_argl;
       "kr", kr_of_argl;
       "pd", pd_of_argl;
-      "pdfrac", pdfrac_of_argl;
+      "unifrac", unifrac_of_argl;
       "uavgdst", uavgdst_of_argl;
       "bavgdst", bavgdst_of_argl;
       "cluster", cluster_of_argl;
