@@ -5,7 +5,7 @@
 open MapsSets
 open Fam_batteries
 
-module MP = Mokaphy_prefs.Heat
+module MP = Mokaphy_heat.Prefs
 
 (* color utils *)
 

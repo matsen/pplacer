@@ -11,47 +11,6 @@ open Fam_batteries
 
 
 
-(* *** HEAT HEAT HEAT HEAT HEAT *** *)
-let heat prefs = function
-  | [pr1; pr2] as prl ->
-      let fname = match Mokaphy_prefs.Heat.out_fname prefs with
-        | "" -> (Cmds_common.cat_names prl)^".heat.xml"
-        | s -> s
-      in
-      let ref_tree = Placerun.get_same_tree pr1 pr2 
-      and is_weighted = Mokaphy_prefs.Heat.weighted prefs
-      and use_pp = Mokaphy_prefs.Heat.use_pp prefs
-      in
-      let tree_name = Cmds_common.chop_suffix_if_present fname ".xml"
-      and my_pre_of_pr = Cmds_common.pre_of_pr ~is_weighted ~use_pp
-      and refpkgo = 
-        Cmds_common.refpkgo_of_fname (Mokaphy_prefs.Heat.refpkg_path prefs) 
-      in
-      Cmds_common.check_refpkgo_tree ref_tree refpkgo;
-      Phyloxml.named_tree_list_to_file
-        ([Some tree_name,
-          Heat_tree.make_heat_tree prefs 
-            (match refpkgo with
-            | None -> Decor_gtree.of_newick_gtree ref_tree 
-            | Some rp -> Refpkg.get_tax_ref_tree rp)
-            (my_pre_of_pr pr1) 
-            (my_pre_of_pr pr2)]
-        @ match refpkgo with
-        | None -> []
-        | Some rp -> begin
-            let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-            let my_make_tax_pre = 
-              Cmds_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap in
-            [Some (tree_name^".tax"),
-            Heat_tree.make_heat_tree prefs taxt 
-              (my_make_tax_pre pr1)
-              (my_make_tax_pre pr2)]
-        end)
-        fname
-  | [] -> () (* e.g. heat -help *)
-  | _ -> failwith "Please specify exactly two place files to make a heat tree."
-
-
 (* *** KR KR KR KR KR *** *)
 let kr prefs prl = 
   Cmds_common.wrap_output (Mokaphy_prefs.KR.out_fname prefs)

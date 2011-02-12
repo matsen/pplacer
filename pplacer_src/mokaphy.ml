@@ -80,12 +80,12 @@ let bary_of_argl = function
 let heat_of_argl = function
   | [] -> print_endline "makes a heat tree given two placefiles"
   | argl -> 
-    let prefs = Mokaphy_prefs.Heat.defaults () in
-    Cmds.heat 
+    let prefs = Mokaphy_heat.Prefs.defaults () in
+    Mokaphy_heat.heat 
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.Heat.specl_of_prefs prefs)
+        (Mokaphy_heat.Prefs.specl_of_prefs prefs)
         "usage: heat [options] ex1.place ex2.place")
 
 let kr_of_argl = function
