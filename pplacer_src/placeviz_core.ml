@@ -25,8 +25,8 @@ let trees_to_file tree_fmt prefix trees =
   match tree_fmt with
   | Newick -> Newick.tree_list_to_file trees (prefix^".tre")
   | Phyloxml ->
-    let pd = Xphyloxml.pxdata_of_gtrees trees in
-    Xphyloxml.pxdata_to_file (prefix^".xml") pd
+    let pd = Phyloxml.pxdata_of_gtrees trees in
+    Phyloxml.pxdata_to_file (prefix^".xml") pd
 
 let make_zero_leaf decor_list bl name =
   Gtree.Subtree
@@ -177,10 +177,10 @@ let fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm =
 (* min_bl is the bl that will be fed to spread_short_fat above *)
 let write_fat_tree
       ?min_bl mass_width log_coeff fname_base decor_ref_tree massm =
-  let pd = Xphyloxml.pxdata_of_named_gtree
+  let pd = Phyloxml.pxdata_of_named_gtree
     (fname_base ^ ".fat")
     (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
-  in Xphyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
+  in Phyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
 
 (* edpl trees *)
 let edpl_tree white_bg
@@ -198,7 +198,7 @@ let edpl_tree white_bg
       (Edpl.weighted_edpl_map_of_pr weighting criterion pr))
 
 let write_edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl fname_base decor_ref_tree placerun =
-  let pd = Xphyloxml.pxdata_of_named_gtree
+  let pd = Phyloxml.pxdata_of_named_gtree
     (fname_base ^ ".epdl")
     (edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree placerun)
-  in Xphyloxml.pxdata_to_file (fname_base ^ ".epdl.xml") pd
+  in Phyloxml.pxdata_to_file (fname_base ^ ".epdl.xml") pd

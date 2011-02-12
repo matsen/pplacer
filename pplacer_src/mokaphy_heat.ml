@@ -196,7 +196,8 @@ let heat prefs = function
         Mokaphy_common.refpkgo_of_fname (Prefs.refpkg_path prefs) 
       in
       Mokaphy_common.check_refpkgo_tree ref_tree refpkgo;
-      Phyloxml.named_tree_list_to_file
+      Phyloxml.named_gtrees_to_file
+        fname
         ([Some tree_name,
           make_heat_tree prefs 
             (match refpkgo with
@@ -215,7 +216,6 @@ let heat prefs = function
               (my_make_tax_pre pr1)
               (my_make_tax_pre pr2)]
         end)
-        fname
   | [] -> () (* e.g. heat -help *)
   | _ -> failwith "Please specify exactly two place files to make a heat tree."
 

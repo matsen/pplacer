@@ -69,9 +69,9 @@ let bary prefs prl =
       | "" -> (Mokaphy_common.cat_names prl)^".bary.xml"
       | s -> s
     in
-    Phyloxml.named_tree_to_file
+    Phyloxml.named_gtree_to_file
+      fname
       (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
       (make_bary_tree transform t prel)
-      fname
   end
 

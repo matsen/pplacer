@@ -42,8 +42,8 @@ let get_named_mass_tree dirname i name =
         if Sys.file_exists fname then
           [{
             (List.hd
-              (Xphyloxml.load fname).Xphyloxml.trees)
-            with Xphyloxml.name = Some (name^infix)
+              (Phyloxml.load fname).Phyloxml.trees)
+            with Phyloxml.name = Some (name^infix)
           }]
         else [])
       [".phy"; ".tax"])
@@ -62,11 +62,9 @@ let clusterviz prefs = function
             in
             let (nt, ssm) = Clusterviz.name_tree_and_subsets_map dirname nameim in
             (* write it out, and read it back in for the combination *)
-            let ch = open_out out_fname in
-            Phyloxml.write_named_tree_list ch [Some out_tree_name, nt];
-            close_out ch;
+            Phyloxml.named_gtree_to_file out_fname out_tree_name nt;
             let named_tree = 
-              match (Xphyloxml.load out_fname).Xphyloxml.trees with
+              match (Phyloxml.load out_fname).Phyloxml.trees with
               | [t] -> t
               | _ -> assert(false)
             in
@@ -77,9 +75,9 @@ let clusterviz prefs = function
                 (IntMapFuns.to_pairs nameim)
             in
             (* write out the average masses corresponding to the named clusters *)
-            Xphyloxml.pxdata_to_file out_fname 
-              { Xphyloxml.trees = (named_tree::(List.flatten mass_trees)); 
-                Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; };
+            Phyloxml.pxdata_to_file out_fname 
+              { Phyloxml.trees = (named_tree::(List.flatten mass_trees)); 
+                Phyloxml.data_attribs = Phyloxml.phyloxml_attrs; };
             (* write out CSV file showing the cluster contents *)
             let subsets_fname = Prefs.subsets_fname prefs in
             if subsets_fname <> "" then 
