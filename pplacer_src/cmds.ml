@@ -9,27 +9,6 @@
 open MapsSets
 open Fam_batteries
 
-(* *** BOOTSUB BOOTSUB BOOTSUB BOOTSUB BOOTSUB BOOTSUB *** *)
-let bootsub prefs = function
-  | [ct_fname] -> begin
-      match (Mokaphy_prefs.Bootsub.boot_fname prefs,
-            Mokaphy_prefs.Bootsub.name_csv prefs) with
-        | "",_ -> failwith "please supply a file of bootstrapped trees"
-        | _,"" -> failwith "please supply a cluster CSV file"
-        | (boot_fname, csv_fname) -> 
-            Cmds_common.wrap_output (Mokaphy_prefs.Bootsub.out_fname prefs)
-              (fun ch ->
-                Bootsub.perform 
-                  ch
-                  (Mokaphy_prefs.Bootsub.cutoff prefs) 
-                  ~csv_fname
-                  ~boot_fname
-                  ~ct_fname)
-      end
-  | [] -> () (* e.g. -help *)
-  | _ -> failwith "Please specify exactly one cluster tree for bootsub."
-
-
 (* *** PCA PCA PCA PCA PCA *** *)
 let pca prefs = function
   | [] -> ()

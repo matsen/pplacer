@@ -177,14 +177,14 @@ let bootviz_of_argl = function
         "usage: bootviz [options] -b boot_trees cluster_tree")
 
 let bootsub_of_argl = function
-  | [] -> print_endline "makes a tree which shows the bootstrap values"
+  | [] -> print_endline "Removes unclusterable samples"
   | argl -> 
-    let prefs = Mokaphy_prefs.Bootsub.defaults () in
-    Cmds.bootsub
+    let prefs = Mokaphy_bootsub.Prefs.defaults () in
+    Mokaphy_bootsub.bootsub
       prefs 
       (wrap_parse_argv
         argl
-        (Mokaphy_prefs.Bootsub.specl_of_prefs prefs)
+        (Mokaphy_bootsub.Prefs.specl_of_prefs prefs)
         "usage: bootsub [options] -b boot_trees --name-csv my.csv cluster_tree")
 
 let pca_of_argl = function
