@@ -168,7 +168,8 @@ let () =
               if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
               else (None, decor_ref_tree)
         in
-        let pd = Xphyloxml.pxdata_of_named_gtrees
+        Xphyloxml.named_gtrees_to_file 
+          (fname_base ^ ".xml")
           ([
             Some (prname^".ref.fat"),
             my_fat final_rt place_massm;
@@ -189,8 +190,7 @@ let () =
               ]
               end
           with
-          | Placement.No_classif -> []))
-        in Xphyloxml.pxdata_to_file (fname_base ^ ".xml") pd;
+          | Placement.No_classif -> []));
 
         if frc = 0 && ret_code = 1 then 0 else ret_code
       with

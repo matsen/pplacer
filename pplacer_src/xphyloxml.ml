@@ -110,3 +110,9 @@ let pxdata_of_named_gtrees gtrees =
 let pxdata_of_gtree t = pxdata_of_gtrees [t]
 let pxdata_of_named_gtree name t = pxdata_of_named_gtrees [Some name, t]
 
+let gtree_to_file fname t = pxdata_to_file fname (pxdata_of_gtree t)
+let gtrees_to_file fname l = pxdata_to_file fname (pxdata_of_gtrees l)
+let named_gtree_to_file fname name t = 
+  pxdata_to_file fname (pxdata_of_named_gtree name t)
+let named_gtrees_to_file fname l = 
+  pxdata_to_file fname (pxdata_of_named_gtrees l)
