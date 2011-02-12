@@ -31,42 +31,6 @@ let criterion_of_bool = function
 
 
 
-(* Bary Bary Bary Bary Bary Bary Bary Bary *)
-module Bary = struct
-  type prefs = 
-    {
-      out_fname: string ref;
-      use_pp: bool ref;
-      weighted: bool ref;
-      transform: string ref;
-    }
-
-  let out_fname         p = !(p.out_fname)
-  let use_pp            p = !(p.use_pp)
-  let weighted          p = !(p.weighted)
-  let transform         p = !(p.transform)
-
-  let defaults () =
-    {
-      out_fname = ref "";
-      use_pp = ref false;
-      weighted = ref true;
-      transform = ref "";
-    }
-
-  let specl_of_prefs prefs = 
-[
-  "-p", Arg.Set prefs.use_pp,
-  "Use posterior probability.";
-  "--point", Arg.Clear prefs.weighted,
-  weighted_help;
-  "-o", Arg.Set_string prefs.out_fname,
-  "Set the filename to write to. Otherwise write to stdout.";
-  "--transform", Arg.Set_string prefs.transform,
-  transform_help;
-]
-end
-
 (* Heat Heat Heat Heat Heat Heat Heat Heat *)
 module Heat = struct
   type mokaphy_prefs = 

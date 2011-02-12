@@ -69,12 +69,12 @@ let pr_wrap_parse_argv argl specl usage =
 let bary_of_argl = function
   | [] -> print_endline "draws the barycenter of a placement collection on the reference tree"
   | argl -> 
-    let prefs = Mokaphy_prefs.Bary.defaults () in
-    Cmds.bary 
+    let prefs = Mokaphy_bary.Prefs.defaults () in
+    Mokaphy_bary.bary 
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.Bary.specl_of_prefs prefs)
+        (Mokaphy_bary.Prefs.specl_of_prefs prefs)
         "usage: bary [options] placefile[s]")
 
 let heat_of_argl = function
