@@ -1,4 +1,4 @@
-open Json
+open Jsontype
 
 exception Type_mismatch_wanted of string
 exception Type_mismatch of string
@@ -26,24 +26,24 @@ let _get_real = function
   | Float x -> x
   | _ -> raise (Type_mismatch_wanted "real")
 
-let slurp fname = String.concat " " (File_parsing.string_list_of_file fname)
+let slurp fname = String.concat "\n" (File_parsing.string_list_of_file fname)
 
-let of_file fname = deserialize (slurp fname)
+let of_file fname = Json.of_string (slurp fname)
 
-let get_gen f x = 
+let get_gen f x =
   try f x with
   | Type_mismatch_wanted wanted ->
       raise (Type_mismatch ("expected "^wanted^", got "^(name_type x)))
 
-let get_bool    = get_gen _get_bool   
-let get_int     = get_gen _get_int    
-let get_float   = get_gen _get_float  
-let get_string  = get_gen _get_string 
+let get_bool    = get_gen _get_bool
+let get_int     = get_gen _get_int
+let get_float   = get_gen _get_float
+let get_string  = get_gen _get_string
 let get_hashtbl = get_gen _get_hashtbl
-let get_array   = get_gen _get_array  
-let get_real    = get_gen _get_real  
+let get_array   = get_gen _get_array
+let get_real    = get_gen _get_real
 
-let find_gen what o k = 
+let find_gen what o k =
   match o with
   | Object h -> begin
       try what (Hashtbl.find h k) with
@@ -55,12 +55,12 @@ let find_gen what o k =
 
 let find = find_gen (fun o -> o)
 
-let find_bool    = find_gen _get_bool   
-let find_int     = find_gen _get_int    
-let find_float   = find_gen _get_float  
-let find_string  = find_gen _get_string 
+let find_bool    = find_gen _get_bool
+let find_int     = find_gen _get_int
+let find_float   = find_gen _get_float
+let find_string  = find_gen _get_string
 let find_hashtbl = find_gen _get_hashtbl
-let find_array   = find_gen _get_array  
-let find_real    = find_gen _get_real  
+let find_array   = find_gen _get_array
+let find_real    = find_gen _get_real
 
 
