@@ -81,7 +81,7 @@ let rec clade_of_stree bark tree =
   | Stree.Leaf id -> id, [] in
   Xml.Element ("clade", [], tags id @ List.map (clade_of_stree bark) children)
 
-let pxtree_of_gtree ?(name = None) gtree =
+let pxtree_of_gtree ?name gtree =
   {
     name = name;
     clade = clade_of_stree (Gtree.get_bark_map gtree) (Gtree.get_stree gtree);
@@ -96,7 +96,7 @@ let pxdata_of_gtrees gtrees =
 
 let pxdata_of_named_gtrees gtrees =
   {
-    trees = List.map (fun (name, tree) -> pxtree_of_gtree ~name tree) gtrees;
+    trees = List.map (fun (name, tree) -> pxtree_of_gtree ?name tree) gtrees;
     data_attribs = [];
   }
 
@@ -105,7 +105,7 @@ let pxdata_of_named_gtree name t = pxdata_of_named_gtrees [Some name, t]
 
 let gtree_to_file fname t = pxdata_to_file fname (pxdata_of_gtree t)
 let gtrees_to_file fname l = pxdata_to_file fname (pxdata_of_gtrees l)
-let named_gtree_to_file fname name t = 
+let named_gtree_to_file fname name t =
   pxdata_to_file fname (pxdata_of_named_gtree name t)
-let named_gtrees_to_file fname l = 
+let named_gtrees_to_file fname l =
   pxdata_to_file fname (pxdata_of_named_gtrees l)

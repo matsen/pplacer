@@ -113,27 +113,30 @@ let clusterviz prefs = function
         | _, "" -> failwith "please specify an out file name"
         | (cluster_fname, out_fname) ->
           try
-            let nameim = Cluster_common.nameim_of_csv cluster_fname
-            and out_tree_name =
-              Mokaphy_common.chop_suffix_if_present cluster_fname ".csv"
-            in
+            let nameim = Cluster_common.nameim_of_csv cluster_fname in
             let (nt, ssm) = name_tree_and_subsets_map dirname nameim in
-            (* write it out, and read it back in for the combination *)
+            (* write it out, and read it back in for the combination 
             Phyloxml.named_gtree_to_file out_fname out_tree_name nt;
             let named_tree =
               match (Phyloxml.load out_fname).Phyloxml.trees with
               | [t] -> t
               | _ -> assert(false)
             in
+*)
+            let cluster_pxtree =
+              Phyloxml.pxtree_of_gtree
+                ~name:
+                  (Mokaphy_common.chop_suffix_if_present cluster_fname ".csv")
+                nt
             (* now we read in the cluster trees *)
-            let mass_trees =
+            and mass_trees =
               List.map
                 (fun (i, name) -> get_named_mass_tree dirname i name)
                 (IntMapFuns.to_pairs nameim)
             in
             (* write out the average masses corresponding to the named clusters *)
             Phyloxml.pxdata_to_file out_fname
-              { Phyloxml.trees = (named_tree::(List.flatten mass_trees));
+              { Phyloxml.trees = (cluster_pxtree::(List.flatten mass_trees));
                 Phyloxml.data_attribs = Phyloxml.phyloxml_attrs; };
             (* write out CSV file showing the cluster contents *)
             let subsets_fname = Prefs.subsets_fname prefs in
