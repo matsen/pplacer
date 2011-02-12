@@ -146,12 +146,12 @@ let bavgdst_of_argl = function
 let cluster_of_argl = function
   | [] -> print_endline "makes a heirarchical cluster of the placeruns"
   | argl -> 
-    let prefs = Mokaphy_prefs.Cluster.defaults () in
-    Cmds.cluster
+    let prefs = Mokaphy_cluster.Prefs.defaults () in
+    Mokaphy_cluster.cluster
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.Cluster.specl_of_prefs prefs)
+        (Mokaphy_cluster.Prefs.specl_of_prefs prefs)
         "usage: cluster [options] placefiles")
 
 let clusterviz_of_argl = function

@@ -139,64 +139,6 @@ end
 
 
 
-(* CLUSTER CLUSTER CLUSTER CLUSTER CLUSTER CLUSTER CLUSTER CLUSTER *)
-module Cluster = struct
-  type mokaphy_prefs = 
-    {
-      out_fname: string ref;
-      use_pp: bool ref;
-      weighted: bool ref;
-      refpkg_path : string ref;
-      nboot : int ref;
-      seed : int ref;
-      tax_cluster_mode : string ref;
-      transform : string ref;
-    }
-  
-  let out_fname         p = !(p.out_fname)
-  let use_pp            p = !(p.use_pp)
-  let weighted          p = !(p.weighted)
-  let refpkg_path       p = !(p.refpkg_path)
-  let nboot             p = !(p.nboot)
-  let seed              p = !(p.seed)
-  let tax_cluster_mode  p = !(p.tax_cluster_mode)
-  let transform         p = !(p.transform)
-  
-  let defaults () = 
-    { 
-      out_fname = ref "";
-      use_pp = ref false;
-      weighted = ref false;
-      refpkg_path = ref "";
-      nboot = ref 0;
-      seed = ref 0;
-      tax_cluster_mode = ref "";
-      transform = ref "";
-    }
-  
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_fname,
-    "Set the filename to write to. Otherwise write to stdout.";
-    "-p", Arg.Set prefs.use_pp,
-    "Use posterior probability.";
-    "-c", Arg.Set_string prefs.refpkg_path,
-    (refpkg_help "cluster");
-    "--unweighted", Arg.Clear prefs.weighted,
-    weighted_help;
-    "--bootstrap", Arg.Set_int prefs.nboot,
-    "the number of bootstrap replicates to run";
-    "--seed", Arg.Set_int prefs.seed,
-    "Random seed for bootstrap";
-    "--tax-cluster", Arg.Set_string prefs.tax_cluster_mode,
-    "Perform taxonomic clustering rather than phylogenetic.\
-    Specify \"unit\" or \"inv\" for the two different modes.";
-    "--transform", Arg.Set_string prefs.transform,
-    transform_help;
-    ]
-end 
-
-
 (* CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ
  * CLUSTERVIZ *)
 
