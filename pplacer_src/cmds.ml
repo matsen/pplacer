@@ -11,19 +11,6 @@ open Fam_batteries
 
 
 
-(* *** PD PD PD PD PD *** *)
-let pd prefs prl = 
-  let pd_cmd = 
-    if Mokaphy_prefs.PD.normalized prefs then Pd.normalized_of_pr
-    else Pd.of_pr
-  in
-  Cmds_common.wrap_output 
-    (Mokaphy_prefs.PD.out_fname prefs) 
-    (Cmds_common.write_unary 
-      (pd_cmd (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.PD.use_pp prefs)))
-      prl)
-
-
 (* *** PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *** *)
 let pdfrac prefs prl = 
   let t = Cmds_common.list_get_same_tree prl
@@ -44,7 +31,6 @@ let pdfrac prefs prl =
       (Uptri.init
         (Array.length inda)
         (fun i j -> Pdfrac.of_induceds t inda.(i) inda.(j))))
-
 
 
 (* *** AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST  *** *)
@@ -80,72 +66,6 @@ let bavgdst prefs prl =
             pra.(i) 
             pra.(j))))
 
-
-(* *** CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ *** *)
-
-(* get mass tree(s) and name them with name *)
-let get_named_mass_tree dirname i name = 
-  List.flatten
-    (List.map
-      (fun infix ->
-        let fname = 
-          dirname^"/"^Cluster_common.mass_trees_dirname
-            ^"/"^(Mokaphy_cluster.zeropad i)^infix^".fat.xml" in
-        if Sys.file_exists fname then
-          [{
-            (List.hd
-              (Xphyloxml.load fname).Xphyloxml.trees)
-            with Xphyloxml.name = Some (name^infix)
-          }]
-        else [])
-      [".phy"; ".tax"])
-
-let clusterviz prefs = function
-  | [dirname] -> begin
-      match (Mokaphy_prefs.Clusterviz.name_csv prefs,
-             Mokaphy_prefs.Clusterviz.out_fname prefs) with
-        | "", _ -> failwith "please specify a cluster CSV file"
-        | _, "" -> failwith "please specify an out file name"
-        | (cluster_fname, out_fname) -> 
-          try
-            let nameim = Cluster_common.nameim_of_csv cluster_fname 
-            and out_tree_name = 
-              Cmds_common.chop_suffix_if_present cluster_fname ".csv"
-            in
-            let (nt, ssm) = Clusterviz.name_tree_and_subsets_map dirname nameim in
-            (* write it out, and read it back in for the combination *)
-            let ch = open_out out_fname in
-            Phyloxml.write_named_tree_list ch [Some out_tree_name, nt];
-            close_out ch;
-            let named_tree = 
-              match (Xphyloxml.load out_fname).Xphyloxml.trees with
-              | [t] -> t
-              | _ -> assert(false)
-            in
-            (* now we read in the cluster trees *)
-            let mass_trees = 
-              List.map 
-                (fun (i, name) -> get_named_mass_tree dirname i name)
-                (IntMapFuns.to_pairs nameim)
-            in
-            (* write out the average masses corresponding to the named clusters *)
-            Xphyloxml.pxdata_to_file out_fname 
-              { Xphyloxml.trees = (named_tree::(List.flatten mass_trees)); 
-                Xphyloxml.data_attribs = Xphyloxml.phyloxml_attrs; };
-            (* write out CSV file showing the cluster contents *)
-            let subsets_fname = Mokaphy_prefs.Clusterviz.subsets_fname prefs in
-            if subsets_fname <> "" then 
-              Csv.save subsets_fname 
-                (StringMap.fold
-                  (fun name s l -> 
-                    [name; String.concat "," (StringSet.elements s)]::l)
-                  ssm
-                  [])
-          with Clusterviz.Numbering_mismatch ->
-            failwith ("numbering mismatch with "^dirname^" and "^cluster_fname)
-  end
-  | [] -> () (* e.g. -help *)
-  | _ -> failwith "Please specify exactly one cluster directory for clusterviz."
 
 
 (* *** BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ *** *)

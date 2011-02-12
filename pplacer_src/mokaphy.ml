@@ -100,14 +100,14 @@ let kr_of_argl = function
         "usage: kr [options] placefiles")
 
 let pd_of_argl = function
-  | [] -> print_endline "calculates PD of the subtree spanned by the placments"
+  | [] -> print_endline "calculates PD of the subtree spanned by the placements"
   | argl -> 
-    let prefs = Mokaphy_prefs.PD.defaults () in
-    Cmds.pd 
+    let prefs = Mokaphy_pd.Prefs.defaults () in
+    Mokaphy_pd.pd 
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.PD.specl_of_prefs prefs)
+        (Mokaphy_pd.Prefs.specl_of_prefs prefs)
         "usage: pd [options] placefiles")
 
 let pdfrac_of_argl = function
@@ -157,12 +157,12 @@ let cluster_of_argl = function
 let clusterviz_of_argl = function
   | [] -> print_endline "makes a nice tree for visualization of results"
   | argl -> 
-    let prefs = Mokaphy_prefs.Clusterviz.defaults () in
-    Cmds.clusterviz
+    let prefs = Mokaphy_clusterviz.Prefs.defaults () in
+    Mokaphy_clusterviz.clusterviz
       prefs 
       (wrap_parse_argv
         argl
-        (Mokaphy_prefs.Clusterviz.specl_of_prefs prefs)
+        (Mokaphy_clusterviz.Prefs.specl_of_prefs prefs)
         "usage: clusterviz [options] --name-csv my.csv cluster_dir")
 
 let bootviz_of_argl = function

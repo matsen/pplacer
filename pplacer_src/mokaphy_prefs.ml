@@ -31,38 +31,6 @@ let criterion_of_bool = function
 
 
 
-(* PD PD PD PD PD PD PD PD *)
-module PD = struct
-  type mokaphy_prefs = 
-    {
-      use_pp: bool ref;
-      out_fname: string ref;
-      normalized: bool ref;
-    }
-  
-  let use_pp            p = !(p.use_pp)
-  let out_fname         p = !(p.out_fname)
-  let normalized        p = !(p.normalized)
-  
-  let defaults () = 
-    { 
-      use_pp = ref false;
-      out_fname = ref "";
-      normalized = ref false;
-    }
-  
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_fname,
-    "Set the filename to write to. Otherwise write to stdout.";
-    "-p", Arg.Set prefs.use_pp,
-    "Use posterior probability.";
-    "--normalized", Arg.Set prefs.normalized,
-    "Divide by total tree length.";
-    ]
-end 
-
-
 (* PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC PDFRAC *)
 module PDFrac = struct
   type mokaphy_prefs = 
@@ -137,40 +105,6 @@ module Avgdst = struct
     ]
 end 
 
-
-
-(* CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ CLUSTERVIZ
- * CLUSTERVIZ *)
-
-module Clusterviz = struct
-  type mokaphy_prefs = 
-    {
-      out_fname: string ref;
-      name_csv: string ref;
-      subsets_fname: string ref;
-    }
-  
-  let out_fname p = !(p.out_fname)
-  let name_csv p = !(p.name_csv)
-  let subsets_fname p = !(p.subsets_fname)
-  
-  let defaults () = 
-    { 
-      out_fname = ref "";
-      name_csv = ref "";
-      subsets_fname = ref "";
-    }
-  
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_fname,
-    "Specify a prefix for the clusters (required).";
-    "--name-csv", Arg.Set_string prefs.name_csv,
-    "A CSV file containing two columns: \"numbers\", which are node numbers in the clustered tree, and \"names\", which are names for those nodes.";
-    "--subsets", Arg.Set_string prefs.subsets_fname,
-    "Specify a file to write out subset membership.";
-    ]
-end 
 
 
 (* BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ *)
