@@ -10,9 +10,9 @@ exception Numbering_mismatch
 
 
 (* makes a map from node labels (in bootstrap positions) to the node numbers *)
-let nodemap_of_tree t = 
+let nodemap_of_tree t =
   IntMap.fold
-    (fun i b -> 
+    (fun i b ->
       match b#get_boot_opt with
       | None -> fun m -> m
       | Some boot -> begin
@@ -26,8 +26,8 @@ let nodemap_of_tree t =
 (* given a tree with node numbering in the bootstrap location, and a map from
  * those numbers to strings, naming those nodes, make a tree with names in the
  * appropriate locations and no bootstraps. *)
-let make_named_tree sm t = 
-  Gtree.set_bark_map t 
+let make_named_tree sm t =
+  Gtree.set_bark_map t
     (IntMap.map
       (fun b ->
         match b#get_boot_opt with
@@ -39,15 +39,15 @@ let make_named_tree sm t =
           else no_boot_b#set_name (IntMap.find node_id sm))
       (Gtree.get_bark_map t))
 
-let name_tree_and_subsets_map dirname nameim = 
+let name_tree_and_subsets_map dirname nameim =
   let t = Newick.of_file (Cluster_common.tree_name_of_dirname dirname) in
   let nodeim = nodemap_of_tree t in
   (* shifted_nameim uses the Stree numbering rather than that given by
    * the bootstrap labels (as nameim does) *)
   try
-    let shifted_nameim = 
+    let shifted_nameim =
       IntMap.fold
-        (fun cluster_num name -> 
+        (fun cluster_num name ->
           IntMap.add (IntMap.find cluster_num nodeim) name)
         IntMap.empty
         nameim
