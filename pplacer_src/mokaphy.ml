@@ -190,12 +190,12 @@ let bootsub_of_argl = function
 let pca_of_argl = function
   | [] -> print_endline "does PCA, and makes lovely trees"
   | argl -> 
-    let prefs = Mokaphy_prefs.Pca.defaults () in
-    Cmds.pca
+    let prefs = Mokaphy_pca.Prefs.defaults () in
+    Mokaphy_pca.pca
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.Pca.specl_of_prefs prefs)
+        (Mokaphy_pca.Prefs.specl_of_prefs prefs)
         "usage: pca [options] placefiles")
 
 
