@@ -34,11 +34,6 @@ class decor_bark arg =
       super#to_xml
       @ List.fold_left (fun l b -> (Decor.to_xml b) @ l) [] (List.sort compare decor)
 
-    method write_xml ch =
-      super#write_xml ch;
-      (* sort so tags are in proper order *)
-      List.iter (Decor.write_xml ch) (List.sort compare decor)
-
     method append_decor decor_list =
       {< decor = decor @ decor_list >}
 

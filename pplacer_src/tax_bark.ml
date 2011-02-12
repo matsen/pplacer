@@ -7,8 +7,6 @@
 open Fam_batteries
 open MapsSets
 
-let write_xml_tax_name ch = Myxml.write_tag output_string "scientific_name" ch
-
 class tax_bark arg =
   let (bl, name, boot, tax_ido, tax_nameo) =
     match arg with
@@ -47,35 +45,7 @@ class tax_bark arg =
             maybe_list Tax_id.to_xml tax_ido
             @ maybe_list (fun name -> [Myxml.tag "scientific_name"]) tax_nameo
           )
-
-    method write_xml ch =
-      let perhaps_write write_fun xo =
-        match xo with
-        | Some x -> write_fun x
-        | None -> ()
-      in
-      super#write_xml ch;
-      (* sort so tags are in proper order *)
-      match (tax_ido, tax_nameo) with
-      | (None, None) -> ()
-      | _ ->
-          Myxml.write_long_tag
-            (fun () ->
-              perhaps_write (Tax_id.write_xml ch) tax_ido;
-              perhaps_write (write_xml_tax_name ch) tax_nameo;)
-            "taxonomy"
-            ch
   end
-
-  (*
-let compare b1 b2 =
-  try
-    Base.raise_if_different Newick_bark.compare b1 b2;
-    Base.raise_if_different compare b1#get_decor b2#get_decor;
-    0
-  with
-  | Base.Different c -> c
-*)
 
 let of_newick_bark nb tax_ido tax_nameo =
   new tax_bark (`Of_newick_bark(nb, tax_ido, tax_nameo))
