@@ -16,7 +16,6 @@ module Prefs = struct
       p_exp: float ref;
       weighted: bool ref;
       seed: int ref;
-      matrix: bool ref;
       bary_density: bool ref;
       ddensity: bool ref;
       refpkg_path : string ref;
@@ -42,7 +41,6 @@ module Prefs = struct
     { 
       use_pp = ref false;
       verbose = ref false;
-      normal = ref false;
       n_samples = ref 0;
       out_fname = ref "";
       list_output = ref false;
@@ -139,16 +137,7 @@ let pair_core transform p n_samples t pre1 pre2 =
       else None;
   }
 
-let wrapped_pair_core transform context p n_samples t pre1 pre2 =
-  try pair_core transform p n_samples t pre1 pre2 with
-  | Kr_distance.Invalid_place_loc a -> 
-      invalid_arg
-        (Printf.sprintf 
-          "%g is not a valid placement location when %s" a context)
-  | Kr_distance.Total_kr_not_zero tkr ->
-      failwith ("total kr_vect not zero for "^context^": "^(string_of_float tkr))
-
-
+  
 (* core
  * run pair_core for each unique pair 
  *)
@@ -161,9 +150,6 @@ let core ch prefs prl =
   and is_weighted = Prefs.weighted prefs
   and use_pp = Prefs.use_pp prefs
   and pra = Array.of_list prl 
-  and context pr1 pr2 = 
-    Printf.sprintf "comparing %s with %s" 
-      (Placerun.get_name pr1) (Placerun.get_name pr2)
   and p = Prefs.p_exp prefs
   and transform = Mass_map.transform_of_str (Prefs.transform prefs)
   and tax_refpkgo = match Prefs.refpkg_path prefs with
@@ -182,8 +168,19 @@ let core ch prefs prl =
     Uptri.init
       (Array.length prea)
       (fun i j ->
-        wrapped_pair_core transform
-          (context pra.(i) pra.(j)) p n_samples t prea.(i) prea.(j))
+        let context = 
+          Printf.sprintf "comparing %s with %s" 
+            (Placerun.get_name pra.(i)) (Placerun.get_name pra.(j))
+        in
+        try pair_core transform p n_samples t prea.(i) prea.(j) with
+        | Kr_distance.Invalid_place_loc a -> 
+            invalid_arg
+            (Printf.sprintf 
+               "%g is not a valid placement location when %s" a context)
+        | Kr_distance.Total_kr_not_zero tkr ->
+            failwith 
+               ("total kr_vect not zero for "^context^": "^
+                  (string_of_float tkr)))
   (* here we make one of these pairs from a function which tells us how to
    * assign a branch length to a tax rank *)
   and t_pre_f_of_bl_of_rank rp bl_of_rank = 
