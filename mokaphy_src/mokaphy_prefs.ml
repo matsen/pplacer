@@ -7,7 +7,10 @@
 let spec_with_default symbol setfun p help = 
   (symbol, setfun p, Printf.sprintf help !p)
 
-let weighted_help = 
+let set_int i = Arg.Set_int i
+let set_float f = Arg.Set_float f
+
+let weighted_help =
   "The point version simply uses the best placement, rather than spreading out the probability mass. Default is spread."
 
 let refpkg_help fors = 
@@ -120,11 +123,11 @@ weighted_help;
 "Use gray and black in place of red and blue to signify the sign of the KR along that edge.";
 "--white-bg", Arg.Set prefs.white_bg,
 "Make colors for the heat tree which are compatible with a white background.";
-spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level
+spec_with_default "--gray-level" set_int prefs.gray_level
 "Specify the amount of gray to mix into the color scheme. Default is %d.";
-spec_with_default "--min-width" (fun o -> Arg.Set_float o) prefs.min_width
+spec_with_default "--min-width" set_float prefs.min_width
 "Specify the minimum width of the branches in a heat tree. Default is %g.";
-spec_with_default "--max-width" (fun o -> Arg.Set_float o) prefs.max_width
+spec_with_default "--max-width" set_float prefs.max_width
 "Specify the maximum width of the branches in a heat tree. Default is %g.";
 ]
 end
