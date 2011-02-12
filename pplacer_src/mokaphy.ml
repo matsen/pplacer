@@ -91,12 +91,12 @@ let heat_of_argl = function
 let kr_of_argl = function
   | [] -> print_endline "runs KR analyses, including significance estimation"
   | argl -> 
-    let prefs = Mokaphy_prefs.KR.defaults () in
-    Cmds.kr 
+    let prefs = Mokaphy_kr.Prefs.defaults () in
+    Mokaphy_kr.kr 
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.KR.specl_of_prefs prefs)
+        (Mokaphy_kr.Prefs.specl_of_prefs prefs)
         "usage: kr [options] placefiles")
 
 let pd_of_argl = function

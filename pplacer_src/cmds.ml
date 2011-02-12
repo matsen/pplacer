@@ -11,12 +11,6 @@ open Fam_batteries
 
 
 
-(* *** KR KR KR KR KR *** *)
-let kr prefs prl = 
-  Cmds_common.wrap_output (Mokaphy_prefs.KR.out_fname prefs)
-    (fun ch -> Kr_core.core ch prefs prl)
-
-
 (* *** PD PD PD PD PD *** *)
 let pd prefs prl = 
   let pd_cmd = 
@@ -208,11 +202,11 @@ let cluster prefs prl =
         make_cluster transform ~is_weighted ~use_pp refpkgo prefs boot_prl in
       Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
       (* run distance on bootstraps *)
-      let kr_prefs = Mokaphy_prefs.KR.defaults () in
-      kr_prefs.Mokaphy_prefs.KR.list_output := true;
-      kr_prefs.Mokaphy_prefs.KR.out_fname := 
+      let kr_prefs = Mokaphy_kr.Prefs.defaults () in
+      kr_prefs.Mokaphy_kr.Prefs.list_output := true;
+      kr_prefs.Mokaphy_kr.Prefs.out_fname := 
         ("dist."^(pad_str_of_int i)^".tab");
-      kr kr_prefs boot_prl;
+      Mokaphy_kr.kr kr_prefs boot_prl;
     done
   end
 
