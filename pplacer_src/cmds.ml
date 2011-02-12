@@ -9,23 +9,6 @@
 open MapsSets
 open Fam_batteries
 
-(* *** BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ *** *)
-let bootviz prefs = function
-  | [ct_fname] ->
-      let out_fname = match Mokaphy_prefs.Bootviz.out_fname prefs with
-        | "" -> "cluster_boot.xml" 
-        | s -> s
-      in
-      Phyloxml.tree_to_file
-        (Bootviz.decorate_tree 
-          (Mokaphy_prefs.Bootviz.cutoff prefs) 
-          (Mokaphy_prefs.Bootviz.boot_fname prefs)
-          ct_fname)
-        out_fname
-  | [] -> () (* e.g. -help *)
-  | _ -> failwith "Please specify exactly one cluster tree for bootviz."
-
-
 (* *** BOOTSUB BOOTSUB BOOTSUB BOOTSUB BOOTSUB BOOTSUB *** *)
 let bootsub prefs = function
   | [ct_fname] -> begin

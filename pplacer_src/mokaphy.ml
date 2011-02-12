@@ -168,12 +168,12 @@ let clusterviz_of_argl = function
 let bootviz_of_argl = function
   | [] -> print_endline "makes a tree which shows the bootstrap values"
   | argl -> 
-    let prefs = Mokaphy_prefs.Bootviz.defaults () in
-    Cmds.bootviz
+    let prefs = Mokaphy_bootviz.Prefs.defaults () in
+    Mokaphy_bootviz.bootviz
       prefs 
       (wrap_parse_argv
         argl
-        (Mokaphy_prefs.Bootviz.specl_of_prefs prefs)
+        (Mokaphy_bootviz.Prefs.specl_of_prefs prefs)
         "usage: bootviz [options] -b boot_trees cluster_tree")
 
 let bootsub_of_argl = function
