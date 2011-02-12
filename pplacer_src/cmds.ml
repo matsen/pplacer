@@ -9,44 +9,6 @@
 open MapsSets
 open Fam_batteries
 
-
-
-
-(* *** AVGDIST AVGDIST AVGDIST AVGDIST AVGDIST  *** *)
-
-let make_dist_fun prefs prl = 
-  Pquery_distances.dist_fun_of_expon_weight 
-    (Mokaphy_prefs.Avgdst.exponent prefs)
-    (Mokaphy_prefs.weighting_of_bool (Mokaphy_prefs.Avgdst.weighted prefs))
-    (Mokaphy_prefs.criterion_of_bool (Mokaphy_prefs.Avgdst.use_pp prefs))
-    (Edge_rdist.build_ca_info (Cmds_common.list_get_same_tree prl))
-
-let uavgdst prefs prl = 
-  Cmds_common.wrap_output 
-    (Mokaphy_prefs.Avgdst.out_fname prefs) 
-    (Cmds_common.write_unary
-      (Avgdst.of_placerun 
-        (make_dist_fun prefs prl))
-      prl)
-
-let bavgdst prefs prl = 
-  let pra = Array.of_list prl in
-  Cmds_common.wrap_output 
-    (Mokaphy_prefs.Avgdst.out_fname prefs) 
-    (Cmds_common.write_uptri
-      (Mokaphy_prefs.Avgdst.list_output prefs)
-      (Array.map Placerun.get_name pra)
-      "bavgdst"
-      (Uptri.init
-        (Array.length pra)
-        (fun i j -> 
-          Avgdst.of_placerun_pair 
-            (make_dist_fun prefs prl)
-            pra.(i) 
-            pra.(j))))
-
-
-
 (* *** BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ BOOTVIZ *** *)
 let bootviz prefs = function
   | [ct_fname] ->

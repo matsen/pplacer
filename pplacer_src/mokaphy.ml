@@ -121,27 +121,27 @@ let unifrac_of_argl = function
         (Mokaphy_unifrac.Prefs.specl_of_prefs prefs)
         "usage: unifrac [options] placefiles")
 
-let uavgdst_of_argl = function
+let uavgdist_of_argl = function
   | [] -> print_endline "calculates the unary pairwise distance for each place file"
   | argl -> 
-    let prefs = Mokaphy_prefs.Avgdst.defaults () in
-    Cmds.uavgdst
+    let prefs = Mokaphy_avgdist.Prefs.defaults () in
+    Mokaphy_avgdist.uavgdist
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
-        "usage: uavgdst [options] placefiles")
+        (Mokaphy_avgdist.Prefs.specl_of_prefs prefs)
+        "usage: uavgdist [options] placefiles")
 
-let bavgdst_of_argl = function
+let bavgdist_of_argl = function
   | [] -> print_endline "calculates the binary pairwise distance for each place file"
   | argl -> 
-    let prefs = Mokaphy_prefs.Avgdst.defaults () in
-    Cmds.bavgdst
+    let prefs = Mokaphy_avgdist.Prefs.defaults () in
+    Mokaphy_avgdist.bavgdist
       prefs 
       (pr_wrap_parse_argv
         argl
-        (Mokaphy_prefs.Avgdst.specl_of_prefs prefs)
-        "usage: bavgdst [options] placefiles")
+        (Mokaphy_avgdist.Prefs.specl_of_prefs prefs)
+        "usage: bavgdist [options] placefiles")
 
 let cluster_of_argl = function
   | [] -> print_endline "makes a heirarchical cluster of the placeruns"
@@ -208,8 +208,8 @@ let cmd_map =
       "kr", kr_of_argl;
       "pd", pd_of_argl;
       "unifrac", unifrac_of_argl;
-      "uavgdst", uavgdst_of_argl;
-      "bavgdst", bavgdst_of_argl;
+      "uavgdist", uavgdist_of_argl;
+      "bavgdist", bavgdist_of_argl;
       "cluster", cluster_of_argl;
       "clusterviz", clusterviz_of_argl;
       "bootviz", bootviz_of_argl;
