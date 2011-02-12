@@ -32,7 +32,7 @@ let parse_args () =
     "placeviz "^Version.version_revision^"\nplaceviz ex.place\n"
   and anon_arg arg =
     files := arg :: !files in
-  let args = 
+  let args =
     [
       "-p", Arg.Set use_pp,
       "Use posterior probability for the weight.";
@@ -74,65 +74,65 @@ let parse_args () =
   Arg.parse args anon_arg usage;
   List.rev !files
 
-     
+
     (* note return code of 0 is OK *)
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
-    let weighting = 
+    let weighting =
       if !weighted then Mass_map.Weighted
       else Mass_map.Unweighted
-    and criterion = 
+    and criterion =
       if !use_pp then Placement.post_prob
       else Placement.ml_ratio
     in
-    let tree_fmt = 
-      if !xml then Placeviz_core.Phyloxml 
+    let tree_fmt =
+      if !xml then Placeviz_core.Phyloxml
       else Placeviz_core.Newick in
-    let write_num_file = 
+    let write_num_file =
       Placeviz_core.write_num_file !bogus_bl tree_fmt in
     let collect ret_code fname =
       try
         let frc = 0 in
-        let placerun = 
+        let placerun =
           Placerun_io.of_file fname in
         let ref_tree = Placerun.get_ref_tree placerun in
-        let decor_ref_tree = 
-          Decor_gtree.of_newick_gtree 
+        let decor_ref_tree =
+          Decor_gtree.of_newick_gtree
             (if not !show_node_numbers then ref_tree
             else (Newick.make_boot_id ref_tree))
         in
         let pqueries = Placerun.get_pqueries placerun in
-        let unplaced_seqs, placed_map = 
+        let unplaced_seqs, placed_map =
           Pquery.make_map_by_best_loc
             criterion
             pqueries
         in
         if unplaced_seqs <> [] then begin
           print_endline "Found the following unplaced sequences:";
-          List.iter 
+          List.iter
             (fun pq -> print_endline (String.concat " " (Pquery.namel pq)))
             unplaced_seqs;
         end;
-        let fname_base = 
+        let fname_base =
           (!out_dir)^"/"^
-            (Filename.basename 
+            (Filename.basename
               (Placerun_io.chop_place_extension fname))
         (* set up the coefficient for the width *)
-        and n_placed = 
-          (List.length pqueries) - (List.length unplaced_seqs) 
-        and min_bl = match !min_fat_bl with 0. -> None | x -> Some x 
+        and n_placed =
+          (List.length pqueries) - (List.length unplaced_seqs)
+        and min_bl = match !min_fat_bl with 0. -> None | x -> Some x
         in
         (* mass width is the amount of mass per unit *)
-        let mass_width = 
+        let mass_width =
           if !unit_width <> 0. then (* unit width specified *)
             !unit_width *. (float_of_int n_placed)
           else (* split up the mass according to the number of queries *)
-            !total_width 
+            !total_width
         in
         let transform = Mass_map.transform_of_str !transform in
         (* make the various visualizations *)
-        let place_massm = 
+        let place_massm =
           Mass_map.By_edge.of_placerun transform weighting criterion placerun in
         if !write_classic then begin
           write_num_file fname_base decor_ref_tree placed_map;
@@ -140,35 +140,35 @@ let () =
             mass_width !log_coeff fname_base decor_ref_tree place_massm
         end;
         if !write_tog then
-          Placeviz_core.write_tog_file 
+          Placeviz_core.write_tog_file
             tree_fmt criterion fname_base decor_ref_tree placed_map;
         if !max_edpl <> 0. then
-          Placeviz_core.write_edpl_tree !white_bg weighting 
+          Placeviz_core.write_edpl_tree !white_bg weighting
             criterion ~mass_width !log_coeff !max_edpl fname_base decor_ref_tree placerun;
         if !write_sing then
-          Placeviz_core.write_sing_file 
+          Placeviz_core.write_sing_file
             weighting
             criterion
             !unit_width
             tree_fmt
-            fname_base 
-            decor_ref_tree 
+            fname_base
+            decor_ref_tree
             (List.filter Pquery.is_placed pqueries);
 
         (* new version code *)
-        let prname = 
+        let prname =
           (Placerun.get_name placerun)^
             (if !use_pp then ".PP" else ".ML")
-        and my_fat = Placeviz_core.fat_tree ?min_bl mass_width !log_coeff 
+        and my_fat = Placeviz_core.fat_tree ?min_bl mass_width !log_coeff
         in
-        let (tax_rp_opt, final_rt) = 
+        let (tax_rp_opt, final_rt) =
           match Refpkg.refpkgo_of_path !refpkg_path with
           | None -> (None, decor_ref_tree)
-          | Some rp -> 
+          | Some rp ->
               if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
               else (None, decor_ref_tree)
         in
-        Phyloxml.named_tree_list_to_file
+        let pd = Xphyloxml.pxdata_of_named_gtrees
           ([
             Some (prname^".ref.fat"),
             my_fat final_rt place_massm;
@@ -184,18 +184,18 @@ let () =
                 Placeviz_core.fat_tree (mass_width /. 2.) !log_coeff taxt
                 (* NOTE: we don't use my_fat taxt here *)
                   (Mass_map.By_edge.of_pre transform
-                    (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif 
+                    (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif
                       weighting criterion ti_imap placerun))
               ]
               end
           with
           | Placement.No_classif -> []))
-          (fname_base^".xml");
+        in Xphyloxml.pxdata_to_file (fname_base ^ ".xml") pd;
 
         if frc = 0 && ret_code = 1 then 0 else ret_code
-      with 
-      | Sys_error msg -> prerr_endline msg; 2 
-      | Placement.No_PP -> 
+      with
+      | Sys_error msg -> prerr_endline msg; 2
+      | Placement.No_PP ->
           failwith "Posterior probability use requested, but some or all placements were calculated without PP."
     in
     exit (List.fold_left collect 1 files)
