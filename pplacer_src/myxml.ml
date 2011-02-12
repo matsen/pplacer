@@ -7,8 +7,8 @@
  * write_long_tag.
 *)
 
-let write_tag ?attrib write_data_inners tag_name ch data = 
-  let attrib_str = 
+let write_tag ?attrib write_data_inners tag_name ch data =
+  let attrib_str =
     match attrib with
     | None -> ""
     | Some s -> " "^s
@@ -17,18 +17,21 @@ let write_tag ?attrib write_data_inners tag_name ch data =
   write_data_inners ch data;
   Printf.fprintf ch "</%s>\n" tag_name
 
-let write_long_tag ?attrib write_inners tag_name ch = 
+let write_long_tag ?attrib write_inners tag_name ch =
   write_tag
     ?attrib
     (fun _ _ ->
       Printf.fprintf ch "\n";
       write_inners ())
     tag_name
-    ch 
+    ch
     ()
 
 let write_float ?attrib = write_tag ?attrib (fun ch x -> Printf.fprintf ch "%g" x)
 let write_int ?attrib = write_tag ?attrib (fun ch x -> Printf.fprintf ch "%d" x)
 let write_string ?attrib = write_tag ?attrib (fun ch x -> Printf.fprintf ch "%s" x)
 
+
+let tag name ?(attributes = []) contents =
+  Xml.Element (name, attributes, [Xml.PCData (contents)])
 

@@ -25,11 +25,11 @@ let to_bare_str = function
   | NCBI s -> s
   | NoTax -> none_str
 
-let of_string id_str = 
+let of_string id_str =
   if id_str = none_str then NoTax
   else
     try
-      Scanf.sscanf id_str "%c*%s" 
+      Scanf.sscanf id_str "%c*%s"
         (fun c s ->
           match c with
           | 'N' -> NCBI s
@@ -38,8 +38,12 @@ let of_string id_str =
     | End_of_file -> invalid_arg (id_str^" is not a valid tax id!")
 
 (* *** I/O *** *)
-let ppr ff ti = 
+let ppr ff ti =
   Format.pp_print_string ff (to_str ti)
+
+let to_xml = function
+  | NCBI s -> [Myxml.tag "id" ~attributes:[("provider", "ncbi_taxonomy")] s]
+  | NoTax -> []
 
 let write_xml ch = function
   | NCBI s -> Printf.fprintf ch "<id provider=\"ncbi_taxonomy\">%s</id>\n" s
