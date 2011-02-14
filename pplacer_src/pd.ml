@@ -13,7 +13,7 @@ let total_floatol =
 (* compute the PD of an induced tree. we recursively go through the tree,
  * returning Some len if there is a placement distal to us, with len being the
  * length of the path to the last recorded MRCA. *)
-let of_induced t ind = 
+let of_induced t ind =
   (* start recording the total branch length from the most distal placement *)
   let perhaps_start_path id =
     match IntMapFuns.opt_find id ind with
@@ -29,7 +29,7 @@ let of_induced t ind =
         match List.filter ((<>) None) below with
         | [] -> perhaps_start_path id
         | [Some x] -> Some ((Gtree.get_bl t id) +. x) (* continue path *)
-        | _ as l -> 
+        | _ as l ->
             add_to_tot (total_floatol l); (* record lengths from distal paths *)
             Some (Gtree.get_bl t id)) (* start recording from mrca of those paths *)
       perhaps_start_path
@@ -39,9 +39,9 @@ let of_induced t ind =
   | None -> failwith "empty induced tree"
 
 (* later have a lazy data cache with the induceds? *)
-let of_pr criterion pr = 
-  of_induced (Placerun.get_ref_tree pr) 
+let of_pr criterion pr =
+  of_induced (Placerun.get_ref_tree pr)
                 (Induced.of_placerun criterion pr)
 
-let normalized_of_pr criterion pr = 
+let normalized_of_pr criterion pr =
   (of_pr criterion pr) /. (Gtree.tree_length (Placerun.get_ref_tree pr))

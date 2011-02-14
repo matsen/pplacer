@@ -15,7 +15,7 @@ let mimic a = create (BA3.dim1 a) (BA3.dim2 a) (BA3.dim3 a)
 let copy a = let b = mimic a in BA3.blit a b; b
 let set_all (* tensor value *) = BA3.fill
 
-let ppr ff x = 
+let ppr ff x =
   let n = dim1 x in
   Format.fprintf ff "@[{";
   for i=0 to n-1 do

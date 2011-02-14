@@ -13,11 +13,11 @@ open MapsSets
 
 let prl = List.map Placerun_io.of_file ["test1.place"; "test2.place"; "test3.place"]
 
-let (rt, blobl) = t_named_prel_of_prl prl 
+let (rt, blobl) = t_named_prel_of_prl prl
 
 open PreCluster
 
-let bm_to_pairs m = 
+let bm_to_pairs m =
   let l = BMap.fold (fun k v l -> (k,v)::l) m [] in
   List.rev l
 

@@ -11,7 +11,7 @@
 open Fam_batteries
 
 type t =
-  { 
+  {
    statd     :  Gsl_vector.vector;
    diagdq    :  Diagd.diagd;
    seq_type  :  Alignment.seq_type;
@@ -25,33 +25,33 @@ type t =
 let statd    model = model.statd
 let diagdq   model = model.diagdq
 let rates    model = model.rates
-let tensor   model = model.tensor 
-let util_v   model = model.util_v 
+let tensor   model = model.tensor
+let util_v   model = model.util_v
 let seq_type model = model.seq_type
 let n_states model = Alignment.nstates_of_seq_type model.seq_type
 let n_rates  model = Array.length (rates model)
 
 let build model_name emperical_freqs opt_transitions ref_align rates =
-  let seq_type, (trans, statd) = 
-    if model_name = "GTR" then 
-      (Alignment.Nucleotide_seq, 
+  let seq_type, (trans, statd) =
+    if model_name = "GTR" then
+      (Alignment.Nucleotide_seq,
       match opt_transitions with
       | Some transitions ->
           (Nuc_models.b_of_trans_vector transitions,
           Alignment_funs.emper_freq 4 Nuc_models.nuc_map ref_align)
-      | None -> assert(false)) 
+      | None -> assert(false))
     else
       (Alignment.Protein_seq,
-        let model_trans, model_statd = 
+        let model_trans, model_statd =
           Prot_models.trans_and_statd_of_model_name model_name in
         (model_trans,
           if emperical_freqs then
-            Alignment_funs.emper_freq 20 Prot_models.prot_map ref_align 
+            Alignment_funs.emper_freq 20 Prot_models.prot_map ref_align
           else
             model_statd))
   in
   let n_states = Alignment.nstates_of_seq_type seq_type in
-  { 
+  {
     statd = statd;
     diagdq = Diagd.normalizedOfExchangeableMat trans statd;
     seq_type = seq_type;
@@ -62,7 +62,7 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
 
 let of_prefs ref_dir_complete prefs ref_align =
   let opt_transitions = match Prefs.stats_fname prefs with
-  | s when s = "" -> 
+  | s when s = "" ->
       Printf.printf
         "NOTE: you have not specified a stats file. I'm using the %s model.\n"
         (Prefs.model_name prefs);
@@ -71,14 +71,14 @@ let of_prefs ref_dir_complete prefs ref_align =
   in
   if Alignment_funs.is_nuc_align ref_align && (Prefs.model_name prefs) <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
-  build 
-    (Prefs.model_name prefs) 
+  build
+    (Prefs.model_name prefs)
     (Prefs.emperical_freqs prefs)
-    opt_transitions 
-    ref_align 
-    (Gamma.discrete_gamma 
+    opt_transitions
+    ref_align
+    (Gamma.discrete_gamma
       (Prefs.gamma_n_cat prefs) (Prefs.gamma_alpha prefs))
 
 (* prepare the tensor for a certain branch length *)
-let prep_tensor_for_bl model bl = 
+let prep_tensor_for_bl model bl =
   (model.diagdq)#multi_exp model.tensor model.rates bl

@@ -18,31 +18,31 @@ let tolerance = 1e-15
 let vecMake n x = Gsl_vector.create ~init:x n
 let matMake nrows ncols x = Gsl_matrix.create ~init:x nrows ncols
 
-let vecOfArray a = 
+let vecOfArray a =
   let n = Array.length a in
   let v = Gsl_vector.create n in
   for i=0 to n-1 do v.{i} <- a.(i) done;
   v
 
-let vecOfList l = 
+let vecOfList l =
   vecOfArray (Array.of_list l)
 
-let vecFold_left f start v = 
+let vecFold_left f start v =
   let x = ref start
   and n = Gsl_vector.length v in
-  for i=0 to n-1 do 
+  for i=0 to n-1 do
     x := f !x v.{i}
   done;
   !x
 
-let vecInit n f = 
+let vecInit n f =
   let v = Gsl_vector.create n in
   for i=0 to n-1 do v.{i} <- f i done;
   v
 
 let vecMimic v = Gsl_vector.create (Gsl_vector.length v)
 
-let matInit nrows ncols f = 
+let matInit nrows ncols f =
   let m = Gsl_matrix.create nrows ncols in
   for r=0 to nrows-1 do
     for c=0 to ncols-1 do
@@ -55,20 +55,20 @@ let allocMatTranspose m =
   let (rows, cols) = Gsl_matrix.dims m in
   matInit cols rows (fun i j -> m.{j,i})
 
-let vecMap f v = 
+let vecMap f v =
   vecInit (Gsl_vector.length v)
              (fun i -> f v.{i})
 
-let matMap f m = 
+let matMap f m =
   let (rows, cols) = Gsl_matrix.dims m in
   matInit rows cols (fun i j -> f m.{i,j})
 
-let vecMapFromArray f a = 
+let vecMapFromArray f a =
   let n = Array.length a in
   assert(n > 0);
   vecInit n ( fun i -> f a.(i) )
 
-let matMapFromAAR f m = 
+let matMapFromAAR f m =
   (* assume rectangular *)
   let nrows = Array.length m in
   assert(nrows > 0);
@@ -78,7 +78,7 @@ let matMapFromAAR f m =
     fun i j -> f m.(i).(j)
   )
 
-let diagOfArr a = 
+let diagOfArr a =
   let n = Array.length a in
   let m = Gsl_matrix.create ~init:0. n n in
   for i=0 to n-1 do
@@ -86,7 +86,7 @@ let diagOfArr a =
   done;
   m
 
-let diagOfVec v = 
+let diagOfVec v =
   let n = Gsl_vector.length v in
   let m = Gsl_matrix.create ~init:0. n n in
   for i=0 to n-1 do
@@ -95,46 +95,46 @@ let diagOfVec v =
   m
 
 (* information about vectors and matrices *)
-let assertSymm m = 
+let assertSymm m =
   let n, cols = Gsl_matrix.dims m in
   assert(n = cols);
   for i=0 to n-1 do
     for j=i to n-1 do
       if (abs_float(m.{i,j} -. m.{j,i}) > tolerance) then
         failwith (
-          Printf.sprintf 
+          Printf.sprintf
             "matrix not symmetric: %f vs %f" m.{i,j} m.{j,i})
     done
   done
 
-let vecSatisfiesPredicate pred v = 
-  vecFold_left 
-    (fun soFar x -> soFar && pred x) 
-    true 
+let vecSatisfiesPredicate pred v =
+  vecFold_left
+    (fun soFar x -> soFar && pred x)
+    true
     v
 
-let vecNonneg v = 
+let vecNonneg v =
   vecSatisfiesPredicate (fun x -> x >= 0.) v
 
-let matVecMul dest a v = 
-  Gsl_blas.gemv 
-    Gsl_blas.NoTrans ~alpha:1. 
+let matVecMul dest a v =
+  Gsl_blas.gemv
+    Gsl_blas.NoTrans ~alpha:1.
     ~a:a ~x:v ~beta:0. ~y:dest
 
-let allocMatVecMul a v = 
-  let (rows, midA) = Gsl_matrix.dims a 
+let allocMatVecMul a v =
+  let (rows, midA) = Gsl_matrix.dims a
   and midV = Gsl_vector.length v in
   assert(midA = midV);
   let w = Gsl_vector.create rows in
   matVecMul w a v;
   w
 
-let matMatMul dest a b = 
-  Gsl_blas.gemm 
-    ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.NoTrans 
+let matMatMul dest a b =
+  Gsl_blas.gemm
+    ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.NoTrans
     ~alpha:1. ~a:a ~b:b ~beta:0. ~c:dest
 
-let allocMatMatMul a b = 
+let allocMatMatMul a b =
   let (rows, midA) = Gsl_matrix.dims a
   and (midB, cols) = Gsl_matrix.dims b in
   assert(midA = midB);
@@ -143,7 +143,7 @@ let allocMatMatMul a b =
   m
 
 (* norms and normalizing *)
-let lp_norm p v = 
+let lp_norm p v =
   assert(p > 0.);
   let x = ref 0. in
   for i=0 to (Gsl_vector.length v)-1 do
@@ -155,12 +155,12 @@ let l1_norm v = lp_norm 1. v
 let l2_norm v = lp_norm 2. v
 
 (* normalize in place *)
-let gen_normalize norm_fun v = 
+let gen_normalize norm_fun v =
   Gsl_vector.scale v (1. /. (norm_fun v))
 let l1_normalize v = gen_normalize l1_norm v
 let l2_normalize v = gen_normalize l2_norm v
 
-let alloc_gen_normalize norm_fun v = 
+let alloc_gen_normalize norm_fun v =
   let normed = Gsl_vector.copy v in
   Gsl_vector.scale normed (1. /. (norm_fun normed));
   normed
@@ -173,13 +173,13 @@ let symmEigs m =
   Gsl_eigen.symmv (`M(m))
 
 (* pretty printers *)
-let ppr_gsl_vector ff y = 
+let ppr_gsl_vector ff y =
   Format.fprintf ff "@[{";
   Ppr.ppr_list_inners Format.pp_print_float ff (
     Array.to_list (Gsl_vector.to_array y));
   Format.fprintf ff "}@]"
 
-let ppr_gsl_matrix ff m = 
+let ppr_gsl_matrix ff m =
   let nrows, _ = Gsl_matrix.dims m in
   Format.fprintf ff "@[{";
   for i=0 to nrows-1 do

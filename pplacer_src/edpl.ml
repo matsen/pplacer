@@ -10,7 +10,7 @@
 open MapsSets
 
 (* calculate quadratic form of an uptri u and a vector v *)
-let qform u v = 
+let qform u v =
   assert(Uptri.get_dim u = Array.length v);
   let tot = ref 0. in
   Uptri.iterij
@@ -18,25 +18,25 @@ let qform u v =
     u;
   !tot
 
-let raw_edpl_of_placement_array criterion t pa = 
+let raw_edpl_of_placement_array criterion t pa =
   let d = Distance_mat.of_placement_array t pa in
-  qform 
-    d 
+  qform
+    d
     (Base.arr_normalized_prob (Array.map criterion pa))
 
-let raw_edpl_of_placement_list criterion t pl = 
+let raw_edpl_of_placement_list criterion t pl =
   raw_edpl_of_placement_array criterion t (Array.of_list pl)
 
-let raw_edpl_of_pquery criterion t pq = 
-  raw_edpl_of_placement_list 
+let raw_edpl_of_pquery criterion t pq =
+  raw_edpl_of_placement_list
     criterion t (Pquery.place_list pq)
 
-let edpl_of_pquery criterion t pq = 
+let edpl_of_pquery criterion t pq =
   (raw_edpl_of_pquery criterion t pq) /. (Gtree.tree_length t)
 
 (* weight the edpl list by the mass. will throw an out of bounds if the top
  * id is not the biggest id in the tree. *)
-let weighted_edpl_map weighting criterion t pquery_list = 
+let weighted_edpl_map weighting criterion t pquery_list =
   let _ = (weighting,criterion,t,pquery_list) in
   raise (Base.Unimplemented "weighted_edpl_map")
   (*
@@ -56,25 +56,25 @@ let weighted_edpl_map weighting criterion t pquery_list =
           in
           mass_a.(i) <- mass_a.(i) +. mass;
           edpl_a.(i) <- edpl_a.(i) +. mass *. b)
-        (Mass_map.Pre.mul_of_pquery weighting criterion 
+        (Mass_map.Pre.mul_of_pquery weighting criterion
            mass_per_pquery pq))
     pquery_list;
-  let rec make_map accu i = 
+  let rec make_map accu i =
     if i < 0 then accu
-    else 
-      make_map 
+    else
+      make_map
         (if mass_a.(i) <> 0. then
           IntMap.add i (mass_a.(i), edpl_a.(i) /. mass_a.(i)) accu
-        else 
+        else
           accu)
         (i-1)
   in
   make_map IntMap.empty top_id
   *)
 
-let weighted_edpl_map_of_pr weighting criterion pr = 
-  weighted_edpl_map 
-    weighting 
-    criterion 
+let weighted_edpl_map_of_pr weighting criterion pr =
+  weighted_edpl_map
+    weighting
+    criterion
     (Placerun.get_ref_tree pr)
     (Placerun.get_pqueries pr)

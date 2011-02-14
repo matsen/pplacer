@@ -2,7 +2,7 @@
 # invocation: pplacer --verbosity 2 -t small.tre -r smallRefAlign.phy fragment.fasta
 # reference tree file: small.tre
 # reference alignment file: smallRefAlign.phy
-# statistics file: 
+# statistics file:
 # reference data directory: .
 # substitution model: LG
 # use emperical frequencies: true

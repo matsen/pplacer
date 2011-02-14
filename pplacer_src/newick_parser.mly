@@ -1,4 +1,4 @@
-%token CR EOF COLON SEMICOLON COMMA OPENP CLOSEP 
+%token CR EOF COLON SEMICOLON COMMA OPENP CLOSEP
 %token <string> LABEL REAL
 
 %start tree
@@ -15,11 +15,11 @@
   let add_bl = add_bark Newick_bark.map_set_bl
   let add_name = add_bark Newick_bark.map_set_name
   let add_boot = add_bark Newick_bark.map_set_boot
-  let add_leaf leafname = 
+  let add_leaf leafname =
     incr node_num;
     add_name leafname;
     Stree.leaf !node_num
-  let add_internal tL = 
+  let add_internal tL =
     incr node_num;
     Stree.node !node_num tL
 %}
@@ -45,10 +45,10 @@ subtree_list:
   { $1 :: $3}
   | subtree
   { [$1] }
-  
-nosemitree: 
-  | subtree 
-  { 
+
+nosemitree:
+  | subtree
+  {
     let result = Gtree.gtree $1 !bark_map in
     (* clear things out for the next tree *)
     node_num := -1;
@@ -56,7 +56,7 @@ nosemitree:
     result
   }
 
-tree: 
+tree:
   | nosemitree SEMICOLON
   { $1 }
   | nosemitree

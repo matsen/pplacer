@@ -3,7 +3,7 @@
  *)
 
 
-let () = 
+let () =
   Subcommand.inner_loop
     ~prg_name:"placeutil"
     ~version:"v1.1"

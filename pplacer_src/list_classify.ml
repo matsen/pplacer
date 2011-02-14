@@ -6,18 +6,18 @@ module TIAMR = AlgMap.AlgMapR (Tax_id.OrderedTaxId)
 
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
  * the first time that the tax rank is less than or equal to rank *)
-let classify_at_rank td rank ti = 
-  let rec aux curr_ti = 
+let classify_at_rank td rank ti =
+  let rec aux curr_ti =
     if rank >= Tax_taxonomy.get_tax_rank td curr_ti then curr_ti
-    else 
-      aux 
+    else
+      aux
         (try Tax_taxonomy.get_ancestor td curr_ti with
         | Tax_taxonomy.NoAncestor _ -> assert(false))
   in
   aux ti
 
 (* apply f to all of the keys and add the results together *)
-let keymap_add_by f m = 
+let keymap_add_by f m =
   List.fold_right
     (fun (k,v) -> (TIAMR.add_by (f k) v))
     (Tax_id.TaxIdMapFuns.to_pairs m)
@@ -40,14 +40,14 @@ let classif_stral td name desired_rank m =
 let classify how criterion rp prl =
   let td = Refpkg.get_taxonomy rp in
   let n_ranks = Tax_taxonomy.get_n_ranks td in
-  List.iter 
+  List.iter
     (fun pr ->
       let ch = open_out ((Placerun.get_name pr)^".sqlclassif") in
-      try 
-        List.iter 
+      try
+        List.iter
           (fun pq ->
             let outl = ref [] in
-            let m = ref 
+            let m = ref
               (List.fold_right
                 (fun p ->
                   TIAMR.add_by
@@ -58,8 +58,8 @@ let classify how criterion rp prl =
             in
             for desired_rank=(n_ranks-1) downto 0 do
               m := keymap_add_by (classify_at_rank td desired_rank) !m;
-              outl := 
-                (List.flatten 
+              outl :=
+                (List.flatten
                   (List.map
                     (fun name -> classif_stral td name desired_rank !m)
                     (Pquery.namel pq)))
@@ -70,6 +70,6 @@ let classify how criterion rp prl =
           close_out ch;
       with
       | Placement.No_classif ->
-          invalid_arg 
+          invalid_arg
             ((Placerun.get_name pr)^" contains unclassified queries!"))
     prl

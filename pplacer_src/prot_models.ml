@@ -13,7 +13,7 @@ let prot_code = [|'A'; 'R'; 'N'; 'D'; 'C'; 'Q'; 'E'; 'G'; 'H'; 'I'; 'L'; 'K'; 'M
 let prot_map = begin
   let pm = ref CharMap.empty in
   Array.iteri (
-    fun i c -> 
+    fun i c ->
       let v = Gsl_vector.create ~init:0. 20 in
       v.{i} <- 1.;
       pm := CharMap.add c v !pm;
@@ -26,25 +26,25 @@ let prot_map = begin
     CharMap.add 'X' any !pm))))
 end
 
-let lv_of_aa aa = 
+let lv_of_aa aa =
   try
-    CharMap.find aa prot_map 
+    CharMap.find aa prot_map
   with
-    | Not_found -> 
+    | Not_found ->
         invalid_arg (Printf.sprintf "%c not a known amino acid!" aa)
 
 
 (* *** MODELS *** *)
 
-let parseLine line = 
+let parseLine line =
   Array.of_list (List.map float_of_string (Str.split (Str.regexp "[ \t]+") line))
 
-let parseProtModel stringArr = 
-  let lowerTriMat = 
+let parseProtModel stringArr =
+  let lowerTriMat =
     Array.map parseLine stringArr
   in
   let nEntries = 1 + Array.length lowerTriMat in
-  let qMat = 
+  let qMat =
     Fam_gsl_matvec.matInit nEntries nEntries (
       fun i j ->
         if i = j then 0. (* filled in later *)
@@ -53,7 +53,7 @@ let parseProtModel stringArr =
 
 let parseFreq str = Gsl_vector.of_array (parseLine str)
 
-let littleWag = 
+let littleWag =
 parseProtModel [|
 "0.551571";
 "0.509848   0.635346";
@@ -61,7 +61,7 @@ parseProtModel [|
 "1.027040   0.528191  0.265256   0.0302949";
 |]
 
-let wag_trans = 
+let wag_trans =
 parseProtModel [|
 "0.551571";
 "0.509848   0.635346";
@@ -88,7 +88,7 @@ let wag_statd = parseFreq "0.0866279  0.043972  0.0390894  0.0570451  0.0193078 
 
 
 (* Le and Gascuel's matrix *)
-let lg_trans = 
+let lg_trans =
 parseProtModel [|
 "0.425093";
 "0.276818 0.751878";

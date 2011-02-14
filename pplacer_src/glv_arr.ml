@@ -8,7 +8,7 @@ type glv_arr = Glv.glv array
 
 let arr_get = Array.get
 
-let make ~n_glvs ~n_sites ~n_rates ~n_states = 
+let make ~n_glvs ~n_sites ~n_rates ~n_states =
   Array.init n_glvs (fun _ -> Glv.make ~n_sites ~n_rates ~n_states)
 
 let iter = Array.iter
@@ -21,7 +21,7 @@ let get a glvi = arr_get a glvi
 
 let get_one a = assert(a <> [||]); a.(0)
 
-let evolve_into model ~src ~dst bl_fun = 
+let evolve_into model ~src ~dst bl_fun =
   let n = Array.length src in
   if n <> Array.length dst then
     failwith "Glv_arr.evolve_into: unequal lengths!";
@@ -30,7 +30,7 @@ let evolve_into model ~src ~dst bl_fun =
   done
 
 (* for making a collection of nodes for the first (fast) evaluation *)
-let prep_supernodes model ~dst darr parr bl_fun = 
+let prep_supernodes model ~dst darr parr bl_fun =
   let n = Array.length dst in
   if n <> Array.length darr || n <> Array.length parr then
     failwith "Glv_arr.prep_supernode: unequal lengths!";

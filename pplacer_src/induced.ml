@@ -1,7 +1,7 @@
 (* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * This is how we record the most distal placements for a placerun. 
+ * This is how we record the most distal placements for a placerun.
  * We store them as a map from the edge numbers where they live to the distance
  * from their position on the edge to the distal side of that edge. We call these (key,value) pairs "marks" on the tree.
  *
@@ -20,7 +20,7 @@ let fold_bool_or = function
    | [] -> assert(false)
 
 (* check and make sure there are no extra points on the induced *)
-let check_on_stree t ind = 
+let check_on_stree t ind =
   let rec aux = function
     | Stree.Node(id, tL) ->
         let we_have_one = IntMap.mem id ind in
@@ -30,7 +30,7 @@ let check_on_stree t ind =
         end
         else we_have_one
     | Stree.Leaf id -> IntMap.mem id ind
-  in 
+  in
   let _ = aux t in ()
 
 let check t ind = check_on_stree (Gtree.get_stree t) ind
@@ -51,18 +51,18 @@ type status = {left : bool; right : bool;}
 
 let status_done = {left=true; right=true;}
 
-let status_or a b = 
+let status_or a b =
   {left = a.left || b.left; right = a.right || b.right;}
 
 let fold_status_or = function
    | x::l -> List.fold_left status_or x l
    | [] -> assert(false)
 
-let intersect_on_stree t ind1 ind2 = 
+let intersect_on_stree t ind1 ind2 =
   let m = ref IntMap.empty in
   let add k v = m := IntMap.add k v !m in
   (* return if we should continue *)
-  let status_add j status = 
+  let status_add j status =
     if status = status_done then begin
       add j 0.; (* MRCA at node *)
       status_done
@@ -70,13 +70,13 @@ let intersect_on_stree t ind1 ind2 =
     else
       let ofj = IntMapFuns.opt_find j in
       match (ofj ind1, ofj ind2) with
-      | (Some p1, Some p2) -> 
+      | (Some p1, Some p2) ->
           add j (max p1 p2); status_done
       (* max so we get the most proximal placement *)
-      | (Some p, None) -> 
+      | (Some p, None) ->
           if status.right then (add j p; status_done)
           else {left=true;right=false}
-      | (None, Some p) -> 
+      | (None, Some p) ->
           if status.left then (add j p; status_done)
           else {left=false;right=true}
       | (None, None) -> status
@@ -86,30 +86,30 @@ let intersect_on_stree t ind1 ind2 =
         let below = List.map aux tL in
         if List.mem status_done below then status_done
         else status_add id (fold_status_or below)
-    | Stree.Leaf id -> 
+    | Stree.Leaf id ->
         status_add id {left=false; right=false}
   in
   let _ = aux t in
   !m
 
-let intersect t ind1 ind2 = 
+let intersect t ind1 ind2 =
   intersect_on_stree (Gtree.get_stree t) ind1 ind2
 
 
 (* *** union of induceds *** *)
 (* much simpler.
  *)
- 
+
 (* we just have a bool that says if the given edge already has something below
  * it.
  * *)
-let union_on_stree t ind1 ind2 = 
+let union_on_stree t ind1 ind2 =
   let m = ref IntMap.empty in
   let add k v = m := IntMap.add k v !m in
-  let attempt_add j = 
+  let attempt_add j =
     let ofj = IntMapFuns.opt_find j in
     match (ofj ind1, ofj ind2) with
-    | (Some p1, Some p2) -> 
+    | (Some p1, Some p2) ->
         add j (min p1 p2); true
         (* min so we get the most distal placement *)
     | (Some p, None) -> add j p; true
@@ -126,14 +126,14 @@ let union_on_stree t ind1 ind2 =
   let _ = aux t in
   !m
 
-let union t ind1 ind2 = 
+let union t ind1 ind2 =
   union_on_stree (Gtree.get_stree t) ind1 ind2
 
 
 
 (* *** IO *** *)
-let of_placerun criterion pr = 
-  let distal_mark_map = 
+let of_placerun criterion pr =
+  let distal_mark_map =
     IntMap.map
       (List.sort compare)
       (List.fold_right
@@ -145,10 +145,10 @@ let of_placerun criterion pr =
         (Placerun.get_pqueries pr)
         IntMap.empty)
   in
-  let check_edge i = 
+  let check_edge i =
     if IntMap.mem i distal_mark_map then
       [i, List.hd (IntMap.find i distal_mark_map)]
-    else 
+    else
       []
   in
   IntMapFuns.of_pairlist

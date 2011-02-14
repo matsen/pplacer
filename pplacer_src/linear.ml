@@ -22,14 +22,14 @@ external gemmish : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -
 (* statd dst a b *)
 external statd_pairwise_prod : Gsl_vector.vector -> Tensor.tensor -> Tensor.tensor -> Tensor.tensor -> unit = "statd_pairwise_prod_c"
 
-(* x y first last util 
+(* x y first last util
  * take the logarithm of the dot product of x and y restricted to the interval
  * [start, last]. start and last are 0-indexed, of course.
  * *)
 external bounded_logdot : Tensor.tensor -> Tensor.tensor -> int -> int -> Gsl_vector.vector -> float = "bounded_logdot_c"
 
 (* dst u lambda uit
- * where uit is u inverse transpose 
+ * where uit is u inverse transpose
  * dst_ij = sum_k (lambda_k *. u_ik *. uit_jk)
  * *)
 external dediagonalize : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_vector.vector -> Gsl_matrix.matrix -> unit = "dediagonalize"

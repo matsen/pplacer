@@ -19,8 +19,8 @@ let pr3 = Placerun_io.of_file "test3.place"
 
 open Barycenter
 
-let mop fname = 
-  Mass_map.Indiv.of_placerun Mass_map.Unweighted Placement.ml_ratio 
+let mop fname =
+  Mass_map.Indiv.of_placerun Mass_map.Unweighted Placement.ml_ratio
   (Placerun_io.of_file fname)
 
 let rt = Placerun.get_ref_tree (Placerun_io.of_file "test1.place")
@@ -35,7 +35,7 @@ let q1 = find 1. rt m1
 let q2 = find 1. rt m2
 let q3 = find 1. rt m3
 
-(* 
+(*
  *
 
  * let q4 = of_placerun Mass_map.Unweighted Placement.ml_ratio 1.

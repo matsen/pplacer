@@ -168,7 +168,7 @@ let () =
               if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
               else (None, decor_ref_tree)
         in
-        Phyloxml.named_gtrees_to_file 
+        Phyloxml.named_gtrees_to_file
           (fname_base ^ ".xml")
           ([
             Some (prname^".ref.fat"),

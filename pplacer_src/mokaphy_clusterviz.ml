@@ -115,7 +115,7 @@ let clusterviz prefs = function
           try
             let nameim = Cluster_common.nameim_of_csv cluster_fname in
             let (nt, ssm) = name_tree_and_subsets_map dirname nameim in
-            (* write it out, and read it back in for the combination 
+            (* write it out, and read it back in for the combination
             Phyloxml.named_gtree_to_file out_fname out_tree_name nt;
             let named_tree =
               match (Phyloxml.load out_fname).Phyloxml.trees with

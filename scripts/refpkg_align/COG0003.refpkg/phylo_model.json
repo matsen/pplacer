@@ -1,10 +1,10 @@
 {
-  "datatype": "AA", 
-  "subs_model": "WAG", 
-  "program": "RAxML version 7.2.5", 
-  "ras_model": "gamma", 
+  "datatype": "AA",
+  "subs_model": "WAG",
+  "program": "RAxML version 7.2.5",
+  "ras_model": "gamma",
   "gamma": {
-    "alpha": 1.15316, 
+    "alpha": 1.15316,
     "n_cats": 4
   }
 }

@@ -1,9 +1,9 @@
 # pplacer v1.1.alpha00 run, 12/14/2010 14:31:35
 # invocation: placeutil -o ../nopseudo/p4z2r22 --tax-exclude pseudo.txt /home/bvdiversity/data/processed/p4z2r22/qalign.place
-# reference tree file: 
+# reference tree file:
 # reference alignment file: /home/bvdiversity/data/processed/p4z2r22/refalign.fasta
-# statistics file: 
-# reference data directory: 
+# statistics file:
+# reference data directory:
 # substitution model: LG
 # use emperical frequencies: true
 # number of gamma categories: 1

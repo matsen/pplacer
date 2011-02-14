@@ -12,9 +12,9 @@
 open MapsSets
 open Fam_batteries
 
-module type BLOB = 
-sig 
-  type t 
+module type BLOB =
+sig
+  type t
   val merge: t -> t -> t
   val compare: t -> t -> int
 end
@@ -22,7 +22,7 @@ end
 module Cluster (B: BLOB) =
   struct
 
-    module OrderedBlob = 
+    module OrderedBlob =
       struct
         type t = B.t
         let compare = B.compare
@@ -31,7 +31,7 @@ module Cluster (B: BLOB) =
     module BMap = Map.Make (OrderedBlob)
 
     (* cble is short for clusterable *)
-    type cble = 
+    type cble =
       {
         dist : float;
         small : B.t;
@@ -40,7 +40,7 @@ module Cluster (B: BLOB) =
 
     (* we require distf to be passed in here, so that we can perform some normm
      * fun as below *)
-    let cble_of_blobs distf b b' = 
+    let cble_of_blobs distf b b' =
       let (small, big) = if compare b b' < 0 then (b, b') else (b', b) in
       { dist = distf b b'; small = small; big = big; }
 
@@ -52,16 +52,16 @@ module Cluster (B: BLOB) =
       if cdist <> 0 then cdist
       else Pervasives.compare a b
 
-    let replace_blob distf oldb newb c = 
+    let replace_blob distf oldb newb c =
       if c.small = oldb then cble_of_blobs distf c.big newb
       else if c.big = oldb then cble_of_blobs distf c.small newb
       else invalid_arg "replace_blob: blob not found"
 
-    let perhaps_replace_blob distf ~oldb ~newb c = 
+    let perhaps_replace_blob distf ~oldb ~newb c =
       if blob_in_cble oldb c then replace_blob distf oldb newb c
       else c
 
-    module OrderedCble = 
+    module OrderedCble =
       struct
         type t = cble
         let compare = compare_cble
@@ -74,14 +74,14 @@ module Cluster (B: BLOB) =
     (* BEGIN crazy work around until ocaml 3.12 *)
     exception First of B.t
 
-    let first_key m = 
-      try 
-        BMap.iter (fun k _ -> raise (First k)) m; 
+    let first_key m =
+      try
+        BMap.iter (fun k _ -> raise (First k)) m;
         invalid_arg "empty map given to first_key"
       with
       | First k -> k
 
-    let get_only_binding m = 
+    let get_only_binding m =
       let k = first_key m in
       match BMap.remove k m with
       | m' when m' = BMap.empty -> (k, BMap.find k m)
@@ -90,13 +90,13 @@ module Cluster (B: BLOB) =
 
     (* note that the blobls can be non normalized as we call normf on them from
      * the beginning and pass those on to distf *)
-    let of_named_blobl given_distf normf blobl = 
-      let counter = ref 0 
+    let of_named_blobl given_distf normf blobl =
+      let counter = ref 0
       and barkm = ref IntMap.empty
       and bmapr = ref BMap.empty
       and csetr = ref CSet.empty
       and blobim = ref IntMap.empty
-      in 
+      in
       let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
       in
       List.iter
@@ -109,12 +109,12 @@ module Cluster (B: BLOB) =
         blobl;
       (* we store our normf results in normm *)
       let normm = ref (BMap.mapi (fun b _ -> normf b) (!bmapr)) in
-      let distf b b' = 
+      let distf b b' =
         given_distf ~x1:(BMap.find b !normm) ~x2:(BMap.find b' !normm) b b'
       in
-      let rec init_aux = function 
-        | b::l -> 
-            List.iter 
+      let rec init_aux = function
+        | b::l ->
+            List.iter
               (fun b' -> csetr := CSet.add (cble_of_blobs distf b b') (!csetr))
               l;
               init_aux l
@@ -127,11 +127,11 @@ module Cluster (B: BLOB) =
       (* now actually perform the clustering *)
       let n_blobs = BMap.fold (fun _ _ i -> i+1) (!bmapr) 0 in
       assert (n_blobs > 0);
-      let rec merge_aux bmap cset free_index = 
+      let rec merge_aux bmap cset free_index =
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
         flush_all ();
-        let set_bl_for b bl = 
-          barkm := Newick_bark.map_set_bl 
+        let set_bl_for b bl =
+          barkm := Newick_bark.map_set_bl
                      (Stree.top_id (BMap.find b bmap)) bl (!barkm)
         in
         if CSet.cardinal cset = 0 then begin
@@ -148,9 +148,9 @@ module Cluster (B: BLOB) =
           blobim := IntMap.add free_index merged (!blobim);
           set_bl_for next.small (distf next.small merged);
           set_bl_for next.big (distf next.big merged);
-          barkm := 
+          barkm :=
             Newick_bark.map_set_name free_index (string_of_int free_index) (!barkm);
-          merge_aux 
+          merge_aux
             (BMap.add
               merged
               (Stree.node free_index [tsmall; tbig])
@@ -167,11 +167,11 @@ module Cluster (B: BLOB) =
     (* mimic clusters blobl with the same steps as in the supplied tree, and
      * spit out a blobim which represents what would have resulted had we done
      * the clustering in that way. *)
-    let mimic t blobl = 
-      let blobim = ref IntMap.empty in 
+    let mimic t blobl =
+      let blobim = ref IntMap.empty in
       let set_blob i b = blobim := IntMapFuns.check_add i b (!blobim) in
       ListFuns.iteri set_blob blobl;
-      let _ = 
+      let _ =
         Gtree.recur
           (fun i -> function
             | [b1; b2] -> let m = B.merge b1 b2 in set_blob i m; m
@@ -183,7 +183,7 @@ module Cluster (B: BLOB) =
   end
 
 
-module PreBlob = 
+module PreBlob =
   struct
     type t = Mass_map.Pre.t
     let compare = Pervasives.compare

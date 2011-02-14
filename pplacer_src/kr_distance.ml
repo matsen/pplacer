@@ -25,27 +25,27 @@ exception Total_kr_not_zero of float
 let tol = 1e-10 (* "zero" *)
 
 (* the KR exponent is 1/p unless p is less than 1, in which case it's 1 *)
-let outer_exponent p = 
+let outer_exponent p =
   if p < 1. then 1.
   else 1. /. p
- 
+
 (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
 let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
 
-(* total up the info from the previous step. 
- * note that data_sofar will be modified in place. 
+(* total up the info from the previous step.
+ * note that data_sofar will be modified in place.
  * data_to_r: takes the kr info vector and turns it into a real number
  * data_info_list: list of (distal_bl, data)
  *
  * signature is
 ('a -> float) -> float -> (float * 'b) list -> ('a -> 'b -> 'c) -> float ->     'a          -> float * 'a
- data_to_r       bl       data_info_list        update_data        prev_subtot  start_data  
+ data_to_r       bl       data_info_list        update_data        prev_subtot  start_data
  *
  * is what ocaml infers, but update_data is actually 'a -> 'b -> unit, as
  * update_data modifies in place
  * *)
-let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_data = 
-  let rec aux ~subtotal ~prev_a data_sofar data_info_list = 
+let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_data =
+  let rec aux ~subtotal ~prev_a data_sofar data_info_list =
     (* next_total actually adds on the segment length times data_to_r of
      * the kr vector *)
     let next_subtotal a =
@@ -56,7 +56,7 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
     in
     match data_info_list with
     (* a is the location of the location of the data along the edge *)
-    | (a, data)::rest -> 
+    | (a, data)::rest ->
         (* we pull this out so that we do the next total, then add on the data
          * onto the data_sofar *)
         if a < 0. || a > bl then raise (Invalid_place_loc a);
@@ -66,7 +66,7 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
           ~prev_a:a
           (update_data data_sofar data; data_sofar)
           rest
-    | [] -> 
+    | [] ->
         (* sum things up on final segment to the next node *)
         (next_subtotal bl, data_sofar)
   in
@@ -82,53 +82,53 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
 let total_over_tree curried_edge_total
                     check_final_data
                     data_list_sum
-                    starter_data_factory 
+                    starter_data_factory
                     ref_tree =
-  let (grand_total, final_data) = 
-    Stree.recur 
+  let (grand_total, final_data) =
+    Stree.recur
       (fun id below_list -> (* the node recurrence *)
-        curried_edge_total 
+        curried_edge_total
           id
           (List.fold_right ( +. ) (List.map fst below_list) 0.) (* prev subtot *)
           (data_list_sum (List.map snd below_list))) (* total of below kr_infos *)
       (fun id -> (* the leaf recurrence *)
-        curried_edge_total 
+        curried_edge_total
           id
-          0. 
+          0.
           (starter_data_factory ()))
       (Gtree.get_stree ref_tree)
   in
   check_final_data final_data;
   grand_total /. (Gtree.tree_length ref_tree)
 
-let make_kr_map m1 m2 = 
-  let process_map f = 
+let make_kr_map m1 m2 =
+  let process_map f =
     IntMap.map (List.map (fun (dist_bl, mass) -> (dist_bl, f mass)))
   in
   Mass_map.Indiv.sort
-    (Base.combine_list_intmaps 
+    (Base.combine_list_intmaps
     [
       process_map (fun mass -> [|mass; 0.|]) m1;
       process_map (fun mass -> [|0.; mass|]) m2;
     ])
 
 (* Z_p distance between two mass maps *)
-let dist ref_tree p m1 m2 = 
-  let starter_kr_v = [|0.; 0.|] 
+let dist ref_tree p m1 m2 =
+  let starter_kr_v = [|0.; 0.|]
   and kr_map = make_kr_map m1 m2 in
-  let kr_edge_total id = 
-    total_along_edge 
-      (exp_kr_diff p) 
-      (Gtree.get_bl ref_tree id) 
+  let kr_edge_total id =
+    total_along_edge
+      (exp_kr_diff p)
+      (Gtree.get_bl ref_tree id)
       (Base.get_from_list_intmap id kr_map)
       Mokaphy_base.v_addto
   (* make sure that the kr_v totals to zero *)
-  and check_final_kr final_kr_v = 
+  and check_final_kr final_kr_v =
     let final_kr_diff = final_kr_v.(0) -. final_kr_v.(1) in
-    if abs_float final_kr_diff > tol then 
+    if abs_float final_kr_diff > tol then
       raise (Total_kr_not_zero final_kr_diff)
   in
-  (total_over_tree 
+  (total_over_tree
     kr_edge_total
     check_final_kr
     Mokaphy_base.v_list_sum
@@ -137,15 +137,15 @@ let dist ref_tree p m1 m2 =
   ** (outer_exponent p)
 
 (* x1 and x2 are factors which get multiplied by the mass *)
-let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 = 
+let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 =
   dist
     t
     p
     (Mass_map.Indiv.of_pre transform ?factor:x1 pre1)
     (Mass_map.Indiv.of_pre transform ?factor:x2 pre2)
 
-let scaled_dist_of_pres transform p t pre1 pre2 = 
-  dist_of_pres transform p t 
+let scaled_dist_of_pres transform p t pre1 pre2 =
+  dist_of_pres transform p t
     ~x1:(1. /. Mass_map.Pre.total_mass transform pre1)
     ~x2:(1. /. Mass_map.Pre.total_mass transform pre2)
     ~pre1 ~pre2

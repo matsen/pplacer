@@ -14,9 +14,9 @@ open Fam_batteries
 (* masses *)
 let list_sum = List.fold_left (fun accu x -> accu +. x) 0.
 
-let submap m key_list = 
+let submap m key_list =
   List.fold_right
-    (fun k accu -> 
+    (fun k accu ->
       if IntMap.mem k m then
         IntMap.add k (IntMap.find k m) accu
       else
@@ -27,22 +27,22 @@ let submap m key_list =
 let singleton_map k v = IntMap.add k v IntMap.empty
 
 (* the total mass in the mass_map *)
-let total_mass mass_map = 
-  IntMap.fold 
-    (fun _ mass_l accu -> 
-      List.fold_right 
+let total_mass mass_map =
+  IntMap.fold
+    (fun _ mass_l accu ->
+      List.fold_right
         (fun (_, m) -> ( +. ) m)
         mass_l
         accu)
     mass_map
     0.
 
-let list_count f l = 
-  List.fold_left 
+let list_count f l =
+  List.fold_left
     (fun accu x -> if f x then accu+1 else accu) 0 l
 
-let extract_goods l = 
-  List.fold_left 
+let extract_goods l =
+  List.fold_left
     (fun accu -> function | Some x -> x::accu | None -> accu) [] l
 
 
@@ -56,12 +56,12 @@ val ids : int list = [6; 5; 3; 4]
 *
 * note that neither of them include "wanted."
 *)
-let collect_distal_ids stree wanted = 
+let collect_distal_ids stree wanted =
   let rec aux = function
     | Stree.Node(i, tL) ->
-        if i = wanted then 
+        if i = wanted then
           List.flatten (List.map Stree.node_ids tL)
-        else 
+        else
           (let below = List.map aux tL in
 (* make sure we don't have the id appearing multiple places *)
           assert(list_count (( <> ) []) below <= 1);
@@ -69,68 +69,68 @@ let collect_distal_ids stree wanted =
 (* if we get to a leaf but haven't hit wanted yet then the leaf must be wanted.
  * however, in that case we don't include it by the above comment *)
     | Stree.Leaf _ -> []
-  in 
+  in
   aux stree
 
-let collect_proximal_ids stree wanted = 
+let collect_proximal_ids stree wanted =
   let rec aux = function
     | Stree.Node(i, tL) ->
         if i = wanted then [] (* stop *)
         else (i :: (List.flatten (List.map aux tL)))
     | Stree.Leaf i -> if i = wanted then [] else [i]
-  in 
+  in
   aux stree
 
 exception Found_edge of int
 exception Found_node of int
 type action = Continue | Stop
 
-let find ref_tree mass_m = 
+let find ref_tree mass_m =
   let smass = Mass_map.Indiv.sort mass_m in
-  let work sub_mass id pos = 
+  let work sub_mass id pos =
     Kr_distance.dist ref_tree 1.
       sub_mass
       (singleton_map id [pos, total_mass sub_mass])
   in
-  let get_sub_mass collect_fun id = 
-    submap smass (collect_fun (Gtree.get_stree ref_tree) id) 
+  let get_sub_mass collect_fun id =
+    submap smass (collect_fun (Gtree.get_stree ref_tree) id)
   in
   (* the amount of work required to move all of the mass on the chosen side, as
    * well as the edge_mass, to pos on id *)
-  let tree_work collect_fun edge_mass id pos = 
+  let tree_work collect_fun edge_mass id pos =
     let sub_mass =
       IntMap.add id edge_mass (get_sub_mass collect_fun id)
     in
     work sub_mass id pos
   in
-  let proximal_work prox_ml id pos = 
+  let proximal_work prox_ml id pos =
     List.iter (fun (m_pos,_) -> assert(m_pos >= pos)) prox_ml;
-    tree_work collect_proximal_ids prox_ml id pos 
-  and distal_work dist_ml id pos = 
+    tree_work collect_proximal_ids prox_ml id pos
+  and distal_work dist_ml id pos =
     List.iter (fun (m_pos,_) -> assert(m_pos <= pos)) dist_ml;
     tree_work collect_distal_ids dist_ml id pos
   in
   (* prox_ml is extra mass that is thought of as living on the proximal side of
    * the edge. as used below, it is the mass that is proximal to pos on the
    * edge. equivalent for dist_ml. *)
-  let delta ~prox_ml ~dist_ml id pos = 
+  let delta ~prox_ml ~dist_ml id pos =
     (proximal_work prox_ml id pos) -. (distal_work dist_ml id pos)
   in
-  let get_mass_list id = 
+  let get_mass_list id =
     if IntMap.mem id smass then IntMap.find id smass
     else []
   in
   (* this is the function that helps us find the barycenter-containing edge *)
-  let check id = 
+  let check id =
     let bl = Gtree.get_bl ref_tree id
     and our_mass_list = get_mass_list id in
-    if 0. > delta ~prox_ml:our_mass_list ~dist_ml:[] id 0. 
+    if 0. > delta ~prox_ml:our_mass_list ~dist_ml:[] id 0.
     (* we are negative at the bottom of the edge. continue. *)
     then Continue
-    else if 0. > delta ~prox_ml:[] ~dist_ml:our_mass_list id bl 
+    else if 0. > delta ~prox_ml:[] ~dist_ml:our_mass_list id bl
     (* top is negative (and bottom is positive from before) *)
     then raise (Found_edge id)
-    else 
+    else
     (* top is positive *)
       Stop
   in
@@ -139,9 +139,9 @@ let find ref_tree mass_m =
     | Stree.Leaf id -> check id
     | Stree.Node(id, tL) ->
         (match check id with
-        | Continue -> 
+        | Continue ->
             let below = List.map find_loc tL in
-  (* this edge is negative at the bottom but nothing was found. 
+  (* this edge is negative at the bottom but nothing was found.
    * the deepest node to have this must have positive at the tops of all of the
    * edges. we assert to make sure this is the case. *)
             List.iter (fun b -> assert(b = Stop)) below;
@@ -149,16 +149,16 @@ let find ref_tree mass_m =
         | Stop as s -> s)
   in
   (* da and dc are Delta(a) and Delta(c) in the barycenter scan *)
-  let find_pos id = 
+  let find_pos id =
     let bl = Gtree.get_bl ref_tree id in
-    let rec aux ~dist_ml ~prox_ml curr_pos = 
-      let our_delta pos = 
+    let rec aux ~dist_ml ~prox_ml curr_pos =
+      let our_delta pos =
         assert(pos <= bl);
         delta ~dist_ml ~prox_ml id pos
       in
     (* the barycenter formula. because da is negative we are essentially taking
      * a weighted average here. *)
-      let bary ~above_pos da = 
+      let bary ~above_pos da =
         assert(da <= 0.);
         let dc = our_delta curr_pos in
         assert(dc >= 0.);
@@ -172,10 +172,10 @@ let find ref_tree mass_m =
         let da = our_delta pos in
         if da > 0. then
           (* we can do better by moving past this placement *)
-          aux 
-            ~dist_ml:((pos,mass)::dist_ml) 
-            ~prox_ml:rest 
-            pos 
+          aux
+            ~dist_ml:((pos,mass)::dist_ml)
+            ~prox_ml:rest
+            pos
         else
           bary ~above_pos:pos da
       end
@@ -184,16 +184,16 @@ let find ref_tree mass_m =
     aux ~dist_ml:[] ~prox_ml:(get_mass_list id) 0.
   in
   try
-    let _ = find_loc (Gtree.get_stree ref_tree) in 
+    let _ = find_loc (Gtree.get_stree ref_tree) in
     failwith "failed to find barycenter edge/node!"
   with
-  | Found_node id -> 
+  | Found_node id ->
       (* the node is at the bottom of the edge *)
       (id, 0.)
-  | Found_edge id -> 
+  | Found_edge id ->
       (* let pos_classic = find_pos id  *)
       (*
-      let pos_new = 
+      let pos_new =
         delta ~dist_ml:(get_mass_list id) ~prox_ml:[] id (Gtree.get_bl ref_tree id)
       in
       Printf.printf "%g\t%g\n" pos_classic pos_new; *)
@@ -202,11 +202,11 @@ let find ref_tree mass_m =
 (* pre means pre mass map *)
 let of_pre transform t pmm = find t (Mass_map.Indiv.of_pre transform pmm)
 
-let of_placerun transform weighting criterion pr = 
-  find 
+let of_placerun transform weighting criterion pr =
+  find
     (Placerun.get_ref_tree pr)
-    (Mass_map.Indiv.of_placerun 
-      transform 
+    (Mass_map.Indiv.of_placerun
+      transform
       weighting
       criterion
       pr)
@@ -216,12 +216,12 @@ let of_placerun transform weighting criterion pr =
 
 (* to get the distance between two locations on a tree. a bit of a silly hack to
  * make a distance matrix then just get a single distance, but it works *)
-let location_distance t (loc1, distal1) (loc2, distal2) = 
-  let make_place loc dist_bl = 
-    Placement.make_ml loc ~ml_ratio:1. ~log_like:1. 
+let location_distance t (loc1, distal1) (loc2, distal2) =
+  let make_place loc dist_bl =
+    Placement.make_ml loc ~ml_ratio:1. ~log_like:1.
                           ~dist_bl ~pend_bl:0.
   in
-  let m = 
+  let m =
     Distance_mat.of_placement_array t
       [| make_place loc1 distal1;
          make_place loc2 distal2; |]
@@ -230,11 +230,11 @@ let location_distance t (loc1, distal1) (loc2, distal2) =
 
 
 let calc_dist transform weighting criterion pr1 pr2 =
-  let calc_bary pr = 
+  let calc_bary pr =
     of_placerun transform weighting criterion pr
   in
-  location_distance 
+  location_distance
     (Placerun.get_same_tree pr1 pr2)
     (calc_bary pr1)
     (calc_bary pr2)
-     
+

@@ -16,7 +16,7 @@ let rec n_taxa = function
   | Node(_,tL) -> List.fold_left ( + ) 0 (List.map n_taxa tL)
   | Leaf(_) -> 1
 
-let n_edges stree = 
+let n_edges stree =
   let rec aux = function
     | Node(_,tL) -> List.fold_left ( + ) 1 (List.map aux tL)
     | Leaf(_) -> 1
@@ -28,7 +28,7 @@ let rec node_ids_aux = function
   | Leaf(i) -> [i]
 
 let node_ids stree = List.sort compare (node_ids_aux stree)
-let nonroot_node_ids stree = 
+let nonroot_node_ids stree =
   try List.sort compare (List.tl (node_ids_aux stree)) with
   | Failure "tl" -> invalid_arg "nonroot_node_ids"
 
@@ -49,19 +49,19 @@ let multifurcating_at_root = function
   | Leaf(_) -> false
 
 let rec plain_to_newick = function
-  | Node(i, tL) -> 
+  | Node(i, tL) ->
       "("^(String.concat "," (List.map plain_to_newick tL))^")"^(string_of_int i)
   | Leaf i -> string_of_int i
 
 let rec ppr ff = function
-  | Node(i, tL) -> 
-      Format.fprintf ff "@[(%a)@]%d" 
+  | Node(i, tL) ->
+      Format.fprintf ff "@[(%a)@]%d"
         (Ppr.ppr_gen_list_inners "," ppr) tL i
   | Leaf i -> Format.pp_print_int ff i
 
 (* the maximal outdegree of nodes in the tree *)
 let rec outdegree = function
-  | Node(_,tL) -> 
+  | Node(_,tL) ->
       List.fold_left max (List.length tL) (List.map outdegree tL)
   | Leaf _ -> 0
 
@@ -70,7 +70,7 @@ let rec boost by = function
   | Node(i,tL) -> Node(i+by, List.map (boost by) tL)
   | Leaf(i) -> Leaf(i+by)
 
-let recur f_node f_leaf tree = 
+let recur f_node f_leaf tree =
   let rec aux = function
   | Node(id, tL) -> f_node id (List.map aux tL)
   | Leaf id -> f_leaf id
@@ -79,5 +79,5 @@ let recur f_node f_leaf tree =
 
 (* for functions that don't treat leaves differently than a node with empty
  * leaves. *)
-let recur_listly f = recur f (fun id -> f id []) 
+let recur_listly f = recur f (fun id -> f id [])
 

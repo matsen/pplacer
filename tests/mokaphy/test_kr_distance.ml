@@ -75,7 +75,7 @@ let generate_tests transform which expected =
     (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
       let (pr1, mass1), (pr2, mass2) = Hashtbl.find data pr_name1, Hashtbl.find data pr_name2 in
       let tree = Placerun.get_same_tree pr1 pr2 in
-      let calculated = 
+      let calculated =
         Kr_distance.dist_of_pres transform p tree mass1 mass2 in
       (Printf.sprintf "%s x %s" pr_name1 pr_name2) >:: fun _ ->
         (Printf.sprintf "%f !~= %f" calculated expected) @? approximately_equal expected calculated
