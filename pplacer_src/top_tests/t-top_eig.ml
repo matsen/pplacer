@@ -7,8 +7,8 @@ scale_by_l2 v;;
 v;;
 
 (* top eigenvalue 8, with eigenvector (2,1,2) *)
-let m = 
-  Gsl_matrix.of_arrays 
+let m =
+  Gsl_matrix.of_arrays
     [|
       [| 3.; 2.; 4.; |];
       [| 2.; 0.; 2.; |];
@@ -32,7 +32,7 @@ let random_symmetric n =
   done;
   m
 
-let compare size = 
+let compare size =
   let m = random_symmetric size in
   let time = Sys.time () in
   let ours = top_eig m 1e-3 500 in
@@ -42,7 +42,7 @@ let compare size =
   Printf.printf "theirs took %g\n" ((Sys.time ()) -. time);
   (ours, Gsl_vector.max theirs);;
 
-let test size = 
+let test size =
   let m = random_symmetric size in
   top_eig m 1e-10 100;;
 

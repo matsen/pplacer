@@ -9,20 +9,20 @@ exception Missing_element of string
 (* uptree maps-- could be expanded later and go into a different file *)
 type uptree_map = int IntMap.t
 
-let utm_of_stree t = 
+let utm_of_stree t =
   let m = ref IntMap.empty in
   let add_to_m i j = m := IntMapFuns.check_add i j (!m) in
   let rec aux = function
     | Stree.Node (i, tL) ->
         List.iter (fun s -> add_to_m (Stree.top_id s) i; aux s) tL
     | Stree.Leaf _ -> ()
-  in 
+  in
   aux t;
   !m
 
 
 (* Refpkg.t *)
-type t = 
+type t =
   {
     (* specified *)
     ref_tree    : Newick_bark.newick_bark Gtree.gtree Lazy.t;
@@ -52,29 +52,29 @@ let get_uptree_map  rp = Lazy.force rp.uptree_map
 
 (* NOTE: once parsing of stats files is deprecated, we can set the prefs
  * directly, rather than doing this. *)
-let build_model stats_fname ref_align = 
+let build_model stats_fname ref_align =
   let prefs = Prefs.defaults () in
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
-let of_strmap m = 
-  let get what = 
+let of_strmap m =
+  let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
   let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
-  let lref_tree = lazy (Newick.of_file (get "tree_file")) 
-  and lmodel = 
+  let lref_tree = lazy (Newick.of_file (get "tree_file"))
+  and lmodel =
       lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in
-  let lmrcam = 
-    lazy (Tax_map.mrcam_of_data  
-           (Lazy.force lseqinfom) 
+  let lmrcam =
+    lazy (Tax_map.mrcam_of_data
+           (Lazy.force lseqinfom)
            (Lazy.force ltaxonomy)
            (Lazy.force lref_tree))
-  and luptree_map = 
+  and luptree_map =
     lazy (utm_of_stree (Gtree.get_stree (Lazy.force lref_tree)))
   in
   {
@@ -102,53 +102,53 @@ let refpkgo_of_path = function
 (* these should be light enough that it's not worth making them lazy *)
 
 (* mrca tax decor, that is *)
-let get_tax_decor_map rp = 
+let get_tax_decor_map rp =
   let td = get_taxonomy rp in
   IntMap.map
     (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
     (get_mrcam rp)
 
 (* tax ref tree is the usual ref tree with but with taxonomic annotation *)
-let get_tax_ref_tree rp =  
+let get_tax_ref_tree rp =
   Decor_gtree.add_decor_by_map
     (Decor_gtree.of_newick_gtree (get_ref_tree rp))
     (IntMap.map (fun x -> [x]) (get_tax_decor_map rp))
 
 (* if the rp is equipped with a taxonomy *)
-let tax_equipped rp = 
+let tax_equipped rp =
   try let _ = get_taxonomy rp and _ = get_seqinfom rp in true with
   | Missing_element _ -> false
 
-let contain_classify rp pr = 
-  Tax_classify.classify_pr 
+let contain_classify rp pr =
+  Tax_classify.classify_pr
     Placement.add_contain_classif
     (Tax_classify.contain_classify
-      (get_mrcam rp) 
+      (get_mrcam rp)
       (get_uptree_map rp))
     pr
 
-let print_OK start rp = 
+let print_OK start rp =
   print_endline (start^(get_name rp)^" checks OK!")
 
 (* make sure all of the tax maps etc are set up *)
-let check_refpkg_classification rp = 
+let check_refpkg_classification rp =
   print_endline "Checking MRCA map...";
   let mrcam = get_mrcam rp in
   print_endline "Checking uptree map...";
   let utm = get_uptree_map rp in
   print_endline "Trying classifications...";
-  let _ = 
-    List.map 
-      (Tax_classify.contain_classify_loc mrcam utm) 
+  let _ =
+    List.map
+      (Tax_classify.contain_classify_loc mrcam utm)
       (Gtree.nonroot_node_ids (get_ref_tree rp))
   in
   ()
 
-let check rp name what = 
+let check rp name what =
   print_endline ("Checking "^name^"...");
   let _ = what rp in ()
 
-let check_refpkg rp = 
+let check_refpkg rp =
   print_endline ("Checking refpkg "^(get_name rp)^"...");
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
@@ -158,8 +158,8 @@ let check_refpkg rp =
     check rp "seqinfom" get_seqinfom;
     check_refpkg_classification rp;
     print_OK "Taxonomically-informed reference package " rp
-  with 
-    | Missing_element _ -> 
+  with
+    | Missing_element _ ->
         print_OK "Non-taxonomically-informed reference package " rp
 
 

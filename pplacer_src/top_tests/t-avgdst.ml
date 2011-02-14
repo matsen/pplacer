@@ -11,8 +11,8 @@ let prl = [p1; p2; p3]
 let t = Cmds.list_get_same_tree prl
 let tl = Gtree.tree_length t
 
-let dist_fun = 
-  Pquery_distances.dist_fun_of_w 
+let dist_fun =
+  Pquery_distances.dist_fun_of_w
     Mass_map.Weighted
     Placement.ml_ratio
     (Edge_rdist.build_ca_info t)

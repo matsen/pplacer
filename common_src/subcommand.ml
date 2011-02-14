@@ -11,28 +11,28 @@ open MapsSets
 let option_rex = Str.regexp "-.*"
 
 (* print the commands available through cmd_map *)
-let print_avail_cmds prg_name cmd_map = 
+let print_avail_cmds prg_name cmd_map =
   print_endline "Here is a list of commands available using this interface:";
   StringMap.iter (fun k v -> Printf.printf "\t%s\t" k; v []) cmd_map;
-  Printf.printf 
+  Printf.printf
     "To get more help about a given command, type %s COMMAND --help\n"
     prg_name;
   ()
 
 (* given an argl, process a subcommand *)
-let process_cmd prg_name cmd_map argl = 
-  let print_need_cmd_error () = 
-    Printf.printf 
+let process_cmd prg_name cmd_map argl =
+  let print_need_cmd_error () =
+    Printf.printf
       "please specify a %s command, e.g. %s COMMAND [...]"
       prg_name prg_name;
     print_avail_cmds prg_name cmd_map;
     exit 1
   in
   match argl with
-    | s::_ -> 
+    | s::_ ->
       if StringMap.mem s cmd_map then
         (StringMap.find s cmd_map) argl
-      else if Str.string_match option_rex s 0 then 
+      else if Str.string_match option_rex s 0 then
         print_need_cmd_error ()
       else begin
         print_endline ("Unknown "^prg_name^" command: "^s);
@@ -49,14 +49,14 @@ let process_cmd prg_name cmd_map argl =
  * the relevant parsing, and then spits out a list of anonymous arguments (those
  * not associated with command line flags. Note that one of the purposes here is
  * to mutate the prefs that are in specl, so this needs to get run first before
- * actually using any prefs. 
+ * actually using any prefs.
  * *)
-let wrap_parse_argv argl specl usage = 
+let wrap_parse_argv argl specl usage =
   let anonymous = ref [] in
   try
-    Arg.parse_argv 
+    Arg.parse_argv
       ~current:(ref 0) (* start from beginning *)
-      (Array.of_list argl) 
+      (Array.of_list argl)
       specl
       (fun s -> anonymous := s::!anonymous)
       usage;
@@ -70,19 +70,19 @@ let wrap_parse_argv argl specl usage =
   | Arg.Bad s -> print_string s; exit 1
   | Arg.Help s -> print_string s; []
 
-(* Makes a specification with a default value. 
+(* Makes a specification with a default value.
 spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level
 "Specify the amount of gray to mix into the color scheme. Default is %d.";
  * *)
-let spec_with_default symbol setfun p help = 
+let spec_with_default symbol setfun p help =
   (symbol, setfun p, Printf.sprintf help !p)
 
 (* given a (string, f) list, make a map of it *)
-let cmd_map_of_list l = 
+let cmd_map_of_list l =
   List.fold_right (fun (k,v) -> StringMap.add k v) l StringMap.empty
 
 (* intended to be the inner loop of a function *)
-let inner_loop ~prg_name ~version cmd_map = 
+let inner_loop ~prg_name ~version cmd_map =
   Arg.parse
     [
       "-v", Arg.Unit (fun () -> Printf.printf "placeutil %s\n" version),
@@ -93,6 +93,6 @@ let inner_loop ~prg_name ~version cmd_map =
     (fun _ -> (* anonymous args. tl to remove command name. *)
       process_cmd prg_name cmd_map (List.tl (Array.to_list Sys.argv));
       exit 0) (* need to exit to avoid processing the other anon args as cmds *)
-    (Printf.sprintf 
+    (Printf.sprintf
       "Type %s --cmds to see the list of available commands."
       prg_name)

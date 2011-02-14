@@ -3,7 +3,7 @@
  *)
 
 
-let time_str_of_seconds secs = 
+let time_str_of_seconds secs =
   let iSecs = int_of_float secs in
   let hours = iSecs / 3600 in
   let mins = iSecs / 60 - 60*hours in
@@ -14,18 +14,18 @@ let print_elapsed_time () =
   let t = Sys.time () in
   Printf.printf "elapsed time: %s (%g s)\n" (time_str_of_seconds t) t
 
-let calc_total_memory () = 
+let calc_total_memory () =
   let stat = Gc.quick_stat () in
-  (stat.Gc.minor_words +. 
-   stat.Gc.major_words -. 
+  (stat.Gc.minor_words +.
+   stat.Gc.major_words -.
    stat.Gc.promoted_words)
   *. (float_of_int Sys.word_size) /. 8.
 
-let print_memory_usage () = 
+let print_memory_usage () =
   Printf.printf "memory usage (bytes): %g\n" (calc_total_memory ())
 
-let print_n_compactions () = 
-  Printf.printf "number of garbage compactions: %d\n" 
+let print_n_compactions () =
+  Printf.printf "number of garbage compactions: %d\n"
                 ((Gc.quick_stat ()).Gc.compactions)
 
 let get_dir_contents ?(pred = (fun _ -> true)) dir_name =

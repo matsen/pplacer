@@ -27,7 +27,7 @@ Currently implemented
 * a generalization of unweighted UniFrac_.
 * `Heat trees`_ in phyloXML format, which graphically show the difference between two collections of placements.
 * KR comparison and heat trees on the taxonomic tree
-* "merge" clustering 
+* "merge" clustering
 * bootstrapping thereof
 * finding "wandering" samples in clustering
 * edge principal components analysis

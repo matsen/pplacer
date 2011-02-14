@@ -39,9 +39,9 @@ module CharSet = Set.Make(OrderedChar)
 module StringSet = Set.Make(OrderedString)
 
 
-module type STRINGABLE = 
-sig 
-  type t 
+module type STRINGABLE =
+sig
+  type t
   val to_string: t -> string
 end
 
@@ -51,27 +51,27 @@ module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
   struct
     module M = Map.Make(OT)
 
-    let opt_add k optX map = 
+    let opt_add k optX map =
       match optX with
       | Some x -> M.add k x map
       | None -> map
 
     let opt_find k m = if M.mem k m then Some (M.find k m) else None
 
-      (* if x is a key of m, make sure that it is bound to y. 
+      (* if x is a key of m, make sure that it is bound to y.
        * otherwise, add (x,y) as a kv-pair to m *)
     let check_add x y m =
-      if M.mem x m then 
+      if M.mem x m then
         if y = M.find x m then m else failwith "check_add"
-      else 
+      else
         M.add x y m
 
-    let union m1 m2 = 
+    let union m1 m2 =
       M.fold (
         fun k v m -> M.add k v m
     ) m1 m2
 
-    let print val_to_string m = 
+    let print val_to_string m =
       M.iter (
         fun k v ->
           Printf.printf "%s\t-> %s\n" (SBLE.to_string k) (val_to_string v)
@@ -83,15 +83,15 @@ module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
       | [] -> M.empty
 
 (* listly means add values as a list associated with a key *)
-    let add_listly k v m = 
+    let add_listly k v m =
       if M.mem k m then M.add k (v::(M.find k m)) m
       else M.add k [v] m
 
 (* the two given functions take the elements of the list into keys and values
  * for the map. these are then collected into a map from the key to the list of
- * all values associated with that key. 
+ * all values associated with that key.
  * *)
-    let of_f_list_listly ~key_f ~val_f pre_f_list = 
+    let of_f_list_listly ~key_f ~val_f pre_f_list =
       let rec aux m = function
         | x::l -> aux (add_listly (key_f x) (val_f x) m) l
         | [] -> m
@@ -102,23 +102,23 @@ module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
  * associated with that key. *)
     let of_pairlist_listly l = of_f_list_listly ~key_f:fst ~val_f:snd l
 
-    let nkeys m = 
+    let nkeys m =
       M.fold (fun _ _ n -> n+1) m 0
 
   (* keys in increasing order *)
-    let keys m = 
+    let keys m =
       let l = M.fold (fun k _ l -> k::l) m [] in
       List.rev l
 
-    let values m = 
+    let values m =
       let l = M.fold (fun _ v l -> v::l) m [] in
       List.rev l
 
-    let to_pairs m = 
+    let to_pairs m =
       let l = M.fold (fun k v l -> (k,v)::l) m [] in
       List.rev l
 
-    let ppr_gen ppr_val ff m = 
+    let ppr_gen ppr_val ff m =
       Format.fprintf ff "@[[";
       ppr_list_inners (
         fun ff (k, v) ->
@@ -172,7 +172,7 @@ module SetFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
     (* map from Set to Set of the same type. currying heaven. *)
     let map f s = S.fold (fun x -> S.add (f x)) s S.empty
 
-    let ppr ff s = 
+    let ppr ff s =
       Format.fprintf ff "@[{";
       ppr_list_inners (
         fun ff x ->

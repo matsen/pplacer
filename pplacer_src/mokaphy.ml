@@ -10,7 +10,7 @@ let place_file_rex = Str.regexp ".*\\.place"
 (* our strategy is to load the placefiles in to memory when we need them, but if
   * they are already in memory, then we use them *)
 let placerun_map = ref StringMap.empty
-let placerun_by_name fname = 
+let placerun_by_name fname =
   if not (Str.string_match place_file_rex fname 0) then
     failwith ("Place files must end with .place suffix, unlike: "^fname);
   if StringMap.mem fname !placerun_map then
@@ -24,24 +24,24 @@ let placerun_by_name fname =
 
 (* *** wrapped versions of programs *** *)
 
-let pr_wrap_parse_argv argl specl usage = 
+let pr_wrap_parse_argv argl specl usage =
   List.map placerun_by_name (Subcommand.wrap_parse_argv argl specl usage)
 
 (* here are the commands, wrapped up to simply take an argument list. they must
- * also print out a documentation line when given an empty list argument. 
+ * also print out a documentation line when given an empty list argument.
  *
  * can't wait for first class modules in 3.12!!!
  * that will make all of this quite slick...
  *
  * Note that we can't push them out to their respective subcommand files because
- * they are using placerun_by_name. 
+ * they are using placerun_by_name.
  *)
 let bary_of_argl = function
   | [] -> print_endline "draws the barycenter of a placement collection on the reference tree"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_bary.Prefs.defaults () in
-    Mokaphy_bary.bary 
-      prefs 
+    Mokaphy_bary.bary
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_bary.Prefs.specl_of_prefs prefs)
@@ -49,10 +49,10 @@ let bary_of_argl = function
 
 let heat_of_argl = function
   | [] -> print_endline "makes a heat tree given two placefiles"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_heat.Prefs.defaults () in
-    Mokaphy_heat.heat 
-      prefs 
+    Mokaphy_heat.heat
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_heat.Prefs.specl_of_prefs prefs)
@@ -60,10 +60,10 @@ let heat_of_argl = function
 
 let kr_of_argl = function
   | [] -> print_endline "runs KR analyses, including significance estimation"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_kr.Prefs.defaults () in
-    Mokaphy_kr.kr 
-      prefs 
+    Mokaphy_kr.kr
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_kr.Prefs.specl_of_prefs prefs)
@@ -71,10 +71,10 @@ let kr_of_argl = function
 
 let pd_of_argl = function
   | [] -> print_endline "calculates PD of the subtree spanned by the placements"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_pd.Prefs.defaults () in
-    Mokaphy_pd.pd 
-      prefs 
+    Mokaphy_pd.pd
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_pd.Prefs.specl_of_prefs prefs)
@@ -82,10 +82,10 @@ let pd_of_argl = function
 
 let unifrac_of_argl = function
   | [] -> print_endline "calculates the pairwise PD fraction of the subtree spanned by the placments"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_unifrac.Prefs.defaults () in
     Mokaphy_unifrac.unifrac
-      prefs 
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_unifrac.Prefs.specl_of_prefs prefs)
@@ -93,10 +93,10 @@ let unifrac_of_argl = function
 
 let uavgdist_of_argl = function
   | [] -> print_endline "calculates the unary pairwise distance for each place file"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_avgdist.Prefs.defaults () in
     Mokaphy_avgdist.uavgdist
-      prefs 
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_avgdist.Prefs.specl_of_prefs prefs)
@@ -104,10 +104,10 @@ let uavgdist_of_argl = function
 
 let bavgdist_of_argl = function
   | [] -> print_endline "calculates the binary pairwise distance for each place file"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_avgdist.Prefs.defaults () in
     Mokaphy_avgdist.bavgdist
-      prefs 
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_avgdist.Prefs.specl_of_prefs prefs)
@@ -115,10 +115,10 @@ let bavgdist_of_argl = function
 
 let cluster_of_argl = function
   | [] -> print_endline "makes a heirarchical cluster of the placeruns"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_cluster.Prefs.defaults () in
     Mokaphy_cluster.cluster
-      prefs 
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_cluster.Prefs.specl_of_prefs prefs)
@@ -126,10 +126,10 @@ let cluster_of_argl = function
 
 let clusterviz_of_argl = function
   | [] -> print_endline "makes a nice tree for visualization of results"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_clusterviz.Prefs.defaults () in
     Mokaphy_clusterviz.clusterviz
-      prefs 
+      prefs
       (Subcommand.wrap_parse_argv
         argl
         (Mokaphy_clusterviz.Prefs.specl_of_prefs prefs)
@@ -137,10 +137,10 @@ let clusterviz_of_argl = function
 
 let bootviz_of_argl = function
   | [] -> print_endline "makes a tree which shows the bootstrap values"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_bootviz.Prefs.defaults () in
     Mokaphy_bootviz.bootviz
-      prefs 
+      prefs
       (Subcommand.wrap_parse_argv
         argl
         (Mokaphy_bootviz.Prefs.specl_of_prefs prefs)
@@ -148,10 +148,10 @@ let bootviz_of_argl = function
 
 let bootsub_of_argl = function
   | [] -> print_endline "Removes unclusterable samples"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_bootsub.Prefs.defaults () in
     Mokaphy_bootsub.bootsub
-      prefs 
+      prefs
       (Subcommand.wrap_parse_argv
         argl
         (Mokaphy_bootsub.Prefs.specl_of_prefs prefs)
@@ -159,18 +159,18 @@ let bootsub_of_argl = function
 
 let pca_of_argl = function
   | [] -> print_endline "does PCA, and makes lovely trees"
-  | argl -> 
+  | argl ->
     let prefs = Mokaphy_pca.Prefs.defaults () in
     Mokaphy_pca.pca
-      prefs 
+      prefs
       (pr_wrap_parse_argv
         argl
         (Mokaphy_pca.Prefs.specl_of_prefs prefs)
         "usage: pca [options] placefiles")
 
 
-let cmd_map = 
-  List.fold_right 
+let cmd_map =
+  List.fold_right
     (fun (k,v) -> StringMap.add k v)
     [
       "bary", bary_of_argl;
@@ -189,9 +189,9 @@ let cmd_map =
     StringMap.empty
 
 let process_batch_file fname =
-  List.iter 
+  List.iter
     (fun s -> Subcommand.process_cmd "mokaphy" cmd_map (split_on_space s))
-    (File_parsing.filter_comments 
+    (File_parsing.filter_comments
       (File_parsing.string_list_of_file fname))
 
 let () = begin
@@ -201,17 +201,17 @@ let () = begin
         "Execute commands from indicated batch file";
         "-v", Arg.Unit (fun () -> Printf.printf "mokaphy %s\n" version),
         "Print version and exit";
-        "--cmds", 
+        "--cmds",
           Arg.Unit (fun () -> Subcommand.print_avail_cmds "mokaphy" cmd_map),
         "Print a list of the available commands.";
       ]
       (fun _ -> (* anonymous args. tl to remove "mokaphy" or symlink name *)
-        Subcommand.process_cmd 
-          "mokaphy" 
-          cmd_map 
+        Subcommand.process_cmd
+          "mokaphy"
+          cmd_map
           (List.tl (Array.to_list Sys.argv));
         exit 0) (* need to exit to avoid processing the other anon args as cmds *)
       "mokaphy can be used as mokaphy [command name] [args] \
       or -B [batch file] to run a batch analysis; \
-      Type mokaphy --cmds to see the list of available commands." 
+      Type mokaphy --cmds to see the list of available commands."
 end

@@ -2,7 +2,7 @@ open MapsSets
 open Fam_batteries
 
 module Prefs = struct
-  type prefs = 
+  type prefs =
     {
       out_fname: string ref;
       use_pp: bool ref;
@@ -23,7 +23,7 @@ module Prefs = struct
       transform = ref "";
     }
 
-  let specl_of_prefs prefs = 
+  let specl_of_prefs prefs =
 [
   "-p", Arg.Set prefs.use_pp,
   "Use posterior probability.";
@@ -38,28 +38,28 @@ end
 
 
 let make_bary_tree transform t prel =
-  let bary_map = 
+  let bary_map =
     IntMapFuns.of_pairlist_listly
       (ListFuns.mapi
         (fun i pre ->
           let (loc, pos) = Barycenter.of_pre transform t pre in
           (loc,
-            (pos, 
+            (pos,
             Gtree.Internal_node,
-            (fun bl -> 
-              new Decor_bark.decor_bark 
-                (`Of_bl_name_boot_dlist 
+            (fun bl ->
+              new Decor_bark.decor_bark
+                (`Of_bl_name_boot_dlist
                    (Some bl, None, None, [Decor.dot i]))))))
         prel)
   in
   Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
 
-let bary prefs prl = 
-  let t = Mokaphy_common.list_get_same_tree prl 
+let bary prefs prl =
+  let t = Mokaphy_common.list_get_same_tree prl
   and transform = Mass_map.transform_of_str (Prefs.transform prefs)
   in
-  let prel = 
-    Mokaphy_common.prel_of_prl 
+  let prel =
+    Mokaphy_common.prel_of_prl
       ~is_weighted:(Prefs.weighted prefs)
       ~use_pp:(Prefs.use_pp prefs)
       prl

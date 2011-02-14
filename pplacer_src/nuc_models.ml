@@ -1,7 +1,7 @@
 (* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
  * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * translating nucleotide sequences into likelihood vectors 
+ * translating nucleotide sequences into likelihood vectors
  * *)
 
 open MapsSets
@@ -24,7 +24,7 @@ Not C 	           G or A or T 	        D
 Any 	           G or C or T or A 	N
    *)
 
-let nuc_map = 
+let nuc_map =
   CharMapFuns.of_pairlist (
     List.map (fun (c, v) -> (c, Gsl_vector.of_array v)) (
 (*            A   C   G   T  *)
@@ -43,17 +43,17 @@ let nuc_map =
        'V', [|1.; 1.; 1.; 0.|];   (*  G or C or A 	 *)
        'D', [|1.; 0.; 1.; 1.|];   (*  G or A or T 	 *)
        'N', [|1.; 1.; 1.; 1.|];   (*  G or C or T or A *)
-       '-', [|1.; 1.; 1.; 1.|];  
+       '-', [|1.; 1.; 1.; 1.|];
        '?', [|1.; 1.; 1.; 1.|];
        'X', [|1.; 1.; 1.; 1.|];]))
 
 let nuc_code = [|'A';'C';'G';'T'|]
 
-let lv_of_nuc nuc = 
+let lv_of_nuc nuc =
   try
-    CharMap.find nuc nuc_map 
+    CharMap.find nuc nuc_map
   with
-    | Not_found -> 
+    | Not_found ->
         invalid_arg (Printf.sprintf "%c not a known nucleotide!" nuc)
 
 
@@ -64,21 +64,21 @@ let lv_of_nuc nuc =
  # List.map transform 3 [0;1;2;3;4;5];;
 - : (int * int) list = [(0, 1); (0, 2); (0, 3); (1, 2); (1, 3); (2, 3)]
  * *)
-let transform dim x = 
+let transform dim x =
   let rec aux k i j =
     if j >= k then aux (k-1) (i+1) (j-k)
     else (i,i+j+1)
   in
   aux dim 0 x
 
-let set_both m (i,j) x = 
+let set_both m (i,j) x =
   m.(i).(j) <- x;
   m.(j).(i) <- x
 
-(* make a symmetric matrix out of a vector which is assumed to be 
- * ac ag at cg ct gt 
+(* make a symmetric matrix out of a vector which is assumed to be
+ * ac ag at cg ct gt
  *)
-let b_of_trans_vector v = 
+let b_of_trans_vector v =
   assert(Array.length v = 6);
   let m = Array.make_matrix 4 4 0. in
   for i=0 to 5 do

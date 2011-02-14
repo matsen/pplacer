@@ -4,17 +4,17 @@
 
 (* Note that this version of rounded placements does not take the likelihood
  * weight ratio into account. However, we do preserve the order of appearance of
- * edges in the rounded pquery, which does maintain some of that information. 
- * Furthermore, branch lengths must be similar. 
+ * edges in the rounded pquery, which does maintain some of that information.
+ * Furthermore, branch lengths must be similar.
  *)
-type rounded_placement = 
+type rounded_placement =
   {
     location: int;
     distal_bl: int;
     pendant_bl: int;
   }
 
-let rounded_placement_of_placement multiplier p = 
+let rounded_placement_of_placement multiplier p =
   let round x = Base.round (multiplier *. x) in
   {
     location = p.Placement.location;
@@ -25,65 +25,65 @@ let rounded_placement_of_placement multiplier p =
 type rounded_pquery = rounded_placement list
 
 (* compare first by descending ml ratio, then arbitrary *)
-let compare_by_ml_ratio x y = 
+let compare_by_ml_ratio x y =
   match compare x.Placement.ml_ratio y.Placement.ml_ratio with
   | 0 -> compare x y
   | ml_cmp -> - ml_cmp
 
-(* Round after filtering the ones that don't make the ML ratio cutoff. 
+(* Round after filtering the ones that don't make the ML ratio cutoff.
  * We sort here to make sure that they are in ml_ratio descending order. *)
-let rounded_pquery_of_pquery cutoff multiplier pq = 
-  List.map 
-    (rounded_placement_of_placement multiplier) 
+let rounded_pquery_of_pquery cutoff multiplier pq =
+  List.map
+    (rounded_placement_of_placement multiplier)
     (List.sort
       compare_by_ml_ratio
       (List.filter
         (fun p -> p.Placement.ml_ratio >= cutoff)
         pq.Pquery.place_list))
 
-module RPQMap = 
+module RPQMap =
   Map.Make
-    (struct 
+    (struct
       type t = rounded_pquery
       let compare = Pervasives.compare
     end)
 
-let add_listly k v m = 
+let add_listly k v m =
   if RPQMap.mem k m then RPQMap.add k (v::(RPQMap.find k m)) m
   else RPQMap.add k [v] m
 
 (* given a list of pqueries, we round them, then cluster the pqueries which are
  * identical after the rounding step. *)
-let round_pquery_list cutoff sig_figs pql = 
+let round_pquery_list cutoff sig_figs pql =
   assert(sig_figs > 0);
-  let multiplier = Base.int_pow 10. sig_figs 
+  let multiplier = Base.int_pow 10. sig_figs
   in
   (* collect placements together using a map *)
   let m =
-    List.fold_left 
-      (fun m pq -> 
+    List.fold_left
+      (fun m pq ->
         add_listly (rounded_pquery_of_pquery cutoff multiplier pq) pq m)
       RPQMap.empty
       pql
   in
   (* take the first placement in the collected list, and give it all of the
    * names associated with the other pqueries *)
-  List.map 
+  List.map
     (fun pql ->
-      {(List.hd pql) with Pquery.namel = 
+      {(List.hd pql) with Pquery.namel =
         List.flatten (List.map (fun pq -> pq.Pquery.namel) pql)})
     (RPQMap.fold (fun _ v l -> (List.rev v)::l) m []) (* the clustered ones *)
 
-let round_placerun out_name cutoff sig_figs pr = 
-  {pr with 
-    Placerun.pqueries = 
+let round_placerun out_name cutoff sig_figs pr =
+  {pr with
+    Placerun.pqueries =
       round_pquery_list cutoff sig_figs (pr.Placerun.pqueries);
     name = out_name;}
 
 (* UI-related *)
 
 module Prefs = struct
-  type prefs = 
+  type prefs =
     {
       out_prefix: string ref;
       sig_figs: int ref;
@@ -101,7 +101,7 @@ module Prefs = struct
       cutoff = ref 0.01;
     }
 
-  let specl_of_prefs prefs = 
+  let specl_of_prefs prefs =
 [
   "-o", Arg.Set_string prefs.out_prefix,
   "Set the prefix to write to. Required.";
@@ -114,10 +114,10 @@ end
 
 let of_argl = function
   | [] -> print_endline "clusters the placements by rounding"
-  | argl -> 
+  | argl ->
     let prefs = Prefs.defaults () in
     (* note-- the command below mutates prefs (so order important) *)
-    let fnamel = 
+    let fnamel =
       Subcommand.wrap_parse_argv
         argl
         (Prefs.specl_of_prefs prefs)
@@ -125,7 +125,7 @@ let of_argl = function
     in
     if fnamel = [] then exit 0;
     let out_prefix = Prefs.out_prefix prefs in
-    if out_prefix = "" then 
+    if out_prefix = "" then
       invalid_arg "Please specify an output prefix with -o";
     List.iter
       (fun fname ->

@@ -16,15 +16,15 @@ module Multiset (OT: Map.OrderedType) =
     let mem = M.mem
     let find = M.find
 
-    let n_mem x s = 
+    let n_mem x s =
       if mem x s then find x s
       else 0
 
-    let add x s = 
+    let add x s =
       if mem x s then M.add x ((M.find x s)+1) s
       else M.add x 1 s
 
-    let remove x s = 
+    let remove x s =
       if mem x s then begin
         let new_val = (M.find x s) - 1 in
         assert(new_val >= 0);
@@ -38,8 +38,8 @@ module Multiset (OT: Map.OrderedType) =
     let of_list = List.fold_left (fun s x -> add x s) empty
 
       (* sends the multiset to a list _with multiplicity_ *)
-    let to_list s = 
-      let rec multiadd x n l = 
+    let to_list s =
+      let rec multiadd x n l =
         if n <= 0 then l
         else multiadd x (n-1) (x::l)
       in

@@ -1,4 +1,4 @@
-(* 
+(*
  *
  * not super-high performance because of map and boxing.
  *
@@ -9,12 +9,12 @@ module AlgMap (N: Number.NUMBER) (OT: Map.OrderedType) =
     module M = Map.Make(OT)
     type t = N.t M.t
 
-    let soft_find k m = 
+    let soft_find k m =
       try M.find k m with
       | Not_found -> N.zero
 
       (* sets k to (soft value of k) op v *)
-    let soft_op_add op k v m = 
+    let soft_op_add op k v m =
       M.add k (op (soft_find k m) v) m
 
     let add_by = soft_op_add (N.add)

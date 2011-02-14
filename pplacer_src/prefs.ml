@@ -4,7 +4,7 @@
  * preferences data type and function.
  *)
 
-type prefs = 
+type prefs =
   {
    (* basics *)
     refpkg_path : string ref;
@@ -44,10 +44,10 @@ type prefs =
 
 
 (* default values *)
-let defaults () = 
-  { 
+let defaults () =
+  {
     (* basics *)
-    refpkg_path = ref ""; 
+    refpkg_path = ref "";
     tree_fname = ref "";
     ref_align_fname = ref "";
     stats_fname = ref "";
@@ -83,7 +83,7 @@ let defaults () =
   }
 
 
-type mut_param = 
+type mut_param =
   | MutBool of bool ref
   | MutFloat of float ref
   | MutInt of int ref
@@ -123,10 +123,10 @@ let diagnostic        p = !(p.diagnostic)
 
 (* arguments and preferences *)
 
-let spec_with_default symbol setfun p help = 
+let spec_with_default symbol setfun p help =
   (symbol, setfun p, Printf.sprintf help !p)
 
-let args prefs = 
+let args prefs =
   [
     (* short *)
     "-c", Arg.Set_string prefs.refpkg_path,
@@ -140,7 +140,7 @@ let args prefs =
     The information in this file can be overriden on the command line.";
     "-d", Arg.Set_string prefs.ref_dir,
     "Specify the directory containing the reference information.";
-    "-p", Arg.Set prefs.calc_pp, 
+    "-p", Arg.Set prefs.calc_pp,
     "Calculate posterior probabilities.";
     "-m", Arg.Set_string prefs.model_name,
     "Set the sequence substitution model. Protein options are LG (default) or WAG. \
@@ -184,7 +184,7 @@ let args prefs =
     "--writeMasked", Arg.Set prefs.write_masked,
     "Write out the reference alignment with the query sequence, masked to the \
     region without gaps in the query.";
-    spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level 
+    spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
     "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
     "--unfriendly", Arg.Clear prefs.friendly,
     "Do not run friend finder pre-analysis.";
@@ -201,27 +201,27 @@ let args prefs =
 (* include a pref here if it should go in the place file *)
 let titled_typed_prefs p =
   [
-    MutString p.tree_fname,       "reference tree file"         ; 
-    MutString p.ref_align_fname,  "reference alignment file"    ; 
-    MutString p.stats_fname,      "statistics file"             ; 
-    MutString p.ref_dir,          "reference data directory"    ; 
-    MutString p.model_name,       "substitution model"          ; 
-    MutBool p.emperical_freqs,    "use emperical frequencies"   ; 
-    MutInt p.gamma_n_cat,         "number of gamma categories"  ; 
-    MutFloat p.gamma_alpha,       "gamma alpha"                 ; 
-    MutInt p.max_strikes,         "max number of strikes"       ; 
-    MutFloat p.strike_box,        "strike box"                  ; 
-    MutInt p.max_pitches,         "max number of pitches"       ; 
-    MutBool p.calc_pp,            "calculate PP"                ; 
-    MutBool p.uniform_prior,      "uniform prior"               ; 
-    MutFloat p.start_pend,        "starting pendant length"     ; 
-    MutFloat p.max_pend,          "maximal pendant length"      ; 
-    MutFloat p.initial_tolerance, "ML tolerance"                ; 
-    MutFloat p.pp_rel_err,        "relative error for PP"       ; 
+    MutString p.tree_fname,       "reference tree file"         ;
+    MutString p.ref_align_fname,  "reference alignment file"    ;
+    MutString p.stats_fname,      "statistics file"             ;
+    MutString p.ref_dir,          "reference data directory"    ;
+    MutString p.model_name,       "substitution model"          ;
+    MutBool p.emperical_freqs,    "use emperical frequencies"   ;
+    MutInt p.gamma_n_cat,         "number of gamma categories"  ;
+    MutFloat p.gamma_alpha,       "gamma alpha"                 ;
+    MutInt p.max_strikes,         "max number of strikes"       ;
+    MutFloat p.strike_box,        "strike box"                  ;
+    MutInt p.max_pitches,         "max number of pitches"       ;
+    MutBool p.calc_pp,            "calculate PP"                ;
+    MutBool p.uniform_prior,      "uniform prior"               ;
+    MutFloat p.start_pend,        "starting pendant length"     ;
+    MutFloat p.max_pend,          "maximal pendant length"      ;
+    MutFloat p.initial_tolerance, "ML tolerance"                ;
+    MutFloat p.pp_rel_err,        "relative error for PP"       ;
   ]
 
 (* do a sanity check on the preferences *)
-let check p = 
+let check p =
   if start_pend p <= 0. then
     failwith "Starting pendant branch length must be strictly positive.";
   if start_pend p >= max_pend p then
@@ -232,8 +232,8 @@ let check p =
 
 (* we can't further factor the match because it would have to return things of
  * different types *)
-let write ch p = 
-  List.iter 
+let write ch p =
+  List.iter
     (fun (typed_pref, title) ->
       let write fmt pref = Printf.fprintf ch fmt title (!pref) in
       match typed_pref with
@@ -244,7 +244,7 @@ let write ch p =
     (titled_typed_prefs p)
 
 (* let read_prefs line fmt title pref =  *)
-let read pref_lines = 
+let read pref_lines =
   let p = defaults () in
   let rec aux = function
     | ((typed_pref, title)::more_prefs, line::more_lines) -> begin
@@ -254,7 +254,7 @@ let read pref_lines =
             if title = found_title then
               pref := x
             else
-              failwith 
+              failwith
                 ("Prefs.read: expected '"^title^"', found '"^found_title^"'"));
         (* recur here *)
         aux (more_prefs, more_lines)

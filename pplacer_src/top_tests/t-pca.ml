@@ -1,8 +1,8 @@
 open Pca
 
-let build_faa intll = 
-  Array.of_list 
-    (List.map 
+let build_faa intll =
+  Array.of_list
+    (List.map
       (fun l -> Array.of_list (List.map float_of_int l))
       intll)
 
@@ -44,7 +44,7 @@ cov(m)
 show(prcomp(m))
 # Standard deviations:
 # [1] 4.9245017 1.4857642 0.8416972
-# 
+#
 # Rotation:
 #          PC1        PC2        PC3
 # a -0.7445646 -0.5718874 -0.3443375
@@ -54,7 +54,7 @@ show(prcomp(m))
 show(prcomp(m, scale=TRUE))
 # Standard deviations:
 # [1] 1.5230503 0.7690720 0.2980708
-# 
+#
 # Rotation:
 #          PC1        PC2        PC3
 # a -0.5872014 -0.5314280 -0.6105561
@@ -62,8 +62,8 @@ show(prcomp(m, scale=TRUE))
 # c  0.6341729  0.1666971 -0.7550079
 *)
 
-let x = 
-  build_faa 
+let x =
+  build_faa
   [
     [9; 3; 2];
     [3; 4; 9];

@@ -11,27 +11,27 @@
 let basic_max_mismatches = 5
 let min_matches = 30
 
-type similarity = Unrelated | Similar of int * int 
+type similarity = Unrelated | Similar of int * int
 type friend = Friendless | Identical of int | Friend of int
 
 (* we want unrelated to be bigger (i.e. less similar) than any Similar one *)
-let compare x y = 
+let compare x y =
   match (x, y) with
   | (Unrelated, Unrelated) -> 0
   | (Similar _, Unrelated) -> -1
   | (Unrelated, Similar _) -> 1
   | (a,b) -> Pervasives.compare a b
 
-let is_gap c = 
-  c = '?' || c = '-' 
+let is_gap c =
+  c = '?' || c = '-'
 
 (* report the similarity between two strings as either Unrelated (more than
  * max_mismatches mismatches) or Similar(n_mismatches, n_matches_to_gap) *)
-let similarity max_mismatches s1 s2 = 
+let similarity max_mismatches s1 s2 =
   let l = String.length s1 in
   if l <> String.length s2 then
     failwith("Query sequences aren't all the same length. Have they been aligned to a reference alignment?");
-  let mismatches = ref 0 
+  let mismatches = ref 0
   and matches_to_gap = ref 0
   and n_matches = ref 0
   in
@@ -59,17 +59,17 @@ let similarity max_mismatches s1 s2 =
 
 (* match each entry in the alignment with the sequence with which it is most
  * similar. if no sequences are considered similar, than give None *)
-let prev_pairing_of_alignment a = 
+let prev_pairing_of_alignment a =
   let len = Array.length a in
-  let pairing = Array.make len Friendless 
-  and max_mismatches = ref basic_max_mismatches 
+  let pairing = Array.make len Friendless
+  and max_mismatches = ref basic_max_mismatches
   in
   for i=1 to len-1 do
     let best_sim = ref Unrelated in
     try
       for j=0 to i-1 do
         max_mismatches := basic_max_mismatches;
-        let our_sim = 
+        let our_sim =
           similarity (!max_mismatches)
             (Alignment.get_seq a i) (Alignment.get_seq a j) in
         if 0 > compare our_sim (!best_sim) then begin
@@ -85,7 +85,7 @@ let prev_pairing_of_alignment a =
   (* here we reduce the number of possible mismatches so that the subsequent
    * sequence comparisons have to do strictly better than has been done before.
    * that way we can cut out early of a comparison *)
-              max_mismatches := n_mismatches-1;  
+              max_mismatches := n_mismatches-1;
               pairing.(i) <- Friend j
           end
         end;
@@ -96,14 +96,14 @@ let prev_pairing_of_alignment a =
 
 (* print out the similarities between sequences which are assigned to be friends
  * as a check *)
-let fprint_similarities ch a prof = 
+let fprint_similarities ch a prof =
   for i=0 to (Array.length a)-1 do
     Printf.fprintf ch "\n  %s\n" (Alignment.get_seq a i);
     match prof.(i) with
     | Friendless -> Printf.fprintf ch "x\n";
-    | Friend j -> 
+    | Friend j ->
         Printf.fprintf ch "f %s\n" (Alignment.get_seq a j);
-    | Identical j -> 
+    | Identical j ->
         Printf.fprintf ch "i %s\n" (Alignment.get_seq a j);
   done
 

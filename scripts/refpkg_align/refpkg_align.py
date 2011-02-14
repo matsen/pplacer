@@ -21,11 +21,11 @@ def main():
 
 def hmmer_align(reference_package, sequence_files, out_prefix):
     """
-    Create an alignment with hmmer. Then, separate out reference sequences 
+    Create an alignment with hmmer. Then, separate out reference sequences
     from the fragments into two separate files.
     """
-  
-    # Determine the name of the reference package, excluding any other 
+
+    # Determine the name of the reference package, excluding any other
     # elements in its path.
     reference_package_name = list(os.path.split(reference_package)).pop()
     reference_package_name_prefix = os.path.splitext(reference_package_name)[0]
@@ -43,12 +43,12 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
     if out_prefix is None:
         # Sequence file name will be appended within for loop.
         out_prefix = os.path.join(reference_package, reference_package_name_prefix) + '.'
-    
+
     # hmmalign must be in PATH for this to work.
     hmmer_template = Template('hmmalign --outformat afa -o $tmp_file' + ' --mapali ' + \
                               aln_sto + ' ' + profile + ' $sequence_file')
     for sequence_file in sequence_files:
-        
+
         # Determine a name for the temporary output file.
         tmp_file = sequence_file + '.' + str(os.getppid()) + '.afa'
         sequence_file_name = list(os.path.split(sequence_file)).pop()
@@ -67,16 +67,16 @@ def hmmer_align(reference_package, sequence_files, out_prefix):
                                      stderr=None,
                                      shell=(sys.platform!="win32"))
             return_code = child.wait()
-        
+
             # If return code was not 1, split off the reference sequences from the fragments.
             if not return_code:
                 # Determine output file names.  Set to default if -o was not specified.
-                out_refs, out_frags = [os.path.join(reference_package, out_prefix + '.ref.fasta'), 
+                out_refs, out_frags = [os.path.join(reference_package, out_prefix + '.ref.fasta'),
                                        os.path.join(reference_package, out_prefix + '.frag.fasta')]
                 if not out_prefix_arg:
                     out_refs = out_prefix + sequence_file_name_prefix + ".ref.fasta"
                     out_frags = out_prefix + sequence_file_name_prefix + ".frag.fasta"
- 
+
                 frag_names = names(SeqIO.parse(sequence_file, "fasta"))
                 in_seqs = SeqIO.parse(tmp_file, "fasta")
                 # Two separate files are written out, so iterator + generator are used twice.
@@ -107,7 +107,7 @@ def id_filter(in_seqs, f):
     for record in in_seqs:
         if (f(record.id)):
             yield record
-    
+
 
 def parse_arguments():
     """
@@ -133,7 +133,7 @@ def reference_package(reference_package):
         return reference_package
     else:
         raise Exception, 'Path to reference package does not exist: ' + reference_package
-    
+
 
 if __name__ == '__main__':
     sys.exit(main())

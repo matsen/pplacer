@@ -1,7 +1,7 @@
 (* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
  * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
  *
- * Say we bootstrap a clustering method. 
+ * Say we bootstrap a clustering method.
  * If there are samples that don't fit into a tree-like structure, then they
  * will wander about and make all of the bootstrap values low.
  * We would like to find them and look at bootstrap values when those taxa are
@@ -28,16 +28,16 @@
  *   - remove this element from every set in ssl, and recur.
  *)
 
-module Make 
-         (O: Set.OrderedType) 
+module Make
+         (O: Set.OrderedType)
          (S: Set.S with type elt = O.t)
          (SS: Set.S with type elt = S.t) = struct
 
   (* madness *)
   exception First of O.t
   exception Empty_hash
-  let first_key h = 
-    try Hashtbl.iter (fun k _ -> raise (First k)) h; raise Empty_hash with 
+  let first_key h =
+    try Hashtbl.iter (fun k _ -> raise (First k)) h; raise Empty_hash with
     | First k -> k
 
   let s_of_list l = List.fold_right S.add l S.empty
@@ -51,7 +51,7 @@ module Make
   let symmdiff s s' = S.union (S.diff s s') (S.diff s' s)
 
   (* f is a map from elements of list to some comparable quantities *)
-  let find_fsmallest f startl = 
+  let find_fsmallest f startl =
     let rec aux x v = function
       | x'::l ->
           let v' = f x' in
@@ -61,18 +61,18 @@ module Make
     in
     match startl with
     | [] -> assert false
-    | h::t -> aux h (f h) t 
-  
+    | h::t -> aux h (f h) t
+
   (* given a StringSetSet, find the StringSet with the smallest symmetric
    * difference with chosen_s *)
-  let smallest_symmdiff s ss = 
+  let smallest_symmdiff s ss =
     find_fsmallest S.cardinal (List.map (symmdiff s) (SS.elements ss))
-  
+
   (* given a list of S.t's, most_pop finds the element which is most
    * commonly seen. if all S.t's are empty, then return None. *)
-  let most_pop sl = 
+  let most_pop sl =
     let h = Hashtbl.create ((S.cardinal (List.hd sl)) / 4) in
-    let boost x = 
+    let boost x =
       if Hashtbl.mem h x then Hashtbl.replace h x (1 + (Hashtbl.find h x))
       else Hashtbl.add h x 1
     in
@@ -80,40 +80,40 @@ module Make
     try
       let fk = first_key h in
       Some
-        (Hashtbl.fold 
-          (fun k v ((_, bv) as p) -> if v > bv then (k, v) else p) 
+        (Hashtbl.fold
+          (fun k v ((_, bv) as p) -> if v > bv then (k, v) else p)
           h
           (fk, Hashtbl.find h fk))
     with
     | Empty_hash -> None
-  
+
   (* remove x from every elememnt of ss *)
-  let ssremove x ss = 
+  let ssremove x ss =
     SS.fold
       (fun s -> SS.add (if S.mem x s then S.remove x s else s)) ss SS.empty
-  
+
   (* See the top of this code for the full introduction to this function.
    *
    * the score is the fraction of the SSets in our list will contain a set
-   * identical to start_s upon removal of the naughty elements. 
+   * identical to start_s upon removal of the naughty elements.
    * we use this funny aux and bump_down design because it's expensive to
    * compute the score, and in doing so we make symmdiffl, which is then used to
    * find the next naughty.
    * *)
-  let perform cutoff start_s start_ssl = 
+  let perform cutoff start_s start_ssl =
    (* the final return of aux is a pair (final_score, l) where l's elements are
     * of the form (s,x), where s is the score before removing x *)
     let inv_listnl = 1. /. (float_of_int (List.length start_ssl)) in
     let rec aux s ssl accu =
       let symdiffl = List.map (smallest_symmdiff s) ssl in
       (* score is the score before deletion *)
-      let score = 
-        List.fold_right 
+      let score =
+        List.fold_right
           (fun s -> (+.) (if s = S.empty then inv_listnl else 0.))
           symdiffl
           0.
       in
-      if score >= cutoff then 
+      if score >= cutoff then
         score, accu
       else begin
         match most_pop symdiffl with

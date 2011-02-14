@@ -4,7 +4,7 @@
  * some basic functions.
  *
  * This definitely needs some cleaning out, as much functionality isn't used or
- * duplicated somewhere else. 
+ * duplicated somewhere else.
  *
  * Some of the code here is not very good!
 *)
@@ -18,38 +18,38 @@ open MapsSets
 let round x = int_of_float (floor (x +. 0.5))
 
 (*
-# int_pow 10. 3;;              
+# int_pow 10. 3;;
 - : float = 1000.
-# int_pow 10. 0;;              
+# int_pow 10. 0;;
 - : float = 1.
 *)
-let int_pow x n = 
+let int_pow x n =
   assert(n >= 0);
   let rec aux accu i = if i=0 then accu else aux (x*.accu) (i-1) in
   aux 1. n
 
-let date_time_str () = 
+let date_time_str () =
   let the_time = Unix.localtime (Unix.time ()) in
-  Printf.sprintf "%02d/%02d/%d %02d:%02d:%02d" 
-    (the_time.Unix.tm_mon+1) 
-    the_time.Unix.tm_mday 
+  Printf.sprintf "%02d/%02d/%d %02d:%02d:%02d"
+    (the_time.Unix.tm_mon+1)
+    the_time.Unix.tm_mday
     (the_time.Unix.tm_year+1900)
-    the_time.Unix.tm_hour 
+    the_time.Unix.tm_hour
     the_time.Unix.tm_min
     the_time.Unix.tm_sec
 
-let safe_chop_extension s = 
+let safe_chop_extension s =
   try Filename.chop_extension s with | Invalid_argument _ -> s
 
-let safe_chop_suffix name suff = 
+let safe_chop_suffix name suff =
   if Filename.check_suffix name suff then Filename.chop_suffix name suff
   else name
 
-(* pull_each_out : 
+(* pull_each_out :
 # pull_each_out [1;2;3];;
 - : (int * int list) list = [(1, [2; 3]); (2, [1; 3]); (3, [1; 2])]
 *)
-let pull_each_out init_list = 
+let pull_each_out init_list =
   let rec aux all_pairs start = function
     | x::l ->
         aux ((x, List.rev_append start l)::all_pairs) (x::start) l
@@ -58,30 +58,30 @@ let pull_each_out init_list =
   List.rev (aux [] [] init_list)
 
 
-(* funny. 
+(* funny.
 # list_sub 4 [1;2;3;4;5;6;7;8];;
 - : int list = [1; 2; 3; 4]
 # list_sub ~start:2 ~len:4 [1;2;3;4;5;6;7;8];;
 - : int list = [3; 4; 5; 6]
  * *)
-let list_sub ?start:(start=0) ~len l = 
+let list_sub ?start:(start=0) ~len l =
   Array.to_list (Array.sub (Array.of_list l) start len)
 
 
 exception Different of int
 
-let raise_if_different cmp x1 x2 = 
+let raise_if_different cmp x1 x2 =
   let c = cmp x1 x2 in
   if c <> 0 then raise (Different c)
 
 (* get the unique items from a list
  * slow, clearly.
  *)
-let list_uniques linit = 
+let list_uniques linit =
   List.rev (
     List.fold_left (
       fun l x ->
-        if List.mem x l then l 
+        if List.mem x l then l
         else x :: l
     ) [] linit )
 
@@ -89,11 +89,11 @@ let list_uniques linit =
 # list_find_loc 2 [0;1;2;3;4;5;6;7];;
 - : int = 2
 *)
-let list_find_loc x l = 
+let list_find_loc x l =
   let rec aux i = function
     | hd::tl -> if x = hd then i else aux (i+1) tl
     | [] -> raise Not_found
-  in 
+  in
   aux 0 l
 
 
@@ -110,21 +110,21 @@ let rec list_iterpairs f = function
 (1,3)   (2,3)   (1,4)   (1,5)   (2,4)   (2,5)   (3,4)   (3,5)   - : unit = ()
 * note that we don't get (1,2).
 *)
-let list_list_iterpairs f ll = 
+let list_list_iterpairs f ll =
   list_iterpairs
     (fun l1 l2 ->
-      List.iter 
+      List.iter
         (fun x -> List.iter (fun y -> f x y) l2)
         l1)
     ll
 
 (* get from map, but return an empty list if not in map *)
-let get_from_list_intmap id m = 
+let get_from_list_intmap id m =
   if IntMap.mem id m then IntMap.find id m
   else []
 
 (*
-# let divbyk k x = x mod k = 0;;                                   
+# let divbyk k x = x mod k = 0;;
 val divbyk : int -> int -> bool = <fun>
 # let x = find_multiple_matches [divbyk 2; divbyk 3] [1;2;3;4;5;6;7;8];;
 val x : int list = [6]
@@ -133,7 +133,7 @@ let find_multiple_matches f_list =
   let rec aux accu = function
     | [] -> List.rev accu
     | x::l ->
-        if (List.fold_left 
+        if (List.fold_left
              (fun accu f ->
                accu+(if f x then 1 else 0))
              0
@@ -142,14 +142,14 @@ let find_multiple_matches f_list =
              aux (x::accu) l
         else
           aux accu l
-  in 
-  aux [] 
+  in
+  aux []
 
 
-let combine_over_intmaps combine_fun keys m1 m2 = 
-  try 
-    List.fold_right 
-      (fun key -> IntMap.add key 
+let combine_over_intmaps combine_fun keys m1 m2 =
+  try
+    List.fold_right
+      (fun key -> IntMap.add key
                     (combine_fun (IntMap.find key m1) (IntMap.find key m2)))
       keys
       IntMap.empty
@@ -161,12 +161,12 @@ let combine_over_intmaps combine_fun keys m1 m2 =
  * combine all the maps into a single one, with k bound to a list of all of the
  * bindings for k in map_list.
  *)
-let combine_intmaps_listly map_list = 
+let combine_intmaps_listly map_list =
   List.fold_right
     (fun m ->
       IntMap.fold
         (fun k v sofar ->
-          if IntMap.mem k sofar then 
+          if IntMap.mem k sofar then
             IntMap.add k (v::(IntMap.find k sofar)) sofar
           else
             IntMap.add k [v] sofar)
@@ -174,12 +174,12 @@ let combine_intmaps_listly map_list =
     (List.rev map_list) (* the above rev's things *)
     IntMap.empty
 
-(* 
+(*
  * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
  * combine all the maps into a single one, with k bound to the concatenated set
  * of bindings for k in map_list.
  *)
-let combine_list_intmaps map_list = 
+let combine_list_intmaps map_list =
   IntMap.map
     List.flatten
     (combine_intmaps_listly map_list)
@@ -188,7 +188,7 @@ let combine_list_intmaps map_list =
 (* mask_to_list:
  * Mask an array into a list
  *)
-let mask_to_list mask_arr a = 
+let mask_to_list mask_arr a =
   assert(Array.length mask_arr = Array.length a);
   let masked = ref [] in
 (* count down so that we don't have to reverse after adding them *)
@@ -198,36 +198,36 @@ let mask_to_list mask_arr a =
   !masked
 
 (* the L_1 norm of a float list *)
-let normalized_prob fl = 
+let normalized_prob fl =
   let sum = List.fold_left ( +. ) 0. fl in
   List.map (fun x -> x /. sum) fl
 
 (* the L_1 norm of a float array *)
-let arr_normalized_prob fa = 
+let arr_normalized_prob fa =
   let sum = Array.fold_left ( +. ) 0. fa in
   Array.map (fun x -> x /. sum) fa
 
 (* ll_normalized_prob :
  * ll_list is a list of log likelihoods. this function gives the normalized
- * probabilities, i.e. exponentiate then our_like / (sum other_likes) 
+ * probabilities, i.e. exponentiate then our_like / (sum other_likes)
  * have to do it this way to avoid underflow problems.
  * *)
-let ll_normalized_prob ll_list = 
-  List.map 
+let ll_normalized_prob ll_list =
+  List.map
     (fun log_like ->
-      1. /. 
-        (List.fold_left ( +. ) 0. 
-          (List.map 
-            (fun other_ll -> exp (other_ll -. log_like)) 
+      1. /.
+        (List.fold_left ( +. ) 0.
+          (List.map
+            (fun other_ll -> exp (other_ll -. log_like))
             ll_list)))
     ll_list
 
-let time_fun f = 
+let time_fun f =
   let prev = Sys.time () in
   f ();
   ((Sys.time ()) -. prev)
 
-let print_time_fun name f = 
+let print_time_fun name f =
   Printf.printf "%s took %g seconds\n" name (time_fun f)
 
 (* iter over all ordered pairs in a list.
@@ -237,7 +237,7 @@ val print_pair : int -> int -> unit = <fun>
 (1,2) (1,3) (1,4) (2,3) (2,4) (3,4) - : unit = ()
 *)
 let rec list_iter_over_pairs_of_single f = function
-  | x::l -> 
+  | x::l ->
       List.iter (fun y -> f x y) l;
       list_iter_over_pairs_of_single f l
   | [] -> ()
@@ -246,29 +246,29 @@ let rec list_iter_over_pairs_of_single f = function
 # list_iter_over_pairs_of_two print_pair [1;3] [4;5];;
 (1,4) (1,5) (3,4) (3,5) - : unit = ()
 *)
-let list_iter_over_pairs_of_two f l1 l2 = 
+let list_iter_over_pairs_of_two f l1 l2 =
   List.iter (fun x -> List.iter (f x) l2) l1
 
 (* find the first element of an array satisfying a predicate *)
 let array_first f a =
   let n = Array.length a in
-  let rec aux i = 
+  let rec aux i =
     if i >= n then invalid_arg "array_first: no first!"
     else if f (Array.unsafe_get a i) then i
     else aux (i+1)
-  in 
+  in
   aux 0
 
 (* find the last element of an array satisfying a predicate *)
 let array_last f a =
-  let rec aux i = 
+  let rec aux i =
     if i < 0 then invalid_arg "array_last: no last!"
     else if f (Array.unsafe_get a i) then i
     else aux (i-1)
-  in 
+  in
   aux ((Array.length a)-1)
 
-let rec find_zero_pad_width n = 
+let rec find_zero_pad_width n =
   assert(n>=0);
   if n <= 9 then 1
   else 1+(find_zero_pad_width (n/10))

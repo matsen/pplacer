@@ -7,7 +7,7 @@
 open Fam_batteries
 open MapsSets
 
-type 'a placerun = 
+type 'a placerun =
   {
     ref_tree  :  'a Gtree.gtree;
     prefs     :  Prefs.prefs;
@@ -15,7 +15,7 @@ type 'a placerun =
     pqueries  :  Pquery.pquery list;
   }
 
-let make ref_tree prefs name pqueries = 
+let make ref_tree prefs name pqueries =
   {
     ref_tree  =  ref_tree;
     prefs     =  prefs;
@@ -49,21 +49,21 @@ let contains_unplaced_queries p =
   with
   | Exit -> true
 
-let get_same cmp get_thing thing_name pr1 pr2 = 
+let get_same cmp get_thing thing_name pr1 pr2 =
   let x = get_thing pr1 in
   if 0 = cmp x (get_thing pr2) then x
-  else 
-    failwith 
+  else
+    failwith
       (Printf.sprintf
         "%ss for %s and %s not the same! Were these run with the same reference tree and model parameters (e.g. statistics files?)"
         thing_name (get_name pr1) (get_name pr2))
 
-let get_same_tree pr1 pr2 = 
+let get_same_tree pr1 pr2 =
   get_same Newick.compare get_ref_tree "Reference tree" pr1 pr2
-let get_same_prefs pr1 pr2 = 
+let get_same_prefs pr1 pr2 =
   get_same compare get_prefs "Pref" pr1 pr2
 
-let combine name pr1 pr2 = 
+let combine name pr1 pr2 =
   let ref_tree = get_same_tree pr1 pr2
   and prefs = get_same_prefs pr1 pr2 in
   make
@@ -72,23 +72,23 @@ let combine name pr1 pr2 =
     name
     ((get_pqueries pr1) @ (get_pqueries pr2))
 
-let warn_about_duplicate_names placerun = 
-  let _ = 
+let warn_about_duplicate_names placerun =
+  let _ =
     List.fold_left
       (fun accu name ->
         if StringSet.mem name accu then
           Printf.printf "Warning: query name %s appears multiple times.\n" name;
         StringSet.add name accu)
       StringSet.empty
-      (List.flatten 
-        (List.map 
-          (fun pq -> pq.Pquery.namel) 
+      (List.flatten
+        (List.map
+          (fun pq -> pq.Pquery.namel)
           (get_pqueries placerun)))
   in
   ()
 
-let filter_unplaced ?verbose:(verbose=false) pr = 
-  let (placed_l, unplaced_l) = 
+let filter_unplaced ?verbose:(verbose=false) pr =
+  let (placed_l, unplaced_l) =
     List.partition Pquery.is_placed (get_pqueries pr) in
   if verbose && placed_l <> [] then
     Printf.printf "Filtering %d unplaced sequences from %s...\n"
@@ -98,7 +98,7 @@ let filter_unplaced ?verbose:(verbose=false) pr =
 
 (* for each entry of a (name, f) list, make a placerun with the given name and
  * the pqueries that satisfy f *)
-let multifilter named_f_list placerun = 
+let multifilter named_f_list placerun =
   let ref_tree = get_ref_tree placerun
   and prefs = get_prefs placerun in
   List.map2
@@ -113,31 +113,31 @@ let cutoff_str x = Printf.sprintf "%1.2g" x
 (* let cutoff_str x = Printf.sprintf "%02d" (Base.round (100. *. x)) *)
 
 let cutoff_filter make_name cutoff_fun =
-  multifilter 
+  multifilter
     [ (make_name "lt"), (fun pq -> not (cutoff_fun pq));
       (make_name "ge"), cutoff_fun ]
 
 let re_matches rex s = Str.string_match rex s 0
 
-let warn_about_multiple_matches rex_list placerun = 
+let warn_about_multiple_matches rex_list placerun =
   let (_,_) = (rex_list, placerun) in
   raise (Base.Unimplemented "warn_about_multiple_matches")
   (*
   List.iter
-    (fun s -> 
+    (fun s ->
       Printf.printf "Warning: multiple match on %s\n" s)
     (Base.find_multiple_matches
       (List.map re_matches rex_list)
       (List.map Pquery.name (get_pqueries placerun)))
 *)
 
-let multifilter_by_regex named_regex_list placerun = 
+let multifilter_by_regex named_regex_list placerun =
   let _ = (placerun,named_regex_list) in
   raise (Base.Unimplemented "multifilter_by_regex")
   (*
-  multifilter 
-    (List.map 
-      (fun (name, rex) -> 
+  multifilter
+    (List.map
+      (fun (name, rex) ->
         (name, fun pq -> re_matches rex (Pquery.name pq)))
       named_regex_list)
     placerun

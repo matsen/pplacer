@@ -13,59 +13,59 @@ module MP = Mokaphy_heat.Prefs
  * exponentiated version of the heat *)
 let intensity_of_heat ~p heat = (abs_float heat) ** p
 
-let assert_intensity intensity = 
+let assert_intensity intensity =
   assert(intensity >= 0. || intensity <= 1.)
 
-let simple_color_of_heat heat = 
+let simple_color_of_heat heat =
   if heat >= 0. then Decor.red else Decor.blue
 
-let gray_black_of_heat heat = 
+let gray_black_of_heat heat =
   if heat >= 0. then Decor.gray 180 else Decor.black
 
-let color_of_heat prefs ?(p=1.) heat = 
+let color_of_heat prefs ?(p=1.) heat =
   let gray_level = MP.gray_level prefs in
   let intensity = intensity_of_heat ~p heat
   and color = simple_color_of_heat heat
-  and gray = 
-    Decor.gray 
-      (if MP.white_bg prefs then 
-        255-gray_level 
-      else 
+  and gray =
+    Decor.gray
+      (if MP.white_bg prefs then
+        255-gray_level
+      else
         gray_level)
   in
   assert_intensity intensity;
   Decor.color_avg intensity color gray
 
-let width_value_of_heat ~width_diff ?(p=1.) heat = 
+let width_value_of_heat ~width_diff ?(p=1.) heat =
   let intensity = intensity_of_heat ~p heat in
   assert_intensity intensity;
   width_diff *. intensity
 
-let color_map prefs t pre1 pre2 = 
+let color_map prefs t pre1 pre2 =
   let transform = Mass_map.transform_of_str "" in
   let p = MP.p_exp prefs
-  and kr_map = 
+  and kr_map =
     IntMap.map
     (* we don't care about where we are along the edge *)
-      (List.map snd) 
-      (Kr_distance.make_kr_map 
+      (List.map snd)
+      (Kr_distance.make_kr_map
         (Mass_map.Indiv.of_pre transform pre1)
         (Mass_map.Indiv.of_pre transform pre2)) in
-  let sum_over_krs_of_id id = 
+  let sum_over_krs_of_id id =
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
       (Base.get_from_list_intmap id kr_map)
   in
-  let heat_list = 
+  let heat_list =
     Stree.recur_listly
       (fun id below ->
         ((id,
-          sum_over_krs_of_id 
-            id 
+          sum_over_krs_of_id
+            id
 (* the first item a list from a subtree is the total of all of the heat in that
 * subtree. therefore to get the total heat for our tree, we just have to total
 * all of those *)
-            (List.fold_left 
+            (List.fold_left
               (fun accu -> function
                 | (_,heat)::_ -> heat +. accu
                 | [] -> accu)
@@ -79,34 +79,34 @@ let color_map prefs t pre1 pre2 =
   if top_heat > Kr_distance.tol then
     raise (Kr_distance.Total_kr_not_zero top_heat);
   (* why do I do it like this rather than mapping abs first? *)
-  let max_abs_heat = 
+  let max_abs_heat =
     max
       (ListFuns.complete_fold_left max heat_only)
       (-. (ListFuns.complete_fold_left min heat_only))
   in
-  let our_color_of_heat scaled_heat = 
-    if MP.simple_colors prefs then 
+  let our_color_of_heat scaled_heat =
+    if MP.simple_colors prefs then
       simple_color_of_heat scaled_heat
-    else if MP.gray_black_colors prefs then 
+    else if MP.gray_black_colors prefs then
       gray_black_of_heat scaled_heat
     else color_of_heat prefs ~p scaled_heat
   in
   let min_width = MP.min_width prefs in
   let width_diff = (MP.max_width prefs) -. min_width in
   IntMapFuns.of_pairlist
-    (List.map 
-      (fun (id, raw_heat) -> 
+    (List.map
+      (fun (id, raw_heat) ->
         let scaled_heat = raw_heat /. max_abs_heat in
         let wv = width_value_of_heat ~width_diff ~p scaled_heat in
-        (id, 
+        (id,
         if wv = 0. then []
-        else 
+        else
           ( our_color_of_heat scaled_heat ) ::
           ( if wv < min_width then []
             else [ Decor.width wv ])))
       heat_list)
 
-let make_heat_tree prefs decor_t pre1 pre2 = 
-  Decor_gtree.add_decor_by_map 
+let make_heat_tree prefs decor_t pre1 pre2 =
+  Decor_gtree.add_decor_by_map
     decor_t
     (color_map prefs decor_t pre1 pre2)

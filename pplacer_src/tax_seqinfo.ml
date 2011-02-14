@@ -15,36 +15,36 @@ type t =
 
 type seqinfo_map = t StringMap.t
 
-let tax_id_by_name sim s = 
+let tax_id_by_name sim s =
   try (StringMap.find s sim).tax_id with
   | Not_found -> failwith ("tax_id for "^s^" not found!")
 
 
- 
+
 (* *** reading *** *)
 (* requires "seqname" and "tax_id" columns, "accession"
  * "tax_name","isType","ok","i","outlier","selected","label" *)
-let of_csv fname = 
-  let safe_assoc k l = 
-    try List.assoc k l with 
+let of_csv fname =
+  let safe_assoc k l =
+    try List.assoc k l with
       | Not_found -> failwith ("couldn't find "^k^" column in "^fname)
   in
-  List.fold_left 
-    (fun sim al -> 
+  List.fold_left
+    (fun sim al ->
       let seqname_str = safe_assoc "seqname" al in
       try
-        StringMapFuns.check_add 
+        StringMapFuns.check_add
           seqname_str
-          { 
+          {
             tax_id = NCBI (safe_assoc "tax_id" al);
-            accession = 
-              try R_csv.entry_of_str (List.assoc "accession" al) with 
-              | Not_found -> None 
+            accession =
+              try R_csv.entry_of_str (List.assoc "accession" al) with
+              | Not_found -> None
           }
           sim
       with
       | Failure "check_add" ->
-          failwith 
+          failwith
           (Printf.sprintf "Tax_refdata.of_csv: contradictory line for %s\n" seqname_str)
       | Not_found -> failwith ("seq_name and/or tax_id fields missing in "^fname))
     StringMap.empty

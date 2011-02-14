@@ -4,7 +4,7 @@
  * to calculate the errors of placement given a correct tree
  *
  * we assume for the purposes of this code that the tree is bifurcating, and is
- * rooted at a trifurcating node 
+ * rooted at a trifurcating node
 *)
 
 
@@ -30,9 +30,9 @@ let parse_args () =
   List.rev !files
 
   (* make a set of the taxon names *)
-let tax_set t = 
+let tax_set t =
   let rec get_name_list = function
-    | id::l -> 
+    | id::l ->
       begin
         match (Gtree.get_bark t id)#get_name_opt with
         | Some s -> s::(get_name_list l)
@@ -40,10 +40,10 @@ let tax_set t =
       end
     | [] -> []
   in
-  StringSetFuns.of_list 
+  StringSetFuns.of_list
     (get_name_list (Gtree.node_ids t))
-    
-     
+
+
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
@@ -57,7 +57,7 @@ let () =
         let ref_tree = Placerun.get_ref_tree pr in
         let ref_tax = tax_set ref_tree in
         assert(StringSet.diff ref_tax correct_set = StringSet.empty);
-        let correct_loc = 
+        let correct_loc =
           match StringSet.elements (StringSet.diff correct_set ref_tax) with
           | [] -> failwith "correct has no extras!"
           | [extra_name] -> Dist_stree.find_placement correct_tree extra_name
@@ -69,10 +69,10 @@ let () =
             List.iter (
               fun place ->
                 (* for each placement, the error, the ml_ratio, and the pp *)
-                Printf.fprintf out_ch "%d\t%g\t%s\n" 
-                  (Dist_stree.edge_node_distance 
-                    (Gtree.get_stree ref_tree) 
-                    correct_loc 
+                Printf.fprintf out_ch "%d\t%g\t%s\n"
+                  (Dist_stree.edge_node_distance
+                    (Gtree.get_stree ref_tree)
+                    correct_loc
                     (Placement.location place))
                   (Placement.ml_ratio place)
                   (Placement.opt_to_str "%g" (Placement.post_prob_opt place))
@@ -80,8 +80,8 @@ let () =
           ) (Placerun.get_pqueries pr);
         close_out out_ch;
         if frc = 0 && ret_code = 1 then 0 else ret_code
-      with 
-      | Sys_error msg -> prerr_endline msg; 2 
+      with
+      | Sys_error msg -> prerr_endline msg; 2
     in
     exit (List.fold_left collect 1 files)
   end

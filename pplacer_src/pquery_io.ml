@@ -12,21 +12,21 @@ let no_seq_str = "<sequence not loaded>"
 let space_concat sl = String.concat " " sl
 let space_split = Str.split (Str.regexp "[ \t]+")
 
- 
+
 (* ***** WRITING ***** *)
 
-let write ch pq = 
+let write ch pq =
   Printf.fprintf ch ">%s\n" (space_concat (Pquery.namel pq));
   Printf.fprintf ch "%s\n" (Pquery.seq pq);
-  List.iter 
-    (fun p -> 
-      Printf.fprintf ch "%s\n" (Placement.to_str p)) 
+  List.iter
+    (fun p ->
+      Printf.fprintf ch "%s\n" (Placement.to_str p))
     (Pquery.place_list pq)
 
 let write_csv ch pq =
   let qname = R_csv.quote (space_concat (Pquery.namel pq)) in
   ListFuns.iteri
-    (fun i p -> 
+    (fun i p ->
       R_csv.write_strl ch (qname::(string_of_int i)::(Placement.to_csv_strl p)))
     (Pquery.place_list pq)
 
@@ -40,5 +40,5 @@ let parse_pquery ?load_seq:(load_seq=true) = function
       ~namel:(space_split (Alignment.remove_fasta_gt header))
       ~seq:my_seq
       (List.map Placement.placement_of_str places)
-  | _ -> 
+  | _ ->
       invalid_arg "problem with place file. missing sequence data?"
