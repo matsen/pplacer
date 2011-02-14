@@ -8,7 +8,7 @@ open MapsSets
 
 (* note that order is important so the xml comes out right when we sort using
  * polymorphic compare *)
-type decoration = 
+type decoration =
   | Width of float
   | Color of int * int * int
   | Dot of int
@@ -37,15 +37,15 @@ let sand = color (255, 201, 175)
 let gray intensity = color (intensity, intensity, intensity)
 
 (* weight is the weight of a *)
-let int_avg weight a b = 
+let int_avg weight a b =
   assert(0. <= weight && weight <= 1.);
-  int_of_float 
+  int_of_float
     ((float_of_int a) *. weight +. (float_of_int b) *. (1. -. weight))
 let triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2) =
   (int_avg weight r1 r2, int_avg weight g1 g2, int_avg weight b1 b2)
 
 (* weight is the weight of a *)
-let color_avg weight c1 c2 = 
+let color_avg weight c1 c2 =
   match (c1,c2) with
   | (Color (r1,g1,b1), Color (r2,g2,b2)) ->
       color (triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2))
@@ -58,7 +58,7 @@ let gray_green ~gray_level level = color gray_level level gray_level
 let gray_blue ~gray_level level = color gray_level gray_level level
 
 (* "a_color" is actually any map from an int to a decoration *)
-let scaled_color a_color ~min ~max x = 
+let scaled_color a_color ~min ~max x =
   assert_unit_interval x;
   a_color (min + (int_of_float ((float_of_int (max - min)) *. x)))
 *)
@@ -68,7 +68,7 @@ let scaled_color a_color ~min ~max x =
 
 let width w = Width w
 
-let scaled_width ~min ~max x = 
+let scaled_width ~min ~max x =
   assert_unit_interval x;
   width (min +. (max -. min) *. x)
 
@@ -91,33 +91,25 @@ let ppr ff = function
   | Dot i -> Format.fprintf ff "Dot(%d)" i
   | Taxinfo (ti,name) -> Format.fprintf ff "Taxinfo(%a,%s)" Tax_id.ppr ti name
 
-let write_xml ch = function
-  | Color(r,g,b) -> 
-      Myxml.write_long_tag
-        (fun () -> 
-          Myxml.write_int "red" ch r;
-          Myxml.write_int "green" ch g;
-          Myxml.write_int "blue" ch b;)
-        "color"
-        ch
-  | Width w -> 
-      Myxml.write_float "width" ch w
-  | Dot i -> 
-      let tag_name = 
-        let r = i mod 3 in
-        if r = 0 then "duplications"
-        else if r = 1 then "speciations"
-        else "losses"
-      in
-      Myxml.write_long_tag
-        (fun () -> Myxml.write_int tag_name ch (i+1);)
-        "events"
-        ch
-  | Taxinfo (ti, name) -> 
-     Myxml.write_long_tag
-       (fun () ->
-         Tax_id.write_xml ch ti;
-         Myxml.write_string "scientific_name" ch name)
-       "taxonomy"
-       ch
+let to_xml = function
+  | Color (r, g, b) ->
+    [Xml.Element ("color", [], [
+      Myxml.tag "red" (string_of_int r);
+      Myxml.tag "green" (string_of_int g);
+      Myxml.tag "blue" (string_of_int b);
+    ])]
+  | Width w ->
+    [Myxml.tag "width" (Printf.sprintf "%g" w)]
+  | Dot i ->
+    let tag_name = match i mod 3 with
+      | 0 -> "duplications"
+      | 1 -> "speciations"
+      | _ -> "losses"
+    in [Xml.Element ("events", [], [
+      Myxml.tag tag_name (string_of_int (i + 1));
+    ])]
+  | Taxinfo (ti, name) ->
+    [Xml.Element ("taxonomy", [], Tax_id.to_xml ti @ [
+      Myxml.tag "scientific_name" name;
+    ])]
 

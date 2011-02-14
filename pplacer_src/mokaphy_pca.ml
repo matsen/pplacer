@@ -148,13 +148,13 @@ let pca_complete ?scale transform
   let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
   and names = (List.map Placerun.get_name prl)
   in
-  Phyloxml.named_tree_list_to_file
+  Phyloxml.named_gtrees_to_file
+    (out_prefix^".xml")
     (List.map
       (fun (eval, evect) ->
         (Some (string_of_float eval),
         heat_tree_of_floatim multiplier t (map_of_arr evect)))
-      combol)
-    (out_prefix^".xml");
+      combol);
   save_named_fal
     (out_prefix^".rot")
     (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);

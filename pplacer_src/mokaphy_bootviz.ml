@@ -36,12 +36,12 @@ let bootviz prefs = function
         | "" -> "cluster_boot.xml" 
         | s -> s
       in
-      Phyloxml.tree_to_file
+      Phyloxml.gtree_to_file
+        out_fname
         (Bootviz.decorate_tree 
           (Prefs.cutoff prefs) 
           (Prefs.boot_fname prefs)
           ct_fname)
-        out_fname
   | [] -> () (* e.g. -help *)
   | _ -> failwith "Please specify exactly one cluster tree for bootviz."
 
