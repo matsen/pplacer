@@ -3,7 +3,7 @@ open Fam_batteries
 open MapsSets
 
 module Prefs = struct
-  type mokaphy_prefs = 
+  type mokaphy_prefs =
     {
       p_exp: float ref;
       use_pp: bool ref;
@@ -17,7 +17,7 @@ module Prefs = struct
       seed: int ref;
       matrix: bool ref;
     }
-  
+ 
   let use_pp            p = !(p.use_pp)
   let transform         p = !(p.transform)
   let n_samples         p = !(p.n_samples)
@@ -29,9 +29,9 @@ module Prefs = struct
   let weighted          p = !(p.weighted)
   let seed              p = !(p.seed)
   let matrix            p = !(p.matrix)
-  
-  let defaults () = 
-    { 
+ 
+  let defaults () =
+    {
       use_pp = ref false;
       verbose = ref false;
       normal = ref false;
@@ -50,7 +50,7 @@ module Prefs = struct
       refpkg_path = ref "";
       transform = ref "";
     }
-  
+
   (* arguments *)
   let specl_of_prefs prefs = [
     "-o", Arg.Set_string prefs.out_fname,
@@ -85,10 +85,10 @@ module Prefs = struct
     "--verbose", Arg.Set prefs.verbose,
     "Verbose running.";
 ]
-end 
+end
 
 
-type result = 
+type result =
   {
     distance : float;
     p_value : float option;
@@ -100,42 +100,42 @@ let get_p_value r = match r.p_value with
   | None -> failwith "no p-value!"
 
 let pair_core transform p n_samples t pre1 pre2 =
-  let resampled_dists = 
+  let resampled_dists =
     Normal_approx.normal_pair_approx rng weighting
       criterion (Mokaphy_prefs.n_samples prefs) p pr1 pr2
   in
   (* here we shadow original_dist with one we know is unweighted *)
-  let original_dist = 
+  let original_dist =
     Kr_distance.pair_distance
       weighting
-      criterion 
-      p 
-      pr1 
+      criterion
+      p
+      pr1
       pr2
   in
-  R_plots.write_density 
+  R_plots.write_density
     "normal"
     (Placerun.get_name pr1)
     (Placerun.get_name pr2)
-    original_dist 
+    original_dist
     resampled_dists
     p;
   { distance = original_dist;
-    p_value = 
-      Some 
-        (Mokaphy_base.list_onesided_pvalue 
-          resampled_dists 
+    p_value =
+      Some
+        (Mokaphy_base.list_onesided_pvalue
+          resampled_dists
           original_dist)}
 
-let normal_core ch prefs prl = 
-  if List.length prl = 0 then 
+let normal_core ch prefs prl =
+  if List.length prl = 0 then
     exit 0; (* zero mokaphy --help *)
-  if List.length prl = 1 then 
+  if List.length prl = 1 then
     invalid_arg "can't do KR with fewer than two place files";
-  let n_samples = Prefs.n_samples prefs 
+  let n_samples = Prefs.n_samples prefs
   and is_weighted = Prefs.weighted prefs
   and use_pp = Prefs.use_pp prefs
-  and pra = Array.of_list prl 
+  and pra = Array.of_list prl
   and p = Prefs.p_exp prefs
   and transform = Mass_map.transform_of_str (Prefs.transform prefs)
   in
@@ -146,13 +146,13 @@ let normal_core ch prefs prl =
   (* the names of the placeruns *)
   and names = Array.map Placerun.get_name pra
   in
-  Mokaphy_common.write_uptril 
+  Mokaphy_common.write_uptril
     (Prefs.list_output prefs)
     names
     [Uptri.map get_distance u; Uptri.map get_p_value u;]
     ch
 
 
-let normal prefs prl = 
+let normal prefs prl =
   Mokaphy_common.wrap_output (Prefs.out_fname prefs)
     (fun ch -> normal_core ch prefs prl)

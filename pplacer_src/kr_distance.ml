@@ -77,7 +77,7 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
  * starts at leaves with starter_data_factory.
  * the reason why we use starter_data_factory rather than doing a fully
  * functional approach is that then the number of allocations is linear in only
- * the size of the tree, rather than depending on the number of placements .
+ * the size of the tree, rather than depending on the number of placements.
  * *)
 let total_over_tree curried_edge_total
                     check_final_data
