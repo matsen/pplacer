@@ -64,10 +64,17 @@ let to_file invocation out_fname placerun =
     placerun;
   close_out ch
 
-let to_json invocation out_fname placerun =
+let to_json_file invocation out_fname placerun =
   let ret = Hashtbl.create 8
+  and meta = Hashtbl.create 16
   and ref_tree = Placerun.get_ref_tree placerun
   and pqueries = Placerun.get_pqueries placerun in
+  Hashtbl.add meta "invocation" (Jsontype.String invocation);
+  Hashtbl.add ret "metadata" (Jsontype.Object meta);
+
+  Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) [|
+    "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length";
+  |]));
   Hashtbl.add ret "tree" (Jsontype.String (Newick.to_string ref_tree));
   Hashtbl.add ret "placements" (Jsontype.Array (Array.map Pquery_io.to_json (Array.of_list pqueries)));
   Json.to_file out_fname (Jsontype.Object ret)

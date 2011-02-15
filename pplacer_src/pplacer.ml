@@ -177,13 +177,19 @@ let () =
             if not (Refpkg.tax_equipped rp) then pr
             else Refpkg.contain_classify rp pr
           and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
+          and invocation = (String.concat " " (Array.to_list Sys.argv))
           in
           Placerun_io.to_file
-            (String.concat " " (Array.to_list Sys.argv))
+            invocation
             (out_prefix^".place")
             final_pr;
           if Prefs.csv prefs then
             Placerun_io.to_csv_file (out_prefix^".csv") final_pr;
+          if Prefs.json prefs then
+            Placerun_io.to_json_file
+              invocation
+              (out_prefix ^ ".json")
+              final_pr;
         end)
       files;
     (* print final info *)
