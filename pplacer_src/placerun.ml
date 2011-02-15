@@ -91,7 +91,7 @@ let filter_unplaced ?verbose:(verbose=false) pr =
   let (placed_l, unplaced_l) =
     List.partition Pquery.is_placed (get_pqueries pr) in
   if verbose && placed_l <> [] then
-    Printf.printf "Filtering %d unplaced sequences from %s...\n"
+    Printf.printf "Warning: Ignoring %d unplaced sequences from %s...\n"
       (List.length unplaced_l)
       (get_name pr);
   { pr with pqueries = placed_l }
