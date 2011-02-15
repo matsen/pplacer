@@ -50,3 +50,7 @@ let to_string o =
   to_formatter (Format.formatter_of_buffer buf) o;
   Buffer.contents buf
 
+let to_file name o =
+  let file = open_out name in
+  to_formatter (Format.formatter_of_out_channel file) o;
+  close_out file

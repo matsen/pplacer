@@ -30,6 +30,13 @@ let write_csv ch pq =
       R_csv.write_strl ch (qname::(string_of_int i)::(Placement.to_csv_strl p)))
     (Pquery.place_list pq)
 
+let to_json pq =
+  let tbl = Hashtbl.create 4 in
+  let namel = List.map (fun s -> Jsontype.String s) (Pquery.namel pq) in
+  Hashtbl.add tbl "n" (Jsontype.Array (Array.of_list namel));
+  Hashtbl.add tbl "p" (Jsontype.Array (Array.map Placement.to_json (Array.of_list (Pquery.place_list pq))));
+  Jsontype.Object tbl
+
 
 (* ***** READING ***** *)
 

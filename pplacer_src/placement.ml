@@ -161,6 +161,13 @@ let to_strl =
 
 let to_str place = String.concat "\t" (to_strl place)
 
+let to_json place = Jsontype.Array [|
+  Jsontype.Int place.location;
+  Jsontype.Float place.log_like;
+  Jsontype.Float place.ml_ratio;
+  Jsontype.Float place.distal_bl;
+  Jsontype.Float place.pendant_bl;
+|]
 
 (* CSV *)
 let opt_to_csv_str f = function
