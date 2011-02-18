@@ -30,6 +30,7 @@ let slurp fname = String.concat "\n" (File_parsing.string_list_of_file fname)
 
 let of_file fname = Json.of_string (slurp fname)
 
+(* "getting" something simply means that we convert to a proper ocaml type. *)
 let get_gen f x =
   try f x with
   | Type_mismatch_wanted wanted ->
@@ -43,6 +44,8 @@ let get_hashtbl = get_gen _get_hashtbl
 let get_array   = get_gen _get_array
 let get_real    = get_gen _get_real
 
+(* "finding" something means that we find it in the json object (as a
+ * hashtable) and then convert to the corresponding ocaml type. *)
 let find_gen what o k =
   match o with
   | Object h -> begin
@@ -63,4 +66,4 @@ let find_hashtbl = find_gen _get_hashtbl
 let find_array   = find_gen _get_array
 let find_real    = find_gen _get_real
 
-
+let mem o k = try let _ = find o k in true with | Undefined_key _ -> false

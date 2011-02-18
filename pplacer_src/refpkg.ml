@@ -50,13 +50,13 @@ let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
-(* NOTE: once parsing of stats files is deprecated, we can set the prefs
- * directly, rather than doing this. *)
-let build_model stats_fname ref_align =
+(* deprecated now *)
+let model_of_stats_fname stats_fname ref_align =
   let prefs = Prefs.defaults () in
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
+(* this is the primary builder. *)
 let of_strmap m =
   let get what =
     try StringMap.find what m with
@@ -65,7 +65,17 @@ let of_strmap m =
   let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
   let lref_tree = lazy (Newick.of_file (get "tree_file"))
   and lmodel =
-      lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));
+      lazy
+        (let aln = Lazy.force lfasta_aln in
+        if StringMap.mem "phylo_model_file" m then
+          Model.of_json (StringMap.find "phylo_model_file" m) aln
+        else begin
+          print_endline
+            "Warning: using a statistics file directly is now deprecated. \
+            We suggest using a reference package. If you already are, then \
+            please use the latest version of taxtastic.";
+          model_of_stats_fname (get "tree_stats") aln
+        end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in
