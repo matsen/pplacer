@@ -18,7 +18,7 @@
         | "r" -> "\r"
         | "t" -> "\t"
           (* no unicode escapes just yet. *)
-        | s -> syntax_error tok "no unicode escapes"
+        | _ -> syntax_error tok "no unicode escapes"
     ) s
 
   let add_to_hash h (s, v) = Hashtbl.add h s v; h
