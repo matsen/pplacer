@@ -32,7 +32,7 @@ class decor_bark arg =
 
     method to_xml =
       super#to_xml
-      @ List.fold_left (fun l b -> (Decor.to_xml b) @ l) [] (List.sort compare decor)
+      @ List.flatten (List.map Decor.to_xml (List.sort compare decor))
 
     method append_decor decor_list =
       {< decor = decor @ decor_list >}
