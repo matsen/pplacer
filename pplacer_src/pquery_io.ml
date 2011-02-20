@@ -9,25 +9,24 @@ open MapsSets
 
 let no_seq_str = "<sequence not loaded>"
 
-let space_concat sl = String.concat " " sl
 let space_split = Str.split (Str.regexp "[ \t]+")
 
 
 (* ***** WRITING ***** *)
 
 let write ch pq =
-  Printf.fprintf ch ">%s\n" (space_concat (Pquery.namel pq));
+  Printf.fprintf ch ">%s\n" (String.concat " " (Pquery.namel pq));
   Printf.fprintf ch "%s\n" (Pquery.seq pq);
   List.iter
     (fun p ->
       Printf.fprintf ch "%s\n" (Placement.to_str p))
     (Pquery.place_list pq)
 
-let write_csv ch pq =
-  let qname = R_csv.quote (space_concat (Pquery.namel pq)) in
-  ListFuns.iteri
-    (fun i p ->
-      R_csv.write_strl ch (qname::(string_of_int i)::(Placement.to_csv_strl p)))
+(* convert to a string list list appropriate for using with the Csv module. *)
+let to_csv_strl pq =
+  let qname = String.concat " " (Pquery.namel pq) in
+  ListFuns.mapi
+    (fun i p -> qname::(string_of_int i)::(Placement.to_csv_strl p))
     (Pquery.place_list pq)
 
 let to_json pq =

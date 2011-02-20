@@ -159,31 +159,26 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
 
-let csv_output_fmt_str =
-  R_csv.strl_to_str
-    (List.map R_csv.quote
-      [
-        "name";
-        "hit";
-        "location";
-        "ml_ratio";
-        "post_prob";
-        "log_like";
-        "marginal_prob";
-        "distal_bl";
-        "pendant_bl";
-        "contain_classif";
-        "classif"
-        ])
+let csv_col_names =
+  [
+    "name";
+    "hit";
+    "location";
+    "ml_ratio";
+    "post_prob";
+    "log_like";
+    "marginal_prob";
+    "distal_bl";
+    "pendant_bl";
+    "contain_classif";
+    "classif";
+  ]
 
-let write_csv ch pr =
-  Printf.fprintf ch "%s\n" csv_output_fmt_str;
-  List.iter (Pquery_io.write_csv ch) (Placerun.get_pqueries pr)
+let to_csv_strl pr =
+  List.flatten (List.map Pquery_io.to_csv_strl pr.Placerun.pqueries)
 
 let to_csv_file out_fname pr =
-  let ch = open_out out_fname in
-  write_csv ch pr;
-  close_out ch
+  Csv.save out_fname (csv_col_names::(to_csv_strl pr))
 
 let ppr_placerun ff pr =
   Format.fprintf ff "Placerun %s" pr.Placerun.name
