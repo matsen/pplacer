@@ -11,8 +11,6 @@ module Prefs = struct
       out_fname: string ref;
       list_output: bool ref;
       density: bool ref;
-      p_plot: bool ref;
-      box_plot: bool ref;
       p_exp: float ref;
       weighted: bool ref;
       seed: int ref;
@@ -28,8 +26,6 @@ module Prefs = struct
   let out_fname         p = !(p.out_fname)
   let list_output       p = !(p.list_output)
   let density           p = !(p.density)
-  let p_plot            p = !(p.p_plot)
-  let box_plot          p = !(p.box_plot)
   let p_exp             p = !(p.p_exp)
   let weighted          p = !(p.weighted)
   let seed              p = !(p.seed)
@@ -45,8 +41,6 @@ module Prefs = struct
       out_fname = ref "";
       list_output = ref false;
       density = ref false;
-      p_plot = ref false;
-      box_plot = ref false;
       p_exp = ref 1.;
       weighted = ref true;
       seed = ref 1;
@@ -74,12 +68,6 @@ module Prefs = struct
     "Output the KR results as a list rather than a matrix.";
     "--density", Arg.Set prefs.density,
     "write out a shuffle density data file for each pair.";
-(*
-    "--pplot", Arg.Set prefs.p_plot,
-        "write out a plot of the distances when varying the p for the Z_p calculation";
-    "--box", Arg.Set prefs.box_plot,
-        "write out a box and point plot showing the original sample distances compared to the shuffled ones.";
-*)
     "-s", Arg.Set_int prefs.n_samples,
         ("Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is "^(string_of_int (n_samples prefs)));
