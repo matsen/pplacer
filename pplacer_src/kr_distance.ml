@@ -77,7 +77,7 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
  * starts at leaves with starter_data_factory.
  * the reason why we use starter_data_factory rather than doing a fully
  * functional approach is that then the number of allocations is linear in only
- * the size of the tree, rather than depending on the number of placements .
+ * the size of the tree, rather than depending on the number of placements.
  * *)
 let total_over_tree curried_edge_total
                     check_final_data
@@ -101,6 +101,8 @@ let total_over_tree curried_edge_total
   check_final_data final_data;
   grand_total /. (Gtree.tree_length ref_tree)
 
+(* combine two float list IntMaps into a single float 2-array list IntMap.
+ * The latter is the input for the KR distance function. *)
 let make_kr_map m1 m2 =
   let process_map f =
     IntMap.map (List.map (fun (dist_bl, mass) -> (dist_bl, f mass)))
@@ -112,7 +114,7 @@ let make_kr_map m1 m2 =
       process_map (fun mass -> [|0.; mass|]) m2;
     ])
 
-(* Z_p distance between two mass maps *)
+(* Z_p distance between two Indiv mass maps *)
 let dist ref_tree p m1 m2 =
   let starter_kr_v = [|0.; 0.|]
   and kr_map = make_kr_map m1 m2 in
@@ -136,7 +138,8 @@ let dist ref_tree p m1 m2 =
     ref_tree)
   ** (outer_exponent p)
 
-(* x1 and x2 are factors which get multiplied by the mass *)
+(* x1 and x2 are factors which get multiplied by the mass before calculation.
+ * By pulling them out like so, we don't have to make new Pres. *)
 let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 =
   dist
     t

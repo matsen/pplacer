@@ -99,11 +99,13 @@ end
 
 
 (* Indiv meanins that each unit of mass is considered individually on the tree.
- * Indiv makes the weighting for a given edge as a list of (distal_bl, weight)
- * for each placement *)
+ * Indiv makes the weighting for a given edge as a list of (distal_bl, mass)
+ * for each placement.
+ *)
 module Indiv = struct
 
-  type t = (float * float) IntMap.t
+         (* distal_bl * mass *)
+  type t = (float     * float) IntMap.t
 
   (* factor is a multiplicative factor to multiply the mass by.
    * transform is an int -> float function which given a multiplicity spits out
@@ -133,6 +135,13 @@ module Indiv = struct
     IntMap.map
       (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
       m
+
+let total_mass m =
+  IntMap.fold
+    (fun _ mass_l accu ->
+      List.fold_right (fun (_, mass) -> ( +. ) mass) mass_l accu)
+    m
+    0.
 
   let ppr =
     IntMapFuns.ppr_gen
