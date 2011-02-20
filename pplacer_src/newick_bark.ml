@@ -77,12 +77,6 @@ class newick_bark arg =
         [Myxml.tag "confidence" ~attributes:[("type", "bootstrap")] (Printf.sprintf "%g" boot)]) boot
     end
 
-    method write_xml ch =
-      write_something_opt (Myxml.write_string "name") ch name;
-      write_something_opt (Myxml.write_float "branch_length") ch bl;
-      write_something_opt
-        (Myxml.write_float ~attrib:"type=\"bootstrap\"" "confidence") ch boot
-
     method to_numbered id =
       {< name = Some
                 (match name with
