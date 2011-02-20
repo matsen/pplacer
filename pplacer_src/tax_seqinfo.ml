@@ -22,6 +22,12 @@ let tax_id_by_name sim s =
 
 
 (* *** reading *** *)
+
+let entry_of_str = function
+  | "" -> None
+  | "NA" -> None
+  | s -> Some s
+
 (* requires "seqname" and "tax_id" columns, "accession"
  * "tax_name","isType","ok","i","outlier","selected","label" *)
 let of_csv fname =
@@ -38,7 +44,7 @@ let of_csv fname =
           {
             tax_id = NCBI (safe_assoc "tax_id" al);
             accession =
-              try R_csv.entry_of_str (List.assoc "accession" al) with
+              try entry_of_str (List.assoc "accession" al) with
               | Not_found -> None
           }
           sim

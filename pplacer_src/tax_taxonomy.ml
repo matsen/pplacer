@@ -107,10 +107,25 @@ let tax_line_of_strol = function
         exit(0);
     end
 
+(* if a list list is rectangular *)
+let list_list_is_rectangular = function
+  | x::l -> begin
+      try
+        let x_l = List.length x in
+        List.iter
+          (fun y -> if x_l <> List.length y then raise Exit)
+          l;
+        true
+      with
+      | Exit -> false
+    end
+  | [] -> true
+
 let of_ncbi_file fname =
   let taxid_of_stro = ncbi_of_stro
-  and full_list = R_csv.list_list_of_file fname in
-  if not (R_csv.list_list_is_rectangular full_list) then
+  and full_list =
+    List.map (List.map Tax_seqinfo.entry_of_str) (Csv.load fname) in
+  if not (list_list_is_rectangular full_list) then
     invalid_arg ("Array not rectangular: "^fname);
   match List.map tax_line_of_strol full_list with
   | names::lineage_data ->
