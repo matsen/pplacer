@@ -69,7 +69,7 @@ let classify how criterion rp prl =
   let n_ranks = Tax_taxonomy.get_n_ranks td in
   List.iter
     (fun pr ->
-      let ch = open_out ((Placerun.get_name pr)^".class.sql") in
+      let ch = open_out ((Placerun.get_name pr)^".class.tab") in
       try
         List.iter
           (fun pq ->
