@@ -16,9 +16,7 @@ let placerun_by_name fname =
   if StringMap.mem fname !placerun_map then
     StringMap.find fname !placerun_map
   else begin
-    let pr = Placerun.filter_unplaced ~verbose:true
-               (Placerun_io.of_file ~load_seq:false fname)
-    in
+    let pr = Placerun_io.filtered_of_file fname in
     if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
     placerun_map := StringMap.add fname pr !placerun_map;
     pr

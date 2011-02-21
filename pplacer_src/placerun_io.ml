@@ -156,6 +156,9 @@ let of_file ?load_seq:(load_seq=true) place_fname =
     (chop_place_extension (Filename.basename place_fname))
     (get_pqueries [])
 
+let filtered_of_file ?verbose:(verbose=true) fname =
+  Placerun.filter_unplaced ~verbose (of_file fname)
+
 
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
 

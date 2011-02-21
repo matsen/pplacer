@@ -87,10 +87,10 @@ let warn_about_duplicate_names placerun =
   in
   ()
 
-let filter_unplaced ?verbose:(verbose=false) pr =
+let filter_unplaced ?verbose:(verbose=true) pr =
   let (placed_l, unplaced_l) =
     List.partition Pquery.is_placed (get_pqueries pr) in
-  if verbose && placed_l <> [] then
+  if verbose && unplaced_l <> [] then
     Printf.printf "Warning: Ignoring %d unplaced sequences from %s...\n"
       (List.length unplaced_l)
       (get_name pr);
