@@ -12,6 +12,7 @@ let () =
         "round", Placeutil_round.of_argl;
         "demulti", Placeutil_demulti.of_argl;
         "to_json", Placeutil_to_json.of_argl;
+        "classify", Placeutil_classify.of_argl;
       ]
     )
 

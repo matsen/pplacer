@@ -1,4 +1,3 @@
-open Placeviz_common
 
 module Prefs = struct
   type prefs =
