@@ -1,4 +1,4 @@
-(*
+(* A map equipped with algebraic operations.
  *
  * not super-high performance because of map and boxing.
  *

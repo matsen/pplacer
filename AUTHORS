@@ -1,0 +1,12 @@
+# Authors
+
+Erick Matsen
+ - original code base for pplacer and mokaphy
+ - alignment script design
+
+Aaron Gallagher
+  - visionary subcommand options objects
+  - much file format magic
+
+Brian Hodges
+  - alignment python scripts
