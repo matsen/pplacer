@@ -117,9 +117,11 @@ let cutoff_filter make_name cutoff_fun =
 
 let re_matches rex s = Str.string_match rex s 0
 
+exception Unimplemented of string
+
 let warn_about_multiple_matches rex_list placerun =
   let (_,_) = (rex_list, placerun) in
-  raise (Base.Unimplemented "warn_about_multiple_matches")
+  raise (Unimplemented "warn_about_multiple_matches")
   (*
   List.iter
     (fun s ->
@@ -131,7 +133,7 @@ let warn_about_multiple_matches rex_list placerun =
 
 let multifilter_by_regex named_regex_list placerun =
   let _ = (placerun,named_regex_list) in
-  raise (Base.Unimplemented "multifilter_by_regex")
+  raise (Unimplemented "multifilter_by_regex")
   (*
   multifilter
     (List.map

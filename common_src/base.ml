@@ -6,10 +6,6 @@
  * Some of the code here is not very good!
 *)
 
-exception Unimplemented of string
-
-let unimplemented s = raise (Unimplemented s)
-
 open MapsSets
 
 let round x = int_of_float (floor (x +. 0.5))

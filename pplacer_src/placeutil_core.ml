@@ -29,6 +29,7 @@ let read_re_split_file fname =
       (File_parsing.filter_empty_lines
         (File_parsing.string_list_of_file fname)))
 
+    (*
 (* split up placeruns *)
 let partition_by_cutoff infix_str criterion use_edpl cutoff placerun =
   let t = Placerun.get_ref_tree placerun in
@@ -56,9 +57,6 @@ let partition_by_cutoff infix_str criterion use_edpl cutoff placerun =
   Placerun.cutoff_filter make_name geq_cutoff placerun
 
 let write_edpl_list criterion ch pr =
-  let _ = (criterion, ch, pr) in
-  raise (Base.Unimplemented "write_edpl_list")
-  (*
   let t = Placerun.get_ref_tree pr in
   let tl = Gtree.tree_length t in
   String_matrix.write_padded ch
@@ -71,4 +69,3 @@ let write_edpl_list criterion ch pr =
         |])
       (Array.of_list (Placerun.get_pqueries pr)))
   *)
-
