@@ -10,7 +10,7 @@ let option_rex = Str.regexp "-.*"
 (* print the commands available through cmd_map *)
 let print_avail_cmds prg_name cmd_map =
   print_endline "Here is a list of commands available using this interface:";
-  StringMap.iter (fun k v -> Printf.printf "\t%s\t" k; v []) cmd_map;
+  StringMap.iter (fun k v -> Printf.printf "\t%s\t%s\n" k (v ())#desc) cmd_map;
   Printf.printf
     "To get more help about a given command, type %s COMMAND --help\n"
     prg_name;
@@ -28,7 +28,7 @@ let process_cmd prg_name cmd_map argl =
   match argl with
     | s::_ ->
       if StringMap.mem s cmd_map then
-        (StringMap.find s cmd_map) argl
+        ((StringMap.find s cmd_map) ())#run argl
       else if Str.string_match option_rex s 0 then
         print_need_cmd_error ()
       else begin
@@ -93,3 +93,59 @@ let inner_loop ~prg_name ~version cmd_map =
     (Printf.sprintf
       "Type %s --cmds to see the list of available commands."
       prg_name)
+
+
+(* the new stuff *)
+exception No_default of string * string
+
+type 'a described =
+  | Needs_argument of string * string
+  | Formatted of 'a * ('a -> string, unit, string) format
+  | Plain of 'a * string
+
+type 'a flag = {
+  value: 'a option ref;
+  opt: string;
+  described: 'a described;
+}
+
+let flag opt described = {
+  value = ref None;
+  opt = opt;
+  described = described;
+}
+
+let fv f = match !(f.value) with
+  | Some x -> x
+  | None -> let x = begin match f.described with
+      | Formatted (x, _) -> x
+      | Plain (x, _) -> x
+      | Needs_argument (name, _) -> raise (No_default (name, f.opt))
+  end in f.value := Some x; x
+
+let desc_of_flag f =
+  match f.described with
+    | Needs_argument (_, s) -> s
+    | Formatted (v, fmt) -> Printf.sprintf fmt v
+    | Plain (_, s) -> s
+
+let some_flag func f = f.opt, func f, desc_of_flag f
+let string_flag = some_flag (fun f -> Arg.String (fun x -> f.value := Some x))
+let int_flag = some_flag (fun f -> Arg.Int (fun x -> f.value := Some x))
+let float_flag = some_flag (fun f -> Arg.Float (fun x -> f.value := Some x))
+let toggle_flag = some_flag (fun f -> Arg.Unit (fun () -> f.value := Some (not (fv f))))
+
+class virtual subcommand () =
+object (self)
+  method virtual desc: string
+  method virtual usage: string
+  method virtual specl: (string * Arg.spec * string) list
+  method virtual action: string list -> unit
+
+  method run argl =
+    let argl = wrap_parse_argv argl (self#specl) (self#usage) in
+    try
+      self#action argl
+    with
+      | No_default (name, opt) -> Printf.printf "no option provided for %s flag (%s)\n" name opt
+end

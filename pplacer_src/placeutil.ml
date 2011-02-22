@@ -5,10 +5,10 @@ let () =
     ~version:"v1.1"
     (Subcommand.cmd_map_of_list
       [
-        "round", Placeutil_round.of_argl;
-        "demulti", Placeutil_demulti.of_argl;
-        "to_json", Placeutil_to_json.of_argl;
-        "classify", Placeutil_classify.of_argl;
+        "round", (fun () -> new Placeutil_round.cmd ());
+        "demulti", (fun () -> new Placeutil_demulti.cmd ());
+        "to_json", (fun () -> new Placeutil_to_json.cmd ());
+        "classify", (fun () -> new Placeutil_classify.cmd ());
       ]
     )
 

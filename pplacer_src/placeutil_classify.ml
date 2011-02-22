@@ -1,33 +1,4 @@
-(* UI-related *)
-
-module Prefs = struct
-  type prefs =
-    {
-      use_pp: bool ref;
-      refpkg_path: string ref;
-    }
-
-  let refpkg_path p = !(p.refpkg_path)
-
-  let defaults () =
-    {
-      use_pp = ref false;
-      refpkg_path = ref "";
-    }
-
-  let specl_of_prefs prefs =
-[
-  (*
-  "-o", Arg.Set_string prefs.out_prefix,
-  "Set the prefix to write to. Required.";
-  *)
-  "-c", Arg.Set_string prefs.refpkg_path,
-  "Reference package path";
-  "--pp", Arg.Set prefs.use_pp,
-  "Use posterior probability for our criteria.";
-]
-end
-
+open Subcommand
 
 module TIAMR = AlgMap.AlgMapR (Tax_id.OrderedTaxId)
 
@@ -101,26 +72,29 @@ let classify how criterion rp prl =
             ((Placerun.get_name pr)^" contains unclassified queries!"))
     prl
 
-let criterion_of_prefs prefs =
-  if !(prefs.Prefs.use_pp) then Placement.post_prob
-  else Placement.ml_ratio
+(* UI-related *)
 
-let of_argl = function
-  | [] -> print_endline "Classify a placerun using the designated refpkg in a way designed to go into SQL.";
-  | argl ->
-    let prefs = Prefs.defaults () in
-    (* note-- the command below mutates prefs (so order important) *)
-    let fnamel =
-      Subcommand.wrap_parse_argv
-        argl
-        (Prefs.specl_of_prefs prefs)
-        "usage: classify [options] placefile[s]"
-    in
-    if fnamel = [] then exit 0;
-    let rp = match !(prefs.Prefs.refpkg_path) with
-    | "" -> invalid_arg "Please specify a reference package with -c";
-    | s -> Refpkg.of_path s
-    and criterion = criterion_of_prefs prefs
+class cmd () =
+object
+  inherit subcommand () as super
+
+  val refpkg_path = flag "-c"
+    (Needs_argument ("reference package path", "Reference package path"))
+  val use_pp = flag "--pp"
+    (Plain (false, "Use posterior probability for our criteria."))
+
+  method specl = [
+    string_flag refpkg_path;
+    toggle_flag use_pp;
+  ]
+
+  method desc = "Classify a placerun using the designated refpkg in a way designed to go into SQL."
+  method usage = "usage: classify [options] placefile[s]"
+
+  method action fnamel =
+    let rp = Refpkg.of_path (fv refpkg_path)
+    and criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio
     in
     classify Placement.contain_classif criterion rp
       (List.map Placerun_io.of_file fnamel)
+end

@@ -69,3 +69,13 @@ let write_edpl_list criterion ch pr =
         |])
       (Array.of_list (Placerun.get_pqueries pr)))
   *)
+class outprefix_cmd () =
+object
+  val out_prefix = Subcommand.flag "-o"
+    (Subcommand.Needs_argument ("out-prefix", "Set the prefix to write to. Required."))
+
+  method specl = [
+    Subcommand.string_flag out_prefix;
+  ]
+end
+
