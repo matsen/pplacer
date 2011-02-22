@@ -179,6 +179,7 @@ let write_fat_tree
     (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
   in Phyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
 
+  (*
 (* edpl trees *)
 let edpl_tree white_bg
       weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree pr =
@@ -199,3 +200,4 @@ let write_edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl 
     (fname_base ^ ".epdl")
     (edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree placerun)
   in Phyloxml.pxdata_to_file (fname_base ^ ".epdl.xml") pd
+*)
