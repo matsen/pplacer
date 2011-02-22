@@ -83,15 +83,26 @@ class newick_bark arg =
 
   end
 
-let compare b1 b2 =
+let float_approx_compare epsilon x y =
+  let diff = x -. y in
+  if abs_float diff <= epsilon then 0
+  else if diff < 0. then -1
+  else 1
+
+let floato_approx_compare epsilon a b =
+  match (a, b) with
+  | (Some x, Some y) -> float_approx_compare epsilon x y
+  | (a, b) -> Pervasives.compare a b
+
+let compare ?epsilon:(epsilon=0.) ?cmp_boot:(cmp_boot=true) b1 b2 =
+  let fc = floato_approx_compare epsilon in
   try
-    Base.raise_if_different compare b1#get_bl_opt b2#get_bl_opt;
+    Base.raise_if_different fc b1#get_bl_opt b2#get_bl_opt;
     Base.raise_if_different compare b1#get_name_opt b2#get_name_opt;
-    Base.raise_if_different compare b1#get_boot_opt b2#get_boot_opt;
+    if cmp_boot then Base.raise_if_different fc b1#get_boot_opt b2#get_boot_opt;
     0
   with
   | Base.Different c -> c
-
 
 let map_find_loose id m =
   if IntMap.mem id m then IntMap.find id m

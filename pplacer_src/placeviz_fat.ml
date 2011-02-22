@@ -53,10 +53,15 @@ let total_mass_width prefs total_multiplicity =
     !(prefs.Prefs.total_width)
 
 let get_rpo_tree prefs pr =
-  let alt_tree = Decor_gtree.of_newick_gtree (Placerun.get_ref_tree pr) in
+  let alt_tree = Decor_gtree.of_newick_gtree pr.Placerun.ref_tree in
   match Refpkg.refpkgo_of_path !(prefs.Prefs.refpkg_path) with
   | None -> (None, alt_tree)
   | Some rp ->
+      Refpkg.check_tree_identical
+        ~epsilon:1e-5
+        (pr.Placerun.name^" reference tree")
+        (Placerun.get_ref_tree pr)
+        rp;
       if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
       else (None, alt_tree)
 

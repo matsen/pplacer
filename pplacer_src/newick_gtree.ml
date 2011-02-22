@@ -1,20 +1,22 @@
-(* could be called newick_gtree.
- *)
-
 open MapsSets
 open Fam_batteries
 
 type t = Newick_bark.newick_bark Gtree.gtree
 
+
 (* use *)
 
-let compare t1 t2 = Gtree.compare Newick_bark.compare t1 t2
+(* epsilon is the "error" allowed in the floating point comparisons, and
+ * cmp_boot determines if the comparison should compare bootstraps. *)
+let compare ?epsilon:(epsilon=0.) ?cmp_boot:(cmp_boot=true) t1 t2 =
+  Gtree.compare (Newick_bark.compare ~epsilon ~cmp_boot) t1 t2
 
 let to_numbered t =
   Gtree.mapi_bark_map (fun i x -> x#to_numbered i) t
 
 let make_boot_id t =
   Gtree.mapi_bark_map (fun i x -> x#set_boot (float_of_int i)) t
+
 
 (* output *)
 
@@ -33,7 +35,8 @@ let to_string_gen f t =
       (f t)
       t)^";"
 
-let to_string ?(with_edge_labels = false) t = to_string_gen (string_of_bark ~with_edge_labels) t
+let to_string ?(with_edge_labels = false) t =
+  to_string_gen (string_of_bark ~with_edge_labels) t
 
 let write ch t = Printf.fprintf ch "%s\n" (to_string t)
 
@@ -56,7 +59,6 @@ let ppr ff t =
         ppr_bark ff id
   in
   Format.fprintf ff "%a;" aux (Gtree.get_stree t)
-
 
 
 (* input *)

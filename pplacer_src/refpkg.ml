@@ -105,8 +105,6 @@ let refpkgo_of_path = function
 
 (* *** ACCESSORIES *** *)
 
-(* these should be light enough that it's not worth making them lazy *)
-
 (* mrca tax decor, that is *)
 let get_tax_decor_map rp =
   let td = get_taxonomy rp in
@@ -168,4 +166,9 @@ let check_refpkg rp =
     | Missing_element _ ->
         print_OK "Non-taxonomically-informed reference package " rp
 
+(* check that a given tree t is the same as the ref tree in the refpkg rp. 
+ * Note that we don't check bootstraps. *)
+let check_tree_identical ?epsilon:(epsilon=0.) title t rp =
+  if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then
+    failwith (title^" and the tree from "^(get_name rp)^" are not the same.")
 
