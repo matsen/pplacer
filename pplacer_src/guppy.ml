@@ -1,7 +1,7 @@
 
 let () =
   Subcommand.inner_loop
-    ~prg_name:"placeutil"
+    ~prg_name:"guppy"
     ~version:"v1.1"
     (Subcommand.cmd_map_of_list
       [
@@ -9,8 +9,7 @@ let () =
         "demulti", (fun () -> new Placeutil_demulti.cmd ());
         "to_json", (fun () -> new Placeutil_to_json.cmd ());
         "classify", (fun () -> new Placeutil_classify.cmd ());
+
+        "fat", (fun () -> new Placeviz_fat.cmd ());
       ]
     )
-
-
-
