@@ -1,5 +1,5 @@
 (*
-let t = Gtree.get_stree (Newick.of_string "((a,b),(c,d))");;
+let t = Gtree.get_stree (Newick_gtree.of_string "((a,b),(c,d))");;
 let ids = Barycenter.collect_distal_ids t 2;;
 let ids = Barycenter.collect_proximal_ids t 2;;
 
@@ -14,7 +14,7 @@ let pr3 = Placerun_io.of_file "test3.place"
 #install_printer Fam_gsl_matvec.ppr_gsl_matrix
 #install_printer Mass_map.Indiv.ppr
 #install_printer Stree.ppr
-#install_printer Newick.ppr
+#install_printer Newick_gtree.ppr
 
 
 open Barycenter

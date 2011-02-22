@@ -151,7 +151,7 @@ let cluster prefs prl =
     (* bootstrap turned off *)
     let (drt, cluster_t, blobim) =
       make_cluster transform ~is_weighted ~use_pp refpkgo prefs prl in
-    Newick.to_file cluster_t Cluster_common.cluster_tree_name;
+    Newick_gtree.to_file cluster_t Cluster_common.cluster_tree_name;
     mkdir Cluster_common.mass_trees_dirname;
     Sys.chdir Cluster_common.mass_trees_dirname;
     (* make a tax tree here then run mimic on it *)
@@ -175,7 +175,7 @@ let cluster prefs prl =
       let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
       let (_, cluster_t, _) =
         make_cluster transform ~is_weighted ~use_pp refpkgo prefs boot_prl in
-      Newick.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
+      Newick_gtree.to_file cluster_t ("cluster."^(pad_str_of_int i)^".tre");
       (* run distance on bootstraps *)
       let kr_prefs = Mokaphy_kr.Prefs.defaults () in
       kr_prefs.Mokaphy_kr.Prefs.list_output := true;

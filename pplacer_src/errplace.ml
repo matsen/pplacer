@@ -45,7 +45,7 @@ let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
     if !correct_tree_fname = "" then failwith "please supply correct tree";
-    let correct_tree = Newick.of_file !correct_tree_fname in
+    let correct_tree = Newick_gtree.of_file !correct_tree_fname in
     let correct_set = tax_set correct_tree in
     let collect ret_code place_fname =
       try

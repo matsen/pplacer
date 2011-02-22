@@ -57,7 +57,7 @@ let get_same cmp get_thing thing_name pr1 pr2 =
         thing_name (get_name pr1) (get_name pr2))
 
 let get_same_tree pr1 pr2 =
-  get_same Newick.compare get_ref_tree "Reference tree" pr1 pr2
+  get_same Newick_gtree.compare get_ref_tree "Reference tree" pr1 pr2
 let get_same_prefs pr1 pr2 =
   get_same compare get_prefs "Pref" pr1 pr2
 

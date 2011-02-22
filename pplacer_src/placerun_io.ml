@@ -52,8 +52,8 @@ let to_file invocation out_fname placerun =
   (* we do the following to write a tree with the node numbers in place of
    * the bootstrap values, and at @ at the end of the taxon names *)
   Printf.fprintf ch "# numbered reference tree: %s\n"
-    (Newick.to_string (Newick.to_numbered ref_tree));
-  Printf.fprintf ch "# reference tree: %s\n" (Newick.to_string ref_tree);
+    (Newick_gtree.to_string (Newick_gtree.to_numbered ref_tree));
+  Printf.fprintf ch "# reference tree: %s\n" (Newick_gtree.to_string ref_tree);
   write_by_best_loc
     Placement.ml_ratio
     ch
@@ -71,7 +71,7 @@ let to_json_file invocation out_fname placerun =
   Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) [|
     "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length";
   |]));
-  Hashtbl.add ret "tree" (Jsontype.String (Newick.to_string ref_tree));
+  Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ref_tree));
   Hashtbl.add ret "placements" (Jsontype.Array (Array.map Pquery_io.to_json (Array.of_list pqueries)));
   Json.to_file out_fname (Jsontype.Object ret)
 
@@ -110,7 +110,7 @@ let prefs_and_rt_of_header hlines =
           post_invocation
       in
       (prefs,
-        Newick.of_string (Str.matched_group 1 tree_line))
+        Newick_gtree.of_string (Str.matched_group 1 tree_line))
     end
   with
   | Scanf.Scan_failure s ->

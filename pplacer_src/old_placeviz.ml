@@ -100,7 +100,7 @@ let () =
         let decor_ref_tree =
           Decor_gtree.of_newick_gtree
             (if not !show_node_numbers then ref_tree
-            else (Newick.make_boot_id ref_tree))
+            else (Newick_gtree.make_boot_id ref_tree))
         in
         let pqueries = Placerun.get_pqueries placerun in
         let unplaced_seqs, placed_map =

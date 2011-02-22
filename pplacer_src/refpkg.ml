@@ -59,7 +59,7 @@ let of_strmap m =
     | Not_found -> raise (Missing_element what)
   in
   let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
-  let lref_tree = lazy (Newick.of_file (get "tree_file"))
+  let lref_tree = lazy (Newick_gtree.of_file (get "tree_file"))
   and lmodel =
       lazy
         (let aln = Lazy.force lfasta_aln in

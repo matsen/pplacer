@@ -31,7 +31,7 @@ let list_count f l =
  * Note that "wanted" is not included.
  * Note: just returns the empty list if the id is not in the tree.
  *
-# let t = Gtree.get_stree (Newick.of_string "((a,b),(c,d))");;
+# let t = Gtree.get_stree (Newick_gtree.of_string "((a,b),(c,d))");;
 val t : Stree.stree = ((0,1)2,(3,4)5)6
 # let ids = Barycenter.collect_distal_ids t 2;;
 val ids : int list = [0; 1]

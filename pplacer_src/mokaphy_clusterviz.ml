@@ -66,7 +66,7 @@ let make_named_tree sm t =
       (Gtree.get_bark_map t))
 
 let name_tree_and_subsets_map dirname nameim =
-  let t = Newick.of_file (Cluster_common.tree_name_of_dirname dirname) in
+  let t = Newick_gtree.of_file (Cluster_common.tree_name_of_dirname dirname) in
   let nodeim = nodemap_of_tree t in
   (* shifted_nameim uses the Stree numbering rather than that given by
    * the bootstrap labels (as nameim does) *)

@@ -20,7 +20,7 @@ let widthl_of_mass log_coeff mass_width mass =
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees =
   match tree_fmt with
-  | Newick -> Newick.tree_list_to_file trees (prefix^".tre")
+  | Newick -> Newick_gtree.tree_list_to_file trees (prefix^".tre")
   | Phyloxml ->
     let pd = Phyloxml.pxdata_of_gtrees trees in
     Phyloxml.pxdata_to_file (prefix^".xml") pd

@@ -47,8 +47,8 @@ module StrBootsub =
 let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname =
   if cutoff < 0. || cutoff > 1. then
     failwith "bootsub cutoff must be between zero and one";
-  let ct = Newick.of_file ct_fname
-  and boot_tl = Newick.list_of_file boot_fname
+  let ct = Newick_gtree.of_file ct_fname
+  and boot_tl = Newick_gtree.list_of_file boot_fname
   in
   let boot_sssl = List.map Cluster_common.sss_of_tree boot_tl
   and taxon_list t = List.map (Gtree.get_name t) (Gtree.leaf_ids t)
