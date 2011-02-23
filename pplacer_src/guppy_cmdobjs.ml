@@ -1,4 +1,4 @@
-(* 
+(*
  * This is for the hierarchy of common command objects.
  *)
 
@@ -72,3 +72,44 @@ object
   ]
 end
 
+class outfile_cmd () =
+object
+  val out_fname = flag "-o"
+    (Plain ("-", "Set the filename to write to. Otherwise write to stdout."))
+  method specl = [ string_flag out_fname; ]
+
+  method private out_channel =
+    match fv out_fname with
+      | "-" -> stdout
+      | s -> open_out s
+end
+
+let place_file_rex = Str.regexp ".*\\.place"
+module SM = MapsSets.StringMap
+
+(* *** accessing placefiles *** *)
+(* our strategy is to load the placefiles in to memory when we need them, but if
+  * they are already in memory, then we use them *)
+let placerun_map = ref SM.empty
+let placerun_by_name fname =
+  if not (Str.string_match place_file_rex fname 0) then
+    failwith ("Place files must end with .place suffix, unlike: "^fname);
+  if SM.mem fname !placerun_map then
+    SM.find fname !placerun_map
+  else begin
+    let pr = Placerun_io.filtered_of_file fname in
+    if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
+    placerun_map := SM.add fname pr !placerun_map;
+    pr
+  end
+
+class virtual placefile_cmd () =
+object (self)
+  inherit outfile_cmd ()
+
+  method virtual private placefile_action: 'a Placerun.placerun list -> out_channel -> unit
+  method action fnamel =
+    let prl = List.map placerun_by_name fnamel
+    and ch = self#out_channel in
+    self#placefile_action prl ch
+end
