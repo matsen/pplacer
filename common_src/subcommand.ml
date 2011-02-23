@@ -115,6 +115,7 @@ let flag opt described = {
   described = described;
 }
 
+(* fv is short for flag value. It fetches the value. *)
 let fv f = match !(f.value) with
   | Some x -> x
   | None -> let x = begin match f.described with

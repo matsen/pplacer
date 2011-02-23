@@ -83,7 +83,7 @@ let round_placerun out_name cutoff sig_figs pr =
 class cmd () =
 object
   inherit subcommand () as super
-  inherit Placeutil_core.outprefix_cmd () as outprefix_super
+  inherit Guppy_cmdobjs.outprefix_cmd () as outprefix_super
 
   val sig_figs = flag "--sig-figs"
     (Formatted (3, "Set the number of significant figures used for rounding (default %d)."))

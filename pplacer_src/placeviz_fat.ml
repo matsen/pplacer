@@ -6,10 +6,19 @@ object (self)
 
   val use_pp = flag "-p"
     (Plain (false, "Use posterior probability for the weight."))
+
+  (* mass subcommand *)
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
+  val transform = flag "--transform"
+    (Plain ("", Mokaphy_common.transform_help))
+
+  val out_dir = flag "--out-dir"
+    (Plain (".", "Specify the directory to write place files to."))
+    (* rp_command *)
   val refpkg_path = flag "-c"
     (Needs_argument ("reference package path", "Reference package path"))
+    (* viz_command *)
   val white_bg = flag "--whitebg"
     (Plain (false, "Make colors appropriate for a white background."))
   val min_fat_bl = flag "--min-fat"
@@ -20,10 +29,6 @@ object (self)
     (Plain (0., "Set the number of pixels for a single placement (will override total-width if set)."))
   val log_coeff = flag "--log"
     (Plain (0., "Set to a nonzero value to perform a logarithmic transform of the branch width."))
-  val out_dir = flag "--out-dir"
-    (Plain (".", "Specify the directory to write place files to."))
-  val transform = flag "--transform"
-    (Plain ("", Mokaphy_common.transform_help))
 
   method specl = [
     toggle_flag use_pp;
@@ -46,6 +51,7 @@ object (self)
       | 0. -> fv total_width
       | x -> x *. (float_of_int total_multiplicity)
 
+      (* rp_command *)
   method private get_rpo_tree pr =
     let alt_tree = Decor_gtree.of_newick_gtree pr.Placerun.ref_tree in
     match Refpkg.refpkgo_of_path (fv refpkg_path) with
@@ -79,19 +85,19 @@ object (self)
               (Mass_map.By_edge.of_placerun transform weighting criterion pr)
            ]
            @
-             (try
-                match tax_rp_opt with
-                  | None -> []
-                  | Some rp -> begin
-                    let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-                    [
-                      Some (pr.Placerun.name^".tax.fat"),
-                      Placeviz_core.fat_tree (mass_width /. 2.) (fv log_coeff) taxt
-                        (Mass_map.By_edge.of_pre transform
-                           (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif
-                              weighting criterion ti_imap pr))
-                    ]
-                  end
+           (try
+              match tax_rp_opt with
+                | None -> []
+                | Some rp -> begin
+                  let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+                  [
+                    Some (pr.Placerun.name^".tax.fat"),
+                    Placeviz_core.fat_tree (mass_width /. 2.) (fv log_coeff) taxt
+                      (Mass_map.By_edge.of_pre transform
+                         (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif
+                            weighting criterion ti_imap pr))
+                  ]
+                end
               with
         (* if we get a No_classif exception then don't make a tax fat tree *)
                 | Placement.No_classif -> [])))
