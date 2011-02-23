@@ -18,7 +18,7 @@
  * uit is the inverse transpose of u, which is handy for speedy computations.
  *)
 
-module FGM = Fam_gsl_matvec
+open Fam_gsl_matvec
 
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
@@ -42,24 +42,21 @@ let multi_exp ~dst u lambda uit util rates bl =
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
 
 
+let mm = allocMatMatMul
+
 class diagd arg =
 (* See Felsenstein p.206.
  * Say that E \Lambda E^{-1} = D^{1/2} B D^{1/2}.
  * Then DB = (D^{1/2} E) \Lambda (D^{1/2} E)^{-1}
  * *)
   let diagdStructureOfDBMatrix d b =
-    let dDiagSqrt = FGM.diagOfVec (FGM.vecMap sqrt d) in
-    let dDiagSqrtInv =
-      FGM.diagOfVec (FGM.vecMap (fun x -> 1. /. (sqrt x)) d) in
-    let (evals, evects) =
-      FGM.symmEigs
-        (FGM.allocMatMatMul dDiagSqrt
-                            (FGM.allocMatMatMul b dDiagSqrt)) in
+    let dDiagSqrt = diagOfVec (vecMap sqrt d) in
+    let dDiagSqrtInv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
+    let (evals, evects) = symmEigs (mm dDiagSqrt (mm b dDiagSqrt)) in
     (* make sure that diagonal matrix is all positive *)
-    if not (FGM.vecNonneg d) then
+    if not (vecNonneg d) then
       failwith("negative element in the diagonal of a DB matrix!");
-    (evals, FGM.allocMatMatMul dDiagSqrtInv evects,
-       FGM.allocMatMatMul dDiagSqrt evects)
+    (evals, mm dDiagSqrtInv evects, mm dDiagSqrt evects)
   in
 
   let (lambdav, u, uit) =
@@ -67,7 +64,7 @@ class diagd arg =
       match arg with
         | `OfData (lambdav, u, uit) -> (lambdav, u, uit)
         | `OfSymmMat m ->
-            let evals, evects = FGM.symmEigs m in
+            let evals, evects = symmEigs m in
             (evals, evects, evects)
         | `OfDBMatrix(d, b) -> diagdStructureOfDBMatrix d b
         | `OfExchangeableMat(symmPart, statnDist) ->
@@ -76,7 +73,7 @@ class diagd arg =
               (* here we set up the diagonal entries of the symmetric matrix so
                * that we get the row sum of the Q matrix is zero.
                * see top of code. *)
-              FGM.matInit n n (
+              matInit n n (
                 fun i j ->
                   if i <> j then Gsl_matrix.get symmPart i j
                   else (
@@ -106,7 +103,7 @@ object (self)
     Linear.dediagonalize
                   dst
                   u
-                  (FGM.vecMap (fun lambda -> exp (t *. lambda)) lambdav)
+                  (vecMap (fun lambda -> exp (t *. lambda)) lambdav)
                   uit
 
   method multi_exp (dst:Tensor.tensor) rates bl =
@@ -138,7 +135,7 @@ let normalizedOfExchangeableMat symmPart statnDist =
 
 let symmQ n =
   let offDiag = 1. /. (float_of_int (n-1)) in
-  FGM.matInit n n (fun i j -> if i = j then -. 1. else offDiag)
+  matInit n n (fun i j -> if i = j then -. 1. else offDiag)
 
 let symmDQ n = ofSymmMat (symmQ n)
 let binarySymmDQ = symmDQ 2

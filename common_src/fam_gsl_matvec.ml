@@ -5,6 +5,7 @@
  and
  http://oandrieu.nerim.net/ocaml/gsl/doc/Gsl_blas.html
  *
+ * Reminder: the Gsl_matrix is made with c_layout.
  *)
 
 let tolerance = 1e-15
@@ -164,7 +165,7 @@ let alloc_gen_normalize norm_fun v =
 let alloc_l1_normalize v = alloc_gen_normalize l1_norm v
 let alloc_l2_normalize v = alloc_gen_normalize l2_norm v
 
-(* eigen *)
+(* gives a matrix such that the rows are the eigenvectors. *)
 let symmEigs m =
   assertSymm m;
   Gsl_eigen.symmv (`M(m))
