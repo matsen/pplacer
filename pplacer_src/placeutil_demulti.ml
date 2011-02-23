@@ -20,7 +20,7 @@ let demulti_placerun out_name pr =
 class cmd () =
 object
   inherit subcommand () as super
-  inherit Guppy_cmdobjs.outprefix_cmd () as outprefix_super
+  inherit Guppy_cmdobjs.out_prefix_cmd () as out_prefix_super
 
   method desc = "splits apart placements with multiplicity, effectively undoing a round procedure."
   method usage = "usage: demulti [options] placefile[s]"

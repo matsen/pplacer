@@ -83,14 +83,14 @@ let round_placerun out_name cutoff sig_figs pr =
 class cmd () =
 object
   inherit subcommand () as super
-  inherit Guppy_cmdobjs.outprefix_cmd () as outprefix_super
+  inherit Guppy_cmdobjs.out_prefix_cmd () as out_prefix_super
 
   val sig_figs = flag "--sig-figs"
     (Formatted (3, "Set the number of significant figures used for rounding (default %d)."))
   val cutoff = flag "--cutoff"
     (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ration (default %g)."))
 
-  method specl = outprefix_super#specl @ [
+  method specl = out_prefix_super#specl @ [
     int_flag sig_figs;
     float_flag cutoff;
   ]
