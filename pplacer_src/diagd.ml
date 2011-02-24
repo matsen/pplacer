@@ -1,5 +1,5 @@
 (* diagd:
- * a class for diagonalized matrices
+ * a type for diagonalized matrices
  *
  * Time-reversible models are typically speficied by giving the stationary
  * frequency and the "exchangeability" between states.
@@ -24,23 +24,88 @@ let mm = allocMatMatMul
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
 
+(* the setup is that X diag(\lambda) X^{-1} is the matrix of interest. *)
+type t = 
+  {
+    x: Gsl_matrix.matrix; 
+    l: Gsl_vector.vector; (* lambda *)
+    xit: Gsl_matrix.matrix; (* x inverse transpose *)
+    util: Gsl_vector.vector;
+  }
+
+let make ~x ~l ~xit = 
+  let n = Gsl_vector.length l in
+  assert((n,n) = Gsl_matrix.dims x);
+  assert((n,n) = Gsl_matrix.dims xit);
+  {
+    x = x;
+    l = l;
+    xit = xit;
+    util = Gsl_vector.create n
+  }
+
+
+  (* *** utils *** *)
+
+let dim dd = Gsl_vector.length dd.l
+let matrix_of_same_dims dd = Gsl_matrix.create (dim dd) (dim dd)
+
+
+  (* *** into matrices *** *)
+
+
+
+
+let to_matrix dd = 
+  let m = matrix_of_same_dims dd in
+  Linear.dediagonalize m dd.x dd.l dd.xit;
+  m
+
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
  * X exp(D rate bl) X^{-1}.
  * util should be a vector of the same length as lambda *)
-let multi_exp ~dst x lambda xit util rates bl =
-  let n = Gsl_vector.length lambda in
+let alt_multi_exp ~dst dd rates bl =
+  let n = Gsl_vector.length dd.l in
   try
     Tensor.set_all dst 0.;
     for r=0 to (Array.length rates)-1 do
       for i=0 to n-1 do
-        set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
+        set1 dd.util i (exp (rates.(r) *. bl *. (get1 dd.l i)))
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      Linear.dediagonalize dst_mat x util xit
+      Linear.dediagonalize dst_mat dd.x dd.util dd.xit
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
+
+
+  (* *** making *** *)
+
+exception StationaryFreqHasNegativeEntry
+
+let check_stationary v = 
+  if not (vecNonneg v) then raise StationaryFreqHasNegativeEntry
+
+let of_symmetric m = 
+  let (l, x) = symmEigs m in
+  make ~l ~x ~xit:x
+
+(* d = vector for diagonal, b = symmetric matrix. see top. *)
+(* See Felsenstein p.206.
+ * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
+ * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
+ * Thus we want X = D^{1/2} U, and so
+ * X inverse transpose is D^{-1/2} U.
+ * *)
+let of_d_b d b =
+  (* make sure that diagonal matrix is all positive *)
+  if not (vecNonneg d) then
+    failwith("negative element in the diagonal of a DB matrix!");
+  let dm_root = diagOfVec (vecMap sqrt d) in
+  let dm_root_inv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
+  let (evals, u) = symmEigs (mm dm_root (mm b dm_root)) in
+  make ~l:evals ~x:(mm dm_root u) ~xit:(mm dm_root_inv u)
 
 (* here we set up the diagonal entries of the symmetric matrix so
  * that we get the row sum of the Q matrix is zero.
@@ -59,13 +124,47 @@ let n = Gsl_vector.length pi in
         done;
         -. (!total /. pi.{i})))
 
+let of_exchangeable_pair m pi = of_d_b pi (b_of_exchangeable_pair m pi)
+
+let find_rate dd pi = 
+  let q = to_matrix dd in
+  let rate = ref 0. in
+  for i=0 to (dim dd)-1 do
+    rate := !rate -. q.{i,i} *. (Gsl_vector.get pi i)
+  done;
+  !rate
+
+let normalize_rate dd pi = 
+  Gsl_vector.scale dd.l (1. /. (find_rate dd pi))
+
+let normed_of_exchangeable_pair m pi = 
+  let dd = of_exchangeable_pair m pi in
+  normalize_rate dd pi;
+  dd
+
+
+
+
+
+(* here we exponentiate our diagonalized matrix across all the rates.
+ * if D is the diagonal matrix, we get a #rates matrices of the form
+ * X exp(D rate bl) X^{-1}.
+ * util should be a vector of the same length as lambda *)
+let multi_exp ~dst x lambda xit util rates bl =
+  let n = Gsl_vector.length lambda in
+  try
+    Tensor.set_all dst 0.;
+    for r=0 to (Array.length rates)-1 do
+      for i=0 to n-1 do
+        set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
+      done;
+      let dst_mat = Tensor.BA3.slice_left_2 dst r in
+      Linear.dediagonalize dst_mat x util xit
+    done;
+  with
+    | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
+
 class diagd arg =
-(* See Felsenstein p.206.
- * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
- * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
- * Thus we want X = D^{1/2} U, and so
- * X inverse transpose is D^{-1/2} U.
- * *)
   let diagdStructureOfDBMatrix d b =
     let dDiagSqrt = diagOfVec (vecMap sqrt d) in
     let dDiagSqrtInv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
@@ -131,10 +230,10 @@ let normalizedOfExchangeableMat symmPart pi =
   dd#normalizeRate pi;
   dd
 
-let symmQ n =
-  let offDiag = 1. /. (float_of_int (n-1)) in
-  matInit n n (fun i j -> if i = j then -. 1. else offDiag)
+let symm_q n =
+  let off_diag = 1. /. (float_of_int (n-1)) in
+  matInit n n (fun i j -> if i = j then -. 1. else off_diag)
 
-let symmDQ n = ofSymmMat (symmQ n)
-let binarySymmDQ = symmDQ 2
+let symm_diagd n = of_symmetric (symm_q n)
+let binary_symm_diagd = symm_diagd 2
 
