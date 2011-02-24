@@ -1,26 +1,26 @@
 
 exception Last
 
-class virtual seq_generator =
+class virtual ['a] generator =
   object
-    method virtual next_sr: Seq_record.sr
+    method virtual next: 'a
   end
 
 (* return a new object which is the previous with a filter applied *)
-let filter f sg =
+let filter f g =
   object
-    method next_sr =
+    method next =
       let rec aux () =
-        let sr = sg#next_sr in
-        if f sr then sr
+        let x = g#next in
+        if f x then x
         else aux ()
       in
       aux ()
   end
 
-let to_list sg =
+let to_list g =
   let rec aux accu =
-    try aux ((sg#next_sr)::accu) with
+    try aux ((g#next_sr)::accu) with
     | Last -> accu
   in
   aux []
