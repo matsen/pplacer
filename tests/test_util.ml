@@ -15,9 +15,20 @@ let pres_of_dir which =
   tbl
 ;;
 
-let fabs x = if x > 0.0 then x else -. x;;
+let approximately_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
-let approximately_equal ?(epsilon = 1e-5) f1 f2 = fabs (f1 -. f2) < epsilon;;
+let matrices_approximately_equal ?(epsilon = 1e-5) m1 m2 =
+  let (rows,cols) as dim1 = Gsl_matrix.dims m1 in
+  try
+    assert(dim1 = Gsl_matrix.dims m2);
+    for i=0 to rows-1 do
+      for j=0 to cols-1 do
+        if not (approximately_equal ~epsilon m1.{i,j} m2.{i,j}) then raise Exit
+      done
+    done;
+    true
+  with
+  | Exit -> false
 
 let gtree_equal g1 g2 =
   if g1.Gtree.stree = g2.Gtree.stree then

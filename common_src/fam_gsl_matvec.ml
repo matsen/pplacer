@@ -49,9 +49,10 @@ let matInit nrows ncols f =
   done;
   m
 
-let allocMatTranspose m =
-  let (rows, cols) = Gsl_matrix.dims m in
-  matInit cols rows (fun i j -> m.{j,i})
+let alloc_transpose m =
+  let mt = Gsl_matrix.copy m in
+  Gsl_matrix.transpose_in_place mt;
+  mt
 
 let vecMap f v =
   vecInit (Gsl_vector.length v)
