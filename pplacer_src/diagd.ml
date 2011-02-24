@@ -25,7 +25,7 @@ let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
 
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
- * U exp(D rate bl) U^{-1}.
+ * X exp(D rate bl) X^{-1}.
  * util should be a vector of the same length as lambda *)
 let multi_exp ~dst x lambda xit util rates bl =
   let n = Gsl_vector.length lambda in
@@ -55,8 +55,6 @@ class diagd arg =
     let dDiagSqrt = diagOfVec (vecMap sqrt d) in
     let dDiagSqrtInv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
     let (evals, u) = symmEigs (mm dDiagSqrt (mm b dDiagSqrt)) in
-    (* we want u to be the matrix of column eigenvectors. *)
-    Gsl_matrix.transpose_in_place u;
     (* make sure that diagonal matrix is all positive *)
     if not (vecNonneg d) then
       failwith("negative element in the diagonal of a DB matrix!");
