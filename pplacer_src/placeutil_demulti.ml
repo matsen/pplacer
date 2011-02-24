@@ -1,4 +1,5 @@
 open Subcommand
+open Guppy_cmdobjs
 
 let demulti_pquery_list pql =
   List.flatten
@@ -20,20 +21,20 @@ let demulti_placerun out_name pr =
 class cmd () =
 object
   inherit subcommand () as super
-  inherit Guppy_cmdobjs.out_prefix_cmd () as out_prefix_super
+  inherit out_prefix_cmd () as super_out_prefix
+  inherit placefile_cmd () as super_placefile
 
   method desc = "splits apart placements with multiplicity, effectively undoing a round procedure."
   method usage = "usage: demulti [options] placefile[s]"
 
-  method action fnamel =
+  method private placefile_action prl =
     let out_prefix = fv out_prefix in
     List.iter
-      (fun fname ->
-        let pr = Placerun_io.of_file fname in
+      (fun pr ->
         let out_name = (out_prefix^(pr.Placerun.name)) in
         Placerun_io.to_file
-          (String.concat " " ("placeutil"::fnamel))
+          "guppy demulti"
           (out_name^".place")
           (demulti_placerun out_name pr))
-      fnamel
+      prl
 end

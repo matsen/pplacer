@@ -16,6 +16,8 @@ let () =
         (* making visualizations *)
         "fat", (fun () -> new Placeviz_fat.cmd ());
 
+        (* mokaphy stuff *)
         "kr", (fun () -> new Mokaphy_kr.cmd ());
+        "pca", (fun () -> new Mokaphy_pca.cmd ());
       ]
     )

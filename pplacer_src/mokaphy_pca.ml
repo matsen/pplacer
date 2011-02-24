@@ -1,60 +1,5 @@
-
-module Prefs = struct
-  type mokaphy_prefs =
-    {
-      out_prefix: string ref;
-      use_pp: bool ref;
-      weighted: bool ref;
-      write_n: int ref;
-      refpkg_path : string ref;
-      scale: bool ref;
-      multiplier: float ref;
-      transform: string ref;
-    }
-
-  let out_prefix  p = !(p.out_prefix)
-  let use_pp      p = !(p.use_pp)
-  let weighted    p = !(p.weighted)
-  let write_n     p = !(p.write_n)
-  let refpkg_path p = !(p.refpkg_path)
-  let scale       p = !(p.scale)
-  let multiplier  p = !(p.multiplier)
-  let transform   p = !(p.transform)
-
-  let defaults () =
-    {
-      out_prefix = ref "";
-      use_pp = ref false;
-      weighted = ref false;
-      write_n = ref 5;
-      refpkg_path = ref "";
-      scale = ref false;
-      multiplier = ref 50.;
-      transform = ref "";
-    }
-
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_prefix,
-    "Specify an out prefix.";
-    "-p", Arg.Set prefs.use_pp,
-    "Use posterior probability.";
-    "-c", Arg.Set_string prefs.refpkg_path,
-    (Mokaphy_common.refpkg_help "cluster");
-    "--unweighted", Arg.Clear prefs.weighted,
-    Mokaphy_common.weighted_help;
-    "--write-n", Arg.Set_int prefs.write_n,
-    "The number of principal coordinates to write out (default is 5).";
-    "--scale", Arg.Set prefs.scale,
-    "Scale variances to one before performing principal components.";
-    "--multiplier", Arg.Set_float prefs.multiplier,
-    "The factor by which we multiply the principal component eigenvectors to get branch thickness.";
-    "--transform", Arg.Set_string prefs.transform,
-    Mokaphy_common.transform_help;
-    ]
-end
-
-
+open Subcommand
+open Guppy_cmdobjs
 
 open MapsSets
 open Fam_batteries
@@ -169,19 +114,44 @@ let pca_complete ?scale transform
   ()
 
 
-let pca prefs = function
-  | [] -> ()
-  | prl ->
-      match Prefs.out_prefix prefs with
-      | "" -> failwith "Please specify an out prefix for pca with -o"
-      | prefix ->
-      pca_complete
-        ~scale:(Prefs.scale prefs)
-        (Mass_map.transform_of_str (Prefs.transform prefs))
-        (Mokaphy_common.weighting_of_bool (Prefs.weighted prefs))
-        (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs))
-        (Prefs.multiplier prefs)
-        (Prefs.write_n prefs)
-        (Mokaphy_common.refpkgo_of_fname (Prefs.refpkg_path prefs))
-        prefix
-        prl
+class cmd () =
+object (self)
+  inherit subcommand () as super
+  inherit out_prefix_cmd () as super_out_prefix
+  inherit mass_cmd () as super_mass
+  inherit refpkg_cmd () as super_refpkg
+  inherit placefile_cmd () as super_placefile
+
+  val write_n = flag "--write-n"
+    (Plain (5, "The number of principal coordinates to write out (default is 5)."))
+  val scale = flag "--scale"
+    (Plain (false, "Scale variances to one before performing principal components."))
+  val multiplier = flag "--multiplier"
+    (Formatted (50., "The factor by which we multiply the principal component eigenvectors to get branch thickness. Default: %g."))
+
+  method specl =
+    super_out_prefix#specl
+    @ super_mass#specl
+    @ super_refpkg#specl
+    @ [
+      int_flag write_n;
+      toggle_flag scale;
+      float_flag multiplier;
+    ]
+
+  method desc = ""
+  method usage = ""
+
+  method private placefile_action prl =
+    let transform, weighting, criterion = self#mass_opts in
+    pca_complete
+      ~scale:(fv scale)
+      transform
+      weighting
+      criterion
+      (fv multiplier)
+      (fv write_n)
+      (Mokaphy_common.refpkgo_of_fname (fv refpkg_path))
+      (fv out_prefix)
+      prl
+end

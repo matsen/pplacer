@@ -14,7 +14,7 @@ let get_p_value r = match r.p_value with
   | Some p -> p
   | None -> failwith "no p-value!"
 
-let make_shuffled_pres transform n_shuffles pre1 pre2 =
+let make_shuffled_pres rng transform n_shuffles pre1 pre2 =
   let pre_arr = Array.of_list (pre1 @ pre2)
   and n1 = List.length pre1
   and n2 = List.length pre2
@@ -26,10 +26,10 @@ let make_shuffled_pres transform n_shuffles pre1 pre2 =
   ListFuns.init
     n_shuffles
     (fun _ ->
-      Mokaphy_base.shuffle pre_arr;
+      Mokaphy_base.shuffle rng pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
-let pair_core transform p n_samples t pre1 pre2 =
+let pair_core rng transform p n_samples t pre1 pre2 =
   let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
   let original_dist = calc_dist pre1 pre2 in
   {
@@ -39,7 +39,7 @@ let pair_core transform p n_samples t pre1 pre2 =
         let shuffled_dists =
           List.map
             (fun (spre1,spre2) -> calc_dist spre1 spre2)
-            (make_shuffled_pres transform n_samples pre1 pre2)
+            (make_shuffled_pres rng transform n_samples pre1 pre2)
         in
         Some
           (Mokaphy_base.list_onesided_pvalue
@@ -58,10 +58,11 @@ object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd () as super_refpkg
+  inherit outfile_cmd () as super_outfile
+  inherit kr_cmd () as super_kr
+  inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
 
-  val p_exp = flag "--exp"
-    (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
   val list_output = flag "--list-out"
     (Plain (false, "Output the KR results as a list rather than a matrix."))
   val density = flag "--density"
@@ -69,29 +70,26 @@ object (self)
   val n_samples = flag "-s"
     (Formatted (1, "Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is %d."))
-  val seed = flag "--seed"
-    (Formatted (1, "Set the random seed, an integer > 0. Default is %d."))
   val verbose = flag "--verbose"
     (Plain (false, "Verbose running."))
 
   method specl =
     super_mass#specl
     @ super_refpkg#specl
-    @ super_placefile#specl
+    @ super_outfile#specl
+    @ super_kr#specl
+    @ super_rng#specl
     @ [
-      string_flag out_fname;
-      float_flag p_exp;
       toggle_flag list_output;
       toggle_flag density;
       int_flag n_samples;
-      int_flag seed;
       toggle_flag verbose;
     ]
 
   method desc = ""
   method usage = ""
 
-  method private placefile_action prl ch =
+  method private placefile_action prl =
     if List.length prl < 2 then
       invalid_arg "can't do KR with fewer than two place files";
     let n_samples = fv n_samples
@@ -99,16 +97,16 @@ object (self)
     and use_pp = fv use_pp
     and pra = Array.of_list prl
     and p = fv p_exp
-    and transform = Mass_map.transform_of_str (fv transform)
+    and transform, _, _ = self#mass_opts
     and tax_refpkgo = match !(refpkg_path.value) with
       | None -> None
       | Some path ->
         let rp = Refpkg.of_path path in
         if Refpkg.tax_equipped rp then Some rp
         else None
+    and ch = self#out_channel
+    and rng = self#rng
     in
-    (* below is for make_shuffled_pres *)
-    Random.init (fv seed);
     (* in the next section, pre_f is a function which takes a pr and makes a pre,
      * and t is a gtree *)
     let uptri_of_t_pre_f (t, pre_f) =
@@ -120,7 +118,7 @@ object (self)
             Printf.sprintf "comparing %s with %s"
               (Placerun.get_name pra.(i)) (Placerun.get_name pra.(j))
           in
-          try pair_core transform p n_samples t prea.(i) prea.(j) with
+          try pair_core rng transform p n_samples t prea.(i) prea.(j) with
           | Kr_distance.Invalid_place_loc a ->
               invalid_arg
               (Printf.sprintf

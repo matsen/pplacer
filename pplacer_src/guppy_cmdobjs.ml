@@ -31,13 +31,19 @@ object
     toggle_flag weighted;
     string_flag transform;
   ]
+
+  method private mass_opts = (
+    Mass_map.transform_of_str (fv transform),
+    (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
+    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
+  )
 end
 
 (* is this dependency goiung to be scary *)
 class refpkg_cmd () =
 object
   val refpkg_path = flag "-c"
-    (Needs_argument ("reference package path", "Reference package path"))
+    (Needs_argument ("reference package path", "Reference package path. Required."))
   method specl = [ string_flag refpkg_path; ]
 
   method private get_rpo_tree pr =
@@ -84,6 +90,25 @@ object
       | s -> open_out s
 end
 
+class kr_cmd () =
+object
+  val p_exp = flag "--exp"
+    (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
+  method specl = [ float_flag p_exp; ]
+end
+
+class rng_cmd () =
+object
+  val seed = flag "--seed"
+    (Formatted (1, "Set the random seed, an integer > 0. Default is %d."))
+  method specl = [ int_flag seed; ]
+
+  method private rng =
+    let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
+    Gsl_rng.set rng (Nativeint.of_int (fv seed));
+    rng
+end
+
 let place_file_rex = Str.regexp ".*\\.place"
 module SM = MapsSets.StringMap
 
@@ -105,11 +130,8 @@ let placerun_by_name fname =
 
 class virtual placefile_cmd () =
 object (self)
-  inherit outfile_cmd ()
-
-  method virtual private placefile_action: 'a Placerun.placerun list -> out_channel -> unit
+  method virtual private placefile_action: 'a Placerun.placerun list -> unit
   method action fnamel =
-    let prl = List.map placerun_by_name fnamel
-    and ch = self#out_channel in
-    self#placefile_action prl ch
+    let prl = List.map placerun_by_name fnamel in
+    self#placefile_action prl
 end

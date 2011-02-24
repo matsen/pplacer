@@ -1,4 +1,5 @@
 open Subcommand
+open Guppy_cmdobjs
 
 (* Note that this version of rounded placements does not take the likelihood
  * weight ratio into account. However, we do preserve the order of appearance of
@@ -83,14 +84,15 @@ let round_placerun out_name cutoff sig_figs pr =
 class cmd () =
 object
   inherit subcommand () as super
-  inherit Guppy_cmdobjs.out_prefix_cmd () as out_prefix_super
+  inherit out_prefix_cmd () as super_out_prefix
+  inherit placefile_cmd () as super_placefile
 
   val sig_figs = flag "--sig-figs"
     (Formatted (3, "Set the number of significant figures used for rounding (default %d)."))
   val cutoff = flag "--cutoff"
     (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ration (default %g)."))
 
-  method specl = out_prefix_super#specl @ [
+  method specl = super_out_prefix#specl @ [
     int_flag sig_figs;
     float_flag cutoff;
   ]
@@ -98,16 +100,14 @@ object
   method desc = "clusters the placements by rounding"
   method usage = "usage: round [options] placefile[s]"
 
-  method action fnamel =
+  method private placefile_action prl =
     let out_prefix = fv out_prefix in
     List.iter
-      (fun fname ->
-        let pr = Placerun_io.of_file fname in
+      (fun pr ->
         let out_name = (out_prefix^(pr.Placerun.name)) in
         Placerun_io.to_file
-          (String.concat " " ("placeutil"::fnamel))
+          "guppy round"
           (out_name^".place")
           (round_placerun out_name (fv cutoff) (fv sig_figs) pr))
-      fnamel
-
+      prl
 end

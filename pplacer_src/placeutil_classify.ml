@@ -1,4 +1,5 @@
 open Subcommand
+open Guppy_cmdobjs
 
 module TIAMR = AlgMap.AlgMapR (Tax_id.OrderedTaxId)
 
@@ -77,24 +78,24 @@ let classify how criterion rp prl =
 class cmd () =
 object
   inherit subcommand () as super
+  inherit refpkg_cmd () as super_refpkg
+  inherit placefile_cmd () as super_placefile
 
-  val refpkg_path = flag "-c"
-    (Needs_argument ("reference package path", "Reference package path"))
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria."))
 
-  method specl = [
-    string_flag refpkg_path;
-    toggle_flag use_pp;
-  ]
+  method specl =
+    super_refpkg#specl
+    @ [
+      toggle_flag use_pp;
+    ]
 
   method desc = "Classify a placerun using the designated refpkg in a way designed to go into SQL."
   method usage = "usage: classify [options] placefile[s]"
 
-  method action fnamel =
+  method private placefile_action prl =
     let rp = Refpkg.of_path (fv refpkg_path)
     and criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio
     in
-    classify Placement.contain_classif criterion rp
-      (List.map Placerun_io.of_file fnamel)
+    classify Placement.contain_classif criterion rp prl
 end

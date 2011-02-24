@@ -32,9 +32,7 @@ object (self)
       | x -> x *. (float_of_int total_multiplicity)
 
   method action fnamel =
-    let transform = Mass_map.transform_of_str (fv transform)
-    and weighting = if (fv weighted) then Mass_map.Weighted else Mass_map.Unweighted
-    and criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio
+    let transform, weighting, criterion = self#mass_opts
     and min_bl = match (fv min_fat_bl) with 0. -> None | x -> Some x
     in
     List.iter
