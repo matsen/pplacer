@@ -20,6 +20,7 @@
 
 open Fam_gsl_matvec
 
+let mm = allocMatMatMul
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
 
@@ -41,8 +42,22 @@ let multi_exp ~dst x lambda xit util rates bl =
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
 
-
-let mm = allocMatMatMul
+(* here we set up the diagonal entries of the symmetric matrix so
+ * that we get the row sum of the Q matrix is zero.
+ * see top of code. *)
+let b_of_exchangeable_pair m pi =
+let n = Gsl_vector.length pi in
+  matInit n n
+    (fun i j ->
+      if i <> j then Gsl_matrix.get m i j
+      else
+      (* r_ii = - (pi_i)^{-1} \sum_{j \ne i} r_ij pi_j *)
+        (let total = ref 0. in
+        for k=0 to n-1 do
+          if k <> i then
+            total := !total +. m.{i,k} *. pi.{k}
+        done;
+        -. (!total /. pi.{i})))
 
 class diagd arg =
 (* See Felsenstein p.206.
@@ -69,27 +84,8 @@ class diagd arg =
             let evals, evects = symmEigs m in
             (evals, evects, evects)
         | `OfDBMatrix(d, b) -> diagdStructureOfDBMatrix d b
-        | `OfExchangeableMat(symmPart, statnDist) ->
-            let n = Gsl_vector.length statnDist in
-            let r =
-              (* here we set up the diagonal entries of the symmetric matrix so
-               * that we get the row sum of the Q matrix is zero.
-               * see top of code. *)
-              matInit n n (
-                fun i j ->
-                  if i <> j then Gsl_matrix.get symmPart i j
-                  else (
-                  (* r_ii = - (pi_i)^{-1} \sum_{j \ne i} r_ij pi_j *)
-                    let total = ref 0. in
-                    for k=0 to n-1 do
-                      if k <> i then
-                        total := !total +. symmPart.{i,k} *. statnDist.{k}
-                    done;
-                    -. (!total /. statnDist.{i})
-                  )
-              )
-            in
-            diagdStructureOfDBMatrix statnDist r
+        | `OfExchangeableMat(m, pi) ->
+            diagdStructureOfDBMatrix pi (b_of_exchangeable_pair m pi)
     with
       | Invalid_argument s -> invalid_arg ("diagd dimension problem: "^s)
   in
@@ -111,12 +107,12 @@ object (self)
   method multi_exp (dst:Tensor.tensor) rates bl =
     multi_exp ~dst x lambdav xit util rates bl
 
-  method normalizeRate statnDist =
+  method normalizeRate pi =
     let q = Gsl_matrix.create (self#size) (self#size) in
     self#toMatrix q;
     let rate = ref 0. in
     for i=0 to (Gsl_vector.length lambdav)-1 do
-      rate := !rate -. q.{i,i} *. (Gsl_vector.get statnDist i)
+      rate := !rate -. q.{i,i} *. (Gsl_vector.get pi i)
     done;
     for i=0 to (Gsl_vector.length lambdav)-1 do
       lambdav.{i} <- lambdav.{i} /. !rate
@@ -127,12 +123,12 @@ end
 
 let ofSymmMat a = new diagd (`OfSymmMat a)
 let ofDBMatrix d b = new diagd (`OfDBMatrix(d, b))
-let ofExchangeableMat symmPart statnDist =
-  new diagd (`OfExchangeableMat(symmPart, statnDist))
+let ofExchangeableMat symmPart pi =
+  new diagd (`OfExchangeableMat(symmPart, pi))
 
-let normalizedOfExchangeableMat symmPart statnDist =
-  let dd = ofExchangeableMat symmPart statnDist in
-  dd#normalizeRate statnDist;
+let normalizedOfExchangeableMat symmPart pi =
+  let dd = ofExchangeableMat symmPart pi in
+  dd#normalizeRate pi;
   dd
 
 let symmQ n =
