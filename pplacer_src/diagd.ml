@@ -13,9 +13,9 @@
  * From there the DB matrix is easily diagonalized; see Felsenstein p. 206 or
  * pplacer/scans/markov_process_db_diag.pdf.
  *
- * For this module, u and lambdav are such that u diag(lambdav) u^{-1} is the
+ * For this module, x and lambdav are such that x diag(lambdav) x^{-1} is the
  * matrix being diagonalized.
- * uit is the inverse transpose of u, which is handy for speedy computations.
+ * xit is the inverse transpose of x, which is handy for speedy computations.
  *)
 
 open Fam_gsl_matvec
@@ -27,7 +27,7 @@ let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
  * if D is the diagonal matrix, we get a #rates matrices of the form
  * U exp(D rate bl) U^{-1}.
  * util should be a vector of the same length as lambda *)
-let multi_exp ~dst u lambda uit util rates bl =
+let multi_exp ~dst x lambda xit util rates bl =
   let n = Gsl_vector.length lambda in
   try
     Tensor.set_all dst 0.;
@@ -36,7 +36,7 @@ let multi_exp ~dst u lambda uit util rates bl =
         set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      Linear.dediagonalize dst_mat u util uit
+      Linear.dediagonalize dst_mat x util xit
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
@@ -46,23 +46,27 @@ let mm = allocMatMatMul
 
 class diagd arg =
 (* See Felsenstein p.206.
- * Say that E \Lambda E^{-1} = D^{1/2} B D^{1/2}.
- * Then DB = (D^{1/2} E) \Lambda (D^{1/2} E)^{-1}
+ * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
+ * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
+ * Thus we want X = D^{1/2} U, and so
+ * X inverse transpose is D^{-1/2} U.
  * *)
   let diagdStructureOfDBMatrix d b =
     let dDiagSqrt = diagOfVec (vecMap sqrt d) in
     let dDiagSqrtInv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
-    let (evals, evects) = symmEigs (mm dDiagSqrt (mm b dDiagSqrt)) in
+    let (evals, u) = symmEigs (mm dDiagSqrt (mm b dDiagSqrt)) in
+    (* we want u to be the matrix of column eigenvectors. *)
+    Gsl_matrix.transpose_in_place u;
     (* make sure that diagonal matrix is all positive *)
     if not (vecNonneg d) then
       failwith("negative element in the diagonal of a DB matrix!");
-    (evals, mm dDiagSqrtInv evects, mm dDiagSqrt evects)
+    (evals, mm dDiagSqrt u, mm dDiagSqrtInv u)
   in
 
-  let (lambdav, u, uit) =
+  let (lambdav, x, xit) =
     try
       match arg with
-        | `OfData (lambdav, u, uit) -> (lambdav, u, uit)
+        | `OfData (lambdav, x, xit) -> (lambdav, x, xit)
         | `OfSymmMat m ->
             let evals, evects = symmEigs m in
             (evals, evects, evects)
@@ -97,17 +101,17 @@ object (self)
 
   method size = Gsl_vector.length lambdav
 
-  method toMatrix dst = Linear.dediagonalize dst u lambdav uit
+  method toMatrix dst = Linear.dediagonalize dst x lambdav xit
 
   method expWithT dst t =
     Linear.dediagonalize
                   dst
-                  u
+                  x
                   (vecMap (fun lambda -> exp (t *. lambda)) lambdav)
-                  uit
+                  xit
 
   method multi_exp (dst:Tensor.tensor) rates bl =
-    multi_exp ~dst u lambdav uit util rates bl
+    multi_exp ~dst x lambdav xit util rates bl
 
   method normalizeRate statnDist =
     let q = Gsl_matrix.create (self#size) (self#size) in

@@ -1,4 +1,5 @@
-RELEASE=mokaphy placeutil placeviz pplacer
+RELEASE=pplacer
+XRELEASE=mokaphy placeutil placeviz pplacer
 
 all: $(RELEASE)
 
