@@ -18,8 +18,8 @@ object
     float_flag cutoff;
   ]
 
-  method usage = ""
-  method desc = ""
+  method usage = "makes a tree which shows the bootstrap values"
+  method desc = "usage: bootviz [options] -b boot_trees cluster_tree"
 
   method action = function
     | [ct_fname] ->

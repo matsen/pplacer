@@ -8,21 +8,27 @@ open MapsSets
 let option_rex = Str.regexp "-.*"
 
 (* print the commands available through cmd_map *)
-let print_avail_cmds prg_name cmd_map =
+let print_avail_cmds prg_name (display_map, longest) =
   print_endline "Here is a list of commands available using this interface:";
-  StringMap.iter (fun k v -> Printf.printf "\t%s\t%s\n" k (v ())#desc) cmd_map;
+  List.iter
+    (fun (name, map) ->
+      Printf.printf "  %s\n" name;
+      StringMap.iter (fun k v -> Printf.printf "    %-*s  %s\n" longest k (v ())#desc) map;
+      Printf.printf "\n"
+    )
+    display_map;
   Printf.printf
     "To get more help about a given command, type %s COMMAND --help\n"
     prg_name;
   ()
 
 (* given an argl, process a subcommand *)
-let process_cmd prg_name cmd_map argl =
+let process_cmd prg_name display_map cmd_map argl =
   let print_need_cmd_error () =
     Printf.printf
       "please specify a %s command, e.g. %s COMMAND [...]"
       prg_name prg_name;
-    print_avail_cmds prg_name cmd_map;
+    print_avail_cmds prg_name display_map;
     exit 1
   in
   match argl with
@@ -33,7 +39,7 @@ let process_cmd prg_name cmd_map argl =
         print_need_cmd_error ()
       else begin
         print_endline ("Unknown "^prg_name^" command: "^s);
-        print_avail_cmds prg_name cmd_map;
+        print_avail_cmds prg_name display_map;
         exit 1
       end
     | [] -> print_need_cmd_error ()
@@ -76,19 +82,31 @@ let spec_with_default symbol setfun p help =
 
 (* given a (string, f) list, make a map of it *)
 let cmd_map_of_list l =
-  List.fold_right (fun (k,v) -> StringMap.add k v) l StringMap.empty
+  let longest = ref 0 in
+  let display_map =
+    List.map
+      (fun (name, l) ->
+        longest := max (String.length name) !longest;
+        name, List.fold_right (fun (k, v) -> StringMap.add k v) l StringMap.empty)
+      l
+  in
+  (display_map, !longest),
+  List.fold_left
+    (fun m1 (_, m2) -> StringMap.fold StringMap.add m1 m2)
+    StringMap.empty
+    display_map
 
 (* intended to be the inner loop of a function *)
-let inner_loop ~prg_name ~version cmd_map =
+let inner_loop ~prg_name ~version (display_map, cmd_map) =
   Arg.parse
     [
       "-v", Arg.Unit (fun () -> Printf.printf "placeutil %s\n" version),
       "Print version and exit";
-      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name cmd_map),
+      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map),
       "Print a list of the available commands.";
     ]
     (fun _ -> (* anonymous args. tl to remove command name. *)
-      process_cmd prg_name cmd_map (List.tl (Array.to_list Sys.argv));
+      process_cmd prg_name display_map cmd_map (List.tl (Array.to_list Sys.argv));
       exit 0) (* need to exit to avoid processing the other anon args as cmds *)
     (Printf.sprintf
       "Type %s --cmds to see the list of available commands."

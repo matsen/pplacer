@@ -100,8 +100,8 @@ object (self)
       string_flag tax_cluster_mode
     ]
 
-  method desc = ""
-  method usage = ""
+  method desc = "makes a hierarchical cluster of the placeruns"
+  method usage = "usage: cluster [options] placefiles"
 
   method private placefile_action prl =
     let outdir = fv outdir in mkdir outdir;
@@ -145,6 +145,4 @@ object (self)
         Newick_gtree.to_file cluster_t (path ("cluster."^(pad_str_of_int i)^".tre"))
       done
     end
-
-
 end

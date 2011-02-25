@@ -139,8 +139,8 @@ object (self)
       float_flag multiplier;
     ]
 
-  method desc = ""
-  method usage = ""
+  method desc = "does PCA, and makes lovely trees"
+  method usage = "usage: pca [options] placefiles"
 
   method private placefile_action prl =
     let transform, weighting, criterion = self#mass_opts in

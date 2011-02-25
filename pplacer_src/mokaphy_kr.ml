@@ -86,8 +86,8 @@ object (self)
       toggle_flag verbose;
     ]
 
-  method desc = ""
-  method usage = ""
+  method desc = "runs KR analyses, including significance estimation"
+  method usage = "usage: kr [options] placefiles"
 
   method private placefile_action prl =
     if List.length prl < 2 then

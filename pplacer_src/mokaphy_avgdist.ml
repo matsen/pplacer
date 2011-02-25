@@ -66,8 +66,8 @@ class bavgdist_cmd () =
 object (self)
   inherit base_cmd ()
 
-  method desc = ""
-  method usage = ""
+  method desc = "calculates the binary pairwise distance for each place file"
+  method usage = "usage: bavgdist [options] placefiles"
 
   method private placefile_action prl =
     let pra = Array.of_list prl in
@@ -89,8 +89,8 @@ class uavgdist_cmd () =
 object (self)
   inherit base_cmd ()
 
-  method desc = ""
-  method usage = ""
+  method desc = "calculates the unary pairwise distance for each place file"
+  method usage = "usage: uavgdist [options] placefiles"
 
   method private placefile_action prl =
     Mokaphy_common.write_unary
