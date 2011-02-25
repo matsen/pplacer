@@ -1,41 +1,7 @@
+open Subcommand
+open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
-
-module Prefs = struct
-  type prefs =
-    {
-      out_fname: string ref;
-      use_pp: bool ref;
-      weighted: bool ref;
-      transform: string ref;
-    }
-
-  let out_fname         p = !(p.out_fname)
-  let use_pp            p = !(p.use_pp)
-  let weighted          p = !(p.weighted)
-  let transform         p = !(p.transform)
-
-  let defaults () =
-    {
-      out_fname = ref "";
-      use_pp = ref false;
-      weighted = ref true;
-      transform = ref "";
-    }
-
-  let specl_of_prefs prefs =
-[
-  "-p", Arg.Set prefs.use_pp,
-  "Use posterior probability.";
-  "--point", Arg.Clear prefs.weighted,
-  Mokaphy_common.weighted_help;
-  "-o", Arg.Set_string prefs.out_fname,
-  "Set the filename to write to. Otherwise write to stdout.";
-  "--transform", Arg.Set_string prefs.transform,
-  Mokaphy_common.transform_help;
-]
-end
-
 
 let make_bary_tree transform t prel =
   let bary_map =
@@ -54,24 +20,42 @@ let make_bary_tree transform t prel =
   in
   Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
 
-let bary prefs prl =
-  let t = Mokaphy_common.list_get_same_tree prl
-  and transform = Mass_map.transform_of_str (Prefs.transform prefs)
-  in
-  let prel =
-    Mokaphy_common.prel_of_prl
-      ~is_weighted:(Prefs.weighted prefs)
-      ~use_pp:(Prefs.use_pp prefs)
-      prl
-  in
-  if prl <> [] then begin
-    let fname = match Prefs.out_fname prefs with
-      | "" -> (Mokaphy_common.cat_names prl)^".bary.xml"
-      | s -> s
-    in
-    Phyloxml.named_gtree_to_file
-      fname
-      (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
-      (make_bary_tree transform t prel)
-  end
+class cmd () =
+object (self)
+  inherit subcommand () as super
+  inherit mass_cmd () as super_mass
+  inherit placefile_cmd () as super_placefile
 
+  val outfile = flag "-o"
+    (Plain ("", "The file to write out to. Defaults to the concatenation of the input file names."))
+
+  method specl =
+    super_mass#specl
+    @ [
+      string_flag outfile;
+    ]
+
+  method usage = ""
+  method desc = ""
+
+  method private placefile_action prl =
+    let t = Mokaphy_common.list_get_same_tree prl
+    and transform, _, _ = self#mass_opts
+    in
+    let prel =
+      Mokaphy_common.prel_of_prl
+        ~is_weighted:(fv weighted)
+        ~use_pp:(fv use_pp)
+        prl
+    in
+    if prl <> [] then begin
+      let fname = match fv outfile with
+        | "" -> (Mokaphy_common.cat_names prl)^".bary.xml"
+        | s -> s
+      in
+      Phyloxml.named_gtree_to_file
+        fname
+        (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
+        (make_bary_tree transform t prel)
+    end
+end

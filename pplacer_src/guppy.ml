@@ -23,5 +23,6 @@ let () =
         "heat", (fun () -> new Mokaphy_heat.cmd ());
         "bavgdist", (fun () -> new Mokaphy_avgdist.bavgdist_cmd ());
         "uavgdist", (fun () -> new Mokaphy_avgdist.uavgdist_cmd ());
+        "bary", (fun () -> new Mokaphy_bary.cmd ());
       ]
     )
