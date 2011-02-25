@@ -57,17 +57,17 @@ let run_file prefs query_fname =
       seq_list
   in
   let ref_align =
-    if query_list = [] then begin
+    if ref_list = [] then begin
       if (Prefs.verb_level prefs) >= 1 then
         print_endline
-          "Didn't find any reference sequences in given fasta file.\
+          "Didn't find any reference sequences in given fasta file. \
           Using supplied reference alignment.";
       Refpkg.get_aln_fasta rp
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
         print_endline
-          "Found reference sequences in given fasta file.
+          "Found reference sequences in given fasta file. \
           Using those for reference alignment.";
       Array.of_list ref_list
     end
