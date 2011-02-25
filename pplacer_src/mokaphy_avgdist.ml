@@ -1,47 +1,7 @@
-
+open Subcommand
+open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
-
-module Prefs = struct
-  type mokaphy_prefs =
-    {
-      use_pp: bool ref;
-      out_fname: string ref;
-      list_output: bool ref;
-      weighted: bool ref;
-      exponent: float ref;
-    }
-
-  let use_pp            p = !(p.use_pp)
-  let out_fname         p = !(p.out_fname)
-  let list_output       p = !(p.list_output)
-  let weighted          p = !(p.weighted)
-  let exponent          p = !(p.exponent)
-
-  let defaults () =
-    {
-      use_pp = ref false;
-      out_fname = ref "";
-      list_output = ref false;
-      weighted = ref false;
-      exponent = ref 1.;
-    }
-
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_fname,
-    "Set the filename to write to. Otherwise write to stdout.";
-    "-p", Arg.Set prefs.use_pp,
-    "Use posterior probability.";
-    "--list-out", Arg.Set prefs.list_output,
-    "Output the avgdist results as a list rather than a matrix.";
-    "--unweighted", Arg.Clear prefs.weighted,
-    Mokaphy_common.weighted_help;
-    "--exp", Arg.Set_float prefs.exponent,
-    "An exponent applied before summation of distances.";
-    ]
-end
-
 
 type 'a data_t =
   | Pairwise of 'a Placerun.placerun * 'a Placerun.placerun
@@ -74,34 +34,67 @@ let of_placerun_pair dist_fun pr pr' =
 let of_placerun dist_fun pr =
   of_placerun_gen dist_fun (Single pr)
 
-let make_dist_fun prefs prl =
-  Pquery_distances.dist_fun_of_expon_weight
-    (Prefs.exponent prefs)
-    (Mokaphy_common.weighting_of_bool (Prefs.weighted prefs))
-    (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs))
-    (Edge_rdist.build_ca_info (Mokaphy_common.list_get_same_tree prl))
+class virtual base_cmd () =
+object (self)
+  inherit subcommand () as super
+  inherit outfile_cmd () as super_outfile
+  inherit mass_cmd () as super_mass
+  inherit kr_cmd () as super_kr
+  inherit placefile_cmd () as super_placefile
 
-let uavgdist prefs prl =
-  Mokaphy_common.wrap_output
-    (Prefs.out_fname prefs)
-    (Mokaphy_common.write_unary
-      (of_placerun
-        (make_dist_fun prefs prl))
-      prl)
+  val list_output = flag "--list-out"
+    (Plain (false, "Output the avgdist results as a list rather than a matrix."))
 
-let bavgdist prefs prl =
-  let pra = Array.of_list prl in
-  Mokaphy_common.wrap_output
-    (Prefs.out_fname prefs)
-    (Mokaphy_common.write_uptri
-      (Prefs.list_output prefs)
+  method specl =
+    super_outfile#specl
+    @ super_mass#specl
+    @ super_kr#specl
+    @ [
+      toggle_flag list_output;
+    ]
+
+  method private make_dist_fun prl =
+    let _, weighting, criterion = self#mass_opts in
+    Pquery_distances.dist_fun_of_expon_weight
+      (fv p_exp)
+      weighting
+      criterion
+      (Edge_rdist.build_ca_info (Mokaphy_common.list_get_same_tree prl))
+end
+
+class bavgdist_cmd () =
+object (self)
+  inherit base_cmd ()
+
+  method desc = ""
+  method usage = ""
+
+  method private placefile_action prl =
+    let pra = Array.of_list prl in
+    Mokaphy_common.write_uptri
+      (fv list_output)
       (Array.map Placerun.get_name pra)
       "bavgdst"
       (Uptri.init
-        (Array.length pra)
-        (fun i j ->
-          of_placerun_pair
-            (make_dist_fun prefs prl)
-            pra.(i)
-            pra.(j))))
+         (Array.length pra)
+         (fun i j ->
+           of_placerun_pair
+             (self#make_dist_fun prl)
+             pra.(i)
+             pra.(j)))
+      self#out_channel
+end
 
+class uavgdist_cmd () =
+object (self)
+  inherit base_cmd ()
+
+  method desc = ""
+  method usage = ""
+
+  method private placefile_action prl =
+    Mokaphy_common.write_unary
+      (of_placerun (self#make_dist_fun prl))
+      prl
+      self#out_channel
+end

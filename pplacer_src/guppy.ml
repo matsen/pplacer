@@ -21,5 +21,7 @@ let () =
         "pca", (fun () -> new Mokaphy_pca.cmd ());
         "cluster", (fun () -> new Mokaphy_cluster.cmd ());
         "heat", (fun () -> new Mokaphy_heat.cmd ());
+        "bavgdist", (fun () -> new Mokaphy_avgdist.bavgdist_cmd ());
+        "uavgdist", (fun () -> new Mokaphy_avgdist.uavgdist_cmd ());
       ]
     )
