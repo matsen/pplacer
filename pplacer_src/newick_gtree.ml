@@ -17,6 +17,18 @@ let to_numbered t =
 let make_boot_id t =
   Gtree.mapi_bark_map (fun i x -> x#set_boot (float_of_int i)) t
 
+(* make a set of the taxon names *)
+let get_name_list t =
+  let rec aux = function
+    | id::l ->
+        begin
+          match (Gtree.get_bark t id)#get_name_opt with
+          | Some s -> s::(aux l)
+          | None -> aux l
+        end
+    | [] -> []
+  in
+  aux (Gtree.node_ids t)
 
 (* output *)
 

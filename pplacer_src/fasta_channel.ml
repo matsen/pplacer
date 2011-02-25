@@ -100,6 +100,14 @@ let gen_fold next_fun f start ch =
 let name_fold f start ch = gen_fold next_name f start ch
 let named_seq_fold f start ch = gen_fold next_named_seq f start ch
 
+let to_list ch = named_seq_fold (fun ns accu -> ns::accu) [] ch
+
+let list_of_fname fname =
+  let ch = of_fname fname in
+  let l = to_list ch in
+  close ch;
+  l
+
 (* *** other functions *** *)
 let size_checking_for_duplicate_names ch =
   let (size,_) =

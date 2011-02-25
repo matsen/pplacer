@@ -40,16 +40,16 @@ let makeAlnIndexMap taxonMap alnNameArr =
     failwith
       (Printf.sprintf "tree has %d taxa, and ref align has %d." n_tree n_aln);
   check_for_repeats alnNameArr;
-  IntMap.map (
-    fun taxName ->
+  IntMap.map
+    (fun taxName ->
       let outEdges = ArrayFuns.find_all_indices taxName alnNameArr in
       if List.length outEdges = 0 then
         failwith ("taxon not found in alignment: '"^taxName^"'")
       else if List.length outEdges > 1 then
         failwith ("taxon in alignment repeatedly: '"^taxName^"'")
       else (* pigeonhole principle *)
-        List.hd outEdges
-  ) taxonMap
+        List.hd outEdges)
+    taxonMap
 
 (* a like_aln is just the corresponding array of likelihood vectors *)
 let like_aln_of_align seq_type align =

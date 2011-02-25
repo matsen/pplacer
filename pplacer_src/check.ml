@@ -1,5 +1,4 @@
-(* routines for doing sanity checks
-*)
+(* routines for doing sanity checks *)
 
 open MapsSets
 open Fam_batteries
@@ -18,10 +17,9 @@ let pretend model ref_align query_fnames =
   in
   List.iter
     (fun fname ->
-      let ch = Fasta_channel.of_fname fname in
       let (size,_) =
-        Fasta_channel.named_seq_fold
-          (fun (name,seq) (i,s) ->
+        List.fold_left
+          (fun (i,s) (name,seq) ->
             String.iter
               (fun c ->
                 try
@@ -39,10 +37,9 @@ let pretend model ref_align query_fnames =
               failwith (name^" does not have the same length as the reference alignment!")
             else (i+1,StringSet.add name s))
           (0,StringSet.empty)
-          ch
+          (Fasta_channel.list_of_fname fname)
       in
-      Printf.printf "%s: %d sequences.\n" fname size;
-      Fasta_channel.close ch;)
+      Printf.printf "%s: %d sequences.\n" fname size)
     query_fnames
 
 (* check that dir_name is actually a directory *)

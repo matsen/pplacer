@@ -26,33 +26,20 @@ let parse_args () =
   Arg.parse args anon_arg usage;
   List.rev !files
 
-  (* make a set of the taxon names *)
-let tax_set t =
-  let rec get_name_list = function
-    | id::l ->
-      begin
-        match (Gtree.get_bark t id)#get_name_opt with
-        | Some s -> s::(get_name_list l)
-        | None -> get_name_list l
-      end
-    | [] -> []
-  in
-  StringSetFuns.of_list
-    (get_name_list (Gtree.node_ids t))
-
+let get_name_set t = StringSetFuns.of_list (Newick_gtree.get_name_list t)
 
 let () =
   if not !Sys.interactive then begin
     let files = parse_args () in if files = [] then exit 0;
     if !correct_tree_fname = "" then failwith "please supply correct tree";
     let correct_tree = Newick_gtree.of_file !correct_tree_fname in
-    let correct_set = tax_set correct_tree in
+    let correct_set = Newick_gtree.tax_set correct_tree in
     let collect ret_code place_fname =
       try
         let frc = 0 in
         let pr = Placerun_io.of_file place_fname in
         let ref_tree = Placerun.get_ref_tree pr in
-        let ref_tax = tax_set ref_tree in
+        let ref_tax = Newick_gtree.tax_set ref_tree in
         assert(StringSet.diff ref_tax correct_set = StringSet.empty);
         let correct_loc =
           match StringSet.elements (StringSet.diff correct_set ref_tax) with

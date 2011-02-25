@@ -20,7 +20,7 @@ type prior = Uniform_prior | Exponential_prior of float
 
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
-let pplacer_core prefs query_fname prior model ref_align gtree
+let pplacer_core prefs query_fname query_list prior model ref_align gtree
       ~darr ~parr ~snodes locs =
   let seq_type = Model.seq_type model
   and prior_fun =
@@ -28,7 +28,6 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     | Uniform_prior -> (fun _ -> 1.)
     | Exponential_prior mean ->
         fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
-  and query_channel = Fasta_channel.of_fname query_fname
   and ref_length = Alignment.length ref_align
   and fantasy_mat =
     if fantasy prefs <> 0. then
@@ -46,7 +45,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     if friendly_run then begin
       print_string "Finding friends. ";
       flush_all();
-      let a = Alignment.read_fasta query_fname in
+      let a = Array.of_list query_list in
       print_string "Read alignment. ";
       flush_all();
       let flen = float_of_int (Alignment.n_seqs a) in
@@ -73,9 +72,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
     else
   (* usual ball playing *)
       (max_pitches prefs, max_strikes prefs)
-  and num_queries =
-    Fasta_channel.size_checking_for_duplicate_names query_channel
-  in
+  and num_queries = List.length query_list in
   (* making glvs which are appropriate for query side of the first placement
    * stage. in contrast to the second stage query glv, this guy is full length. *)
   let full_query_orig =
@@ -370,7 +367,7 @@ let pplacer_core prefs query_fname prior model ref_align gtree
   end
   end
   in
-  Fasta_channel.named_seq_iteri process_query query_channel;
+  ListFuns.iteri process_query query_list;
   if fantasy prefs <> 0. then begin
     Fantasy.results_to_file
       (Filename.basename (Filename.chop_extension query_fname))
