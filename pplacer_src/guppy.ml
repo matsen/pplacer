@@ -20,5 +20,6 @@ let () =
         "kr", (fun () -> new Mokaphy_kr.cmd ());
         "pca", (fun () -> new Mokaphy_pca.cmd ());
         "cluster", (fun () -> new Mokaphy_cluster.cmd ());
+        "heat", (fun () -> new Mokaphy_heat.cmd ());
       ]
     )

@@ -60,7 +60,7 @@ let heat_map_of_floatim multiplier m =
       if v = 0. then []
       else begin
         let width = multiplier *. (abs_float v) in
-        (Heat_tree.simple_color_of_heat v)::
+        (Mokaphy_heat.simple_color_of_heat v)::
           (if width < min_width then []
            else [Decor.width width])
       end)
