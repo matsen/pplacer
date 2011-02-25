@@ -1,48 +1,34 @@
+open Subcommand
+open Guppy_cmdobjs
 
-module Prefs = struct
-  type mokaphy_prefs =
-    {
-      boot_fname: string ref;
-      out_fname: string ref;
-      cutoff: float ref;
-    }
+class cmd () =
+object
+  inherit subcommand () as super
 
-  let boot_fname p = !(p.boot_fname)
-  let out_fname p = !(p.out_fname)
-  let cutoff p = !(p.cutoff)
+  val boot_fname = flag "-b"
+    (Needs_argument ("bootstrapped trees", "The file containing the bootstrapped trees, one per line."))
+  val out_fname = flag "-o"
+    (Formatted ("cluster_boot.xml", "Specify an out file. Default: %s"))
+  val cutoff = flag "--cutoff"
+    (Formatted (0., "Specify the cutoff for writing out the bootstrap value. Default: %g."))
 
-  let defaults () =
-    {
-      boot_fname = ref "";
-      out_fname = ref "";
-      cutoff = ref 0.;
-    }
+  method specl = [
+    string_flag boot_fname;
+    string_flag out_fname;
+    float_flag cutoff;
+  ]
 
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-b", Arg.Set_string prefs.boot_fname,
-    "The file containing the bootstrapped trees, one per line.";
-    "-o", Arg.Set_string prefs.out_fname,
-    "Specify an out file (default cluster_boot.xml).";
-    "--cutoff", Arg.Set_float prefs.cutoff,
-    "Specify the cutoff for writing out the bootstrap value (default 0).";
-    ]
-end
+  method usage = ""
+  method desc = ""
 
-
-let bootviz prefs = function
-  | [ct_fname] ->
-      let out_fname = match Prefs.out_fname prefs with
-        | "" -> "cluster_boot.xml"
-        | s -> s
-      in
+  method action = function
+    | [ct_fname] ->
       Phyloxml.gtree_to_file
-        out_fname
+        (fv out_fname)
         (Bootviz.decorate_tree
-          (Prefs.cutoff prefs)
-          (Prefs.boot_fname prefs)
+          (fv cutoff)
+          (fv boot_fname)
           ct_fname)
-  | [] -> () (* e.g. -help *)
-  | _ -> failwith "Please specify exactly one cluster tree for bootviz."
-
-
+    | [] -> () (* e.g. -help *)
+    | _ -> failwith "Please specify exactly one cluster tree for bootviz."
+end

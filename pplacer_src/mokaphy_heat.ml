@@ -168,11 +168,10 @@ object (self)
         | s -> s
       in
       let ref_tree = Placerun.get_same_tree pr1 pr2
-      and is_weighted = fv weighted
-      and use_pp = fv use_pp
+      and _, weighting, criterion = self#mass_opts
       in
       let tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml"
-      and my_pre_of_pr = Mokaphy_common.pre_of_pr ~is_weighted ~use_pp
+      and my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo =
         Mokaphy_common.refpkgo_of_fname (fv refpkg_path)
       in
@@ -200,7 +199,7 @@ object (self)
         | Some rp -> begin
             let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
             let my_make_tax_pre =
-              Mokaphy_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap in
+              Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap in
             [Some (tree_name^".tax"),
             make_heat_tree prefs taxt
               (my_make_tax_pre pr1)

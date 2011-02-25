@@ -93,11 +93,9 @@ object (self)
     if List.length prl < 2 then
       invalid_arg "can't do KR with fewer than two place files";
     let n_samples = fv n_samples
-    and is_weighted = fv weighted
-    and use_pp = fv use_pp
     and pra = Array.of_list prl
     and p = fv p_exp
-    and transform, _, _ = self#mass_opts
+    and transform, weighting, criterion = self#mass_opts
     and tax_refpkgo = match !(refpkg_path.value) with
       | None -> None
       | Some path ->
@@ -132,14 +130,14 @@ object (self)
     and t_pre_f_of_bl_of_rank rp bl_of_rank =
       let (taxt, ti_imap) = Tax_gtree.of_refpkg_gen bl_of_rank rp in
       (Decor_gtree.to_newick_gtree taxt,
-      Mokaphy_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap)
+      Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap)
     in
     (* here we make a list of uptris, which are to get printed *)
     let uptris =
       List.map
         uptri_of_t_pre_f
         ([Mokaphy_common.list_get_same_tree prl,
-        Mokaphy_common.pre_of_pr ~is_weighted ~use_pp] @
+        Mass_map.Pre.of_placerun weighting criterion] @
         (match tax_refpkgo with
         | None -> []
         | Some rp ->

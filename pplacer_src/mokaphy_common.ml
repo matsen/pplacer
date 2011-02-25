@@ -15,28 +15,6 @@ let transform_help =
     "A transform to apply to the read multiplicities before calculating. \
     Options are 'log' and 'unit'. Default is no transform."
 
-(* the following two options are common between many prefs *)
-
-(* weighted option *)
-let weighting_of_bool = function
-  | true -> Mass_map.Weighted
-  | false -> Mass_map.Unweighted
-
-(* use_pp option *)
-let criterion_of_bool = function
-  | true -> Placement.post_prob
-  | false -> Placement.ml_ratio
-
-(* for out_fname options *)
-let ch_of_fname = function
-  | "" -> stdout
-  | s -> open_out s
-
-let wrap_output fname f =
-  let ch = ch_of_fname fname in
-  f ch;
-  if ch <> stdout then close_out ch
-
 let chop_suffix_if_present s suff =
   if Filename.check_suffix s suff then Filename.chop_suffix s suff
   else s
@@ -51,21 +29,15 @@ let cat_names prl =
   String.concat "." (List.map Placerun.get_name prl)
 
 (* *** making pres *** *)
-let pre_of_pr ~is_weighted ~use_pp pr =
-  Mass_map.Pre.of_placerun
-    (weighting_of_bool is_weighted)
-    (criterion_of_bool use_pp)
-    pr
+let prel_of_prl weighting criterion prl =
+  List.map (Mass_map.Pre.of_placerun weighting criterion) prl
 
-let prel_of_prl ~is_weighted ~use_pp prl =
-  List.map (pre_of_pr ~is_weighted ~use_pp) prl
-
-let make_tax_pre taxt ~is_weighted ~use_pp ti_imap pr =
+let make_tax_pre taxt weighting criterion ti_imap pr =
   Tax_mass.pre
     (Gtree.top_id taxt)
     Placement.contain_classif
-    (weighting_of_bool is_weighted)
-    (criterion_of_bool use_pp)
+    weighting
+    criterion
     ti_imap
     pr
 

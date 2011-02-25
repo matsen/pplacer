@@ -24,5 +24,6 @@ let () =
         "bavgdist", (fun () -> new Mokaphy_avgdist.bavgdist_cmd ());
         "uavgdist", (fun () -> new Mokaphy_avgdist.uavgdist_cmd ());
         "bary", (fun () -> new Mokaphy_bary.cmd ());
+        "bootviz", (fun () -> new Mokaphy_bootviz.cmd ());
       ]
     )

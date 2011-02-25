@@ -40,13 +40,9 @@ object (self)
 
   method private placefile_action prl =
     let t = Mokaphy_common.list_get_same_tree prl
-    and transform, _, _ = self#mass_opts
+    and transform, weighting, criterion = self#mass_opts
     in
-    let prel =
-      Mokaphy_common.prel_of_prl
-        ~is_weighted:(fv weighted)
-        ~use_pp:(fv use_pp)
-        prl
+    let prel = Mokaphy_common.prel_of_prl weighting criterion prl
     in
     if prl <> [] then begin
       let fname = match fv outfile with

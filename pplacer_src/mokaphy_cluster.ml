@@ -8,14 +8,14 @@ let classify_mode_str = function
   | "inv" -> Tax_gtree.of_refpkg_inverse
   | s -> failwith ("unknown tax cluster mode: "^s)
 
-let t_prel_of_prl ~is_weighted ~use_pp prl =
+let t_prel_of_prl weighting criterion prl =
   (Mokaphy_common.list_get_same_tree prl,
-    List.map (Mokaphy_common.pre_of_pr ~is_weighted ~use_pp) prl)
+    List.map (Mass_map.Pre.of_placerun weighting criterion) prl)
 
-let tax_t_prel_of_prl tgt_fun ~is_weighted ~use_pp rp prl =
+let tax_t_prel_of_prl tgt_fun weighting criterion rp prl =
   let (taxt, ti_imap) = tgt_fun rp in
   (taxt,
-    List.map (Mokaphy_common.make_tax_pre taxt ~is_weighted ~use_pp ti_imap) prl)
+    List.map (Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap) prl)
 
 let zeropad i = Printf.sprintf "%04d" i
 
@@ -36,13 +36,13 @@ let mkdir path =
   with
     | Unix.Unix_error (Unix.EEXIST, _, _) -> ()
 
-let make_cluster transform ~is_weighted ~use_pp refpkgo mode_str prl =
+let make_cluster transform weighting criterion refpkgo mode_str prl =
   let namel = List.map Placerun.get_name prl
   and distf rt ~x1 ~x2 b1 b2 =
     Kr_distance.dist_of_pres transform 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
   and normf a = 1. /. (Mass_map.Pre.total_mass transform a)
   in
-  let (rt, prel) = t_prel_of_prl ~is_weighted ~use_pp prl
+  let (rt, prel) = t_prel_of_prl weighting criterion prl
   in
   Mokaphy_common.check_refpkgo_tree rt refpkgo;
   let (drt, (cluster_t, blobim)) =
@@ -62,7 +62,7 @@ let make_cluster transform ~is_weighted ~use_pp refpkgo mode_str prl =
         let (taxt, tax_prel) =
           tax_t_prel_of_prl
             (classify_mode_str mode_str)
-            ~is_weighted ~use_pp rp prl in
+            weighting criterion rp prl in
         (taxt,
           PreCluster.of_named_blobl
             (distf taxt)
@@ -105,9 +105,7 @@ object (self)
 
   method private placefile_action prl =
     let outdir = fv outdir in mkdir outdir;
-    let is_weighted = fv weighted
-    and use_pp = fv use_pp
-    and transform, _, _ = self#mass_opts
+    let transform, weighting, criterion = self#mass_opts
     and refpkgo = Mokaphy_common.refpkgo_of_fname (fv refpkg_path)
     and mode_str = fv tax_cluster_mode
     in
@@ -120,7 +118,7 @@ object (self)
     if 0 = nboot then begin
       (* bootstrap turned off *)
       let (drt, cluster_t, blobim) =
-        make_cluster transform ~is_weighted ~use_pp refpkgo mode_str prl in
+        make_cluster transform weighting criterion refpkgo mode_str prl in
       Newick_gtree.to_file cluster_t (path Cluster_common.cluster_tree_name);
       let outdir = path Cluster_common.mass_trees_dirname in mkdir outdir;
       let path = Filename.concat outdir in
@@ -133,7 +131,7 @@ object (self)
           IntMap.iter (write_pre_tree transform (path "") "phy" tdrt) blobim;
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
-              Tax_gtree.of_refpkg_unit ~is_weighted ~use_pp rp prl in
+              Tax_gtree.of_refpkg_unit weighting criterion rp prl in
           let tax_blobim = PreCluster.mimic cluster_t tax_prel in
           IntMap.iter (write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
     end
@@ -143,7 +141,7 @@ object (self)
         Printf.printf "running bootstrap %d of %d\n" i nboot;
         let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
         let (_, cluster_t, _) =
-          make_cluster transform ~is_weighted ~use_pp refpkgo mode_str boot_prl in
+          make_cluster transform weighting criterion refpkgo mode_str boot_prl in
         Newick_gtree.to_file cluster_t (path ("cluster."^(pad_str_of_int i)^".tre"))
       done
     end
