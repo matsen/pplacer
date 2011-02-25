@@ -5,8 +5,7 @@ default:
 	make -C .. $@
 
 tags:
-	taggage /home/matsen/pplacer/ocaml/*/*.ml
-
+	taggage `find /home/matsen/pplacer/ocaml -name "*.ml" | grep -v "_build"`
 
 
 .PHONY: tags

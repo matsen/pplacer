@@ -60,12 +60,13 @@ let to_matrix dd =
   m
 
 (* return an exponentiated matrix *)
-let to_exp ~dst dd bl =
-  Gsl_matrix.set_all dst 0.;
+let to_exp dd bl =
+  let dst = matrix_of_same_dims dd in
   for i=0 to (Gsl_vector.length dd.l)-1 do
     set1 dd.util i (exp (bl *. (get1 dd.l i)))
   done;
-  Linear.dediagonalize dst dd.x dd.util dd.xit
+  Linear.dediagonalize dst dd.x dd.util dd.xit;
+  dst
 
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
@@ -113,7 +114,7 @@ let of_d_b d b =
   let dm_root = diagOfVec (vecMap sqrt d) in
   let dm_root_inv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
   let (l, u) = symmEigs (mm dm_root (mm b dm_root)) in
-  make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
+  make ~l ~x:(mm dm_root u) ~xit:(mm dm_root_inv u)
 
 (* here we set up the diagonal entries of the symmetric matrix so
  * that we get the column sum of the Q matrix is zero.

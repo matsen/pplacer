@@ -30,6 +30,8 @@ let matrices_approximately_equal ?(epsilon = 1e-5) m1 m2 =
   with
   | Exit -> false
 
+let ( ^=^ ) = matrices_approximately_equal
+
 let gtree_equal g1 g2 =
   if g1.Gtree.stree = g2.Gtree.stree then
     MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
