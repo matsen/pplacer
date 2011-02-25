@@ -59,6 +59,14 @@ let to_matrix dd =
   Linear.dediagonalize m dd.x dd.l dd.xit;
   m
 
+(* return an exponentiated matrix *)
+let to_exp ~dst dd bl =
+  Gsl_matrix.set_all dst 0.;
+  for i=0 to (Gsl_vector.length dd.l)-1 do
+    set1 dd.util i (exp (bl *. (get1 dd.l i)))
+  done;
+  Linear.dediagonalize dst dd.x dd.util dd.xit
+
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
  * X exp(D rate bl) X^{-1}.
@@ -89,7 +97,9 @@ let of_symmetric m =
   let (l, x) = symmEigs m in
   make ~l ~x ~xit:x
 
-(* d = vector for diagonal, b = symmetric matrix. see top. *)
+(* d = vector for diagonal, b = symmetric matrix which has been set up with
+ * diagonal entries so that BD is a Q-transpose matrix (with zero column
+ * totals). see top. *)
 (* See Felsenstein p.206.
  * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
  * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
@@ -102,23 +112,23 @@ let of_d_b d b =
     failwith("negative element in the diagonal of a DB matrix!");
   let dm_root = diagOfVec (vecMap sqrt d) in
   let dm_root_inv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
-  let (evals, u) = symmEigs (mm dm_root (mm b dm_root)) in
-  make ~l:evals ~x:(mm dm_root u) ~xit:(mm dm_root_inv u)
+  let (l, u) = symmEigs (mm dm_root (mm b dm_root)) in
+  make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
 (* here we set up the diagonal entries of the symmetric matrix so
- * that we get the row sum of the Q matrix is zero.
+ * that we get the column sum of the Q matrix is zero.
  * see top of code. *)
-let b_of_exchangeable_pair m pi =
+let b_of_exchangeable_pair r pi =
 let n = Gsl_vector.length pi in
   matInit n n
     (fun i j ->
-      if i <> j then Gsl_matrix.get m i j
+      if i <> j then Gsl_matrix.get r i j
       else
-      (* r_ii = - (pi_i)^{-1} \sum_{j \ne i} r_ij pi_j *)
+      (* r_ii = - (pi_i)^{-1} \sum_{k \ne i} r_ki pi_k *)
         (let total = ref 0. in
         for k=0 to n-1 do
           if k <> i then
-            total := !total +. m.{i,k} *. pi.{k}
+            total := !total +. r.{k,i} *. pi.{k}
         done;
         -. (!total /. pi.{i})))
 
