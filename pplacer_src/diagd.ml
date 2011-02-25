@@ -24,16 +24,17 @@ let mm = allocMatMatMul
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
 
+
 (* the setup is that X diag(\lambda) X^{-1} is the matrix of interest. *)
-type t = 
+type t =
   {
-    x: Gsl_matrix.matrix; 
+    x: Gsl_matrix.matrix;
     l: Gsl_vector.vector; (* lambda *)
     xit: Gsl_matrix.matrix; (* x inverse transpose *)
     util: Gsl_vector.vector;
   }
 
-let make ~x ~l ~xit = 
+let make ~x ~l ~xit =
   let n = Gsl_vector.length l in
   assert((n,n) = Gsl_matrix.dims x);
   assert((n,n) = Gsl_matrix.dims xit);
@@ -53,10 +54,7 @@ let matrix_of_same_dims dd = Gsl_matrix.create (dim dd) (dim dd)
 
   (* *** into matrices *** *)
 
-
-
-
-let to_matrix dd = 
+let to_matrix dd =
   let m = matrix_of_same_dims dd in
   Linear.dediagonalize m dd.x dd.l dd.xit;
   m
@@ -65,7 +63,7 @@ let to_matrix dd =
  * if D is the diagonal matrix, we get a #rates matrices of the form
  * X exp(D rate bl) X^{-1}.
  * util should be a vector of the same length as lambda *)
-let alt_multi_exp ~dst dd rates bl =
+let multi_exp ~dst dd rates bl =
   let n = Gsl_vector.length dd.l in
   try
     Tensor.set_all dst 0.;
@@ -84,10 +82,10 @@ let alt_multi_exp ~dst dd rates bl =
 
 exception StationaryFreqHasNegativeEntry
 
-let check_stationary v = 
+let check_stationary v =
   if not (vecNonneg v) then raise StationaryFreqHasNegativeEntry
 
-let of_symmetric m = 
+let of_symmetric m =
   let (l, x) = symmEigs m in
   make ~l ~x ~xit:x
 
@@ -126,7 +124,7 @@ let n = Gsl_vector.length pi in
 
 let of_exchangeable_pair m pi = of_d_b pi (b_of_exchangeable_pair m pi)
 
-let find_rate dd pi = 
+let find_rate dd pi =
   let q = to_matrix dd in
   let rate = ref 0. in
   for i=0 to (dim dd)-1 do
@@ -134,100 +132,12 @@ let find_rate dd pi =
   done;
   !rate
 
-let normalize_rate dd pi = 
+let normalize_rate dd pi =
   Gsl_vector.scale dd.l (1. /. (find_rate dd pi))
 
-let normed_of_exchangeable_pair m pi = 
+let normed_of_exchangeable_pair m pi =
   let dd = of_exchangeable_pair m pi in
   normalize_rate dd pi;
-  dd
-
-
-
-
-
-(* here we exponentiate our diagonalized matrix across all the rates.
- * if D is the diagonal matrix, we get a #rates matrices of the form
- * X exp(D rate bl) X^{-1}.
- * util should be a vector of the same length as lambda *)
-let multi_exp ~dst x lambda xit util rates bl =
-  let n = Gsl_vector.length lambda in
-  try
-    Tensor.set_all dst 0.;
-    for r=0 to (Array.length rates)-1 do
-      for i=0 to n-1 do
-        set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
-      done;
-      let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      Linear.dediagonalize dst_mat x util xit
-    done;
-  with
-    | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
-
-class diagd arg =
-  let diagdStructureOfDBMatrix d b =
-    let dDiagSqrt = diagOfVec (vecMap sqrt d) in
-    let dDiagSqrtInv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
-    let (evals, u) = symmEigs (mm dDiagSqrt (mm b dDiagSqrt)) in
-    (* make sure that diagonal matrix is all positive *)
-    if not (vecNonneg d) then
-      failwith("negative element in the diagonal of a DB matrix!");
-    (evals, mm dDiagSqrt u, mm dDiagSqrtInv u)
-  in
-
-  let (lambdav, x, xit) =
-    try
-      match arg with
-        | `OfData (lambdav, x, xit) -> (lambdav, x, xit)
-        | `OfSymmMat m ->
-            let evals, evects = symmEigs m in
-            (evals, evects, evects)
-        | `OfDBMatrix(d, b) -> diagdStructureOfDBMatrix d b
-        | `OfExchangeableMat(m, pi) ->
-            diagdStructureOfDBMatrix pi (b_of_exchangeable_pair m pi)
-    with
-      | Invalid_argument s -> invalid_arg ("diagd dimension problem: "^s)
-  in
-  let util = Gsl_vector.create (Gsl_vector.length lambdav) in
-
-object (self)
-
-  method size = Gsl_vector.length lambdav
-
-  method toMatrix dst = Linear.dediagonalize dst x lambdav xit
-
-  method expWithT dst t =
-    Linear.dediagonalize
-                  dst
-                  x
-                  (vecMap (fun lambda -> exp (t *. lambda)) lambdav)
-                  xit
-
-  method multi_exp (dst:Tensor.tensor) rates bl =
-    multi_exp ~dst x lambdav xit util rates bl
-
-  method normalizeRate pi =
-    let q = Gsl_matrix.create (self#size) (self#size) in
-    self#toMatrix q;
-    let rate = ref 0. in
-    for i=0 to (Gsl_vector.length lambdav)-1 do
-      rate := !rate -. q.{i,i} *. (Gsl_vector.get pi i)
-    done;
-    for i=0 to (Gsl_vector.length lambdav)-1 do
-      lambdav.{i} <- lambdav.{i} /. !rate
-    done;
-    ()
-
-end
-
-let ofSymmMat a = new diagd (`OfSymmMat a)
-let ofDBMatrix d b = new diagd (`OfDBMatrix(d, b))
-let ofExchangeableMat symmPart pi =
-  new diagd (`OfExchangeableMat(symmPart, pi))
-
-let normalizedOfExchangeableMat symmPart pi =
-  let dd = ofExchangeableMat symmPart pi in
-  dd#normalizeRate pi;
   dd
 
 let symm_q n =
@@ -236,4 +146,3 @@ let symm_q n =
 
 let symm_diagd n = of_symmetric (symm_q n)
 let binary_symm_diagd = symm_diagd 2
-
