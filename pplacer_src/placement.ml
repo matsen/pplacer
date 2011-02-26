@@ -94,7 +94,7 @@ let float_opt_of_string s =
 
 let taxid_opt_of_string s =
   if s = "-" then None
-  else Some (Tax_id.of_string s)
+  else Some (Tax_id.of_old_string s)
 
 (* we allow either 7 entry lines (no classification) or 9 entry lines *)
 let placement_of_str str =
@@ -154,17 +154,49 @@ let to_strl =
     string_of_int
     string_of_8gfloat
     (opt_to_str string_of_8gfloat)
-    (opt_to_str Tax_id.to_str)
+    (opt_to_str Tax_id.to_string)
 
 let to_str place = String.concat "\t" (to_strl place)
 
-let to_json place = Jsontype.Array [|
-  Jsontype.Int place.location;
-  Jsontype.Float place.log_like;
-  Jsontype.Float place.ml_ratio;
-  Jsontype.Float place.distal_bl;
-  Jsontype.Float place.pendant_bl;
-|]
+let to_json has_classif place =
+  let tail = match place.contain_classif with
+    | Some c ->
+      has_classif := true;
+      [|Tax_id.to_json c|]
+    | None -> [||]
+  in
+  Jsontype.Array (Array.append [|
+    Jsontype.Int place.location;
+    Jsontype.Float place.log_like;
+    Jsontype.Float place.ml_ratio;
+    Jsontype.Float place.distal_bl;
+    Jsontype.Float place.pendant_bl;
+  |] tail)
+
+let of_json fields a =
+  let a = Jsontype.array a in
+  let map = List.fold_left2
+    (fun m k v -> StringMap.add k v m)
+    StringMap.empty
+    (Array.to_list fields)
+    (Array.to_list a) in
+  let get k = StringMap.find k map
+  and maybe_get f k =
+    try
+      Some (f (StringMap.find k map))
+    with
+      | Not_found -> None
+  in {
+    location = Jsontype.int (get "edge_num");
+    log_like = Jsontype.float (get "likelihood");
+    ml_ratio = Jsontype.float (get "like_weight_ratio");
+    distal_bl = Jsontype.float (get "distal_length");
+    pendant_bl = Jsontype.float (get "pendant_length");
+    post_prob = None;
+    marginal_prob = None;
+    contain_classif = maybe_get Tax_id.of_json "classification";
+    classif = None;
+  }
 
 (* CSV *)
 let opt_to_csv_str f = function
@@ -176,5 +208,5 @@ let to_csv_strl =
     string_of_int
     string_of_gfloat
     (opt_to_csv_str string_of_gfloat)
-    (opt_to_csv_str Tax_id.to_bare_str)
+    (opt_to_csv_str Tax_id.to_string)
 

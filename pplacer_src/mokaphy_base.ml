@@ -68,7 +68,7 @@ let v_list_sum = function
 let shuffle rng a =
   let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
   for i = Array.length a - 1 downto 1 do
-    swap i ((Nativeint.to_int (Gsl_rng.get rng)) mod (i+1))
+    swap i (Gsl_rng.uniform_int rng (i+1))
   done
 
 (* make an integer permutation *)

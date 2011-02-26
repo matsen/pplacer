@@ -33,7 +33,7 @@ let get_n_ranks td = Array.length td.rank_names
 
 let get_tax_rank td ti =
   try TaxIdMap.find ti td.tax_rank_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_str ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_string ti))
 
 let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
@@ -45,7 +45,7 @@ let get_ancestor td ti =
 
 let get_tax_name td ti =
   try TaxIdMap.find ti td.tax_name_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_str ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
 
 let get_lineage td ti =
   let rec aux accu ti' =
@@ -59,7 +59,7 @@ let add_lineage_to_tree_and_map (t,m) l =
     try TaxIdMapFuns.check_add k v m with
     | Failure _ ->
         failwith
-          ("Tax table broken: either "^(to_str k)^
+          ("Tax table broken: either "^(to_string k)^
           "is defined to have multiple ancestors, or it is found at multiple \
           taxonomic ranks.")
   in
@@ -119,7 +119,7 @@ let list_list_is_rectangular = function
   | [] -> true
 
 let of_ncbi_file fname =
-  let taxid_of_stro = ncbi_of_stro
+  let taxid_of_stro = of_stro
   and full_list =
     List.map (List.map Tax_seqinfo.entry_of_str) (Csv.load fname) in
   if not (list_list_is_rectangular full_list) then

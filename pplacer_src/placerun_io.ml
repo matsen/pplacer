@@ -68,11 +68,15 @@ let to_json_file invocation out_fname placerun =
   Hashtbl.add meta "invocation" (Jsontype.String invocation);
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
-  Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) [|
-    "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length";
-  |]));
-  Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ref_tree));
-  Hashtbl.add ret "placements" (Jsontype.Array (Array.map Pquery_io.to_json (Array.of_list pqueries)));
+  let has_classif = ref false in
+  Hashtbl.add ret "placements" (Jsontype.Array (Array.map (Pquery_io.to_json has_classif) (Array.of_list pqueries)));
+  Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) (
+    Array.append
+      [| "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"; |]
+      (if !has_classif then [| "classification" |] else [||])
+  )));
+  Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
+  Hashtbl.add ret "version" (Jsontype.Int 1);
   Json.to_file out_fname (Jsontype.Object ret)
 
 (* ***** READING ***** *)
@@ -152,9 +156,18 @@ let of_file ?load_seq:(load_seq=true) place_fname =
     (chop_place_extension (Filename.basename place_fname))
     (get_pqueries [])
 
-let filtered_of_file ?verbose:(verbose=true) fname =
-  Placerun.filter_unplaced ~verbose (of_file fname)
 
+
+let of_json_file fname =
+  let json = Jsontype.obj (Json.of_file fname) in
+  let fields = Array.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
+  let pqa = Array.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
+  let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
+  Placerun.make
+    ref_tree
+    (Prefs.defaults ())
+    (Filename.chop_extension (Filename.basename fname))
+    (Array.to_list pqa)
 
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
 
@@ -182,3 +195,13 @@ let to_csv_file out_fname pr =
 let ppr_placerun ff pr =
   Format.fprintf ff "Placerun %s" pr.Placerun.name
 
+let of_any_file fname =
+  if Filename.check_suffix fname ".place" then
+    of_file fname
+  else if Filename.check_suffix fname ".json" then
+    of_json_file fname
+  else
+    failwith ("unfamiliar suffix on " ^ fname)
+
+let filtered_of_file ?verbose:(verbose=true) fname =
+  Placerun.filter_unplaced ~verbose (of_any_file fname)

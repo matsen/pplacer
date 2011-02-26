@@ -31,7 +31,7 @@ let classif_stral td name desired_rank m =
         name;
         Tax_taxonomy.get_rank_name td desired_rank;
         Tax_taxonomy.rank_name_of_tax_id td ti;
-        Tax_id.to_bare_str ti;
+        Tax_id.to_string ti;
         Printf.sprintf "%g" p;
       |])
     (Tax_id.TaxIdMapFuns.to_pairs m)

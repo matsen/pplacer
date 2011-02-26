@@ -39,7 +39,7 @@ let of_csv fname =
         StringMapFuns.check_add
           seqname_str
           {
-            tax_id = NCBI (safe_assoc "tax_id" al);
+            tax_id = TaxStr (safe_assoc "tax_id" al);
             accession =
               try entry_of_str (List.assoc "accession" al) with
               | Not_found -> None

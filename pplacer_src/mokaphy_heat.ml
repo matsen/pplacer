@@ -11,6 +11,7 @@ type prefs = {
   gray_black_colors: bool;
   min_width: float;
   max_width: float;
+  transform: int -> float;
 }
 
 (* color utils *)
@@ -48,7 +49,7 @@ let width_value_of_heat ~width_diff ?(p=1.) heat =
   width_diff *. intensity
 
 let color_map prefs t pre1 pre2 =
-  let transform = Mass_map.transform_of_str "" in
+  let transform = prefs.transform in
   let p = prefs.p_exp
   and kr_map =
     IntMap.map
@@ -168,7 +169,7 @@ object (self)
         | s -> s
       in
       let ref_tree = Placerun.get_same_tree pr1 pr2
-      and _, weighting, criterion = self#mass_opts
+      and transform, weighting, criterion = self#mass_opts
       in
       let tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml"
       and my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
@@ -183,6 +184,7 @@ object (self)
         gray_black_colors = fv gray_black_colors;
         min_width = fv min_width;
         max_width = fv max_width;
+        transform = transform;
       } in
       Mokaphy_common.check_refpkgo_tree ref_tree refpkgo;
       Phyloxml.named_gtrees_to_file

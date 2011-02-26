@@ -38,10 +38,10 @@ rule token = parse
   | '"' (escape | nonescape)* '"' as s
       { STRING s }
 
-  | '-'? digit+ '.' digit+ (['e' 'E'] ['+' '-']? digit+)? as f
-      { FLOAT (float_of_string f) }
   | '-'? digit+ as i
       { INT (int_of_string i) }
+  | '-'? digit+ ('.' digit+)? (['e' 'E'] ['+' '-']? digit+)? as f
+      { FLOAT (float_of_string f) }
 
   | "true"
       { TRUE }

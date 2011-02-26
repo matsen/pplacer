@@ -62,7 +62,7 @@ end
 
 class viz_cmd () =
 object
-  val white_bg = flag "--whitebg"
+  val white_bg = flag "--white-bg"
     (Plain (false, "Make colors appropriate for a white background."))
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
@@ -109,7 +109,6 @@ object
     rng
 end
 
-let place_file_rex = Str.regexp ".*\\.place"
 module SM = MapsSets.StringMap
 
 (* *** accessing placefiles *** *)
@@ -117,8 +116,6 @@ module SM = MapsSets.StringMap
   * they are already in memory, then we use them *)
 let placerun_map = ref SM.empty
 let placerun_by_name fname =
-  if not (Str.string_match place_file_rex fname 0) then
-    failwith ("Place files must end with .place suffix, unlike: "^fname);
   if SM.mem fname !placerun_map then
     SM.find fname !placerun_map
   else begin

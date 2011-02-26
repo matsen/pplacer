@@ -33,7 +33,7 @@ type prefs =
     write_masked : bool ref;
     only_write_best : bool ref;
     csv : bool ref;
-    json : bool ref;
+    old_format : bool ref;
     (* other *)
     friendly : bool ref;
     pretend : bool ref;
@@ -74,7 +74,7 @@ let defaults () =
     write_masked = ref false;
     only_write_best = ref false;
     csv = ref false;
-    json = ref false;
+    old_format = ref false;
     (* other *)
     friendly = ref true;
     pretend = ref false;
@@ -113,7 +113,7 @@ let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
 let csv               p = !(p.csv)
-let json              p = !(p.json)
+let old_format        p = !(p.old_format)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let friendly          p = !(p.friendly)
@@ -194,8 +194,8 @@ let args prefs =
     "Only check out the files then report. Do not run the analysis.";
     "--csv", Arg.Set prefs.csv,
     "Make a CSV file with the results.";
-    "--json", Arg.Set prefs.json,
-    "Make a json file with the results.";
+    "--old-format", Arg.Set prefs.old_format,
+    "Make an old-format placefile with the resuls.";
     "--diagnostic", Arg.Set prefs.diagnostic,
     "Write out a file describing the 'diagnostic' mutations for various clades.";
   ]
