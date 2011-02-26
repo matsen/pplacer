@@ -6,29 +6,29 @@ let () =
     (Subcommand.cmd_map_of_list [
       "placeutil", [
         (* mapping place files to place files *)
-        "round", (fun () -> new Placeutil_round.cmd ());
-        "demulti", (fun () -> new Placeutil_demulti.cmd ());
-        "to_json", (fun () -> new Placeutil_to_json.cmd ());
+        "round", (fun () -> new Guppy_round.cmd ());
+        "demulti", (fun () -> new Guppy_demulti.cmd ());
+        "to_json", (fun () -> new Guppy_to_json.cmd ());
 
         (* gathering tables from place files *)
-        "classify", (fun () -> new Placeutil_classify.cmd ());
+        "classify", (fun () -> new Guppy_classify.cmd ());
       ];
 
       (* making visualizations *)
       "placeviz", [
-        "fat", (fun () -> new Placeviz_fat.cmd ());
+        "fat", (fun () -> new Guppy_fat.cmd ());
       ];
 
       (* mokaphy stuff *)
       "mokaphy", [
-        "kr", (fun () -> new Mokaphy_kr.cmd ());
-        "pca", (fun () -> new Mokaphy_pca.cmd ());
-        "cluster", (fun () -> new Mokaphy_cluster.cmd ());
-        "heat", (fun () -> new Mokaphy_heat.cmd ());
-        "bavgdist", (fun () -> new Mokaphy_avgdist.bavgdist_cmd ());
-        "uavgdist", (fun () -> new Mokaphy_avgdist.uavgdist_cmd ());
-        "bary", (fun () -> new Mokaphy_bary.cmd ());
-        "bootviz", (fun () -> new Mokaphy_bootviz.cmd ());
+        "kr", (fun () -> new Guppy_kr.cmd ());
+        "pca", (fun () -> new Guppy_pca.cmd ());
+        "cluster", (fun () -> new Guppy_cluster.cmd ());
+        "heat", (fun () -> new Guppy_heat.cmd ());
+        "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
+        "uavgdist", (fun () -> new Guppy_avgdist.uavgdist_cmd ());
+        "bary", (fun () -> new Guppy_bary.cmd ());
+        "bootviz", (fun () -> new Guppy_bootviz.cmd ());
       ];
     ])
 

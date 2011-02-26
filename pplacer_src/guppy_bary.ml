@@ -35,8 +35,8 @@ object (self)
       string_flag outfile;
     ]
 
-  method usage = "draws the barycenter of a placement collection on the reference tree"
-  method desc = "usage: bary [options] placefile[s]"
+  method desc = "draws the barycenter of a placement collection on the reference tree"
+  method usage = "usage: bary [options] placefile[s]"
 
   method private placefile_action prl =
     let t = Mokaphy_common.list_get_same_tree prl
