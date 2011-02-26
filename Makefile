@@ -31,4 +31,8 @@ runcaml:
 test: tests.native
 	./tests.native
 
+docs: gen_docs.native
+	./gen_docs.native
+	make -C docs html
+
 .PHONY: $(RELEASE) clean runcaml

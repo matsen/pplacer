@@ -6,10 +6,14 @@
 Welcome to pplacer's documentation!
 ===================================
 
-Contents:
+The pplacer program consists of two binaries: pplacer and guppy.
 
 .. toctree::
    :maxdepth: 2
+
+   pplacer
+   guppy
+
 
 Indices and tables
 ==================

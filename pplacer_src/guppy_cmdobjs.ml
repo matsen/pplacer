@@ -39,7 +39,6 @@ object
   )
 end
 
-(* is this dependency goiung to be scary *)
 class refpkg_cmd () =
 object
   val refpkg_path = flag "-c"

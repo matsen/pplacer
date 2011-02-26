@@ -13,7 +13,8 @@ let print_avail_cmds prg_name (display_map, longest) =
   List.iter
     (fun (name, map) ->
       Printf.printf "  %s\n" name;
-      StringMap.iter (fun k v -> Printf.printf "    %-*s  %s\n" longest k (v ())#desc) map;
+      StringMap.iter
+        (fun k v -> Printf.printf "    %-*s  %s\n" longest k (v ())#desc) map;
       Printf.printf "\n"
     )
     display_map;
