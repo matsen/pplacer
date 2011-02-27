@@ -1,6 +1,5 @@
 
-`kr` is a fantastic command-- truly amazing.
-It calculates the Katorovich-Rubinstein distance
+`kr` calculates the Katorovich-Rubinstein distance between collections of placements (given by their place files).
 
 .. math::
 
@@ -20,4 +19,3 @@ for :math:`0 < p < \infty` we have the distances
     Z_p(P,Q) = 
     \left[\int_T \left| P(\tau(y)) - Q(\tau(y)) \right|^p \, \lambda(dy)\right]^{\frac{1}{p} \wedge 1}
 
-Wow!

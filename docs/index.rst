@@ -6,7 +6,10 @@
 Welcome to pplacer's documentation!
 ===================================
 
-The pplacer program consists of two binaries: pplacer and guppy.
+The pplacer suite consists of two separate binaries: pplacer and guppy.
+The pplacer binary actually does phylogenetic placement and produces place files, while guppy does all of the downstream analysis. 
+Guppy can do many different things via its subcommand interface, from compressing place files to statistical comparative analysis.
+Use the links below to find out more.
 
 .. toctree::
    :maxdepth: 2
