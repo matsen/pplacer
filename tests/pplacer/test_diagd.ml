@@ -1,8 +1,8 @@
 open OUnit
 open Test_util
 
-open Diagd
-open Fam_gsl_matvec
+open Diagd;;
+open Fam_gsl_matvec;;
 
 let b = Gsl_matrix.of_arrays [|[|-. 1.; 0.15|];[|0.15; -.2.|]|];;
 let d = Gsl_vector.of_array [|0.25; 0.75|];;
@@ -38,15 +38,27 @@ let test_multi_exp _ =
     (matrices_approximately_equal exp4 (Tensor.BA3.slice_left_2 t 1)));
   ()
 
+let column_sums_one m =
+  try
+    let (rows,cols) = Gsl_matrix.dims m in
+    for j=0 to cols-1 do
+      let sum = ref 0. in
+      for i=0 to rows-1 do
+        sum := !sum +. m.{i,j}
+      done;
+      if not (approximately_equal 1. !sum) then raise Exit
+    done;
+    true
+  with
+  | Exit -> false
 
-let noep = normed_of_exchangeable_pair b d;;
-to_matrix noep;;
-to_exp noep 1.;;
-
-
+let test_normed_of_exchangeable_pair _ =
+  let noep = normed_of_exchangeable_pair b d in
+  "column_sums_one" @? column_sums_one (to_exp noep 1.)
 
 let suite = [
   "dediag" >:: test_dediag;
   "to_exp" >:: test_to_exp;
   "multi_exp" >:: test_multi_exp;
+  "not_transpose" >:: test_normed_of_exchangeable_pair;
 ]
