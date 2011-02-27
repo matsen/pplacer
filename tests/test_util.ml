@@ -17,6 +17,19 @@ let pres_of_dir which =
 
 let approximately_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
+let vectors_approximately_equal ?(epsilon = 1e-5) v1 v2 =
+  let dim = Gsl_vector.length v1 in
+  try
+    assert(dim = Gsl_vector.length v2);
+    for i=0 to dim-1 do
+      if not (approximately_equal ~epsilon v1.{i} v2.{i}) then raise Exit
+    done;
+    true
+  with
+  | Exit -> false
+
+let ( *=* ) = vectors_approximately_equal
+
 let matrices_approximately_equal ?(epsilon = 1e-5) m1 m2 =
   let (rows,cols) as dim1 = Gsl_matrix.dims m1 in
   try
