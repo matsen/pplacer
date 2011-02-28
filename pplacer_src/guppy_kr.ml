@@ -29,7 +29,7 @@ let make_shuffled_pres rng transform n_shuffles pre1 pre2 =
       Mokaphy_base.shuffle rng pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
-let pair_core rng transform p n_samples t pre1 pre2 =
+let pair_core ?(normal=false) rng transform p n_samples t pre1 pre2 =
   let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
   let original_dist = calc_dist pre1 pre2 in
   {
@@ -37,9 +37,12 @@ let pair_core rng transform p n_samples t pre1 pre2 =
     p_value =
       if 0 < n_samples then begin
         let shuffled_dists =
-          List.map
-            (fun (spre1,spre2) -> calc_dist spre1 spre2)
-            (make_shuffled_pres rng transform n_samples pre1 pre2)
+          if normal then (* use normal approximation *)
+            Normal_approx.normal_pair_approx rng n_samples p t pre1 pre2
+          else
+            List.map
+              (fun (spre1,spre2) -> calc_dist spre1 spre2)
+              (make_shuffled_pres rng transform n_samples pre1 pre2)
         in
         Some
           (Mokaphy_base.list_onesided_pvalue
@@ -72,6 +75,9 @@ object (self)
         calculate distance only). Default is %d."))
   val verbose = flag "--verbose"
     (Plain (false, "Verbose running."))
+  val normal = flag "--normal"
+    (Plain (false, "Use the Gaussian process approximation for p-value \
+        estimation"))
 
   method specl =
     super_mass#specl
@@ -84,6 +90,7 @@ object (self)
       toggle_flag density;
       int_flag n_samples;
       toggle_flag verbose;
+      toggle_flag normal;
     ]
 
   method desc =
@@ -117,7 +124,10 @@ object (self)
             Printf.sprintf "comparing %s with %s"
               (Placerun.get_name pra.(i)) (Placerun.get_name pra.(j))
           in
-          try pair_core rng transform p n_samples t prea.(i) prea.(j) with
+          try
+            pair_core ~normal:(fv normal) rng transform
+                      p n_samples t prea.(i) prea.(j)
+          with
           | Kr_distance.Invalid_place_loc a ->
               invalid_arg
               (Printf.sprintf

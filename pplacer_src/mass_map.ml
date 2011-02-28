@@ -3,6 +3,9 @@
  * which would mean that we could decide on a transform once and then have that
  * be fixed for the life of the Pre. That would be convenient, but would make
  * bootstrapping, etc, impossible.
+ *
+ * Bootstraping, etc, is also the reason why we have mass_units and multimuls
+ * not squashed into a single data type.
 *)
 
 open MapsSets
@@ -22,19 +25,19 @@ module Pre = struct
 
   type mass_unit =
     {
-      loc : int;
-      distal_bl : float;
-      mass : float;
+      loc: int;
+      distal_bl: float;
+      mass: float;
     }
 
   let scale_mu scalar mu = {mu with mass = scalar *. mu.mass}
 
   type multimul = {
     (* multiplicity *)
-    multi : int;
+    multi: int;
     (* mul is Mass Unit List *)
     (* list across mass for a given placement. *)
-    mul : mass_unit list;
+    mul: mass_unit list;
     }
 
   let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0.

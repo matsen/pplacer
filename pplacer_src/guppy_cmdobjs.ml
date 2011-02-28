@@ -94,7 +94,7 @@ end
 
 class kr_cmd () =
 object
-  val p_exp = flag "--exp"
+  val p_exp = flag "-p"
     (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
   method specl = [ float_flag p_exp; ]
 end

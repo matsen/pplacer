@@ -6,6 +6,10 @@
 
 open MapsSets
 open Fam_batteries
+open Mass_map
+
+(* for the time being, we interpret multiplicity literally *)
+let transform = Mass_map.no_transform
 
 exception Avg_weight_not_one of float
 
@@ -19,6 +23,7 @@ type labeled_mass = { pquery_num: int ;
 type calc_intermediate = { omega: float ref;   (* weighted sum of normals *)
                            sigma: float ref; } (* sum of weights *)
 
+(* getters to avoid references *)
 let get_omega i = !(i.omega)
 let get_sigma i = !(i.sigma)
 
@@ -31,48 +36,33 @@ let intermediate_sum i1 i2 =
 let intermediate_list_sum =
   ListFuns.complete_fold_left intermediate_sum
 
-let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
-  let np1 = Placerun.n_pqueries pr1
-  and np2 = Placerun.n_pqueries pr2 in
-  let int_inv x = 1. /. (float_of_int x)
-  and ref_tree = Placerun.get_same_tree pr1 pr2 in
-  let labeled_mass_arr = Array.make (1+Gtree.top_id ref_tree) []
+(* recall that transform is globally set up top for the time being *)
+let normal_pair_approx rng n_samples p t pre1 pre2 =
+  let np1 = List.length pre1
+  and np2 = List.length pre2
+  and int_inv x = 1. /. (float_of_int x)
+  in
+  let labeled_mass_arr = Array.make (1+Gtree.top_id t) []
   and pquery_counter = ref 0
   and front_coeff = sqrt(int_inv(np1 * np2))
   and sample = Array.make (np1 + np2) 0.
   in
   (* initialize the labeled_mass_arr array *)
   List.iter
-    (fun pr ->
-      List.iter
-        (fun pquery ->
-          (match weighting with
-          | Mass_map.Weighted ->
-  (* this is not too elegant. because of roundoff in reading and writing the
-   * placements, we have to re-normalize the masses so that we get a nice tidy
-   * sum*)
-              let pl = Pquery.place_list pquery in
-              ListFuns.iter2
-                (fun p mass ->
-                  let edge_num = Placement.location p in
-                  labeled_mass_arr.(edge_num) <-
-                    (Placement.distal_bl p,
-                    { pquery_num = !pquery_counter;
-                    mass = mass })
-                    :: (labeled_mass_arr.(edge_num)))
-                pl
-                (Base.normalized_prob (List.map criterion pl));
-          | Mass_map.Unweighted ->
-              let p = Pquery.best_place criterion pquery in
-              let edge_num = Placement.location p in
-              labeled_mass_arr.(edge_num) <-
-                (Placement.distal_bl p,
-                { pquery_num = !pquery_counter;
-                mass = 1. })
-                :: (labeled_mass_arr.(edge_num)));
-          incr pquery_counter)
-        (Placerun.get_pqueries pr))
-    [pr1; pr2];
+    (List.iter
+      (fun multimul ->
+        let trans_multi = transform multimul.Pre.multi in
+        List.iter
+          (fun mu ->
+            labeled_mass_arr.(mu.Pre.loc) <-
+              (mu.Pre.distal_bl,
+              { pquery_num = !pquery_counter;
+              mass = trans_multi *. mu.Pre.mass })
+              :: (labeled_mass_arr.(mu.Pre.loc)))
+          multimul.Pre.mul;
+        incr pquery_counter))
+    [pre1; pre2];
+  (* sort along the edge *)
   for i=0 to (Array.length labeled_mass_arr) - 1 do
     labeled_mass_arr.(i) <-
       List.sort
@@ -104,7 +94,7 @@ let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
       let edge_total id =
         Kr_distance.total_along_edge
           (to_xi_p p)
-          (Gtree.get_bl ref_tree id)
+          (Gtree.get_bl t id)
           labeled_mass_arr.(id)
           update_data
       (* make sure that the average weight totals to one *)
@@ -119,5 +109,5 @@ let normal_pair_approx rng weighting criterion n_samples p pr1 pr2 =
           check_final_data
           intermediate_list_sum
           (fun () -> { omega = ref 0.; sigma = ref 0.; })
-          ref_tree)
+          t)
         ** (Kr_distance.outer_exponent p))
