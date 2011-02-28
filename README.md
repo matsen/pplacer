@@ -4,6 +4,8 @@
 `pplacer` places reads on a phylogenetic tree. 
 `guppy` (Grand Unified Phylogenetic Placement Yanalyzer) analyzes them.
 
+* [project webpage](http://matsen.fhcrc.org/pplacer/)
+* [binaries](http://matsen.fhcrc.org/pplacer/download.html)
 * [compilation instructions](http://matsen.fhcrc.org/pplacer/compile.html)
 * [a usage example](http://github.com/fhcrc/microbiome-demo)
 
