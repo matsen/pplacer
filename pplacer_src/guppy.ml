@@ -14,6 +14,7 @@ let command_list () =
     (* making visualizations *)
     "placeviz", [
       "fat", (fun () -> new Guppy_fat.cmd ());
+      "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
     ];
 
     (* mokaphy stuff *)

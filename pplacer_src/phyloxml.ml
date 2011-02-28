@@ -63,9 +63,12 @@ let load fname =
 let xml_of_pxdata pxd =
   Xml.Element("phyloxml", phyloxml_attrs @ pxd.data_attribs, List.map xml_of_pxtree pxd.trees)
 
+let pxdata_to_channel ch pxd =
+  Printf.fprintf ch "%s\n" (Xml.to_string_fmt (xml_of_pxdata (pxd)))
+
 let pxdata_to_file fname pxd =
   let ch = open_out fname in
-  Printf.fprintf ch "%s\n" (Xml.to_string_fmt (xml_of_pxdata (pxd)));
+  pxdata_to_channel ch pxd;
   close_out ch
 
 let echo fname =
