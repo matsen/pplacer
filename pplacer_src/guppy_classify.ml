@@ -90,7 +90,8 @@ object
       toggle_flag use_pp;
     ]
 
-  method desc = "Classify a placerun using the designated refpkg in a way designed to go into SQL."
+  method desc =
+"outputs classification information in a tabular format"
   method usage = "usage: classify [options] placefile[s]"
 
   method private placefile_action prl =

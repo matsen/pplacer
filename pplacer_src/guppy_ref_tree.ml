@@ -2,7 +2,10 @@ open Guppy_cmdobjs
 open Subcommand
 
 let trees_of_refpkg path =
-  let prefix = Mokaphy_common.chop_suffix_if_present path ".refpkg" in
+  let prefix =
+    Mokaphy_common.chop_suffix_if_present
+      (Refpkg_parse.remove_terminal_slash path) ".refpkg"
+  in
   match Refpkg.refpkgo_of_path path with
   | None -> []
   | Some rp ->
@@ -21,8 +24,7 @@ object
   method specl = super_outfile#specl @ super_refpkg#specl
 
   method desc =
-    "generates a taxonomically annotated reference tree and an \
-    induced taxonomic tree in phyloXML format"
+"writes a taxonomically annotated reference tree and an induced taxonomic tree"
   method usage = "usage: ref_tree -o my.xml my1.refpkg [my2.refpkg ...]"
 
   method action pathl =

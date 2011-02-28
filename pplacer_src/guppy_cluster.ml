@@ -100,7 +100,8 @@ object (self)
       string_flag tax_cluster_mode
     ]
 
-  method desc = "makes a hierarchical cluster of the placeruns"
+  method desc =
+"performs squash clustering"
   method usage = "usage: cluster [options] placefiles"
 
   method private placefile_action prl =

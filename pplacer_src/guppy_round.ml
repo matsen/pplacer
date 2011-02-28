@@ -97,7 +97,8 @@ object
     float_flag cutoff;
   ]
 
-  method desc = "clusters the placements by rounding"
+  method desc =
+"clusters the placements by rounding branch lengths"
   method usage = "usage: round [options] placefile[s]"
 
   method private placefile_action prl =

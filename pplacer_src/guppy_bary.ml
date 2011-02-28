@@ -35,7 +35,8 @@ object (self)
       string_flag outfile;
     ]
 
-  method desc = "draws the barycenter of a placement collection on the reference tree"
+  method desc =
+"draws the barycenter of a placement collection on the reference tree"
   method usage = "usage: bary [options] placefile[s]"
 
   method private placefile_action prl =

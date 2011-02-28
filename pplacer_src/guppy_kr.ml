@@ -86,7 +86,8 @@ object (self)
       toggle_flag verbose;
     ]
 
-  method desc = "runs KR analyses, including significance estimation"
+  method desc =
+"calculates the Kantorovich-Rubinstein distance and corresponding p-values"
   method usage = "usage: kr [options] placefiles"
 
   method private placefile_action prl =

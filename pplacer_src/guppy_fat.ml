@@ -23,7 +23,8 @@ object (self)
       float_flag log_coeff;
     ]
 
-  method desc = "make fat trees"
+  method desc =
+"makes trees with edges fattened in proportion to the number of reads"
   method usage = "usage: fat [options] placefile[s]"
 
   method private total_mass_width total_multiplicity =

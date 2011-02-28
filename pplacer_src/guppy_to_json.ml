@@ -8,7 +8,8 @@ object
 
   method specl = []
 
-  method desc = "converts .place files to .place.json files."
+  method desc =
+"converts .place files to .json files"
   method usage = "usage: to_json placefile[s]"
 
   method private placefile_action prl =

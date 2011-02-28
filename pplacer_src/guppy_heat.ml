@@ -159,7 +159,8 @@ object (self)
       float_flag max_width;
     ]
 
-  method desc = "makes a heat tree given two placefiles"
+  method desc =
+"makes a heat tree"
   method usage = "usage: heat [options] ex1.place ex2.place"
 
   method private placefile_action = function

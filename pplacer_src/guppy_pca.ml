@@ -139,7 +139,8 @@ object (self)
       float_flag multiplier;
     ]
 
-  method desc = "does PCA, and makes lovely trees"
+  method desc =
+"performs edge principal components"
   method usage = "usage: pca [options] placefiles"
 
   method private placefile_action prl =
