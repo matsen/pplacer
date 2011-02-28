@@ -29,28 +29,6 @@ let make_shuffled_pres rng transform n_shuffles pre1 pre2 =
       Mokaphy_base.shuffle rng pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
-let pair_core ?(normal=false) rng transform p n_samples t pre1 pre2 =
-  let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
-  let original_dist = calc_dist pre1 pre2 in
-  {
-    distance = original_dist;
-    p_value =
-      if 0 < n_samples then begin
-        let shuffled_dists =
-          if normal then (* use normal approximation *)
-            Normal_approx.normal_pair_approx rng n_samples p t pre1 pre2
-          else
-            List.map
-              (fun (spre1,spre2) -> calc_dist spre1 spre2)
-              (make_shuffled_pres rng transform n_samples pre1 pre2)
-        in
-        Some
-          (Mokaphy_base.list_onesided_pvalue
-            shuffled_dists
-            original_dist)
-      end
-      else None;
-  }
 
 
 (* core
@@ -69,7 +47,8 @@ object (self)
   val list_output = flag "--list-out"
     (Plain (false, "Output the KR results as a list rather than a matrix."))
   val density = flag "--density"
-    (Plain (false, "write out a shuffle density data file for each pair."))
+    (Plain (false, "Make density plots showing the distribution of randomized \
+        values with the calculated values"))
   val n_samples = flag "-s"
     (Formatted (1, "Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is %d."))
@@ -97,6 +76,33 @@ object (self)
 "calculates the Kantorovich-Rubinstein distance and corresponding p-values"
   method usage = "usage: kr [options] placefiles"
 
+
+  (* we don't call self#rng to avoid re-seeding the rng *)
+  method private pair_core rng transform n_samples t name1 pre1 name2 pre2 =
+  let p = fv p_exp in
+  let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
+  let original_dist = calc_dist pre1 pre2 in
+  {
+    distance = original_dist;
+    p_value =
+      if 0 < n_samples then begin
+        let null_dists =
+          if fv normal then (* use normal approximation *)
+            Normal_approx.normal_pair_approx rng n_samples p t pre1 pre2
+          else
+            List.map
+              (fun (spre1,spre2) -> calc_dist spre1 spre2)
+              (make_shuffled_pres rng transform n_samples pre1 pre2)
+        in
+        if fv density then R_plots.write_density p name1 name2 original_dist null_dists;
+        Some
+          (Mokaphy_base.list_onesided_pvalue
+            null_dists
+            original_dist)
+      end
+      else None;
+  }
+
   method private placefile_action prl =
     if List.length prl < 2 then
       invalid_arg "can't do KR with fewer than two place files";
@@ -116,17 +122,15 @@ object (self)
     (* in the next section, pre_f is a function which takes a pr and makes a pre,
      * and t is a gtree *)
     let uptri_of_t_pre_f (t, pre_f) =
-      let prea = Array.map pre_f pra in
+      let prea = Array.map pre_f pra
+      and namea = Array.map Placerun.get_name pra
+      in
       Uptri.init
         (Array.length prea)
         (fun i j ->
-          let context =
-            Printf.sprintf "comparing %s with %s"
-              (Placerun.get_name pra.(i)) (Placerun.get_name pra.(j))
-          in
+          let context = Printf.sprintf "comparing %s with %s" namea.(i) namea.(j) in
           try
-            pair_core ~normal:(fv normal) rng transform
-                      p n_samples t prea.(i) prea.(j)
+            self#pair_core rng transform n_samples t namea.(i) prea.(i) namea.(j) prea.(j)
           with
           | Kr_distance.Invalid_place_loc a ->
               invalid_arg
