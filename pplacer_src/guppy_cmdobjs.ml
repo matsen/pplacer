@@ -40,21 +40,24 @@ object
 end
 
 class refpkg_cmd () =
-object
+object(self)
   val refpkg_path = flag "-c"
     (Needs_argument ("reference package path", "Reference package path. Required."))
   method specl = [ string_flag refpkg_path; ]
 
-  method private get_rpo_tree pr =
+  method private get_rpo = Refpkg.refpkgo_of_path (fv refpkg_path)
+
+  method private check_rpo_tree name t =
+    match self#get_rpo with
+    | None -> ()
+    | Some rp -> Refpkg.check_tree_approx rp name t
+
+  method private get_rpo_and_tree pr =
     let alt_tree = Decor_gtree.of_newick_gtree pr.Placerun.ref_tree in
-    match Refpkg.refpkgo_of_path (fv refpkg_path) with
+    match self#get_rpo with
       | None -> (None, alt_tree)
       | Some rp ->
-        Refpkg.check_tree_identical
-          ~epsilon:1e-5
-          (pr.Placerun.name^" reference tree")
-          (Placerun.get_ref_tree pr)
-          rp;
+        Refpkg.pr_check_tree_approx rp pr;
         if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
         else (None, alt_tree)
 end

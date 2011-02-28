@@ -38,7 +38,7 @@ object (self)
     List.iter
       (fun fname ->
         let pr = Placerun_io.filtered_of_file fname in
-        let (tax_rp_opt, final_rt) = self#get_rpo_tree pr
+        let (tax_rp_opt, final_rt) = self#get_rpo_and_tree pr
         and mass_width = self#total_mass_width (Placerun.total_multiplicity pr)
         in
         Phyloxml.named_gtrees_to_file
