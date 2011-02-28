@@ -1,7 +1,3 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *)
-
 open Fam_batteries
 open MapsSets
 
@@ -56,14 +52,32 @@ let to_file invocation out_fname placerun =
   (* we do the following to write a tree with the node numbers in place of
    * the bootstrap values, and at @ at the end of the taxon names *)
   Printf.fprintf ch "# numbered reference tree: %s\n"
-    (Newick.to_string (Newick.to_numbered ref_tree));
-  Printf.fprintf ch "# reference tree: %s\n" (Newick.to_string ref_tree);
+    (Newick_gtree.to_string (Newick_gtree.to_numbered ref_tree));
+  Printf.fprintf ch "# reference tree: %s\n" (Newick_gtree.to_string ref_tree);
   write_by_best_loc
     Placement.ml_ratio
     ch
     placerun;
   close_out ch
 
+let to_json_file invocation out_fname placerun =
+  let ret = Hashtbl.create 8
+  and meta = Hashtbl.create 16
+  and ref_tree = Placerun.get_ref_tree placerun
+  and pqueries = Placerun.get_pqueries placerun in
+  Hashtbl.add meta "invocation" (Jsontype.String invocation);
+  Hashtbl.add ret "metadata" (Jsontype.Object meta);
+
+  let has_classif = ref false in
+  Hashtbl.add ret "placements" (Jsontype.Array (Array.map (Pquery_io.to_json has_classif) (Array.of_list pqueries)));
+  Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) (
+    Array.append
+      [| "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"; |]
+      (if !has_classif then [| "classification" |] else [||])
+  )));
+  Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
+  Hashtbl.add ret "version" (Jsontype.Int 1);
+  Json.to_file out_fname (Jsontype.Object ret)
 
 (* ***** READING ***** *)
 
@@ -100,7 +114,7 @@ let prefs_and_rt_of_header hlines =
           post_invocation
       in
       (prefs,
-        Newick.of_string (Str.matched_group 1 tree_line))
+        Newick_gtree.of_string (Str.matched_group 1 tree_line))
     end
   with
   | Scanf.Scan_failure s ->
@@ -143,34 +157,51 @@ let of_file ?load_seq:(load_seq=true) place_fname =
     (get_pqueries [])
 
 
+
+let of_json_file fname =
+  let json = Jsontype.obj (Json.of_file fname) in
+  let fields = Array.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
+  let pqa = Array.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
+  let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
+  Placerun.make
+    ref_tree
+    (Prefs.defaults ())
+    (Filename.chop_extension (Filename.basename fname))
+    (Array.to_list pqa)
+
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
 
-let csv_output_fmt_str =
-  R_csv.strl_to_str
-    (List.map R_csv.quote
-      [
-        "name";
-        "hit";
-        "location";
-        "ml_ratio";
-        "post_prob";
-        "log_like";
-        "marginal_prob";
-        "distal_bl";
-        "pendant_bl";
-        "contain_classif";
-        "classif"
-        ])
+let csv_col_names =
+  [
+    "name";
+    "hit";
+    "location";
+    "ml_ratio";
+    "post_prob";
+    "log_like";
+    "marginal_prob";
+    "distal_bl";
+    "pendant_bl";
+    "contain_classif";
+    "classif";
+  ]
 
-let write_csv ch pr =
-  Printf.fprintf ch "%s\n" csv_output_fmt_str;
-  List.iter (Pquery_io.write_csv ch) (Placerun.get_pqueries pr)
+let to_csv_strl pr =
+  List.flatten (List.map Pquery_io.to_csv_strl pr.Placerun.pqueries)
 
 let to_csv_file out_fname pr =
-  let ch = open_out out_fname in
-  write_csv ch pr;
-  close_out ch
+  Csv.save out_fname (csv_col_names::(to_csv_strl pr))
 
 let ppr_placerun ff pr =
   Format.fprintf ff "Placerun %s" pr.Placerun.name
 
+let of_any_file fname =
+  if Filename.check_suffix fname ".place" then
+    of_file fname
+  else if Filename.check_suffix fname ".json" then
+    of_json_file fname
+  else
+    failwith ("unfamiliar suffix on " ^ fname)
+
+let filtered_of_file ?verbose:(verbose=true) fname =
+  Placerun.filter_unplaced ~verbose (of_any_file fname)

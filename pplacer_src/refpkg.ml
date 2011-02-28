@@ -1,7 +1,3 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
-*)
-
 open MapsSets
 
 exception Missing_element of string
@@ -50,22 +46,32 @@ let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
-(* NOTE: once parsing of stats files is deprecated, we can set the prefs
- * directly, rather than doing this. *)
-let build_model stats_fname ref_align =
+(* deprecated now *)
+let model_of_stats_fname stats_fname ref_align =
   let prefs = Prefs.defaults () in
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
+(* this is the primary builder. *)
 let of_strmap m =
   let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
   let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
-  let lref_tree = lazy (Newick.of_file (get "tree_file"))
+  let lref_tree = lazy (Newick_gtree.of_file (get "tree_file"))
   and lmodel =
-      lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));
+      lazy
+        (let aln = Lazy.force lfasta_aln in
+        if StringMap.mem "phylo_model_file" m then
+          Model.of_json (StringMap.find "phylo_model_file" m) aln
+        else begin
+          print_endline
+            "Warning: using a statistics file directly is now deprecated. \
+            We suggest using a reference package. If you already are, then \
+            please use the latest version of taxtastic.";
+          model_of_stats_fname (get "tree_stats") aln
+        end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in
@@ -98,8 +104,6 @@ let refpkgo_of_path = function
 
 
 (* *** ACCESSORIES *** *)
-
-(* these should be light enough that it's not worth making them lazy *)
 
 (* mrca tax decor, that is *)
 let get_tax_decor_map rp =
@@ -162,4 +166,16 @@ let check_refpkg rp =
     | Missing_element _ ->
         print_OK "Non-taxonomically-informed reference package " rp
 
+(* check that a given tree t is the same as the ref tree in the refpkg rp. 
+ * Note that we don't check bootstraps. *)
+let check_tree_identical ?epsilon:(epsilon=0.) rp title t =
+  if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then
+    failwith (title^" and the tree from "^(get_name rp)^" are not the same.")
 
+let check_tree_approx = check_tree_identical ~epsilon:1e-5
+
+let pr_check_tree_approx rp pr =
+  check_tree_approx
+    rp
+    (pr.Placerun.name^" reference tree")
+    (Placerun.get_ref_tree pr)

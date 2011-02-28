@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * For parsing refdata files.
+(* For parsing refdata files.
 *)
 
 open Tax_id
@@ -22,6 +19,12 @@ let tax_id_by_name sim s =
 
 
 (* *** reading *** *)
+
+let entry_of_str = function
+  | "" -> None
+  | "NA" -> None
+  | s -> Some s
+
 (* requires "seqname" and "tax_id" columns, "accession"
  * "tax_name","isType","ok","i","outlier","selected","label" *)
 let of_csv fname =
@@ -36,9 +39,9 @@ let of_csv fname =
         StringMapFuns.check_add
           seqname_str
           {
-            tax_id = NCBI (safe_assoc "tax_id" al);
+            tax_id = TaxStr (safe_assoc "tax_id" al);
             accession =
-              try R_csv.entry_of_str (List.assoc "accession" al) with
+              try entry_of_str (List.assoc "accession" al) with
               | Not_found -> None
           }
           sim

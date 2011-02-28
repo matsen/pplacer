@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * functions to iterate over a fasta file
+(* functions to iterate over a fasta file
 *)
 
 open MapsSets
@@ -102,6 +99,14 @@ let gen_fold next_fun f start ch =
 
 let name_fold f start ch = gen_fold next_name f start ch
 let named_seq_fold f start ch = gen_fold next_named_seq f start ch
+
+let to_list ch = named_seq_fold (fun ns accu -> ns::accu) [] ch
+
+let list_of_fname fname =
+  let ch = of_fname fname in
+  let l = to_list ch in
+  close ch;
+  l
 
 (* *** other functions *** *)
 let size_checking_for_duplicate_names ch =

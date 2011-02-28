@@ -1,7 +1,3 @@
-(* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
- * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *)
-
 open MapsSets
 open Fam_batteries
 
@@ -69,16 +65,16 @@ let v_list_sum = function
  * http://en.wikipedia.org/wiki/Random_permutation
  * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
  *)
-let shuffle a =
+let shuffle rng a =
   let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
   for i = Array.length a - 1 downto 1 do
-    swap i (Random.int (i+1))
+    swap i (Gsl_rng.uniform_int rng (i+1))
   done
 
 (* make an integer permutation *)
-let perm n =
+let perm rng n =
   let a = Array.init n (fun i -> i) in
-  shuffle a;
+  shuffle rng a;
   a
 
 (* make a min to max array such that their differences in sequence are evenly

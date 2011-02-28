@@ -1,6 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
+(* 
  * a placerun is a data structure representing a single pplacer run.
 *)
 
@@ -59,7 +57,7 @@ let get_same cmp get_thing thing_name pr1 pr2 =
         thing_name (get_name pr1) (get_name pr2))
 
 let get_same_tree pr1 pr2 =
-  get_same Newick.compare get_ref_tree "Reference tree" pr1 pr2
+  get_same Newick_gtree.compare get_ref_tree "Reference tree" pr1 pr2
 let get_same_prefs pr1 pr2 =
   get_same compare get_prefs "Pref" pr1 pr2
 
@@ -87,11 +85,11 @@ let warn_about_duplicate_names placerun =
   in
   ()
 
-let filter_unplaced ?verbose:(verbose=false) pr =
+let filter_unplaced ?verbose:(verbose=true) pr =
   let (placed_l, unplaced_l) =
     List.partition Pquery.is_placed (get_pqueries pr) in
-  if verbose && placed_l <> [] then
-    Printf.printf "Filtering %d unplaced sequences from %s...\n"
+  if verbose && unplaced_l <> [] then
+    Printf.printf "Warning: Ignoring %d unplaced sequences from %s...\n"
       (List.length unplaced_l)
       (get_name pr);
   { pr with pqueries = placed_l }
@@ -119,9 +117,11 @@ let cutoff_filter make_name cutoff_fun =
 
 let re_matches rex s = Str.string_match rex s 0
 
+exception Unimplemented of string
+
 let warn_about_multiple_matches rex_list placerun =
   let (_,_) = (rex_list, placerun) in
-  raise (Base.Unimplemented "warn_about_multiple_matches")
+  raise (Unimplemented "warn_about_multiple_matches")
   (*
   List.iter
     (fun s ->
@@ -133,7 +133,7 @@ let warn_about_multiple_matches rex_list placerun =
 
 let multifilter_by_regex named_regex_list placerun =
   let _ = (placerun,named_regex_list) in
-  raise (Base.Unimplemented "multifilter_by_regex")
+  raise (Unimplemented "multifilter_by_regex")
   (*
   multifilter
     (List.map

@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *
- * this simply contains the information about the Markov process corresponding
+(* this simply contains the information about the Markov process corresponding
  * to the model.
  *
  * we also include matrices mats which can be used as scratch to avoid having to
@@ -39,7 +36,7 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
       | Some transitions ->
           (Nuc_models.b_of_trans_vector transitions,
           Alignment_funs.emper_freq 4 Nuc_models.nuc_map ref_align)
-      | None -> assert(false))
+      | None -> failwith "GTR specified but no substitution rates given.")
     else
       (Alignment.Protein_seq,
         let model_trans, model_statd =
@@ -78,6 +75,37 @@ let of_prefs ref_dir_complete prefs ref_align =
     ref_align
     (Gamma.discrete_gamma
       (Prefs.gamma_n_cat prefs) (Prefs.gamma_alpha prefs))
+
+let of_json json_fname ref_align =
+  let o = Simple_json.of_file json_fname in
+  let model_name = (Simple_json.find_string o "subs_model") in
+  if Alignment_funs.is_nuc_align ref_align && model_name <> "GTR" then
+    failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
+  if "gamma" <> Simple_json.find_string o "ras_model" then
+    failwith "For the time being, we only support gamma rates-across-sites model.";
+  let gamma_o = Simple_json.find o "gamma" in
+  let opt_transitions =
+    if Simple_json.mem o "subs_rates" then begin
+      let subs_rates_o = Simple_json.find o "subs_rates" in
+      Some [|
+        Simple_json.find_float subs_rates_o "ac";
+        Simple_json.find_float subs_rates_o "ag";
+        Simple_json.find_float subs_rates_o "at";
+        Simple_json.find_float subs_rates_o "cg";
+        Simple_json.find_float subs_rates_o "ct";
+        Simple_json.find_float subs_rates_o "gt";
+      |]
+    end
+    else None
+  in
+  build
+    model_name
+    (Simple_json.find_bool o "empirical_frequencies")
+    opt_transitions
+    ref_align
+    (Gamma.discrete_gamma
+      (Simple_json.find_int gamma_o "n_cats")
+      (Simple_json.find_float gamma_o "alpha"))
 
 (* prepare the tensor for a certain branch length *)
 let prep_tensor_for_bl model bl =

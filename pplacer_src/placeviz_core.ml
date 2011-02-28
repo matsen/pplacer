@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * the actual functionality of placeviz
+(* the actual functionality of placeviz
 *)
 
 type tree_fmt = Newick | Phyloxml
@@ -23,7 +20,7 @@ let widthl_of_mass log_coeff mass_width mass =
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees =
   match tree_fmt with
-  | Newick -> Newick.tree_list_to_file trees (prefix^".tre")
+  | Newick -> Newick_gtree.tree_list_to_file trees (prefix^".tre")
   | Phyloxml ->
     let pd = Phyloxml.pxdata_of_gtrees trees in
     Phyloxml.pxdata_to_file (prefix^".xml") pd
@@ -182,6 +179,7 @@ let write_fat_tree
     (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
   in Phyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
 
+  (*
 (* edpl trees *)
 let edpl_tree white_bg
       weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree pr =
@@ -202,3 +200,4 @@ let write_edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl 
     (fname_base ^ ".epdl")
     (edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree placerun)
   in Phyloxml.pxdata_to_file (fname_base ^ ".epdl.xml") pd
+*)

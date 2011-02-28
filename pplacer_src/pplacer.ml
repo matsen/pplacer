@@ -1,6 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
-*)
+(* "main" *)
 
 open Fam_batteries
 open MapsSets
@@ -22,19 +20,7 @@ let () =
   if not !Sys.interactive then begin
     let (files, prefs) = parse_args () in
     Prefs.check prefs;
-    (* *********************************************************
-    if files = [] then begin
-      print_endline "Please specify some query sequences.";
-      exit 0;
-    end;
-    *)
-    if (Prefs.verb_level prefs) >= 1 then
-      Printf.printf
-        "Running pplacer %s analysis...\n"
-        Version.version_revision;
-    (* initialize the GSL error handler *)
     Gsl_error.init ();
-    (* check that the directories exist and get a good in path *)
     Check.directory (Prefs.out_dir prefs);
     let ref_dir_complete =
       match Prefs.ref_dir prefs with
@@ -177,19 +163,25 @@ let () =
             if not (Refpkg.tax_equipped rp) then pr
             else Refpkg.contain_classify rp pr
           and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
+          and invocation = (String.concat " " (Array.to_list Sys.argv))
           in
-          Placerun_io.to_file
-            (String.concat " " (Array.to_list Sys.argv))
-            (out_prefix^".place")
+          Placerun_io.to_json_file
+            invocation
+            (out_prefix ^ ".json")
             final_pr;
           if Prefs.csv prefs then
             Placerun_io.to_csv_file (out_prefix^".csv") final_pr;
+          if Prefs.old_format prefs then
+            Placerun_io.to_file
+              invocation
+              (out_prefix^".place")
+              final_pr;
         end)
       files;
     (* print final info *)
     if Prefs.verb_level prefs >= 1 then begin
       Common_base.print_elapsed_time ();
       Common_base.print_n_compactions ();
-    end;
-    exit 0
+      print_endline "";
+    end
   end

@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The tax_tree points from a tax_id to its ancestor.
+(* The tax_tree points from a tax_id to its ancestor.
  *
  * Note that taxonomic ranks decrease as one goes towards the ancestor.
  *
@@ -36,7 +33,7 @@ let get_n_ranks td = Array.length td.rank_names
 
 let get_tax_rank td ti =
   try TaxIdMap.find ti td.tax_rank_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_str ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_rank not known: "^(Tax_id.to_string ti))
 
 let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
@@ -48,7 +45,7 @@ let get_ancestor td ti =
 
 let get_tax_name td ti =
   try TaxIdMap.find ti td.tax_name_map with
-  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_str ti))
+  | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
 
 let get_lineage td ti =
   let rec aux accu ti' =
@@ -62,7 +59,7 @@ let add_lineage_to_tree_and_map (t,m) l =
     try TaxIdMapFuns.check_add k v m with
     | Failure _ ->
         failwith
-          ("Tax table broken: either "^(to_str k)^
+          ("Tax table broken: either "^(to_string k)^
           "is defined to have multiple ancestors, or it is found at multiple \
           taxonomic ranks.")
   in
@@ -107,10 +104,25 @@ let tax_line_of_strol = function
         exit(0);
     end
 
+(* if a list list is rectangular *)
+let list_list_is_rectangular = function
+  | x::l -> begin
+      try
+        let x_l = List.length x in
+        List.iter
+          (fun y -> if x_l <> List.length y then raise Exit)
+          l;
+        true
+      with
+      | Exit -> false
+    end
+  | [] -> true
+
 let of_ncbi_file fname =
-  let taxid_of_stro = ncbi_of_stro
-  and full_list = R_csv.list_list_of_file fname in
-  if not (R_csv.list_list_is_rectangular full_list) then
+  let taxid_of_stro = of_stro
+  and full_list =
+    List.map (List.map Tax_seqinfo.entry_of_str) (Csv.load fname) in
+  if not (list_list_is_rectangular full_list) then
     invalid_arg ("Array not rectangular: "^fname);
   match List.map tax_line_of_strol full_list with
   | names::lineage_data ->

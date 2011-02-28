@@ -1,9 +1,3 @@
-(* mokaphy v1.0. Copyright (C) 2010  Frederick A Matsen.
- * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *
- * Here we read in t
- *)
-
 open MapsSets
 module SSS = Cluster_common.StringSetSet
 
@@ -11,8 +5,8 @@ module SSS = Cluster_common.StringSetSet
  * trees, and ct_fname, which is the tree with the full data.
  * Write out an XML file with those bootstrap values. *)
 let decorate_tree cutoff boot_fname ct_fname =
-  let ct = Cluster_common.ensure_numbered (Newick.of_file ct_fname)
-  and boot_tl = Newick.list_of_file boot_fname
+  let ct = Cluster_common.ensure_numbered (Newick_gtree.of_file ct_fname)
+  and boot_tl = Newick_gtree.list_of_file boot_fname
   in
   let boot_sssl = List.map Cluster_common.sss_of_tree boot_tl
   and taxon_list t = List.map (Gtree.get_name t) (Gtree.leaf_ids t)

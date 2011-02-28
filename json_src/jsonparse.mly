@@ -7,17 +7,18 @@
   let escapes = Str.regexp "\\\\\\([\"\\\\/bfnrt]\\|u....\\)"
   let unquote tok s =
     let s = String.sub s 1 ((String.length s) - 2) in
-    Str.global_substitute escapes (function
-      | "\\\\" -> "\\"
-      | "\\\"" -> "\""
-      | "\\/" -> "/"
-      | "\\b" -> "\b"
-      | "\\f" -> "\012"
-      | "\\n" -> "\n"
-      | "\\r" -> "\r"
-      | "\\t" -> "\t"
-        (* no unicode escapes just yet. *)
-      | _ -> syntax_error tok "no unicode escapes"
+    Str.global_substitute escapes (fun s ->
+      match Str.replace_matched "\\1" s with
+        | "\\" -> "\\"
+        | "\"" -> "\""
+        | "/" -> "/"
+        | "b" -> "\b"
+        | "f" -> "\012"
+        | "n" -> "\n"
+        | "r" -> "\r"
+        | "t" -> "\t"
+          (* no unicode escapes just yet. *)
+        | _ -> syntax_error tok "no unicode escapes"
     ) s
 
   let add_to_hash h (s, v) = Hashtbl.add h s v; h

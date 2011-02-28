@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The bark for newick gtrees, i.e. trees that only have bl, name, and boot.
+(* The bark for newick gtrees, i.e. trees that only have bl, name, and boot.
 *)
 
 open Fam_batteries
@@ -77,12 +74,6 @@ class newick_bark arg =
         [Myxml.tag "confidence" ~attributes:[("type", "bootstrap")] (Printf.sprintf "%g" boot)]) boot
     end
 
-    method write_xml ch =
-      write_something_opt (Myxml.write_string "name") ch name;
-      write_something_opt (Myxml.write_float "branch_length") ch bl;
-      write_something_opt
-        (Myxml.write_float ~attrib:"type=\"bootstrap\"" "confidence") ch boot
-
     method to_numbered id =
       {< name = Some
                 (match name with
@@ -92,15 +83,26 @@ class newick_bark arg =
 
   end
 
-let compare b1 b2 =
+let float_approx_compare epsilon x y =
+  let diff = x -. y in
+  if abs_float diff <= epsilon then 0
+  else if diff < 0. then -1
+  else 1
+
+let floato_approx_compare epsilon a b =
+  match (a, b) with
+  | (Some x, Some y) -> float_approx_compare epsilon x y
+  | (a, b) -> Pervasives.compare a b
+
+let compare ?epsilon:(epsilon=0.) ?cmp_boot:(cmp_boot=true) b1 b2 =
+  let fc = floato_approx_compare epsilon in
   try
-    Base.raise_if_different compare b1#get_bl_opt b2#get_bl_opt;
+    Base.raise_if_different fc b1#get_bl_opt b2#get_bl_opt;
     Base.raise_if_different compare b1#get_name_opt b2#get_name_opt;
-    Base.raise_if_different compare b1#get_boot_opt b2#get_boot_opt;
+    if cmp_boot then Base.raise_if_different fc b1#get_boot_opt b2#get_boot_opt;
     0
   with
   | Base.Different c -> c
-
 
 let map_find_loose id m =
   if IntMap.mem id m then IntMap.find id m

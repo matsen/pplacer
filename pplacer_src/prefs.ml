@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *
- * preferences data type and function.
+(* preferences data type and functions.
  *)
 
 type prefs =
@@ -36,6 +33,7 @@ type prefs =
     write_masked : bool ref;
     only_write_best : bool ref;
     csv : bool ref;
+    old_format : bool ref;
     (* other *)
     friendly : bool ref;
     pretend : bool ref;
@@ -76,6 +74,7 @@ let defaults () =
     write_masked = ref false;
     only_write_best = ref false;
     csv = ref false;
+    old_format = ref false;
     (* other *)
     friendly = ref true;
     pretend = ref false;
@@ -114,6 +113,7 @@ let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
 let csv               p = !(p.csv)
+let old_format        p = !(p.old_format)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let friendly          p = !(p.friendly)
@@ -194,6 +194,8 @@ let args prefs =
     "Only check out the files then report. Do not run the analysis.";
     "--csv", Arg.Set prefs.csv,
     "Make a CSV file with the results.";
+    "--old-format", Arg.Set prefs.old_format,
+    "Make an old-format placefile with the resuls.";
     "--diagnostic", Arg.Set prefs.diagnostic,
     "Write out a file describing the 'diagnostic' mutations for various clades.";
   ]

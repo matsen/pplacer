@@ -18,3 +18,8 @@ let pres_of_dir which =
 let fabs x = if x > 0.0 then x else -. x;;
 
 let approximately_equal ?(epsilon = 1e-5) f1 f2 = fabs (f1 -. f2) < epsilon;;
+
+let gtree_equal g1 g2 =
+  if g1.Gtree.stree = g2.Gtree.stree then
+    MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
+  else false

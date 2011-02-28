@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *
- * functions for dealing with alignments, especially for likelihoods
+(* functions for dealing with alignments, especially for likelihoods
 *)
 
 open MapsSets
@@ -43,16 +40,16 @@ let makeAlnIndexMap taxonMap alnNameArr =
     failwith
       (Printf.sprintf "tree has %d taxa, and ref align has %d." n_tree n_aln);
   check_for_repeats alnNameArr;
-  IntMap.map (
-    fun taxName ->
+  IntMap.map
+    (fun taxName ->
       let outEdges = ArrayFuns.find_all_indices taxName alnNameArr in
       if List.length outEdges = 0 then
         failwith ("taxon not found in alignment: '"^taxName^"'")
       else if List.length outEdges > 1 then
         failwith ("taxon in alignment repeatedly: '"^taxName^"'")
       else (* pigeonhole principle *)
-        List.hd outEdges
-  ) taxonMap
+        List.hd outEdges)
+    taxonMap
 
 (* a like_aln is just the corresponding array of likelihood vectors *)
 let like_aln_of_align seq_type align =

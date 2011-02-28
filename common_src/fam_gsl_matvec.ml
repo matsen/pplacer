@@ -1,13 +1,11 @@
-(* Copyright (C) 2009  Frederick A Matsen.
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * some nicer ways to make and use Gsl_vectors and Gsl_matrices.
+(* some nicer ways to make and use Gsl_vectors and Gsl_matrices.
  *
  * look at
  http://www.gnu.org/software/gsl/manual/html_node/GSL-BLAS-Interface.html
  and
  http://oandrieu.nerim.net/ocaml/gsl/doc/Gsl_blas.html
  *
+ * Reminder: the Gsl_matrix is made with c_layout.
  *)
 
 let tolerance = 1e-15
@@ -167,7 +165,7 @@ let alloc_gen_normalize norm_fun v =
 let alloc_l1_normalize v = alloc_gen_normalize l1_norm v
 let alloc_l2_normalize v = alloc_gen_normalize l2_norm v
 
-(* eigen *)
+(* gives a matrix such that the rows are the eigenvectors. *)
 let symmEigs m =
   assertSymm m;
   Gsl_eigen.symmv (`M(m))

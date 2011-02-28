@@ -1,7 +1,4 @@
-(* mokaphy v0.3. Copyright (C) 2010  Frederick A Matsen.
- * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *
- * Here we have the core agorithm, which takes two placement collection lists
+(* Here we have the core agorithm, which takes two placement collection lists
  * and calculates their weighted KR distance.
  *
  * Each query is allocated 1/(num queries), and this get broken up by the
@@ -101,6 +98,8 @@ let total_over_tree curried_edge_total
   check_final_data final_data;
   grand_total /. (Gtree.tree_length ref_tree)
 
+(* combine two float list IntMaps into a single float 2-array list IntMap.
+ * The latter is the input for the KR distance function. *)
 let make_kr_map m1 m2 =
   let process_map f =
     IntMap.map (List.map (fun (dist_bl, mass) -> (dist_bl, f mass)))
@@ -112,7 +111,7 @@ let make_kr_map m1 m2 =
       process_map (fun mass -> [|0.; mass|]) m2;
     ])
 
-(* Z_p distance between two mass maps *)
+(* Z_p distance between two Indiv mass maps *)
 let dist ref_tree p m1 m2 =
   let starter_kr_v = [|0.; 0.|]
   and kr_map = make_kr_map m1 m2 in
@@ -136,7 +135,8 @@ let dist ref_tree p m1 m2 =
     ref_tree)
   ** (outer_exponent p)
 
-(* x1 and x2 are factors which get multiplied by the mass *)
+(* x1 and x2 are factors which get multiplied by the mass before calculation.
+ * By pulling them out like so, we don't have to make new Pres. *)
 let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 =
   dist
     t

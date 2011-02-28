@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * We keep track of the multiplicities so that we can use them in bootstrapping.
+(* We keep track of the multiplicities so that we can use them in bootstrapping.
  * Note that one option would be to make the Pres have a float multiplicity,
  * which would mean that we could decide on a transform once and then have that
  * be fixed for the life of the Pre. That would be convenient, but would make
@@ -99,11 +96,13 @@ end
 
 
 (* Indiv meanins that each unit of mass is considered individually on the tree.
- * Indiv makes the weighting for a given edge as a list of (distal_bl, weight)
- * for each placement *)
+ * Indiv makes the weighting for a given edge as a list of (distal_bl, mass)
+ * for each placement.
+ *)
 module Indiv = struct
 
-  type t = (float * float) IntMap.t
+         (* distal_bl * mass *)
+  type t = (float     * float) IntMap.t
 
   (* factor is a multiplicative factor to multiply the mass by.
    * transform is an int -> float function which given a multiplicity spits out
@@ -133,6 +132,13 @@ module Indiv = struct
     IntMap.map
       (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
       m
+
+let total_mass m =
+  IntMap.fold
+    (fun _ mass_l accu ->
+      List.fold_right (fun (_, mass) -> ( +. ) mass) mass_l accu)
+    m
+    0.
 
   let ppr =
     IntMapFuns.ppr_gen
