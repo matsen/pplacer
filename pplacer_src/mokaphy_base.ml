@@ -65,16 +65,16 @@ let v_list_sum = function
  * http://en.wikipedia.org/wiki/Random_permutation
  * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
  *)
-let shuffle a =
+let shuffle rng a =
   let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
   for i = Array.length a - 1 downto 1 do
-    swap i (Random.int (i+1))
+    swap i (Gsl_rng.uniform_int rng (i+1))
   done
 
 (* make an integer permutation *)
-let perm n =
+let perm rng n =
   let a = Array.init n (fun i -> i) in
-  shuffle a;
+  shuffle rng a;
   a
 
 (* make a min to max array such that their differences in sequence are evenly

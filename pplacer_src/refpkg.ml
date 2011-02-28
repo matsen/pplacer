@@ -168,7 +168,14 @@ let check_refpkg rp =
 
 (* check that a given tree t is the same as the ref tree in the refpkg rp. 
  * Note that we don't check bootstraps. *)
-let check_tree_identical ?epsilon:(epsilon=0.) title t rp =
+let check_tree_identical ?epsilon:(epsilon=0.) rp title t =
   if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then
     failwith (title^" and the tree from "^(get_name rp)^" are not the same.")
 
+let check_tree_approx = check_tree_identical ~epsilon:1e-5
+
+let pr_check_tree_approx rp pr =
+  check_tree_approx
+    rp
+    (pr.Placerun.name^" reference tree")
+    (Placerun.get_ref_tree pr)

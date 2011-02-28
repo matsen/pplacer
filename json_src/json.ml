@@ -4,6 +4,13 @@ let of_string s =
   let lexbuf = Lexing.from_string s in
   Jsonparse.parse Jsonlex.token lexbuf
 
+let of_file fname =
+  let fobj = open_in fname in
+  let lexbuf = Lexing.from_channel fobj in
+  let ret = Jsonparse.parse Jsonlex.token lexbuf in
+  close_in fobj;
+  ret
+
 let to_escape = Str.regexp "\\([\\\\\"/\b\012\n\r\t]\\)"
 let quote = Str.global_substitute to_escape begin fun s ->
   match Str.replace_matched "\\1" s with

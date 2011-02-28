@@ -1,3 +1,6 @@
+open Subcommand
+open Guppy_cmdobjs
+
 (* Note that this version of rounded placements does not take the likelihood
  * weight ratio into account. However, we do preserve the order of appearance of
  * edges in the rounded pquery, which does maintain some of that information.
@@ -78,58 +81,34 @@ let round_placerun out_name cutoff sig_figs pr =
 
 (* UI-related *)
 
-module Prefs = struct
-  type prefs =
-    {
-      out_prefix: string ref;
-      sig_figs: int ref;
-      cutoff: float ref;
-    }
+class cmd () =
+object
+  inherit subcommand () as super
+  inherit out_prefix_cmd () as super_out_prefix
+  inherit placefile_cmd () as super_placefile
 
-  let out_prefix p = !(p.out_prefix)
-  let sig_figs p = !(p.sig_figs)
-  let cutoff p = !(p.cutoff)
+  val sig_figs = flag "--sig-figs"
+    (Formatted (3, "Set the number of significant figures used for rounding (default %d)."))
+  val cutoff = flag "--cutoff"
+    (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ration (default %g)."))
 
-  let defaults () =
-    {
-      out_prefix = ref "";
-      sig_figs = ref 3;
-      cutoff = ref 0.01;
-    }
+  method specl = super_out_prefix#specl @ [
+    int_flag sig_figs;
+    float_flag cutoff;
+  ]
 
-  let specl_of_prefs prefs =
-[
-  "-o", Arg.Set_string prefs.out_prefix,
-  "Set the prefix to write to. Required.";
-  "--sig-figs", Arg.Set_int prefs.sig_figs,
-  "Set the number of significant figures used for rounding (default 3).";
-  "--cutoff", Arg.Set_float prefs.cutoff,
-  "Set the rounding inclusion cutoff for the ML weight ratio (default 0.01).";
-]
-end
+  method desc =
+"clusters the placements by rounding branch lengths"
+  method usage = "usage: round [options] placefile[s]"
 
-let of_argl = function
-  | [] -> print_endline "clusters the placements by rounding"
-  | argl ->
-    let prefs = Prefs.defaults () in
-    (* note-- the command below mutates prefs (so order important) *)
-    let fnamel =
-      Subcommand.wrap_parse_argv
-        argl
-        (Prefs.specl_of_prefs prefs)
-        "usage: round [options] placefile[s]"
-    in
-    if fnamel = [] then exit 0;
-    let out_prefix = Prefs.out_prefix prefs in
-    if out_prefix = "" then
-      invalid_arg "Please specify an output prefix with -o";
+  method private placefile_action prl =
+    let out_prefix = fv out_prefix in
     List.iter
-      (fun fname ->
-        let pr = Placerun_io.of_file fname in
+      (fun pr ->
         let out_name = (out_prefix^(pr.Placerun.name)) in
         Placerun_io.to_file
-          (String.concat " " ("placeutil"::argl))
+          "guppy round"
           (out_name^".place")
-          (round_placerun out_name (Prefs.cutoff prefs) (Prefs.sig_figs prefs) pr))
-      fnamel
-
+          (round_placerun out_name (fv cutoff) (fv sig_figs) pr))
+      prl
+end
