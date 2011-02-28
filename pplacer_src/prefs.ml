@@ -10,6 +10,7 @@ type prefs =
     stats_fname : string ref;
     ref_dir : string ref;
     out_dir : string ref;
+    legacy_place : bool ref;
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
@@ -51,6 +52,7 @@ let defaults () =
     stats_fname = ref "";
     ref_dir = ref ""; (* empty is the correct default; it gets some special handling *)
     out_dir = ref ".";
+    legacy_place = ref false;
     (* tree calc *)
     start_pend = ref 0.1;
     max_pend = ref 2.;
@@ -116,6 +118,7 @@ let csv               p = !(p.csv)
 let old_format        p = !(p.old_format)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
+let legacy_place      p = !(p.legacy_place)
 let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
@@ -190,6 +193,8 @@ let args prefs =
     "Do not run friend finder pre-analysis.";
     "--outDir", Arg.Set_string prefs.out_dir,
     "Specify the directory to write place files to.";
+    "--legacy-place", Arg.Set prefs.legacy_place,
+    "Use legacy format rather than new JSON format (deprecated)";
     "--pretend", Arg.Set prefs.pretend,
     "Only check out the files then report. Do not run the analysis.";
     "--csv", Arg.Set prefs.csv,
