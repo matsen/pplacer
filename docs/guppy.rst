@@ -28,9 +28,8 @@ familiar concept          guppy concept
 ========================  =============
 weighted UniFrac          |KR| distance (kr_)
 unweighted UniFrac        Phylogenetic diversity (pdfrac_)
-OTU alpha diversity       the unary pairwise distance for each place file (uavgdist_)
-OTU count                 PD of the subtree spanned by the placements (pd_)
-UPGMA using UniFrac       "squash" clustering (cluster_)
+OTU alpha diversity       PD of the subtree spanned by the placements (pd_)
+UPGMA using UniFrac       "squash" clustering (squash_)
 PCA using UniFrac         Edge PCA (pca_)
 ========================  =============
 
@@ -52,12 +51,11 @@ A list of these programs is below, and can always be found using ``guppy --cmds`
 Command line interface
 ----------------------
 The general way to invoke |guppy| is ``guppy COMMAND [options] placefile[s]`` where COMMAND is one of the |guppy| commands.
-For example
-```console
-guppy heat --gray-black coastal.place DCM.place
-```
+For example::
 
-These programs are described in more detail below (Commands_), and can always be found using ``guppy --cmds``.
+  guppy heat --gray-black coastal.place DCM.place
+
+These programs are listed with more detail below, and can always be found using ``guppy --cmds`` .
 
 
 Batch mode
@@ -69,9 +67,7 @@ You don't have to specify loading them or anything; |guppy| just loads a given f
 To use the batch mode, just put the commands, options, and placefiles you want into a file.
 One line per command, and it's not necessary to write ``guppy COMMAND``. 
 So the equivalent command to the above run in a batch file would be 
-```console
-heat --gray-black coastal.place DCM.place
-```
+``heat --gray-black coastal.place DCM.place`` .
 Note that you need to specify each option each time you run a command-- they don't carry between lines of a batch file. 
 That's on purpose.
 
@@ -83,7 +79,7 @@ We have chosen to use phyloXML as the format for these trees, as it has width an
 We like looking at these trees using the tree viewer archaeopteryx_.
 If you open archaeopteryx with the default settings, you will see *nothing interesting*, simply the reference tree.
 You need to click on the "Colorize Branches" and "Use branch-width" check boxes.
-If you don't see those check boxes, then you need to edit the archaeopteryx configuration file so they do.
+If you don't see those check boxes, then use `this configuration file`_ (if you are going to copy and paste it click on "raw" first).
 
 List of subcommands
 ===================
@@ -108,7 +104,15 @@ Indices and tables
 .. |pplacer| replace:: ``pplacer``
 .. |KR| replace:: Kantorovich-Rubinstein
 
+.. _kr: generated_rst/kr.html
+.. _pd: generated_rst/pd.html
+.. _squash: generated_rst/squash.html
+.. _pca: generated_rst/pca.html
+.. _heat: generated_rst/heat.html
+.. _bary: generated_rst/bary.html
+
 .. _pplacer: http://matsen.fhrcrc.org/pplacer
+.. _this configuration file: http://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
 .. _phyloxml: http://phyloxml.org/
 .. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/
 .. _EvansMatsen2010: http://arxiv.org/abs/1005.1699
