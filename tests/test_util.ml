@@ -1,4 +1,5 @@
 open Mass_map
+open Fam_batteries
 
 (* Assume the test runner is running in the project root. We can't do much
    better than this. *)
@@ -18,9 +19,48 @@ let pres_of_dir weighting criterion which =
   tbl
 ;;
 
-let fabs x = if x > 0.0 then x else -. x;;
+let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
-let approximately_equal ?(epsilon = 1e-5) f1 f2 = fabs (f1 -. f2) < epsilon;;
+let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
+  let dim = Gsl_vector.length v1 in
+  try
+    assert(dim = Gsl_vector.length v2);
+    for i=0 to dim-1 do
+      if not (approx_equal ~epsilon v1.{i} v2.{i}) then raise Exit
+    done;
+    true
+  with
+  | Exit -> false
+
+let ( *=* ) = vec_approx_equal
+
+let mat_approx_equal ?(epsilon = 1e-5) m1 m2 =
+  let (rows,cols) as dim1 = Gsl_matrix.dims m1 in
+  try
+    assert(dim1 = Gsl_matrix.dims m2);
+    for i=0 to rows-1 do
+      for j=0 to cols-1 do
+        if not (approx_equal ~epsilon m1.{i,j} m2.{i,j}) then raise Exit
+      done
+    done;
+    true
+  with
+  | Exit -> false
+
+let ( ^=^ ) = mat_approx_equal
+
+let array_f_equal f a1 a2 =
+  try
+    ArrayFuns.iter2 (fun x y -> if not (f x y) then raise Exit) a1 a2;
+    true
+  with | Exit -> true
+
+let farr_approx_equal ?(epsilon = 1e-5) fa1 fa2 =
+  array_f_equal (approx_equal ~epsilon) fa1 fa2
+
+let farrarr_approx_equal ?(epsilon = 1e-5) faa1 faa2 =
+  array_f_equal (farr_approx_equal ~epsilon) faa1 faa2
+
 
 let gtree_equal g1 g2 =
   if g1.Gtree.stree = g2.Gtree.stree then
@@ -39,6 +79,5 @@ let farrarr_of_string s =
   Array.of_list (List.map farr_of_string (Str.split (Str.regexp "\n") s))
 
 let vec_of_string s = Gsl_vector.of_array (farr_of_string s)
-let mat_of_string s = Gsl_matrix.of_arrays (farr_of_string s)
-
+let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
 

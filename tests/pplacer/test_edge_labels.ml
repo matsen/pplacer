@@ -6,7 +6,7 @@ let labeled = "((A:2[0],B:9[1]):7[2],C:5[3],D:1[4]):0[5];"
 let higher_labeled = "((A:2[20],B:9[21]):7[22],C:5[23],D:1[24]):0[25];"
 
 let test_parsed_equality _ =
-  let p1, p2 = 
+  let p1, p2 =
     Newick_gtree.of_string unlabeled, Newick_gtree.of_string labeled in
   "labeled != unlabled" @? gtree_equal p1 p2
 

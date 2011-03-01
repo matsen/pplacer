@@ -92,7 +92,7 @@ let predefined_tests transform which expected =
       let calculated =
         Kr_distance.dist_of_pres transform p tree pre1 pre2 in
       (Printf.sprintf "%s x %s" pr_name1 pr_name2) >:: fun _ ->
-        (Printf.sprintf "%f !~= %f" calculated expected) @? approximately_equal expected calculated
+        (Printf.sprintf "%f !~= %f" calculated expected) @? approx_equal expected calculated
     ) pairs;
   ) expected;
 ;;
@@ -124,7 +124,7 @@ let matrix_tests which =
         in
         (Printf.sprintf "%s x %s" pr_name1 pr_name2) >::
           fun _ ->
-            (Printf.sprintf "%f !~= %f" kr matrix) @? approximately_equal kr matrix)
+            (Printf.sprintf "%f !~= %f" kr matrix) @? approx_equal kr matrix)
       (get_pairs names)
 
 let suite =
