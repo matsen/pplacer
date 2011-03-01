@@ -26,3 +26,19 @@ let gtree_equal g1 g2 =
   if g1.Gtree.stree = g2.Gtree.stree then
     MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
   else false
+
+
+(* For white space separated vectors and matrices. 
+ * These aren't very smart-- leading and trailing whitespace will annoy them. 
+ * *)
+
+let farr_of_string s =
+  Array.of_list (List.map float_of_string (Str.split (Str.regexp "[ ]+") s))
+
+let farrarr_of_string s =
+  Array.of_list (List.map farr_of_string (Str.split (Str.regexp "\n") s))
+
+let vec_of_string s = Gsl_vector.of_array (farr_of_string s)
+let mat_of_string s = Gsl_matrix.of_arrays (farr_of_string s)
+
+
