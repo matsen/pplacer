@@ -102,7 +102,7 @@ object (self)
 
   method desc =
 "performs squash clustering"
-  method usage = "usage: cluster [options] placefiles"
+  method usage = "usage: squash [options] placefiles"
 
   method private placefile_action prl =
     let outdir = fv outdir in mkdir outdir;

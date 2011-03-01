@@ -10,7 +10,7 @@ let command_list () =
       "bary", (fun () -> new Guppy_bary.cmd ());
       "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
       "bootviz", (fun () -> new Guppy_bootviz.cmd ());
-      "cluster", (fun () -> new Guppy_cluster.cmd ());
+      "squash", (fun () -> new Guppy_squash.cmd ());
       "heat", (fun () -> new Guppy_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());
       "pca", (fun () -> new Guppy_pca.cmd ());
