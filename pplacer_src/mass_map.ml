@@ -45,6 +45,8 @@ module Pre = struct
     (transform mumu.multi) *. (mul_total_mass mumu.mul)
   let scale_multimul scalar mumu =
     {mumu with mul = List.map (scale_mu scalar) mumu.mul}
+  let unit_mass_scale transform mumu =
+    scale_multimul (1. /. (multimul_total_mass transform mumu)) mumu
 
 
   (* list across pqueries *)
@@ -95,6 +97,8 @@ module Pre = struct
     let scalar = 1. /. (total_mass transform pre) in
     List.map (scale_multimul scalar) pre
 
+  let unitize_mass transform pre =
+    List.map (unit_mass_scale transform) pre
 end
 
 

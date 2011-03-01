@@ -11,7 +11,8 @@ open Mass_map
 (* for the time being, we interpret multiplicity literally *)
 let transform = Mass_map.no_transform
 
-exception Avg_weight_not_one of float
+(* this exception shows up if the average mass isn't one *)
+exception Avg_mass_not_one of float
 
 (* These are masses which are associated with an index. 
  * The index is so that we can sample the eta's, then multiply the eta_j with
@@ -37,7 +38,11 @@ let intermediate_list_sum =
   ListFuns.complete_fold_left intermediate_sum
 
 (* recall that transform is globally set up top for the time being *)
-let normal_pair_approx rng n_samples p t pre1 pre2 =
+let normal_pair_approx rng n_samples p t prepre1 prepre2 =
+  (* make sure that the pres have unit mass per placement *)
+  let pre1 = Mass_map.Pre.unitize_mass transform prepre1
+  and pre2 = Mass_map.Pre.unitize_mass transform prepre2
+  in
   let np1 = List.length pre1
   and np2 = List.length pre2
   and int_inv x = 1. /. (float_of_int x)
@@ -52,6 +57,7 @@ let normal_pair_approx rng n_samples p t pre1 pre2 =
     (List.iter
       (fun multimul ->
         let trans_multi = transform multimul.Pre.multi in
+        assert(trans_multi = 1.); (* for debugging *)
         List.iter
           (fun mu ->
             labeled_mass_arr.(mu.Pre.loc) <-
@@ -101,7 +107,7 @@ let normal_pair_approx rng n_samples p t pre1 pre2 =
       and check_final_data data =
         let avg_weight = int_inv (np1 + np2) *. (get_sigma data) in
         if abs_float (avg_weight -. 1.) > Kr_distance.tol then
-          raise (Avg_weight_not_one (avg_weight-.1.))
+          raise (Avg_mass_not_one (avg_weight-.1.))
       in
       front_coeff *.
         (Kr_distance.total_over_tree

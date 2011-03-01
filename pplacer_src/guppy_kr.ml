@@ -82,6 +82,7 @@ object (self)
   let p = fv p_exp in
   let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
   let original_dist = calc_dist pre1 pre2 in
+  let type_str = if fv normal then "normal" else "density" in
   {
     distance = original_dist;
     p_value =
@@ -94,7 +95,7 @@ object (self)
               (fun (spre1,spre2) -> calc_dist spre1 spre2)
               (make_shuffled_pres rng transform n_samples pre1 pre2)
         in
-        if fv density then R_plots.write_density p name1 name2 original_dist null_dists;
+        if fv density then R_plots.write_density p type_str name1 name2 original_dist null_dists;
         Some
           (Mokaphy_base.list_onesided_pvalue
             null_dists
