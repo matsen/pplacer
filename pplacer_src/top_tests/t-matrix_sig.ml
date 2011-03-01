@@ -42,8 +42,3 @@ let ew = w_expectation rng 1e-5 m;;
 let tw = Fam_matrix.trace m;;
 
 
-
-(* eigs should be n
-l
-*)
-

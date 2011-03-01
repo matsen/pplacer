@@ -1,17 +1,20 @@
+open Mass_map
+
 (* Assume the test runner is running in the project root. We can't do much
    better than this. *)
 let tests_dir = "./tests/"
 
-let pres_of_dir which =
+let pres_of_dir weighting criterion which =
   let files = Common_base.get_dir_contents
     ~pred:(fun name -> Filename.check_suffix name "place")
     (tests_dir ^ "mokaphy/data/" ^ which) in
   let tbl = Hashtbl.create 10 in
-  List.iter(fun f ->
-    let pr = Placerun_io.of_file f in
-    let pre = Mass_map.Pre.of_placerun Mass_map.Weighted Placement.ml_ratio pr in
-    Hashtbl.add tbl pr.Placerun.name (pr, pre)
-  ) files;
+  List.iter
+    (fun f ->
+      let pr = Placerun_io.of_file f in
+      let pre = Pre.normalize_mass no_transform (Pre.of_placerun weighting criterion pr) in
+      Hashtbl.add tbl pr.Placerun.name (pr, pre))
+    files;
   tbl
 ;;
 

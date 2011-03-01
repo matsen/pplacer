@@ -11,9 +11,6 @@
  * Build the ca_info to avoid tree traversal in the main loop.
  *)
 
-module BA1 = Bigarray.Array1
-module BA2 = Bigarray.Array2
-
 
 let exponentiate_function exponent f =
   if exponent = 1. then f
@@ -42,9 +39,11 @@ let unweighted_pquery_dist criterion ca_info pqa pqb =
     (Placement.location p1, Placement.distal_bl p1)
     (Placement.location p2, Placement.distal_bl p2)
 
+let dist_fun_of_weight = function
+  | Mass_map.Weighted -> weighted_pquery_dist
+  | Mass_map.Unweighted -> unweighted_pquery_dist
+
 let dist_fun_of_expon_weight exponent weighting =
   exponentiate_function
     exponent
-    (match weighting with
-    | Mass_map.Weighted -> weighted_pquery_dist
-    | Mass_map.Unweighted -> unweighted_pquery_dist)
+    (dist_fun_of_weight weighting)
