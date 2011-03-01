@@ -266,3 +266,7 @@ let rec find_zero_pad_width n =
   if n <= 9 then 1
   else 1+(find_zero_pad_width (n/10))
 
+let quote_regex = Str.regexp "'"
+let sqlite_escape s =
+  Printf.sprintf "'%s'" (Str.global_replace quote_regex "''" s)
+
