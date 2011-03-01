@@ -25,6 +25,7 @@ let command_list () =
       "round", (fun () -> new Guppy_round.cmd ());
       "demulti", (fun () -> new Guppy_demulti.cmd ());
       "to_json", (fun () -> new Guppy_to_json.cmd ());
+      "taxtable", (fun () -> new Guppy_taxtable.cmd ());
     ];
   ]
 
