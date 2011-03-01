@@ -73,7 +73,7 @@ class diagd arg =
               (* here we set up the diagonal entries of the symmetric matrix so
                * that we get the row sum of the Q matrix is zero.
                * see top of code. *)
-              matInit n n (
+              mat_init n n (
                 fun i j ->
                   if i <> j then Gsl_matrix.get symmPart i j
                   else (
@@ -135,7 +135,7 @@ let normalizedOfExchangeableMat symmPart statnDist =
 
 let symmQ n =
   let offDiag = 1. /. (float_of_int (n-1)) in
-  matInit n n (fun i j -> if i = j then -. 1. else offDiag)
+  mat_init n n (fun i j -> if i = j then -. 1. else offDiag)
 
 let symmDQ n = ofSymmMat (symmQ n)
 let binarySymmDQ = symmDQ 2

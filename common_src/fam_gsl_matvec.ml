@@ -10,6 +10,7 @@
 
 let tolerance = 1e-15
 
+open Bigarray
 
 (* making vectors and matrices *)
 
@@ -40,26 +41,59 @@ let vecInit n f =
 
 let vecMimic v = Gsl_vector.create (Gsl_vector.length v)
 
-let matInit nrows ncols f =
-  let m = Gsl_matrix.create nrows ncols in
-  for r=0 to nrows-1 do
-    for c=0 to ncols-1 do
-      m.{r, c} <- f r c
+let mat_init n_rows n_cols f =
+  let m = Gsl_matrix.create n_rows n_cols in
+  for i=0 to n_rows-1 do
+    let row = Array2.slice_left m i in
+    for j=0 to n_cols-1 do
+      Array1.unsafe_set row j (f i j)
     done;
   done;
   m
 
 let allocMatTranspose m =
   let (rows, cols) = Gsl_matrix.dims m in
-  matInit cols rows (fun i j -> m.{j,i})
+  mat_init cols rows (fun i j -> m.{j,i})
 
 let vecMap f v =
   vecInit (Gsl_vector.length v)
              (fun i -> f v.{i})
 
+(* given an f which takes a vector and gives a float, make a vector out of
+ * applying f to each of the rows of m *)
+let map_rows_to_vector f m =
+  let n_rows = Array2.dim1 m in
+  let v = Gsl_vector.create n_rows in
+  for i=0 to n_rows-1 do
+    Array1.unsafe_set v i (f (Gsl_matrix.row m i))
+  done;
+  v
+
+let vec_iter f a =
+  let n = Gsl_vector.length a in
+  for i=0 to n-1 do
+    f (Array1.unsafe_get a i)
+  done
+
+let vec_iter2 f a b =
+  let n = Gsl_vector.length a in
+  assert(n = Gsl_vector.length b);
+  for i=0 to n-1 do
+    f (Array1.unsafe_get a i) (Array1.unsafe_get b i)
+  done
+
+let vec_map2_into f ~dst a b =
+  let n = Gsl_vector.length dst in
+  assert(n = Gsl_vector.length a);
+  assert(n = Gsl_vector.length b);
+  for i=0 to n-1 do
+    Array1.unsafe_set dst i
+      (f (Array1.unsafe_get a i) (Array1.unsafe_get b i))
+  done
+
 let matMap f m =
   let (rows, cols) = Gsl_matrix.dims m in
-  matInit rows cols (fun i j -> f m.{i,j})
+  mat_init rows cols (fun i j -> f m.{i,j})
 
 let vecMapFromArray f a =
   let n = Array.length a in
@@ -72,7 +106,7 @@ let matMapFromAAR f m =
   assert(nrows > 0);
   let ncols = Array.length m.(0) in
   assert(ncols > 0);
-  matInit nrows ncols (
+  mat_init nrows ncols (
     fun i j -> f m.(i).(j)
   )
 
@@ -113,6 +147,35 @@ let vecSatisfiesPredicate pred v =
 
 let vecNonneg v =
   vecSatisfiesPredicate (fun x -> x >= 0.) v
+
+let mat_dim_asserting_square m =
+  let n = Array2.dim1 m in
+  assert(n = Array2.dim2 m);
+  n
+
+let qform m v =
+  let n = Gsl_vector.length v in
+  assert(n = Array2.dim1 m && n = Array2.dim2 m);
+  let x = ref 0. in
+  for i=0 to n-1 do
+    let vi = Array1.unsafe_get v i
+    and mi = Array2.slice_left m i
+    in
+    for j=0 to n-1 do
+      x :=
+        (!x) +. vi *. (Array1.unsafe_get v j) *. (Array1.unsafe_get mi j)
+    done;
+  done;
+  !x
+
+let trace m =
+  let n = Array2.dim1 m in
+  assert(n = (Array2.dim2 m));
+  let x = ref 0. in
+  for i=0 to n-1 do
+      x := (!x) +. (Array2.unsafe_get m i i)
+  done;
+  !x
 
 let matVecMul dest a v =
   Gsl_blas.gemv
