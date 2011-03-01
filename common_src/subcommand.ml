@@ -64,11 +64,6 @@ let wrap_parse_argv argl specl usage =
       specl
       (fun s -> anonymous := s::!anonymous)
       usage;
-    (* we assume that some anonymous argument are needed *)
-    if !anonymous = [] then begin
-      print_endline usage;
-      exit 0;
-    end;
     List.rev !anonymous
   with
   | Arg.Bad s -> print_string s; exit 1
