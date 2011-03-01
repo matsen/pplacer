@@ -1,9 +1,7 @@
 open Subcommand
 open Guppy_cmdobjs
 
-let quote_regex = Str.regexp "'"
-let escape s =
-  Printf.sprintf "'%s'" (Str.global_replace quote_regex "''" s)
+let escape = Base.sqlite_escape
 
 class cmd () =
 object (self)
@@ -27,6 +25,15 @@ object (self)
         tax_id TEXT PRIMARY KEY NOT NULL,
         tax_name TEXT NOT NULL,
         rank TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS placements (
+        name TEXT NOT NULL,
+        desired_rank TEXT NOT NULL,
+        rank TEXT NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        likelihood REAL NOT NULL,
+        origin TEXT NOT NULL
       );
     \n";
     Tax_id.TaxIdMap.iter

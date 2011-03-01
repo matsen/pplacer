@@ -1,6 +1,7 @@
 open Subcommand
 open Guppy_cmdobjs
 
+let escape = Base.sqlite_escape
 module TIAMR = AlgMap.AlgMapR (Tax_id.OrderedTaxId)
 
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
@@ -78,13 +79,16 @@ object
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria."))
   val csv_out = flag "--csv"
-    (Plain (false, "Write .class.csv files containing CSV data instead of a matrix."))
+    (Plain (false, "Write .class.csv files containing CSV data."))
+  val sqlite_out = flag "--sqlite"
+    (Plain (false, "Write .class.sqlite files containing sqlite insert statements."))
 
   method specl =
     super_refpkg#specl
   @ [
     toggle_flag use_pp;
     toggle_flag csv_out;
+    toggle_flag sqlite_out;
   ]
 
   method desc =
@@ -104,6 +108,17 @@ object
           output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
           List.iter
             (fun arr -> Printf.fprintf ch "%s,%s\n" (String.concat "," (Array.to_list arr)) prn)
+            outl;
+          close_out ch)
+      else if fv sqlite_out then
+        (fun outl ->
+          let prn = Placerun.get_name pr in
+          let ch = open_out (prn ^ ".class.sqlite") in
+          List.iter
+            (fun arr -> Printf.fprintf ch
+              "INSERT INTO placements VALUES (%s, %s);\n"
+              (String.concat ", " (List.map escape (Array.to_list arr)))
+              (escape prn))
             outl;
           close_out ch)
       else
