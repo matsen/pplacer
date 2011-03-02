@@ -82,9 +82,7 @@ let pca_complete ?scale transform
   let prt = Mokaphy_common.list_get_same_tree prl in
   let t = match refpkgo with
   | None -> Decor_gtree.of_newick_gtree prt
-  | Some rp ->
-      Mokaphy_common.check_refpkgo_tree prt refpkgo;
-      Refpkg.get_tax_ref_tree rp
+  | Some rp -> Refpkg.get_tax_ref_tree rp
   in
   let data = List.map (splitify_placerun transform weighting criterion) prl
   in
@@ -145,6 +143,7 @@ object (self)
 
   method private placefile_action prl =
     let transform, weighting, criterion = self#mass_opts in
+    self#check_placerunl prl;
     pca_complete
       ~scale:(fv scale)
       transform
@@ -152,7 +151,7 @@ object (self)
       criterion
       (fv multiplier)
       (fv write_n)
-      (Mokaphy_common.refpkgo_of_fname (fv refpkg_path))
+      (self#get_rpo)
       (fv out_prefix)
       prl
 end

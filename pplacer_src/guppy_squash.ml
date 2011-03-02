@@ -44,7 +44,6 @@ let make_cluster transform weighting criterion refpkgo mode_str prl =
   in
   let (rt, prel) = t_prel_of_prl weighting criterion prl
   in
-  Mokaphy_common.check_refpkgo_tree rt refpkgo;
   let (drt, (cluster_t, blobim)) =
     if mode_str = "" then begin
       (* phylogenetic clustering *)
@@ -107,7 +106,7 @@ object (self)
   method private placefile_action prl =
     let outdir = fv outdir in mkdir outdir;
     let transform, weighting, criterion = self#mass_opts
-    and refpkgo = Mokaphy_common.refpkgo_of_fname (fv refpkg_path)
+    and refpkgo = self#get_rpo
     and mode_str = fv tax_cluster_mode
     in
     let path = Filename.concat outdir in
@@ -116,6 +115,7 @@ object (self)
     let pad_str_of_int i =
       String_matrix.pad_to_width '0' width (string_of_int i)
     in
+    self#check_placerunl prl;
     if 0 = nboot then begin
       (* bootstrap turned off *)
       let (drt, cluster_t, blobim) =

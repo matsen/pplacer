@@ -3,6 +3,35 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
+let write_unary pr_to_float prl ch =
+  String_matrix.write_padded
+   ch
+   (Array.map
+     (fun pr ->
+       [|
+         Placerun.get_name pr;
+         Printf.sprintf "%g" (pr_to_float pr);
+       |])
+   (Array.of_list prl))
+
+let write_uptri list_output namea fun_name u ch =
+  if Uptri.get_dim u = 0 then
+    failwith(Printf.sprintf "can't do %s with fewer than two place files" fun_name);
+  if list_output then begin
+    String_matrix.write_padded ch
+      (Array.of_list
+        ([|"sample_1"; "sample_2"; fun_name;|]::
+          (let m = ref [] in
+          Uptri.iterij
+            (fun i j s -> m := [|namea.(i); namea.(j); s|]::!m)
+            (Uptri.map (Printf.sprintf "%g") u);
+          List.rev !m)))
+  end
+  else begin
+    Printf.fprintf ch "%s distances:\n" fun_name;
+    Mokaphy_common.write_named_float_uptri ch namea u;
+  end
+
 type 'a data_t =
   | Pairwise of 'a Placerun.placerun * 'a Placerun.placerun
   | Single of 'a Placerun.placerun
@@ -72,7 +101,7 @@ object (self)
 
   method private placefile_action prl =
     let pra = Array.of_list prl in
-    Mokaphy_common.write_uptri
+    write_uptri
       (fv list_output)
       (Array.map Placerun.get_name pra)
       "bavgdst"
@@ -95,7 +124,7 @@ object (self)
   method usage = "usage: uavgdist [options] placefile(s)"
 
   method private placefile_action prl =
-    Mokaphy_common.write_unary
+    write_unary
       (of_placerun (self#make_dist_fun prl))
       prl
       self#out_channel

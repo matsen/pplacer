@@ -21,7 +21,6 @@ let shuffle rng a =
     swap i (Gsl_rng.uniform_int rng (i+1))
   done
 
-
 (* just calculate the fraction of elements of a which are geq x.
  * that's the probability that something of value x or greater was drawn from
  * the distribution of a.
@@ -56,7 +55,38 @@ let make_shuffled_pres rng transform n_shuffles pre1 pre2 =
       shuffle rng pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
-
+exception Uptri_dim_mismatch
+let write_uptril list_output namea fun_namel ul ch =
+  match ul with
+  | [] -> ()
+  | hd::tl ->
+  if 0 =
+    List.fold_left
+      (fun d u -> if d = Uptri.get_dim u then d else raise Uptri_dim_mismatch)
+      (Uptri.get_dim hd)
+      tl
+  then
+    failwith "can't do anything interesting with fewer than two place files";
+  if list_output then begin
+    let make_line i j =
+      Array.of_list
+        ([namea.(i); namea.(j)] @
+          (List.map (fun u -> Printf.sprintf "%g" (Uptri.get u i j)) ul))
+    in
+    String_matrix.write_padded ch
+      (Array.of_list
+        ((Array.of_list (["sample_1";"sample_2"] @ fun_namel))::
+          (let m = ref [] in
+          Uptri.iterij (fun i j _ -> m := ((make_line i j)::!m)) hd;
+          List.rev !m)))
+  end
+  else begin
+    List.iter2
+      (fun fun_name u ->
+        Printf.fprintf ch "%s distances:\n" fun_name;
+        Mokaphy_common.write_named_float_uptri ch namea u;)
+      fun_namel ul
+  end
 
 (* core
  * run pair_core for each unique pair
@@ -199,7 +229,7 @@ object (self)
     and print_pvalues = n_samples > 0
     and neighborly f l = List.flatten (List.map f l)
     in
-    Mokaphy_common.write_uptril
+    write_uptril
       (fv list_output)
       names
       (if print_pvalues then neighborly (fun s -> [s;s^"_p_value"]) fun_names

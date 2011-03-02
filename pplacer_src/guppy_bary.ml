@@ -3,6 +3,9 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
+let prel_of_prl weighting criterion prl =
+  List.map (Mass_map.Pre.of_placerun weighting criterion) prl
+
 let make_bary_tree transform t prel =
   let bary_map =
     IntMapFuns.of_pairlist_listly
@@ -43,7 +46,7 @@ object (self)
     let t = Mokaphy_common.list_get_same_tree prl
     and transform, weighting, criterion = self#mass_opts
     in
-    let prel = Mokaphy_common.prel_of_prl weighting criterion prl
+    let prel = prel_of_prl weighting criterion prl
     in
     if prl <> [] then begin
       let fname = match fv outfile with

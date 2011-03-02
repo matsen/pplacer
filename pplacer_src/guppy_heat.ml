@@ -174,9 +174,7 @@ object (self)
       in
       let tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml"
       and my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
-      and refpkgo =
-        Mokaphy_common.refpkgo_of_fname (fv refpkg_path)
-      in
+      and refpkgo = self#get_rpo in
       let prefs = {
         gray_level = fv gray_level;
         white_bg = fv white_bg;
@@ -187,7 +185,7 @@ object (self)
         max_width = fv max_width;
         transform = transform;
       } in
-      Mokaphy_common.check_refpkgo_tree ref_tree refpkgo;
+      self#check_rpo_tree (pr1.Placerun.name) ref_tree;
       Phyloxml.named_gtrees_to_file
         fname
         ([Some tree_name,

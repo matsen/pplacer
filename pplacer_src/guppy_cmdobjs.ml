@@ -53,6 +53,11 @@ object(self)
     | None -> ()
     | Some rp -> Refpkg.check_tree_approx rp name t
 
+  method private check_placerunl =
+    List.iter
+      (fun pr ->
+        self#check_rpo_tree (Placerun.get_name pr) (Placerun.get_ref_tree pr))
+
   method private get_rpo_and_tree pr =
     let alt_tree = Decor_gtree.of_newick_gtree pr.Placerun.ref_tree in
     match self#get_rpo with
