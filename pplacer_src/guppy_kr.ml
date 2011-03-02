@@ -11,6 +11,31 @@ type result =
     p_value : float option;
   }
 
+(* uniformly shuffle the elements of an array using the Knuth shuffle
+ * http://en.wikipedia.org/wiki/Random_permutation
+ * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
+ *)
+let shuffle rng a =
+  let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
+  for i = Array.length a - 1 downto 1 do
+    swap i (Gsl_rng.uniform_int rng (i+1))
+  done
+
+
+(* just calculate the fraction of elements of a which are geq x.
+ * that's the probability that something of value x or greater was drawn from
+ * the distribution of a.
+ * clearly, l doesn't need to be sorted *)
+let int_div x y = (float_of_int x) /. (float_of_int y)
+let list_onesided_pvalue l x =
+  int_div
+    (List.fold_left
+      (fun accu a_elt ->
+        if a_elt >= x then accu+1
+        else accu)
+      0 l)
+    (List.length l)
+
 let get_distance r = r.distance
 let get_p_value r = match r.p_value with
   | Some p -> p
@@ -28,7 +53,7 @@ let make_shuffled_pres rng transform n_shuffles pre1 pre2 =
   ListFuns.init
     n_shuffles
     (fun _ ->
-      Mokaphy_base.shuffle rng pre_arr;
+      shuffle rng pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
 
@@ -99,7 +124,7 @@ object (self)
         in
         if fv density then R_plots.write_density p type_str name1 name2 original_dist null_dists;
         Some
-          (Mokaphy_base.list_onesided_pvalue
+          (list_onesided_pvalue
             null_dists
             original_dist)
       end

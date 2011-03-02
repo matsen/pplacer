@@ -25,7 +25,8 @@ object
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
   val transform = flag "--transform"
-    (Plain ("", Mokaphy_common.transform_help))
+    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
+    Options are 'log' and 'unit'. Default is no transform."))
   method specl = [
     toggle_flag use_pp;
     toggle_flag weighted;

@@ -2,18 +2,12 @@
 exception Refpkg_tree_and_ref_tree_mismatch
 exception Uptri_dim_mismatch
 
-let spec_with_default symbol setfun p help =
-  (symbol, setfun p, Printf.sprintf help !p)
-
-let weighted_help =
-  "The point version simply uses the best placement, rather than spreading out the probability mass. Default is spread."
-
-let refpkg_help fors =
-  "Specify a reference package to use the taxonomic version of "^fors^"."
-
-let transform_help =
-    "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."
+let write_named_float_uptri ch names u =
+  String_matrix.write_named_padded ch names
+    (Fam_batteries.MatrixFuns.init (Uptri.get_dim u) (Uptri.get_dim u)
+      (fun i j ->
+        if i < j then (Printf.sprintf "%g" (Uptri.get u i j))
+        else ""))
 
 let chop_suffix_if_present s suff =
   if Filename.check_suffix s suff then Filename.chop_suffix s suff
@@ -85,7 +79,7 @@ let write_uptri list_output namea fun_name u ch =
   end
   else begin
     Printf.fprintf ch "%s distances:\n" fun_name;
-    Mokaphy_base.write_named_float_uptri ch namea u;
+    write_named_float_uptri ch namea u;
   end
 
 
@@ -117,6 +111,6 @@ let write_uptril list_output namea fun_namel ul ch =
     List.iter2
       (fun fun_name u ->
         Printf.fprintf ch "%s distances:\n" fun_name;
-        Mokaphy_base.write_named_float_uptri ch namea u;)
+        write_named_float_uptri ch namea u;)
       fun_namel ul
   end

@@ -29,6 +29,25 @@ let outer_exponent p =
 (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
 let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
 
+(* add v2 to v1 (which is modified in place) *)
+let v_addto v1 v2 =
+  for i=0 to (Array.length v1)-1 do
+    v1.(i) <- v1.(i) +. v2.(i)
+  done
+
+(* multiply a vector times a scalar. functional. *)
+let v_times_scalar v s =
+  Array.map (( *. ) s) v
+
+(* take the vector sum of a float array list. no side effects. *)
+let v_list_sum = function
+  | hd::tl ->
+    let v = Array.copy hd in
+    List.iter (v_addto v) tl;
+    v
+  | [] -> assert(false)
+
+
 (* total up the info from the previous step.
  * note that data_sofar will be modified in place.
  * data_to_r: takes the kr info vector and turns it into a real number
@@ -120,7 +139,7 @@ let dist ref_tree p m1 m2 =
       (exp_kr_diff p)
       (Gtree.get_bl ref_tree id)
       (Base.get_from_list_intmap id kr_map)
-      Mokaphy_base.v_addto
+      v_addto
   (* make sure that the kr_v totals to zero *)
   and check_final_kr final_kr_v =
     let final_kr_diff = final_kr_v.(0) -. final_kr_v.(1) in
@@ -130,7 +149,7 @@ let dist ref_tree p m1 m2 =
   (total_over_tree
     kr_edge_total
     check_final_kr
-    Mokaphy_base.v_list_sum
+    v_list_sum
     (fun () -> Array.copy starter_kr_v)
     ref_tree)
   ** (outer_exponent p)
