@@ -85,3 +85,36 @@ let farrarr_of_string s =
 let vec_of_string s = Gsl_vector.of_array (farr_of_string s)
 let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
 
+exception Inequal
+let rec json_equal ?(epsilon = 1e-5) j1 j2 =
+  match j1, j2 with
+    | Jsontype.Bool b1, Jsontype.Bool b2 -> b1 = b2
+    | Jsontype.Int i1, Jsontype.Int i2 -> i1 = i2
+    | Jsontype.Float f1, Jsontype.Float f2 -> approx_equal ~epsilon f1 f2
+    | Jsontype.String s1, Jsontype.String s2 -> s1 = s2
+    | Jsontype.Object o1, Jsontype.Object o2 ->
+      (Hashtbl.length o1) = (Hashtbl.length o2) && begin
+        try
+          Hashtbl.iter
+            (fun k v ->
+              if not (Hashtbl.mem o2 k) || not (json_equal ~epsilon v (Hashtbl.find o2 k))
+              then raise Inequal)
+            o1;
+          true
+        with
+          | Inequal -> false
+      end
+    | Jsontype.Array a1, Jsontype.Array a2 ->
+      (Array.length a1) = (Array.length a2) && begin
+        try
+          List.iter2
+            (fun a b -> if not (json_equal ~epsilon a b) then raise Inequal)
+            (Array.to_list a1)
+            (Array.to_list a2);
+          true
+        with
+          | Inequal -> false
+      end
+    | Jsontype.Null, Jsontype.Null -> true
+    | _, _ -> false
+

@@ -4,8 +4,33 @@
   let syntax_error tok msg =
     raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
 
-  let escapes = Str.regexp "\\\\\\([\"\\\\/bfnrt]\\|u....\\)"
-  let unquote tok s =
+  let utf8_encode x =
+    let x' = Int32.of_int x
+    and (&-) = Int32.logand
+    and (|-) = Int32.logor
+    and (>>-) = Int32.shift_right
+    and chr i = Char.chr (Int32.to_int i)
+    in
+    if x <= 0x7f then
+      let s = String.create 1 in
+      s.[0] <- chr x';
+      s
+    else if x <= 0x7ff then
+      let s = String.create 2 in
+      s.[0] <- chr (x' >>- 6 &- 0b00011111l |- 0b11000000l);
+      s.[1] <- chr (x' &- 0b00111111l |- 0b10000000l);
+      s
+    else if x <= 0xffff then
+      let s = String.create 3 in
+      s.[0] <- chr (x' >>- 12 &- 0b00001111l |- 0b11100000l);
+      s.[1] <- chr (x' >>- 6 &- 0b00111111l |- 0b10000000l);
+      s.[2] <- chr (x' &- 0b00111111l |- 0b10000000l);
+      s
+    else
+      invalid_arg "utf8_encode"
+
+  let escapes = Str.regexp "\\\\\\([\"\\\\/bfnrt]\\|u\\(....\\)\\)"
+  let unquote s =
     let s = String.sub s 1 ((String.length s) - 2) in
     Str.global_substitute escapes (fun s ->
       match Str.replace_matched "\\1" s with
@@ -17,8 +42,9 @@
         | "n" -> "\n"
         | "r" -> "\r"
         | "t" -> "\t"
-          (* no unicode escapes just yet. *)
-        | _ -> syntax_error tok "no unicode escapes"
+        | _ ->
+          let escape = Str.replace_matched "\\2" s in
+          utf8_encode (int_of_string ("0x" ^ escape))
     ) s
 
   let add_to_hash h (s, v) = Hashtbl.add h s v; h
@@ -35,7 +61,7 @@
 %%
 
 pair: STRING COLON value
-      { (unquote 1 $1), $3 }
+      { (unquote $1), $3 }
 
 object_content:
     pair COMMA object_content
@@ -51,7 +77,7 @@ array_content:
 
 value:
   | STRING
-      { String (unquote 1 $1) }
+      { String (unquote $1) }
   | INT
       { Int $1 }
   | FLOAT
@@ -72,11 +98,6 @@ value:
       { Bool false }
   | NULL
       { Null }
-
-  | OBRACE error CBRACE
-      { syntax_error 2 "syntax error in object" }
-  | OBRACK error CBRACK
-      { syntax_error 2 "syntax error in array" }
 
 parse:
     value EOF

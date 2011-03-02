@@ -35,7 +35,7 @@ let rec to_formatter ff o =
       Format.fprintf ff "{@[@,";
       let _ = Hashtbl.fold (fun k v is_first ->
         if not is_first then Format.fprintf ff ",@ ";
-        Format.fprintf ff "\"%s\":@ " k;
+        Format.fprintf ff "\"%s\":@ " (quote k);
         to_formatter ff v;
         false
       ) o true in ();
