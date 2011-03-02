@@ -1,5 +1,5 @@
 (* diagd:
- * a class for diagonalized matrices
+ * a type for diagonalized matrices
  *
  * Time-reversible models are typically speficied by giving the stationary
  * frequency and the "exchangeability" between states.
@@ -13,130 +13,149 @@
  * From there the DB matrix is easily diagonalized; see Felsenstein p. 206 or
  * pplacer/scans/markov_process_db_diag.pdf.
  *
- * For this module, u and lambdav are such that u diag(lambdav) u^{-1} is the
+ * For this module, x and lambdav are such that x diag(lambdav) x^{-1} is the
  * matrix being diagonalized.
- * uit is the inverse transpose of u, which is handy for speedy computations.
+ * xit is the inverse transpose of x, which is handy for speedy computations.
  *)
 
 open Fam_gsl_matvec
 
+let mm = allocMatMatMul
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
 
+
+(* the setup is that X diag(\lambda) X^{-1} is the matrix of interest. *)
+type t =
+  {
+    x: Gsl_matrix.matrix;
+    l: Gsl_vector.vector; (* lambda *)
+    xit: Gsl_matrix.matrix; (* x inverse transpose *)
+    util: Gsl_vector.vector;
+  }
+
+let make ~x ~l ~xit =
+  let n = Gsl_vector.length l in
+  assert((n,n) = Gsl_matrix.dims x);
+  assert((n,n) = Gsl_matrix.dims xit);
+  {
+    x = x;
+    l = l;
+    xit = xit;
+    util = Gsl_vector.create n
+  }
+
+
+  (* *** utils *** *)
+
+let dim dd = Gsl_vector.length dd.l
+let matrix_of_same_dims dd = Gsl_matrix.create (dim dd) (dim dd)
+
+
+  (* *** into matrices *** *)
+
+let to_matrix dd =
+  let m = matrix_of_same_dims dd in
+  Linear.dediagonalize m dd.x dd.l dd.xit;
+  m
+
+(* return an exponentiated matrix *)
+let to_exp dd bl =
+  let dst = matrix_of_same_dims dd in
+  for i=0 to (Gsl_vector.length dd.l)-1 do
+    set1 dd.util i (exp (bl *. (get1 dd.l i)))
+  done;
+  Linear.dediagonalize dst dd.x dd.util dd.xit;
+  dst
+
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
- * U exp(D rate bl) U^{-1}.
+ * X exp(D rate bl) X^{-1}.
  * util should be a vector of the same length as lambda *)
-let multi_exp ~dst u lambda uit util rates bl =
-  let n = Gsl_vector.length lambda in
+let multi_exp ~dst dd rates bl =
+  let n = Gsl_vector.length dd.l in
   try
     Tensor.set_all dst 0.;
     for r=0 to (Array.length rates)-1 do
       for i=0 to n-1 do
-        set1 util i (exp (rates.(r) *. bl *. (get1 lambda i)))
+        set1 dd.util i (exp (rates.(r) *. bl *. (get1 dd.l i)))
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      Linear.dediagonalize dst_mat u util uit
+      Linear.dediagonalize dst_mat dd.x dd.util dd.xit;
+      (* Gsl_matrix.transpose_in_place dst_mat; *)
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
 
 
-let mm = allocMatMatMul
+  (* *** making *** *)
 
-class diagd arg =
+exception StationaryFreqHasNegativeEntry
+
+let check_stationary v =
+  if not (vecNonneg v) then raise StationaryFreqHasNegativeEntry
+
+let of_symmetric m =
+  let (l, x) = symmEigs m in
+  make ~l ~x ~xit:x
+
+(* d = vector for diagonal, b = symmetric matrix which has been set up with
+ * diagonal entries so that BD is a Q-transpose matrix (with zero column
+ * totals). see top. *)
 (* See Felsenstein p.206.
- * Say that E \Lambda E^{-1} = D^{1/2} B D^{1/2}.
- * Then DB = (D^{1/2} E) \Lambda (D^{1/2} E)^{-1}
+ * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
+ * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
+ * Thus we want X = D^{1/2} U, and so
+ * X inverse transpose is D^{-1/2} U.
  * *)
-  let diagdStructureOfDBMatrix d b =
-    let dDiagSqrt = diagOfVec (vecMap sqrt d) in
-    let dDiagSqrtInv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
-    let (evals, evects) = symmEigs (mm dDiagSqrt (mm b dDiagSqrt)) in
-    (* make sure that diagonal matrix is all positive *)
-    if not (vecNonneg d) then
-      failwith("negative element in the diagonal of a DB matrix!");
-    (evals, mm dDiagSqrtInv evects, mm dDiagSqrt evects)
-  in
+let of_d_b d b =
+  (* make sure that diagonal matrix is all positive *)
+  if not (vecNonneg d) then
+    failwith("negative element in the diagonal of a DB matrix!");
+  let dm_root = diagOfVec (vecMap sqrt d) in
+  let dm_root_inv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
+  let (l, u) = symmEigs (mm dm_root (mm b dm_root)) in
+  make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
-  let (lambdav, u, uit) =
-    try
-      match arg with
-        | `OfData (lambdav, u, uit) -> (lambdav, u, uit)
-        | `OfSymmMat m ->
-            let evals, evects = symmEigs m in
-            (evals, evects, evects)
-        | `OfDBMatrix(d, b) -> diagdStructureOfDBMatrix d b
-        | `OfExchangeableMat(symmPart, statnDist) ->
-            let n = Gsl_vector.length statnDist in
-            let r =
-              (* here we set up the diagonal entries of the symmetric matrix so
-               * that we get the row sum of the Q matrix is zero.
-               * see top of code. *)
-              mat_init n n (
-                fun i j ->
-                  if i <> j then Gsl_matrix.get symmPart i j
-                  else (
-                  (* r_ii = - (pi_i)^{-1} \sum_{j \ne i} r_ij pi_j *)
-                    let total = ref 0. in
-                    for k=0 to n-1 do
-                      if k <> i then
-                        total := !total +. symmPart.{i,k} *. statnDist.{k}
-                    done;
-                    -. (!total /. statnDist.{i})
-                  )
-              )
-            in
-            diagdStructureOfDBMatrix statnDist r
-    with
-      | Invalid_argument s -> invalid_arg ("diagd dimension problem: "^s)
-  in
-  let util = Gsl_vector.create (Gsl_vector.length lambdav) in
+(* here we set up the diagonal entries of the symmetric matrix so
+ * that we get the column sum of the Q matrix is zero.
+ * see top of code. *)
+let b_of_exchangeable_pair r pi =
+  let n = Gsl_vector.length pi in
+  mat_init n n
+    (fun i j ->
+      if i <> j then Gsl_matrix.get r i j
+      else
+      (* r_ii = - (pi_i)^{-1} \sum_{k \ne i} r_ki pi_k *)
+        (let total = ref 0. in
+        for k=0 to n-1 do
+          if k <> i then
+            total := !total +. r.{k,i} *. pi.{k}
+        done;
+        -. (!total /. pi.{i})))
 
-object (self)
+let of_exchangeable_pair m pi = of_d_b pi (b_of_exchangeable_pair m pi)
 
-  method size = Gsl_vector.length lambdav
+let find_rate dd pi =
+  let q = to_matrix dd in
+  let rate = ref 0. in
+  for i=0 to (dim dd)-1 do
+    rate := !rate -. q.{i,i} *. (Gsl_vector.get pi i)
+  done;
+  !rate
 
-  method toMatrix dst = Linear.dediagonalize dst u lambdav uit
+let normalize_rate dd pi =
+  Gsl_vector.scale dd.l (1. /. (find_rate dd pi))
 
-  method expWithT dst t =
-    Linear.dediagonalize
-                  dst
-                  u
-                  (vecMap (fun lambda -> exp (t *. lambda)) lambdav)
-                  uit
-
-  method multi_exp (dst:Tensor.tensor) rates bl =
-    multi_exp ~dst u lambdav uit util rates bl
-
-  method normalizeRate statnDist =
-    let q = Gsl_matrix.create (self#size) (self#size) in
-    self#toMatrix q;
-    let rate = ref 0. in
-    for i=0 to (Gsl_vector.length lambdav)-1 do
-      rate := !rate -. q.{i,i} *. (Gsl_vector.get statnDist i)
-    done;
-    for i=0 to (Gsl_vector.length lambdav)-1 do
-      lambdav.{i} <- lambdav.{i} /. !rate
-    done;
-    ()
-
-end
-
-let ofSymmMat a = new diagd (`OfSymmMat a)
-let ofDBMatrix d b = new diagd (`OfDBMatrix(d, b))
-let ofExchangeableMat symmPart statnDist =
-  new diagd (`OfExchangeableMat(symmPart, statnDist))
-
-let normalizedOfExchangeableMat symmPart statnDist =
-  let dd = ofExchangeableMat symmPart statnDist in
-  dd#normalizeRate statnDist;
+let normed_of_exchangeable_pair m pi =
+  let dd = of_exchangeable_pair m pi in
+  normalize_rate dd pi;
   dd
 
-let symmQ n =
-  let offDiag = 1. /. (float_of_int (n-1)) in
-  mat_init n n (fun i j -> if i = j then -. 1. else offDiag)
+let symm_q n =
+  let off_diag = 1. /. (float_of_int (n-1)) in
+  mat_init n n (fun i j -> if i = j then -. 1. else off_diag)
 
-let symmDQ n = ofSymmMat (symmQ n)
-let binarySymmDQ = symmDQ 2
+let symm_diagd n = of_symmetric (symm_q n)
+let binary_symm_diagd = symm_diagd 2
 

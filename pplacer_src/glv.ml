@@ -262,7 +262,7 @@ let tensor_mul tensor ~dst ~src =
  * results in dst.
  *)
 let evolve_into model ~dst ~src bl =
-  (* do the exponents *)
+  (* copy over the exponents *)
   BA1.blit src.e dst.e;
   (* prepare the matrices in our matrix cache *)
   Model.prep_tensor_for_bl model bl;

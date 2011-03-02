@@ -22,17 +22,20 @@ clean:
 	ocamlbuild $@
 	rm $*.mltop
 
+test: tests.native
+	./tests.native
+
 %.runtop: %.top
 	ledit -x -h .toplevel_history ./$*.top
 
 runcaml:
 	ledit -x -h .toplevel_history ocaml
 
-test: tests.native
-	./tests.native
+tags:
+	taggage `find . -name "*.ml" | grep -v "_build"`
 
 docs: gen_docs.native
 	./gen_docs.native
 	make -C docs html
 
-.PHONY: $(RELEASE) clean runcaml
+.PHONY: $(RELEASE) clean runcaml tags test docs

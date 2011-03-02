@@ -10,7 +10,7 @@ open Fam_batteries
 type t =
   {
    statd     :  Gsl_vector.vector;
-   diagdq    :  Diagd.diagd;
+   diagdq    :  Diagd.t;
    seq_type  :  Alignment.seq_type;
    rates     :  float array;
    (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
@@ -50,7 +50,7 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
   let n_states = Alignment.nstates_of_seq_type seq_type in
   {
     statd = statd;
-    diagdq = Diagd.normalizedOfExchangeableMat trans statd;
+    diagdq = Diagd.normed_of_exchangeable_pair trans statd;
     seq_type = seq_type;
     rates = rates;
     tensor = Tensor.create (Array.length rates) n_states n_states;
@@ -109,4 +109,4 @@ let of_json json_fname ref_align =
 
 (* prepare the tensor for a certain branch length *)
 let prep_tensor_for_bl model bl =
-  (model.diagdq)#multi_exp model.tensor model.rates bl
+  Diagd.multi_exp model.tensor model.diagdq model.rates bl

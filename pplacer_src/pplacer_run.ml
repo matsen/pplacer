@@ -19,7 +19,7 @@ let run_file prefs query_fname =
 
    (* *** build reference package *** *)
   let rp =
-    Refpkg.of_strmap
+    Refpkg.of_strmap prefs
       (List.fold_right
       (* only set if the option string is non empty.
        * override the contents of the reference package. *)
@@ -69,7 +69,7 @@ let run_file prefs query_fname =
         print_endline
           "Found reference sequences in given fasta file. \
           Using those for reference alignment.";
-      Array.of_list ref_list
+      Alignment.uppercase (Array.of_list ref_list)
     end
   in
   if (Prefs.verb_level prefs) >= 2 then begin
@@ -135,7 +135,6 @@ let run_file prefs query_fname =
   Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
   if (Prefs.verb_level prefs) >= 1 then print_endline "done.";
 
-  (*
   (* check tree likelihood *)
   let zero_d = Glv_arr.get_one darr
   and zero_p = Glv_arr.get_one parr
@@ -151,7 +150,6 @@ let run_file prefs query_fname =
                 (Glv.log_like3 model util_d util_p util);
   Printf.printf "supernode likelihood is %g\n"
                 (Glv.logdot model sn util);
-  *)
 
   (* *** analyze query sequences *** *)
   let query_bname =

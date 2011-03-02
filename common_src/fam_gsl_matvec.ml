@@ -51,9 +51,10 @@ let mat_init n_rows n_cols f =
   done;
   m
 
-let allocMatTranspose m =
-  let (rows, cols) = Gsl_matrix.dims m in
-  mat_init cols rows (fun i j -> m.{j,i})
+let alloc_transpose m =
+  let mt = Gsl_matrix.copy m in
+  Gsl_matrix.transpose_in_place mt;
+  mt
 
 let vecMap f v =
   vecInit (Gsl_vector.length v)
@@ -228,7 +229,7 @@ let alloc_gen_normalize norm_fun v =
 let alloc_l1_normalize v = alloc_gen_normalize l1_norm v
 let alloc_l2_normalize v = alloc_gen_normalize l2_norm v
 
-(* gives a matrix such that the rows are the eigenvectors. *)
+(* gives a matrix such that the columns are the eigenvectors. *)
 let symmEigs m =
   assertSymm m;
   Gsl_eigen.symmv (`M(m))
