@@ -5,19 +5,22 @@ open Fam_batteries
    better than this. *)
 let tests_dir = "./tests/"
 
-let pres_of_dir weighting criterion which =
+let placeruns_of_dir which =
   let files = Common_base.get_dir_contents
-    ~pred:(fun name -> Filename.check_suffix name "place")
-    (tests_dir ^ "mokaphy/data/" ^ which) in
+    ~pred:(fun name -> Filename.check_suffix name "json")
+    (tests_dir ^ "data/" ^ which) in
+  List.map
+    Placerun_io.of_any_file
+    files
+
+let pres_of_dir weighting criterion which =
   let tbl = Hashtbl.create 10 in
   List.iter
-    (fun f ->
-      let pr = Placerun_io.of_file f in
+    (fun pr ->
       let pre = Pre.normalize_mass no_transform (Pre.of_placerun weighting criterion pr) in
       Hashtbl.add tbl pr.Placerun.name (pr, pre))
-    files;
+    (placeruns_of_dir which);
   tbl
-;;
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
@@ -61,12 +64,14 @@ let farr_approx_equal ?(epsilon = 1e-5) fa1 fa2 =
 let farrarr_approx_equal ?(epsilon = 1e-5) faa1 faa2 =
   array_f_equal (farr_approx_equal ~epsilon) faa1 faa2
 
-
 let gtree_equal g1 g2 =
-  if g1.Gtree.stree = g2.Gtree.stree then
-    MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
-  else false
+  g1.Gtree.stree = g2.Gtree.stree
+  && MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
 
+let placerun_equal pr1 pr2 =
+  pr1.Placerun.name = pr2.Placerun.name
+  && gtree_equal pr1.Placerun.ref_tree pr2.Placerun.ref_tree
+  && pr1.Placerun.pqueries = pr2.Placerun.pqueries
 
 (* For white space separated vectors and matrices. 
  * These aren't very smart-- leading and trailing whitespace will annoy them. 
