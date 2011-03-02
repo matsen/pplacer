@@ -21,21 +21,34 @@ object (self)
     let ch = self#out_channel in
     let tax = Refpkg.get_taxonomy refpkg in
     output_string ch "
+      CREATE TABLE IF NOT EXISTS ranks (
+        rank TEXT PRIMARY KEY NOT NULL,
+        rank_order INT
+      );
+
       CREATE TABLE IF NOT EXISTS taxa (
         tax_id TEXT PRIMARY KEY NOT NULL,
         tax_name TEXT NOT NULL,
-        rank TEXT NOT NULL
+        rank TEXT REFERENCES ranks (rank) NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS placements (
         name TEXT NOT NULL,
-        desired_rank TEXT NOT NULL,
-        rank TEXT NOT NULL,
+        desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
+        rank TEXT REFERENCES ranks (rank) NOT NULL,
         tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
         likelihood REAL NOT NULL,
         origin TEXT NOT NULL
       );
+
     \n";
+    Array.iteri
+      (fun idx name ->
+        Printf.fprintf ch
+          "INSERT INTO ranks VALUES (%s, %d);\n"
+          (escape name)
+          idx)
+      tax.Tax_taxonomy.rank_names;
     Tax_id.TaxIdMap.iter
       (fun tax_id name ->
         let rank = Tax_taxonomy.rank_name_of_tax_id tax tax_id in
