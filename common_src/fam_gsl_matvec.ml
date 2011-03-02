@@ -166,7 +166,7 @@ let alloc_gen_normalize norm_fun v =
 let alloc_l1_normalize v = alloc_gen_normalize l1_norm v
 let alloc_l2_normalize v = alloc_gen_normalize l2_norm v
 
-(* gives a matrix such that the rows are the eigenvectors. *)
+(* gives a matrix such that the columns are the eigenvectors. *)
 let symmEigs m =
   assertSymm m;
   Gsl_eigen.symmv (`M(m))

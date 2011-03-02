@@ -43,7 +43,7 @@ let () =
       end
     in
     let rp =
-      Refpkg.of_strmap
+      Refpkg.of_strmap prefs
         (List.fold_right
     (* only set if the option string is non empty.
      * override the contents of the reference package. *)

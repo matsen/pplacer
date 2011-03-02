@@ -81,7 +81,8 @@ let multi_exp ~dst dd rates bl =
         set1 dd.util i (exp (rates.(r) *. bl *. (get1 dd.l i)))
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      Linear.dediagonalize dst_mat dd.x dd.util dd.xit
+      Linear.dediagonalize dst_mat dd.x dd.util dd.xit;
+      (* Gsl_matrix.transpose_in_place dst_mat; *)
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
@@ -114,13 +115,13 @@ let of_d_b d b =
   let dm_root = diagOfVec (vecMap sqrt d) in
   let dm_root_inv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
   let (l, u) = symmEigs (mm dm_root (mm b dm_root)) in
-  make ~l ~x:(mm dm_root u) ~xit:(mm dm_root_inv u)
+  make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
 (* here we set up the diagonal entries of the symmetric matrix so
  * that we get the column sum of the Q matrix is zero.
  * see top of code. *)
 let b_of_exchangeable_pair r pi =
-let n = Gsl_vector.length pi in
+  let n = Gsl_vector.length pi in
   matInit n n
     (fun i j ->
       if i <> j then Gsl_matrix.get r i j

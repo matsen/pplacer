@@ -47,13 +47,12 @@ let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
 (* deprecated now *)
-let model_of_stats_fname stats_fname ref_align =
-  let prefs = Prefs.defaults () in
+let model_of_stats_fname prefs stats_fname ref_align =
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
 (* this is the primary builder. *)
-let of_strmap m =
+let of_strmap prefs m =
   let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
@@ -70,7 +69,7 @@ let of_strmap m =
             "Warning: using a statistics file directly is now deprecated. \
             We suggest using a reference package. If you already are, then \
             please use the latest version of taxtastic.";
-          model_of_stats_fname (get "tree_stats") aln
+          model_of_stats_fname prefs (get "tree_stats") aln
         end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
@@ -96,7 +95,8 @@ let of_strmap m =
     uptree_map  = luptree_map;
   }
 
-let of_path path = of_strmap (Refpkg_parse.strmap_of_path path)
+let of_path path =
+  of_strmap (Prefs.defaults ()) (Refpkg_parse.strmap_of_path path)
 
 let refpkgo_of_path = function
   | "" -> None
