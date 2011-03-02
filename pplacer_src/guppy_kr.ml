@@ -77,7 +77,7 @@ object (self)
     (Plain (false, "Make density plots showing the distribution of randomized \
         values with the calculated values"))
   val n_samples = flag "-s"
-    (Formatted (1, "Set how many samples to use for significance calculation (0 means \
+    (Formatted (0, "Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is %d."))
   val verbose = flag "--verbose"
     (Plain (false, "Verbose running."))
