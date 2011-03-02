@@ -69,12 +69,11 @@ let gtree_equal g1 g2 =
   && MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
 
 let placerun_equal pr1 pr2 =
-  pr1.Placerun.name = pr2.Placerun.name
-  && gtree_equal pr1.Placerun.ref_tree pr2.Placerun.ref_tree
+  gtree_equal pr1.Placerun.ref_tree pr2.Placerun.ref_tree
   && pr1.Placerun.pqueries = pr2.Placerun.pqueries
 
-(* For white space separated vectors and matrices. 
- * These aren't very smart-- leading and trailing whitespace will annoy them. 
+(* For white space separated vectors and matrices.
+ * These aren't very smart-- leading and trailing whitespace will annoy them.
  * *)
 
 let farr_of_string s =
