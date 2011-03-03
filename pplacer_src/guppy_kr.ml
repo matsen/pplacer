@@ -95,7 +95,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:false as super_refpkg
   inherit outfile_cmd () as super_outfile
   inherit kr_cmd () as super_kr
   inherit rng_cmd () as super_rng
@@ -168,10 +168,9 @@ object (self)
     and pra = Array.of_list prl
     and p = fv p_exp
     and transform, weighting, criterion = self#mass_opts
-    and tax_refpkgo = match !(refpkg_path.value) with
+    and tax_refpkgo = match self#get_rpo with
       | None -> None
-      | Some path ->
-        let rp = Refpkg.of_path path in
+      | Some rp ->
         if Refpkg.tax_equipped rp then Some rp
         else None
     and ch = self#out_channel

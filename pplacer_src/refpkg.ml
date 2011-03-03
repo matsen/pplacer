@@ -98,11 +98,6 @@ let of_strmap prefs m =
 let of_path path =
   of_strmap (Prefs.defaults ()) (Refpkg_parse.strmap_of_path path)
 
-let refpkgo_of_path = function
-  | "" -> None
-  | path -> Some (of_path path)
-
-
 (* *** ACCESSORIES *** *)
 
 (* mrca tax decor, that is *)
@@ -166,7 +161,7 @@ let check_refpkg rp =
     | Missing_element _ ->
         print_OK "Non-taxonomically-informed reference package " rp
 
-(* check that a given tree t is the same as the ref tree in the refpkg rp. 
+(* check that a given tree t is the same as the ref tree in the refpkg rp.
  * Note that we don't check bootstraps. *)
 let check_tree_identical ?epsilon:(epsilon=0.) rp title t =
   if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then

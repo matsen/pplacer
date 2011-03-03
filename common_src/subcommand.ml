@@ -138,6 +138,12 @@ let fv f = match !(f.value) with
       | Needs_argument (name, _) -> raise (No_default (name, f.opt))
   end in f.value := Some x; x
 
+let fvo f =
+  try
+    Some (fv f)
+  with
+    | No_default _ -> None
+
 let desc_of_flag f =
   match f.described with
     | Needs_argument (_, s) -> s

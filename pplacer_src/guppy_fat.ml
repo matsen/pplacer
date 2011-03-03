@@ -7,7 +7,7 @@ object (self)
   inherit out_prefix_cmd () as super_out_prefix
   inherit out_dir_cmd () as super_out_dir
   inherit mass_cmd () as super_mass
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:false as super_refpkg
   inherit viz_cmd () as super_viz
 
   val log_coeff = flag "--log"

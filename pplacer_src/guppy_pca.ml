@@ -117,7 +117,7 @@ object (self)
   inherit subcommand () as super
   inherit out_prefix_cmd () as super_out_prefix
   inherit mass_cmd () as super_mass
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
 
   val write_n = flag "--write-n"

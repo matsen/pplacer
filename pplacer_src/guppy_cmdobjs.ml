@@ -40,13 +40,20 @@ object
   )
 end
 
-class refpkg_cmd () =
+class refpkg_cmd ~required =
 object(self)
   val refpkg_path = flag "-c"
-    (Needs_argument ("reference package path", "Reference package path. Required."))
+    (Needs_argument ("reference package path",
+                     if required
+                     then "Reference package path. Required."
+                     else "Reference package path."))
   method specl = [ string_flag refpkg_path; ]
 
-  method private get_rpo = Refpkg.refpkgo_of_path (fv refpkg_path)
+  method private get_rp = Refpkg.of_path (fv refpkg_path)
+  method private get_rpo =
+    match fvo refpkg_path with
+      | Some path -> Some (Refpkg.of_path path)
+      | None -> None
 
   method private check_rpo_tree name t =
     match self#get_rpo with

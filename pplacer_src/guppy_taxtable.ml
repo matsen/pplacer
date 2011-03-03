@@ -6,7 +6,7 @@ let escape = Base.sqlite_escape
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:true as super_refpkg
   inherit outfile_cmd () as super_outfile
 
   method specl =
@@ -17,7 +17,7 @@ object (self)
   method usage = "usage: taxtable [options] -c <refpkg>"
 
   method action _ =
-    let refpkg = Refpkg.of_path (fv refpkg_path) in
+    let refpkg = self#get_rp in
     let ch = self#out_channel in
     let tax = Refpkg.get_taxonomy refpkg in
     output_string ch "

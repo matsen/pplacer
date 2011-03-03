@@ -77,7 +77,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:false as super_refpkg
   inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
 

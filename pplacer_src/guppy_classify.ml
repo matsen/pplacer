@@ -71,9 +71,9 @@ let classify how criterion n_ranks td pr f =
 (* UI-related *)
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:true as super_refpkg
   inherit placefile_cmd () as super_placefile
 
   val use_pp = flag "--pp"
@@ -96,7 +96,7 @@ object
   method usage = "usage: classify [options] placefile[s]"
 
   method private placefile_action prl =
-    let rp = Refpkg.of_path (fv refpkg_path) in
+    let rp = self#get_rp in
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
     let n_ranks = Tax_taxonomy.get_n_ranks td in

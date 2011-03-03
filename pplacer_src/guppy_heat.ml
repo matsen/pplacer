@@ -126,7 +126,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
-  inherit refpkg_cmd () as super_refpkg
+  inherit refpkg_cmd ~required:false as super_refpkg
   inherit kr_cmd () as super_kr
   inherit placefile_cmd () as super_placefile
 
@@ -169,12 +169,10 @@ object (self)
         | "" -> (Mokaphy_common.cat_names prl)^".heat.xml"
         | s -> s
       in
-      let ref_tree = Placerun.get_same_tree pr1 pr2
-      and transform, weighting, criterion = self#mass_opts
-      in
-      let tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml"
-      and my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
-      and refpkgo = self#get_rpo in
+      let transform, weighting, criterion = self#mass_opts
+      and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in
+      let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
+      and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
       let prefs = {
         gray_level = fv gray_level;
         white_bg = fv white_bg;
@@ -185,7 +183,6 @@ object (self)
         max_width = fv max_width;
         transform = transform;
       } in
-      self#check_rpo_tree (pr1.Placerun.name) ref_tree;
       Phyloxml.named_gtrees_to_file
         fname
         ([Some tree_name,
