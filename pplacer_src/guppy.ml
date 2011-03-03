@@ -26,6 +26,7 @@ let command_list () =
       "demulti", (fun () -> new Guppy_demulti.cmd ());
       "to_json", (fun () -> new Guppy_to_json.cmd ());
       "taxtable", (fun () -> new Guppy_taxtable.cmd ());
+      "check_refpkg", (fun () -> new Guppy_check_refpkg.cmd ());
     ];
   ]
 
