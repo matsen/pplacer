@@ -49,6 +49,7 @@ let ll_of_util util ~n_rates ~n_sites =
 
 let log_like3 statd x y z util =
   let (n_rates, n_sites, n_states) = get_common_tdims [x;y;z] in
+  assert(n_states <= Array1.dim util);
   for site=0 to n_sites-1 do util.{site} <- 0.0 done;
   for rate=0 to n_rates-1 do
     for site=0 to n_sites-1 do
