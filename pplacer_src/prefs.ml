@@ -183,7 +183,7 @@ let args prefs =
     "Set the size of the strike box in log likelihood units. Default is %g.";
     spec_with_default "--max-pitches" (fun o -> Arg.Set_int o) prefs.max_pitches
     "Set the maximum number of pitches for baseball. Default is %d.";
-    spec_with_default "--fantasy" set_float prefs.fantasy
+    spec_with_default "--fantasy" (fun o -> Arg.Set_float o) prefs.fantasy
     "Set to a nonzero value to run in fantasy baseball mode. The value given \
     will be the desired average difference between the likelihood of the best \
     placement with the given baseball parameters and that evaluating all \
