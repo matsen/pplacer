@@ -40,6 +40,7 @@ type prefs =
     pretend : bool ref;
     diagnostic : bool ref;
     check_like : bool ref;
+    version : bool ref;
   }
 
 
@@ -83,6 +84,7 @@ let defaults () =
     pretend = ref false;
     diagnostic = ref false;
     check_like = ref false;
+    version = ref false;
   }
 
 
@@ -125,6 +127,7 @@ let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
+let version           p = !(p.version)
 
 
 (* arguments and preferences *)
@@ -207,6 +210,8 @@ let args prefs =
     "Write out a file describing the 'diagnostic' mutations for various clades.";
     "--check-like", Arg.Set prefs.check_like,
     "Write out the likelihood of the reference tree, calculated two ways.";
+    "--version", Arg.Set prefs.version,
+    "Write out the version number and exit.";
   ]
 
 (* include a pref here if it should go in the place file *)

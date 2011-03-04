@@ -8,7 +8,7 @@ let parse_args () =
   and prefs = Prefs.defaults ()
   in
   let usage =
-    "pplacer "^Version.version_revision^"\npplacer [options] -r ref_align -t ref_tree -s stats_file frags.fasta\n"
+    "pplacer "^Version.version_revision^"\npplacer [options] [alignment]\n"
   and anon_arg arg =
     files := arg :: !files
   in
@@ -19,6 +19,10 @@ let parse_args () =
 let () =
   if not !Sys.interactive then begin
     let (files, prefs) = parse_args () in
+    if Prefs.version prefs then begin
+      print_endline Version.version_revision;
+      exit 0;
+    end;
     Prefs.check prefs;
     Gsl_error.init ();
     Check.directory (Prefs.out_dir prefs);

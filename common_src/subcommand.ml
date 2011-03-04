@@ -96,7 +96,7 @@ let cmd_map_of_list l =
 let inner_loop ~prg_name ~version (display_map, cmd_map) =
   Arg.parse
     [
-      "-v", Arg.Unit (fun () -> Printf.printf "placeutil %s\n" version),
+      "--version", Arg.Unit (fun () -> print_endline version; exit 0),
       "Print version and exit";
       "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map),
       "Print a list of the available commands.";
