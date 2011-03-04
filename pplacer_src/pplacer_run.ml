@@ -50,7 +50,7 @@ let run_file prefs query_fname =
   let ref_name_set = StringSetFuns.of_list ref_name_list in
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
-  let seq_list = Fasta_channel.list_of_fname query_fname in
+  let seq_list = Alignment_funs.of_any_file query_fname in
   let ref_list, query_list =
     List.partition
       (fun (name,_) -> StringSet.mem name ref_name_set)
@@ -60,14 +60,14 @@ let run_file prefs query_fname =
     if ref_list = [] then begin
       if (Prefs.verb_level prefs) >= 1 then
         print_endline
-          "Didn't find any reference sequences in given fasta file. \
+          "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
       Refpkg.get_aln_fasta rp
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
         print_endline
-          "Found reference sequences in given fasta file. \
+          "Found reference sequences in given alignment file. \
           Using those for reference alignment.";
       Alignment.uppercase (Array.of_list ref_list)
     end
