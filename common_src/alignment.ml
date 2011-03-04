@@ -1,7 +1,3 @@
-(* Copyright (C) 2009-10  Frederick A Matsen.
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *)
-
 exception Unknown_format of string
 
 open Fam_batteries
@@ -20,13 +16,13 @@ let nstates_of_seq_type = function | Nucleotide_seq -> 4 | Protein_seq -> 20
 
 (* ***** utils ***** *)
   (* string_break: break str in to chunks of length chunkLen *)
-let string_break str chunkLen = 
-  let rec aux nextStr = 
+let string_break str chunkLen =
+  let rec aux nextStr =
     let nextLen = String.length nextStr in
     if nextLen <= chunkLen then
       [ nextStr ] (* terminate *)
     else
-      ( String.sub nextStr 0 chunkLen ) :: ( 
+      ( String.sub nextStr 0 chunkLen ) :: (
         aux ( String.sub nextStr chunkLen ( nextLen - chunkLen ) ) )
   in
   aux str
@@ -41,11 +37,11 @@ let iteri = Array.iteri
 let getNameArr align = Array.map fst align
 let forgetNames align = Array.map snd align
 
-let sameLengthsUnnamed align = 
+let sameLengthsUnnamed align =
   if align = [||] then true
   else (
     let lengths = Array.map String.length align in
-    Array.fold_left ( 
+    Array.fold_left (
       fun sameSoFar len ->
         sameSoFar && ( len = lengths.(0) )
     ) true lengths
@@ -55,25 +51,37 @@ let sameLengths align = sameLengthsUnnamed ( forgetNames align )
 
 let n_seqs align = Array.length align
 
-let length align = 
+let length align =
   if n_seqs align = 0 then 0
   else if sameLengths align then String.length (get_seq align 0)
   else failwith "length: not all same length"
 
-let uppercase aln = 
+let uppercase aln =
   Array.map (fun (name, seq) -> (name, String.uppercase seq)) aln
 
-let to_map_by_name aln = 
-  Array.fold_right 
-    (fun (name, seq) m -> 
+let to_map_by_name aln =
+  Array.fold_right
+    (fun (name, seq) m ->
       if StringMap.mem name m then
         failwith ("name "^name^" duplicated in alignment!");
-      StringMap.add name seq m) 
+      StringMap.add name seq m)
     aln
     StringMap.empty
 
 
 (* ***** reading alignments ***** *)
+
+(* FASTA *)
+let remove_fasta_gt s =
+  assert(s.[0] == '>');
+  String.sub s 1 ((String.length s)-1)
+
+let firstname s =
+  let last_index =
+    try String.index s ' ' with
+    | Not_found -> String.length s
+  in
+  String.sub s 0 last_index
 
 (*
 # Alignment.name_of_fasta_header ">dfd adfad" ;;
@@ -81,21 +89,17 @@ let to_map_by_name aln =
 # Alignment.name_of_fasta_header ">dfd";;
 - : string = "dfd"
 *)
-let name_of_fasta_header s = 
-  let last = 
-    try String.index s ' ' with 
-    | Not_found -> String.length s
-  in
-  String.sub s 1 (last-1)
+let name_of_fasta_header s =
+  firstname (remove_fasta_gt s)
 
-let read_fasta fname = 
+let read_fasta fname =
   (* first count the number of careted lines in the alignment *)
   let ch = open_in fname in
   let is_name s = if s = "" then false else s.[0] = '>' in
   let n_seqs = ref 0 in
   (* count the number of entries *)
-  let () = 
-    try 
+  let () =
+    try
       while true do if is_name (input_line ch) then incr n_seqs done;
     with
     | End_of_file -> ()
@@ -105,7 +109,7 @@ let read_fasta fname =
   let a = Array.make (!n_seqs) ("","") in
   seek_in ch 0;
   let count = ref (-1) in
-  let () = 
+  let () =
     try
       while true do
         let line = input_line ch in
@@ -130,28 +134,28 @@ let read_fasta fname =
   a
 
 (* read an alignment, type unspecified *)
-let read_align fname = 
-  if Filename.check_suffix fname "fasta" || Filename.check_suffix fname "fa" then 
-    read_fasta fname 
+let read_align fname =
+  if Filename.check_suffix fname "fasta" || Filename.check_suffix fname "fa" then
+    read_fasta fname
   else begin
     print_endline "This program only accepts FASTA files with .fa or .fasta suffix";
     raise (Unknown_format fname)
   end
 
 (* alternate, for wrapped fasta
-   List.iter 
+   List.iter
      (fun line -> Printf.fprintf ch "%s\n" line)
      (string_break seq 60); *)
-let write_fasta_line ch (name, seq) = 
+let write_fasta_line ch (name, seq) =
   Printf.fprintf ch ">%s\n" name;
   Printf.fprintf ch "%s\n" seq
 
-let toFasta align fname = 
+let toFasta align fname =
   let ch = open_out fname in
   Array.iter (write_fasta_line ch) align;
   close_out ch
 
-let toPhylip align fname = 
+let toPhylip align fname =
   let ch = open_out fname in
   Printf.fprintf ch "%d %d\n" (n_seqs align) (length align);
   Array.iter (
@@ -160,7 +164,7 @@ let toPhylip align fname =
   ) align;
   close_out ch
 
-let toMatrixUnnamed alignUnnamed = 
+let toMatrixUnnamed alignUnnamed =
   if not (sameLengthsUnnamed alignUnnamed) then
     failwith "toColumns: alignment not rectangular!"
   else if alignUnnamed = [||] then
@@ -175,12 +179,12 @@ let toMatrix align = toMatrixUnnamed (forgetNames align)
 (* let findBases col = ListFuns.uniques (Array.to_list col) *)
 (* let nBases col = List.length (findBases col) *)
 
-let stack align1 align2 = 
+let stack align1 align2 =
   let a = Array.append align1 align2 in
   if sameLengths a then a
   else failwith "stack: alignment not rectangular!"
 
-let filter_zero_length align = 
+let filter_zero_length align =
   Array.of_list
     (List.filter
       (fun (_,seq) -> seq <> "")
@@ -195,25 +199,25 @@ let array_filteri filterFun a =
 
 (* string_mask: mask is a bool array whose ith elt tells if we should include
  * that char into the output *)
-let string_mask mask str = 
+let string_mask mask str =
   assert(Array.length mask = String.length str);
   StringFuns.of_char_array (
     array_filteri (fun i _ -> mask.(i)) (StringFuns.to_char_array str))
 
 (* mask_align : mask the alignment *)
-let mask_align mask align = 
+let mask_align mask align =
   Array.map (fun (name, seq) -> (name, string_mask mask seq)) align
 
 (* pickColumns: which is a bool array of the same length determining if that
  * column is included *)
-let pickColumns which align = 
+let pickColumns which align =
   assert(Array.length which = length align);
   Array.map (
-    fun (name, seq) -> 
+    fun (name, seq) ->
       (name, string_mask which seq)
   ) align
 
-let colIsConstant col = 
+let colIsConstant col =
   Array.fold_left (
     fun soFar x ->
       soFar && ( x = col.(0) )

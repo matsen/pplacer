@@ -9,7 +9,7 @@ def print_flat_tree(tree_fname):
     tree = Phylo.read(tree_fname,'phyloxml')
     for clade in tree.find_clades():
         if len(clade) > 0:
-            print ",".join([clade.name, str(clade.confidences[0].value)] + 
+            print ",".join([clade.name, str(clade.confidences[0].value)] +
                            [term.name for term in clade.get_terminals()])
 
 for tree_fname in sys.argv[1:]:

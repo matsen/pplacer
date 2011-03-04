@@ -1,6 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
-
+(* 
 from http://www.gnu.org/software/gsl/manual/gsl-ref.html#Numerical-Integration ...
 
 
@@ -18,7 +16,7 @@ where RESULT is the numerical approximation obtained by the algorithm. The algor
 
 In short, the routines return the first approximation which has an absolute error smaller than epsabs or a relative error smaller than epsrel.
 
-Note that this is an either-or constraint, not simultaneous. To compute to a specified absolute error, set epsrel to zero. To compute to a specified relative error, set epsabs to zero. The routines will fail to converge if the error bounds are too stringent, but always return the best approximation obtained up to that stage. 
+Note that this is an either-or constraint, not simultaneous. To compute to a specified absolute error, set epsrel to zero. To compute to a specified relative error, set epsabs to zero. The routines will fail to converge if the error bounds are too stringent, but always return the best approximation obtained up to that stage.
 
 *)
 
@@ -26,10 +24,10 @@ Note that this is an either-or constraint, not simultaneous. To compute to a spe
 let value_of_triple (v, _, _) = v
 
 (* non-adaptive Gauss-Kronrod integration *)
-let integrate f a b ~abs_err ~rel_err = 
-  Gsl_integration.qng f ~a:a ~b:b ~epsabs:abs_err ~epsrel:rel_err 
-    
-let value_integrate f a b ~abs_err ~rel_err = 
+let integrate f a b ~abs_err ~rel_err =
+  Gsl_integration.qng f ~a:a ~b:b ~epsabs:abs_err ~epsrel:rel_err
+
+let value_integrate f a b ~abs_err ~rel_err =
   value_of_triple (integrate f a b ~abs_err ~rel_err)
 
 

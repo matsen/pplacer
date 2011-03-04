@@ -1,48 +1,58 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * The taxonomic id type
+(* The taxonomic id type
  *
  * note use of Pervasives.compare should be redone if speed needed.
 *)
 
 exception UnknownTaxIDPrefix of char
 
-type tax_id = NCBI of string | NoTax
+type tax_id = TaxStr of string | NoTax
 
 let none_str = "none"
 
 (* *** utility *** *)
-let ncbi_of_stro = function
-  | Some s -> NCBI s
+let of_stro = function
+  | Some s -> TaxStr s
   | None -> NoTax
 
-let to_str = function
-  | NCBI s -> "N*"^s
+let of_string = function
+  | "none" -> NoTax
+  | s -> TaxStr s
+
+let to_string = function
+  | TaxStr s -> s
   | NoTax -> none_str
 
-let to_bare_str = function
-  | NCBI s -> s
-  | NoTax -> none_str
+let of_json = function
+  | Jsontype.String s -> TaxStr s
+  | Jsontype.Null -> NoTax
+  | x -> Jsontype.unexpected x "string or null"
 
-let of_string id_str = 
+let to_json = function
+  | TaxStr s -> Jsontype.String s
+  | NoTax -> Jsontype.Null
+
+let of_old_string id_str =
   if id_str = none_str then NoTax
   else
     try
-      Scanf.sscanf id_str "%c*%s" 
+      Scanf.sscanf id_str "%c*%s"
         (fun c s ->
           match c with
-          | 'N' -> NCBI s
+          | 'N' -> TaxStr s
           | _ -> raise (UnknownTaxIDPrefix c))
     with
     | End_of_file -> invalid_arg (id_str^" is not a valid tax id!")
 
 (* *** I/O *** *)
-let ppr ff ti = 
-  Format.pp_print_string ff (to_str ti)
+let ppr ff ti =
+  Format.pp_print_string ff (to_string ti)
+
+let to_xml = function
+  | TaxStr s -> [Myxml.tag "id" ~attributes:[("provider", "ncbi_taxonomy")] s]
+  | NoTax -> []
 
 let write_xml ch = function
-  | NCBI s -> Printf.fprintf ch "<id provider=\"ncbi_taxonomy\">%s</id>\n" s
+  | TaxStr s -> Printf.fprintf ch "<id provider=\"ncbi_taxonomy\">%s</id>\n" s
   | NoTax -> ()
 
 
@@ -54,7 +64,7 @@ end
 
 module StringableTaxId = struct
   type t = tax_id
-  let to_string = to_str
+  let to_string = to_string
 end
 
 module TaxIdMap = Map.Make(OrderedTaxId)

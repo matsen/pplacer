@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * the lex file for newick parsing.
+(* the lex file for newick parsing.
 *)
 
 (* this stuff gets evaluated automatically *)
@@ -9,10 +6,14 @@
   open Newick_parser
   let line = ref 1
 
-  let dequote s = 
+  let dequote s =
     let len = String.length s in
     assert(s.[0] = '\'' && s.[len-1] = '\'');
     String.sub s 1 (len-2)
+
+  let untag s =
+    let start = if s.[1] = 'I' then 2 else 1 in
+    int_of_string (String.sub s start ((String.length s) - start - 1))
 
 }
 
@@ -24,22 +25,22 @@ let closep = ')'
 let digit = ['0'-'9']
 let exponent = ['e' 'E'] ['+' '-']? digit+
 let floating = (digit+ '.' digit* | digit* '.' digit+ | digit+) exponent?
-(* Unquoted labels may not contain blanks, parentheses, square brackets, 
+(* Unquoted labels may not contain blanks, parentheses, square brackets,
  * single_quotes, colons, semicolons, or commas. *)
-let unquotedchar = [^ ' ' '\t' '\n' '(' ')' '[' ']' '\'' ':' ';' ','] 
+let unquotedchar = [^ ' ' '\t' '\n' '(' ')' '[' ']' '\'' ':' ';' ',']
 let unquotedlabel = unquotedchar+
-let quotedchar = [^ ' ' '\''] 
+let quotedchar = [^ ' ' '\'']
 let quotedlabel = '\'' quotedchar+ '\''
-let comment = '[' [^ ' ' '\t' '\n' '[' ']']* ']'
+let edgelabel = '[' 'I'? digit+ ']'
 
 rule token = parse
   | [' ' '\t']      { token lexbuf }
-  | comment         { token lexbuf }
   | '\n'            { incr line; CR }
   (* because taxnames can be floats, we have to have float first *)
-  | floating        { REAL(Lexing.lexeme lexbuf) }
+  | floating        { REAL(float_of_string(Lexing.lexeme lexbuf)) }
   | unquotedlabel   { LABEL(Lexing.lexeme lexbuf) }
   | quotedlabel     { LABEL(dequote(Lexing.lexeme lexbuf)) }
+  | edgelabel       { EDGE_LABEL(untag(Lexing.lexeme lexbuf)) }
   | colon           { COLON }
   | semicolon       { SEMICOLON }
   | comma           { COMMA }

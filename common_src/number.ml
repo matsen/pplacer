@@ -2,7 +2,7 @@
    0/0 as described below
 *)
 
-module type NUMBER = 
+module type NUMBER =
 sig
   type t
   val zero: t
@@ -29,8 +29,8 @@ sig
 end
 
 
-module B = 
-struct 
+module B =
+struct
   type t = bool
   let of_int x = (x mod 2) = 1
   let to_int x = if x then 1 else 0
@@ -43,7 +43,7 @@ struct
   let div _ _ = false (* the fun stops here *)
   let max = ( || )
   let pow x y = if y then x else true
-  let indic = ( = ) 
+  let indic = ( = )
   let compare = Pervasives.compare
   let succ = not
   let abs x = x
@@ -57,8 +57,8 @@ struct
 end
 
 (* NOTE: we define 0/0 = 0 *)
-module Z = 
-struct 
+module Z =
+struct
   type t = int
   let of_int x = x
   let to_int x = x
@@ -69,21 +69,21 @@ struct
   let mul = ( * )
   let div x y = if x = 0 then 0 else x/y
   let max = max
-  let pow x y = 
+  let pow x y =
     if y = 0 then 1
     else if y < 0 then 0
     else
-      let rec aux n = 
+      let rec aux n =
 	if n = 0 then 1
 	else x * (aux (n-1))
       in
       aux y
-  let indic x y = 
+  let indic x y =
     if x = y then 1 else 0
   let compare = Pervasives.compare
   let succ = (+) 1
   let abs = abs
-  let conv_float_fun f = 
+  let conv_float_fun f =
     (fun x -> int_of_float (f (float_of_int x) ))
   let inv = conv_float_fun (fun x -> 1./.x)
   let exp = conv_float_fun exp
@@ -96,7 +96,7 @@ end
 
 
 (* below: a bit of care needs to be taken in order to have infinites and nan not
- * get converted into ok numbers by indic or div. 
+ * get converted into ok numbers by indic or div.
  * *)
 let is_bad x = let c = classify_float x in (c = FP_infinite) || (c = FP_nan)
 let is_ok x = not (is_bad x)
@@ -104,8 +104,8 @@ let ucheck f x = if is_bad x then nan else f x
 let bcheck f x y = if is_bad x || is_bad y then nan else f x y
 
 (* NOTE: we define 0/0 = 0 *)
-module R = 
-struct 
+module R =
+struct
   type t = float
   let of_int x = float_of_int x
   let to_int x = int_of_float x

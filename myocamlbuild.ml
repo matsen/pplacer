@@ -1,7 +1,3 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *)
-
 open Ocamlbuild_plugin;;
 open Command;;
 
@@ -75,11 +71,10 @@ dispatch begin function
       dep ["use_pplacer"; ] ["pplacer_src/libpplacercside.a"; ];
 
       (* automatically include <lib> when the use_<lib> tag is given in _tags *)
-      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "gsl") "gsl";
-      ocaml_lib ~extern:true ~dir:(ocamlfind_query "json") "json";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "oUnit") "oUnit";
   | _ -> ()
 end;;
 

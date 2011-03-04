@@ -1,7 +1,4 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- * 
- * care and feeding of placements.
+(* * care and feeding of placements.
  *
  *)
 
@@ -16,14 +13,14 @@ let get_some except = function
   | Some pp -> pp
   | None -> raise except
 
-type placement = 
+type placement =
   {
-    location        : int; 
+    location        : int;
     ml_ratio        : float;
     post_prob       : float option;
     log_like        : float;
     marginal_prob   : float option;
-    distal_bl       : float; 
+    distal_bl       : float;
     pendant_bl      : float;
     contain_classif : Tax_id.tax_id option;
     classif         : Tax_id.tax_id option;
@@ -54,8 +51,8 @@ let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl =
   contain_classif  =  None;
   classif          =  None;}
 
-let add_pp p ~marginal_prob ~post_prob = 
-  {p with 
+let add_pp p ~marginal_prob ~post_prob =
+  {p with
     post_prob      =  Some post_prob;
     marginal_prob  =  Some marginal_prob}
 
@@ -71,7 +68,7 @@ let sort_placecoll criterion pc =
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc
 
-let by_name_map_of_place_hash place_hash = 
+let by_name_map_of_place_hash place_hash =
   Hashtbl.fold (
     fun _ (name, place) name_map ->
       if StringMap.mem name name_map then
@@ -80,10 +77,10 @@ let by_name_map_of_place_hash place_hash =
         StringMap.add name place name_map
   ) place_hash StringMap.empty
 
-let make_ml_ratio_filter cutoff placement = 
+let make_ml_ratio_filter cutoff placement =
   placement.ml_ratio > cutoff
 
-let make_post_prob_filter cutoff placement = 
+let make_post_prob_filter cutoff placement =
   match placement.post_prob with
   | Some x -> x > cutoff
   | None -> assert(false)
@@ -91,22 +88,22 @@ let make_post_prob_filter cutoff placement =
 
 (* *** READING *** *)
 
-let float_opt_of_string s = 
+let float_opt_of_string s =
   if s = "-" then None
   else Some (float_of_string s)
 
-let taxid_opt_of_string s = 
+let taxid_opt_of_string s =
   if s = "-" then None
-  else Some (Tax_id.of_string s)
+  else Some (Tax_id.of_old_string s)
 
 (* we allow either 7 entry lines (no classification) or 9 entry lines *)
-let placement_of_str str = 
+let placement_of_str str =
   let strs = Array.of_list (Str.split (Str.regexp "[ \t]+") str) in
   let len = Array.length strs in
-  if len <> 7 && len <> 9 then 
+  if len <> 7 && len <> 9 then
     failwith ("placement_of_str : wrong number of entries in "^str)
   else begin
-    let basic = 
+    let basic =
       {
         location         =  int_of_string        strs.(0);
         ml_ratio         =  float_of_string      strs.(1);
@@ -121,7 +118,7 @@ let placement_of_str str =
     in
     if len = 7 then basic
     else
-      { 
+      {
         basic with
         contain_classif  =  taxid_opt_of_string  strs.(7);
         classif          =  taxid_opt_of_string  strs.(8);
@@ -139,7 +136,7 @@ let opt_to_str f = function
 let string_of_8gfloat = Printf.sprintf "%8g"
 let string_of_gfloat = Printf.sprintf "%g"
 
-let to_strl_gen fint ffloat ffloato ftaxido place = 
+let to_strl_gen fint ffloat ffloato ftaxido place =
   [
     fint place.location;
     ffloat place.ml_ratio;
@@ -152,25 +149,64 @@ let to_strl_gen fint ffloat ffloato ftaxido place =
     ftaxido place.classif;
   ]
 
-let to_strl = 
-  to_strl_gen 
-    string_of_int 
-    string_of_8gfloat 
+let to_strl =
+  to_strl_gen
+    string_of_int
+    string_of_8gfloat
     (opt_to_str string_of_8gfloat)
-    (opt_to_str Tax_id.to_str)
+    (opt_to_str Tax_id.to_string)
 
 let to_str place = String.concat "\t" (to_strl place)
 
+let to_json has_classif place =
+  let tail = match place.contain_classif with
+    | Some c ->
+      has_classif := true;
+      [|Tax_id.to_json c|]
+    | None -> [||]
+  in
+  Jsontype.Array (Array.append [|
+    Jsontype.Int place.location;
+    Jsontype.Float place.log_like;
+    Jsontype.Float place.ml_ratio;
+    Jsontype.Float place.distal_bl;
+    Jsontype.Float place.pendant_bl;
+  |] tail)
+
+let of_json fields a =
+  let a = Jsontype.array a in
+  let map = List.fold_left2
+    (fun m k v -> StringMap.add k v m)
+    StringMap.empty
+    (Array.to_list fields)
+    (Array.to_list a) in
+  let get k = StringMap.find k map
+  and maybe_get f k =
+    try
+      Some (f (StringMap.find k map))
+    with
+      | Not_found -> None
+  in {
+    location = Jsontype.int (get "edge_num");
+    log_like = Jsontype.float (get "likelihood");
+    ml_ratio = Jsontype.float (get "like_weight_ratio");
+    distal_bl = Jsontype.float (get "distal_length");
+    pendant_bl = Jsontype.float (get "pendant_length");
+    post_prob = None;
+    marginal_prob = None;
+    contain_classif = maybe_get Tax_id.of_json "classification";
+    classif = None;
+  }
 
 (* CSV *)
 let opt_to_csv_str f = function
   | Some x -> f x
   | None -> "NA"
 
-let to_csv_strl = 
-  to_strl_gen 
-    string_of_int 
-    string_of_gfloat 
+let to_csv_strl =
+  to_strl_gen
+    string_of_int
+    string_of_gfloat
     (opt_to_csv_str string_of_gfloat)
-    (opt_to_csv_str Tax_id.to_bare_str)
+    (opt_to_csv_str Tax_id.to_string)
 

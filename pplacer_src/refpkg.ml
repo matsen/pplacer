@@ -1,7 +1,3 @@
-(* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
-*)
-
 open MapsSets
 
 exception Missing_element of string
@@ -9,20 +5,20 @@ exception Missing_element of string
 (* uptree maps-- could be expanded later and go into a different file *)
 type uptree_map = int IntMap.t
 
-let utm_of_stree t = 
+let utm_of_stree t =
   let m = ref IntMap.empty in
   let add_to_m i j = m := IntMapFuns.check_add i j (!m) in
   let rec aux = function
     | Stree.Node (i, tL) ->
         List.iter (fun s -> add_to_m (Stree.top_id s) i; aux s) tL
     | Stree.Leaf _ -> ()
-  in 
+  in
   aux t;
   !m
 
 
 (* Refpkg.t *)
-type t = 
+type t =
   {
     (* specified *)
     ref_tree    : Newick_bark.newick_bark Gtree.gtree Lazy.t;
@@ -50,31 +46,40 @@ let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
-(* NOTE: once parsing of stats files is deprecated, we can set the prefs
- * directly, rather than doing this. *)
-let build_model stats_fname ref_align = 
-  let prefs = Prefs.defaults () in
+(* deprecated now *)
+let model_of_stats_fname prefs stats_fname ref_align =
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
-let of_strmap m = 
-  let get what = 
+(* this is the primary builder. *)
+let of_strmap prefs m =
+  let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
   let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
-  let lref_tree = lazy (Newick.of_file (get "tree_file")) 
-  and lmodel = 
-      lazy (build_model (get "tree_stats") (Lazy.force lfasta_aln));
+  let lref_tree = lazy (Newick_gtree.of_file (get "tree_file"))
+  and lmodel =
+      lazy
+        (let aln = Lazy.force lfasta_aln in
+        if StringMap.mem "phylo_model_file" m then
+          Model.of_json (StringMap.find "phylo_model_file" m) aln
+        else begin
+          print_endline
+            "Warning: using a statistics file directly is now deprecated. \
+            We suggest using a reference package. If you already are, then \
+            please use the latest version of taxtastic.";
+          model_of_stats_fname prefs (get "tree_stats") aln
+        end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in
-  let lmrcam = 
-    lazy (Tax_map.mrcam_of_data  
-           (Lazy.force lseqinfom) 
+  let lmrcam =
+    lazy (Tax_map.mrcam_of_data
+           (Lazy.force lseqinfom)
            (Lazy.force ltaxonomy)
            (Lazy.force lref_tree))
-  and luptree_map = 
+  and luptree_map =
     lazy (utm_of_stree (Gtree.get_stree (Lazy.force lref_tree)))
   in
   {
@@ -90,65 +95,59 @@ let of_strmap m =
     uptree_map  = luptree_map;
   }
 
-let of_path path = of_strmap (Refpkg_parse.strmap_of_path path)
-
-let refpkgo_of_path = function
-  | "" -> None
-  | path -> Some (of_path path)
-
+let of_path path =
+  of_strmap (Prefs.defaults ()) (Refpkg_parse.strmap_of_path path)
 
 (* *** ACCESSORIES *** *)
 
-(* these should be light enough that it's not worth making them lazy *)
-
 (* mrca tax decor, that is *)
-let get_tax_decor_map rp = 
+let get_tax_decor_map rp =
   let td = get_taxonomy rp in
   IntMap.map
     (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
     (get_mrcam rp)
 
 (* tax ref tree is the usual ref tree with but with taxonomic annotation *)
-let get_tax_ref_tree rp =  
+let get_tax_ref_tree rp =
   Decor_gtree.add_decor_by_map
     (Decor_gtree.of_newick_gtree (get_ref_tree rp))
     (IntMap.map (fun x -> [x]) (get_tax_decor_map rp))
 
 (* if the rp is equipped with a taxonomy *)
-let tax_equipped rp = 
+let tax_equipped rp =
   try let _ = get_taxonomy rp and _ = get_seqinfom rp in true with
   | Missing_element _ -> false
 
-let contain_classify rp pr = 
-  Tax_classify.classify_pr 
+let contain_classify rp pr =
+  Tax_classify.classify_pr
     Placement.add_contain_classif
     (Tax_classify.contain_classify
-      (get_mrcam rp) 
+      (get_mrcam rp)
       (get_uptree_map rp))
     pr
 
-let print_OK start rp = 
+let print_OK start rp =
   print_endline (start^(get_name rp)^" checks OK!")
 
 (* make sure all of the tax maps etc are set up *)
-let check_refpkg_classification rp = 
+let check_refpkg_classification rp =
   print_endline "Checking MRCA map...";
   let mrcam = get_mrcam rp in
   print_endline "Checking uptree map...";
   let utm = get_uptree_map rp in
   print_endline "Trying classifications...";
-  let _ = 
-    List.map 
-      (Tax_classify.contain_classify_loc mrcam utm) 
+  let _ =
+    List.map
+      (Tax_classify.contain_classify_loc mrcam utm)
       (Gtree.nonroot_node_ids (get_ref_tree rp))
   in
   ()
 
-let check rp name what = 
+let check rp name what =
   print_endline ("Checking "^name^"...");
   let _ = what rp in ()
 
-let check_refpkg rp = 
+let check_refpkg rp =
   print_endline ("Checking refpkg "^(get_name rp)^"...");
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
@@ -158,8 +157,20 @@ let check_refpkg rp =
     check rp "seqinfom" get_seqinfom;
     check_refpkg_classification rp;
     print_OK "Taxonomically-informed reference package " rp
-  with 
-    | Missing_element _ -> 
+  with
+    | Missing_element _ ->
         print_OK "Non-taxonomically-informed reference package " rp
 
+(* check that a given tree t is the same as the ref tree in the refpkg rp.
+ * Note that we don't check bootstraps. *)
+let check_tree_identical ?epsilon:(epsilon=0.) rp title t =
+  if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then
+    failwith (title^" and the tree from "^(get_name rp)^" are not the same.")
 
+let check_tree_approx = check_tree_identical ~epsilon:1e-5
+
+let pr_check_tree_approx rp pr =
+  check_tree_approx
+    rp
+    (pr.Placerun.name^" reference tree")
+    (Placerun.get_ref_tree pr)

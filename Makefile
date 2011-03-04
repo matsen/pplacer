@@ -1,4 +1,4 @@
-RELEASE=placeviz pplacer placeutil mokaphy
+RELEASE=pplacer guppy
 
 all: $(RELEASE)
 
@@ -13,12 +13,17 @@ $(RELEASE):
 
 clean:
 	rm -rf bin libs
+	rm -f tests.native
 	ocamlbuild -clean
-	rm *.mltop
+	rm -f *.mltop
 
 %.top: %.byte
 	find _build -name '*.cmo' -print0 | xargs -0I% basename % .cmo > $*.mltop
 	ocamlbuild $@
+	rm $*.mltop
+
+test: tests.native
+	./tests.native
 
 %.runtop: %.top
 	ledit -x -h .toplevel_history ./$*.top
@@ -26,4 +31,11 @@ clean:
 runcaml:
 	ledit -x -h .toplevel_history ocaml
 
-.PHONY: $(RELEASE) clean runcaml
+tags:
+	taggage `find . -name "*.ml" | grep -v "_build"`
+
+docs: gen_docs.native
+	./gen_docs.native
+	make -C docs html
+
+.PHONY: $(RELEASE) clean runcaml tags test docs

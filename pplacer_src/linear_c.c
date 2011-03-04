@@ -1,12 +1,10 @@
-/* pplacer v1.0. Copyright (C) 2009-2010  Frederick A Matsen.
- * This file is part of pplacer. pplacer is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer.  If not, see <http://www.gnu.org/licenses/>.
- *
- * to understand the pointer arithmetic below, it's important to understand 
+/* 
+ * to understand the pointer arithmetic below, it's important to understand
  * the layout of the Glv's. they are row-major and indexed in terms of rate,
  * then site, then state. thus the rate-blocks are n_sites*n_states in size.
  *
  * Also, the c_layout used by bigarray means that by incrementing a pointer,
- * we first go across the array in the farthest right index, then increment 
+ * we first go across the array in the farthest right index, then increment
  * the next index when we go past the end on that index. E.g., we go from
  * (i,n-1) to (i+1,0).
 */
@@ -36,10 +34,10 @@ CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, valu
   int rate, site, state;
   double *util_v;
   for(site=0; site < n_sites; site++) { util[site] = 0.0; }
-  for(rate=0; rate < n_rates; rate++) { 
-    // for each rate, start at the top of the util vector 
+  for(rate=0; rate < n_rates; rate++) {
+    // for each rate, start at the top of the util vector
     util_v = util;
-    // here we hard code in the limits for some popular choices 
+    // here we hard code in the limits for some popular choices
     // so that loops can get unrolled
     if(n_states == 4) {
       for(site=0; site < n_sites; site++) {
@@ -90,8 +88,8 @@ CAMLprim value pairwise_prod_c(value dst_value, value x_value, value y_value)
   double *dst = Data_bigarray_val(dst_value);
   double *x = Data_bigarray_val(x_value);
   double *y = Data_bigarray_val(y_value);
-  int size = 
-    (Bigarray_val(x_value)->dim[0]) 
+  int size =
+    (Bigarray_val(x_value)->dim[0])
     * (Bigarray_val(x_value)->dim[1])
     * (Bigarray_val(x_value)->dim[2]);
   int i;
@@ -110,7 +108,7 @@ CAMLprim value glv_print_c(value x_value)
   int n_states = (Bigarray_val(x_value)->dim[2]);
   double *loc = x;
   int rate, site, state;
-  for(rate=0; rate < n_rates; rate++) { 
+  for(rate=0; rate < n_rates; rate++) {
     for(site=0; site < n_sites; site++) {
       for(state=0; state < n_states; state++) {
 	printf("%g\t",*loc);
@@ -140,11 +138,11 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
     printf("bad input dimensions!");
   };
   if(n_states == 4) {
-    for(site=0; site < n_sites; site++) { 
+    for(site=0; site < n_sites; site++) {
       // start back at the top of the matrix
       a = a_start;
       // going down the matrix a and across dst
-      for(i=0; i < 4; i++) { 
+      for(i=0; i < 4; i++) {
         *dst = 0;
         // going across a
         for(j=0; j < 4; j++) { *dst += a[j] * b[j]; }
@@ -155,11 +153,11 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
     }
   }
   else if(n_states == 20) {
-    for(site=0; site < n_sites; site++) { 
+    for(site=0; site < n_sites; site++) {
       // start back at the top of the matrix
       a = a_start;
       // going down the matrix a and across dst
-      for(i=0; i < 20; i++) { 
+      for(i=0; i < 20; i++) {
         *dst = 0;
         // going across a
         for(j=0; j < 20; j++) { *dst += a[j] * b[j]; }
@@ -170,11 +168,11 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
     }
   }
   else {
-    for(site=0; site < n_sites; site++) { 
+    for(site=0; site < n_sites; site++) {
       // start back at the top of the matrix
       a = a_start;
       // going down the matrix a and across dst
-      for(i=0; i < n_states; i++) { 
+      for(i=0; i < n_states; i++) {
         *dst = 0;
         // going across a
         for(j=0; j < n_states; j++) { *dst += a[j] * b[j]; }
@@ -198,7 +196,7 @@ CAMLprim value statd_pairwise_prod_c(value statd_value, value dst_value, value a
   int n_sites = Bigarray_val(a_value)->dim[1];
   int n_states = Bigarray_val(a_value)->dim[2];
   int rate, site, state;
-  for(rate=0; rate < n_rates; rate++) { 
+  for(rate=0; rate < n_rates; rate++) {
       for(site=0; site < n_sites; site++) {
         for(state=0; state < n_states; state++) {
           *dst = statd[state] * (*a) * (*b);
@@ -228,11 +226,11 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
   double *x_p, *y_p, *util_v;
   // now we clear it out to n_used
   for(site=0; site < n_used; site++) { util[site] = 0.0; }
-  for(rate=0; rate < n_rates; rate++) { 
-    // for each rate, start at the top of the util vector 
+  for(rate=0; rate < n_rates; rate++) {
+    // for each rate, start at the top of the util vector
     util_v = util;
     // 1st term: gets us at top of correct rate cat
-    // 2nd term: gets us "start" entries down that rate cat
+    // 2nd term: gets us "first" entries down that rate cat
     int boost = rate * n_sites * n_states + first * n_states;
     x_p = x + boost;
     y_p = y + boost;

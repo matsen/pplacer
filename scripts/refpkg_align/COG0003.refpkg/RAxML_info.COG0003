@@ -48,7 +48,7 @@ IMPORTANT WARNING
 Found 45 columns that contain only undetermined values which will be treated as missing data.
 Normally these columns should be excluded from the analysis.
 
-Just in case you might need it, an alignment file with 
+Just in case you might need it, an alignment file with
 undetermined columns removed is printed to file COG0003.ref.phymlAln.reduced
 
 
@@ -84,10 +84,10 @@ Fixed Base Frequencies:
 
 RAxML was called as follows:
 
-raxmlHPC-SSE3 -m PROTGAMMAWAG -n COG0003 -s COG0003.ref.phymlAln 
+raxmlHPC-SSE3 -m PROTGAMMAWAG -n COG0003 -s COG0003.ref.phymlAln
 
 
-Inference[0]: Time 1499.527959 GAMMA-based likelihood -14415.589999, best rearrangement setting 10, alpha[0]: 1.153160 
+Inference[0]: Time 1499.527959 GAMMA-based likelihood -14415.589999, best rearrangement setting 10, alpha[0]: 1.153160
 
 
 Conducting final model optimizations on all 1 trees under GAMMA-based models ....
@@ -95,7 +95,7 @@ Conducting final model optimizations on all 1 trees under GAMMA-based models ...
 Inference[0] final GAMMA-based Likelihood: -14415.590001 tree written to file /home/rkodner/prep/noodle/build_refpkgs/runs/COG0003/RAxML_result.COG0003
 
 
-Starting final GAMMA-based thorough Optimization on tree 0 likelihood -14415.590001 .... 
+Starting final GAMMA-based thorough Optimization on tree 0 likelihood -14415.590001 ....
 
 Final GAMMA-based Score of best tree -14415.590001
 
