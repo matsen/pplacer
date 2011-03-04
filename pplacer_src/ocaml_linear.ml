@@ -3,6 +3,8 @@
 
 open Bigarray
 
+let mdims m = (Array2.dim1 m, Array2.dim2 m)
+
 let get_common f = function
   | x::l ->
       let fx = f x in
@@ -10,10 +12,11 @@ let get_common f = function
       fx
   | [] -> assert(false)
 
-let get_common_dims l = get_common Tensor.dims l
+let get_common_mdims l = get_common mdims l
+let get_common_tdims l = get_common Tensor.dims l
 
 let pairwise_prod dst x y =
-  let (n_rates, n_sites, n_states) = get_common_dims [dst;x;y] in
+  let (n_rates, n_sites, n_states) = get_common_tdims [dst;x;y] in
   for rate=0 to n_rates-1 do
     for site=0 to n_sites-1 do
       for state=0 to n_states-1 do
@@ -23,7 +26,7 @@ let pairwise_prod dst x y =
   done
 
 let statd_pairwise_prod statd dst a b =
-  let (n_rates, n_sites, n_states) = get_common_dims [dst;a;b] in
+  let (n_rates, n_sites, n_states) = get_common_tdims [dst;a;b] in
   assert(n_states = Array1.dim statd);
   for rate=0 to n_rates-1 do
     for site=0 to n_sites-1 do
@@ -35,10 +38,8 @@ let statd_pairwise_prod statd dst a b =
   done
 
 (* total up the likes from the util vector *)
-let ll_of_util util n_rates =
-  let n_sites = Array1.dim util
-  and ll_tot = ref 0.
-  in
+let ll_of_util util ~n_rates ~n_sites =
+  let ll_tot = ref 0. in
   for site=0 to n_sites-1 do
     ll_tot := !ll_tot +. log(util.{site})
   done;
@@ -47,7 +48,7 @@ let ll_of_util util n_rates =
   !ll_tot
 
 let log_like3 statd x y z util =
-  let (n_rates, n_sites, n_states) = get_common_dims [x;y;z] in
+  let (n_rates, n_sites, n_states) = get_common_tdims [x;y;z] in
   for site=0 to n_sites-1 do util.{site} <- 0.0 done;
   for rate=0 to n_rates-1 do
     for site=0 to n_sites-1 do
@@ -60,18 +61,20 @@ let log_like3 statd x y z util =
       done
     done
   done;
-  ll_of_util util n_rates
+  ll_of_util util ~n_rates ~n_sites
 
 (* take the logarithm of the dot product of x and y restricted to the interval
- * [start, last]. start and last are 0-indexed, of course.
+ * [first, last] (inclusive). first and last are 0-indexed, of course.
  * *)
 let bounded_logdot x y first last util =
-  let (n_rates, _, n_states) = get_common_dims [x;y]
+  let (n_rates, n_sites, n_states) = get_common_tdims [x;y]
   and n_used = 1 + last - first
   in
+  assert(0 <= first && last > first && last <= n_sites);
+  assert(n_used <= Array1.dim util);
   for site=0 to n_used-1 do util.{site} <- 0.0 done;
   for rate=0 to n_rates-1 do
-    for site=first to last-1 do
+    for site=first to last do
       for state=0 to n_states-1 do
         let util_site = site-first in
         util.{util_site} <-
@@ -79,19 +82,19 @@ let bounded_logdot x y first last util =
       done
     done
   done;
-  ll_of_util util n_rates
+  ll_of_util util ~n_rates ~n_sites:n_used
 
 let gemmish dst a b =
-  let (max_i,max_k) = Gsl_matrix.dims a
-  and (max_k',max_j) = Gsl_matrix.dims b
+  let (a_rows,a_cols) = mdims a
+  and (n_sites, n_states) = get_common_mdims [dst;b]
   in
-  assert(max_k = max_k');
-  assert((max_i,max_j) = Gsl_matrix.dims dst);
-  for i=0 to max_i-1 do
-    for j=0 to max_j-1 do
-      dst.{i,j} <- 0.;
-      for k=0 to max_k-1 do
-        dst.{i,j} <- dst.{i,j} +. a.{i,k} *. b.{k,j}
+  assert(a_rows = a_cols);
+  assert(a_rows = n_states);
+  for site=0 to n_sites-1 do
+    for dst_col=0 to n_states-1 do
+      dst.{site,dst_col} <- 0.;
+      for i=0 to n_states-1 do
+        dst.{site,dst_col} <- dst.{site,dst_col} +. a.{dst_col,i} *. b.{site,i}
       done
     done
   done

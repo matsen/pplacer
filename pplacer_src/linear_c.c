@@ -230,7 +230,7 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
     // for each rate, start at the top of the util vector
     util_v = util;
     // 1st term: gets us at top of correct rate cat
-    // 2nd term: gets us "start" entries down that rate cat
+    // 2nd term: gets us "first" entries down that rate cat
     int boost = rate * n_sites * n_states + first * n_states;
     x_p = x + boost;
     y_p = y + boost;

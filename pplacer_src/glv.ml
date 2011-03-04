@@ -72,7 +72,7 @@ let make ~n_rates ~n_sites ~n_states =
   { e = iba1_create n_sites;
     a = Tensor.create n_rates n_sites n_states; }
 
-let print g = Linear.glv_print g.a
+(* let print g = Linear.glv_print g.a *)
 
 let get_a g ~rate ~site ~state = BA3.get g.a rate site state
 let unsafe_get_a g ~rate ~site ~state =
