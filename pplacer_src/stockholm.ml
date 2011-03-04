@@ -71,22 +71,40 @@ let tokenize_string s =
       raise (Syntax_error (line, col))
   in List.rev (aux 0 [])
 
-type 'a phase =
+module SM = MapsSets.StringMap
+type phase =
   | Needs_header
-  | Needs_footer of 'a list
-  | Found_footer of 'a list
+  | Needs_footer of string list SM.t
+  | Found_footer of (string * string) list
 
+let gap_regexp = Str.regexp "\\."
 let parse tokens =
   let res = List.fold_left
     (fun state tok ->
       match state, tok with
-        | Needs_header, Header -> Needs_footer []
+        | Needs_header, Header -> Needs_footer SM.empty
         | Needs_header, _ -> raise (Parse_error "something before header")
         | _, Header -> raise (Parse_error "header unexpected")
 
-        | Needs_footer l, Alignment (a, b) -> Needs_footer ((a, b) :: l)
-        | Needs_footer l, Footer -> Found_footer l
-        | Needs_footer l, _ -> Needs_footer l
+        | Needs_footer m, Alignment (name, seq) ->
+          let seq = Str.global_replace gap_regexp "-" seq in
+          let l =
+            try
+              SM.find name m
+            with
+              | Not_found -> []
+          in
+          let m = SM.add name (seq :: l) m in
+          Needs_footer m
+        | Needs_footer m, Footer ->
+          let l =
+            SM.fold
+              (fun name seql l ->
+                (name, String.concat "" (List.rev seql)) :: l)
+              m
+              []
+          in Found_footer l
+        | Needs_footer m, _ -> Needs_footer m
         | _, Footer -> raise (Parse_error "footer unexpected")
 
         | Found_footer _, _ -> raise (Parse_error "something after footer")
