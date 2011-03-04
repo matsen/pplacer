@@ -82,7 +82,6 @@ let multi_exp ~dst dd rates bl =
       done;
       let dst_mat = Tensor.BA3.slice_left_2 dst r in
       Linear.dediagonalize dst_mat dd.x dd.util dd.xit;
-      (* Gsl_matrix.transpose_in_place dst_mat; *)
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
