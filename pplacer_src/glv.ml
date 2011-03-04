@@ -222,29 +222,29 @@ let bounded_total_twoexp g start last =
 
 (* take the log like of the product of three things then dot with the stationary
  * distribution. *)
-let log_like3 model x y z =
+let log_like3 utilv_nsites model x y z =
   assert(dims x = dims y && dims y = dims z);
   (Linear.log_like3 (Model.statd model)
                     x.a
                     y.a
                     z.a
-                    (Model.util_v model))
+                    utilv_nsites)
     +. (log_of_2 *.
         ((total_twoexp x) +. (total_twoexp y) +. (total_twoexp z)))
 
 (* the log "dot" of the likelihood vectors in the 0-indexed interval
  * [start,last] *)
-let bounded_logdot model x y start last =
+let bounded_logdot utilv_nsites x y start last =
   assert(dims x = dims y);
   assert(start >= 0 && start <= last && last < get_n_sites x);
   (Linear.bounded_logdot
-    x.a y.a start last (Model.util_v model))
+    x.a y.a start last utilv_nsites)
     +. (log_of_2 *. ((bounded_total_twoexp x start last) +.
                      (bounded_total_twoexp y start last)))
 
 (* just take the log "dot" of the likelihood vectors *)
-let logdot model x y =
-  bounded_logdot model x y 0 ((get_n_sites x)-1)
+let logdot utilv_nsites x y =
+  bounded_logdot utilv_nsites x y 0 ((get_n_sites x)-1)
 
 (* multiply by a tensor *)
 let tensor_mul tensor ~dst ~src =

@@ -10,6 +10,7 @@ let n_like_calls = ref 0
 
 type three_tax = {
   model  : Model.t;
+  util_v : Gsl_vector.vector; (* should be as long as the number of sites *)
   prox   : Glv_edge.t;      (* the proximal glv *)
   dist   : Glv_edge.t;      (* the distal glv *)
   pend   : Glv_edge.t;      (* the pendant, i.e. query glv *)
@@ -20,8 +21,10 @@ let get_dist_bl tt = Glv_edge.get_bl tt.dist
 let get_prox_bl tt = Glv_edge.get_bl tt.prox
 let get_cut_bl tt = (get_dist_bl tt) +. (get_prox_bl tt)
 
-let make model ~prox ~dist ~pend =
-  { model  = model;
+let make model util_v ~prox ~dist ~pend =
+  {
+    model  = model;
+    util_v = util_v;
     prox   = prox;
     dist   = dist;
     pend  = pend;
@@ -29,6 +32,7 @@ let make model ~prox ~dist ~pend =
 
 let log_like tt =
   Glv.log_like3
+    tt.util_v
     tt.model
     (Glv_edge.get_evolv tt.prox)
     (Glv_edge.get_evolv tt.dist)

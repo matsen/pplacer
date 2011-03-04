@@ -38,6 +38,7 @@ let pplacer_core prefs query_fname query_list prior model ref_align gtree
   and fantasy_mod = Base.round (100. *. (fantasy_frac prefs))
   and n_fantasies = ref 0
   in
+  let utilv_nsites = Gsl_vector.create ref_length in
   (* we turn off friend finding in fantasy mode *)
   let friendly_run = friendly prefs && (fantasy prefs = 0.) in
   (* make the friend profile if required *)
@@ -164,7 +165,7 @@ let pplacer_core prefs query_fname query_list prior model ref_align gtree
         (List.map
           (fun loc ->
             (loc,
-            Glv.bounded_logdot model full_query_evolv
+            Glv.bounded_logdot utilv_nsites full_query_evolv
               (Glv_arr.get snodes loc) first_informative last_informative))
           locs)
     in
@@ -178,6 +179,7 @@ let pplacer_core prefs query_fname query_list prior model ref_align gtree
     let tt =
       Three_tax.make
         model
+        utilv_nsites
         ~dist:dist_edge ~prox:prox_edge ~pend:pend_edge
     in
     (* set up the function which gives placements by location *)

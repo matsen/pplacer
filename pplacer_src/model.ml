@@ -15,15 +15,12 @@ type t =
    rates     :  float array;
    (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
    tensor    :  Tensor.tensor;
-   (* util_v is a float bigarray of the same length as the ref alignment *)
-   util_v    :  Gsl_vector.vector;
   }
 
 let statd    model = model.statd
 let diagdq   model = model.diagdq
 let rates    model = model.rates
 let tensor   model = model.tensor
-let util_v   model = model.util_v
 let seq_type model = model.seq_type
 let n_states model = Alignment.nstates_of_seq_type model.seq_type
 let n_rates  model = Array.length (rates model)
@@ -54,7 +51,6 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
     seq_type = seq_type;
     rates = rates;
     tensor = Tensor.create (Array.length rates) n_states n_states;
-    util_v = Gsl_vector.create (Alignment.length ref_align)
   }
 
 let of_prefs ref_dir_complete prefs ref_align =

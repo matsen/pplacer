@@ -78,6 +78,7 @@ let run_file prefs query_fname =
       (fun (name,_) -> print_endline ("\t'"^name^"'"))
       ref_align
   end;
+  let n_sites = Alignment.length ref_align in
 
   (* *** make the likelihood vectors *** *)
   (* the like data from the alignment *)
@@ -104,7 +105,7 @@ let run_file prefs query_fname =
     flush_all ()
   end;
   (* allocate our memory *)
-  let darr = Like_stree.glv_arr_for model ref_align ref_tree in
+  let darr = Like_stree.glv_arr_for model ref_tree n_sites in
   let parr = Glv_arr.mimic darr
   and snodes = Glv_arr.mimic darr
   in
@@ -136,6 +137,7 @@ let run_file prefs query_fname =
   if (Prefs.verb_level prefs) >= 1 then print_endline "done.";
 
   (* check tree likelihood *)
+  let utilv_nsites = Gsl_vector.create n_sites in
   let zero_d = Glv_arr.get_one darr
   and zero_p = Glv_arr.get_one parr
   and sn = Glv_arr.get_one snodes
@@ -147,9 +149,9 @@ let run_file prefs query_fname =
   let util = Glv.mimic zero_d in
   Glv.set_all util 0 1.;
   Printf.printf "tree likelihood is %g\n"
-                (Glv.log_like3 model util_d util_p util);
+                (Glv.log_like3 utilv_nsites model util_d util_p util);
   Printf.printf "supernode likelihood is %g\n"
-                (Glv.logdot model sn util);
+                (Glv.logdot utilv_nsites sn util);
 
   (* *** analyze query sequences *** *)
   let query_bname =

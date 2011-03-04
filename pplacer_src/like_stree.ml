@@ -19,10 +19,10 @@ let like_aln_map_of_data seq_type align tree =
       (Bark_map.to_name_map (Gtree.get_bark_map tree))
       (Array.map fst align))
 
-let glv_arr_for model align tree =
+let glv_arr_for model tree n_sites =
   Glv_arr.make
     ~n_glvs:(1 + Gtree.n_edges tree)
-    ~n_sites:(Alignment.length align)
+    ~n_sites
     ~n_rates:(Model.n_rates model)
     ~n_states:(Model.n_states model)
 
