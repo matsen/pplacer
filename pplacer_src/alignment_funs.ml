@@ -89,3 +89,11 @@ let emper_freq nstates like_map align =
   (* Format.fprintf Format.std_formatter "%a@." Fam_gsl_matvec.ppr_gsl_vector total; *)
   total
 
+let of_any_file fname =
+  if Filename.check_suffix fname ".fasta" then
+    Fasta_channel.list_of_fname fname
+  else if Filename.check_suffix fname ".sth"
+      || Filename.check_suffix fname ".sto" then
+    Stockholm.of_file fname
+  else
+    failwith ("unfamiliar suffix on " ^ fname)
