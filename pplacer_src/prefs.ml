@@ -149,55 +149,54 @@ let args prefs =
     "-p", Arg.Set prefs.calc_pp,
     "Calculate posterior probabilities.";
     "-m", Arg.Set_string prefs.model_name,
-    "Set the sequence substitution model. Protein options are LG (default) or WAG. \
+    "Set the sequence substitution model. Protein options are LG (default), \
+    WAG, or JTT. \
     For nucleotides the GTR parameters must be specified via a stats file.";
     (* model *)
-    "--modelFreqs", Arg.Clear prefs.emperical_freqs,
+    "--model-freqs", Arg.Clear prefs.emperical_freqs,
     "Use protein frequencies counted from the chosen model rather than counts \
     from the reference alignment.";
-    "--gammaCats", Arg.Set_int prefs.gamma_n_cat,
+    "--gamma-cats", Arg.Set_int prefs.gamma_n_cat,
     "Specify the number of categories for a discrete gamma model. (Default is \
     one, i.e. no gamma rate variation.)";
-    "--gammaAlpha", Arg.Set_float prefs.gamma_alpha,
+    "--gamma-alpha", Arg.Set_float prefs.gamma_alpha,
     "Specify the shape parameter for a discrete gamma model.";
     (* like calc parameters *)
-    spec_with_default "--mlTolerance" (fun o -> Arg.Set_float o) prefs.initial_tolerance
+    spec_with_default "--ml-tolerance" (fun o -> Arg.Set_float o) prefs.initial_tolerance
     "Specify the tolerance for the 1st stage of branch length optimization (the 2nd stage optimizes to 1e-5). Default is %g.";
-    spec_with_default "--ppRelErr" (fun o -> Arg.Set_float o) prefs.pp_rel_err
+    spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
     "Specify the relative error for the posterior probability calculation. Default is %g.";
-    "--uniformPrior", Arg.Set prefs.uniform_prior,
+    "--uniform-prior", Arg.Set prefs.uniform_prior,
     "Use a uniform prior rather than exponential in the posterior probability \
     calculation.";
-    spec_with_default "--startPend" (fun o -> Arg.Set_float o) prefs.start_pend
+    spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
     "Set the starting pendant branch length for the ML and Bayes calculations. Default is %g.";
-    spec_with_default "--maxPend" (fun o -> Arg.Set_float o) prefs.max_pend
+    spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
     "Set the maximum pendant branch length for the ML calculation. Default is %g.";
     (* baseball *)
-    spec_with_default "--maxStrikes" (fun o -> Arg.Set_int o) prefs.max_strikes
+    spec_with_default "--max-strikes" (fun o -> Arg.Set_int o) prefs.max_strikes
     "Set the maximum number of strikes for baseball. Setting to zero disables ball playing. Default is %d.";
-    spec_with_default "--strikeBox" (fun o -> Arg.Set_float o) prefs.strike_box
+    spec_with_default "--strike-box" (fun o -> Arg.Set_float o) prefs.strike_box
     "Set the size of the strike box in log likelihood units. Default is %g.";
-    spec_with_default "--maxPitches" (fun o -> Arg.Set_int o) prefs.max_pitches
+    spec_with_default "--max-pitches" (fun o -> Arg.Set_int o) prefs.max_pitches
     "Set the maximum number of pitches for baseball. Default is %d.";
     spec_with_default "--fantasy" (fun o -> Arg.Set_float o) prefs.fantasy
     "Set to a nonzero value to run in fantasy baseball mode. The value given \
     will be the desired average difference between the likelihood of the best \
     placement with the given baseball parameters and that evaluating all \
     maxPitches pitches. Default is %g.";
-    spec_with_default "--fantasyFrac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
+    spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
     "Set the fraction of fragments to use when running fantasy baseball. Default is %g.";
     (* other *)
-    "--writeMasked", Arg.Set prefs.write_masked,
+    "--write-masked", Arg.Set prefs.write_masked,
     "Write out the reference alignment with the query sequence, masked to the \
     region without gaps in the query.";
     spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
     "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
     "--unfriendly", Arg.Clear prefs.friendly,
     "Do not run friend finder pre-analysis.";
-    "--outDir", Arg.Set_string prefs.out_dir,
+    "--out-dir", Arg.Set_string prefs.out_dir,
     "Specify the directory to write place files to.";
-    "--legacy-place", Arg.Set prefs.legacy_place,
-    "Use legacy format rather than new JSON format (deprecated)";
     "--pretend", Arg.Set prefs.pretend,
     "Only check out the files then report. Do not run the analysis.";
     "--csv", Arg.Set prefs.csv,
