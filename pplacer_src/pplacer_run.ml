@@ -136,22 +136,24 @@ let run_file prefs query_fname =
   Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
   if (Prefs.verb_level prefs) >= 1 then print_endline "done.";
 
-  (* check tree likelihood *)
-  let utilv_nsites = Gsl_vector.create n_sites in
-  let zero_d = Glv_arr.get_one darr
-  and zero_p = Glv_arr.get_one parr
-  and sn = Glv_arr.get_one snodes
-  in
-  let util_d = Glv.mimic zero_d
-  and util_p = Glv.mimic zero_p in
-  Glv.evolve_into model ~src:zero_d ~dst:util_d (half_bl_fun 0);
-  Glv.evolve_into model ~src:zero_p ~dst:util_p (half_bl_fun 0);
-  let util = Glv.mimic zero_d in
-  Glv.set_all util 0 1.;
-  Printf.printf "tree likelihood is %g\n"
-                (Glv.log_like3 utilv_nsites model util_d util_p util);
-  Printf.printf "supernode likelihood is %g\n"
-                (Glv.logdot utilv_nsites sn util);
+  (* *** check tree likelihood *** *)
+  if Prefs.check_like prefs then begin
+    let utilv_nsites = Gsl_vector.create n_sites in
+    let zero_d = Glv_arr.get_one darr
+    and zero_p = Glv_arr.get_one parr
+    and sn = Glv_arr.get_one snodes
+    in
+    let util_d = Glv.mimic zero_d
+    and util_p = Glv.mimic zero_p in
+    Glv.evolve_into model ~src:zero_d ~dst:util_d (half_bl_fun 0);
+    Glv.evolve_into model ~src:zero_p ~dst:util_p (half_bl_fun 0);
+    let util = Glv.mimic zero_d in
+    Glv.set_all util 0 1.;
+    Printf.printf "tree likelihood is %g\n"
+                  (Glv.log_like3 utilv_nsites model util_d util_p util);
+    Printf.printf "supernode likelihood is %g\n"
+                  (Glv.logdot utilv_nsites sn util);
+  end;
 
   (* *** analyze query sequences *** *)
   let query_bname =

@@ -39,6 +39,7 @@ type prefs =
     friendly : bool ref;
     pretend : bool ref;
     diagnostic : bool ref;
+    check_like : bool ref;
   }
 
 
@@ -81,6 +82,7 @@ let defaults () =
     friendly = ref true;
     pretend = ref false;
     diagnostic = ref false;
+    check_like = ref false;
   }
 
 
@@ -122,6 +124,7 @@ let legacy_place      p = !(p.legacy_place)
 let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
+let check_like        p = !(p.check_like)
 
 
 (* arguments and preferences *)
@@ -203,6 +206,8 @@ let args prefs =
     "Make an old-format placefile with the resuls.";
     "--diagnostic", Arg.Set prefs.diagnostic,
     "Write out a file describing the 'diagnostic' mutations for various clades.";
+    "--check-like", Arg.Set prefs.check_like,
+    "Write out the likelihood of the reference tree, calculated two ways.";
   ]
 
 (* include a pref here if it should go in the place file *)
