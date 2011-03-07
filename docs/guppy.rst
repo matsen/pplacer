@@ -23,12 +23,14 @@ There is a gentle introduction in MatsenEvans2011_, and a more full treatment in
 
 Here's a table to demonstrate the relation of |guppy| concepts to ones which may be more familiar to the reader:
 
+
+.. unweighted UniFrac        Phylogenetic diversity (pdfrac_)
+.. OTU alpha diversity       PD of the subtree spanned by the placements (pd_)
+
 ========================  =============
 familiar concept          guppy concept 
 ========================  =============
 weighted UniFrac          |KR| distance (kr_)
-unweighted UniFrac        Phylogenetic diversity (pdfrac_)
-OTU alpha diversity       PD of the subtree spanned by the placements (pd_)
 UPGMA using UniFrac       "squash" clustering (squash_)
 PCA using UniFrac         Edge PCA (pca_)
 ========================  =============
@@ -45,7 +47,7 @@ Each of these have their own options.
 Rather than make a suite of little programs, we have opted for an interface analogous to git and svn: namely, a collection of different actions wrapped up into a single interface.
 
 There are two ways to access the commands-- through the command line interface, and through the batch mode.
-A list of these programs is below, and can always be found using ``guppy --cmds``
+A list of these programs is below, and can always be found using ``guppy --cmds``.
 
 
 Command line interface
@@ -91,14 +93,6 @@ List of subcommands
    generated_rst/*
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
 
 .. |guppy| replace:: ``guppy``
 .. |pplacer| replace:: ``pplacer``
@@ -116,7 +110,7 @@ Indices and tables
 .. _phyloxml: http://phyloxml.org/
 .. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/
 .. _EvansMatsen2010: http://arxiv.org/abs/1005.1699
-.. _MatsenEvans2011: http://arxiv.org/abs/1005.1699
+.. _MatsenEvans2011: http://matsen.fhcrc.org/papers/11MatsenEvansEdgeSquash.pdf
 
 .. vim:set ai fo+=n fo-=l ft=rst:
 
