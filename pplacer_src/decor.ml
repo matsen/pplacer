@@ -28,7 +28,7 @@ let green = color (0, 255, 0)
 let blue = color (0, 0, 255)
 
 (* interesting colors *)
-let sand = color (255, 201, 175)
+let sand = color (255, 90, 90)
 
 (* white is 255, black is 0 *)
 let gray intensity = color (intensity, intensity, intensity)
