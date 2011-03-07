@@ -22,8 +22,10 @@ object (self)
 "writes a taxonomically annotated reference tree and an induced taxonomic tree"
   method usage = "usage: ref_tree -o my.xml my1.refpkg [my2.refpkg ...]"
 
-  method action pathl =
-    Phyloxml.pxdata_to_channel self#out_channel
-      (Phyloxml.pxdata_of_named_gtrees
-        (List.flatten (List.map trees_of_refpkg pathl)))
+  method action = function
+    | [] -> ()
+    | pathl ->
+      Phyloxml.pxdata_to_channel self#out_channel
+        (Phyloxml.pxdata_of_named_gtrees
+           (List.flatten (List.map trees_of_refpkg pathl)))
 end
