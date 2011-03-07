@@ -56,5 +56,6 @@ let () =
       print_endline ("Wrote "^generated_dir^rst_name^"...")
 
     )
-    (List.flatten (List.map snd (Guppy.command_list ())))
+    (("pplacer", (fun () -> new Prefs.pplacer_cmd ()))::
+      (List.flatten (List.map snd (Guppy.command_list ()))))
 

@@ -5,14 +5,11 @@ open MapsSets
 
 let parse_args () =
   let files  = ref []
-  and prefs = Prefs.defaults ()
   in
-  let usage =
-    "pplacer "^Version.version_revision^"\npplacer [options] [alignment]\n"
-  and anon_arg arg =
-    files := arg :: !files
+  let prefs = Prefs.defaults ()
+  and anon_arg arg = files := arg :: !files
   in
-  Arg.parse (Prefs.args prefs) anon_arg usage;
+  Arg.parse (Prefs.specl prefs) anon_arg Prefs.usage;
   (List.rev !files, prefs)
 
 

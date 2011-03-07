@@ -3,6 +3,7 @@ tags
 *.mltop
 *.top
 *.native
+*.swp
 .ocamlinit
 .toplevel_history
 top_tests

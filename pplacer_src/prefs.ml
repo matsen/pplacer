@@ -135,83 +135,73 @@ let version           p = !(p.version)
 let spec_with_default symbol setfun p help =
   (symbol, setfun p, Printf.sprintf help !p)
 
-let args prefs =
+let specl prefs =
   [
     (* short *)
-    "-c", Arg.Set_string prefs.refpkg_path,
-    "Specify the path to the reference package.";
-    "-t", Arg.Set_string prefs.tree_fname,
-    "Specify the reference tree filename.";
-    "-r", Arg.Set_string prefs.ref_align_fname,
-    "Specify the reference alignment filename.";
-    "-s", Arg.Set_string prefs.stats_fname,
-    "Supply a phyml stats.txt file or a RAxML info file which specifies the model parameters. \
-    The information in this file can be overriden on the command line.";
-    "-d", Arg.Set_string prefs.ref_dir,
-    "Specify the directory containing the reference information.";
-    "-p", Arg.Set prefs.calc_pp,
-    "Calculate posterior probabilities.";
-    "-m", Arg.Set_string prefs.model_name,
-    "Set the sequence substitution model. Protein options are LG (default), \
-    WAG, or JTT. \
-    For nucleotides the GTR parameters must be specified via a stats file.";
-    (* model *)
-    "--model-freqs", Arg.Clear prefs.emperical_freqs,
-    "Use protein frequencies counted from the chosen model rather than counts \
-    from the reference alignment.";
-    "--gamma-cats", Arg.Set_int prefs.gamma_n_cat,
-    "Specify the number of categories for a discrete gamma model. (Default is \
-    one, i.e. no gamma rate variation.)";
-    "--gamma-alpha", Arg.Set_float prefs.gamma_alpha,
-    "Specify the shape parameter for a discrete gamma model.";
-    (* like calc parameters *)
-    spec_with_default "--ml-tolerance" (fun o -> Arg.Set_float o) prefs.initial_tolerance
-    "Specify the tolerance for the 1st stage of branch length optimization (the 2nd stage optimizes to 1e-5). Default is %g.";
-    spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
-    "Specify the relative error for the posterior probability calculation. Default is %g.";
-    "--uniform-prior", Arg.Set prefs.uniform_prior,
-    "Use a uniform prior rather than exponential in the posterior probability \
-    calculation.";
-    spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
-    "Set the starting pendant branch length for the ML and Bayes calculations. Default is %g.";
-    spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
-    "Set the maximum pendant branch length for the ML calculation. Default is %g.";
-    (* baseball *)
-    spec_with_default "--max-strikes" (fun o -> Arg.Set_int o) prefs.max_strikes
-    "Set the maximum number of strikes for baseball. Setting to zero disables ball playing. Default is %d.";
-    spec_with_default "--strike-box" (fun o -> Arg.Set_float o) prefs.strike_box
-    "Set the size of the strike box in log likelihood units. Default is %g.";
-    spec_with_default "--max-pitches" (fun o -> Arg.Set_int o) prefs.max_pitches
-    "Set the maximum number of pitches for baseball. Default is %d.";
-    spec_with_default "--fantasy" (fun o -> Arg.Set_float o) prefs.fantasy
-    "Set to a nonzero value to run in fantasy baseball mode. The value given \
-    will be the desired average difference between the likelihood of the best \
-    placement with the given baseball parameters and that evaluating all \
-    maxPitches pitches. Default is %g.";
-    spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
-    "Set the fraction of fragments to use when running fantasy baseball. Default is %g.";
-    (* other *)
-    "--write-masked", Arg.Set prefs.write_masked,
-    "Write out the reference alignment with the query sequence, masked to the \
-    region without gaps in the query.";
-    spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
-    "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
-    "--unfriendly", Arg.Clear prefs.friendly,
-    "Do not run friend finder pre-analysis.";
-    "--out-dir", Arg.Set_string prefs.out_dir,
-    "Specify the directory to write place files to.";
-    "--pretend", Arg.Set prefs.pretend,
-    "Only check out the files then report. Do not run the analysis.";
-    "--csv", Arg.Set prefs.csv,
-    "Make a CSV file with the results.";
-    "--old-format", Arg.Set prefs.old_format,
-    "Make an old-format placefile with the resuls.";
-    "--diagnostic", Arg.Set prefs.diagnostic,
-    "Write out a file describing the 'diagnostic' mutations for various clades.";
-    "--check-like", Arg.Set prefs.check_like,
-    "Write out the likelihood of the reference tree, calculated two ways.";
-    "--version", Arg.Set prefs.version,
-    "Write out the version number and exit.";
+"-c", Arg.Set_string prefs.refpkg_path,
+"Specify the path to the reference package.";
+"-t", Arg.Set_string prefs.tree_fname,
+"Specify the reference tree filename.";
+"-r", Arg.Set_string prefs.ref_align_fname,
+"Specify the reference alignment filename.";
+"-s", Arg.Set_string prefs.stats_fname,
+"Supply a phyml stats.txt or a RAxML info file giving the model parameters.";
+"-d", Arg.Set_string prefs.ref_dir,
+"Specify the directory containing the reference information.";
+"-p", Arg.Set prefs.calc_pp,
+"Calculate posterior probabilities.";
+"-m", Arg.Set_string prefs.model_name,
+"Substitution model. Protein: are LG, WAG, or JTT. Nucleotides: GTR.";
+(* model *)
+"--model-freqs", Arg.Clear prefs.emperical_freqs,
+"Use model frequencies instead of reference alignment frequencies.";
+"--gamma-cats", Arg.Set_int prefs.gamma_n_cat,
+"Number of categories for discrete gamma model.";
+"--gamma-alpha", Arg.Set_float prefs.gamma_alpha,
+"Specify the shape parameter for a discrete gamma model.";
+(* like calc parameters *)
+spec_with_default "--ml-tolerance" (fun o -> Arg.Set_float o) prefs.initial_tolerance
+"1st stage branch len optimization tolerance (2nd stage to 1e-5). Default: %g.";
+spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
+"Relative error for the posterior probability calculation. Default is %g.";
+"--unif-prior", Arg.Set prefs.uniform_prior,
+"Use a uniform prior rather than exponential.";
+spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
+"Starting pendant branch length. Default is %g.";
+spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
+"Set the maximum ML pendant branch length. Default is %g.";
+(* baseball *)
+spec_with_default "--max-strikes" (fun o -> Arg.Set_int o) prefs.max_strikes
+"Maximum number of strikes for baseball. 0 -> no ball playing. Default is %d.";
+spec_with_default "--strike-box" (fun o -> Arg.Set_float o) prefs.strike_box
+"Set the size of the strike box in log likelihood units. Default is %g.";
+spec_with_default "--max-pitches" (fun o -> Arg.Set_int o) prefs.max_pitches
+"Set the maximum number of pitches for baseball. Default is %d.";
+"--fantasy", Arg.Set_float prefs.fantasy,
+"Desired likelihood cutoff for fantasy baseball mode. 0 -> no fantasy.";
+spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
+"Fraction of fragments to use when running fantasy baseball. Default is %g.";
+(* other *)
+"--write-masked", Arg.Set prefs.write_masked,
+"Write alignment masked to the region without gaps in the query.";
+spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
+"Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
+"--unfriendly", Arg.Clear prefs.friendly,
+"Do not run friend finder pre-analysis.";
+"--out-dir", Arg.Set_string prefs.out_dir,
+"Specify the directory to write place files to.";
+"--pretend", Arg.Set prefs.pretend,
+"Only check out the files then report. Do not run the analysis.";
+"--csv", Arg.Set prefs.csv,
+"Make a CSV file with the results.";
+"--old-format", Arg.Set prefs.old_format,
+"Make an old-format placefile with the resuls.";
+"--diagnostic", Arg.Set prefs.diagnostic,
+"Write file describing the 'diagnostic' mutations for various clades.";
+"--check-like", Arg.Set prefs.check_like,
+"Write out the likelihood of the reference tree, calculated two ways.";
+"--version", Arg.Set prefs.version,
+"Write out the version number and exit.";
   ]
 
 (* include a pref here if it should go in the place file *)
@@ -287,4 +277,17 @@ let read pref_lines =
   in
   aux (titled_typed_prefs p, pref_lines);
   p
+
+let usage =
+    "pplacer [options] [alignment]"
+
+  (* for the time being just to generate documentation *)
+class pplacer_cmd () =
+object
+  inherit Subcommand.subcommand ()
+  method desc = "performs phylogenetic placement"
+  method usage = usage
+  method specl = specl (defaults ())
+  method action _ = ()
+end
 

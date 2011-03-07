@@ -132,7 +132,7 @@ object (self)
 
   val outfile = flag "-o"
     (Plain ("", "Output file. Default is derived from the input filenames."))
-  val simple_colors = flag "--color-gradiation"
+  val simple_colors = flag "--color-grad"
     (Plain (true, "Use color gradation as well as thickness to represent mass transport."))
   val gray_black_colors = flag "--gray-black"
     (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
