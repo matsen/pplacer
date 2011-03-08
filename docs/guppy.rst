@@ -18,7 +18,7 @@ guppy
 Introduction
 ============
 
-To use the statistical comparison features of |guppy|, it's a good idea to have a basic understanding of what the Kantorovich-Rubinstein (KR, a.k.a. earth-mover's distance) is doing, and how the edge PCA and squash clustering algorithms work. 
+To use the statistical comparison features of |guppy|, it's a good idea to have a basic understanding of what the Kantorovich-Rubinstein (KR, a.k.a. earth-mover's distance) is doing, and how the edge PCA and squash clustering algorithms work.
 There is a gentle introduction in MatsenEvans2011_, and a more full treatment in EvansMatsen2010_.
 
 Here's a table to demonstrate the relation of |guppy| concepts to ones which may be more familiar to the reader:
@@ -28,7 +28,7 @@ Here's a table to demonstrate the relation of |guppy| concepts to ones which may
 .. OTU alpha diversity       PD of the subtree spanned by the placements (pd_)
 
 ========================  =============
-familiar concept          guppy concept 
+familiar concept          guppy concept
 ========================  =============
 weighted UniFrac          |KR| distance (kr_)
 UPGMA using UniFrac       "squash" clustering (squash_)
@@ -62,17 +62,27 @@ These programs are listed with more detail below, and can always be found using 
 
 Batch mode
 ----------
-It's easy to run lots of commands at once with batch mode.
-However, unlike running the equivalent set of commands on the command line, *.place files are only loaded once per batch file run*.
-You don't have to specify loading them or anything; |guppy| just loads a given file the first time it is used in a command.
 
-To use the batch mode, just put the commands, options, and placefiles you want into a file.
-One line per command, and it's not necessary to write ``guppy COMMAND``. 
-So the equivalent command to the above run in a batch file would be 
-``heat --gray-black coastal.place DCM.place`` .
-Note that you need to specify each option each time you run a command-- they don't carry between lines of a batch file. 
-That's on purpose.
+It's easy to run lots of commands at once with batch mode.  However, unlike
+running the equivalent set of commands on the command line, *placefiles are
+only loaded once per batch file run*. |guppy| will load a given file the first
+time it is used in a command.
 
+Batch files are files with one guppy command per line, specified exactly as
+would be written in a shell, except without the leading ``guppy``. Arguments
+can be enclosed in double quotes to preserve whitespace, and double quotes
+within quoted strings are quoted by doubling (e.g. ``"spam ""and""
+eggs"``. Globbing (e.g. ``*.json``) is not allowed. Comments are also allowed
+in batch files; everything on a line after a ``#`` is ignored.
+
+An example batch file::
+
+  # Whole-line comment.
+  pca -o pca -c some.refpkg src/a.json src/b.json
+  squash -c some.refpkg -o squash_out src/a.json src/b.json
+  classify -c some.refpkg some.json  # inline comment
+
+..
 
 phyloXML viewing notes
 ----------------------
@@ -90,7 +100,7 @@ List of subcommands
    :maxdepth: 2
    :glob:
 
-   generated_rst/*
+   generated_rst/guppy_*
 
 
 

@@ -5,8 +5,8 @@ let details_dir = docs_dir^"details/"
 let generated_dir = docs_dir^"generated_rst/"
 
 let check_directory path =
-  if not (Sys.is_directory path) then 
-    failwith 
+  if not (Sys.is_directory path) then
+    failwith
       ("Could not find the "^path^" directory. \
       Please run this command in the pplacer repository root directory.")
 
@@ -23,9 +23,14 @@ let () =
   List.iter check_directory [docs_dir; details_dir; generated_dir;];
 
   List.iter
-    (fun (name, pre_o) ->
+    (fun (name, prefix, pre_o) ->
       let o = pre_o ()
-      and rst_name = name^".rst"
+      and rst_name =
+        Printf.sprintf "%s%s.rst"
+          (match prefix with
+            | None -> ""
+            | Some s -> s ^ "_")
+          name
       in
       let ch = open_out (generated_dir^rst_name) in
       let endline () = Printf.fprintf ch "\n" in
@@ -56,6 +61,8 @@ let () =
       print_endline ("Wrote "^generated_dir^rst_name^"...")
 
     )
-    (("pplacer", (fun () -> new Prefs.pplacer_cmd ()))::
-      (List.flatten (List.map snd (Guppy.command_list ()))))
+    (("pplacer", None, (fun () -> new Prefs.pplacer_cmd ()))::
+        (List.map
+           (fun (name, pre_o) -> name, Some "guppy", pre_o)
+           (List.flatten (List.map snd (Guppy.command_list ())))))
 
