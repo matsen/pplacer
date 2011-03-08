@@ -100,7 +100,7 @@ List of subcommands
    :maxdepth: 2
    :glob:
 
-   generated_rst/*
+   generated_rst/guppy_*
 
 
 
