@@ -270,3 +270,44 @@ let quote_regex = Str.regexp "'"
 let sqlite_escape s =
   Printf.sprintf "'%s'" (Str.global_replace quote_regex "''" s)
 
+(* parsing *)
+exception Syntax_error of int * int
+
+let rec first_match groups s =
+  match groups with
+    | g :: rest ->
+      begin
+        try
+          g, Str.matched_group g s
+        with
+          | Not_found -> first_match rest s
+      end
+    | [] -> raise Not_found
+
+let pos s ch =
+  let rec aux pos line =
+    try
+      let pos' = String.index_from s pos '\n' in
+      if pos' >= ch then
+        line, ch - pos
+      else
+        aux (succ pos') (succ line)
+    with
+      | Not_found -> line, ch - pos
+  in aux 0 1
+
+let tokenize_string regexp to_token s =
+  let rec aux en accum =
+    if String.length s = en then
+      accum
+    else if Str.string_match regexp s en then
+      let accum =
+        try
+          (to_token s) :: accum
+        with
+          | Not_found -> accum
+      in aux (Str.match_end ()) accum
+    else
+      let line, col = pos s en in
+      raise (Syntax_error (line, col))
+  in List.rev (aux 0 [])

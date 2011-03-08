@@ -21,55 +21,17 @@ let stockholm_regexp = Str.regexp begin
   ]) ^ "\\)[ \t]*$\n*"
 end
 
-let rec first_match groups s =
-  match groups with
-    | g :: rest ->
-      begin
-        try
-          g, Str.matched_group g s
-        with
-          | Not_found -> first_match rest s
-      end
-    | [] -> raise Not_found
-
 let sline_of_match s =
-  match first_match [2; 3; 4; 5] s with
+  match Base.first_match [2; 3; 4; 5] s with
     | 2, _ -> Header
     | 3, _ -> Footer
     | 4, s -> Markup s
     | 5, _ -> Alignment (Str.matched_group 6 s, Str.matched_group 7 s)
     | _, _ -> invalid_arg "sline_of_match"
 
-exception Syntax_error of int * int
+let tokenize_stockholm = Base.tokenize_string stockholm_regexp sline_of_match
+
 exception Parse_error of string
-
-let pos s ch =
-  let rec aux pos line =
-    try
-      let pos' = String.index_from s pos '\n' in
-      if pos' >= ch then
-        line, ch - pos
-      else
-        aux (succ pos') (succ line)
-    with
-      | Not_found -> line, ch - pos
-  in aux 0 1
-
-let tokenize_string s =
-  let rec aux en accum =
-    if String.length s = en then
-      accum
-    else if Str.string_match stockholm_regexp s en then
-      let accum =
-        try
-          (sline_of_match s) :: accum
-        with
-          | Not_found -> accum
-      in aux (Str.match_end ()) accum
-    else
-      let line, col = pos s en in
-      raise (Syntax_error (line, col))
-  in List.rev (aux 0 [])
 
 module SM = MapsSets.StringMap
 type phase =
@@ -116,9 +78,9 @@ let parse tokens =
     | _ -> raise (Parse_error "didn't reach footer by EOF")
 
 let of_string s =
-  parse (tokenize_string s)
+  parse (tokenize_stockholm s)
 
 let of_file fname =
   let lines = File_parsing.string_list_of_file fname in
-  let tokens = List.flatten (List.map tokenize_string lines) in
+  let tokens = List.flatten (List.map tokenize_stockholm lines) in
   parse tokens

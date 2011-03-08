@@ -93,16 +93,21 @@ let cmd_map_of_list l =
     display_map
 
 (* intended to be the inner loop of a function *)
-let inner_loop ~prg_name ~version (display_map, cmd_map) =
+let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
+  let process = process_cmd prg_name display_map cmd_map in
   Arg.parse
     [
       "--version", Arg.Unit (fun () -> print_endline version; exit 0),
       "Print version and exit";
       "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map),
       "Print a list of the available commands.";
+      "--batch", Arg.String (fun fname ->
+        let argll = Batchfile.of_file fname in
+        List.iter process argll),
+      "Run the provided batch file of guppy commands";
     ]
     (fun _ -> (* anonymous args. tl to remove command name. *)
-      process_cmd prg_name display_map cmd_map (List.tl (Array.to_list Sys.argv));
+      process (List.tl (Array.to_list Sys.argv));
       exit 0) (* need to exit to avoid processing the other anon args as cmds *)
     (Printf.sprintf
       "Type %s --cmds to see the list of available commands."
