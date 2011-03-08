@@ -90,7 +90,7 @@ let emper_freq nstates like_map align =
   total
 
 let of_any_file fname =
-  let has_suffix fname = Filename.check_suffix fname ".fasta" in
+  let has_suffix suffix = Filename.check_suffix fname suffix in
   if has_suffix ".fasta" || has_suffix ".fa" then
     Fasta_channel.list_of_fname fname
   else if has_suffix ".sth" || has_suffix ".sto" then
