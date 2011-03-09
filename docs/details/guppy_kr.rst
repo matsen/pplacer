@@ -11,7 +11,7 @@ by its closed form formula
     Z(P,Q) = 
     \int_T \left| P(\tau(y)) - Q(\tau(y)) \right| \, \lambda(dy).
 
-This is a generalization of the UniFrac distance, which can only place mass at leaves and cannot accomodate uncertainty.
+This is a generalization of the UniFrac distance (UniFrac can only place mass at leaves and cannot accomodate uncertainty).
 There is a further generalization to an :math:`L^p` Zolotarev-type version:
 for :math:`0 < p < \infty` we have the distances
 
