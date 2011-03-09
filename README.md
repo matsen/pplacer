@@ -1,7 +1,7 @@
 # pplacer and guppy
 
 `pplacer` places reads on a phylogenetic tree. 
-`guppy` (Grand Unified Phylogenetic Placement Yanalyzer) analyzes them.
+`guppy` (Grand Unified Phylogenetic Placement Yanalyzer) yanalyzes them.
 
 * [project webpage](http://matsen.fhcrc.org/pplacer/)
 * [binaries](http://matsen.fhcrc.org/pplacer/download.html)
