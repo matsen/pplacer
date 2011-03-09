@@ -4,7 +4,7 @@ guppy
 
 :Authors: Erick Matsen and Aaron Gallagher
 :Title: mokaphy
-:Version: 0.4
+:Version: 0.1
 :License: GPL v3
 :Date: March 2011
 
