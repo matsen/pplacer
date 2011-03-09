@@ -51,14 +51,24 @@ let model_of_stats_fname prefs stats_fname ref_align =
   prefs.Prefs.stats_fname := stats_fname;
   Model.of_prefs "" prefs ref_align
 
-(* this is the primary builder. *)
-let of_strmap prefs m =
+(* This is the primary builder. We have the option of specifying an actual
+ * alignment and a tree if we have them already. *)
+let of_strmap ?ref_tree ?ref_align prefs m =
   let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
-  let lfasta_aln = lazy (Alignment.uppercase (Alignment.read_fasta(get "aln_fasta"))) in
-  let lref_tree = lazy (Newick_gtree.of_file (get "tree_file"))
+  let lfasta_aln =
+    lazy
+      (match ref_align with
+      | Some a -> a
+      | None -> Alignment.uppercase (Alignment.read_fasta(get "aln_fasta")))
+  in
+  let lref_tree =
+    lazy
+      (match ref_tree with
+      | Some t -> t
+      | None -> Newick_gtree.of_file (get "tree_file"))
   and lmodel =
       lazy
         (let aln = Lazy.force lfasta_aln in

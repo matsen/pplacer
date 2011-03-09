@@ -17,33 +17,32 @@ let run_file prefs query_fname =
     end
   in
 
-   (* *** build reference package *** *)
-  let rp =
-    Refpkg.of_strmap prefs
-      (List.fold_right
-      (* only set if the option string is non empty.
-       * override the contents of the reference package. *)
-        (fun (k,v) m ->
-          if v = "" then m
-          else StringMap.add k (ref_dir_complete^v) m)
-        [
-          "tree_file", Prefs.tree_fname prefs;
-          "aln_fasta", Prefs.ref_align_fname prefs;
-          "tree_stats", Prefs.stats_fname prefs;
-        ]
-        (match Prefs.refpkg_path prefs with
+  (* string map which represents the elements of the reference package; these
+   * may be actually a reference package or specified on the command line. *)
+  let rp_strmap =
+    List.fold_right
+    (* only set if the option string is non empty.
+     * override the contents of the reference package. *)
+      (fun (k,v) m ->
+        if v = "" then m
+        else StringMap.add k (ref_dir_complete^v) m)
+      [
+        "tree_file", Prefs.tree_fname prefs;
+        "aln_fasta", Prefs.ref_align_fname prefs;
+        "tree_stats", Prefs.stats_fname prefs;
+      ]
+      (match Prefs.refpkg_path prefs with
         | "" ->
             StringMap.add "name"
               (Base.safe_chop_extension (Prefs.ref_align_fname prefs))
               StringMap.empty
-        | path -> Refpkg_parse.strmap_of_path path))
+        | path -> Refpkg_parse.strmap_of_path path)
   in
-  let ref_tree  = Refpkg.get_ref_tree  rp
-  and model     = Refpkg.get_model     rp
+
+  let ref_tree = 
+    try Newick_gtree.of_file (StringMap.find "tree_file" rp_strmap) with
+    | Not_found -> failwith "please specify a reference tree with -t or -c"
   in
-  if (Prefs.verb_level prefs) > 0 &&
-    not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
-       print_endline Placerun_io.bifurcation_warning;
 
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_list = Newick_gtree.get_name_list ref_tree in
@@ -62,7 +61,14 @@ let run_file prefs query_fname =
         print_endline
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
-      Refpkg.get_aln_fasta rp
+      try
+        Alignment.uppercase 
+          (Alignment.read_fasta (StringMap.find "aln_fasta" rp_strmap))
+      with
+      | Not_found -> 
+          failwith 
+          "Please specify a reference alignment with -r or -c, or include all \
+          reference sequences in the primary alignment."
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
@@ -79,6 +85,14 @@ let run_file prefs query_fname =
       ref_align
   end;
   let n_sites = Alignment.length ref_align in
+
+
+  (* *** build reference package *** *)
+  let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
+  let model = Refpkg.get_model rp in
+  if (Prefs.verb_level prefs) > 0 &&
+    not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
+       print_endline Placerun_io.bifurcation_warning;
 
   (* *** make the likelihood vectors *** *)
   (* the like data from the alignment *)

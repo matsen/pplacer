@@ -76,6 +76,28 @@ Now it is even easier to write the pplacer command::
   pplacer -c my.refpkg mergedWithRefpkg.sto
 
 
+Examples using HMMER
+````````````````````
+
+HMMER_ is another excellent package for searching and aligning sequences by the Eddy group, which can align amino acid and nucleotide sequences.
+
+Assume that we have a reference alignment `refseqs.sto` in Stockholm format. We first build an HMM::
+
+  hmmbuild refseqs.hmm refseqs.sto
+
+Then we can use it to make a combined alignment with the reference sequences and the reads::
+
+  hmmalign -o combo.sto --mapali refseqs.sto refseqs.hmm qseqs.fasta 
+
+Now we can run pplacer::
+
+  pplacer -t rpoB.tre -s RAxML_info.rpoB combo.sto 
+
+... or with a reference package::
+
+  pplacer -c rpoB.refpkg combo.sto 
+
+
 .. Fantasy baseball
 .. ----------------
 .. 
@@ -85,4 +107,5 @@ Now it is even easier to write the pplacer command::
 
 
 .. _Infernal: http://infernal.janelia.org/
+.. _HMMER: http://hmmer.janelia.org/
 
