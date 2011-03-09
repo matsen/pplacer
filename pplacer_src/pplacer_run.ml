@@ -49,7 +49,7 @@ let run_file prefs query_fname =
   let ref_name_set = StringSetFuns.of_list ref_name_list in
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
-  let seq_list = Alignment_funs.of_any_file query_fname in
+  let seq_list = Alignment_funs.upper_list_of_any_file query_fname in
   let ref_list, query_list =
     List.partition
       (fun (name,_) -> StringSet.mem name ref_name_set)
@@ -62,11 +62,11 @@ let run_file prefs query_fname =
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
       try
-        Alignment.uppercase 
-          (Alignment.read_fasta (StringMap.find "aln_fasta" rp_strmap))
+        Alignment_funs.upper_aln_of_any_file 
+          (StringMap.find "aln_fasta" rp_strmap)
       with
-      | Not_found -> 
-          failwith 
+      | Not_found ->
+          failwith
           "Please specify a reference alignment with -r or -c, or include all \
           reference sequences in the primary alignment."
     end

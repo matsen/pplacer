@@ -89,7 +89,7 @@ let emper_freq nstates like_map align =
   (* Format.fprintf Format.std_formatter "%a@." Fam_gsl_matvec.ppr_gsl_vector total; *)
   total
 
-let of_any_file fname =
+let list_of_any_file fname =
   let has_suffix suffix = Filename.check_suffix fname suffix in
   if has_suffix ".fasta" || has_suffix ".fa" then
     Fasta_channel.list_of_fname fname
@@ -97,3 +97,9 @@ let of_any_file fname =
     Stockholm.of_file fname
   else
     failwith ("unfamiliar suffix on " ^ fname)
+
+let uppercase_list l = List.map Alignment.pair_uppercase l
+let upper_list_of_any_file fname = uppercase_list (list_of_any_file fname)
+
+let aln_of_any_file fname = Array.of_list (list_of_any_file fname)
+let upper_aln_of_any_file fname = Alignment.uppercase (aln_of_any_file fname)

@@ -56,8 +56,9 @@ let length align =
   else if sameLengths align then String.length (get_seq align 0)
   else failwith "length: not all same length"
 
-let uppercase aln =
-  Array.map (fun (name, seq) -> (name, String.uppercase seq)) aln
+let pair_uppercase (name, seq) = (name, String.uppercase seq)
+
+let uppercase aln = Array.map pair_uppercase aln
 
 let to_map_by_name aln =
   Array.fold_right
