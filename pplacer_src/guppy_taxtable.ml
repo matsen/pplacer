@@ -13,7 +13,7 @@ object (self)
     super_refpkg#specl
     @ super_outfile#specl
 
-  method desc = "makes sql for a reference package"
+  method desc = "makes SQL enabling taxonomic querying of placement results"
   method usage = "usage: taxtable [options] -c <refpkg>"
 
   method action _ =

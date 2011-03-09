@@ -19,7 +19,7 @@ Introduction
 ============
 
 To use the statistical comparison features of |guppy|, it's a good idea to have a basic understanding of what the Kantorovich-Rubinstein (KR, a.k.a. earth-mover's distance) is doing, and how the edge PCA and squash clustering algorithms work.
-There is a gentle introduction in MatsenEvans2011_, and a more full treatment in EvansMatsen2010_.
+There is a gentle introduction in `Matsen and Evans`_, and a more full treatment in `Evans and Matsen`_.
 
 Here's a table to demonstrate the relation of |guppy| concepts to ones which may be more familiar to the reader:
 
@@ -84,6 +84,18 @@ An example batch file::
 
 ..
 
+
+About multiplicities
+--------------------
+
+The new versions of pplacer and guppy support "multiplicities," i.e. multiple reads being treated as one.
+For example, if some reads are identical, they can be treated as a group.
+Doing so makes guppy operations *much* faster.
+
+By default, they are used "as is" for guppy calculations-- a single placement with multiplicity four is the same as four reads placed individually.
+However, if one would like to decrease the impact of multiplicities on downstream analysis (e.g. if PCR artifacts are suspected) one can use the ``--transform`` option to choose a transform for the multiplicies before use.
+
+
 phyloXML viewing notes
 ----------------------
 |guppy| makes fattened and annotated trees to visualize the results of various analyses.
@@ -92,6 +104,7 @@ We like looking at these trees using the tree viewer archaeopteryx_.
 If you open archaeopteryx with the default settings, you will see *nothing interesting*, simply the reference tree.
 You need to click on the "Colorize Branches" and "Use branch-width" check boxes.
 If you don't see those check boxes, then use `this configuration file`_ (if you are going to copy and paste it click on "raw" first).
+
 
 List of subcommands
 ===================
@@ -119,8 +132,8 @@ List of subcommands
 .. _this configuration file: http://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
 .. _phyloxml: http://phyloxml.org/
 .. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/
-.. _EvansMatsen2010: http://arxiv.org/abs/1005.1699
-.. _MatsenEvans2011: http://matsen.fhcrc.org/papers/11MatsenEvansEdgeSquash.pdf
+.. _Evans and Matsen: http://arxiv.org/abs/1005.1699
+.. _Matsen and Evans: http://matsen.fhcrc.org/papers/11MatsenEvansEdgeSquash.pdf
 
 .. vim:set ai fo+=n fo-=l ft=rst:
 

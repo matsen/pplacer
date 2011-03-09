@@ -90,7 +90,7 @@ object
   val sig_figs = flag "--sig-figs"
     (Formatted (3, "Set the number of significant figures used for rounding (default %d)."))
   val cutoff = flag "--cutoff"
-    (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ration (default %g)."))
+    (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ratio (default %g)."))
 
   method specl = super_out_prefix#specl @ [
     int_flag sig_figs;

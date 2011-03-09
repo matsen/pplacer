@@ -9,7 +9,7 @@ object
   method specl = []
 
   method desc =
-"converts .place files to .json files"
+"converts old-style .place files to .json placement files"
   method usage = "usage: to_json placefile[s]"
 
   method private placefile_action prl =
