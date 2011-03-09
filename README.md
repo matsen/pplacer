@@ -1,13 +1,12 @@
 # pplacer and guppy
 
-`pplacer` places reads on a phylogenetic tree. 
+`pplacer` places reads on a phylogenetic tree.
 `guppy` (Grand Unified Phylogenetic Placement Yanalyzer) yanalyzes them.
 
-* [project webpage](http://matsen.fhcrc.org/pplacer/)
-* [binaries](http://matsen.fhcrc.org/pplacer/download.html)
+* [project webpage (with compiled binaries)](http://matsen.fhcrc.org/pplacer/)
 * [documentation](http://matsen.github.com/pplacer/)
-* [compilation instructions](http://matsen.fhcrc.org/pplacer/compile.html)
 * [tutorial](http://github.com/fhcrc/microbiome-demo)
+* [compilation instructions](http://matsen.fhcrc.org/pplacer/compile.html)
 
 `pplacer` and `guppy` are free software under the GPL v3.
 
