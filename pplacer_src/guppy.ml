@@ -8,13 +8,15 @@ let command_list () =
 
     "statistical comparison", [
       "bary", (fun () -> new Guppy_bary.cmd ());
-      "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
       "bootviz", (fun () -> new Guppy_bootviz.cmd ());
       "squash", (fun () -> new Guppy_squash.cmd ());
       "heat", (fun () -> new Guppy_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());
       "pca", (fun () -> new Guppy_pca.cmd ());
+      (* untested so invisible
+      "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
       "uavgdist", (fun () -> new Guppy_avgdist.uavgdist_cmd ());
+      *)
     ];
 
     "classification", [

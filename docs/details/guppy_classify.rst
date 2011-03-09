@@ -1,6 +1,6 @@
 
-This subcommand outputs the classifications made by `pplacer` in a tabular format appropriate for use with R or SQL.
-For example, here is a classification list made for one read. 
+This subcommand outputs the classifications made by pplacer in a tabular format appropriate for use with R or SQL.
+For example, here is a classification list made for one read.
 The columns are as follows: read name, attempted rank for classification, actual rank for classification, taxonomic identifier, and confidence.
 You can see that in this example, there is some uncertainty at and below species, but only one classification at the genus level.
 
