@@ -20,8 +20,8 @@ type prior = Uniform_prior | Exponential_prior of float
 
 (* pplacer_core :
   * actually try the placements, etc. return placement records *)
-let pplacer_core prefs query_fname query_list prior model ref_align gtree
-      ~darr ~parr ~snodes locs =
+let pplacer_core prefs query_fname locs prior model ref_align gtree
+      ~darr ~parr ~snodes query_list =
   let seq_type = Model.seq_type model
   and prior_fun =
     match prior with

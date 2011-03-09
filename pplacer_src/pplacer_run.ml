@@ -179,14 +179,16 @@ let run_file prefs query_fname =
       ((Gtree.tree_length ref_tree) /.
         (float_of_int (Gtree.n_edges ref_tree)))
   in
+  let partial = Core.pplacer_core prefs query_fname locs prior
+    model ref_align ref_tree
+    ~darr ~parr ~snodes
+  in
+  let results = Multiprocessing.divide_async partial query_list in
   let pr =
     Placerun.make
       ref_tree
       query_bname
-      (Array.to_list
-        (Core.pplacer_core prefs query_fname query_list prior
-          model ref_align ref_tree
-          ~darr ~parr ~snodes locs))
+      (List.flatten (List.map Array.to_list results))
   in
   (* write output if we aren't in fantasy mode *)
   if Prefs.fantasy prefs = 0. then begin

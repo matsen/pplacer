@@ -1,6 +1,10 @@
 external quiet_close: int -> unit = "quiet_close"
 external fd_of_file_descr: Unix.file_descr -> int = "%identity"
 
+type 'a data =
+  | Data of 'a
+  | Exception of exn
+
 let range n =
   let rec aux accum n =
     if n = 0 then
@@ -25,12 +29,19 @@ let make_child child_func =
   let rd, wr = Unix.pipe () in
   match Unix.fork () with
     | 0 ->
-      let wr' = fd_of_file_descr wr in
-      List.iter
-        (fun fd -> if fd != wr' then quiet_close fd)
-        (range 256);
+      begin
+        let ignored = List.map fd_of_file_descr [wr; Unix.stdout; Unix.stderr] in
+        List.iter
+          (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
+          (range 256)
+      end;
       let wrc = Unix.out_channel_of_descr wr in
-      child_func (fun x -> Marshal.to_channel wrc x []);
+      let write x = Marshal.to_channel wrc x [] in begin
+        try
+          child_func (fun x -> write (Data x))
+        with
+          | exn -> write (Exception exn)
+      end;
       exit 0
     | pid ->
       Unix.close wr;
@@ -75,8 +86,9 @@ let all_nth_of_m l m n =
 
 let map_async f ?(children = 4) l =
   let ret = ref [] in
-  let handler_func x =
-    ret := x :: (!ret)
+  let handler_func = function
+    | Data x -> ret := x :: (!ret)
+    | Exception exn -> raise exn
   in
   let nth = all_nth_of_m l children in
   let child_funcs = List.map
@@ -102,3 +114,20 @@ let iter_async f ?(children = 4) l =
     make_child
     child_funcs
   in child_loop (fun () -> ()) (List.map snd pipes)
+
+let divide_async f ?(children = 4) l =
+  let ret = ref [] in
+  let handler_func = function
+    | Data x -> ret := x :: (!ret)
+    | Exception exn -> raise exn
+  in
+  let nth = all_nth_of_m l children in
+  let child_funcs = List.map
+    (fun n write -> write (f (nth n)))
+    (range children)
+  in
+  let pipes = List.map
+    make_child
+    child_funcs
+  in child_loop handler_func (List.map snd pipes);
+  !ret
