@@ -1,5 +1,5 @@
 
-``kr`` calculates the Katorovich-Rubinstein distance between collections of placements (given by their place files).
+``kr`` calculates the Kantorovich-Rubinstein distance between collections of placements (given by their place files).
 
 .. math::
 
