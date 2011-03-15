@@ -29,11 +29,12 @@ let command_list () =
       "to_json", (fun () -> new Guppy_to_json.cmd ());
       "taxtable", (fun () -> new Guppy_taxtable.cmd ());
       "check_refpkg", (fun () -> new Guppy_check_refpkg.cmd ());
+      "distmat", (fun () -> new Guppy_distmat.cmd ());
     ];
   ]
 
 let () =
   Subcommand.inner_loop
     ~prg_name:"guppy"
-    ~version:"v0.1alpha01"
+    ~version:"v0.1alpha02"
     (Subcommand.cmd_map_of_list (command_list ()))

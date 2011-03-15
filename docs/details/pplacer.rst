@@ -54,7 +54,7 @@ Next, merge the reference and query alignments using the ``--merge`` option::
 
 Now ``merged.sto`` contains a single alignment of both reference and query sequences, and can be used with pplacer as follows after making a reference tree and accompanying statistics file::
 
-  pplacer -t reference_tree -a statistics_file merged.sto
+  pplacer -t reference_tree -s statistics_file merged.sto
 
 Using a reference package
 '''''''''''''''''''''''''
