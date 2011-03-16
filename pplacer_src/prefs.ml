@@ -234,50 +234,6 @@ let check p =
     failwith "Starting pendant branch length must be strictly less than maximum pendant branch length.";
   ()
 
-(* reading and writing *)
-
-(* we can't further factor the match because it would have to return things of
- * different types *)
-let write ch p =
-  List.iter
-    (fun (typed_pref, title) ->
-      let write fmt pref = Printf.fprintf ch fmt title (!pref) in
-      match typed_pref with
-      | MutBool b -> write "# %s: %b\n" b
-      | MutFloat x -> write "# %s: %g\n" x
-      | MutInt i -> write "# %s: %d\n" i
-      | MutString s -> write "# %s: %s\n" s)
-    (titled_typed_prefs p)
-
-(* let read_prefs line fmt title pref =  *)
-let read pref_lines =
-  let p = defaults () in
-  let rec aux = function
-    | ((typed_pref, title)::more_prefs, line::more_lines) -> begin
-      let scan fmt pref =
-        Scanf.sscanf line fmt
-          (fun found_title x ->
-            if title = found_title then
-              pref := x
-            else
-              failwith
-                ("Prefs.read: expected '"^title^"', found '"^found_title^"'"));
-        (* recur here *)
-        aux (more_prefs, more_lines)
-      in
-      match typed_pref with
-      (* @: means stop reading at the colon. otherwise will slurp whole str *)
-      | MutBool b -> scan "# %s@: %b" b
-      | MutFloat x -> scan "# %s@: %g" x
-      | MutInt i -> scan "# %s@: %d" i
-      | MutString s -> scan "# %s@: %s" s
-    end
-    | (_::_, []) -> failwith "Prefs.read: not enough pref lines!"
-    | _ -> ()
-  in
-  aux (titled_typed_prefs p, pref_lines);
-  p
-
 let usage =
     "pplacer [options] [alignment]"
 

@@ -45,7 +45,6 @@ let to_file invocation out_fname placerun =
   Printf.fprintf ch "# pplacer %s run, %s\n"
     Version.version_revision (Base.date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
-  Prefs.write ch (Placerun.get_prefs placerun);
   Printf.fprintf ch "%s\n" output_fmt_str;
   if not (Stree.multifurcating_at_root (Gtree.get_stree ref_tree)) then
     Printf.fprintf ch "# %s\n" bifurcation_warning;
@@ -82,7 +81,7 @@ let to_json_file invocation out_fname placerun =
 (* ***** READING ***** *)
 
 (* read the header, i.e. the first set of lines in the placefile *)
-let prefs_and_rt_of_header hlines =
+let rt_of_header hlines =
   let reftree_rex = Str.regexp "^# reference tree: \\(.*\\)"
   and invocation_rex = Str.regexp "^# invocation:"
   and str_match rex str = Str.string_match rex str 0
@@ -106,15 +105,12 @@ let prefs_and_rt_of_header hlines =
         File_parsing.find_beginning
           (str_match invocation_rex)
           header_tl in
-      let prefs = Prefs.read post_invocation in
       (* get the ref tree *)
       let tree_line,_ =
         File_parsing.find_beginning
           (str_match reftree_rex)
           post_invocation
-      in
-      (prefs,
-        Newick_gtree.of_string (Str.matched_group 1 tree_line))
+      in Newick_gtree.of_string (Str.matched_group 1 tree_line)
     end
   with
   | Scanf.Scan_failure s ->
@@ -136,8 +132,8 @@ let of_file ?load_seq:(load_seq=true) place_fname =
   let next_batch () =
     File_parsing.read_lines_until ch fastaname_rex
   in
-  let (prefs, ref_tree) =
-    try prefs_and_rt_of_header (next_batch ()) with
+  let ref_tree =
+    try rt_of_header (next_batch ()) with
     | End_of_file -> failwith (place_fname^" empty place file!")
   in
   let rec get_pqueries accu =
@@ -152,7 +148,6 @@ let of_file ?load_seq:(load_seq=true) place_fname =
   (* parse the header, getting a ref tree *)
   Placerun.make
     ref_tree
-    prefs
     (chop_place_extension (Filename.basename place_fname))
     (get_pqueries [])
 
@@ -165,7 +160,6 @@ let of_json_file fname =
   let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
   Placerun.make
     ref_tree
-    (Prefs.defaults ())
     (Filename.chop_extension (Filename.basename fname))
     (Array.to_list pqa)
 

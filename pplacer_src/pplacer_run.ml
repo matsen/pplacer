@@ -39,7 +39,7 @@ let run_file prefs query_fname =
         | path -> Refpkg_parse.strmap_of_path path)
   in
 
-  let ref_tree = 
+  let ref_tree =
     try Newick_gtree.of_file (StringMap.find "tree_file" rp_strmap) with
     | Not_found -> failwith "please specify a reference tree with -t or -c"
   in
@@ -62,7 +62,7 @@ let run_file prefs query_fname =
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
       try
-        Alignment_funs.upper_aln_of_any_file 
+        Alignment_funs.upper_aln_of_any_file
           (StringMap.find "aln_fasta" rp_strmap)
       with
       | Not_found ->
@@ -182,7 +182,6 @@ let run_file prefs query_fname =
   let pr =
     Placerun.make
       ref_tree
-      prefs
       query_bname
       (Array.to_list
         (Core.pplacer_core prefs query_fname query_list prior

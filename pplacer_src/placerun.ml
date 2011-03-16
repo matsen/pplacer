@@ -1,4 +1,4 @@
-(* 
+(*
  * a placerun is a data structure representing a single pplacer run.
 *)
 
@@ -8,26 +8,22 @@ open MapsSets
 type 'a placerun =
   {
     ref_tree  :  'a Gtree.gtree;
-    prefs     :  Prefs.prefs;
     name      :  string;
     pqueries  :  Pquery.pquery list;
   }
 
-let make ref_tree prefs name pqueries =
+let make ref_tree name pqueries =
   {
     ref_tree  =  ref_tree;
-    prefs     =  prefs;
     name      =  name;
     pqueries  =  pqueries;
   }
 
 let get_ref_tree p = p.ref_tree
-let get_prefs p = p.prefs
 let get_name p = p.name
 let get_pqueries p = p.pqueries
 
 let set_ref_tree p ref_tree = {p with ref_tree = ref_tree}
-let set_prefs p prefs = {p with prefs = prefs}
 let set_name p name = {p with name = name}
 let set_pqueries p pqueries = {p with pqueries = pqueries}
 
@@ -58,15 +54,11 @@ let get_same cmp get_thing thing_name pr1 pr2 =
 
 let get_same_tree pr1 pr2 =
   get_same Newick_gtree.compare get_ref_tree "Reference tree" pr1 pr2
-let get_same_prefs pr1 pr2 =
-  get_same compare get_prefs "Pref" pr1 pr2
 
 let combine name pr1 pr2 =
-  let ref_tree = get_same_tree pr1 pr2
-  and prefs = get_same_prefs pr1 pr2 in
+  let ref_tree = get_same_tree pr1 pr2 in
   make
     ref_tree
-    prefs
     name
     ((get_pqueries pr1) @ (get_pqueries pr2))
 
@@ -97,10 +89,9 @@ let filter_unplaced ?verbose:(verbose=true) pr =
 (* for each entry of a (name, f) list, make a placerun with the given name and
  * the pqueries that satisfy f *)
 let multifilter named_f_list placerun =
-  let ref_tree = get_ref_tree placerun
-  and prefs = get_prefs placerun in
+  let ref_tree = get_ref_tree placerun in
   List.map2
-    (make ref_tree prefs)
+    (make ref_tree)
     (List.map fst named_f_list)
     (ListFuns.multifilter
       (List.map snd named_f_list)
