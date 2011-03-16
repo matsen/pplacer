@@ -41,7 +41,10 @@ dispatch begin function
       (* use static linking for native binaries *)
       let _ = flag ["link"; "ocaml"; "native";] (
           if is_osx then
-            (S[A"-cclib"; A"-L../libs"])
+            (S[
+              A"-cclib"; A"-L../libs";
+              A"-ccopt"; A"-Wl,-search_paths_first";
+            ])
           else
             (S[A"-ccopt"; A"-static"])
       ) in ()
