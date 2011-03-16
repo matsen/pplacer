@@ -40,6 +40,7 @@ type prefs =
     pretend : bool ref;
     diagnostic : bool ref;
     check_like : bool ref;
+    children : int ref;
     version : bool ref;
   }
 
@@ -84,6 +85,7 @@ let defaults () =
     pretend = ref false;
     diagnostic = ref false;
     check_like = ref false;
+    children = ref 2;
     version = ref false;
   }
 
@@ -127,6 +129,7 @@ let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
+let children          p = !(p.children)
 let version           p = !(p.version)
 
 
@@ -200,6 +203,8 @@ spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Write file describing the 'diagnostic' mutations for various clades.";
 "--check-like", Arg.Set prefs.check_like,
 "Write out the likelihood of the reference tree, calculated two ways.";
+spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
+"The number of child processes to spawn when doing placements. Default is %d.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

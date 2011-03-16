@@ -183,7 +183,11 @@ let run_file prefs query_fname =
     model ref_align ref_tree
     ~darr ~parr ~snodes
   in
-  let results = Multiprocessing.divide_async partial query_list in
+  let results = Multiprocessing.divide_async
+    ~children:(Prefs.children prefs)
+    partial
+    query_list
+  in
   let pr =
     Placerun.make
       ref_tree
