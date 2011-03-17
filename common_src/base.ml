@@ -296,7 +296,7 @@ let pos s ch =
       | Not_found -> line, ch - pos
   in aux 0 1
 
-let tokenize_string regexp to_token s =
+let tokenize_string regexp to_token ?eof_token s =
   let rec aux en accum =
     if String.length s = en then
       accum
@@ -310,4 +310,9 @@ let tokenize_string regexp to_token s =
     else
       let line, col = pos s en in
       raise (Syntax_error (line, col))
-  in List.rev (aux 0 [])
+  in
+  let res = aux 0 [] in
+  List.rev begin match eof_token with
+    | Some tok -> tok :: res
+    | None -> res
+  end

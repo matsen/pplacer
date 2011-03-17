@@ -16,9 +16,9 @@ let stockholm_regexp = Str.regexp begin
     (* markup (group 4), *)
     "\\(#=.+\\)";
     (* or a sequence alignment (group 5, containing groups 6 and 7). *)
-    "\\(\\([^ \t\n#]+\\)[ \t]+\\([^ \t\n#]+\\)\\)";
+    "\\(\\([^ \t\n\r#]+\\)[ \t]+\\([^ \t\n\r#]+\\)\\)";
   (* and finally, strip off any trailing whitespace. *)
-  ]) ^ "\\)[ \t]*$\n*"
+  ]) ^ "\\)[ \t\r]*$\n*"
 end
 
 let sline_of_match s =
