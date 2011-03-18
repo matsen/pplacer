@@ -176,7 +176,6 @@ let csv_col_names =
     "marginal_prob";
     "distal_bl";
     "pendant_bl";
-    "contain_classif";
     "classif";
   ]
 

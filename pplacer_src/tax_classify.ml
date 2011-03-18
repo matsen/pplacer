@@ -13,14 +13,14 @@ let classify_pr what how pr =
     (List.map (classify_pq what how) (Placerun.get_pqueries pr))
 
 (* classification types *)
-let contain_classify_loc mrcam utm loc =
+let classify_loc mrcam utm loc =
   let rec aux i =
     if IntMap.mem i mrcam then IntMap.find i mrcam
     else aux (IntMap.find i utm)
   in
   try aux loc with | Not_found -> Tax_id.NoTax
 
-let contain_classify mrcam utm p =
-  contain_classify_loc mrcam utm (Placement.location p)
+let classify mrcam utm p =
+  classify_loc mrcam utm (Placement.location p)
 
 

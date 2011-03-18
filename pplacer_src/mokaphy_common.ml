@@ -22,7 +22,7 @@ let cat_names prl =
 let make_tax_pre taxt weighting criterion ti_imap pr =
   Tax_mass.pre
     (Gtree.top_id taxt)
-    Placement.contain_classif
+    Placement.classif
     weighting
     criterion
     ti_imap

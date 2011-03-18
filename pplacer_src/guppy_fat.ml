@@ -59,7 +59,7 @@ object (self)
                     Some (pr.Placerun.name^".tax.fat"),
                     Placeviz_core.fat_tree (mass_width /. 2.) (fv log_coeff) taxt
                       (Mass_map.By_edge.of_pre transform
-                         (Tax_mass.pre (Gtree.top_id taxt) Placement.contain_classif
+                         (Tax_mass.pre (Gtree.top_id taxt) Placement.classif
                             weighting criterion ti_imap pr))
                   ]
                 end
