@@ -4,17 +4,17 @@ type token =
 
 let fasta_regexp = Str.regexp begin
   (* each line is either ... *)
-  "^\\(" ^ (String.concat "\\|" [
+  "\\(" ^ (String.concat "\\|" [
     (* nothing but whitespace (matched at the end of the group), *)
     "";
     (* a comment (not captured), *)
-    ";.*";
+    ";[^\n\r]*";
     (* a sequence name (group 3; group 2 should be non-matching), *)
     "\\(>\\([^\n\r]+\\)\\)";
     (* or a sequence chunk (group 4). *)
     "\\([^\ \t\n\r]+\\)";
   (* and finally, strip off any trailing whitespace. *)
-  ]) ^ "\\)[ \t\r]*$\n*"
+  ]) ^ "\\)[ \t]*\\(\r\\|\n\\|\r\n\\)+"
 end
 
 let token_of_match s =

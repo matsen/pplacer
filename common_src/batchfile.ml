@@ -1,9 +1,9 @@
 let batchfile_regexp = Str.regexp begin
   String.concat "\\|" [
     (* whitespace (ignored) *)
-    "[ \t\r]+";
+    "[ \t]+";
     (* a newline (group 1) *)
-    "\\(\n\\)";
+    "\\(\r\\|\n\\|\r\n\\)";
     (* a bare string (group 2) *)
     "\\([^\" \t\r\n#]+\\)";
     (* a quoted string (group 3; group 4 should be non-matching) *)
