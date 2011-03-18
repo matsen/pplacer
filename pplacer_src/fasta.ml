@@ -13,8 +13,13 @@ let fasta_regexp = Str.regexp begin
     "\\(>\\([^\n\r]+\\)\\)";
     (* or a sequence chunk (group 4). *)
     "\\([^\ \t\n\r]+\\)";
-  (* and finally, strip off any trailing whitespace. *)
-  ]) ^ "\\)[ \t]*\\(\r\\|\n\\|\r\n\\)+"
+  (* and finally, strip off any trailing whitespace. The last bit of this
+   * deserves some explanation, as it's a little unreadable with the
+   * backslashes. It matches successive sequences of \r, \n, or \r\n, /or/ the
+   * end of the string. Just the latter isn't good enough because it won't work
+   * with files delimited with just \r, and just the former isn't good enough
+   * because it won't match on strings without linebreaks. *)
+  ]) ^ "\\)[ \t]*\\(\\(\r\\|\n\\|\r\n\\)+\\|$\\)"
 end
 
 let token_of_match s =

@@ -17,8 +17,9 @@ let stockholm_regexp = Str.regexp begin
     "\\(#=.+\\)";
     (* or a sequence alignment (group 5, containing groups 6 and 7). *)
     "\\(\\([^ \t\n\r#]+\\)[ \t]+\\([^ \t\n\r#]+\\)\\)";
-  (* and finally, strip off any trailing whitespace. *)
-  ]) ^ "\\)[ \t]*\\(\r\\|\n\\|\r\n\\)+"
+  (* and finally, strip off any trailing whitespace. For an explanation of the
+   * hideous regexp here, see fasta.ml. *)
+  ]) ^ "\\)[ \t]*\\(\\(\r\\|\n\\|\r\n\\)+\\|$\\)"
 end
 
 let sline_of_match s =
