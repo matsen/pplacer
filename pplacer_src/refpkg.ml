@@ -128,10 +128,10 @@ let tax_equipped rp =
   try let _ = get_taxonomy rp and _ = get_seqinfom rp in true with
   | Missing_element _ -> false
 
-let contain_classify rp pr =
+let classify rp pr =
   Tax_classify.classify_pr
-    Placement.add_contain_classif
-    (Tax_classify.contain_classify
+    Placement.add_classif
+    (Tax_classify.classify
       (get_mrcam rp)
       (get_uptree_map rp))
     pr
@@ -148,7 +148,7 @@ let check_refpkg_classification rp =
   print_endline "Trying classifications...";
   let _ =
     List.map
-      (Tax_classify.contain_classify_loc mrcam utm)
+      (Tax_classify.classify_loc mrcam utm)
       (Gtree.nonroot_node_ids (get_ref_tree rp))
   in
   ()

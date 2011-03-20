@@ -3,6 +3,8 @@
 open MapsSets
 open Fam_batteries
 
+exception Duplicate_name of string
+
 (* run through the query sequences and make sure everything looks OK *)
 let pretend model ref_align query_fnames =
   let len = Alignment.length ref_align in
@@ -32,12 +34,12 @@ let pretend model ref_align query_fnames =
                         "%c is not a known base in %s" c name))
               seq;
             if StringSet.mem name s then
-              raise (Fasta_channel.Duplicate_name name)
+              raise (Duplicate_name name)
             else if len <> String.length seq then
               failwith (name^" does not have the same length as the reference alignment!")
             else (i+1,StringSet.add name s))
           (0,StringSet.empty)
-          (Fasta_channel.list_of_fname fname)
+          (Fasta.of_file fname)
       in
       Printf.printf "%s: %d sequences.\n" fname size)
     query_fnames

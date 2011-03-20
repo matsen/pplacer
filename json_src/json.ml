@@ -26,30 +26,30 @@ let quote = Str.global_substitute to_escape begin fun s ->
 end
 
 let rec to_formatter ff o =
-  let _ = match o with
+  let rec aux = function
     | Bool b -> Format.fprintf ff "%s" (string_of_bool b)
     | Int i -> Format.fprintf ff "%d" i
     | Float f -> Format.fprintf ff "%f" f
     | String s -> Format.fprintf ff "\"%s\"" (quote s)
     | Object o ->
-      Format.fprintf ff "{@[@,";
+      Format.fprintf ff "@[<2>{@,";
       let _ = Hashtbl.fold (fun k v is_first ->
         if not is_first then Format.fprintf ff ",@ ";
         Format.fprintf ff "\"%s\":@ " (quote k);
-        to_formatter ff v;
+        aux v;
         false
       ) o true in ();
-      Format.fprintf ff "@,@]}"
+      Format.fprintf ff "@]@,}"
     | Array o ->
-      Format.fprintf ff "[@[@,";
+      Format.fprintf ff "@[<2>[@,";
       let _ = Array.fold_left (fun is_first o ->
         if not is_first then Format.fprintf ff ",@ ";
-        to_formatter ff o;
+        aux o;
         false
       ) true o in ();
-      Format.fprintf ff "@,@]]"
+      Format.fprintf ff "@]@,]"
     | Null -> Format.fprintf ff "null"
-  in Format.pp_print_flush ff ()
+  in aux o; Format.fprintf ff "\n@?"
 
 let to_string o =
   let buf = Buffer.create 256 in

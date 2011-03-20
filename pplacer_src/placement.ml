@@ -22,7 +22,6 @@ type placement =
     marginal_prob   : float option;
     distal_bl       : float;
     pendant_bl      : float;
-    contain_classif : Tax_id.tax_id option;
     classif         : Tax_id.tax_id option;
   }
 
@@ -36,20 +35,18 @@ let marginal_prob       p = get_some No_PP p.marginal_prob
 let distal_bl           p = p.distal_bl
 let pendant_bl          p = p.pendant_bl
 let classif_opt         p = p.classif
-let contain_classif_opt p = p.contain_classif
-let contain_classif     p = get_some No_classif p.contain_classif
 let classif             p = get_some No_classif p.classif
 
-let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl =
-  {location        =  loc;
+let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl = {
+  location         =  loc;
   ml_ratio         =  ml_ratio;
   log_like         =  log_like;
   distal_bl        =  dist_bl;
   pendant_bl       =  pend_bl;
   marginal_prob    =  None;
   post_prob        =  None;
-  contain_classif  =  None;
-  classif          =  None;}
+  classif          =  None;
+}
 
 let add_pp p ~marginal_prob ~post_prob =
   {p with
@@ -57,7 +54,6 @@ let add_pp p ~marginal_prob ~post_prob =
     marginal_prob  =  Some marginal_prob}
 
 let add_classif p c = {p with classif = Some c}
-let add_contain_classif p c = {p with contain_classif = Some c}
 
 let compare_placements criterion rp1 rp2 =
   compare (criterion rp1) (criterion rp2)
@@ -112,7 +108,6 @@ let placement_of_str str =
         marginal_prob    =  float_opt_of_string  strs.(4);
         distal_bl        =  float_of_string      strs.(5);
         pendant_bl       =  float_of_string      strs.(6);
-        contain_classif  =  None;
         classif          =  None;
       }
     in
@@ -120,8 +115,7 @@ let placement_of_str str =
     else
       {
         basic with
-        contain_classif  =  taxid_opt_of_string  strs.(7);
-        classif          =  taxid_opt_of_string  strs.(8);
+        classif  =  taxid_opt_of_string  strs.(7);
       }
   end
 
@@ -145,7 +139,6 @@ let to_strl_gen fint ffloat ffloato ftaxido place =
     ffloato place.marginal_prob;
     ffloat place.distal_bl;
     ffloat place.pendant_bl;
-    ftaxido place.contain_classif;
     ftaxido place.classif;
   ]
 
@@ -159,7 +152,7 @@ let to_strl =
 let to_str place = String.concat "\t" (to_strl place)
 
 let to_json has_classif place =
-  let tail = match place.contain_classif with
+  let tail = match place.classif with
     | Some c ->
       has_classif := true;
       [|Tax_id.to_json c|]
@@ -194,8 +187,7 @@ let of_json fields a =
     pendant_bl = Jsontype.float (get "pendant_length");
     post_prob = None;
     marginal_prob = None;
-    contain_classif = maybe_get Tax_id.of_json "classification";
-    classif = None;
+    classif = maybe_get Tax_id.of_json "classification";
   }
 
 (* CSV *)

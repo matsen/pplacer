@@ -1,9 +1,9 @@
 let batchfile_regexp = Str.regexp begin
   String.concat "\\|" [
     (* whitespace (ignored) *)
-    "[ \t\r]+";
+    "[ \t]+";
     (* a newline (group 1) *)
-    "\\(\n\\)";
+    "\\(\r\\|\n\\|\r\n\\)";
     (* a bare string (group 2) *)
     "\\([^\" \t\r\n#]+\\)";
     (* a quoted string (group 3; group 4 should be non-matching) *)
@@ -16,6 +16,7 @@ end
 type token =
   | String of string
   | Newline
+  | EOF
 
 let token_of_match s =
   match Base.first_match [1; 2; 3] s with
@@ -24,23 +25,26 @@ let token_of_match s =
     | 3, s -> String s
     | _, _ -> invalid_arg "token_of_match"
 
-let tokenize_batchfile = Base.tokenize_string batchfile_regexp token_of_match
+let tokenize_batchfile = Base.tokenize_string
+  batchfile_regexp
+  token_of_match
+  ~eof_token:EOF
 
 let quote_regexp = Str.regexp "\"\""
 let parse tokens =
-  let res = List.fold_left
+  let _, sll = List.fold_left
     (fun (sl, sll) -> function
       | String s ->
         let s = Str.global_replace quote_regexp "\"" s
         in s :: sl, sll
-      | Newline when sl = [] -> sl, sll
-      | Newline -> [], (List.rev sl) :: sll)
+      | Newline
+      | EOF ->
+        if sl = [] then
+          sl, sll
+        else
+          [], (List.rev sl) :: sll)
     ([], [])
     tokens
-  in
-  let sll = match res with
-    | [], sll -> sll
-    | sl, sll -> (List.rev sl) :: sll
   in List.rev sll
 
 let of_string s =

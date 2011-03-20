@@ -6,7 +6,7 @@ type sline =
 
 let stockholm_regexp = Str.regexp begin
   (* each line is either ... *)
-  "^\\(" ^ (String.concat "\\|" [
+  "\\(" ^ (String.concat "\\|" [
     (* nothing but whitespace (matched at the end of the group), *)
     "";
     (* the header (group 2), *)
@@ -16,9 +16,10 @@ let stockholm_regexp = Str.regexp begin
     (* markup (group 4), *)
     "\\(#=.+\\)";
     (* or a sequence alignment (group 5, containing groups 6 and 7). *)
-    "\\(\\([^ \t\n#]+\\)[ \t]+\\([^ \t\n#]+\\)\\)";
-  (* and finally, strip off any trailing whitespace. *)
-  ]) ^ "\\)[ \t]*$\n*"
+    "\\(\\([^ \t\n\r#]+\\)[ \t]+\\([^ \t\n\r#]+\\)\\)";
+  (* and finally, strip off any trailing whitespace. For an explanation of the
+   * hideous regexp here, see fasta.ml. *)
+  ]) ^ "\\)[ \t]*\\(\\(\r\\|\n\\|\r\n\\)+\\|$\\)"
 end
 
 let sline_of_match s =

@@ -192,7 +192,7 @@ let run_file prefs query_fname =
   if Prefs.fantasy prefs = 0. then begin
     let final_pr =
       if not (Refpkg.tax_equipped rp) then pr
-      else Refpkg.contain_classify rp pr
+      else Refpkg.classify rp pr
     and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
     and invocation = (String.concat " " (Array.to_list Sys.argv))
     in

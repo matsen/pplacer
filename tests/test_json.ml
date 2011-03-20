@@ -8,7 +8,7 @@ let suite = List.map
       | "pass" -> fun () ->
         let parsed = Json.of_file fname in
         let roundtrip = Json.of_string (Json.to_string parsed) in
-        "not equal after roundtrip" @? json_equal parsed roundtrip
+        json_equal parsed roundtrip
       | "fail" -> fun () ->
         "parsing didn't fail" @? begin
           try

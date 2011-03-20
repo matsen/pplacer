@@ -129,7 +129,7 @@ object (self)
     in
     List.iter
       (fun pr ->
-        classify Placement.contain_classif criterion n_ranks td pr (out_func pr))
+        classify Placement.classif criterion n_ranks td pr (out_func pr))
       prl
 
 end

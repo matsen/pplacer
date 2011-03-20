@@ -30,6 +30,7 @@ let command_list () =
       "taxtable", (fun () -> new Guppy_taxtable.cmd ());
       "check_refpkg", (fun () -> new Guppy_check_refpkg.cmd ());
       "distmat", (fun () -> new Guppy_distmat.cmd ());
+      "merge", (fun () -> new Guppy_merge.cmd ());
     ];
   ]
 
