@@ -9,14 +9,44 @@ A basic pplacer run looks like::
 
   pplacer -c my.refpkg aln.fasta
 
-with a reference package (preferred), or without a reference package::
+with a reference package.
+Running pplacer with a reference package is simple and produces taxonomic annotations which can be used for classification and visualization (see, for example classify_ and fat_).
+If you wish to override specific parts of the reference package, you can do so with command line options.
+
+A "reference package" is simply a collection of files including a reference tree, a reference alignment, and associated taxonomic information.
+We have the beginnings of a `reference package database`_ which we hope in the future to be a comprehensive resource for phylogenetic placement.
+It's just started, and we would love to have your submissions.
+For now most users will have to make a reference package using our taxtastic_ package to take advantage of the taxonomic annotation features of pplacer.
+
+The ``aln.fasta`` is the alignment file.
+It should have the reference sequences which were used to make the reference tree, aligned with the query sequences to be placed on the reference tree.
+The reference sequences must have identical names to those used in the reference tree.
+It's possible to split the alignment into two files (the reference sequences and the query sequences); in that case you need to make sure that those alignments are in the same frame and have the same length.
+This splitting was obligatory in v1.0.
+The alignment can be in FASTA format (with a ``.fasta`` or ``.fa`` suffix) or Stockholm format (with a ``.sto`` or ``.sth`` suffix).
+
+Another way to run pplacer is without a reference package::
 
   pplacer -t reference_tree -s statistics_file aln.fasta
+
+The ``statistics_file`` is a file describing the evolutionary model used to make the reference tree (described in the section on reference tree below).
+Running pplacer in this way will diable the taxonomic annotation features of pplacer v1.1.
+
+
+
+Migrating from pplacer v1.0
+---------------------------
+There are a couple of differences between the present version and the previous version of pplacer which are worth knowing about.
+
+* Rather than having a plain text ".place" output file, we now have a JSON_-format file which contains the placements
+* Reference packages encapsulate reference information, making it easy to do placement and taxonomic annotation
+* Alignments can now be supplied as a single file, rather than being split into reference and query alignments
+* Better alignment parsers, including a Stockholm parser
+* ``placeviz``, ``placeutil`` and ``mokaphy`` have been replaced by a single binary called ``guppy``
 
 
 Making alignments for use with pplacer
 --------------------------------------
-
 There are several options and formats for providing alignments of reference and query sequences.
 Examples below illustrate various steps in the sequence alignment process.
 
@@ -28,11 +58,11 @@ Infernal_ is an excellent package for searching and aligning sequences using RNA
 Creating a reference alignment
 ''''''''''''''''''''''''''''''
 
-The first step in any pipeline involving Infernal (assuming you already have an alignment profile but are not working from a reference package) is to create an alignment of reference sequences. 
-See the Infernal docs for a description of options not mentioned here. 
+The first step in any pipeline involving Infernal (assuming you already have an alignment profile but are not working from a reference package) is to create an alignment of reference sequences.
+See the Infernal docs for a description of options not mentioned here.
 For example::
 
-  cmalign --hbanded --sub --dna -1 -o refalign.sto profile.cm refseqs.fasta 
+  cmalign --hbanded --sub --dna -1 -o refalign.sto profile.cm refseqs.fasta
 
 Inputs to this command include an alignment profile (``profile.cm``) and unaligned reference sequences (``refs.fasta``).
 The output file, identified using the ``-o`` option, contains the aligned reference sequences in Stockholm format.
@@ -46,7 +76,7 @@ Query sequences must be aligned with respect to the reference sequences.
 This is easily accomplished using two calls to cmalign.
 First, align the query sequences just like the reference sequences above::
 
-  cmalign --hbanded --sub --dna -1 -o qalign.sto profile.cm qseqs.fasta 
+  cmalign --hbanded --sub --dna -1 -o qalign.sto profile.cm qseqs.fasta
 
 Next, merge the reference and query alignments using the ``--merge`` option::
 
@@ -63,7 +93,7 @@ A closely related example involves alignment with the profile and reference sequ
 So now we skip creation of the reference alignment.
 First, create the query alignment::
 
-  cmalign --hbanded --sub --dna -1 -o qalign.sto my.refpkg/profile.cm qseqs.fasta 
+  cmalign --hbanded --sub --dna -1 -o qalign.sto my.refpkg/profile.cm qseqs.fasta
 
 ...then merge::
 
@@ -98,14 +128,122 @@ Now we can run pplacer::
   pplacer -c rpoB.refpkg combo.sto
 
 
-.. Fantasy baseball
-.. ----------------
-.. 
-.. Set to a nonzero value to run in fantasy baseball mode. 
-.. The value given will be the desired average difference between the likelihood of the best placement with the given baseball parameters and that evaluating all
-.. max-pitches pitches. 
+
+Making reference trees
+----------------------
+
+PHYML_ and RAxML_ are two nice packages for making ML trees that are supported for use with pplacer.
+Pplacer only knows about the GTR, WAG, LG, and JTT models, so use those to build your trees.
+If you are fond of another model and can convince me that I should implement it, I will.
+
+Both of these packages implement gamma rate variation among sites, which accomodates that some regions evolve more quickly than others.
+That's generally a good thing, but if you have millions of query sequences, you might have to run pplacer with fewer rate parameters to make it faster.
+
+I run RAxML like so, on similar alignments (the "F" suffix on PROTGAMMAWAGF means to use the emperical amino acid frequencies)::
+
+  raxmlHPC -m GTRGAMMA -n test -s nucleotides.phy
+  raxmlHPC -m PROTGAMMAWAGF -n test -s amino_acids.phy
+
+Even though Alexandros Stamatakis is quite fond of the "CAT" models and they accelerate tree inference, they aren't appropriate for use with pplacer.
+We need to get an estimate of the gamma shape parameter.
+
+PHYML can be run like so, on non-interleaved (hence the -q) phylip-format alignments::
+
+  phyml -q -d nt -m GTR -i nucleotides.phy
+  phyml -q -d aa -m WAG -i amino_acids.phy
+
+Note that pplacer only works with phyml version 3.0 (the current version).
+
+If your taxon names have too many funny symbols, pplacer will get confused.
+We have had a difficult time with the wacky names exported by the otherwise lovely software geneious_.
+If you have a tree which isn't getting parsed properly by pplacer, and you think it should be, send it to us and we will have a look.
+
+At least for now, we do not recommend that you give pplacer a reference tree with lots of very similar sequences.
+It's certainly a bit of a waste of time-- pplacer must evaluate the resultant branches like any others.
+But worse, it can foul up the analysis.
+If one has a clade of very similar sequences, a query sequence which is similar to those sequences can fit anywhere in the clade.
+The resulting uncertainty will then be reported as a low ML ratio or posterior probability, even if pplacer is quite confident that the query fits in that clade.
+Pplacer also has computational difficulty with exceedingly short ("zero") length edges.
+We are currently considering ways to work around these issues.
+
+If you give pplacer a reference tree which has been rooted, you will get a warning like::
+
+  Warning: pplacer results make the most sense when the given tree is multifurcating
+  at the root. See manual for details.
+
+In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they are be artifically counted as two separate edges.
+That will lead to artifactually low likelihood weight ratio and posterior probabilities for query sequences placed on those edges.
+This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the placeviz trees.
+
+
+
+Baseball
+--------
+"Baseball" is one way that pplacer substantially increases the speed of placement, especially on very large trees.
+Baseball is a game where the player with the bat has a certain number of unsuccessful attempts, called "strikes", to hit the ball.
+
+Pplacer applies this logic as follows.
+Before placing placements, the algorithm gathers some extra information at each edge which makes it very fast to do a quick initial evaluation of those edges.
+This initial evaluation of the edges gives the order with which those edges are evaluated in a more complete sense.
+We will call full evaluations "pitches."
+We start with the edge that looks best from the initial evaluation; say that the ML attachment to that edge for a given query has log likelihood L.
+Fix some positive number D, which we call the "strike box."
+We proceed down the list in order until we encounter the first placement which has log likelihood less than L - D, which we call a "strike."
+Continue, allowing some number of strikes, until we stop doing detailed evaluation of what are most likely rather poor parts of the tree.
+
+You can control the behavior of baseball playing using the ``--max-strikes``, ``--strike-box``, and ``--max-pitches`` options.
+If, for any reason, you wish to disable baseball playing, simply add ``--max-strikes`` to zero (this also disables the ``--max-pitches`` option).
+
+Having control over these options raises the question of how to set them.
+The answer to this question can be given by pplacer's "fantasy baseball" feature.
+To gain an understanding of the tradeoff between runtime and accuracy, it analyzes all ``--max-pitches`` best locations.
+It then runs the baseball algorithm with each combination of strike box (from 0 to the specified ``--strike-box``) and max strikes (from 1 to the specified ``--max-strikes``).
+Using these different settings the program reports
+
+- the "batting average," i.e. the number of times the baseball algorithm with those settings achieved the optimal location obtained by evaluating all ``--max-pitches`` best locations; found in the file prefix.batting_avg.out
+- the "log likelihood difference," i.e. the difference between the ML log likelihood achieved by the baseball algorithm with those settings compared to the best obtained by evaluating all ``--max-pitches`` best locations; found in the file prefix.like_diff.out
+- the "number of trials," i.e. the number of locations fully evaluated by the baseball algorithm with those settings; found in the file prefix.n_trials.out
+
+The fantasy mode is invoked by telling pplacer what average likelihood difference you would like via the ``--fantasy`` option.
+You can also tell it to run an evenly-spaced fraction of the query sequences in fantasy mode using the ``--fantasy-frac`` option, which gives you an idea of the optimal run parameters for the rest of the sequences. For example::
+
+  pplacer --maxStrikes 10 --strikeBox 10 --fantasy 0.05 --fantasyFrac 0.02 -r example.fasta...
+
+says to run pplacer trying all of the combinations of max strikes and strike box up to 10, looking for the optimal combination which will give an average log likelihood difference of 0.05, and running on 2% of the query sequences.
+If, for any reason, you wish to disable baseball playing, simply add ``--max-strikes`` to zero (this also disables the ``--max-pitches`` option).
+
+You can use R to plot these matrices in a heat-map like fashion like so::
+
+  ba > read.table("reads_nodups.batting_avg.out")
+  image(x=c(0:nrow(ba)-1),xlab= "strike box", ylab= "number of strikes", \
+     y=c(1:ncol(ba)-1),z=as.matrix(ba), main="batting average")
+
+
+About the EDPL metric
+---------------------
+
+The expected distance between placement locations (EDPL) is a means of understanding the uncertainty of a placement using pplacer.
+The motivation for using such a metric comes from when there are a number of closely-related sequences present in the reference alignment.
+In this case, there may be considerable uncertainty about which edge is best as measured by posterior probability or likelihood weight ratio.
+However, the actual uncertainty as to the best region of the tree for that query sequence may be quite small.
+For instance, we may have a number of very similar subspecies of a given species in the alignment, and although it may not be possible to be sure to match a given query to a subspecies, one might be quite sure that it is one of them.
+
+The EDPL metric is one way of resolving this problem by considering the distances between the possible placements for a given query.
+It works as follows.
+Say the query bounces around to the different placement positions according to their posterior probability; i.e. the query lands with location one with probability :math:`p_1`, location two with probability :math:`p_2`, and so on.
+Then the EDPL value is simply the expected distance it will travel in one of those bounces (if you don't like probabilistic language, it's simply the average distance it will travel per bounce when allowed to bounce between the placements for a long time with their assigned probabilities).
+Here's an example, with three hypothetical locations for a given query sequence:
+
+.. image:: ../_static/edpl_formula.png
 
 
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
-
+.. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
+.. _taxtastic: http://github.com/fhcrc/taxtastic/
+.. _JSON: http://www.json.org/
+.. _PHYML: http://www.atgc-montpellier.fr/phyml/">Phyml</a> and
+.. _RAxML: http://icwww.epfl.ch/~stamatak/index-Dateien/Page443.htm">RAxML</a>
+.. _geneious: http://www.geneious.com/
+.. _classify: guppy_classify.html
+.. _fat: guppy_fat.html
