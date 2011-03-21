@@ -1,8 +1,6 @@
-(* the actual functionality of placeviz
-*)
-
 type tree_fmt = Newick | Phyloxml
 
+open Subcommand
 open MapsSets
 open Fam_batteries
 
@@ -49,28 +47,6 @@ let tree_by_map f ref_tree placed_map =
     ref_tree
     (IntMap.mapi f placed_map)
 
-(* tog tree *)
-let tog_tree criterion ref_tree placed_map =
-  tree_by_map
-    (fun _ ->
-      List.map
-        (fun pquery ->
-          let best = Pquery.best_place criterion pquery in
-          (Placement.distal_bl best,
-          make_zero_leaf
-            [ Decor.red ]
-            (Placement.pendant_bl best)
-            (String.concat "_" pquery.Pquery.namel),
-         decor_bark_of_bl)))
-    ref_tree
-    placed_map
-
-let write_tog_file tree_fmt criterion fname_base ref_tree placed_map =
-  trees_to_file
-    tree_fmt
-    (fname_base^".tog")
-    [tog_tree criterion ref_tree placed_map]
-
 (* num tree *)
 let num_tree bogus_bl ref_tree placed_map =
   tree_by_map
@@ -90,52 +66,6 @@ let write_num_file bogus_bl tree_fmt fname_base ref_tree
     tree_fmt
     (fname_base^".num")
     [num_tree bogus_bl ref_tree placed_map]
-
-(* sing trees *)
-let sing_tree weighting criterion mass_width ref_tree pquery =
-  let pqname = String.concat "_" pquery.Pquery.namel in
-  match weighting with
-  | Mass_map.Weighted ->
-    Gtree.add_subtrees_by_map
-      ref_tree
-      (IntMapFuns.of_pairlist_listly
-        (ListFuns.mapi
-          (fun num p ->
-            let mass = criterion p in
-            (Placement.location p,
-              (Placement.distal_bl p,
-              make_zero_leaf
-                ([ Decor.red] @
-                  (widthl_of_mass 0. mass_width mass))
-                (Placement.pendant_bl p)
-                (Printf.sprintf
-                  "%s_#%d_M=%g"
-                  pqname
-                  num
-                  mass),
-              decor_bark_of_bl)))
-          (Pquery.place_list pquery)))
-  | Mass_map.Unweighted ->
-      let p = Pquery.best_place criterion pquery in
-      Gtree.add_subtrees_by_map
-        ref_tree
-        (IntMapFuns.of_pairlist_listly
-          [Placement.location p,
-            (Placement.distal_bl p,
-            make_zero_leaf
-              [ Decor.red; ]
-              (Placement.pendant_bl p)
-              (Printf.sprintf "%s" pqname),
-              decor_bark_of_bl)])
-
-let write_sing_file weighting criterion mass_width tree_fmt fname_base ref_tree
-                                           placed_pquery_list =
-  trees_to_file
-    tree_fmt
-    (fname_base^".sing")
-    (List.map
-      (sing_tree weighting criterion mass_width ref_tree)
-      placed_pquery_list)
 
 
 (* fat trees.
@@ -179,25 +109,37 @@ let write_fat_tree
     (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
   in Phyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
 
-  (*
-(* edpl trees *)
-let edpl_tree white_bg
-      weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree pr =
-  let gray = if white_bg then Decor.black else Decor.white in
-  Decor_gtree.add_decor_by_map
-    decor_ref_tree
-    (IntMap.map
-      (fun (mass, edpl) ->
-        (widthl_of_mass log_coeff mass_width mass) @
-          [if edpl <= max_edpl then
-            Decor.color_avg (edpl /. max_edpl) Decor.red gray
-          else
-            Decor.orange ])
-      (Edpl.weighted_edpl_map_of_pr weighting criterion pr))
 
-let write_edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl fname_base decor_ref_tree placerun =
-  let pd = Phyloxml.pxdata_of_named_gtree
-    (fname_base ^ ".epdl")
-    (edpl_tree white_bg weighting criterion ~mass_width log_coeff max_edpl decor_ref_tree placerun)
-  in Phyloxml.pxdata_to_file (fname_base ^ ".epdl.xml") pd
-*)
+class viz_command () =
+object
+  val unit_width = flag "--unit-width"
+    (Plain (0., "Set the number of pixels for a single placement (will override total-width if set)."))
+  val total_width = flag "--total-width"
+    (Formatted (400., "Set the total number of pixels for all of the mass. Default: %g"))
+  val xml = flag "--xml"
+    (Plain (false, "Write phyloXML (with colors) for all visualizations."))
+  val show_node_numbers = flag "--node-numbers"
+    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
+
+  method specl = [
+    float_flag unit_width;
+    float_flag total_width;
+    toggle_flag xml;
+    toggle_flag show_node_numbers;
+  ]
+
+  method private fmt = if fv xml then Phyloxml else Newick
+  method private decor_ref_tree pr =
+    let ref_tree = Placerun.get_ref_tree pr in
+    Decor_gtree.of_newick_gtree
+      (if not (fv show_node_numbers) then
+          ref_tree
+       else
+          (Newick_gtree.make_boot_id ref_tree))
+  method private mass_width n_placed =
+    let unit_width = fv unit_width in
+    if unit_width <> 0. then (* unit width specified *)
+      unit_width *. (float_of_int n_placed)
+    else (* split up the mass according to the number of queries *)
+      (fv total_width)
+end
