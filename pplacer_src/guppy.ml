@@ -4,6 +4,7 @@ let command_list () =
     "visualization", [
       "fat", (fun () -> new Guppy_fat.cmd ());
       "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
+      "sing", (fun () -> new Guppy_sing.cmd ());
     ];
 
     "statistical comparison", [
