@@ -22,7 +22,7 @@ let zeropad i = Printf.sprintf "%04d" i
 let write_pre_tree transform prefix infix drt id pre =
   let tot = Mass_map.Pre.total_mass transform pre in
   assert(tot > 0.);
-  Placeviz_core.write_fat_tree
+  Visualization.write_fat_tree
     ~min_bl:2e-2
     400. (* mass width *)
     1.   (* log coeff *)

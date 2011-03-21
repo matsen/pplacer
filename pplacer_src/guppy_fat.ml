@@ -46,7 +46,7 @@ object (self)
           (pr.Placerun.name^".xml")
           ([
             Some (pr.Placerun.name^".ref.fat"),
-            Placeviz_core.fat_tree ?min_bl mass_width (fv log_coeff) final_rt
+            Visualization.fat_tree ?min_bl mass_width (fv log_coeff) final_rt
               (Mass_map.By_edge.of_placerun transform weighting criterion pr)
            ]
            @
@@ -57,7 +57,7 @@ object (self)
                   let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
                   [
                     Some (pr.Placerun.name^".tax.fat"),
-                    Placeviz_core.fat_tree (mass_width /. 2.) (fv log_coeff) taxt
+                    Visualization.fat_tree (mass_width /. 2.) (fv log_coeff) taxt
                       (Mass_map.By_edge.of_pre transform
                          (Tax_mass.pre (Gtree.top_id taxt) Placement.classif
                             weighting criterion ti_imap pr))

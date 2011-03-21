@@ -67,7 +67,7 @@ let heat_map_of_floatim multiplier m =
     m
 
 let heat_tree_of_floatim multiplier t m =
-  Placeviz_core.spread_short_fat 1e-2
+  Visualization.spread_short_fat 1e-2
     (Decor_gtree.add_decor_by_map t ((heat_map_of_floatim multiplier) m))
 
 let save_named_fal fname nvl =
