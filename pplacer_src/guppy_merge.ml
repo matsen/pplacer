@@ -16,15 +16,15 @@ object
 
   method private placefile_action = function
     | [] -> ()
-    | initial :: prl ->
+    | prl ->
       let fname = match fv outfile with
         | "" -> (Mokaphy_common.cat_names prl) ^ ".json"
         | s -> s
       in
       let combined = List.fold_left
         (Placerun.combine "")
-        initial
-        prl
+        (List.hd prl)
+        (List.tl prl)
       in
       Placerun_io.to_json_file "guppy merge" fname combined
 end
