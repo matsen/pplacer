@@ -1,0 +1,18 @@
+
+1.1.alpha03 to 1.1.alpha04
+==========================
+
+ * Closed GH-12: removed Placement.classif, and renamed
+   Placement.contain_classif to Placement.classif.
+ * Closed GH-29: added `guppy merge` to merge multiple placefiles.
+ * Closed GH-30: accepting \r, \n, and \r\n as delimiters everywhere in pplacer
+   and guppy.
+ * Closed GH-36: added `guppy {classic,tog,sing,filter}`. The former three were
+   originally a part of placeviz, and the lattermost filters placefiles to only
+   a specific subset of their placements.
+ * Closed GH-37: added a trailing newline to the end of json files.
+ * Closed GH-38: added this changelog.
+ * Bugfix in `guppy classify`. From the commit:
+     Previously, a file was being opened and closed for every pquery in every
+     placerun. This resulted in only the last pquery being classified and
+     written out. Now only one file is being opened for each placerun.
