@@ -160,6 +160,7 @@ let string_flag = some_flag (fun f -> Arg.String (fun x -> f.value := Some x))
 let int_flag = some_flag (fun f -> Arg.Int (fun x -> f.value := Some x))
 let float_flag = some_flag (fun f -> Arg.Float (fun x -> f.value := Some x))
 let toggle_flag = some_flag (fun f -> Arg.Unit (fun () -> f.value := Some (not (fv f))))
+let string_list_flag = some_flag (fun f -> Arg.String (fun x -> f.value := Some (x :: fv f)))
 
 class virtual subcommand () =
 object (self)
