@@ -102,34 +102,33 @@ object (self)
     let n_ranks = Tax_taxonomy.get_n_ranks td in
     let out_func pr =
       if fv csv_out then
-        (fun outl ->
-          let prn = Placerun.get_name pr in
-          let ch = open_out (prn ^ ".class.csv") in
+        let prn = Placerun.get_name pr in
+        let ch = open_out (prn ^ ".class.csv") in
+        ch, (fun outl ->
           output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
           List.iter
             (fun arr -> Printf.fprintf ch "%s,%s\n" (String.concat "," (Array.to_list arr)) prn)
-            outl;
-          close_out ch)
+            outl)
       else if fv sqlite_out then
-        (fun outl ->
-          let prn = Placerun.get_name pr in
-          let ch = open_out (prn ^ ".class.sqlite") in
+        let prn = Placerun.get_name pr in
+        let ch = open_out (prn ^ ".class.sqlite") in
+        ch, (fun outl ->
           List.iter
             (fun arr -> Printf.fprintf ch
               "INSERT INTO placements VALUES (%s, %s);\n"
               (String.concat ", " (List.map escape (Array.to_list arr)))
               (escape prn))
-            outl;
-          close_out ch)
+            outl)
       else
-        (fun outl ->
-          let ch = open_out ((Placerun.get_name pr)^".class.tab") in
-          String_matrix.write_padded ch (Array.of_list outl);
-          close_out ch)
+        let ch = open_out ((Placerun.get_name pr)^".class.tab") in
+        ch, (fun outl ->
+          String_matrix.write_padded ch (Array.of_list outl))
     in
     List.iter
       (fun pr ->
-        classify Placement.classif criterion n_ranks td pr (out_func pr))
+        let ch, out_func = out_func pr in
+        classify Placement.classif criterion n_ranks td pr out_func;
+        close_out ch)
       prl
 
 end
