@@ -41,5 +41,5 @@ let command_list () =
 let () =
   Subcommand.inner_loop
     ~prg_name:"guppy"
-    ~version:"v0.1alpha03"
+    ~version:Version.version_revision
     (Subcommand.cmd_map_of_list (command_list ()))
