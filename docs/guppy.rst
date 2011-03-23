@@ -110,7 +110,7 @@ List of subcommands
 ===================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :glob:
 
    generated_rst/guppy_*
