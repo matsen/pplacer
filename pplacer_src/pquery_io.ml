@@ -51,7 +51,10 @@ let parse_pquery ?load_seq:(load_seq=true) = function
 
 let of_json fields o =
   let tbl = Jsontype.obj o in
-  let namel = List.map Jsontype.string (Jsontype.array (Hashtbl.find tbl "n")) in
-  let pa = List.map (Placement.of_json fields) (Jsontype.array (Hashtbl.find tbl "p")) in
+  let namel = match Hashtbl.find tbl "n" with
+    | Jsontype.String s -> [s]
+    | Jsontype.Array arr -> List.map Jsontype.string arr
+    | x -> Jsontype.unexpected x "string or string array"
+  and pa = List.map (Placement.of_json fields) (Jsontype.array (Hashtbl.find tbl "p")) in
   Pquery.make_ml_sorted ~namel ~seq:no_seq_str pa
 
