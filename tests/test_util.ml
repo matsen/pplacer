@@ -102,11 +102,11 @@ let rec json_equal ?(epsilon = 1e-5) j1 j2 =
         true
       end
     | Jsontype.Array a1, Jsontype.Array a2 ->
-      (Array.length a1) = (Array.length a2) && begin
+      (List.length a1) = (List.length a2) && begin
         List.iter2
           (json_equal ~epsilon)
-          (Array.to_list a1)
-          (Array.to_list a2);
+          a1
+          a2;
         true
       end
     | Jsontype.Null, Jsontype.Null -> true

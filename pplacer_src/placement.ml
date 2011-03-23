@@ -155,24 +155,25 @@ let to_json has_classif place =
   let tail = match place.classif with
     | Some c ->
       has_classif := true;
-      [|Tax_id.to_json c|]
-    | None -> [||]
+      [Tax_id.to_json c]
+    | None -> []
   in
-  Jsontype.Array (Array.append [|
+  Jsontype.Array ([
     Jsontype.Int place.location;
     Jsontype.Float place.log_like;
     Jsontype.Float place.ml_ratio;
     Jsontype.Float place.distal_bl;
     Jsontype.Float place.pendant_bl;
-  |] tail)
+  ] @ tail)
 
 let of_json fields a =
   let a = Jsontype.array a in
   let map = List.fold_left2
     (fun m k v -> StringMap.add k v m)
     StringMap.empty
-    (Array.to_list fields)
-    (Array.to_list a) in
+    fields
+    a
+  in
   let get k = StringMap.find k map
   and maybe_get f k =
     try

@@ -68,11 +68,10 @@ let to_json_file invocation out_fname placerun =
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
   let has_classif = ref false in
-  Hashtbl.add ret "placements" (Jsontype.Array (Array.map (Pquery_io.to_json has_classif) (Array.of_list pqueries)));
-  Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) (
-    Array.append
-      [| "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"; |]
-      (if !has_classif then [| "classification" |] else [||])
+  Hashtbl.add ret "placements" (Jsontype.Array (List.map (Pquery_io.to_json has_classif) pqueries));
+  Hashtbl.add ret "fields" (Jsontype.Array (List.map (fun s -> Jsontype.String s) (
+    ["edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"]
+    @ (if !has_classif then ["classification"] else [])
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
   Hashtbl.add ret "version" (Jsontype.Int 1);
@@ -155,13 +154,13 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
-  let fields = Array.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
-  let pqa = Array.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
+  let fields = List.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
+  let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
   Placerun.make
     ref_tree
     (Filename.chop_extension (Filename.basename fname))
-    (Array.to_list pqa)
+    pql
 
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
 

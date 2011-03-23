@@ -88,9 +88,9 @@ value:
   | OBRACE CBRACE
       { Object (Hashtbl.create 0) }
   | OBRACK array_content CBRACK
-      { Array (Array.of_list $2) }
+      { Array $2 }
   | OBRACK CBRACK
-      { Array [||] }
+      { Array [] }
 
   | TRUE
       { Bool true }

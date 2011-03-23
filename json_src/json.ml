@@ -42,7 +42,7 @@ let rec to_formatter ff o =
       Format.fprintf ff "@]@,}"
     | Array o ->
       Format.fprintf ff "@[<2>[@,";
-      let _ = Array.fold_left (fun is_first o ->
+      let _ = List.fold_left (fun is_first o ->
         if not is_first then Format.fprintf ff ",@ ";
         aux o;
         false
