@@ -6,52 +6,10 @@ open Fam_batteries
 
 let tolerance = 1e-3
 
-(* *** splitify *** *)
-
-let splitify x = x -. (1. -. x)
-
-let soft_find i m = if IntMap.mem i m then IntMap.find i m else 0.
-
-let arr_of_map len m = Array.init len (fun i -> soft_find i m)
-
 let map_of_arr a =
   let m = ref IntMap.empty in
   Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
   !m
-
-let map_filter f m =
-  IntMap.fold
-    (fun k v m -> if f k v then IntMap.add k v m else m)
-    m
-    IntMap.empty
-
-(* get the mass below the given edge, excluding that edge *)
-let below_mass_map edgem t =
-  let m = ref IntMap.empty in
-  let total =
-    Gtree.recur
-      (fun i below_massl ->
-        let below_tot = List.fold_left ( +. ) 0. below_massl in
-        m := IntMapFuns.check_add i below_tot (!m);
-        (soft_find i edgem) +. below_tot)
-      (fun i -> soft_find i edgem)
-      t
-  in
-  assert(abs_float(1. -. total) < tolerance);
-  !m
-
-(* Take a placerun and turn it into a vector which is indexed by the edges of
- * the tree.
- * Later we may cut the edge mass in half; right now we don't do anything with it. *)
-let splitify_placerun transform weighting criterion pr =
-  let preim = Mass_map.Pre.of_placerun weighting criterion pr
-  and t = Placerun.get_ref_tree pr
-  in
-  arr_of_map
-    (1+(Gtree.top_id t))
-    (IntMap.map
-      splitify
-      (below_mass_map (Mass_map.By_edge.of_pre transform preim) t))
 
 let heat_map_of_floatim multiplier m =
   let min_width = 1. in
@@ -70,12 +28,6 @@ let heat_tree_of_floatim multiplier t m =
   Visualization.spread_short_fat 1e-2
     (Decor_gtree.add_decor_by_map t ((heat_map_of_floatim multiplier) m))
 
-let save_named_fal fname nvl =
-  Csv.save
-    fname
-    (List.map
-      (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
-      nvl)
 
 let pca_complete ?scale transform
       weighting criterion multiplier write_n refpkgo out_prefix prl =
@@ -84,7 +36,7 @@ let pca_complete ?scale transform
   | None -> Decor_gtree.of_newick_gtree prt
   | Some rp -> Refpkg.get_tax_ref_tree rp
   in
-  let data = List.map (splitify_placerun transform weighting criterion) prl
+  let data = List.map (Guppy_splitify.splitify_placerun transform weighting criterion) prl
   in
   let (eval, evect) = Pca.gen_pca ?scale ~n_keep:write_n (Array.of_list data)
   in
@@ -98,15 +50,15 @@ let pca_complete ?scale transform
         (Some (string_of_float eval),
         heat_tree_of_floatim multiplier t (map_of_arr evect)))
       combol);
-  save_named_fal
+  Guppy_splitify.save_named_fal
     (out_prefix^".rot")
     (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
-  save_named_fal
+  Guppy_splitify.save_named_fal
     (out_prefix^".trans")
     (List.combine
       names
       (List.map (fun d -> Array.map (Pca.dot d) evect) data));
-  save_named_fal
+  Guppy_splitify.save_named_fal
     (out_prefix^".edgediff")
     (List.combine names data);
   ()
