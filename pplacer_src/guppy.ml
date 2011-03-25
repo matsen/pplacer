@@ -16,6 +16,7 @@ let command_list () =
       "heat", (fun () -> new Guppy_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());
       "pca", (fun () -> new Guppy_pca.cmd ());
+      "splitify", (fun () -> new Guppy_splitify.cmd ());
       (* untested so invisible
       "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
       "uavgdist", (fun () -> new Guppy_avgdist.uavgdist_cmd ());

@@ -42,23 +42,26 @@ let splitify_placerun transform weighting criterion pr =
       splitify
       (below_mass_map (Mass_map.By_edge.of_pre transform preim) t))
 
-let save_named_fal fname nvl =
-  Csv.save
-    fname
-    (List.map
-      (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
-      nvl)
+let fal_to_strll fal =
+  List.map
+    (fun (name, v) -> name::(List.map string_of_float (Array.to_list v)))
+    fal
 
+let save_out_named_fal ch fal =
+  Csv.save_out ch (fal_to_strll fal)
+
+let save_named_fal fname fal =
+  Csv.save fname (fal_to_strll fal)
 
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit out_prefix_cmd () as super_out_prefix
+  inherit outfile_cmd () as super_outfile
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
 
   method specl =
-    super_out_prefix#specl
+    super_outfile#specl
     @ super_mass#specl
 
   method desc =
@@ -67,11 +70,10 @@ object (self)
 
   method private placefile_action prl =
     let transform, weighting, criterion = self#mass_opts in
-    self#check_placerunl prl;
     let data = List.map (splitify_placerun transform weighting criterion) prl
     and names = (List.map Placerun.get_name prl)
     in
-    save_named_fal
-      (out_prefix^".edgediff")
+    save_out_named_fal
+      self#out_channel
       (List.combine names data)
 end
