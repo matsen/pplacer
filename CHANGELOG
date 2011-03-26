@@ -16,3 +16,10 @@
      Previously, a file was being opened and closed for every pquery in every
      placerun. This resulted in only the last pquery being classified and
      written out. Now only one file is being opened for each placerun.
+
+1.1.alpha05
+===========
+
+  * Added `guppy splitify`. Spits out differences of mass across splits.
+  * Improved documentation.
+
