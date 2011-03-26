@@ -161,7 +161,7 @@ object (self)
 
   method desc =
 "makes a heat tree"
-  method usage = "usage: heat [options] ex1.place ex2.place"
+  method usage = "usage: heat [options] placefile1 placefile2"
 
   method private placefile_action = function
     | [pr1; pr2] as prl ->

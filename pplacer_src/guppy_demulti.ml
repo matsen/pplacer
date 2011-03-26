@@ -25,7 +25,7 @@ object
   inherit placefile_cmd () as super_placefile
 
   method desc =
-"splits apart placements with multiplicity, undoing a round procedure."
+"splits apart placements with multiplicity, undoing a round procedure"
   method usage = "usage: demulti [options] placefile[s]"
 
   method private placefile_action prl =

@@ -39,7 +39,7 @@ object (self)
     @ super_out_prefix#specl
     @ super_viz#specl
 
-  method desc = "make a tree with each of the fragments represented as a pendant edge"
+  method desc = "makes a tree with each of the reads represented as a pendant edge"
   method usage = "usage: tog [options] placefile[s]"
 
   method private placefile_action prl =

@@ -62,7 +62,7 @@ object (self)
     @ super_out_prefix#specl
     @ super_viz#specl
 
-  method desc = "single placement: make one tree for each placement"
+  method desc = "makes one tree for each query sequence, showing uncertainty"
   method usage = "usage: sing [options] placefile[s]"
 
   method private placefile_action prl =

@@ -65,8 +65,8 @@ object (self)
     @ super_mass#specl
 
   method desc =
-"write out splits of masses"
-  method usage = "usage: splitify [options] placefile"
+"writes out differences of masses for the splits of the tree"
+  method usage = "usage: splitify [options] placefile(s)"
 
   method private placefile_action prl =
     let transform, weighting, criterion = self#mass_opts in

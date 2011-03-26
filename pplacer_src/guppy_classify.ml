@@ -92,7 +92,7 @@ object (self)
   ]
 
   method desc =
-    "outputs classification information in a tabular format"
+    "outputs classification information in a tabular or SQLite format"
   method usage = "usage: classify [options] placefile[s]"
 
   method private placefile_action prl =

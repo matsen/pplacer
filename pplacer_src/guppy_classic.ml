@@ -4,27 +4,6 @@ open MapsSets
 open Fam_batteries
 open Visualization
 
-(* tog tree *)
-let tog_tree criterion ref_tree placed_map =
-  tree_by_map
-    (fun _ ->
-      List.map
-        (fun pquery ->
-          let best = Pquery.best_place criterion pquery in
-          (Placement.distal_bl best,
-          make_zero_leaf
-            [ Decor.red ]
-            (Placement.pendant_bl best)
-            (String.concat "_" pquery.Pquery.namel),
-         decor_bark_of_bl)))
-    ref_tree
-    placed_map
-
-let write_tog_file tree_fmt criterion fname_base ref_tree placed_map =
-  trees_to_file
-    tree_fmt
-    (fname_base^".tog")
-    [tog_tree criterion ref_tree placed_map]
 
 class cmd () =
 object (self)
@@ -37,7 +16,7 @@ object (self)
   val log_coeff = flag "--log"
     (Plain (0., "Set to a nonzero value to perform a logarithmic transform of the branch width."))
   val bogus_bl = flag "--num-bl"
-    (Formatted (0.1, "Set the branch length for visualization in the number tree. Default: %g"))
+    (Formatted (0.1, "Set the branch length for visualization in the num tree. Default: %g"))
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To disable, specify a value of 0. Default: %g"))
 
@@ -51,7 +30,7 @@ object (self)
       float_flag min_fat_bl;
     ]
 
-  method desc = "write fat and num trees in their individual files"
+  method desc = "writes fat and num trees in their individual files"
   method usage = "usage: classic [options] placefile[s]"
 
   method private placefile_action prl =
