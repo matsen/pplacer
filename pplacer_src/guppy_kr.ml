@@ -88,6 +88,23 @@ let write_uptril list_output namea fun_namel ul ch =
       fun_namel ul
   end
 
+(* normalizations. We can divide by these to get a given perspective on KR. *)
+let no_normalization _ = 1.
+let tree_length = Gtree.tree_length
+
+let normalization_map =
+  List.fold_right
+    (fun (k,v) -> StringMap.add k v)
+    [
+      "", no_normalization;
+      "tree-length", tree_length;
+    ]
+    StringMap.empty
+
+let normalization_of_str s =
+  try StringMap.find s normalization_map with
+  | Not_found -> failwith ("Normalization "^s^" not known.")
+
 (* core
  * run pair_core for each unique pair
  *)
@@ -136,23 +153,29 @@ object (self)
 
   (* we don't call self#rng to avoid re-seeding the rng *)
   method private pair_core rng transform n_samples t name1 pre1 name2 pre2 =
-  let p = fv p_exp in
-  let calc_dist = Kr_distance.scaled_dist_of_pres transform p t in
+  let p = fv p_exp
+  and normalization = (normalization_of_str (fv normalization)) t
+  in
+  let calc_dist =
+    Kr_distance.scaled_dist_of_pres ~normalization transform p t in
   let original_dist = calc_dist pre1 pre2 in
-  let type_str = if fv normal then "normal" else "density" in
+  let type_str = if fv normal then "normal" else "density"
+  in
   {
     distance = original_dist;
     p_value =
       if 0 < n_samples then begin
         let null_dists =
           if fv normal then (* use normal approximation *)
-            Normal_approx.normal_pair_approx rng n_samples p t pre1 pre2
+            Normal_approx.normal_pair_approx
+              ~normalization rng n_samples p t pre1 pre2
           else
             List.map
               (fun (spre1,spre2) -> calc_dist spre1 spre2)
               (make_shuffled_pres rng transform n_samples pre1 pre2)
         in
-        if fv density then R_plots.write_density p type_str name1 name2 original_dist null_dists;
+        if fv density then
+          R_plots.write_density p type_str name1 name2 original_dist null_dists;
         Some
           (list_onesided_pvalue
             null_dists

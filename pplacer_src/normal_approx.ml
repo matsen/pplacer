@@ -14,7 +14,7 @@ let transform = Mass_map.no_transform
 (* this exception shows up if the average mass isn't one *)
 exception Avg_mass_not_one of float
 
-(* These are masses which are associated with an index. 
+(* These are masses which are associated with an index.
  * The index is so that we can sample the eta's, then multiply the eta_j with
  * the appropriate mu_j. *)
 type labeled_mass = { pquery_num: int ;
@@ -38,7 +38,7 @@ let intermediate_list_sum =
   ListFuns.complete_fold_left intermediate_sum
 
 (* recall that transform is globally set up top for the time being *)
-let normal_pair_approx rng n_samples p t prepre1 prepre2 =
+let normal_pair_approx ?(normalization=1.) rng n_samples p t prepre1 prepre2 =
   (* make sure that the pres have unit mass per placement *)
   let pre1 = Mass_map.Pre.unitize_mass transform prepre1
   and pre2 = Mass_map.Pre.unitize_mass transform prepre2
@@ -110,10 +110,10 @@ let normal_pair_approx rng n_samples p t prepre1 prepre2 =
           raise (Avg_mass_not_one (avg_weight-.1.))
       in
       front_coeff *.
-        (Kr_distance.total_over_tree
+        ((Kr_distance.total_over_tree
           edge_total
           check_final_data
           intermediate_list_sum
           (fun () -> { omega = ref 0.; sigma = ref 0.; })
-          t)
+          t) /. normalization)
         ** (Kr_distance.outer_exponent p))

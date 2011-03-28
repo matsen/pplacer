@@ -109,7 +109,9 @@ class kr_cmd () =
 object
   val p_exp = flag "-p"
     (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
-  method specl = [ float_flag p_exp; ]
+  val normalization = flag "--normalization"
+    (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
+  method specl = [ float_flag p_exp; string_flag normalization; ]
 end
 
 class rng_cmd () =
