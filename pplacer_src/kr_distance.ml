@@ -114,7 +114,7 @@ let total_over_tree curried_edge_total
       (Gtree.get_stree ref_tree)
   in
   check_final_data final_data;
-  grand_total /. (Gtree.tree_length ref_tree)
+  grand_total
 
 (* combine two float list IntMaps into a single float 2-array list IntMap.
  * The latter is the input for the KR distance function. *)
@@ -156,7 +156,7 @@ let dist ?(normalization=1.) ref_tree p m1 m2 =
 
 (* x1 and x2 are factors which get multiplied by the mass before calculation.
  * By pulling them out like so, we don't have to make new Pres. *)
-let dist_of_pres ?(normalization=1.) transform p t ?x1 ?x2 ~pre1 ~pre2 =
+let dist_of_pres ?x1 ?x2 ?(normalization=1.) transform p t ~pre1 ~pre2 =
   dist ~normalization
     t
     p

@@ -154,7 +154,7 @@ object (self)
   (* we don't call self#rng to avoid re-seeding the rng *)
   method private pair_core rng transform n_samples t name1 pre1 name2 pre2 =
   let p = fv p_exp
-  and normalization = (normalization_of_str (fv normalization)) t
+  and normalization = (normalization_of_str (fv normalize)) t
   in
   let calc_dist =
     Kr_distance.scaled_dist_of_pres ~normalization transform p t in

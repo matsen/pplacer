@@ -89,8 +89,9 @@ let predefined_tests transform which expected =
       and (pr2, pre2) = Hashtbl.find data pr_name2
       in
       let tree = Placerun.get_same_tree pr1 pr2 in
+      let normalization = Gtree.tree_length tree in
       let calculated =
-        Kr_distance.dist_of_pres transform p tree pre1 pre2 in
+        Kr_distance.dist_of_pres ~normalization transform p tree ~pre1 ~pre2 in
       (Printf.sprintf "%s x %s" pr_name1 pr_name2) >:: fun _ ->
         (Printf.sprintf "%f !~= %f" calculated expected) @? approx_equal expected calculated
     ) pairs;
@@ -119,7 +120,10 @@ let matrix_tests which =
         and (pr2, pre2) = Hashtbl.find data pr_name2
         in
         let t = Placerun.get_same_tree pr1 pr2 in
-        let kr = Kr_distance.dist_of_pres Mass_map.no_transform 2. t pre1 pre2
+        let normalization = Gtree.tree_length t in
+        let kr =
+          Kr_distance.scaled_dist_of_pres
+            ~normalization Mass_map.no_transform 2. t pre1 pre2
         and matrix = Matrix_sig.matrix_distance weighting criterion pr1 pr2
         in
         (Printf.sprintf "%s x %s" pr_name1 pr_name2) >::
