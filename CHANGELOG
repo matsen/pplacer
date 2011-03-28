@@ -17,9 +17,12 @@
      placerun. This resulted in only the last pquery being classified and
      written out. Now only one file is being opened for each placerun.
 
+
 1.1.alpha05
 ===========
 
   * Added `guppy splitify`. Spits out differences of mass across splits.
+  * Changed default behavior of `guppy kr` to not normalize, and
+    correspondingly added in a `--normalize` command line flag.
   * Improved documentation.
 
