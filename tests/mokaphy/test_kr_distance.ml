@@ -122,8 +122,8 @@ let matrix_tests which =
         let t = Placerun.get_same_tree pr1 pr2 in
         let normalization = Gtree.tree_length t in
         let kr =
-          Kr_distance.scaled_dist_of_pres
-            ~normalization Mass_map.no_transform 2. t pre1 pre2
+          Kr_distance.dist_of_pres ~x1:1. ~x2:1.
+            ~normalization Mass_map.no_transform 2. t ~pre1 ~pre2
         and matrix = Matrix_sig.matrix_distance weighting criterion pr1 pr2
         in
         (Printf.sprintf "%s x %s" pr_name1 pr_name2) >::
