@@ -1,3 +1,11 @@
-val map_async: ('a -> 'b) -> ?children:int -> 'a list -> 'b list
-val iter_async: ('a -> unit) -> ?children:int -> 'a list -> unit
-val divide_async: ('a list -> 'b) -> ?children:int -> 'a list -> 'b list
+val map:
+  ?children:int -> ?progress_handler:(string -> unit) ->
+  ('a -> 'b) -> 'a list -> 'b list
+
+val iter:
+  ?children:int -> ?progress_handler:(string -> unit) ->
+  ('a -> unit) -> 'a list -> unit
+
+val fold:
+  ?children:int -> ?progress_handler:(string -> unit) ->
+  ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b list

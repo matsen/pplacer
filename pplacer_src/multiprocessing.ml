@@ -1,9 +1,60 @@
 external quiet_close: int -> unit = "quiet_close"
 external fd_of_file_descr: Unix.file_descr -> int = "%identity"
 
-type 'a data =
+module OrderedFileDescr = struct
+  type t = Unix.file_descr
+  let compare a b = compare (fd_of_file_descr a) (fd_of_file_descr b)
+end
+module FDM = Map.Make(OrderedFileDescr)
+
+type handler = {
+  ch: in_channel;
+  pid: int;
+  handler: handler -> unit;
+}
+
+let event_loop children =
+  Sys.set_signal Sys.sigchld Sys.Signal_ignore;
+  let pipe_map = List.fold_left
+    (fun m proc ->
+      List.fold_left
+        (fun m handler ->
+          FDM.add
+            (Unix.descr_of_in_channel handler.ch)
+            handler
+            m)
+        m
+        proc#handlers)
+    FDM.empty
+    children
+  in
+
+  let rec aux pipe_map =
+    let pipes = FDM.fold
+      (fun pipe _ l -> pipe :: l)
+      pipe_map
+      []
+    in
+    let rr, _, _ = Unix.select pipes [] [] 0.5 in
+    let pipe_map' = List.fold_left
+      (fun pipes p ->
+        let handler = FDM.find p pipe_map in
+        try
+          handler.handler handler; pipes
+        with
+          | End_of_file -> FDM.remove p pipes)
+      pipe_map
+      rr
+    in
+    if FDM.is_empty pipe_map' then ()
+    else aux pipe_map'
+  in aux pipe_map
+
+type 'a message =
+  | Ready
   | Data of 'a
   | Exception of exn
+  | Fatal_exception of exn
 
 let range n =
   let rec aux accum n =
@@ -13,121 +64,254 @@ let range n =
       aux ((n - 1) :: accum) (pred n)
   in aux [] n
 
-exception Closed
-let read_exactly fd n =
-  let s = String.create n in
-  let rec aux n_read =
-    if n_read = n then s
-    else begin
-      let read = Unix.read fd s n_read (n - n_read) in
-      if read = 0 then raise Closed
-      else aux (n_read + read)
-    end
-  in aux 0
+type buffer = {
+  buf: string;
+  mutable pos: int;
+  length: int;
+}
+let buffer n = {buf = String.create n; pos = 0; length = n}
+type buffer_state =
+  | Needs_more
+  | Done of string
 
-let make_child child_func =
-  let rd, wr = Unix.pipe () in
-  match Unix.fork () with
+let fill_buffer b ch =
+  let ch = Unix.descr_of_in_channel ch in
+  match Unix.read ch b.buf b.pos (b.length - b.pos) with
+    | 0 -> raise End_of_file
+    | n ->
+      let n_read = b.pos + n in
+      if n_read = b.length then
+        Done b.buf
+      else begin
+        b.pos <- n_read;
+        Needs_more
+      end
+
+let marshal ch x =
+  Marshal.to_channel ch x [];
+  flush ch
+
+type marshal_recv_phase =
+  | Needs_header of buffer
+  | Needs_data of string * buffer
+
+class virtual ['a] process child_func =
+  let child_rd, child_wr = Unix.pipe ()
+  and parent_rd, parent_wr = Unix.pipe ()
+  and progress_rd, progress_wr = Unix.pipe () in
+  let _ = Unix.set_nonblock progress_rd in
+  let child_only = [child_rd; parent_wr; progress_wr]
+  in
+  let pid = match Unix.fork () with
     | 0 ->
       begin
-        let ignored = List.map fd_of_file_descr [wr; Unix.stdout; Unix.stderr] in
+        let ignored = List.map fd_of_file_descr child_only in
         List.iter
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
           (range 256)
       end;
-      let wrc = Unix.out_channel_of_descr wr in
-      let write x = Marshal.to_channel wrc x [] in begin
+      Unix.dup2 progress_wr Unix.stdout;
+      Unix.dup2 progress_wr Unix.stderr;
+      Unix.close progress_wr;
+      let rd = Unix.in_channel_of_descr child_rd
+      and wr = Unix.out_channel_of_descr parent_wr in
+      begin
         try
-          child_func (fun x -> write (Data x))
+          child_func rd wr
         with
-          | exn -> write (Exception exn)
+          | exn -> marshal wr (Fatal_exception exn)
       end;
       exit 0
     | pid ->
-      Unix.close wr;
-      pid, rd
+      List.iter Unix.close child_only;
+      pid
+  in
 
-let child_loop handle_func =
-  Sys.set_signal Sys.sigchld Sys.Signal_ignore;
-  let rec aux pipes =
-    let rr, _, _ = Unix.select pipes [] [] 10.
+object (self)
+  val rd = Unix.in_channel_of_descr parent_rd
+  val wr = Unix.out_channel_of_descr child_wr
+  val progress = Unix.in_channel_of_descr progress_rd
+  val pid = pid
+
+  method rd = rd
+  method wr = wr
+  method progress = progress
+  method pid = pid
+
+  method handlers = [
+    {ch = rd; pid = pid; handler = self#marshal_recv};
+    {ch = progress; pid = pid; handler = self#progress_recv};
+  ]
+
+  method close =
+    close_out wr
+
+  method virtual obj_received: 'a message -> unit
+  val mutable marshal_state = Needs_header (buffer 20)
+  method private marshal_recv h =
+    let b = match marshal_state with
+      | Needs_header b -> b
+      | Needs_data (_, b) -> b
+    in match fill_buffer b h.ch, marshal_state with
+      | Needs_more, _ -> ()
+      | Done header, Needs_header _ ->
+        marshal_state <- Needs_data (header, buffer (Marshal.data_size header 0))
+      | Done body, Needs_data (header, _) ->
+        let obj = Marshal.from_string (header ^ body) 0 in
+        self#obj_received obj;
+        marshal_state <- Needs_header (buffer 20)
+
+  method virtual progress_received: string -> unit
+  method private progress_recv h =
+    match begin
+      try
+        Some (input_line h.ch)
+      with
+        | Sys_blocked_io -> None
+    end with
+      | None -> ()
+      | Some "" -> raise End_of_file
+      | Some line -> self#progress_received line
+end
+
+exception Child_error of exn
+let default_progress_handler = Printf.printf "> %s\n"
+
+class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
+  (f: 'a -> 'b) (q: 'a Queue.t) =
+
+  let child_func rd wr =
+    marshal wr Ready;
+    let rec aux () =
+      match begin
+        try
+          Some (Marshal.from_channel rd)
+        with
+          | End_of_file -> None
+      end with
+        | Some x ->
+          marshal
+            wr
+            begin
+              try
+                Data (f x)
+              with
+                | exn -> Exception exn
+            end;
+          aux ()
+        | None -> close_in rd; close_out wr
+    in aux ()
+  in
+
+object (self)
+  inherit ['b] process child_func as super
+
+  val q = q
+  val mutable ret = []
+  method ret = ret
+
+  method push =
+    match begin
+      try
+        Some (Queue.pop q)
+      with
+        | Queue.Empty -> None
+    end with
+      | Some x -> marshal wr x
+      | None -> self#close
+
+  method obj_received = function
+    | Ready -> self#push
+    | Data x -> ret <- x :: ret; self#push
+    | Exception exn
+    | Fatal_exception exn -> raise (Child_error exn)
+
+  method progress_received = progress_handler
+end
+
+let queue_of_list l =
+  let q = Queue.create () in
+  List.iter (fun x -> Queue.push x q) l;
+  q
+
+let map ?(children = 4) ?progress_handler f l =
+  let q = queue_of_list l in
+  let children =
+    List.map
+      (fun _ -> new map_process ?progress_handler f q)
+      (range children) in
+  event_loop children;
+  List.flatten (List.map (fun c -> c#ret) children)
+
+let iter ?(children = 4) ?progress_handler f l =
+  let q = queue_of_list l in
+  let children =
+    List.map
+      (fun _ -> new map_process ?progress_handler f q)
+      (range children) in
+  event_loop children
+
+class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
+  (f: 'a -> 'b -> 'b) (q: 'a Queue.t) (initial: 'b) =
+
+  let child_func rd wr =
+    marshal wr Ready;
+    let rec aux prev =
+      match begin
+        try
+          Some (Marshal.from_channel rd)
+        with
+          | End_of_file -> None
+      end with
+        | Some x ->
+          marshal wr (Data None);
+          aux (f x prev)
+        | None -> Data (Some prev)
     in
-    let closed = List.fold_left
-      (fun cl p ->
-        match begin
-          try
-            let header = read_exactly p 20 in
-            let data = read_exactly p (Marshal.data_size header 0) in
-            Some (header ^ data)
-          with
-            | Closed -> Unix.close p; None
-        end with
-          | Some data -> handle_func (Marshal.from_string data 0); cl
-          | None -> p :: cl)
-      []
-      rr
+    let res =
+      try
+        aux initial
+      with
+        | exn -> Exception exn
     in
-    match List.filter (fun p -> not (List.mem p closed)) pipes with
-      | [] -> ()
-      | pipes -> aux pipes
-  in aux
+    marshal wr res;
+    close_in rd;
+    close_out wr
+  in
 
-let all_nth_of_m l m n =
-  let _, l' = List.fold_left
-    (fun (count, accum) x ->
-      (succ count) mod m,
-      if count = n then
-        x :: accum
-      else
-        accum)
-    (0, [])
-    l
-  in List.rev l'
+object (self)
+  inherit ['b option] process child_func as super
 
-let map_async f ?(children = 4) l =
-  let ret = ref [] in
-  let handler_func = function
-    | Data x -> ret := x :: (!ret)
-    | Exception exn -> raise exn
-  in
-  let nth = all_nth_of_m l children in
-  let child_funcs = List.map
-    (fun n write ->
-      List.iter
-        (fun x -> write (f x))
-        (nth n))
-    (range children)
-  in
-  let pipes = List.map
-    make_child
-    child_funcs
-  in child_loop handler_func (List.map snd pipes);
-  !ret
+  val q = q
+  val mutable ret = initial
+  method ret = ret
 
-let iter_async f ?(children = 4) l =
-  let nth = all_nth_of_m l children in
-  let child_funcs = List.map
-    (fun n _ -> List.iter f (nth n))
-    (range children)
-  in
-  let pipes = List.map
-    make_child
-    child_funcs
-  in child_loop (fun () -> ()) (List.map snd pipes)
+  method push =
+    match begin
+      try
+        Some (Queue.pop q)
+      with
+        | Queue.Empty -> None
+    end with
+      | Some x -> marshal wr x
+      | None -> self#close
 
-let divide_async f ?(children = 4) l =
-  let ret = ref [] in
-  let handler_func = function
-    | Data x -> ret := x :: (!ret)
-    | Exception exn -> raise exn
+  method obj_received = function
+    | Ready -> self#push
+    | Data Some x -> ret <- x; self#close
+    | Data None -> self#push
+    | Exception exn
+    | Fatal_exception exn -> raise (Child_error exn)
+
+  method progress_received = progress_handler
+end
+
+let fold ?(children = 4) ?progress_handler f l initial =
+  let q = queue_of_list l in
+  let children =
+    List.map
+      (fun _ -> new fold_process ?progress_handler f q initial)
+      (range children)
   in
-  let nth = all_nth_of_m l children in
-  let child_funcs = List.map
-    (fun n write -> write (f (nth n)))
-    (range children)
-  in
-  let pipes = List.map
-    make_child
-    child_funcs
-  in child_loop handler_func (List.map snd pipes);
-  !ret
+  event_loop children;
+  List.map (fun c -> c#ret) children

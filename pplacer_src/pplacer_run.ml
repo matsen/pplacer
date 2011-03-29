@@ -183,7 +183,12 @@ let run_file prefs query_fname =
     model ref_align ref_tree
     ~darr ~parr ~snodes
   in
-  let results = Multiprocessing.divide_async
+  let n_done = ref 0 in
+  let results = Multiprocessing.map
+    ~progress_handler:(fun query_name ->
+      incr n_done;
+      Printf.printf "working on %s (%d/%d)...\n" query_name (!n_done) (List.length query_list);
+      flush_all ())
     ~children:(Prefs.children prefs)
     partial
     query_list
@@ -192,7 +197,7 @@ let run_file prefs query_fname =
     Placerun.make
       ref_tree
       query_bname
-      (List.flatten (List.map Array.to_list results))
+      results
   in
   (* write output if we aren't in fantasy mode *)
   if Prefs.fantasy prefs = 0. then begin
