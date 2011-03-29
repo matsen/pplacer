@@ -36,7 +36,6 @@ type prefs =
     csv : bool ref;
     old_format : bool ref;
     (* other *)
-    friendly : bool ref;
     pretend : bool ref;
     diagnostic : bool ref;
     check_like : bool ref;
@@ -81,7 +80,6 @@ let defaults () =
     csv = ref false;
     old_format = ref false;
     (* other *)
-    friendly = ref true;
     pretend = ref false;
     diagnostic = ref false;
     check_like = ref false;
@@ -125,7 +123,6 @@ let old_format        p = !(p.old_format)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let legacy_place      p = !(p.legacy_place)
-let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
@@ -189,8 +186,6 @@ spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
 "Write alignment masked to the region without gaps in the query.";
 spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
-"--unfriendly", Arg.Clear prefs.friendly,
-"Do not run friend finder pre-analysis.";
 "--out-dir", Arg.Set_string prefs.out_dir,
 "Specify the directory to write place files to.";
 "--pretend", Arg.Set prefs.pretend,
