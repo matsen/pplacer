@@ -185,10 +185,14 @@ let run_file prefs query_fname =
   in
   let n_done = ref 0 in
   let results = Multiprocessing.map
-    ~progress_handler:(fun query_name ->
-      incr n_done;
-      Printf.printf "working on %s (%d/%d)...\n" query_name (!n_done) (List.length query_list);
-      flush_all ())
+    ~progress_handler:(fun msg ->
+      if String.rcontains_from msg 0 '>' then begin
+        let query_name = String.sub msg 1 ((String.length msg) - 1) in
+        incr n_done;
+        Printf.printf "working on %s (%d/%d)...\n" query_name (!n_done) (List.length query_list);
+        flush_all ()
+      end else
+        Printf.printf "%s\n" msg)
     ~children:(Prefs.children prefs)
     partial
     query_list

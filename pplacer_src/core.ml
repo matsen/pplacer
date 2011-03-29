@@ -297,7 +297,7 @@ let pplacer_core prefs query_fname locs prior model ref_align gtree
   in
   let query_cache = Hashtbl.create 1024 in
   let memoization_wrap (query_name, pre_query_seq) =
-    Printf.printf "%s\n" query_name;
+    Printf.printf ">%s\n" query_name;
     flush_all ();
     let query_seq = String.uppercase pre_query_seq in
     if String.length query_seq <> ref_length then
