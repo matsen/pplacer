@@ -13,6 +13,12 @@ type handler = {
   handler: handler -> unit;
 }
 
+type 'a message =
+  | Ready
+  | Data of 'a
+  | Exception of exn
+  | Fatal_exception of exn
+
 let event_loop children =
   Sys.set_signal Sys.sigchld Sys.Signal_ignore;
   let pipe_map = List.fold_left
@@ -49,12 +55,6 @@ let event_loop children =
     if FDM.is_empty pipe_map' then ()
     else aux pipe_map'
   in aux pipe_map
-
-type 'a message =
-  | Ready
-  | Data of 'a
-  | Exception of exn
-  | Fatal_exception of exn
 
 let range n =
   let rec aux accum n =

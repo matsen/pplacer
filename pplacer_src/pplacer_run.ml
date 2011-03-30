@@ -1,5 +1,55 @@
+open Multiprocessing
 open Fam_batteries
 open MapsSets
+
+exception Finished
+
+class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
+
+  let child_func rd wr =
+    marshal wr Ready;
+    let rec aux () =
+      match begin
+        try
+          Some (Marshal.from_channel rd)
+        with
+          | End_of_file -> None
+      end with
+        | Some x ->
+          marshal
+            wr
+            begin
+              try
+                Data (f x)
+              with
+                | exn -> Exception exn
+            end;
+          aux ()
+        | None -> close_in rd; close_out wr
+    in aux ()
+  in
+
+object (self)
+  inherit ['b] process child_func as super
+
+  method private push =
+    match begin
+      try
+        Some (nextfunc ())
+      with
+        | Finished -> None
+    end with
+      | Some x -> marshal self#wr x
+      | None -> self#close
+
+  method obj_received = function
+    | Ready -> self#push
+    | Data x -> gotfunc x; self#push
+    | Exception exn
+    | Fatal_exception exn -> raise (Child_error exn)
+
+  method progress_received = progressfunc
+end
 
 let run_file prefs query_fname =
   if (Prefs.verb_level prefs) >= 1 then
@@ -184,19 +234,57 @@ let run_file prefs query_fname =
     ~darr ~parr ~snodes
   in
   let n_done = ref 0 in
-  let results = Multiprocessing.map
-    ~progress_handler:(fun msg ->
-      if String.rcontains_from msg 0 '>' then begin
-        let query_name = String.sub msg 1 ((String.length msg) - 1) in
-        incr n_done;
-        Printf.printf "working on %s (%d/%d)...\n" query_name (!n_done) (List.length query_list);
-        flush_all ()
-      end else
-        Printf.printf "%s\n" msg)
-    ~children:(Prefs.children prefs)
-    partial
-    query_list
+  let queries = List.length query_list in
+  let show_query query_name =
+    incr n_done;
+    Printf.printf "working on %s (%d/%d)...\n" query_name (!n_done) queries;
+    flush_all ()
   in
+  let q = Queue.create () in
+  List.iter
+    (fun (name, seq) -> Queue.push (name, (String.uppercase seq)) q)
+    query_list;
+  let results = ref [] in
+  let query_cache = Hashtbl.create 1024 in
+  let gotfunc (seq, pq) =
+    Hashtbl.add query_cache seq pq;
+    results := pq :: !results
+  and cachefunc (name, seq) =
+    match begin
+      try
+        Some (Hashtbl.find query_cache seq)
+      with
+        | Not_found -> None
+    end with
+      | Some pq ->
+        let pq = Pquery.set_namel pq [name] in
+        incr n_done;
+        results := pq :: !results;
+        true
+      | None -> false
+  and progressfunc msg =
+    if String.rcontains_from msg 0 '>' then begin
+      let query_name = String.sub msg 1 ((String.length msg) - 1) in
+      show_query query_name
+    end else
+      Printf.printf "%s\n" msg
+  in
+  let rec nextfunc () =
+    let x =
+      try
+        Queue.pop q
+      with
+        | Queue.Empty -> raise Finished
+    in
+    if cachefunc x then nextfunc ()
+    else x
+  in
+  let children =
+    List.map
+      (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
+      (range (Prefs.children prefs)) in
+  event_loop children;
+  let results = !results in
   let pr =
     Placerun.make
       ref_tree

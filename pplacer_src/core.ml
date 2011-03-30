@@ -61,6 +61,12 @@ let pplacer_core prefs query_fname locs prior model ref_align gtree
   let full_query_evolv = Glv.mimic full_query_orig in
   (* *** the main query loop *** *)
   let process_query (query_name, query_seq) =
+    Printf.printf ">%s\n" query_name;
+    flush_all ();
+      (* we only proceed if fantasy baseball is turned off or if this is one of
+       * the sequences used for the fantasy baseball procedure *)
+    if String.length query_seq <> ref_length then
+      failwith ("query '"^query_name^"' is not the same length as the ref alignment");
       (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
       (* the mask array shows true if it's included *)
@@ -269,7 +275,7 @@ let pplacer_core prefs query_fname locs prior model ref_align gtree
         (Base.ll_normalized_prob (List.map get_like refined_results))
         refined_results
     in
-    Pquery.make_ml_sorted
+    query_seq, Pquery.make_ml_sorted
       ~namel:[query_name]
       ~seq:query_seq
       (if (calc_pp prefs) then begin
@@ -295,24 +301,4 @@ let pplacer_core prefs query_fname locs prior model ref_align gtree
       end
        else sorted_ml_placements)
   in
-  let query_cache = Hashtbl.create 1024 in
-  let memoization_wrap (query_name, pre_query_seq) =
-    Printf.printf ">%s\n" query_name;
-    flush_all ();
-    let query_seq = String.uppercase pre_query_seq in
-    if String.length query_seq <> ref_length then
-      failwith ("query '"^query_name^"' is not the same length as the ref alignment");
-    match begin
-      try
-        Some (Hashtbl.find query_cache query_seq)
-      with
-        | Not_found -> None
-    end with
-      | Some pq -> Pquery.set_namel pq [query_name]
-      | None ->
-        let pq = process_query (query_name, query_seq) in
-        Hashtbl.add query_cache query_seq pq;
-        pq
-  in
-  memoization_wrap
-
+  process_query
