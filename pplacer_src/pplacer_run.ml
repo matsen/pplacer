@@ -244,22 +244,20 @@ let run_file prefs query_fname =
   List.iter
     (fun (name, seq) -> Queue.push (name, (String.uppercase seq)) q)
     query_list;
-  let results = ref [] in
-  let query_cache = Hashtbl.create 1024 in
+  let query_tbl = Hashtbl.create 1024 in
   let gotfunc (seq, pq) =
-    Hashtbl.add query_cache seq pq;
-    results := pq :: !results
+    Hashtbl.add query_tbl seq pq
   and cachefunc (name, seq) =
     match begin
       try
-        Some (Hashtbl.find query_cache seq)
+        Some (Hashtbl.find query_tbl seq)
       with
         | Not_found -> None
     end with
       | Some pq ->
-        let pq = Pquery.set_namel pq [name] in
+        let pq = Pquery.set_namel pq (name :: pq.Pquery.namel) in
         incr n_done;
-        results := pq :: !results;
+        Hashtbl.replace query_tbl seq pq;
         true
       | None -> false
   and progressfunc msg =
@@ -284,7 +282,11 @@ let run_file prefs query_fname =
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
       (range (Prefs.children prefs)) in
   event_loop children;
-  let results = !results in
+  let results = Hashtbl.fold
+    (fun _ pq l -> pq :: l)
+    query_tbl
+    []
+  in
   let pr =
     Placerun.make
       ref_tree
