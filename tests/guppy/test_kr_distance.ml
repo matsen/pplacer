@@ -1,7 +1,27 @@
 open OUnit
 open Test_util
 
-(* tests where we have calculated distance by hand *)
+
+(* *** Predefined: tests where we have a fixed value we are aiming for *** *)
+
+let criterion = Placement.ml_ratio
+
+let predefined_tests transform which expected =
+  let data = pres_of_dir Mass_map.Weighted criterion which in
+  ("predefined_"^which) >::: List.map (fun (p, pairs) ->
+    (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
+      let (pr1, pre1) = Hashtbl.find data pr_name1
+      and (pr2, pre2) = Hashtbl.find data pr_name2
+      in
+      let tree = Placerun.get_same_tree pr1 pr2 in
+      let normalization = Gtree.tree_length tree in
+      let calculated =
+        Kr_distance.dist_of_pres ~normalization transform p tree ~pre1 ~pre2 in
+      (Printf.sprintf "%s x %s" pr_name1 pr_name2) >:: fun _ ->
+        (Printf.sprintf "%f !~= %f" calculated expected) @? approx_equal expected calculated
+    ) pairs;
+  ) expected;
+;;
 
 let simple_expected = [
   (0.5, [
@@ -10,6 +30,7 @@ let simple_expected = [
     ("test2", "test3", 0.367851);
     ("test4", "test4_demulti", 0.);
   ]);
+  (* note that total tree length is 24 *)
   (1.0, [
     ("test1", "test2", 0.583333);
     ("test1", "test3", 0.25);
@@ -73,30 +94,18 @@ let moran_expected = [
   ]);
 ]
 
-let named_predefined = [
-  "simple", simple_expected;
-  "psbA", psbA_expected;
-  "moran", moran_expected;
-]
 
-let criterion = Placement.ml_ratio
+let no_transform_predefined_suite =
+  List.map
+    (fun (n, pd) -> predefined_tests Mass_map.no_transform n pd)
+    [
+      "simple", simple_expected;
+      "psbA", psbA_expected;
+      "moran", moran_expected;
+    ]
 
-let predefined_tests transform which expected =
-  let data = pres_of_dir Mass_map.Weighted criterion which in
-  ("predefined_"^which) >::: List.map (fun (p, pairs) ->
-    (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
-      let (pr1, pre1) = Hashtbl.find data pr_name1
-      and (pr2, pre2) = Hashtbl.find data pr_name2
-      in
-      let tree = Placerun.get_same_tree pr1 pr2 in
-      let normalization = Gtree.tree_length tree in
-      let calculated =
-        Kr_distance.dist_of_pres ~normalization transform p tree ~pre1 ~pre2 in
-      (Printf.sprintf "%s x %s" pr_name1 pr_name2) >:: fun _ ->
-        (Printf.sprintf "%f !~= %f" calculated expected) @? approx_equal expected calculated
-    ) pairs;
-  ) expected;
-;;
+
+(* *** Matrix tests: comparing to alternative formulation using matrices. *** *)
 
 let hashtbl_keys h = Hashtbl.fold (fun k _ l -> k::l) h []
 
@@ -107,7 +116,6 @@ let get_pairs l =
   in
   List.flatten (aux l)
 
-(* totally inefficient! *)
 let weighting = Mass_map.Unweighted
 
 let matrix_tests which =
@@ -131,13 +139,17 @@ let matrix_tests which =
             (Printf.sprintf "%f !~= %f" kr matrix) @? approx_equal kr matrix)
       (get_pairs names)
 
-let suite =
-  (List.map
-    (fun (n, pd) -> predefined_tests Mass_map.no_transform n pd)
-    named_predefined) @
-  (List.map
+let matrix_suite =
+  List.map
     (fun (n, _) -> matrix_tests n)
     [
       "simple", simple_expected;
       "psbA", psbA_expected;
-    ])
+    ]
+
+
+(* *** the final suite *** *)
+let suite =
+  no_transform_predefined_suite
+  @ matrix_suite
+
