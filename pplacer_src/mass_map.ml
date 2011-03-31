@@ -224,6 +224,7 @@ let transform_map =
     (fun (k,v) -> StringMap.add k v)
     [
       "", no_transform;
+      "no_trans", no_transform;
       "unit", unit_transform;
       "asinh", asinh_transform;
     ]

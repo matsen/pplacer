@@ -6,9 +6,11 @@ open Test_util
 
 let criterion = Placement.ml_ratio
 
-let predefined_tests transform which expected =
-  let data = pres_of_dir Mass_map.Weighted criterion which in
-  ("predefined_"^which) >::: List.map (fun (p, pairs) ->
+let predefined_tests transform_str which expected =
+  let data = pres_of_dir Mass_map.Weighted criterion which
+  and transform = Mass_map.transform_of_str transform_str
+  in
+  ("predefined_"^transform_str^"_"^which) >::: List.map (fun (p, pairs) ->
     (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
       let (pr1, pre1) = Hashtbl.find data pr_name1
       and (pr2, pre2) = Hashtbl.find data pr_name2
@@ -23,7 +25,7 @@ let predefined_tests transform which expected =
   ) expected;
 ;;
 
-let simple_expected = [
+let simple_no_trans_expected = [
   (0.5, [
     ("test1", "test2", 0.686887);
     ("test1", "test3", 0.319036);
@@ -72,8 +74,6 @@ let psbA_expected = [
   ]);
 ]
 
-(* regression test *)
-
 let moran_expected = [
   (1.0, [
     ("control","de_rounded_control",5.29902e-07);
@@ -94,16 +94,27 @@ let moran_expected = [
   ]);
 ]
 
-
 let no_transform_predefined_suite =
   List.map
-    (fun (n, pd) -> predefined_tests Mass_map.no_transform n pd)
+    (fun (n, trans_str, pd) -> predefined_tests trans_str n pd)
     [
-      "simple", simple_expected;
-      "psbA", psbA_expected;
-      "moran", moran_expected;
+      "no_trans", "simple", simple_no_trans_expected;
+      "no_trans", "psbA", psbA_expected;
+      "no_trans", "moran", moran_expected;
+      "no_trans", "simple", [ 1.0, [ "multi_test1", "test3", 0.686887; ] ]
     ]
 
+    (*
+
+
+let with_transform_predefined_suite =
+  List.map
+    (fun (trans, n, pd) -> predefined_tests trans n pd)
+    [
+      Mass_map.no_transform, "simple", transform_no_expected;
+    ]
+
+*)
 
 (* *** Matrix tests: comparing to alternative formulation using matrices. *** *)
 
