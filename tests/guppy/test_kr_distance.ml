@@ -25,6 +25,15 @@ let predefined_tests transform_str which expected =
   ) expected;
 ;;
 
+(*
+ * from R-verification.kr.R
+ *
+ *  [,1]      [,2]      [,3]
+ *  0.5 0.6868867 0.5833333 0.6770032
+ *  1   0.3190356 0.2500000 0.4082483
+ *  2   0.3678511 0.3333333 0.5400617
+ *)
+
 let simple_no_trans_expected = [
   (0.5, [
     ("test1", "test2", 0.686887);
@@ -94,27 +103,79 @@ let moran_expected = [
   ]);
 ]
 
+
+(*
+ * from R-verification.kr.R:
+
+0.3394316 0.2812500 0.4506939
+*)
+
+let simple_no_trans_expected = [
+  (0.5, [
+    ("test1", "test2", 0.686887);
+    ("test1", "test3", 0.319036);
+    ("test2", "test3", 0.367851);
+    ("test4", "test4_demulti", 0.);
+  ]);
+  (* note that total tree length is 24 *)
+  (1.0, [
+    ("test1", "test2", 0.583333);
+    ("test1", "test3", 0.25);
+    ("test2", "test3", 0.333333);
+    ("test4", "test4_demulti", 0.);
+  ]);
+  (2.0, [
+    ("test1", "test2", 0.677003);
+    ("test1", "test3", 0.408248);
+    ("test2", "test3", 0.540062);
+    ("test4", "test4_demulti", 0.);
+  ]);
+]
+
+let psbA_expected = [
+  (0.5, [
+    ("DCM", "coastal", 0.085899);
+    ("DCM", "surface", 0.0679409);
+    ("DCM", "upwelling", 0.0777173);
+    ("coastal", "surface", 0.0910193);
+    ("coastal", "upwelling", 0.0400257);
+    ("surface", "upwelling", 0.0850928);
+  ]);
+  (1.0, [
+    ("DCM", "coastal", 0.0341428);
+    ("DCM", "surface", 0.014255);
+    ("DCM", "upwelling", 0.0278099);
+    ("coastal", "surface", 0.032223);
+    ("coastal", "upwelling", 0.00951196);
+    ("surface", "upwelling", 0.0270792);
+  ]);
+  (2.0, [
+    ("DCM", "coastal", 0.120893);
+    ("DCM", "surface", 0.0396716);
+    ("DCM", "upwelling", 0.104636);
+    ("coastal", "surface", 0.0971287);
+    ("coastal", "upwelling", 0.0277832);
+    ("surface", "upwelling", 0.0827712);
+  ]);
+]
+
+let multi_notrans_expected =
+  [
+    0.5, [ "multi_test1", "test3", 0.3394316; ];
+    1.0, [ "multi_test1", "test3", 0.2812500; ];
+    2.0, [ "multi_test1", "test3", 0.4506939; ];
+  ]
+
 let no_transform_predefined_suite =
   List.map
-    (fun (n, trans_str, pd) -> predefined_tests trans_str n pd)
+    (fun (trans_str, n, pd) -> predefined_tests trans_str n pd)
     [
       "no_trans", "simple", simple_no_trans_expected;
       "no_trans", "psbA", psbA_expected;
       "no_trans", "moran", moran_expected;
-      "no_trans", "simple", [ 1.0, [ "multi_test1", "test3", 0.686887; ] ]
+      "no_trans", "simple", multi_notrans_expected;
     ]
 
-    (*
-
-
-let with_transform_predefined_suite =
-  List.map
-    (fun (trans, n, pd) -> predefined_tests trans n pd)
-    [
-      Mass_map.no_transform, "simple", transform_no_expected;
-    ]
-
-*)
 
 (* *** Matrix tests: comparing to alternative formulation using matrices. *** *)
 
@@ -152,10 +213,10 @@ let matrix_tests which =
 
 let matrix_suite =
   List.map
-    (fun (n, _) -> matrix_tests n)
+    matrix_tests
     [
-      "simple", simple_expected;
-      "psbA", psbA_expected;
+      "simple";
+      "psbA"
     ]
 
 
