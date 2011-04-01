@@ -19,6 +19,9 @@ type 'a message =
   | Exception of exn
   | Fatal_exception of exn
 
+(* The main functionality for multiprocessing. Collects handlers from a group
+ * of children, then dispatches incoming data from these children until every
+ * incoming channel has been closed. *)
 let event_loop children =
   Sys.set_signal Sys.sigchld Sys.Signal_ignore;
   let pipe_map = List.fold_left
@@ -95,21 +98,30 @@ type marshal_recv_phase =
   | Needs_header of buffer
   | Needs_data of string * buffer
 
+(* Most of the important implementation bits for multiprocessing live in the
+ * process class. It's responsible for doing the actual fork as well as handling
+ * the IO. *)
 class virtual ['a] process child_func =
   let child_rd, child_wr = Unix.pipe ()
   and parent_rd, parent_wr = Unix.pipe ()
   and progress_rd, progress_wr = Unix.pipe () in
   let _ = Unix.set_nonblock progress_rd in
+  (* Only these descriptors are used in the child. The parent has no use for
+   * them, so it closes them. The child has no use for anything but them, so
+   * it closes everything but them. *)
   let child_only = [child_rd; parent_wr; progress_wr]
   in
   let pid = match Unix.fork () with
     | 0 ->
+      (* Do the actual closing of the irrelevant descriptors. *)
       begin
         let ignored = List.map fd_of_file_descr child_only in
         List.iter
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
           (range 256)
       end;
+      (* Make writing to stdout or stderr instead write to the progress
+       * channel. *)
       Unix.dup2 progress_wr Unix.stdout;
       Unix.dup2 progress_wr Unix.stderr;
       Unix.close progress_wr;
@@ -121,6 +133,8 @@ class virtual ['a] process child_func =
         with
           | exn -> marshal wr (Fatal_exception exn)
       end;
+      (* The child should only execute its function and not return control to
+       * where the parent spawned it. *)
       exit 0
     | pid ->
       List.iter Unix.close child_only;
@@ -146,6 +160,10 @@ object (self)
   method close =
     close_out wr
 
+  (* Reading an incoming object has two parts:
+   *  (a) reading the marshal header.
+   *  (b) reading the marshal contents.
+   * Once a whole cycle of this has been completed, call obj_received. *)
   method virtual obj_received: 'a message -> unit
   val mutable marshal_state = Needs_header (buffer 20)
   method private marshal_recv h =
@@ -161,6 +179,10 @@ object (self)
         self#obj_received obj;
         marshal_state <- Needs_header (buffer 20)
 
+  (* By setting the progress channel to work in nonblocking mode, we can use
+   * ocaml's existing line buffering implementation instead of writing our
+   * own. Reading an incomplete line raises Sys_blocked_io but otherwise keeps
+   * the buffer intact. *)
   method virtual progress_received: string -> unit
   method private progress_recv h =
     match begin
@@ -177,9 +199,16 @@ end
 exception Child_error of exn
 let default_progress_handler = Printf.printf "> %s\n"
 
+(* The rest of this module is reference implementations of map and fold which
+ * use the multiprocessing infrastructure. *)
+
 class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
   (f: 'a -> 'b) (q: 'a Queue.t) =
 
+  (* In the case of map, the child sends a ready signal, then repeatedly reads
+   * objects from its input channel until there are no more objects to read. The
+   * read objects are applied to the supplied function, and then written back to
+   * the parent. *)
   let child_func rd wr =
     marshal wr Ready;
     let rec aux () =
@@ -210,6 +239,8 @@ object (self)
   val mutable ret = []
   method ret = ret
 
+  (* The parent halves of the children all share a Queue from which new objects
+   * are taken in order to fairly distribute work. *)
   method push =
     match begin
       try
@@ -254,6 +285,9 @@ let iter ?(children = 4) ?progress_handler f l =
 class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
   (f: 'a -> 'b -> 'b) (q: 'a Queue.t) (initial: 'b) =
 
+  (* fold is similar to map, except that there are no intermediate results. To
+   * signal that it needs another object, it writes back None, and when the
+   * parent closes the child's input channel, sends the final result. *)
   let child_func rd wr =
     marshal wr Ready;
     let rec aux prev =

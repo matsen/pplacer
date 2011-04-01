@@ -6,6 +6,11 @@ exception Finished
 
 class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
 
+  (* The pplacer process borrows a lot of its implementation from the the
+   * reference implementation of Multiprocessing.map, because the core of
+   * pplacer is a pure function that takes sequences and yields results. The
+   * difference comes from being able to decide per-sequence whether or not it
+   * should be sent to the child at all. *)
   let child_func rd wr =
     marshal wr Ready;
     let rec aux () =
@@ -59,12 +64,12 @@ let run_file prefs query_fname =
       query_fname;
   let ref_dir_complete =
     match Prefs.ref_dir prefs with
-    | "" -> ""
-    | s -> begin
+      | "" -> ""
+      | s -> begin
         Check.directory s;
         if s.[(String.length s)-1] = '/' then s
         else s^"/"
-    end
+      end
   in
 
   (* string map which represents the elements of the reference package; these
