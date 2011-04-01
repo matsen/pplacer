@@ -45,6 +45,63 @@ There are a couple of differences between the present version and the previous v
 * ``placeviz``, ``placeutil`` and ``mokaphy`` have been replaced by a single binary called ``guppy``
 
 
+JSON_ format specificaiton
+--------------------------
+
+The new JSON format is very simple. Each document is a JSON object with a minimum of four keys: ``tree``, ``fields``,
+``placements``, and ``version``. Another key, ``metadata``, is optional. Other keys in the root object are ignored.
+
+===================  =====
+Key                  Value
+===================  =====
+``version``          The version of the JSON format as an integer. Currently only ``1`` is allowed.
+``tree``             The reference tree as a string, in Newick format.
+``placements``       An array of placements.
+``fields``           An array of strings corresponding to the data given in the placements array.
+``metadata``         An object containing metadata about the generation of this collection of placements.
+===================  =====
+
+The pplacer suite currently uses the following field names:
+
+===================== ===========
+Field                 Description
+===================== ===========
+``edge_num``          The edge number from the provided ``tree`` as an integer.
+``likelihood``        ML log likelihood as a float.
+``like_weight_ratio`` ML likelihood weight ratio as a float.
+``distal_length``     ML distance from the distal side of the edge as a float.
+``pendant_length``    ML pendant branch length as a float.
+``classification``    The ``tax_id`` from a reference package as a string.
+===================== ===========
+
+For ``guppy`` to be able to load a JSON file, it must have ``edge_num``, ``likelihood``, ``like_weight_ratio``,
+``distal_length``, and ``pendant_length`` fields.
+
+Each entry in the ``placements`` array is an object with the following keys:
+
+===== =====
+Key   Value
+===== =====
+``n`` A string or array of strings corresponding to the name or names of the sequences placed here.
+``p`` An array of arrays containing placement data in the same order as ``fields``.
+===== =====
+
+An example JSON document follows::
+
+    {
+      "tree": "((A:2[0],B:9[1]):7[2],C:5[3],D:1[4]):0[5];",
+      "placements": [
+        {"p": [[0, -1309.830000, 1.000000, 1.000000, 10.000000]], "n": ["one_x"]},
+        {"p": [[1, -1309.830000, 1.000000, 2.000000, 10.000000]], "n": ["one_y"]}
+      ],
+      "metadata": {"invocation": "guppy to_json"},
+      "version": 1,
+      "fields": [
+        "edge_num", "likelihood", "like_weight_ratio", "distal_length",
+        "pendant_length"
+      ]
+    }
+
 Making alignments for use with pplacer
 --------------------------------------
 There are several options and formats for providing alignments of reference and query sequences.
