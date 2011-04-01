@@ -315,18 +315,10 @@ let run_file prefs query_fname =
       and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
       and invocation = (String.concat " " (Array.to_list Sys.argv))
       in
-      if Prefs.legacy_place prefs then
-        Placerun_io.to_file
-          invocation
-          (out_prefix^".place")
-          final_pr
-      else if Prefs.csv prefs then
-        Placerun_io.to_csv_file (out_prefix^".csv") final_pr
-      else
-        Placerun_io.to_json_file
-          invocation
-          (out_prefix ^ ".json")
-          final_pr
+      Placerun_io.to_json_file
+        invocation
+        (out_prefix ^ ".json")
+        final_pr
     in
     gotfunc, cachefunc, donefunc
 

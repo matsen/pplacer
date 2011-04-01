@@ -10,7 +10,6 @@ type prefs =
     stats_fname : string ref;
     ref_dir : string ref;
     out_dir : string ref;
-    legacy_place : bool ref;
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
@@ -33,8 +32,6 @@ type prefs =
     verb_level : int ref;
     write_masked : bool ref;
     only_write_best : bool ref;
-    csv : bool ref;
-    old_format : bool ref;
     (* other *)
     pretend : bool ref;
     diagnostic : bool ref;
@@ -54,7 +51,6 @@ let defaults () =
     stats_fname = ref "";
     ref_dir = ref ""; (* empty is the correct default; it gets some special handling *)
     out_dir = ref ".";
-    legacy_place = ref false;
     (* tree calc *)
     start_pend = ref 0.1;
     max_pend = ref 2.;
@@ -77,8 +73,6 @@ let defaults () =
     verb_level = ref 1;
     write_masked = ref false;
     only_write_best = ref false;
-    csv = ref false;
-    old_format = ref false;
     (* other *)
     pretend = ref false;
     diagnostic = ref false;
@@ -118,11 +112,8 @@ let gamma_alpha       p = !(p.gamma_alpha)
 let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
-let csv               p = !(p.csv)
-let old_format        p = !(p.old_format)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
-let legacy_place      p = !(p.legacy_place)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
@@ -190,10 +181,6 @@ spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Specify the directory to write place files to.";
 "--pretend", Arg.Set prefs.pretend,
 "Only check out the files then report. Do not run the analysis.";
-"--csv", Arg.Set prefs.csv,
-"Make a CSV file with the results.";
-"--old-format", Arg.Set prefs.old_format,
-"Make an old-format placefile with the resuls.";
 "--diagnostic", Arg.Set prefs.diagnostic,
 "Write file describing the 'diagnostic' mutations for various clades.";
 "--check-like", Arg.Set prefs.check_like,
