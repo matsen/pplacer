@@ -8,9 +8,9 @@
 CAMLprim value quiet_close(value fd_v)
 {
     CAMLparam1(fd_v);
-    int fd = Int_val(fd_v);
+    int fd = Int_val(fd_v), res;
     do {
-        close(fd);
-    } while (errno == EINTR);
+        res = close(fd);
+    } while (res < 0 && errno == EINTR);
     CAMLreturn(Val_unit);
 }
