@@ -67,11 +67,17 @@ let to_json_file invocation out_fname placerun =
   Hashtbl.add meta "invocation" (Jsontype.String invocation);
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
-  let has_classif = ref false in
-  Hashtbl.add ret "placements" (Jsontype.Array (List.map (Pquery_io.to_json has_classif) pqueries));
+  let json_state = ref None in
+  Hashtbl.add ret "placements" (Jsontype.Array (List.map (Pquery_io.to_json json_state) pqueries));
   Hashtbl.add ret "fields" (Jsontype.Array (List.map (fun s -> Jsontype.String s) (
     ["edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"]
-    @ (if !has_classif then ["classification"] else [])
+    @ begin match !json_state with
+      | None
+      | Some (false, false) -> []
+      | Some (has_post_prob, has_classif) ->
+        begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
+        @ begin if has_classif then ["classification"] else [] end
+    end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
   Hashtbl.add ret "version" (Jsontype.Int 1);

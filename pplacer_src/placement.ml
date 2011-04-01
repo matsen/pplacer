@@ -151,20 +151,48 @@ let to_strl =
 
 let to_str place = String.concat "\t" (to_strl place)
 
-let to_json has_classif place =
-  let tail = match place.classif with
-    | Some c ->
-      has_classif := true;
-      [Tax_id.to_json c]
-    | None -> []
-  in
-  Jsontype.Array ([
-    Jsontype.Int place.location;
-    Jsontype.Float place.log_like;
-    Jsontype.Float place.ml_ratio;
-    Jsontype.Float place.distal_bl;
-    Jsontype.Float place.pendant_bl;
-  ] @ tail)
+let to_json json_state place =
+  begin match !json_state with
+    | Some (has_post_prob, has_classif) ->
+      begin match place.post_prob, place.marginal_prob, has_post_prob with
+        | Some _, Some _, true
+        | None, None, false -> ()
+        | _, _, _ -> failwith "not all placements have posterior probability"
+      end;
+      begin match place.classif, has_classif with
+        | Some _, true
+        | None, false -> ()
+        | _, _ -> failwith "not all placements are classified"
+      end
+    | None ->
+      let t = begin match place.post_prob, place.marginal_prob with
+        | Some _, Some _ -> true
+        | None, None -> false
+        | _, _ ->
+          failwith "placement has posterior probability but not marginal probability ???"
+      end, begin match place.classif with
+        | Some _ -> true
+        | None -> false
+      end
+      in
+      json_state := Some t
+  end;
+  Jsontype.Array (
+    [
+      Jsontype.Int place.location;
+      Jsontype.Float place.log_like;
+      Jsontype.Float place.ml_ratio;
+      Jsontype.Float place.distal_bl;
+      Jsontype.Float place.pendant_bl;
+    ]
+    @ begin match place.post_prob, place.marginal_prob with
+      | Some a, Some b -> [Jsontype.Float a; Jsontype.Float b]
+      | _, _ -> []
+    end
+    @ begin match place.classif with
+      | Some c -> [Tax_id.to_json c]
+      | _ -> []
+    end)
 
 let of_json fields a =
   let a = Jsontype.array a in
@@ -186,8 +214,8 @@ let of_json fields a =
     ml_ratio = Jsontype.float (get "like_weight_ratio");
     distal_bl = Jsontype.float (get "distal_length");
     pendant_bl = Jsontype.float (get "pendant_length");
-    post_prob = None;
-    marginal_prob = None;
+    post_prob = maybe_get Jsontype.float "post_prob";
+    marginal_prob = maybe_get Jsontype.float "marginal_prob";
     classif = maybe_get Tax_id.of_json "classification";
   }
 
