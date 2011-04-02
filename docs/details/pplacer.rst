@@ -55,11 +55,14 @@ The new JSON format is very simple. Each document is a JSON object with a minimu
 Key                  Value
 ===================  =====
 ``version``          The version of the JSON format as an integer. Currently only ``1`` is allowed.
-``tree``             The reference tree as a string, in Newick format.
+``tree``             The reference tree as a string, in "edge-numbered Newick" format.
 ``placements``       An array of placements.
 ``fields``           An array of strings corresponding to the data given in the placements array.
 ``metadata``         An object containing metadata about the generation of this collection of placements.
 ===================  =====
+
+An "edge-numbered Newick" tree is simply a Newick format tree with edge labels in square brackets which provide a well-defined numbering of edges.
+These edge numbers are used to specify the edges on which the placements lie.
 
 The pplacer suite currently uses the following field names:
 
