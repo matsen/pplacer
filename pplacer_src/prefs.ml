@@ -10,7 +10,6 @@ type prefs =
     stats_fname : string ref;
     ref_dir : string ref;
     out_dir : string ref;
-    legacy_place : bool ref;
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
@@ -33,13 +32,11 @@ type prefs =
     verb_level : int ref;
     write_masked : bool ref;
     only_write_best : bool ref;
-    csv : bool ref;
-    old_format : bool ref;
     (* other *)
-    friendly : bool ref;
     pretend : bool ref;
     diagnostic : bool ref;
     check_like : bool ref;
+    children : int ref;
     version : bool ref;
   }
 
@@ -54,7 +51,6 @@ let defaults () =
     stats_fname = ref "";
     ref_dir = ref ""; (* empty is the correct default; it gets some special handling *)
     out_dir = ref ".";
-    legacy_place = ref false;
     (* tree calc *)
     start_pend = ref 0.1;
     max_pend = ref 2.;
@@ -77,13 +73,11 @@ let defaults () =
     verb_level = ref 1;
     write_masked = ref false;
     only_write_best = ref false;
-    csv = ref false;
-    old_format = ref false;
     (* other *)
-    friendly = ref true;
     pretend = ref false;
     diagnostic = ref false;
     check_like = ref false;
+    children = ref 2;
     version = ref false;
   }
 
@@ -118,15 +112,12 @@ let gamma_alpha       p = !(p.gamma_alpha)
 let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
-let csv               p = !(p.csv)
-let old_format        p = !(p.old_format)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
-let legacy_place      p = !(p.legacy_place)
-let friendly          p = !(p.friendly)
 let pretend           p = !(p.pretend)
 let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
+let children          p = !(p.children)
 let version           p = !(p.version)
 
 
@@ -186,20 +177,16 @@ spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
 "Write alignment masked to the region without gaps in the query.";
 spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
-"--unfriendly", Arg.Clear prefs.friendly,
-"Do not run friend finder pre-analysis.";
 "--out-dir", Arg.Set_string prefs.out_dir,
 "Specify the directory to write place files to.";
 "--pretend", Arg.Set prefs.pretend,
 "Only check out the files then report. Do not run the analysis.";
-"--csv", Arg.Set prefs.csv,
-"Make a CSV file with the results.";
-"--old-format", Arg.Set prefs.old_format,
-"Make an old-format placefile with the resuls.";
 "--diagnostic", Arg.Set prefs.diagnostic,
 "Write file describing the 'diagnostic' mutations for various clades.";
 "--check-like", Arg.Set prefs.check_like,
 "Write out the likelihood of the reference tree, calculated two ways.";
+spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
+"The number of child processes to spawn when doing placements. Default is %d.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
