@@ -30,7 +30,7 @@ Another way to run pplacer is without a reference package::
   pplacer -t reference_tree -s statistics_file aln.fasta
 
 The ``statistics_file`` is a file describing the evolutionary model used to make the reference tree (described in the section on reference tree below).
-Running pplacer in this way will diable the taxonomic annotation features of pplacer v1.1.
+Running pplacer in this way will disable the taxonomic annotation features of pplacer v1.1.
 
 
 
@@ -45,7 +45,7 @@ There are a couple of differences between the present version and the previous v
 * ``placeviz``, ``placeutil`` and ``mokaphy`` have been replaced by a single binary called ``guppy``
 
 
-JSON_ format specificaiton
+JSON_ format specification
 --------------------------
 
 The new JSON format is very simple. Each document is a JSON object with a minimum of four keys: ``tree``, ``fields``,
@@ -231,7 +231,7 @@ If you give pplacer a reference tree which has been rooted, you will get a warni
   Warning: pplacer results make the most sense when the given tree is multifurcating
   at the root. See manual for details.
 
-In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they are be artifically counted as two separate edges.
+In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they are be artificially counted as two separate edges.
 That will lead to artifactually low likelihood weight ratio and posterior probabilities for query sequences placed on those edges.
 This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the placeviz trees.
 
