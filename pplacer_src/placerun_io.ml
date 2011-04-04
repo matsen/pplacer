@@ -7,12 +7,6 @@ let bifurcation_warning =
   "Warning: pplacer results make the most sense when the \
   given tree is multifurcating at the root. See manual for details."
 
-let chop_place_extension fname =
-  if Filename.check_suffix fname ".place" then
-    Filename.chop_extension fname
-  else
-    invalid_arg ("this program requires place files ending with .place suffix, unlike "^fname)
-
 (* ***** WRITING ***** *)
 
 let output_fmt_str = "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length, containment classification, classification"
@@ -37,7 +31,7 @@ let write_by_best_loc criterion ch placerun =
 
 let pre_fname out_dir pr = out_dir^"/"^(Placerun.get_name pr)
 
-let to_file invocation out_fname placerun =
+let to_legacy_file invocation out_fname placerun =
   Placerun.warn_about_duplicate_names placerun;
   let ch = open_out out_fname
   and ref_tree = Placerun.get_ref_tree placerun
@@ -153,7 +147,7 @@ let of_file ?load_seq:(load_seq=true) place_fname =
   (* parse the header, getting a ref tree *)
   Placerun.make
     ref_tree
-    (chop_place_extension (Filename.basename place_fname))
+    (Filename.chop_extension (Filename.basename place_fname))
     (get_pqueries [])
 
 

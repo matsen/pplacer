@@ -55,7 +55,7 @@ Command line interface
 The general way to invoke |guppy| is ``guppy COMMAND [options] placefile[s]`` where COMMAND is one of the |guppy| commands.
 For example::
 
-  guppy heat --gray-black coastal.place DCM.place
+  guppy heat --gray-black coastal.json DCM.json
 
 These programs are listed with more detail below, and can always be found using ``guppy --cmds`` .
 
