@@ -44,7 +44,6 @@ type labeled_mass = { pquery_num: int ;
 type calc_intermediate = { omega: float ref;   (* weighted sum of gaussians *)
                            sigma: float ref; } (* sum of weights *)
 
-(* getters to avoid references *)
 let get_omega i = !(i.omega)
 let get_sigma i = !(i.sigma)
 
@@ -52,10 +51,10 @@ let intermediate_sum i1 i2 =
   { omega = ref ((get_omega i1) +. (get_omega i2));
     sigma = ref ((get_sigma i1) +. (get_sigma i2)) }
 
-(* this seems like a pretty crazy way to do things.
- * I should use the mutables in the calc_intermediate. *)
-let intermediate_list_sum =
-  ListFuns.complete_fold_left intermediate_sum
+(* This looks a bit nuts, and it kind of is, but we are actually only doing this
+ * operation O(#edges of the tree) times. For bifurcating trees these are lists
+ * of two, and the above is actually the most efficient way to go. *)
+let intermediate_list_sum = ListFuns.complete_fold_left intermediate_sum
 
 (* recall that transform is globally set up top for the time being *)
 let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
@@ -78,7 +77,10 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
     (List.iter
       (fun multimul ->
         let trans_multi = transform multimul.Pre.multi in
-        assert(trans_multi = 1.); (* for debugging *)
+        if trans_multi <> 1. then
+          failwith
+            "Nontrivial multiplicity for Gaussian significance not \
+            supported at the moment.";
         List.iter
           (fun mu ->
             labeled_mass_arr.(mu.Pre.loc) <-
@@ -107,7 +109,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
     data.omega := (get_omega data) +. lm.mass *. sample.(lm.pquery_num);
     data.sigma := (get_sigma data) +. lm.mass;
   in
-  (* take the samples and do the calculation *)
+  (* Take the samples and do the calculation. *)
   ListFuns.init
     n_samples
     (fun _ ->

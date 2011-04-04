@@ -65,7 +65,6 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
      * the kr vector *)
     let next_subtotal a =
       let seg_len = a -. prev_a in
-      (* Printf.printf "%g\t%g\n" prev_a a; *)
       assert(seg_len >= 0.);
       subtotal+.seg_len*.(data_to_r data_sofar)
     in
