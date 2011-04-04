@@ -67,13 +67,13 @@ object (self)
             ">%s %s\n%s\n"
             name
             (String.concat ""
-               (List.fold_left
+               (List.rev (List.fold_left
                   (fun l tax_id ->
                     if List.mem (Tax_taxonomy.get_tax_rank tax tax_id) included
                     then ((Tax_id.to_string tax_id) ^ ";") :: l
                     else l)
                   []
-                  (Tax_taxonomy.get_lineage tax tax_id)))
+                  (Tax_taxonomy.get_lineage tax tax_id))))
             seq)
         aln;
       close_out out_ch
