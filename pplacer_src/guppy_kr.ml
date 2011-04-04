@@ -126,7 +126,7 @@ object (self)
         calculate distance only). Default is %d."))
   val verbose = flag "--verbose"
     (Plain (false, "Verbose running."))
-  val normal = flag "--normal"
+  val gaussian = flag "--gaussian"
     (Plain (false, "Use the Gaussian process approximation for p-value \
         estimation"))
 
@@ -141,7 +141,7 @@ object (self)
       toggle_flag density;
       int_flag n_samples;
       toggle_flag verbose;
-      toggle_flag normal;
+      toggle_flag gaussian;
     ]
 
   method desc =
@@ -157,15 +157,15 @@ object (self)
   let calc_dist =
     Kr_distance.scaled_dist_of_pres ~normalization transform p t in
   let original_dist = calc_dist pre1 pre2 in
-  let type_str = if fv normal then "normal" else "density"
+  let type_str = if fv gaussian then "gaussian" else "density"
   in
   {
     distance = original_dist;
     p_value =
       if 0 < n_samples then begin
         let null_dists =
-          if fv normal then (* use normal approximation *)
-            Normal_approx.normal_pair_approx
+          if fv gaussian then (* use gaussian approximation *)
+            Gaussian_approx.pair_approx
               ~normalization rng n_samples p t pre1 pre2
           else
             List.map
