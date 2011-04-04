@@ -34,13 +34,13 @@ let intermediate_list_sum =
   ListFuns.complete_fold_left intermediate_sum
 
 (* recall that transform is globally set up top for the time being *)
-let normal_pair_approx ?(normalization=1.) rng n_samples p t prepre1 prepre2 =
+let normal_pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
   (* make sure that the pres have unit mass per placement *)
-  let pre1 = Mass_map.Pre.unitize_mass transform prepre1
-  and pre2 = Mass_map.Pre.unitize_mass transform prepre2
+  let upre1 = Mass_map.Pre.unitize_mass transform pre1
+  and upre2 = Mass_map.Pre.unitize_mass transform pre2
   in
-  let np1 = List.length pre1
-  and np2 = List.length pre2
+  let np1 = List.length upre1
+  and np2 = List.length upre2
   and int_inv x = 1. /. (float_of_int x)
   in
   let labeled_mass_arr = Array.make (1+Gtree.top_id t) []
@@ -63,7 +63,7 @@ let normal_pair_approx ?(normalization=1.) rng n_samples p t prepre1 prepre2 =
               :: (labeled_mass_arr.(mu.Pre.loc)))
           multimul.Pre.mul;
         incr pquery_counter))
-    [pre1; pre2];
+    [upre1; upre2];
   (* sort along the edge *)
   for i=0 to (Array.length labeled_mass_arr) - 1 do
     labeled_mass_arr.(i) <-
