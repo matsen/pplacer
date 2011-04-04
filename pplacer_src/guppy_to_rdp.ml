@@ -2,6 +2,7 @@ open Subcommand
 open Guppy_cmdobjs
 
 let gap_regexp = Str.regexp "-"
+let taxid_regexp = Str.regexp "_"
 
 class cmd () =
 object (self)
@@ -35,7 +36,11 @@ object (self)
           in
           Printf.fprintf out_ch
             "%s*%s*%s*%d*%s\n"
-            (Tax_id.to_string tax_id)
+            (* oh god this is terrible *)
+            (Str.global_replace
+               taxid_regexp
+               "99999"
+               (Tax_id.to_string tax_id))
             name
             ancestor
             (Tax_taxonomy.get_tax_rank tax tax_id)
