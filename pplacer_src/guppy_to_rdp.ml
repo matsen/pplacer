@@ -70,7 +70,7 @@ object (self)
                (List.rev (List.fold_left
                   (fun l tax_id ->
                     if List.mem (Tax_taxonomy.get_tax_rank tax tax_id) included
-                    then ((Tax_id.to_string tax_id) ^ ";") :: l
+                    then ((Tax_taxonomy.get_tax_name tax tax_id) ^ ";") :: l
                     else l)
                   []
                   (Tax_taxonomy.get_lineage tax tax_id))))
