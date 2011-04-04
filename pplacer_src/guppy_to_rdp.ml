@@ -1,6 +1,14 @@
 open Subcommand
 open Guppy_cmdobjs
 
+let index_of l x =
+  let rec aux accum = function
+    | x' :: rest ->
+      if x = x' then accum
+      else aux (accum + 1) rest
+    | [] -> raise Not_found
+  in aux 0 l
+
 let gap_regexp = Str.regexp "-"
 let taxid_regexp = Str.regexp "_"
 
@@ -22,40 +30,55 @@ object (self)
   method usage = "usage: to_rdp -c my.refpkg -o prefix"
 
   method action _ =
-    let rp = self#get_rp in
+    let included = List.map
+      int_of_string
+      (List.flatten
+         (List.map
+            (Str.split (Str.regexp ","))
+            (fv included_ranks)))
+    and rp = self#get_rp in
     let tax = Refpkg.get_taxonomy rp in
+    let is_included tid = List.mem (Tax_taxonomy.get_tax_rank tax tid) included
+    in
     begin
       let out_ch = open_out ((fv out_prefix) ^ "queryseq.txt") in
-      Tax_id.TaxIdMap.iter
-        (fun tax_id name ->
+      let taxonomy = Tax_id.TaxIdMap.fold
+        (fun tax_id name taxl ->
+          if is_included tax_id then
+            (Tax_taxonomy.get_tax_rank tax tax_id, tax_id, name) :: taxl
+          else
+            taxl)
+        tax.Tax_taxonomy.tax_name_map
+        []
+      in
+      let taxonomy = List.sort (fun (a, _, _) (b, _, _) -> a - b) taxonomy in
+      List.iter
+        (fun (_, tax_id, name) ->
           let ancestor =
             try
-              Tax_id.to_string (Tax_taxonomy.get_ancestor tax tax_id)
+              Tax_id.to_string (List.find
+                (fun tid ->
+                  tax_id != tid && is_included tid)
+                (List.rev (Tax_taxonomy.get_lineage tax tax_id)))
             with
-              | Tax_taxonomy.NoAncestor _ -> "0"
+              | Not_found -> "0"
           in
           Printf.fprintf out_ch
             "%s*%s*%s*%d*%s\n"
             (* oh god this is terrible *)
             (Str.global_replace
                taxid_regexp
-               "99999"
+               "00"
                (Tax_id.to_string tax_id))
             name
             ancestor
-            (Tax_taxonomy.get_tax_rank tax tax_id)
+            (index_of included (Tax_taxonomy.get_tax_rank tax tax_id))
             (Tax_taxonomy.rank_name_of_tax_id tax tax_id))
-        tax.Tax_taxonomy.tax_name_map;
+        taxonomy;
       close_out out_ch
     end;
     begin
-      let included = List.map
-        int_of_string
-        (List.flatten
-           (List.map
-              (Str.split (Str.regexp ","))
-              (fv included_ranks)))
-      and seqinfo = Refpkg.get_seqinfom rp
+      let seqinfo = Refpkg.get_seqinfom rp
       and aln = Refpkg.get_aln_fasta rp
       and tax = Refpkg.get_taxonomy rp
       and out_ch = open_out ((fv out_prefix) ^ "queryseq.fasta") in
@@ -69,7 +92,7 @@ object (self)
             (String.concat ""
                (List.rev (List.fold_left
                   (fun l tax_id ->
-                    if List.mem (Tax_taxonomy.get_tax_rank tax tax_id) included
+                    if is_included tax_id
                     then ((Tax_taxonomy.get_tax_name tax tax_id) ^ ";") :: l
                     else l)
                   []
