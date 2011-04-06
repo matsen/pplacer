@@ -4,10 +4,7 @@ open MapsSets
 open Fam_batteries
 
 type prefs = {
-  gray_level: int;
-  white_bg: bool;
   p_exp: float;
-  simple_colors: bool;
   gray_black_colors: bool;
   min_width: float;
   max_width: float;
@@ -28,20 +25,6 @@ let simple_color_of_heat heat =
 
 let gray_black_of_heat heat =
   if heat >= 0. then Decor.gray 180 else Decor.black
-
-let color_of_heat prefs ?(p=1.) heat =
-  let gray_level = prefs.gray_level in
-  let intensity = intensity_of_heat ~p heat
-  and color = simple_color_of_heat heat
-  and gray =
-    Decor.gray
-      (if prefs.white_bg then
-        255-gray_level
-      else
-        gray_level)
-  in
-  assert_intensity intensity;
-  Decor.color_avg intensity color gray
 
 let width_value_of_heat ~width_diff ?(p=1.) heat =
   let intensity = intensity_of_heat ~p heat in
@@ -92,11 +75,10 @@ let color_map prefs t pre1 pre2 =
       (-. (ListFuns.complete_fold_left min heat_only))
   in
   let our_color_of_heat scaled_heat =
-    if prefs.simple_colors then
-      simple_color_of_heat scaled_heat
-    else if prefs.gray_black_colors then
+    if prefs.gray_black_colors then
       gray_black_of_heat scaled_heat
-    else color_of_heat prefs ~p scaled_heat
+    else
+      simple_color_of_heat scaled_heat
   in
   let min_width = prefs.min_width in
   let width_diff = prefs.max_width -. min_width in
@@ -132,14 +114,8 @@ object (self)
 
   val outfile = flag "-o"
     (Plain ("", "Output file. Default is derived from the input filenames."))
-  val simple_colors = flag "--color-grad"
-    (Plain (true, "Use color gradation as well as thickness to represent mass transport."))
   val gray_black_colors = flag "--gray-black"
     (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
-  val white_bg = flag "--white-bg"
-    (Plain (false, "Make colors for the heat tree which are compatible with a white background."))
-  val gray_level = flag "--gray-level"
-    (Formatted (5, "Specify the amount of gray to mix into the color scheme. Default is %d."))
   val min_width = flag "--min-width"
     (Formatted (0.5, "Specify the minimum width of the branches in a heat tree. Default is %g."))
   val max_width = flag "--max-width"
@@ -151,10 +127,7 @@ object (self)
     @ super_kr#specl
     @ [
       string_flag outfile;
-      toggle_flag simple_colors;
       toggle_flag gray_black_colors;
-      toggle_flag white_bg;
-      int_flag gray_level;
       float_flag min_width;
       float_flag max_width;
     ]
@@ -174,10 +147,7 @@ object (self)
       let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
       let prefs = {
-        gray_level = fv gray_level;
-        white_bg = fv white_bg;
         p_exp = fv p_exp;
-        simple_colors = fv simple_colors;
         gray_black_colors = fv gray_black_colors;
         min_width = fv min_width;
         max_width = fv max_width;
