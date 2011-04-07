@@ -18,7 +18,7 @@ let heat_map_of_floatim multiplier m =
       if v = 0. then []
       else begin
         let width = multiplier *. (abs_float v) in
-        (Guppy_heat.simple_color_of_heat v)::
+        (Guppy_kr_heat.simple_color_of_heat v)::
           (if width < min_width then []
            else [Decor.width width])
       end)
@@ -27,7 +27,6 @@ let heat_map_of_floatim multiplier m =
 let heat_tree_of_floatim multiplier t m =
   Visualization.spread_short_fat 1e-2
     (Decor_gtree.add_decor_by_map t ((heat_map_of_floatim multiplier) m))
-
 
 let pca_complete ?scale transform
       weighting criterion multiplier write_n refpkgo out_prefix prl =

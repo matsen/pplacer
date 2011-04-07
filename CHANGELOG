@@ -25,4 +25,5 @@
   * Changed default behavior of `guppy kr` to not normalize, and
     correspondingly added in a `--normalize` command line flag.
   * Improved documentation.
+  * Moved `guppy heat` to `guppy kr_heat`.
 
