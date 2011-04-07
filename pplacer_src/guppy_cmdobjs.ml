@@ -77,8 +77,6 @@ end
 
 class viz_cmd () =
 object
-  val white_bg = flag "--white-bg"
-    (Plain (false, "Make colors appropriate for a white background."))
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
   val total_width = flag "--total-width"
@@ -86,7 +84,6 @@ object
   val unit_width = flag "--unit-width"
     (Plain (0., "Set the number of pixels for a single placement (will override total-width if set)."))
   method specl = [
-    toggle_flag white_bg;
     float_flag min_fat_bl;
     float_flag total_width;
     float_flag unit_width;
