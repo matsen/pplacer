@@ -110,12 +110,11 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit kr_cmd () as super_kr
+  inherit heat_cmd () as super_heat
   inherit placefile_cmd () as super_placefile
 
   val outfile = flag "-o"
     (Plain ("", "Output file. Default is derived from the input filenames."))
-  val gray_black_colors = flag "--gray-black"
-    (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
   val min_width = flag "--min-width"
     (Formatted (0.5, "Specify the minimum width of the branches in a heat tree. Default is %g."))
   val max_width = flag "--max-width"
@@ -127,7 +126,6 @@ object (self)
     @ super_kr#specl
     @ [
       string_flag outfile;
-      toggle_flag gray_black_colors;
       float_flag min_width;
       float_flag max_width;
     ]

@@ -123,6 +123,24 @@ object
     rng
 end
 
+class heat_cmd () =
+object(self)
+  val gray_black_colors = flag "--gray-black"
+    (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
+  method specl = [ toggle_flag gray_black_colors; ]
+
+  method private color_of_heat heat =
+    if heat >= 0. then Decor.red else Decor.blue
+
+  method private gray_black_of_heat heat =
+    if heat >= 0. then Decor.gray 180 else Decor.black
+
+  method private decor_of_heat heat =
+    if fv gray_black_colors then self#gray_black_of_heat else self#color_of_heat
+
+end
+
+
 module SM = MapsSets.StringMap
 
 (* *** accessing placefiles *** *)
