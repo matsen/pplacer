@@ -31,10 +31,10 @@ let width_value_of_heat ~width_diff ?(p=1.) heat =
   assert_intensity intensity;
   width_diff *. intensity
 
-let color_map prefs t pre1 pre2 =
+(* Make a map with the amount of transport along each edge. *)
+let transport_map prefs t pre1 pre2 =
   let transform = prefs.transform in
-  let p = prefs.p_exp
-  and kr_map =
+  let kr_map =
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd)
@@ -69,37 +69,7 @@ let color_map prefs t pre1 pre2 =
   if top_heat > Kr_distance.tol then
     raise (Kr_distance.Total_kr_not_zero top_heat);
   (* why do I do it like this rather than mapping abs first? *)
-  let max_abs_heat =
-    max
-      (ListFuns.complete_fold_left max heat_only)
-      (-. (ListFuns.complete_fold_left min heat_only))
-  in
-  let our_color_of_heat scaled_heat =
-    if prefs.gray_black_colors then
-      gray_black_of_heat scaled_heat
-    else
-      simple_color_of_heat scaled_heat
-  in
-  let min_width = prefs.min_width in
-  let width_diff = prefs.max_width -. min_width in
-  IntMapFuns.of_pairlist
-    (List.map
-      (fun (id, raw_heat) ->
-        let scaled_heat = raw_heat /. max_abs_heat in
-        let wv = width_value_of_heat ~width_diff ~p scaled_heat in
-        (id,
-        if wv = 0. then []
-        else
-          ( our_color_of_heat scaled_heat ) ::
-          ( if wv < min_width then []
-            else [ Decor.width wv ])))
-      heat_list)
-
-let make_heat_tree prefs decor_t pre1 pre2 =
-  Decor_gtree.add_decor_by_map
-    decor_t
-    (color_map prefs decor_t pre1 pre2)
-
+  IntMapFuns.of_pairlist heat_list
 
 (* The commands *)
 
@@ -136,6 +106,7 @@ object (self)
       and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in
       let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
+      (* ***************** KILL THIS ************ *)
       let prefs = {
         p_exp = fv p_exp;
         gray_black_colors = fv gray_black_colors;
@@ -143,6 +114,11 @@ object (self)
         max_width = fv max_width;
         transform = transform;
       } in
+      let make_heat_tree prefs decor_t pre1 pre2 =
+        Decor_gtree.add_decor_by_map
+          decor_t
+          (self#decor_map_of_float_map (transport_map prefs decor_t pre1 pre2))
+      in
       Phyloxml.named_gtrees_to_file
         fname
         ([Some tree_name,
