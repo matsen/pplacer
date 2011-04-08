@@ -158,6 +158,11 @@ object(self)
       (our_color_of_heat x) :: (if width < fv min_width then [] else [Decor.width width])
     in
     IntMap.map to_decor m
+
+  method private heat_tree_of_floatim decor_t m =
+    Decor_gtree.add_decor_by_map decor_t (self#decor_map_of_float_map m)
+
+(*      Visualization.spread_short_fat 1e-2 *)
 end
 
 

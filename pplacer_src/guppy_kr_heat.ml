@@ -3,26 +3,6 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
-(* color utils *)
-
-(* intesity is a float from 0 to 1 which is the absolute-valued and
- * exponentiated version of the heat *)
-let intensity_of_heat ~p heat = (abs_float heat) ** p
-
-let assert_intensity intensity =
-  assert(intensity >= 0. || intensity <= 1.)
-
-let simple_color_of_heat heat =
-  if heat >= 0. then Decor.red else Decor.blue
-
-let gray_black_of_heat heat =
-  if heat >= 0. then Decor.gray 180 else Decor.black
-
-let width_value_of_heat ~width_diff ?(p=1.) heat =
-  let intensity = intensity_of_heat ~p heat in
-  assert_intensity intensity;
-  width_diff *. intensity
-
 (* Make a map with the amount of transport along each edge. *)
 let transport_map transform t pre1 pre2 =
   let kr_map =
