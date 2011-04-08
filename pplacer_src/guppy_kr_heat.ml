@@ -101,7 +101,6 @@ let make_heat_tree prefs decor_t pre1 pre2 =
     (color_map prefs decor_t pre1 pre2)
 
 
-
 (* The commands *)
 
 class cmd () =
@@ -115,20 +114,13 @@ object (self)
 
   val outfile = flag "-o"
     (Plain ("", "Output file. Default is derived from the input filenames."))
-  val min_width = flag "--min-width"
-    (Formatted (0.5, "Specify the minimum width of the branches in a heat tree. Default is %g."))
-  val max_width = flag "--max-width"
-    (Formatted (13., "Specify the maximum width of the branches in a heat tree. Default is %g."))
 
   method specl =
     super_mass#specl
     @ super_refpkg#specl
     @ super_kr#specl
-    @ [
-      string_flag outfile;
-      float_flag min_width;
-      float_flag max_width;
-    ]
+    @ super_heat#specl
+    @ [ string_flag outfile ]
 
   method desc =
 "makes a heat tree"

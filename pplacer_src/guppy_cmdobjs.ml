@@ -3,6 +3,7 @@
  *)
 
 open Subcommand
+open MapsSets
 
 class out_prefix_cmd () =
 object
@@ -127,7 +128,16 @@ class heat_cmd () =
 object(self)
   val gray_black_colors = flag "--gray-black"
     (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
-  method specl = [ toggle_flag gray_black_colors; ]
+  val min_width = flag "--min-width"
+    (Formatted (0.5, "Specify the minimum width of the branches in a heat tree. Default is %g."))
+  val max_width = flag "--max-width"
+    (Formatted (13., "Specify the maximum width of the branches in a heat tree. Default is %g."))
+
+  method specl = [
+      toggle_flag gray_black_colors;
+      float_flag min_width;
+      float_flag max_width;
+    ]
 
   method private color_of_heat heat =
     if heat >= 0. then Decor.red else Decor.blue
@@ -135,9 +145,19 @@ object(self)
   method private gray_black_of_heat heat =
     if heat >= 0. then Decor.gray 180 else Decor.black
 
-  method private decor_of_heat heat =
-    if fv gray_black_colors then self#gray_black_of_heat else self#color_of_heat
-
+  method private decor_map_of_float_map m =
+    let our_color_of_heat =
+      if fv gray_black_colors then self#gray_black_of_heat
+      else self#color_of_heat
+    in
+    let abs_max_value = IntMap.fold (fun _ v x -> max (abs_float v) x) m 0. in
+    (* make an option to specify multiplier, which will override the below *)
+    let multiplier = (fv max_width) /. abs_max_value in
+    let to_decor x =
+      let width = abs_float (x *. multiplier) in
+      (our_color_of_heat x) :: (if width < fv min_width then [] else [Decor.width width])
+    in
+    IntMap.map to_decor m
 end
 
 
