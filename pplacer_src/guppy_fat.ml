@@ -28,7 +28,7 @@ object (self)
   method usage = "usage: fat [options] placefile[s]"
 
   method private total_mass_width total_multiplicity =
-    match fv unit_width with
+    match fv width_multiplier with
       | 0. -> fv total_width
       | x -> x *. (float_of_int total_multiplicity)
 

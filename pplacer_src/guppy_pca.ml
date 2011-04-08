@@ -4,8 +4,6 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
-let tolerance = 1e-3
-
 let map_of_arr a =
   let m = ref IntMap.empty in
   Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
@@ -21,11 +19,9 @@ object (self)
   inherit placefile_cmd () as super_placefile
 
   val write_n = flag "--write-n"
-    (Plain (5, "The number of principal coordinates to write out (default is 5)."))
+    (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
   val scale = flag "--scale"
     (Plain (false, "Scale variances to one before performing principal components."))
-  val multiplier = flag "--multiplier"
-    (Formatted (50., "The factor by which we multiply the principal component eigenvectors to get branch thickness. Default: %g."))
 
   method specl =
     super_out_prefix#specl
@@ -35,7 +31,6 @@ object (self)
     @ [
       int_flag write_n;
       toggle_flag scale;
-      float_flag multiplier;
     ]
 
   method desc =

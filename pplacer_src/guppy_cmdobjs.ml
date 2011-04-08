@@ -76,21 +76,6 @@ object(self)
         else (None, alt_tree)
 end
 
-class viz_cmd () =
-object
-  val min_fat_bl = flag "--min-fat"
-    (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
-  val total_width = flag "--total-width"
-    (Formatted (400., "Set the total number of pixels for all of the mass. Default: %g"))
-  val unit_width = flag "--unit-width"
-    (Plain (0., "Set the number of pixels for a single placement (will override total-width if set)."))
-  method specl = [
-    float_flag min_fat_bl;
-    float_flag total_width;
-    float_flag unit_width;
-  ]
-end
-
 class outfile_cmd () =
 object
   val out_fname = flag "-o"
@@ -124,19 +109,33 @@ object
     rng
 end
 
+class viz_cmd () =
+object
+  val min_fat_bl = flag "--min-fat"
+    (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
+  val total_width = flag "--total-width"
+    (Formatted (400., "Set the total pixel width for all of the branches of the tree. Default: %g"))
+  val width_multiplier = flag "--width-multiplier"
+    (Plain (0., "Override total-width by directly setting the number of pixels per unit of thing displayed."))
+  method specl = [
+    float_flag min_fat_bl;
+    float_flag total_width;
+    float_flag width_multiplier;
+  ]
+end
+
 class heat_cmd () =
 object(self)
+  inherit viz_cmd () as super_viz
   val gray_black_colors = flag "--gray-black"
-    (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
+    (Plain (false, "Use gray/black in place of red/blue to signify the sign of the coefficient for that edge."))
   val min_width = flag "--min-width"
-    (Formatted (0.5, "Specify the minimum width of the branches in a heat tree. Default is %g."))
-  val max_width = flag "--max-width"
-    (Formatted (13., "Specify the maximum width of the branches in a heat tree. Default is %g."))
-
-  method specl = [
+    (Formatted (1., "Specify the minimum width for a branch to be colored and thickened. Default is %g."))
+  method specl =
+    super_viz#specl
+    @ [
       toggle_flag gray_black_colors;
       float_flag min_width;
-      float_flag max_width;
     ]
 
   method private color_of_heat heat =
@@ -150,12 +149,16 @@ object(self)
       if fv gray_black_colors then self#gray_black_of_heat
       else self#color_of_heat
     in
-    let abs_max_value = IntMap.fold (fun _ v x -> max (abs_float v) x) m 0. in
+    let abs_tot_value = IntMap.fold (fun _ v x -> (abs_float v) +. x) m 0. in
     (* make an option to specify multiplier, which will override the below *)
-    let multiplier = (fv max_width) /. abs_max_value in
+    let multiplier =
+      match fv width_multiplier with
+      | 0. -> (fv total_width) /. abs_tot_value  (* not set manually *)
+      | mw -> mw
+    in
     let to_decor x =
       let width = abs_float (x *. multiplier) in
-      (our_color_of_heat x) :: (if width < fv min_width then [] else [Decor.width width])
+      if width < fv min_width then [] else [our_color_of_heat x; Decor.width width]
     in
     IntMap.map to_decor m
 
