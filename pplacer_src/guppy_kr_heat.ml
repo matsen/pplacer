@@ -3,14 +3,6 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
-type prefs = {
-  p_exp: float;
-  gray_black_colors: bool;
-  min_width: float;
-  max_width: float;
-  transform: int -> float;
-}
-
 (* color utils *)
 
 (* intesity is a float from 0 to 1 which is the absolute-valued and
@@ -32,8 +24,7 @@ let width_value_of_heat ~width_diff ?(p=1.) heat =
   width_diff *. intensity
 
 (* Make a map with the amount of transport along each edge. *)
-let transport_map prefs t pre1 pre2 =
-  let transform = prefs.transform in
+let transport_map transform t pre1 pre2 =
   let kr_map =
     IntMap.map
     (* we don't care about where we are along the edge *)
@@ -64,11 +55,9 @@ let transport_map prefs t pre1 pre2 =
         :: (List.flatten below))
       (Gtree.get_stree t)
   in
-  let heat_only = List.map snd heat_list in
-  let top_heat = List.hd heat_only in
+  let (_,top_heat) = List.hd heat_list in
   if top_heat > Kr_distance.tol then
     raise (Kr_distance.Total_kr_not_zero top_heat);
-  (* why do I do it like this rather than mapping abs first? *)
   IntMapFuns.of_pairlist heat_list
 
 (* The commands *)
@@ -106,23 +95,15 @@ object (self)
       and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in
       let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
-      (* ***************** KILL THIS ************ *)
-      let prefs = {
-        p_exp = fv p_exp;
-        gray_black_colors = fv gray_black_colors;
-        min_width = fv min_width;
-        max_width = fv max_width;
-        transform = transform;
-      } in
-      let make_heat_tree prefs decor_t pre1 pre2 =
+      let make_heat_tree decor_t pre1 pre2 =
         Decor_gtree.add_decor_by_map
           decor_t
-          (self#decor_map_of_float_map (transport_map prefs decor_t pre1 pre2))
+          (self#decor_map_of_float_map (transport_map transform decor_t pre1 pre2))
       in
       Phyloxml.named_gtrees_to_file
         fname
         ([Some tree_name,
-          make_heat_tree prefs
+          make_heat_tree
             (match refpkgo with
             | None -> Decor_gtree.of_newick_gtree ref_tree
             | Some rp -> Refpkg.get_tax_ref_tree rp)
@@ -135,7 +116,7 @@ object (self)
             let my_make_tax_pre =
               Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap in
             [Some (tree_name^".tax"),
-            make_heat_tree prefs taxt
+            make_heat_tree taxt
               (my_make_tax_pre pr1)
               (my_make_tax_pre pr2)]
         end)

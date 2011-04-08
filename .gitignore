@@ -12,3 +12,4 @@ common_src/install_common_pprs.txt
 makefile
 libs
 docs/generated_rst/
+docs/_build/doctrees/
