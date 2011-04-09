@@ -10,18 +10,12 @@ object (self)
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit fat_cmd () as super_fat
 
-  val log_coeff = flag "--log"
-    (Plain (0., "Set to a nonzero value to perform a logarithmic transform of the branch width."))
-
   method specl =
     super_out_prefix#specl
     @ super_out_dir#specl
     @ super_mass#specl
     @ super_refpkg#specl
     @ super_fat#specl
-    @ [
-      float_flag log_coeff;
-    ]
 
   method desc =
 "makes trees with edges fattened in proportion to the number of reads"
@@ -45,7 +39,7 @@ object (self)
           ([
             Some (pr.Placerun.name^".ref.fat"),
             self#spread_short_fat
-              (Visualization.fat_tree mass_width (fv log_coeff) final_rt
+              (Visualization.fat_tree mass_width final_rt
                 (Mass_map.By_edge.of_placerun
                   transform weighting criterion pr))
            ]
@@ -57,7 +51,7 @@ object (self)
                   let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
                   [
                     Some (pr.Placerun.name^".tax.fat"),
-                    Visualization.fat_tree (mass_width /. 2.) (fv log_coeff) taxt
+                    Visualization.fat_tree (mass_width /. 2.) taxt
                       (Mass_map.By_edge.of_pre transform
                          (Tax_mass.pre (Gtree.top_id taxt) Placement.classif
                             weighting criterion ti_imap pr))

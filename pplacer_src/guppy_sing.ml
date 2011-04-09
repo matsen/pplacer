@@ -17,7 +17,7 @@ let sing_tree weighting criterion mass_width ref_tree pquery =
               (Placement.distal_bl p,
               Visualization.make_zero_leaf
                 ([ Decor.red] @
-                  (Visualization.widthl_of_mass 0. mass_width mass))
+                  (Visualization.widthl_of_mass mass_width mass))
                 (Placement.pendant_bl p)
                 (Printf.sprintf
                   "%s_#%d_M=%g"

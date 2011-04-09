@@ -25,7 +25,6 @@ let write_pre_tree transform prefix infix drt id pre =
   Visualization.write_fat_tree
     ~min_bl:2e-2
     400. (* mass width *)
-    1.   (* log coeff *)
     (prefix^((zeropad id)^"."^infix))
     drt
     (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre)
