@@ -50,7 +50,10 @@ object (self)
     | None -> Decor_gtree.of_newick_gtree prt
     | Some rp -> Refpkg.get_tax_ref_tree rp
     in
-    let data = List.map (Guppy_splitify.splitify_placerun transform weighting criterion) prl
+    let data =
+      List.map
+        (Guppy_splitify.splitify_placerun transform weighting criterion)
+        prl
     in
     let (eval, evect) = Pca.gen_pca ~scale ~n_keep:write_n (Array.of_list data)
     in
@@ -76,9 +79,5 @@ object (self)
       (out_prefix^".edgediff")
       (List.combine names data);
     ()
-
-
-
-
 
 end

@@ -104,10 +104,10 @@ let fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm =
 (* min_bl is the bl that will be fed to spread_short_fat above *)
 let write_fat_tree
       ?min_bl mass_width log_coeff fname_base decor_ref_tree massm =
-  let pd = Phyloxml.pxdata_of_named_gtree
+  Phyloxml.named_gtree_to_file
+    (fname_base ^ ".fat.xml")
     (fname_base ^ ".fat")
     (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
-  in Phyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
 
 
 class viz_command () =
