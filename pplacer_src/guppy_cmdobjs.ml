@@ -5,6 +5,21 @@
 open Subcommand
 open MapsSets
 
+
+(* *** general objects *** *)
+
+class outfile_cmd () =
+object
+  val out_fname = flag "-o"
+    (Plain ("-", "Set the filename to write to. Otherwise write to stdout."))
+  method specl = [ string_flag out_fname; ]
+
+  method private out_channel =
+    match fv out_fname with
+      | "-" -> stdout
+      | s -> open_out s
+end
+
 class out_prefix_cmd () =
 object
   val out_prefix = flag "-o"
@@ -19,27 +34,20 @@ object
   method specl = [ string_flag out_dir; ]
 end
 
-class mass_cmd () =
+class rng_cmd () =
 object
-  val use_pp = flag "--pp"
-    (Plain (false, "Use posterior probability for the weight."))
-  val weighted = flag "--unweighted"
-    (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
-  val transform = flag "--transform"
-    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."))
-  method specl = [
-    toggle_flag use_pp;
-    toggle_flag weighted;
-    string_flag transform;
-  ]
+  val seed = flag "--seed"
+    (Formatted (1, "Set the random seed, an integer > 0. Default is %d."))
+  method specl = [ int_flag seed; ]
 
-  method private mass_opts = (
-    Mass_map.transform_of_str (fv transform),
-    (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
-    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
-  )
+  method private rng =
+    let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
+    Gsl_rng.set rng (Nativeint.of_int (fv seed));
+    rng
 end
+
+
+(* *** pplacer objects *** *)
 
 class refpkg_cmd ~required =
 object(self)
@@ -76,16 +84,54 @@ object(self)
         else (None, alt_tree)
 end
 
-class outfile_cmd () =
-object
-  val out_fname = flag "-o"
-    (Plain ("-", "Set the filename to write to. Otherwise write to stdout."))
-  method specl = [ string_flag out_fname; ]
 
-  method private out_channel =
-    match fv out_fname with
-      | "-" -> stdout
-      | s -> open_out s
+module SM = MapsSets.StringMap
+
+(* *** accessing placefiles *** *)
+(* our strategy is to load the placefiles in to memory when we need them, but if
+  * they are already in memory, then we use them *)
+let placerun_map = ref SM.empty
+let placerun_by_name fname =
+  if SM.mem fname !placerun_map then
+    SM.find fname !placerun_map
+  else begin
+    let pr = Placerun_io.filtered_of_file fname in
+    if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
+    placerun_map := SM.add fname pr !placerun_map;
+    pr
+  end
+
+class virtual placefile_cmd () =
+object (self)
+  method virtual private placefile_action: 'a Placerun.placerun list -> unit
+  method action fnamel =
+    let prl = List.map placerun_by_name fnamel in
+    self#placefile_action prl
+end
+
+
+(* *** mass-related objects *** *)
+
+class mass_cmd () =
+object
+  val use_pp = flag "--pp"
+    (Plain (false, "Use posterior probability for the weight."))
+  val weighted = flag "--unweighted"
+    (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
+  val transform = flag "--transform"
+    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
+    Options are 'log' and 'unit'. Default is no transform."))
+  method specl = [
+    toggle_flag use_pp;
+    toggle_flag weighted;
+    string_flag transform;
+  ]
+
+  method private mass_opts = (
+    Mass_map.transform_of_str (fv transform),
+    (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
+    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
+  )
 end
 
 class kr_cmd () =
@@ -97,17 +143,8 @@ object
   method specl = [ float_flag p_exp; string_flag normalize; ]
 end
 
-class rng_cmd () =
-object
-  val seed = flag "--seed"
-    (Formatted (1, "Set the random seed, an integer > 0. Default is %d."))
-  method specl = [ int_flag seed; ]
 
-  method private rng =
-    let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
-    Gsl_rng.set rng (Nativeint.of_int (fv seed));
-    rng
-end
+(* *** visualization-related objects *** *)
 
 class viz_cmd () =
 object
@@ -129,6 +166,11 @@ object
       match fv width_multiplier with
       | 0. -> (fv total_width) /. abs_tot  (* not set manually *)
       | mw -> mw
+
+  method private spread_short_fat t =
+    match fv min_fat_bl with
+    | 0. -> t
+    | min_bl -> Visualization.spread_short_fat min_bl t
 end
 
 class heat_cmd () =
@@ -162,14 +204,14 @@ object(self)
     in
     let to_decor x =
       let width = abs_float (x *. multiplier) in
-      if width < fv min_width then [] else [our_color_of_heat x; Decor.width width]
+      if width < fv min_width then []
+      else [our_color_of_heat x; Decor.width width]
     in
     IntMap.map to_decor m
 
   method private heat_tree_of_floatim decor_t m =
     Decor_gtree.add_decor_by_map decor_t (self#decor_map_of_float_map m)
 
-(*      Visualization.spread_short_fat 1e-2 *)
 end
 
 class classic_viz_cmd () =
@@ -195,29 +237,4 @@ object
           ref_tree
        else
           (Newick_gtree.make_boot_id ref_tree))
-end
-
-
-module SM = MapsSets.StringMap
-
-(* *** accessing placefiles *** *)
-(* our strategy is to load the placefiles in to memory when we need them, but if
-  * they are already in memory, then we use them *)
-let placerun_map = ref SM.empty
-let placerun_by_name fname =
-  if SM.mem fname !placerun_map then
-    SM.find fname !placerun_map
-  else begin
-    let pr = Placerun_io.filtered_of_file fname in
-    if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
-    placerun_map := SM.add fname pr !placerun_map;
-    pr
-  end
-
-class virtual placefile_cmd () =
-object (self)
-  method virtual private placefile_action: 'a Placerun.placerun list -> unit
-  method action fnamel =
-    let prl = List.map placerun_by_name fnamel in
-    self#placefile_action prl
 end
