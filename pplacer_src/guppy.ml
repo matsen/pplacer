@@ -6,7 +6,6 @@ let command_list () =
       "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
       "sing", (fun () -> new Guppy_sing.cmd ());
       "tog", (fun () -> new Guppy_tog.cmd ());
-      "classic", (fun () -> new Guppy_classic.cmd ());
     ];
 
     "statistical comparison", [
