@@ -2,7 +2,6 @@ open Subcommand
 open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
-open Visualization
 
 let sing_tree weighting criterion mass_width ref_tree pquery =
   let pqname = String.concat "_" pquery.Pquery.namel in
@@ -16,16 +15,16 @@ let sing_tree weighting criterion mass_width ref_tree pquery =
             let mass = criterion p in
             (Placement.location p,
               (Placement.distal_bl p,
-              make_zero_leaf
+              Visualization.make_zero_leaf
                 ([ Decor.red] @
-                  (widthl_of_mass 0. mass_width mass))
+                  (Visualization.widthl_of_mass 0. mass_width mass))
                 (Placement.pendant_bl p)
                 (Printf.sprintf
                   "%s_#%d_M=%g"
                   pqname
                   num
                   mass),
-              decor_bark_of_bl)))
+              Visualization.decor_bark_of_bl)))
           (Pquery.place_list pquery)))
   | Mass_map.Unweighted ->
       let p = Pquery.best_place criterion pquery in
@@ -34,15 +33,15 @@ let sing_tree weighting criterion mass_width ref_tree pquery =
         (IntMapFuns.of_pairlist_listly
           [Placement.location p,
             (Placement.distal_bl p,
-            make_zero_leaf
+            Visualization.make_zero_leaf
               [ Decor.red; ]
               (Placement.pendant_bl p)
               (Printf.sprintf "%s" pqname),
-              decor_bark_of_bl)])
+              Visualization.decor_bark_of_bl)])
 
 let write_sing_file weighting criterion mass_width tree_fmt fname_base ref_tree
     placed_pquery_list =
-  trees_to_file
+  Visualization.trees_to_file
     tree_fmt
     (fname_base^".sing")
     (List.map
@@ -55,7 +54,8 @@ object (self)
   inherit out_prefix_cmd () as super_out_prefix
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
-  inherit viz_command () as super_viz
+  inherit viz_cmd () as super_viz
+  inherit classic_viz_cmd () as super_classic_viz
 
   method specl =
     super_mass#specl
@@ -67,7 +67,7 @@ object (self)
 
   method private placefile_action prl =
     let _, weighting, criterion = self#mass_opts in
-    let unit_width = fv unit_width in
+    let mass_width = self#multiplier_of_abs_tot 1. in
     List.iter
       (fun pr ->
         let fname_base =
@@ -76,7 +76,7 @@ object (self)
         write_sing_file
           weighting
           criterion
-          unit_width
+          mass_width
           self#fmt
           fname_base
           (self#decor_ref_tree pr)

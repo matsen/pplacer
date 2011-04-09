@@ -122,6 +122,13 @@ object
     float_flag total_width;
     float_flag width_multiplier;
   ]
+
+  (* Given an absolute total quantity, come up with a scaling which will make
+   * that total. *)
+  method private multiplier_of_abs_tot abs_tot =
+      match fv width_multiplier with
+      | 0. -> (fv total_width) /. abs_tot  (* not set manually *)
+      | mw -> mw
 end
 
 class heat_cmd () =
@@ -149,12 +156,9 @@ object(self)
       if fv gray_black_colors then self#gray_black_of_heat
       else self#color_of_heat
     in
-    let abs_tot_value = IntMap.fold (fun _ v x -> (abs_float v) +. x) m 0. in
-    (* make an option to specify multiplier, which will override the below *)
     let multiplier =
-      match fv width_multiplier with
-      | 0. -> (fv total_width) /. abs_tot_value  (* not set manually *)
-      | mw -> mw
+      self#multiplier_of_abs_tot
+        (IntMap.fold (fun _ v x -> (abs_float v) +. x) m 0.)
     in
     let to_decor x =
       let width = abs_float (x *. multiplier) in
@@ -166,6 +170,31 @@ object(self)
     Decor_gtree.add_decor_by_map decor_t (self#decor_map_of_float_map m)
 
 (*      Visualization.spread_short_fat 1e-2 *)
+end
+
+class classic_viz_cmd () =
+object
+  val xml = flag "--xml"
+    (Plain (false, "Write phyloXML (with colors) for all visualizations."))
+  val show_node_numbers = flag "--node-numbers"
+    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
+
+  method specl = [
+    toggle_flag xml;
+    toggle_flag show_node_numbers;
+  ]
+
+  method private fmt =
+    if fv xml then Visualization.Phyloxml
+    else Visualization.Newick
+
+  method private decor_ref_tree pr =
+    let ref_tree = Placerun.get_ref_tree pr in
+    Decor_gtree.of_newick_gtree
+      (if not (fv show_node_numbers) then
+          ref_tree
+       else
+          (Newick_gtree.make_boot_id ref_tree))
 end
 
 

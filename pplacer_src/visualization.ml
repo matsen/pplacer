@@ -110,36 +110,3 @@ let write_fat_tree
     (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
 
 
-class viz_command () =
-object
-  val unit_width = flag "--unit-width"
-    (Plain (0., "Set the number of pixels for a single placement (will override total-width if set)."))
-  val total_width = flag "--total-width"
-    (Formatted (400., "Set the total number of pixels for all of the mass. Default: %g"))
-  val xml = flag "--xml"
-    (Plain (false, "Write phyloXML (with colors) for all visualizations."))
-  val show_node_numbers = flag "--node-numbers"
-    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
-
-  method specl = [
-    float_flag unit_width;
-    float_flag total_width;
-    toggle_flag xml;
-    toggle_flag show_node_numbers;
-  ]
-
-  method private fmt = if fv xml then Phyloxml else Newick
-  method private decor_ref_tree pr =
-    let ref_tree = Placerun.get_ref_tree pr in
-    Decor_gtree.of_newick_gtree
-      (if not (fv show_node_numbers) then
-          ref_tree
-       else
-          (Newick_gtree.make_boot_id ref_tree))
-  method private mass_width n_placed =
-    let unit_width = fv unit_width in
-    if unit_width <> 0. then (* unit width specified *)
-      unit_width *. (float_of_int n_placed)
-    else (* split up the mass according to the number of queries *)
-      (fv total_width)
-end
