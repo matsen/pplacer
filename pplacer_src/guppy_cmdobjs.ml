@@ -147,7 +147,7 @@ end
 (* *** visualization-related objects *** *)
 
 class viz_cmd () =
-object
+object(self)
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
   val total_width = flag "--total-width"
@@ -171,6 +171,10 @@ object
     match fv min_fat_bl with
     | 0. -> t
     | min_bl -> Visualization.spread_short_fat min_bl t
+
+  method private write_spread_tree ~fname ~tree_name t =
+    Phyloxml.named_gtree_to_file ~fname ~tree_name (self#spread_short_fat t)
+
 end
 
 class heat_cmd () =

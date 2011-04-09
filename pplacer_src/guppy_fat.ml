@@ -33,9 +33,7 @@ object (self)
       | x -> x *. (float_of_int total_multiplicity)
 
   method action fnamel =
-    let transform, weighting, criterion = self#mass_opts
-    and min_bl = match (fv min_fat_bl) with 0. -> None | x -> Some x
-    in
+    let transform, weighting, criterion = self#mass_opts in
     List.iter
       (fun fname ->
         let pr = Placerun_io.filtered_of_file fname in
@@ -46,8 +44,10 @@ object (self)
           (pr.Placerun.name^".xml")
           ([
             Some (pr.Placerun.name^".ref.fat"),
-            Visualization.fat_tree ?min_bl mass_width (fv log_coeff) final_rt
-              (Mass_map.By_edge.of_placerun transform weighting criterion pr)
+            self#spread_short_fat
+              (Visualization.fat_tree mass_width (fv log_coeff) final_rt
+                (Mass_map.By_edge.of_placerun
+                  transform weighting criterion pr))
            ]
            @
            (try
