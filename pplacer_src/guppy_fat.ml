@@ -8,7 +8,7 @@ object (self)
   inherit out_dir_cmd () as super_out_dir
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
-  inherit viz_cmd () as super_viz
+  inherit fat_cmd () as super_fat
 
   val log_coeff = flag "--log"
     (Plain (0., "Set to a nonzero value to perform a logarithmic transform of the branch width."))
@@ -18,7 +18,7 @@ object (self)
     @ super_out_dir#specl
     @ super_mass#specl
     @ super_refpkg#specl
-    @ super_viz#specl
+    @ super_fat#specl
     @ [
       float_flag log_coeff;
     ]

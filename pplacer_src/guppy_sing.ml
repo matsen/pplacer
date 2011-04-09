@@ -54,13 +54,13 @@ object (self)
   inherit out_prefix_cmd () as super_out_prefix
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
-  inherit viz_cmd () as super_viz
+  inherit fat_cmd () as super_fat
   inherit classic_viz_cmd () as super_classic_viz
 
   method specl =
     super_mass#specl
     @ super_out_prefix#specl
-    @ super_viz#specl
+    @ super_fat#specl
 
   method desc = "makes one tree for each query sequence, showing uncertainty"
   method usage = "usage: sing [options] placefile[s]"

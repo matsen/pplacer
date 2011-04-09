@@ -146,7 +146,7 @@ end
 
 (* *** visualization-related objects *** *)
 
-class viz_cmd () =
+class fat_cmd () =
 object(self)
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
@@ -179,7 +179,7 @@ end
 
 class heat_cmd () =
 object(self)
-  inherit viz_cmd () as super_viz
+  inherit fat_cmd () as super_viz
   val gray_black_colors = flag "--gray-black"
     (Plain (false, "Use gray/black in place of red/blue to signify the sign of the coefficient for that edge."))
   val min_width = flag "--min-width"
