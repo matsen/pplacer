@@ -74,6 +74,8 @@ object(self)
       (fun pr ->
         self#check_rpo_tree (Placerun.get_name pr) (Placerun.get_ref_tree pr))
 
+  (* This checks to make sure that the placerun given has a reference tree that
+   * matches the reference package tree, if it exists. *)
   method private get_rpo_and_tree pr =
     let alt_tree = Decor_gtree.of_newick_gtree pr.Placerun.ref_tree in
     match self#get_rpo with
@@ -82,6 +84,12 @@ object(self)
         Refpkg.pr_check_tree_approx rp pr;
         if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
         else (None, alt_tree)
+
+  method private get_decor_ref_tree =
+    let rp = self#get_rp in
+    if Refpkg.tax_equipped rp then Refpkg.get_tax_ref_tree rp
+    else Decor_gtree.of_newick_gtree (Refpkg.get_ref_tree rp)
+
 end
 
 
@@ -253,6 +261,9 @@ object(self)
   method private heat_tree_of_floatim decor_t m =
     self#spread_short_fat
       (Decor_gtree.add_decor_by_map decor_t (self#decor_map_of_float_map m))
+
+  method private heat_tree_of_float_arr decor_t a =
+    self#heat_tree_of_floatim decor_t (Visualization.intmap_of_arr a)
 
 end
 

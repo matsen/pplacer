@@ -4,6 +4,11 @@ open Subcommand
 open MapsSets
 open Fam_batteries
 
+let intmap_of_arr a =
+  let m = ref IntMap.empty in
+  Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
+  !m
+
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees =
   match tree_fmt with

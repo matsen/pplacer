@@ -4,11 +4,6 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
-let map_of_arr a =
-  let m = ref IntMap.empty in
-  Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
-  !m
-
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -65,7 +60,7 @@ object (self)
       (List.map
         (fun (eval, evect) ->
           (Some (string_of_float eval),
-          super_heat#heat_tree_of_floatim t (map_of_arr evect)))
+          super_heat#heat_tree_of_float_arr t evect))
         combol);
     Guppy_splitify.save_named_fal
       (out_prefix^".rot")

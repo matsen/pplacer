@@ -3,6 +3,7 @@ let command_list () =
   [
     "visualization", [
       "fat", (fun () -> new Guppy_fat.cmd ());
+      "heat", (fun () -> new Guppy_heat.cmd ());
       "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
       "sing", (fun () -> new Guppy_sing.cmd ());
       "tog", (fun () -> new Guppy_tog.cmd ());
