@@ -31,16 +31,13 @@ object (self)
     List.iter
       (fun fname ->
         let pr = Placerun_io.filtered_of_file fname in
-        let (tax_rp_opt, final_rt) = self#get_rpo_and_tree pr
-        and mass_width = self#total_mass_width (Placerun.total_multiplicity pr)
-        in
+        let (tax_rp_opt, final_rt) = self#get_rpo_and_tree pr in
         Phyloxml.named_gtrees_to_file
           (pr.Placerun.name^".xml")
           ([
             Some (pr.Placerun.name^".ref.fat"),
             self#fat_tree_of_massm final_rt
-              (Mass_map.By_edge.of_placerun
-                transform weighting criterion pr)
+              (Mass_map.By_edge.of_placerun transform weighting criterion pr)
            ]
            @
            (try
@@ -48,12 +45,17 @@ object (self)
                 | None -> []
                 | Some rp -> begin
                   let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
+                  let massm =
+                    Mass_map.By_edge.of_pre transform
+                      (Tax_mass.pre (Gtree.top_id taxt) Placement.classif
+                         weighting criterion ti_imap pr)
+                  in
+                  let multiplier_override =
+                    200. /. (Mass_map.By_edge.total_mass massm)
+                  in
                   [
                     Some (pr.Placerun.name^".tax.fat"),
-                    Visualization.fat_tree (mass_width /. 2.) taxt
-                      (Mass_map.By_edge.of_pre transform
-                         (Tax_mass.pre (Gtree.top_id taxt) Placement.classif
-                            weighting criterion ti_imap pr))
+                    self#fat_tree_of_massm ~multiplier_override taxt massm
                   ]
                 end
               with

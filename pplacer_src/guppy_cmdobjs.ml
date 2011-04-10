@@ -182,9 +182,14 @@ object(self)
   (* Here every mass is the sand color, and there is no min width for coloring.
    * However, we do throw out the width argument if it's less than 1 to avoid
    * disappearing branches.
+   * The multiplier_opt allows for overriding the multiplier.
    * *)
-  method private decor_map_of_mass_map m =
-    let multiplier = self#multiplier_of_float_map m in
+  method private decor_map_of_mass_map ?multiplier_override m =
+    let multiplier =
+      match multiplier_override with
+      | None -> self#multiplier_of_float_map m
+      | Some m -> m
+    in
     let to_decor x =
       if x <= 0. then []
       else begin
@@ -199,9 +204,11 @@ object(self)
   method private write_spread_tree ~fname ~tree_name t =
     Phyloxml.named_gtree_to_file ~fname ~tree_name (self#spread_short_fat t)
 
-  method private fat_tree_of_massm decor_t m =
+  method private fat_tree_of_massm ?multiplier_override decor_t m =
     self#spread_short_fat
-      (Decor_gtree.add_decor_by_map decor_t (self#decor_map_of_mass_map m))
+      (Decor_gtree.add_decor_by_map
+        decor_t
+        (self#decor_map_of_mass_map ?multiplier_override m))
 
 end
 
