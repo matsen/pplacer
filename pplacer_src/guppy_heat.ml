@@ -28,8 +28,16 @@ object (self)
   method usage = "usage: heat -o my.xml -c my.refpkg matrix.csv"
 
   method private csv_to_named_trees t fname =
+    (* Below: add one for the root edge. *)
+    let n_edges = 1+Gtree.n_edges t in
     List.map
-      (fun (name, a) -> (Some name, self#heat_tree_of_float_arr t a))
+      (fun (name, a) ->
+        if n_edges <> Array.length a then
+          failwith
+            (Printf.sprintf
+              "%d entries in %s, and %d edges in reference tree"
+              (Array.length a) name n_edges);
+        (Some name, self#heat_tree_of_float_arr t a))
       (named_arr_list_of_csv fname)
 
   method action = function
