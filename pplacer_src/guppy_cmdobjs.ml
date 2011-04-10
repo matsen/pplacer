@@ -163,17 +163,45 @@ object(self)
   (* Given an absolute total quantity, come up with a scaling which will make
    * that total. *)
   method private multiplier_of_abs_tot abs_tot =
-      match fv width_multiplier with
-      | 0. -> (fv total_width) /. abs_tot  (* not set manually *)
-      | mw -> mw
+    assert(abs_tot > 0.);
+    match fv width_multiplier with
+    | 0. -> (fv total_width) /. abs_tot  (* not set manually *)
+    | mw -> mw
+
+  (* Feed the absolute-value total of the given float map to the above method.
+   * *)
+  method private multiplier_of_float_map m =
+    self#multiplier_of_abs_tot
+      (IntMap.fold (fun _ v x -> (abs_float v) +. x) m 0.)
 
   method private spread_short_fat t =
     match fv min_fat_bl with
     | 0. -> t
     | min_bl -> Visualization.spread_short_fat min_bl t
 
+  (* Here every mass is the sand color, and there is no min width for coloring.
+   * However, we do throw out the width argument if it's less than 1 to avoid
+   * disappearing branches.
+   * *)
+  method private decor_map_of_mass_map m =
+    let multiplier = self#multiplier_of_float_map m in
+    let to_decor x =
+      if x <= 0. then []
+      else begin
+        let width = x *. multiplier in
+        [Decor.sand] @
+          (if width < 1. then []
+          else [Decor.width width])
+      end
+    in
+    IntMap.map to_decor m
+
   method private write_spread_tree ~fname ~tree_name t =
     Phyloxml.named_gtree_to_file ~fname ~tree_name (self#spread_short_fat t)
+
+  method private fat_tree_of_massm decor_t m =
+    self#spread_short_fat
+      (Decor_gtree.add_decor_by_map decor_t (self#decor_map_of_mass_map m))
 
 end
 
@@ -197,6 +225,8 @@ object(self)
   method private gray_black_of_heat heat =
     if heat >= 0. then Decor.gray 180 else Decor.black
 
+  (* Here we have red and blue for positive and negative, and if it's below
+   * min_width then the color and the width argument get thrown out. *)
   method private decor_map_of_float_map m =
     let our_color_of_heat =
       if fv gray_black_colors then self#gray_black_of_heat

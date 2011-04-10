@@ -38,10 +38,9 @@ object (self)
           (pr.Placerun.name^".xml")
           ([
             Some (pr.Placerun.name^".ref.fat"),
-            self#spread_short_fat
-              (Visualization.fat_tree mass_width final_rt
-                (Mass_map.By_edge.of_placerun
-                  transform weighting criterion pr))
+            self#fat_tree_of_massm final_rt
+              (Mass_map.By_edge.of_placerun
+                transform weighting criterion pr)
            ]
            @
            (try

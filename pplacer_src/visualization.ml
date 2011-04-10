@@ -4,12 +4,6 @@ open Subcommand
 open MapsSets
 open Fam_batteries
 
-let min_width = 1.
-
-let widthl_of_mass mass_width mass =
-  let final_width = mass_width *. mass in
-  if final_width >= min_width then [Decor.width (mass_width *. mass)] else []
-
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees =
   match tree_fmt with
@@ -83,25 +77,5 @@ let spread_short_fat min_bl t =
             | Some bl -> if bl > min_bl then b else b#set_bl min_bl
           end)
       (Gtree.get_bark_map t))
-
-let fat_tree ?min_bl mass_width decor_ref_tree massm =
-  let t =
-    Decor_gtree.add_decor_by_map
-      decor_ref_tree
-      (IntMap.map
-        (fun m ->
-          [ Decor.sand ] @
-          (widthl_of_mass mass_width m))
-        massm)
-  in
-  match min_bl with Some mb -> spread_short_fat mb t | None -> t
-
-(* min_bl is the bl that will be fed to spread_short_fat above *)
-let write_fat_tree
-      ?min_bl mass_width fname_base decor_ref_tree massm =
-  Phyloxml.named_gtree_to_file
-    (fname_base ^ ".fat.xml")
-    (fname_base ^ ".fat")
-    (fat_tree ?min_bl mass_width decor_ref_tree massm)
 
 

@@ -19,15 +19,6 @@ let tax_t_prel_of_prl tgt_fun weighting criterion rp prl =
 
 let zeropad i = Printf.sprintf "%04d" i
 
-let write_pre_tree transform prefix infix drt id pre =
-  let tot = Mass_map.Pre.total_mass transform pre in
-  assert(tot > 0.);
-  Visualization.write_fat_tree
-    ~min_bl:2e-2
-    400. (* mass width *)
-    (prefix^((zeropad id)^"."^infix))
-    drt
-    (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre)
 
 let mkdir path =
   try
@@ -78,6 +69,7 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit rng_cmd () as super_rng
+  inherit fat_cmd () as super_fat
   inherit placefile_cmd () as super_placefile
 
   val outdir = flag "-o"
@@ -92,6 +84,7 @@ object (self)
     super_mass#specl
     @ super_refpkg#specl
     @ super_rng#specl
+    @ super_fat#specl
     @ [
       string_flag outdir;
       int_flag nboot;
@@ -101,6 +94,16 @@ object (self)
   method desc =
 "performs squash clustering"
   method usage = "usage: squash [options] placefiles"
+
+  method private write_pre_tree transform prefix infix drt id pre =
+    let tot = Mass_map.Pre.total_mass transform pre in
+    assert(tot > 0.);
+    let tree_name = prefix^((zeropad id)^"."^infix) in
+    let massm = (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre) in
+    Phyloxml.named_gtree_to_file
+      (tree_name ^ ".fat.xml")
+      (tree_name ^ ".fat")
+      (self#fat_tree_of_massm drt massm)
 
   method private placefile_action prl =
     let outdir = fv outdir in mkdir outdir;
@@ -124,16 +127,16 @@ object (self)
       let path = Filename.concat outdir in
       (* make a tax tree here then run mimic on it *)
       match refpkgo with
-        | None -> IntMap.iter (write_pre_tree transform (path "") "phy" drt) blobim
+        | None -> IntMap.iter (self#write_pre_tree transform (path "") "phy" drt) blobim
         | Some rp ->
         (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
           let tdrt = Refpkg.get_tax_ref_tree rp in
-          IntMap.iter (write_pre_tree transform (path "") "phy" tdrt) blobim;
+          IntMap.iter (self#write_pre_tree transform (path "") "phy" tdrt) blobim;
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in
           let tax_blobim = PreCluster.mimic cluster_t tax_prel in
-          IntMap.iter (write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
+          IntMap.iter (self#write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
     end
     else begin
       let rng = self#rng in
