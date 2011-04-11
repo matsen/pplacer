@@ -159,8 +159,8 @@ object(self)
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
   val total_width = flag "--total-width"
-    (Formatted (400., "Set the total pixel width for all of the branches of the tree. Default: %g"))
-  val width_multiplier = flag "--width-multiplier"
+    (Formatted (300., "Set the total pixel width for all of the branches of the tree. Default: %g"))
+  val width_multiplier = flag "--width-factor"
     (Plain (0., "Override total-width by directly setting the number of pixels per unit of thing displayed."))
   method specl = [
     float_flag min_fat_bl;

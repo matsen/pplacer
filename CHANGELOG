@@ -1,4 +1,19 @@
 
+1.1.alpha05
+===========
+
+  * Added `guppy splitify`. Spits out differences of mass across splits.
+  * Changed default behavior of `guppy kr` to not normalize, and
+    correspondingly added in a `--normalize` command line flag.
+  * Improved documentation.
+  * Moved `guppy heat` to `guppy kr_heat`.
+  * The `guppy heat` subcommand now maps an arbitrary vector to a phylogenetic
+    tree contained in a reference package.
+  * Added -j option to pplacer to allow for multithread execution.
+  * Options for the tree-generating subcommands are more uniform.
+  * Removed redundant `classic` subcommand from guppy.
+
+
 1.1.alpha03 to 1.1.alpha04
 ==========================
 
@@ -16,14 +31,4 @@
      Previously, a file was being opened and closed for every pquery in every
      placerun. This resulted in only the last pquery being classified and
      written out. Now only one file is being opened for each placerun.
-
-
-1.1.alpha05
-===========
-
-  * Added `guppy splitify`. Spits out differences of mass across splits.
-  * Changed default behavior of `guppy kr` to not normalize, and
-    correspondingly added in a `--normalize` command line flag.
-  * Improved documentation.
-  * Moved `guppy heat` to `guppy kr_heat`.
 
