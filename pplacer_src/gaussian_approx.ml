@@ -138,9 +138,10 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
       in
       front_coeff *.
         ((Kr_distance.total_over_tree
-          edge_total
-          check_final_data
-          intermediate_list_sum
-          (fun () -> { omega = ref 0.; sigma = ref 0.; })
-          t) /. normalization)
+            edge_total
+            check_final_data
+            intermediate_list_sum
+            (fun () -> { omega = ref 0.; sigma = ref 0.; })
+            t)
+          /. normalization)
         ** (Kr_distance.outer_exponent p))
