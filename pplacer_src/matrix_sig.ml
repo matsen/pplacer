@@ -49,6 +49,8 @@ let build_mtilde weighting criterion pr1 pr2 =
 
 let vec_tot = vec_fold_left (+.) 0.
 
+(* The distance calculated by using matrices rather than by using integration
+ * along edges. *)
 let matrix_distance weighting criterion pr1 pr2 =
   let n1 = Placerun.n_pqueries pr1
   and n2 = Placerun.n_pqueries pr2 in

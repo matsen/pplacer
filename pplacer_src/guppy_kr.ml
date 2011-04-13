@@ -3,8 +3,6 @@ open MapsSets
 open Subcommand
 open Guppy_cmdobjs
 
-let _ = Matrix_sig.vec_tot
-
 type result =
   {
     distance : float;
