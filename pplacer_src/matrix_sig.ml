@@ -225,16 +225,3 @@ let top_eig m tol max_iter =
   aux 0;
   mat_vec_mul ~a:m ~x:v ~y:scratch;
   scratch.{0} /. v.{0}
-
-
-(* This code is for Borell's inequality. Although it does give a bound, it's
- * much too conservative to be useful. *)
-let borell_sig m w ew =
-  Printf.printf "tr M: %g\n" (trace m);
-  Printf.printf "2 tr M^2: %g\n" (2. *. (trace_msq m));
-  Printf.printf "sqrt(2 tr M^2): %g\n" (sqrt (2. *. (trace_msq m)));
-  let t = w -. ew in
-  (w,
-  2. *. exp ( -. t *. t /. (2. *. (top_eig m tol max_iter))))
-  (* this is 2 \exp ( \frac{(-t^2}{2 max_eig m} ) *)
-
