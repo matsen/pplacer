@@ -2,7 +2,7 @@ open OUnit
 open Test_util
 
 open Diagd;;
-open Fam_gsl_matvec;;
+open Linear_utils;;
 
 let b = Gsl_matrix.of_arrays [|[|-. 1.; 0.15|];[|0.15; -.2.|]|];;
 let d = Gsl_vector.of_array [|0.25; 0.75|];;

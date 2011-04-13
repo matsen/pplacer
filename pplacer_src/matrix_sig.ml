@@ -11,7 +11,7 @@
 
 open Bigarray
 open Fam_batteries
-open Fam_gsl_matvec
+open Linear_utils
 
 let rooted_qform m v = sqrt(qform m v)
 
@@ -47,7 +47,7 @@ let build_mtilde weighting criterion pr1 pr2 =
   Gsl_matrix.scale mt (1. /. (Gtree.tree_length t));
   mt
 
-let vec_tot = vecFold_left (+.) 0.
+let vec_tot = vec_fold_left (+.) 0.
 
 let matrix_distance weighting criterion pr1 pr2 =
   let n1 = Placerun.n_pqueries pr1
@@ -55,7 +55,7 @@ let matrix_distance weighting criterion pr1 pr2 =
   let inv_n1 = 1. /. (float_of_int n1)
   and neg_inv_n2 = -. 1. /. (float_of_int n2) in
   let indicator =
-    vecInit
+    vec_init
       (n1+n2)
       (fun i -> if i < n1 then inv_n1 else neg_inv_n2)
   in
@@ -72,6 +72,16 @@ let matrix_distance weighting criterion pr1 pr2 =
 let max_iter = 100
 let tol = 1e-5
 let sq v = v *. v
+
+(* given an f which takes a vector and gives a float, make a vector out of
+ * applying f to each of the rows of m *)
+let map_rows_to_vector f m =
+  let n_rows = Array2.dim1 m in
+  let v = Gsl_vector.create n_rows in
+  for i=0 to n_rows-1 do
+    Array1.unsafe_set v i (f (Gsl_matrix.row m i))
+  done;
+  v
 
 (* the average of each of the rows *)
 let row_avg m =
