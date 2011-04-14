@@ -54,15 +54,15 @@ show(prcomp(m))
 let prcomp_stddevs = farr_of_string
 "4.9245017 1.4857642 0.8416972"
 
-(* note flipped sign of PC1 and PC3 *)
+(* note flipped sign of PC2 *)
 let prcomp_vects = mat_of_string
-"0.7445646 -0.5718874 0.3443375
--0.1652807 -0.6576928 -0.7349302
--0.6467657 -0.4902907 0.5842167"
+"-0.7445646 0.5718874 0.3443375
+  0.1652807 0.6576928 -0.7349302
+  0.6467657 0.4902907 0.5842167"
 (* we have the vectors be rows in matrix, so we can get at them *)
 let () = Gsl_matrix.transpose_in_place prcomp_vects
 
-let (variances, pv) = gen_pca x;;
+let (variances, pv) = gen_pca 3 x;;
 let vects = Gsl_matrix.of_arrays pv;;
 let stddevs = Array.map sqrt variances;;
 
@@ -80,15 +80,15 @@ show(prcomp(m, scale=TRUE))
 let sprcomp_stddevs = farr_of_string
 "1.5230503 0.7690720 0.2980708"
 
-(* note sign of PC2 flipped *)
+(* note sign of PC3 flipped *)
 let sprcomp_vects = mat_of_string
-"-0.5872014 0.5314280 -0.6105561
-0.5030103 0.8305398  0.2391325
-0.6341729 -0.1666971 -0.7550079"
+"-0.5872014 0.5314280  0.6105561
+0.5030103 0.8305398   -0.2391325
+0.6341729 -0.1666971   0.7550079"
 (* we have the vectors be rows in matrix, so we can get at them *)
 let () = Gsl_matrix.transpose_in_place sprcomp_vects
 
-let (svariances, spv) = gen_pca ~scale:true x;;
+let (svariances, spv) = gen_pca ~scale:true 3 x;;
 let svects = Gsl_matrix.of_arrays spv;;
 let sstddevs = Array.map sqrt svariances;;
 

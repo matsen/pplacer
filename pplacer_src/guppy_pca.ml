@@ -50,7 +50,7 @@ object (self)
         (Guppy_splitify.splitify_placerun transform weighting criterion)
         prl
     in
-    let (eval, evect) = Pca.gen_pca ~scale ~n_keep:write_n (Array.of_list data)
+    let (eval, evect) = Pca.gen_pca ~scale write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl)
