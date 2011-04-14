@@ -5,8 +5,9 @@
 *)
 
 open Linear_utils
+open Bigarray
 
-type eigen =
+type eig =
   {
     v: Gsl_vector.vector;
     l: float;
@@ -57,3 +58,41 @@ let top_eig m tol max_iter =
     l = scratch.{0} /. v.{0};
     v = v;
   }
+
+(* Calculates the outer product (scalar v v^T) and puts it in m. *)
+let outer_product ?(scalar=1.) m v =
+  let len = Gsl_vector.length v in
+  let (n_rows, n_cols) = Gsl_matrix.dims m in
+  assert(n_rows = len && n_cols = len);
+  for i=0 to len-1 do
+    let row = Array2.slice_left m i in
+    Array1.blit v row; (* copy v to row *)
+    Gsl_vector.scale row (scalar *. v.{i});
+  done;;
+
+let m = Gsl_matrix.create 3 3;;
+
+let v = Gsl_vector.of_array [|1.; 5.; 2.|];;
+
+outer_product ~scalar:(-1.) m v;;
+m;;
+
+let projector_of_eig m eig =
+  outer_product ~scalar:eig.l m eig.v
+
+(* make a list of the top n eigs *)
+let top_eigs m tol max_iter n_eigs =
+  let m' = Gsl_matrix.copy m in
+  let proj = Gsl_matrix.copy m in
+  let rec aux n_left accu =
+    if n_left <= 0 then accu
+    else
+      let eig = top_eig m' tol max_iter in
+      projector_of_eig proj eig;
+      (* Subtract the projector from m'. *)
+      Gsl_matrix.sub m' proj;
+      aux (n_left - 1) (eig::accu)
+  in
+  List.rev (aux n_eigs [])
+
+
