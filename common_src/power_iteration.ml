@@ -80,7 +80,7 @@ m;;
 let projector_of_eig m eig =
   outer_product ~scalar:eig.l m eig.v
 
-(* make a list of the top n eigs *)
+(* Make an array of the top n eigs. *)
 let top_eigs m tol max_iter n_eigs =
   let m' = Gsl_matrix.copy m in
   let proj = Gsl_matrix.copy m in
@@ -93,6 +93,6 @@ let top_eigs m tol max_iter n_eigs =
       Gsl_matrix.sub m' proj;
       aux (n_left - 1) (eig::accu)
   in
-  List.rev (aux n_eigs [])
+  Array.of_list (List.rev (aux n_eigs []))
 
 
