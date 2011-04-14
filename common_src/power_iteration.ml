@@ -4,6 +4,14 @@
  * http://en.wikipedia.org/wiki/Power_iteration
 *)
 
+open Linear_utils
+
+type eigen =
+  {
+    v: Gsl_vector.vector;
+    l: float;
+  }
+
 let scale_by_l2 v = Gsl_vector.scale v (1. /. (Gsl_blas.nrm2 v))
 
 (* this function returns true if the l-infinity difference between (v * w[0]/v[0]) and w
@@ -36,6 +44,7 @@ let top_eig m tol max_iter =
   in
   let rec aux iter_n =
     if iter_n < max_iter then begin
+      (* we do a back-and-forth to preserve the roles of scratch and v *)
       mul_and_scale v scratch;
       mul_and_scale scratch v;
       if not (stop_time tol scratch v) then aux (iter_n+1)
@@ -44,4 +53,7 @@ let top_eig m tol max_iter =
   in
   aux 0;
   mat_vec_mul ~a:m ~x:v ~y:scratch;
-  scratch.{0} /. v.{0}
+  {
+    l = scratch.{0} /. v.{0};
+    v = v;
+  }
