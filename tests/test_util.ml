@@ -125,3 +125,15 @@ let ( =|| ) = mat_approx_equal
 let ( =@ ) = farr_approx_equal
 let ( =@@ ) = farrarr_approx_equal
 
+
+(* *** random matrices *** *)
+
+let rand_symmetric n =
+  let m = Gsl_matrix.create n n in
+  for i=0 to n-1 do
+    for j=i to n-1 do
+      m.{i,j} <- 1. -. Random.float 2.;
+      m.{j,i} <- m.{i,j};
+    done;
+  done;
+  m;;

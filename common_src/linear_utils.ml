@@ -37,6 +37,12 @@ let vec_iter f a =
     f (Array1.unsafe_get a i)
   done
 
+let vec_iteri f a =
+  let n = Gsl_vector.length a in
+  for i=0 to n-1 do
+    f i (Array1.unsafe_get a i)
+  done
+
 let vec_iter2 f a b =
   let n = Gsl_vector.length a in
   assert(n = Gsl_vector.length b);
@@ -56,6 +62,22 @@ let vec_map2_into f ~dst a b =
 (* If all of the entries of v satisfy pred. *)
 let vec_predicate pred v =
   vec_fold_left (fun so_far x -> so_far && pred x) true v
+
+(* Maximum element after applying f. *)
+let vec_fmax_index f v =
+  assert(0 <> Gsl_vector.length v);
+  let max_val = ref (f v.{0})
+  and max_ind = ref 0
+  in
+  vec_iteri
+    (fun i x ->
+      let fx = f x in
+      if fx > !max_val then begin
+        max_val := fx;
+        max_ind := i;
+      end)
+    v;
+  !max_ind
 
 (* norms and normalizing *)
 let lp_norm p v =

@@ -15,11 +15,15 @@ type eig =
 
 let scale_by_l2 v = Gsl_vector.scale v (1. /. (Gsl_blas.nrm2 v))
 
-(* this function returns true if the l-infinity difference between (v * w[0]/v[0]) and w
- * is less than some tolerance.
+let big_entry_ratio v1 v2 =
+  let i = vec_fmax_index abs_float v2 in
+  v1.{i} /. v2.{i}
+
+(* this function returns true if the l-infinity difference between (v * w[i]/v[i]) and w
+ * is less than some tolerance, where i is the index of the maximal entry of v.
  * *)
 let stop_time tol v w =
-  let pseudo_eval = w.{0} /. v.{0} in
+  let pseudo_eval = big_entry_ratio w v in
   try
     vec_iter2
       (fun vi wi ->
@@ -55,7 +59,7 @@ let top_eig m tol max_iter =
   aux 0;
   mat_vec_mul ~a:m ~x:v ~y:scratch;
   {
-    l = scratch.{0} /. v.{0};
+    l = big_entry_ratio scratch v;
     v = v;
   }
 
@@ -69,13 +73,6 @@ let outer_product ?(scalar=1.) m v =
     Array1.blit v row; (* copy v to row *)
     Gsl_vector.scale row (scalar *. v.{i});
   done;;
-
-let m = Gsl_matrix.create 3 3;;
-
-let v = Gsl_vector.of_array [|1.; 5.; 2.|];;
-
-outer_product ~scalar:(-1.) m v;;
-m;;
 
 let projector_of_eig m eig =
   outer_product ~scalar:eig.l m eig.v
@@ -94,5 +91,3 @@ let top_eigs m tol max_iter n_eigs =
       aux (n_left - 1) (eig::accu)
   in
   Array.of_list (List.rev (aux n_eigs []))
-
-
