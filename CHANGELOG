@@ -12,6 +12,8 @@
   * Added -j option to pplacer to allow for multithread execution.
   * Options for the tree-generating subcommands are more uniform.
   * Removed redundant `classic` subcommand from guppy.
+  * Using power iteration rather than full eigendecomposition. Leads to 60x
+    speedup for PCA on demo data.
 
 
 1.1.alpha03 to 1.1.alpha04
