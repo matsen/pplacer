@@ -17,6 +17,8 @@ object (self)
     (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
   val scale = flag "--scale"
     (Plain (false, "Scale variances to one before performing principal components."))
+  val symmv = flag "--symmv"
+    (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
 
   method specl =
     super_out_prefix#specl
@@ -26,6 +28,7 @@ object (self)
     @ [
       int_flag write_n;
       toggle_flag scale;
+      toggle_flag symmv;
     ]
 
   method desc =
@@ -50,7 +53,8 @@ object (self)
         (Guppy_splitify.splitify_placerun transform weighting criterion)
         prl
     in
-    let (eval, evect) = Pca.gen_pca ~scale write_n (Array.of_list data)
+    let (eval, evect) =
+      Pca.gen_pca ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl)

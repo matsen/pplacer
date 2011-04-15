@@ -8,13 +8,13 @@ let dot = ArrayFuns.fold_left2 (fun s x1 x2 -> s +. (x1 *. x2)) 0.
 
 (* Returns array of values, and then array of vectors (i.e. left eigenmatrix if
   * considered as a matrix). Just keep the top n_keep eigenpairs. *)
-let my_symmv n_keep m =
+let power_eigen n_keep m =
   let eiga = Power_iteration.top_eigs m 1e-15 10000 n_keep in
   (Array.map (fun e -> e.Power_iteration.l) eiga,
    Array.map (fun e -> Gsl_vector.to_array (e.Power_iteration.v)) eiga)
 
 (* Alternative version that uses symmv rather than power iteration. *)
-let alt_my_symmv n_keep m =
+let symmv_eigen n_keep m =
   let (evalv, evectm) = Gsl_eigen.symmv (`M (m)) in
   Gsl_eigen.symmv_sort (evalv, evectm) Gsl_eigen.VAL_DESC;
   (* GSL makes nice column vectors *)
@@ -56,5 +56,6 @@ let covariance_matrix ?scale faa =
   m
 
 (* make an array of (eval, evect) tuples. Keep only the top n_keep. *)
-let gen_pca ?scale n_keep faa =
-  my_symmv n_keep (covariance_matrix ?scale faa)
+let gen_pca ?(symmv=false)?scale n_keep faa =
+  let eigen = if symmv then symmv_eigen else power_eigen in
+  eigen n_keep (covariance_matrix ?scale faa)
