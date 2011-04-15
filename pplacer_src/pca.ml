@@ -1,6 +1,9 @@
 open MapsSets
 open Fam_batteries
 
+let tol = 1e-15
+let max_iter = 100000
+
 
 (* *** general PCA stuff *** *)
 
@@ -9,7 +12,7 @@ let dot = ArrayFuns.fold_left2 (fun s x1 x2 -> s +. (x1 *. x2)) 0.
 (* Returns array of values, and then array of vectors (i.e. left eigenmatrix if
   * considered as a matrix). Just keep the top n_keep eigenpairs. *)
 let power_eigen n_keep m =
-  let eiga = Power_iteration.top_eigs m 1e-15 10000 n_keep in
+  let eiga = Power_iteration.top_eigs m tol max_iter n_keep in
   (Array.map (fun e -> e.Power_iteration.l) eiga,
    Array.map (fun e -> Gsl_vector.to_array (e.Power_iteration.v)) eiga)
 
