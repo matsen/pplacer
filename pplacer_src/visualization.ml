@@ -4,16 +4,10 @@ open Subcommand
 open MapsSets
 open Fam_batteries
 
-let min_width = 1.
-
-(* log_coeff determines if we should apply a log transformation. we return a
- * list, which is empty if the final width is less than min_width *)
-let widthl_of_mass log_coeff mass_width mass =
-  let final_width =
-    if log_coeff <> 0. then mass_width *. (log (1. +. log_coeff *. mass))
-    else mass_width *. mass
-  in
-  if final_width >= min_width then [Decor.width (mass_width *. mass)] else []
+let intmap_of_arr a =
+  let m = ref IntMap.empty in
+  Array.iteri (fun i x -> m := IntMap.add i x (!m)) a;
+  !m
 
 (* writing various tree formats *)
 let trees_to_file tree_fmt prefix trees =
@@ -89,57 +83,4 @@ let spread_short_fat min_bl t =
           end)
       (Gtree.get_bark_map t))
 
-let fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm =
-  let t =
-    Decor_gtree.add_decor_by_map
-      decor_ref_tree
-      (IntMap.map
-        (fun m ->
-          [ Decor.sand ] @
-          (widthl_of_mass log_coeff mass_width m))
-        massm)
-  in
-  match min_bl with Some mb -> spread_short_fat mb t | None -> t
 
-(* min_bl is the bl that will be fed to spread_short_fat above *)
-let write_fat_tree
-      ?min_bl mass_width log_coeff fname_base decor_ref_tree massm =
-  let pd = Phyloxml.pxdata_of_named_gtree
-    (fname_base ^ ".fat")
-    (fat_tree ?min_bl mass_width log_coeff decor_ref_tree massm)
-  in Phyloxml.pxdata_to_file (fname_base ^ ".fat.xml") pd
-
-
-class viz_command () =
-object
-  val unit_width = flag "--unit-width"
-    (Plain (0., "Set the number of pixels for a single placement (will override total-width if set)."))
-  val total_width = flag "--total-width"
-    (Formatted (400., "Set the total number of pixels for all of the mass. Default: %g"))
-  val xml = flag "--xml"
-    (Plain (false, "Write phyloXML (with colors) for all visualizations."))
-  val show_node_numbers = flag "--node-numbers"
-    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
-
-  method specl = [
-    float_flag unit_width;
-    float_flag total_width;
-    toggle_flag xml;
-    toggle_flag show_node_numbers;
-  ]
-
-  method private fmt = if fv xml then Phyloxml else Newick
-  method private decor_ref_tree pr =
-    let ref_tree = Placerun.get_ref_tree pr in
-    Decor_gtree.of_newick_gtree
-      (if not (fv show_node_numbers) then
-          ref_tree
-       else
-          (Newick_gtree.make_boot_id ref_tree))
-  method private mass_width n_placed =
-    let unit_width = fv unit_width in
-    if unit_width <> 0. then (* unit width specified *)
-      unit_width *. (float_of_int n_placed)
-    else (* split up the mass according to the number of queries *)
-      (fv total_width)
-end

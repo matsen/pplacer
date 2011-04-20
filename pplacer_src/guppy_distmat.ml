@@ -11,8 +11,8 @@ object (self)
   inherit outfile_cmd () as super_outfile
 
   method desc =
-"prints out a pairwise distance matrix between the edges."
-  method usage = "usage: distmat -o my.tab my1.json [my2.json ...]"
+"prints out a pairwise distance matrix between the edges"
+  method usage = "usage: distmat -o my.tab placefile[s]"
 
   method action = function
     | [] -> ()

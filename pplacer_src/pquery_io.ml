@@ -26,14 +26,14 @@ let to_csv_strl pq =
     (fun i p -> qname::(string_of_int i)::(Placement.to_csv_strl p))
     (Pquery.place_list pq)
 
-let to_json has_classif pq =
+let to_json json_state pq =
   let tbl = Hashtbl.create 4 in
   let namel = List.map (fun s -> Jsontype.String s) (Pquery.namel pq) in
-  Hashtbl.add tbl "n" (Jsontype.Array (Array.of_list namel));
+  Hashtbl.add tbl "n" (Jsontype.Array namel);
   Hashtbl.add tbl "p" (Jsontype.Array (
-    Array.map
-      (Placement.to_json has_classif)
-      (Array.of_list (Pquery.place_list pq))));
+    List.map
+      (Placement.to_json json_state)
+      (Pquery.place_list pq)));
   Jsontype.Object tbl
 
 
@@ -51,7 +51,10 @@ let parse_pquery ?load_seq:(load_seq=true) = function
 
 let of_json fields o =
   let tbl = Jsontype.obj o in
-  let namel = Array.to_list (Array.map Jsontype.string (Jsontype.array (Hashtbl.find tbl "n"))) in
-  let pa = Array.map (Placement.of_json fields) (Jsontype.array (Hashtbl.find tbl "p")) in
-  Pquery.make_ml_sorted ~namel ~seq:no_seq_str (Array.to_list pa)
+  let namel = match Hashtbl.find tbl "n" with
+    | Jsontype.String s -> [s]
+    | Jsontype.Array arr -> List.map Jsontype.string arr
+    | x -> Jsontype.unexpected x "string or string array"
+  and pa = List.map (Placement.of_json fields) (Jsontype.array (Hashtbl.find tbl "p")) in
+  Pquery.make_ml_sorted ~namel ~seq:no_seq_str pa
 

@@ -9,12 +9,15 @@ open Guppy_cmdobjs
 type rounded_placement =
   {
     location: int;
-    distal_bl: int;
-    pendant_bl: int;
+    distal_bl: float;
+    pendant_bl: float;
   }
 
 let rounded_placement_of_placement multiplier p =
-  let round x = Base.round (multiplier *. x) in
+  let round = match multiplier with
+    | Some mult -> fun x -> float_of_int (Base.round (mult *. x))
+    | None -> fun x -> x
+  in
   {
     location = p.Placement.location;
     distal_bl = round p.Placement.distal_bl;
@@ -55,7 +58,9 @@ let add_listly k v m =
  * identical after the rounding step. *)
 let round_pquery_list cutoff sig_figs pql =
   assert(sig_figs > 0);
-  let multiplier = Base.int_pow 10. sig_figs
+  let multiplier = match sig_figs with
+    | 0 -> None
+    | f -> Some (Base.int_pow 10. f)
   in
   (* collect placements together using a map *)
   let m =
@@ -73,7 +78,7 @@ let round_pquery_list cutoff sig_figs pql =
         List.flatten (List.map (fun pq -> pq.Pquery.namel) pql)})
     (RPQMap.fold (fun _ v l -> (List.rev v)::l) m []) (* the clustered ones *)
 
-let round_placerun out_name cutoff sig_figs pr =
+let round_placerun cutoff sig_figs out_name pr =
   {pr with
     Placerun.pqueries =
       round_pquery_list cutoff sig_figs (pr.Placerun.pqueries);
@@ -88,9 +93,9 @@ object
   inherit placefile_cmd () as super_placefile
 
   val sig_figs = flag "--sig-figs"
-    (Formatted (3, "Set the number of significant figures used for rounding (default %d)."))
+    (Formatted (3, "Set the number of significant figures used for rounding. Specify 0 for no rounding. Default: %d."))
   val cutoff = flag "--cutoff"
-    (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ratio (default %g)."))
+    (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ratio. Default: %g."))
 
   method specl = super_out_prefix#specl @ [
     int_flag sig_figs;
@@ -102,13 +107,14 @@ object
   method usage = "usage: round [options] placefile[s]"
 
   method private placefile_action prl =
-    let out_prefix = fv out_prefix in
+    let out_prefix = fv out_prefix
+    and round_placerun = round_placerun (fv cutoff) (fv sig_figs) in
     List.iter
       (fun pr ->
         let out_name = (out_prefix^(pr.Placerun.name)) in
-        Placerun_io.to_file
+        Placerun_io.to_json_file
           "guppy round"
-          (out_name^".place")
-          (round_placerun out_name (fv cutoff) (fv sig_figs) pr))
+          (out_name^".json")
+          (round_placerun out_name pr))
       prl
 end

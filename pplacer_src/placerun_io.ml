@@ -7,12 +7,6 @@ let bifurcation_warning =
   "Warning: pplacer results make the most sense when the \
   given tree is multifurcating at the root. See manual for details."
 
-let chop_place_extension fname =
-  if Filename.check_suffix fname ".place" then
-    Filename.chop_extension fname
-  else
-    invalid_arg ("this program requires place files ending with .place suffix, unlike "^fname)
-
 (* ***** WRITING ***** *)
 
 let output_fmt_str = "# output format: location, ML weight ratio, PP, ML likelihood, marginal likelihood, attachment location (distal length), pendant branch length, containment classification, classification"
@@ -37,7 +31,7 @@ let write_by_best_loc criterion ch placerun =
 
 let pre_fname out_dir pr = out_dir^"/"^(Placerun.get_name pr)
 
-let to_file invocation out_fname placerun =
+let to_legacy_file invocation out_fname placerun =
   Placerun.warn_about_duplicate_names placerun;
   let ch = open_out out_fname
   and ref_tree = Placerun.get_ref_tree placerun
@@ -67,12 +61,17 @@ let to_json_file invocation out_fname placerun =
   Hashtbl.add meta "invocation" (Jsontype.String invocation);
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
-  let has_classif = ref false in
-  Hashtbl.add ret "placements" (Jsontype.Array (Array.map (Pquery_io.to_json has_classif) (Array.of_list pqueries)));
-  Hashtbl.add ret "fields" (Jsontype.Array (Array.map (fun s -> Jsontype.String s) (
-    Array.append
-      [| "edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"; |]
-      (if !has_classif then [| "classification" |] else [||])
+  let json_state = ref None in
+  Hashtbl.add ret "placements" (Jsontype.Array (List.map (Pquery_io.to_json json_state) pqueries));
+  Hashtbl.add ret "fields" (Jsontype.Array (List.map (fun s -> Jsontype.String s) (
+    ["edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"]
+    @ begin match !json_state with
+      | None
+      | Some (false, false) -> []
+      | Some (has_post_prob, has_classif) ->
+        begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
+        @ begin if has_classif then ["classification"] else [] end
+    end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
   Hashtbl.add ret "version" (Jsontype.Int 1);
@@ -148,20 +147,20 @@ let of_file ?load_seq:(load_seq=true) place_fname =
   (* parse the header, getting a ref tree *)
   Placerun.make
     ref_tree
-    (chop_place_extension (Filename.basename place_fname))
+    (Filename.chop_extension (Filename.basename place_fname))
     (get_pqueries [])
 
 
 
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
-  let fields = Array.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
-  let pqa = Array.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
+  let fields = List.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
+  let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
   Placerun.make
     ref_tree
     (Filename.chop_extension (Filename.basename fname))
-    (Array.to_list pqa)
+    pql
 
 (* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
 

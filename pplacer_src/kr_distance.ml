@@ -114,7 +114,7 @@ let total_over_tree curried_edge_total
       (Gtree.get_stree ref_tree)
   in
   check_final_data final_data;
-  grand_total /. (Gtree.tree_length ref_tree)
+  grand_total
 
 (* combine two float list IntMaps into a single float 2-array list IntMap.
  * The latter is the input for the KR distance function. *)
@@ -130,7 +130,7 @@ let make_kr_map m1 m2 =
     ])
 
 (* Z_p distance between two Indiv mass maps *)
-let dist ref_tree p m1 m2 =
+let dist ?(normalization=1.) ref_tree p m1 m2 =
   let starter_kr_v = [|0.; 0.|]
   and kr_map = make_kr_map m1 m2 in
   let kr_edge_total id =
@@ -145,25 +145,26 @@ let dist ref_tree p m1 m2 =
     if abs_float final_kr_diff > tol then
       raise (Total_kr_not_zero final_kr_diff)
   in
-  (total_over_tree
-    kr_edge_total
-    check_final_kr
-    v_list_sum
-    (fun () -> Array.copy starter_kr_v)
-    ref_tree)
+  ((total_over_tree
+      kr_edge_total
+      check_final_kr
+      v_list_sum
+      (fun () -> Array.copy starter_kr_v)
+      ref_tree)
+    /. normalization)
   ** (outer_exponent p)
 
 (* x1 and x2 are factors which get multiplied by the mass before calculation.
  * By pulling them out like so, we don't have to make new Pres. *)
-let dist_of_pres transform p t ?x1 ?x2 ~pre1 ~pre2 =
-  dist
+let dist_of_pres ?x1 ?x2 ?(normalization=1.) transform p t ~pre1 ~pre2 =
+  dist ~normalization
     t
     p
     (Mass_map.Indiv.of_pre transform ?factor:x1 pre1)
     (Mass_map.Indiv.of_pre transform ?factor:x2 pre2)
 
-let scaled_dist_of_pres transform p t pre1 pre2 =
-  dist_of_pres transform p t
+let scaled_dist_of_pres ?(normalization=1.) transform p t pre1 pre2 =
+  dist_of_pres ~normalization transform p t
     ~x1:(1. /. Mass_map.Pre.total_mass transform pre1)
     ~x2:(1. /. Mass_map.Pre.total_mass transform pre2)
     ~pre1 ~pre2

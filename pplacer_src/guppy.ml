@@ -3,19 +3,20 @@ let command_list () =
   [
     "visualization", [
       "fat", (fun () -> new Guppy_fat.cmd ());
+      "heat", (fun () -> new Guppy_heat.cmd ());
       "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
       "sing", (fun () -> new Guppy_sing.cmd ());
       "tog", (fun () -> new Guppy_tog.cmd ());
-      "classic", (fun () -> new Guppy_classic.cmd ());
     ];
 
     "statistical comparison", [
       "bary", (fun () -> new Guppy_bary.cmd ());
       "bootviz", (fun () -> new Guppy_bootviz.cmd ());
       "squash", (fun () -> new Guppy_squash.cmd ());
-      "heat", (fun () -> new Guppy_heat.cmd ());
+      "kr_heat", (fun () -> new Guppy_kr_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());
       "pca", (fun () -> new Guppy_pca.cmd ());
+      "splitify", (fun () -> new Guppy_splitify.cmd ());
       (* untested so invisible
       "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
       "uavgdist", (fun () -> new Guppy_avgdist.uavgdist_cmd ());

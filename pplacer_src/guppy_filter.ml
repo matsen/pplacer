@@ -67,7 +67,7 @@ object (self)
   ]
 
   method desc = "filters one or more placefiles by placement name"
-  method usage = "usage: filter [options] ex1.place [ex2.place [...]]"
+  method usage = "usage: filter [options] placefile[s]"
 
   method private placefile_action = function
     | [] -> ()

@@ -1,8 +1,4 @@
-(* mokaphy v0.3. Copyright (C) 2010  Frederick A Matsen.
- * This file is part of mokaphy. mokaphy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. pplacer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with pplacer. If not, see <http://www.gnu.org/licenses/>.
- *
- * see scan: normal_approx.pdf
- *)
+(* see scan: normal_approx.pdf *)
 
 open MapsSets
 open Fam_batteries
@@ -14,7 +10,7 @@ let transform = Mass_map.no_transform
 (* this exception shows up if the average mass isn't one *)
 exception Avg_mass_not_one of float
 
-(* These are masses which are associated with an index. 
+(* These are masses which are associated with an index.
  * The index is so that we can sample the eta's, then multiply the eta_j with
  * the appropriate mu_j. *)
 type labeled_mass = { pquery_num: int ;
@@ -38,7 +34,7 @@ let intermediate_list_sum =
   ListFuns.complete_fold_left intermediate_sum
 
 (* recall that transform is globally set up top for the time being *)
-let normal_pair_approx rng n_samples p t prepre1 prepre2 =
+let normal_pair_approx ?(normalization=1.) rng n_samples p t prepre1 prepre2 =
   (* make sure that the pres have unit mass per placement *)
   let pre1 = Mass_map.Pre.unitize_mass transform prepre1
   and pre2 = Mass_map.Pre.unitize_mass transform prepre2
@@ -110,10 +106,10 @@ let normal_pair_approx rng n_samples p t prepre1 prepre2 =
           raise (Avg_mass_not_one (avg_weight-.1.))
       in
       front_coeff *.
-        (Kr_distance.total_over_tree
+        ((Kr_distance.total_over_tree
           edge_total
           check_final_data
           intermediate_list_sum
           (fun () -> { omega = ref 0.; sigma = ref 0.; })
-          t)
+          t) /. normalization)
         ** (Kr_distance.outer_exponent p))

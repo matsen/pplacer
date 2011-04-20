@@ -14,7 +14,7 @@ type jsontype =
   | Float of float
   | String of string
   | Object of (string, jsontype) Hashtbl.t
-  | Array of jsontype array
+  | Array of jsontype list
   | Null
 
 let name = function

@@ -24,7 +24,12 @@ let print_n_compactions () =
   Printf.printf "number of garbage compactions: %d\n"
                 ((Gc.quick_stat ()).Gc.compactions)
 
+let assert_is_directory dir_name =
+  assert(Sys.file_exists dir_name);
+  assert(Sys.is_directory dir_name)
+
 let get_dir_contents ?(pred = (fun _ -> true)) dir_name =
+  assert_is_directory dir_name;
   let dirh = Unix.opendir dir_name in
   let rec iter accum =
     try

@@ -179,7 +179,7 @@ htmlhelp_basename = 'pplacerdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'pplacer.tex', u'pplacer Documentation',
-   u'Erick Matsen and Aaron Gallagher', 'manual'),
+   u'Erick Matsen, Aaron Gallagher and Noah Hoffman', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -212,5 +212,5 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'pplacer', u'pplacer Documentation',
-     [u'Erick Matsen and Aaron Gallagher'], 1)
+     [u'Erick Matsen, Aaron Gallagher and Noah Hoffman'], 1)
 ]

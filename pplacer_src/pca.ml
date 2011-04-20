@@ -1,19 +1,29 @@
 open MapsSets
 open Fam_batteries
 
+let tol = 1e-15
+let max_iter = 100000
+
 
 (* *** general PCA stuff *** *)
 
 let dot = ArrayFuns.fold_left2 (fun s x1 x2 -> s +. (x1 *. x2)) 0.
 
-(* returns array of values, and then array of vectors (i.e. left eigenmatrix if
-  * considered as a matrix) *)
-let my_symmv m =
+(* Returns array of values, and then array of vectors (i.e. left eigenmatrix if
+  * considered as a matrix). Just keep the top n_keep eigenpairs. *)
+let power_eigen n_keep m =
+  let eiga = Power_iteration.top_eigs m tol max_iter n_keep in
+  (Array.map (fun e -> e.Power_iteration.l) eiga,
+   Array.map (fun e -> Gsl_vector.to_array (e.Power_iteration.v)) eiga)
+
+(* Alternative version that uses symmv rather than power iteration. *)
+let symmv_eigen n_keep m =
   let (evalv, evectm) = Gsl_eigen.symmv (`M (m)) in
   Gsl_eigen.symmv_sort (evalv, evectm) Gsl_eigen.VAL_DESC;
   (* GSL makes nice column vectors *)
   Gsl_matrix.transpose_in_place evectm;
-  (Gsl_vector.to_array evalv, Gsl_matrix.to_arrays evectm)
+  let sub a = Array.sub a 0 n_keep in
+  (sub (Gsl_vector.to_array evalv), sub (Gsl_matrix.to_arrays evectm))
 
 let column aa j = Array.init (Array.length aa) (fun i -> aa.(i).(j))
 
@@ -49,11 +59,6 @@ let covariance_matrix ?scale faa =
   m
 
 (* make an array of (eval, evect) tuples. Keep only the top n_keep. *)
-let gen_pca ?n_keep ?scale faa =
-  let (vals, vects) as system = my_symmv (covariance_matrix ?scale faa) in
-  match n_keep with
-  | None -> system
-  | Some n -> (Array.sub vals 0 n, Array.sub vects 0 n)
-
-
-
+let gen_pca ?(symmv=false)?scale n_keep faa =
+  let eigen = if symmv then symmv_eigen else power_eigen in
+  eigen n_keep (covariance_matrix ?scale faa)

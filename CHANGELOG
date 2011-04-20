@@ -1,4 +1,30 @@
 
+1.1.alpha05
+===========
+
+ * Closed GH-11: options for the tree-generating subcommands are more uniform.
+ * Closed GH-22: added more unit tests for `guppy kr`.
+ * Closed GH-32: using power iteration rather than full
+   eigendecomposition. Leads to 60x speedup for PCA on demo data.
+ * Closed GH-35: added a remark in the documentation about multiple comparison.
+ * Closed GH-41: added docs for the json placefile format.
+ * Added `guppy splitify`. Spits out differences of mass across splits.
+ * Changed default behavior of `guppy kr` to not normalize, and
+   correspondingly added in a `--normalize` command line flag.
+ * Improved documentation.
+ * Moved `guppy heat` to `guppy kr_heat`.
+ * The `guppy heat` subcommand now maps an arbitrary vector to a phylogenetic
+   tree contained in a reference package.
+ * Removed redundant `classic` subcommand from guppy.
+ * Changed `guppy round` to use the new placefile format.
+ * Added support for posterior probabilities in json placefiles.
+ * Removed csv and old-placefile-format generation from pplacer.
+ * Added the ability to run pplacer in multiple processes in parallel with the
+   -j flag.
+ * Removed friend-finding from pplacer, as it was superseded by some of the
+   multiprocessing code.
+
+
 1.1.alpha03 to 1.1.alpha04
 ==========================
 

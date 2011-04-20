@@ -32,14 +32,14 @@ object (self)
   inherit out_prefix_cmd () as super_out_prefix
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
-  inherit viz_command () as super_viz
+  inherit classic_viz_cmd () as super_classic_viz
 
   method specl =
     super_mass#specl
     @ super_out_prefix#specl
-    @ super_viz#specl
+    @ super_classic_viz#specl
 
-  method desc = "make a tree with each of the fragments represented as a pendant edge"
+  method desc = "makes a tree with each of the reads represented as a pendant edge"
   method usage = "usage: tog [options] placefile[s]"
 
   method private placefile_action prl =

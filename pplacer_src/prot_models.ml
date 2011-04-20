@@ -41,7 +41,7 @@ let parseProtModel stringArr =
   in
   let nEntries = 1 + Array.length lowerTriMat in
   let qMat =
-    Fam_gsl_matvec.mat_init nEntries nEntries (
+    Linear_utils.mat_init nEntries nEntries (
       fun i j ->
         if i = j then 0. (* filled in later *)
         else lowerTriMat.((max i j)-1).(min i j)) in

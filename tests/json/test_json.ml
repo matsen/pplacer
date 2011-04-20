@@ -20,4 +20,4 @@ let suite = List.map
   )
   (Common_base.get_dir_contents
      ~pred:(fun name -> Filename.check_suffix name "json")
-     (tests_dir ^ "json"))
+     (tests_dir ^ "data/json"))

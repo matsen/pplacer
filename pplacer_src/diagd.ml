@@ -18,9 +18,9 @@
  * xit is the inverse transpose of x, which is handy for speedy computations.
  *)
 
-open Fam_gsl_matvec
+open Linear_utils
 
-let mm = allocMatMatMul
+let mm = alloc_mat_mat_mul
 let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
 let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
 
@@ -87,15 +87,18 @@ let multi_exp ~dst dd rates bl =
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
 
 
-  (* *** making *** *)
+(* *** making *** *)
 
 exception StationaryFreqHasNegativeEntry
 
+let vec_nonneg v =
+  vec_predicate (fun x -> x >= 0.) v
+
 let check_stationary v =
-  if not (vecNonneg v) then raise StationaryFreqHasNegativeEntry
+  if not (vec_nonneg v) then raise StationaryFreqHasNegativeEntry
 
 let of_symmetric m =
-  let (l, x) = symmEigs m in
+  let (l, x) = symm_eigs m in
   make ~l ~x ~xit:x
 
 (* d = vector for diagonal, b = symmetric matrix which has been set up with
@@ -109,11 +112,11 @@ let of_symmetric m =
  * *)
 let of_d_b d b =
   (* make sure that diagonal matrix is all positive *)
-  if not (vecNonneg d) then
+  if not (vec_nonneg d) then
     failwith("negative element in the diagonal of a DB matrix!");
-  let dm_root = diagOfVec (vecMap sqrt d) in
-  let dm_root_inv = diagOfVec (vecMap (fun x -> 1. /. (sqrt x)) d) in
-  let (l, u) = symmEigs (mm dm_root (mm b dm_root)) in
+  let dm_root = diag (vec_map sqrt d) in
+  let dm_root_inv = diag (vec_map (fun x -> 1. /. (sqrt x)) d) in
+  let (l, u) = symm_eigs (mm dm_root (mm b dm_root)) in
   make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
 (* here we set up the diagonal entries of the symmetric matrix so

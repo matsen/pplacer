@@ -1,4 +1,4 @@
-_build/*
+/_build
 tags
 *.mltop
 *.top
@@ -9,7 +9,7 @@ tags
 top_tests
 bin
 common_src/install_common_pprs.txt
-_build
 makefile
 libs
 docs/generated_rst/
+docs/_build/doctrees/

@@ -3,206 +3,51 @@ open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
 
-type prefs = {
-  gray_level: int;
-  white_bg: bool;
-  p_exp: float;
-  simple_colors: bool;
-  gray_black_colors: bool;
-  min_width: float;
-  max_width: float;
-  transform: int -> float;
-}
-
-(* color utils *)
-
-(* intesity is a float from 0 to 1 which is the absolute-valued and
- * exponentiated version of the heat *)
-let intensity_of_heat ~p heat = (abs_float heat) ** p
-
-let assert_intensity intensity =
-  assert(intensity >= 0. || intensity <= 1.)
-
-let simple_color_of_heat heat =
-  if heat >= 0. then Decor.red else Decor.blue
-
-let gray_black_of_heat heat =
-  if heat >= 0. then Decor.gray 180 else Decor.black
-
-let color_of_heat prefs ?(p=1.) heat =
-  let gray_level = prefs.gray_level in
-  let intensity = intensity_of_heat ~p heat
-  and color = simple_color_of_heat heat
-  and gray =
-    Decor.gray
-      (if prefs.white_bg then
-        255-gray_level
-      else
-        gray_level)
-  in
-  assert_intensity intensity;
-  Decor.color_avg intensity color gray
-
-let width_value_of_heat ~width_diff ?(p=1.) heat =
-  let intensity = intensity_of_heat ~p heat in
-  assert_intensity intensity;
-  width_diff *. intensity
-
-let color_map prefs t pre1 pre2 =
-  let transform = prefs.transform in
-  let p = prefs.p_exp
-  and kr_map =
-    IntMap.map
-    (* we don't care about where we are along the edge *)
-      (List.map snd)
-      (Kr_distance.make_kr_map
-        (Mass_map.Indiv.of_pre transform pre1)
-        (Mass_map.Indiv.of_pre transform pre2)) in
-  let sum_over_krs_of_id id =
-    List.fold_right
-      (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
-      (Base.get_from_list_intmap id kr_map)
-  in
-  let heat_list =
-    Stree.recur_listly
-      (fun id below ->
-        ((id,
-          sum_over_krs_of_id
-            id
-(* the first item a list from a subtree is the total of all of the heat in that
-* subtree. therefore to get the total heat for our tree, we just have to total
-* all of those *)
-            (List.fold_left
-              (fun accu -> function
-                | (_,heat)::_ -> heat +. accu
-                | [] -> accu)
-              0.
-              below)))
-        :: (List.flatten below))
-      (Gtree.get_stree t)
-  in
-  let heat_only = List.map snd heat_list in
-  let top_heat = List.hd heat_only in
-  if top_heat > Kr_distance.tol then
-    raise (Kr_distance.Total_kr_not_zero top_heat);
-  (* why do I do it like this rather than mapping abs first? *)
-  let max_abs_heat =
-    max
-      (ListFuns.complete_fold_left max heat_only)
-      (-. (ListFuns.complete_fold_left min heat_only))
-  in
-  let our_color_of_heat scaled_heat =
-    if prefs.simple_colors then
-      simple_color_of_heat scaled_heat
-    else if prefs.gray_black_colors then
-      gray_black_of_heat scaled_heat
-    else color_of_heat prefs ~p scaled_heat
-  in
-  let min_width = prefs.min_width in
-  let width_diff = prefs.max_width -. min_width in
-  IntMapFuns.of_pairlist
-    (List.map
-      (fun (id, raw_heat) ->
-        let scaled_heat = raw_heat /. max_abs_heat in
-        let wv = width_value_of_heat ~width_diff ~p scaled_heat in
-        (id,
-        if wv = 0. then []
-        else
-          ( our_color_of_heat scaled_heat ) ::
-          ( if wv < min_width then []
-            else [ Decor.width wv ])))
-      heat_list)
-
-let make_heat_tree prefs decor_t pre1 pre2 =
-  Decor_gtree.add_decor_by_map
-    decor_t
-    (color_map prefs decor_t pre1 pre2)
-
-
-
-(* The commands *)
+let named_arr_list_of_csv fname =
+  List.map
+    (function
+      | [] -> assert(false)
+      | name::entries ->
+          (name, Array.of_list (List.map float_of_string entries)))
+    (Csv.load fname)
 
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd () as super_mass
-  inherit refpkg_cmd ~required:false as super_refpkg
-  inherit kr_cmd () as super_kr
-  inherit placefile_cmd () as super_placefile
-
-  val outfile = flag "-o"
-    (Plain ("", "Output file. Default is derived from the input filenames."))
-  val simple_colors = flag "--color-grad"
-    (Plain (true, "Use color gradation as well as thickness to represent mass transport."))
-  val gray_black_colors = flag "--gray-black"
-    (Plain (false, "Use gray and black in place of red and blue to signify the sign of the KR along that edge."))
-  val white_bg = flag "--white-bg"
-    (Plain (false, "Make colors for the heat tree which are compatible with a white background."))
-  val gray_level = flag "--gray-level"
-    (Formatted (5, "Specify the amount of gray to mix into the color scheme. Default is %d."))
-  val min_width = flag "--min-width"
-    (Formatted (0.5, "Specify the minimum width of the branches in a heat tree. Default is %g."))
-  val max_width = flag "--max-width"
-    (Formatted (13., "Specify the maximum width of the branches in a heat tree. Default is %g."))
+  inherit outfile_cmd () as super_outfile
+  inherit heat_cmd () as super_heat
+  inherit refpkg_cmd ~required:true as super_refpkg
 
   method specl =
-    super_mass#specl
+    super_outfile#specl
     @ super_refpkg#specl
-    @ super_kr#specl
-    @ [
-      string_flag outfile;
-      toggle_flag simple_colors;
-      toggle_flag gray_black_colors;
-      toggle_flag white_bg;
-      int_flag gray_level;
-      float_flag min_width;
-      float_flag max_width;
-    ]
+    @ super_heat#specl
 
   method desc =
-"makes a heat tree"
-  method usage = "usage: heat [options] ex1.place ex2.place"
+"maps an an arbitrary vector of the correct length to the tree"
+  method usage = "usage: heat -o my.xml -c my.refpkg matrix.csv"
 
-  method private placefile_action = function
-    | [pr1; pr2] as prl ->
-      let fname = match fv outfile with
-        | "" -> (Mokaphy_common.cat_names prl)^".heat.xml"
-        | s -> s
-      in
-      let transform, weighting, criterion = self#mass_opts
-      and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in
-      let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
-      and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
-      let prefs = {
-        gray_level = fv gray_level;
-        white_bg = fv white_bg;
-        p_exp = fv p_exp;
-        simple_colors = fv simple_colors;
-        gray_black_colors = fv gray_black_colors;
-        min_width = fv min_width;
-        max_width = fv max_width;
-        transform = transform;
-      } in
-      Phyloxml.named_gtrees_to_file
-        fname
-        ([Some tree_name,
-          make_heat_tree prefs
-            (match refpkgo with
-            | None -> Decor_gtree.of_newick_gtree ref_tree
-            | Some rp -> Refpkg.get_tax_ref_tree rp)
-            (my_pre_of_pr pr1)
-            (my_pre_of_pr pr2)]
-        @ match refpkgo with
-        | None -> []
-        | Some rp -> begin
-            let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
-            let my_make_tax_pre =
-              Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap in
-            [Some (tree_name^".tax"),
-            make_heat_tree prefs taxt
-              (my_make_tax_pre pr1)
-              (my_make_tax_pre pr2)]
-        end)
-  | [] -> () (* e.g. heat -help *)
-  | _ -> failwith "Please specify exactly two place files to make a heat tree."
+  method private csv_to_named_trees t fname =
+    (* Below: add one for the root edge. *)
+    let n_edges = 1+Gtree.n_edges t in
+    List.map
+      (fun (name, a) ->
+        if n_edges <> Array.length a then
+          failwith
+            (Printf.sprintf
+              "%d entries in %s, and %d edges in reference tree"
+              (Array.length a) name n_edges);
+        (Some name, self#heat_tree_of_float_arr t a))
+      (named_arr_list_of_csv fname)
+
+  method action = function
+    | [] -> ()
+    | pathl ->
+        let t = self#get_decor_ref_tree in
+        List.iter
+          (fun fname ->
+            Phyloxml.pxdata_to_channel self#out_channel
+              (Phyloxml.pxdata_of_named_gtrees
+                (self#csv_to_named_trees t fname)))
+          pathl
 end

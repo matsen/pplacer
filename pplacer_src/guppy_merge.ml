@@ -12,7 +12,7 @@ object
   method specl = [string_flag outfile]
 
   method desc = "merges placefiles together"
-  method usage = "usage: merge [options] ex1.place [ex2.place [...]]"
+  method usage = "usage: merge [options] placefiles"
 
   method private placefile_action = function
     | [] -> ()
