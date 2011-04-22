@@ -5,14 +5,12 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit out_prefix_cmd () as super_out_prefix
-  inherit out_dir_cmd () as super_out_dir
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit fat_cmd () as super_fat
 
   method specl =
     super_out_prefix#specl
-    @ super_out_dir#specl
     @ super_mass#specl
     @ super_refpkg#specl
     @ super_fat#specl
@@ -33,7 +31,7 @@ object (self)
         let pr = Placerun_io.filtered_of_file fname in
         let (tax_rp_opt, final_rt) = self#get_rpo_and_tree pr in
         Phyloxml.named_gtrees_to_file
-          (pr.Placerun.name^".xml")
+          ((fv out_prefix)^pr.Placerun.name^".xml")
           ([
             Some (pr.Placerun.name^".ref.fat"),
             self#fat_tree_of_massm final_rt
