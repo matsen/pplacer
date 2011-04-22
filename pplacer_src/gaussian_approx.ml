@@ -78,6 +78,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
   (* Initialize the labeled_mass_arr array with mass from both samples. *)
   List.iter
     (List.iter
+    (* recall multimul = mass unit list with multiplicity *)
       (fun multimul ->
         let trans_multi = transform multimul.Pre.multi in
         if trans_multi <> 1. then
@@ -90,7 +91,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
               (mu.Pre.distal_bl,
               { pquery_num = !pquery_counter;
               mass = trans_multi *. mu.Pre.mass })
-              :: (labeled_mass_arr.(mu.Pre.loc)))
+                :: (labeled_mass_arr.(mu.Pre.loc)))
           multimul.Pre.mul;
         incr pquery_counter))
     [upre1; upre2];
@@ -138,6 +139,8 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
         if abs_float (avg_weight -. 1.) > Kr_distance.tol then
           raise (Avg_mass_not_one (avg_weight-.1.))
       in
+      (* as described up top, front_coeff goes outside the integral but inside
+       * the outer exponentiation. *)
       (front_coeff *.
         (Kr_distance.total_over_tree
           edge_total
