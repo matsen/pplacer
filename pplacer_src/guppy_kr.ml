@@ -169,15 +169,12 @@ object (self)
               ~normalization rng n_samples p t pre1 pre2
           else
             List.map
-              (fun (spre1,spre2) -> calc_dist spre1 spre2)
+              (fun (spre1, spre2) -> calc_dist spre1 spre2)
               (make_shuffled_pres rng transform n_samples pre1 pre2)
         in
         if fv density then
           R_plots.write_density p type_str name1 name2 original_dist null_dists;
-        Some
-          (list_onesided_pvalue
-            null_dists
-            original_dist)
+        Some (list_onesided_pvalue null_dists original_dist)
       end
       else None;
   }

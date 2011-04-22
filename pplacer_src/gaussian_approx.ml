@@ -22,6 +22,9 @@ For this code, we will be setting up "labeled masses" that correspond to the
 indices, then sampling Gaussians, and doing the corresponding summation.
 They get stored in labeled_mass_arr.
 
+The quantity (\frac{1}{\sqrt{mn}})^p is called front_coeff. We pull it out of
+the integral, but leave it inside the outer exponentiation to avoid having to
+deal with the \frac{1}{p} \wedge 1 thing again.
 *)
 
 open MapsSets
@@ -68,7 +71,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
   in
   let labeled_mass_arr = Array.make (1+Gtree.top_id t) []
   and pquery_counter = ref 0
-  and front_coeff = sqrt(int_inv(np1 * np2))
+  and front_coeff = (sqrt(int_inv(np1 * np2))) ** p
   (* sample is a (mutable) array with all of the Gaussian samples (the etas) *)
   and sample = Array.make (np1 + np2) 0.
   in
@@ -116,8 +119,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
       sample_gaussians ();
       (* sample_avg is \frac{1}{m+n} (\sum_i \eta_i) *)
       let sample_avg =
-        (int_inv (Array.length sample)) *.
-          (Array.fold_left (+.) 0. sample) in
+        (int_inv (np1 + np2)) *. (Array.fold_left (+.) 0. sample) in
       (* xi is
        * \sum_i G_i(u) \eta_i - \frac{1}{m+n} (\sum_i G_i(u)) (\sum_i \eta_i)
        * \omega(u) - \sigma(u) \frac{1}{m+n} (\sum_i \eta_i) *)
@@ -136,12 +138,12 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
         if abs_float (avg_weight -. 1.) > Kr_distance.tol then
           raise (Avg_mass_not_one (avg_weight-.1.))
       in
-      front_coeff *.
-        ((Kr_distance.total_over_tree
-            edge_total
-            check_final_data
-            intermediate_list_sum
-            (fun () -> { omega = ref 0.; sigma = ref 0.; })
-            t)
-          /. normalization)
+      (front_coeff *.
+        (Kr_distance.total_over_tree
+          edge_total
+          check_final_data
+          intermediate_list_sum
+          (fun () -> { omega = ref 0.; sigma = ref 0.; })
+          t)
+        /. normalization)
         ** (Kr_distance.outer_exponent p))
