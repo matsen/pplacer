@@ -1,4 +1,11 @@
 
+1.1.alpha06
+===========
+
+* Renamed the `--normal` flag for `guppy kr` to `--gaussian` to avoid confusion
+  with normalization.
+
+
 1.1.alpha05
 ===========
 
