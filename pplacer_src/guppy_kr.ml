@@ -179,9 +179,7 @@ object (self)
       else None;
   }
 
-  method private placefile_action prl =
-    if List.length prl < 2 then
-      invalid_arg "can't do KR with fewer than two place files";
+  method private nontrivial_placefile_action prl =
     let n_samples = fv n_samples
     and pra = Array.of_list prl
     and p = fv p_exp
@@ -255,4 +253,11 @@ object (self)
         neighborly (fun u -> [Uptri.map get_distance u; Uptri.map get_p_value u]) uptris
       else (List.map (Uptri.map get_distance) uptris))
       ch
+
+  method private placefile_action prl =
+    match List.length prl with
+    | 0 -> () (* e.g. guppy kr --help *)
+    | 1 -> invalid_arg "can't do KR with only one place file";
+    | _ -> self#nontrivial_placefile_action prl
+
 end
