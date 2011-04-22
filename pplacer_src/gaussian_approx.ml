@@ -1,6 +1,4 @@
 (*
- * see scan: normal_approx.pdf
-
 Recall
 \xi(u) =
 \frac{1}{\sqrt{mn}}
