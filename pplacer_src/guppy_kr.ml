@@ -166,7 +166,7 @@ object (self)
         let null_dists =
           if fv gaussian then (* use gaussian approximation *)
             Gaussian_approx.pair_approx
-              ~normalization rng n_samples p t pre1 pre2
+              ~normalization transform rng n_samples p t pre1 pre2
           else
             List.map
               (fun (spre1, spre2) -> calc_dist spre1 spre2)

@@ -29,9 +29,6 @@ open MapsSets
 open Fam_batteries
 open Mass_map
 
-(* for the time being, we interpret multiplicity literally *)
-let transform = Mass_map.no_transform
-
 (* this exception shows up if the average mass isn't one *)
 exception Avg_mass_not_one of float
 
@@ -58,7 +55,7 @@ let intermediate_sum i1 i2 =
 let intermediate_list_sum = ListFuns.complete_fold_left intermediate_sum
 
 (* recall that transform is globally set up top for the time being *)
-let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
+let pair_approx ?(normalization=1.) transform rng n_samples p t pre1 pre2 =
   (* make sure that the pres have unit mass per placement *)
   let upre1 = Mass_map.Pre.unitize_mass transform pre1
   and upre2 = Mass_map.Pre.unitize_mass transform pre2
@@ -81,7 +78,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t pre1 pre2 =
         let trans_multi = transform multimul.Pre.multi in
         if trans_multi <> 1. then
           failwith
-            "Nontrivial multiplicity for Gaussian significance not \
+            "Nontrivial transformed multiplicity for Gaussian significance not \
             supported at the moment.";
         List.iter
           (fun mu ->
