@@ -63,6 +63,13 @@ let split_does_cut_lsetset split lsetset =
   Lsetset.cardinal lsetset <> Lsetset.cardinal (split_lsetset split lsetset)
 ;;
 
+(* Partition n_items into n_bins such that each bin is not empty. *)
+let uniform_nonempty_partition n_bins n_items =
+  assert(n_items >= n_bins);
+  let a = Array.create n_bins [] in
+  a
+;;
+
 
 (* testing *)
 
