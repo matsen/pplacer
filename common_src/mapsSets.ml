@@ -182,3 +182,55 @@ module FloatSetFuns = SetFuns (OrderedFloat) (StringableFloat)
 module IntSetFuns = SetFuns (OrderedInt) (StringableInt)
 module CharSetFuns = SetFuns (OrderedChar) (StringableChar)
 module StringSetFuns = SetFuns (OrderedString) (StringableString)
+
+
+
+module type PPRABLE =
+sig
+  type t
+  val ppr: Format.formatter -> t -> unit
+end
+
+module PprFloat = struct
+  type t = float
+  let ppr = Format.pp_print_string
+end
+
+module PprInt = struct
+  type t = int
+  let ppr = Format.pp_print_int
+end
+
+module PprChar = struct
+  type t = char
+  let ppr = Format.pp_print_char
+  end
+
+module PprString = struct
+  type t = string
+  let ppr = Format.pp_print_string
+end
+
+module PSetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
+  struct
+    module S = Set.Make(OT)
+
+    let of_list l = List.fold_right S.add l S.empty
+
+    (* map from Set to Set of the same type. currying heaven. *)
+    let map f s = S.fold (fun x -> S.add (f x)) s S.empty
+
+    let ppr ff s =
+      Format.fprintf ff "@[{";
+      ppr_list_inners (
+        fun ff x ->
+          Format.fprintf ff "%a" PBLE.ppr x;
+          ) ff (S.elements s);
+          Format.fprintf ff "}@]"
+  end
+
+module PCharSetFuns = PSetFuns (OrderedChar) (PprChar)
+
+#install_printer PCharSetFuns.ppr;;
+
+    PCharSetFuns.of_list;;
