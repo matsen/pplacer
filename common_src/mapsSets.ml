@@ -35,15 +35,15 @@ module CharSet = Set.Make(OrderedChar)
 module StringSet = Set.Make(OrderedString)
 
 
-module type STRINGABLE =
+module type PPRABLE =
 sig
   type t
-  val to_string: t -> string
+  val ppr: Format.formatter -> t -> unit
 end
 
 (* general things we might want to do with maps *)
 
-module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
+module MapFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
   struct
     module M = Map.Make(OT)
 
@@ -70,7 +70,7 @@ module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
     let print val_to_string m =
       M.iter (
         fun k v ->
-          Printf.printf "%s\t-> %s\n" (SBLE.to_string k) (val_to_string v)
+          Format.printf "%a\t-> %s\n" PBLE.ppr k (val_to_string v)
           ) m
 
 (* of_pairlist : given key, value pairs *)
@@ -118,11 +118,12 @@ module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
       Format.fprintf ff "@[[";
       ppr_list_inners (
         fun ff (k, v) ->
-          Format.fprintf ff "%s -> " (SBLE.to_string k);
+          Format.fprintf ff "%a -> " PBLE.ppr k;
           ppr_val ff v;
           ) ff (to_pairs m);
           Format.fprintf ff "]@]"
 
+    (* Below: for ppr-ing maps with these value types. *)
     let ppr_string = ppr_gen Format.pp_print_string
     let ppr_int = ppr_gen Format.pp_print_int
     let ppr_float = ppr_gen Format.pp_print_float
@@ -131,69 +132,9 @@ module MapFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
   end
 
 
-module StringableFloat = struct
-  type t = float
-  let to_string = string_of_float
-end
-
-module StringableInt = struct
-  type t = int
-  let to_string = string_of_int
-end
-
-module StringableChar = struct
-  type t = char
-  let to_string c = Printf.sprintf "%c" c
-  end
-
-module StringableString = struct
-  type t = string
-  let to_string s = s
-end
-
-
-module FloatMapFuns = MapFuns (OrderedFloat) (StringableFloat)
-module IntMapFuns = MapFuns (OrderedInt) (StringableInt)
-module CharMapFuns = MapFuns (OrderedChar) (StringableChar)
-module StringMapFuns = MapFuns (OrderedString) (StringableString)
-
-(* general things we might want to do with sets *)
-
-module SetFuns (OT: Map.OrderedType) (SBLE: STRINGABLE with type t = OT.t) =
-  struct
-    module S = Set.Make(OT)
-
-    let of_list l = List.fold_right S.add l S.empty
-
-    (* map from Set to Set of the same type. currying heaven. *)
-    let map f s = S.fold (fun x -> S.add (f x)) s S.empty
-
-    let ppr ff s =
-      Format.fprintf ff "@[{";
-      ppr_list_inners (
-        fun ff x ->
-          Format.fprintf ff "%s" (SBLE.to_string x);
-          ) ff (S.elements s);
-          Format.fprintf ff "}@]"
-  end
-
-
-module FloatSetFuns = SetFuns (OrderedFloat) (StringableFloat)
-module IntSetFuns = SetFuns (OrderedInt) (StringableInt)
-module CharSetFuns = SetFuns (OrderedChar) (StringableChar)
-module StringSetFuns = SetFuns (OrderedString) (StringableString)
-
-
-
-module type PPRABLE =
-sig
-  type t
-  val ppr: Format.formatter -> t -> unit
-end
-
 module PprFloat = struct
   type t = float
-  let ppr = Format.pp_print_string
+  let ppr = Format.pp_print_float
 end
 
 module PprInt = struct
@@ -211,7 +152,15 @@ module PprString = struct
   let ppr = Format.pp_print_string
 end
 
-module PSetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
+
+module FloatMapFuns = MapFuns (OrderedFloat) (PprFloat)
+module IntMapFuns = MapFuns (OrderedInt) (PprInt)
+module CharMapFuns = MapFuns (OrderedChar) (PprChar)
+module StringMapFuns = MapFuns (OrderedString) (PprString)
+
+(* general things we might want to do with sets *)
+
+module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
   struct
     module S = Set.Make(OT)
 
@@ -229,8 +178,8 @@ module PSetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
           Format.fprintf ff "}@]"
   end
 
-module PCharSetFuns = PSetFuns (OrderedChar) (PprChar)
 
-#install_printer PCharSetFuns.ppr;;
-
-    PCharSetFuns.of_list;;
+module FloatSetFuns = SetFuns (OrderedFloat) (PprFloat)
+module IntSetFuns = SetFuns (OrderedInt) (PprInt)
+module CharSetFuns = SetFuns (OrderedChar) (PprChar)
+module StringSetFuns = SetFuns (OrderedString) (PprString)
