@@ -36,6 +36,50 @@ let sort_split p =
 let make_split a b = sort_split (a,b)
 ;;
 
+let split_lset split lset =
+  LsetsetFuns.of_list (
+    List.filter (fun s -> not (Lset.is_empty s))
+      [
+        Lset.inter (fst split) lset;
+        Lset.inter (snd split) lset;
+      ]
+  )
+;;
+
+let split_lsetset split lsetset =
+  Lsetset.fold
+    (fun ls lss -> Lsetset.union lss (split_lset split ls))
+    lsetset
+    Lsetset.empty
+;;
+
+(* lacking SPEED. *)
+let split_does_cut_lset split lset =
+  1 <> Lsetset.cardinal (split_lset split lset)
+;;
+
+(* lacking SPEED. *)
+let split_does_cut_lsetset split lsetset =
+  Lsetset.cardinal lsetset <> Lsetset.cardinal (split_lsetset split lsetset)
+;;
+
+
+(* testing *)
+
+let sigma = auto_list_split [2;5;6];;
+let ls1 = LsetFuns.of_list [1;2];;
+let ls2 = LsetFuns.of_list [3;5;6];;
+let ls3 = LsetFuns.of_list [2;5];;
+let lss = LsetsetFuns.of_list [ls1; ls2];;
+split_lset sigma ls1;;
+let cut_lss = split_lsetset sigma lss;;
+
+split_does_cut_lset sigma ls2;;
+split_does_cut_lset sigma ls3;;
+split_does_cut_lsetset sigma lss;;
+split_does_cut_lsetset sigma cut_lss;;
+
+
 
 (* convenience *)
 
@@ -61,5 +105,4 @@ let auto_list_split l =
   auto_split (LsetFuns.of_list l)
 ;;
 
-auto_list_split [2;5;6];;
 
