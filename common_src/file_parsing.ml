@@ -13,9 +13,14 @@ let filter_comments = filter_not comment_rex
 let string_list_of_file fname =
   let ch = open_in fname in
   let rec get_line accu =
-    try
-      get_line ((input_line ch)::accu)
-    with End_of_file -> close_in ch; List.rev accu
+    match begin
+      try
+        Some (input_line ch)
+      with
+        | End_of_file -> None
+    end with
+      | Some line -> get_line (line :: accu)
+      | None -> close_in ch; List.rev accu
   in
   get_line []
 
