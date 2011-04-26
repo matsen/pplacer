@@ -316,3 +316,11 @@ let tokenize_string regexp to_token ?eof_token s =
     | Some tok -> tok :: res
     | None -> res
   end
+
+let map_and_flatten f l =
+  List.rev
+    (List.fold_left
+       (fun accum x -> List.rev_append (f x) accum)
+       []
+       l)
+

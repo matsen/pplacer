@@ -92,7 +92,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     (* make a masked alignment with just the given query sequence and the
      * reference seqs *)
     if write_masked prefs then
-      Alignment.toFasta
+      Alignment.to_fasta
         (Alignment.mask_align mask_arr
            (Alignment.stack [|query_name, query_seq|] ref_align))
         (query_name^".mask.fasta");
