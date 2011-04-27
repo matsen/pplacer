@@ -169,6 +169,20 @@ module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
     (* map from Set to Set of the same type. currying heaven. *)
     let map f s = S.fold (fun x -> S.add (f x)) s S.empty
 
+    let uniform_sample sample_func s k =
+      let indices = sample_func (S.cardinal s) k in
+      let _, ret = S.fold
+        (fun x (e, accum) ->
+          e + 1,
+          if List.mem e indices then
+            S.add x accum
+          else
+            accum)
+        s
+        (0, S.empty)
+      in
+      ret
+
     let ppr ff s =
       Format.fprintf ff "@[{";
       ppr_list_inners (
