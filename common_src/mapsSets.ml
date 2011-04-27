@@ -171,17 +171,20 @@ module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
 
     let uniform_sample sample_func s k =
       let indices = sample_func (S.cardinal s) k in
-      let _, ret = S.fold
-        (fun x (e, accum) ->
-          e + 1,
-          if List.mem e indices then
-            S.add x accum
-          else
-            accum)
-        s
-        (0, S.empty)
-      in
-      ret
+      let elements = Array.of_list (S.elements s) in
+      List.fold_left
+        (fun accum i -> S.add elements.(i) accum)
+        S.empty
+        indices
+
+    let weighted_sample sample_func weighting s k =
+      let elements = Array.of_list (S.elements s) in
+      let distribution = Array.map weighting elements in
+      let indices = sample_func distribution (S.cardinal s) k in
+      List.fold_left
+        (fun accum i -> S.add elements.(i) accum)
+        S.empty
+        indices
 
     let ppr ff s =
       Format.fprintf ff "@[{";

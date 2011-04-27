@@ -23,7 +23,7 @@ type split = Lset.t * Lset.t
 
 let sort_split p =
   let (a,b) = p in
-  if 0 > Lset.compare a b then p else (b,a)
+  if Lset.cardinal a < Lset.cardinal b then p else (b,a)
 
 let make_split a b = sort_split (a,b)
 
@@ -65,10 +65,27 @@ let split_lsetset split lsetset =
 
 let sset_lsetset = Sset.fold split_lsetset
 
+let partition_lset (a, b) lset =
+  Lset.inter lset a,
+  Lset.inter lset b
+
+let partition_lsetset (a, b) lsetset =
+  let aux lset =
+    Lsetset.fold
+      (fun ls lss ->
+        let ls' = Lset.inter lset ls in
+        if Lset.is_empty ls' then
+          lss
+        else
+          Lsetset.add ls' lss)
+      lsetset
+      Lsetset.empty
+  in
+  aux a, aux b
+
 (* lacking SPEED. *)
 let split_does_cut_lset split lset =
   1 <> Lsetset.cardinal (split_lset split lset)
-
 
 (* lacking SPEED. *)
 let split_does_cut_lsetset split lsetset =
@@ -118,19 +135,40 @@ let uniform_nonempty_partition rng n_bins lss =
 module G = Gsl_rng
 module GD = Gsl_randist
 
-let uniform_sample rng n k =
+type weighting =
+  | Array of float array
+  | Function of (int -> float)
+  | Uniform
+
+let sample rng ?(weighting = Uniform) n k =
   if k > n then failwith "k > n";
+  if k < 0 then failwith "k < 0";
+  let distribution = match weighting with
+    | Array a -> a
+    | Function f -> Array.init n f
+    | Uniform -> Array.make n 1.0
+  in
   let rec aux accum = function
     | 0 -> accum
     | k ->
-      let rec select () =
-        match Gsl_rng.uniform_int rng n with
-          | i when List.mem i accum -> select ()
-          | i -> i
+      let i =
+        Gsl_randist.discrete
+          rng
+          (Gsl_randist.discrete_preproc distribution)
       in
-      aux ((select ()) :: accum) (k - 1)
+      distribution.(i) <- 0.0;
+      aux (i :: accum) (k - 1)
   in
   aux [] k
+
+let sample_sset_weighted rng =
+  SsetFuns.weighted_sample
+  (fun arr -> sample rng ~weighting:(Array arr))
+  (fun (k, l) ->
+    let k = float_of_int (Lset.cardinal k)
+    and l = float_of_int (Lset.cardinal l)
+    in
+    k /. (k +. l))
 
 let repeat f n =
   let rec aux accum = function
@@ -152,7 +190,7 @@ let generate_yule rng count =
     match List.length trees with
       | 1 -> List.hd trees
       | n ->
-        let nodes = uniform_sample rng n 2 in
+        let nodes = sample rng n 2 in
         let _, trees', nodes' = List.fold_left
           (fun (e, l1, l2) x ->
             if List.mem e nodes then
@@ -209,24 +247,37 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
       (min_leafs - 1)
       (Gsl_randist.poisson rng poisson_mean)
   in
-  let splits' = SsetFuns.uniform_sample (uniform_sample rng) splits k in
-  let leafs' = sset_lsetset splits' (Lsetset.singleton leafs) in
-  let base_leafs =
-    LsetsetFuns.uniform_sample
-      (uniform_sample rng)
-      leafs'
-      min_leafs
-  in
+  let splits' = sample_sset_weighted rng splits k in
+  let leafss = sset_lsetset splits' (Lsetset.singleton leafs) in
+  let base_leafs = LsetsetFuns.uniform_sample (sample rng) leafss min_leafs in
   let to_sample =
     Lsetset.filter
       (fun lset -> not (Lsetset.mem lset base_leafs))
-      leafs'
+      leafss
   in
   Lsetset.union
     base_leafs
     (Lsetset.filter
        (fun _ -> Gsl_rng.uniform rng < include_prob)
        to_sample)
+
+let rec distribute_lsetset_on_stree rng splits leafss = function
+  | Stree.Leaf n -> IntMap.add n leafss IntMap.empty
+  | Stree.Node (_, subtree) ->
+    let splits = select_sset_cutting_lsetset splits leafss in
+    let split = Sset.choose (sample_sset_weighted rng splits 1) in
+    let leafss' = split_lsetset split leafss in
+    let distributed =
+      uniform_nonempty_partition rng (List.length subtree) leafss'
+    in
+    List.fold_left2
+      (fun map leafss node ->
+        IntMapFuns.union
+          map
+          (distribute_lsetset_on_stree rng splits leafss node))
+      IntMap.empty
+      distributed
+      subtree
 
 let main rng include_prob poisson_mean yule_size tree =
   let leafss =
@@ -239,8 +290,7 @@ let main rng include_prob poisson_mean yule_size tree =
       (get_lset tree)
   in
   let yule_tree = generate_yule rng yule_size in
-  let partitioned = uniform_nonempty_partition rng yule_size leafss in
-  IntMapFuns.of_pairlist (rev_enumerate ~start:1 partitioned),
+  leafss,
   yule_tree
 
 (* convenience *)
@@ -255,15 +305,12 @@ let outer_inner_split outer inner =
   assert(Lset.subset inner outer);
   make_split inner (Lset.diff outer inner)
 
-
 let auto_split ls =
   let n = 1 + Lset.max_elt ls in
   outer_inner_split (n_set n) ls
 
-
 let auto_list_split l =
   auto_split (LsetFuns.of_list l)
-
 
 (* testing *)
 
