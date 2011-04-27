@@ -44,7 +44,7 @@
   * does this split cut one of the lset in the lsetset?
 * `select_sset_cutting_lsetset: sset -> lsetset -> sset`
   * get the subset of splits that actually cut the given lsetset
-* `generate_root: include_prob:float -> poisson_mean:float -> lset ->
+* `generate_root: include_prob:float -> poisson_mean:float -> sset ->
   lsetset`
   * This will make poisson-distributed cuts in the tree and then select
     them to include with the given probability.
