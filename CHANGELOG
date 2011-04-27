@@ -4,6 +4,7 @@
 
 * Renamed the `--normal` flag for `guppy kr` to `--gaussian` to avoid confusion
   with normalization.
+* Only one shuffle at a time is now stored in memory (big savings, obviously).
 
 
 1.1.alpha05
