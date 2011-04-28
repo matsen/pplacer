@@ -44,9 +44,7 @@ let map_shuffled_pres f rng n_shuffles pre1 pre2 =
   and n1 = List.length pre1
   and n2 = List.length pre2
   in
-  let pquery_sub start len =
-      Array.to_list (Array.sub pre_arr start len)
-  in
+  let pquery_sub start len = Array.to_list (Array.sub pre_arr start len) in
   ListFuns.init
     n_shuffles
     (fun _ ->
@@ -149,7 +147,7 @@ object (self)
   method usage = "usage: kr [options] placefiles"
 
 
-  (* we don't call self#rng to avoid re-seeding the rng *)
+  (* Note that we don't call self#rng to avoid re-seeding the rng. *)
   method private pair_core rng transform n_samples t name1 pre1 name2 pre2 =
   let p = fv p_exp
   and normalization = (normalization_of_str (fv normalize)) t
@@ -164,7 +162,7 @@ object (self)
     p_value =
       if 0 < n_samples then begin
         let null_dists =
-          if fv gaussian then (* use gaussian approximation *)
+          if fv gaussian then
             Gaussian_approx.pair_approx
               ~normalization transform rng n_samples p t pre1 pre2
           else
