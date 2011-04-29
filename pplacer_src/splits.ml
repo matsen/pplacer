@@ -372,7 +372,9 @@ let main
     leaf_map
     0
   in
-  cluster_tree
+
+  let cluster_gtree = Gtree.gtree cluster_tree IntMap.empty in
+  Newick_gtree.to_file cluster_gtree (name_prefix ^ ".tre")
 
 (* convenience *)
 
