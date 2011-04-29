@@ -245,11 +245,11 @@ let newick_bark_of_prefixed_int prefix n =
 
 let rec bark_of_stree_numbers bark_fn = function
   | Stree.Leaf n -> bark_fn n
-  | Stree.Node (n, subtree) ->
+  | Stree.Node (_, subtree) ->
     List.fold_left
       (fun map node ->
         IntMapFuns.union map (bark_of_stree_numbers bark_fn node))
-      (bark_fn n)
+      IntMap.empty
       subtree
 
 let gtree_of_stree_numbers bark_fn stree =
