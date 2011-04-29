@@ -54,12 +54,8 @@ let intermediate_sum i1 i2 =
  * of two, and the above is actually the most efficient way to go. *)
 let intermediate_list_sum = ListFuns.complete_fold_left intermediate_sum
 
-(* recall that transform is globally set up top for the time being *)
-let pair_approx ?(normalization=1.) transform rng n_samples p t pre1 pre2 =
-  (* make sure that the pres have unit mass per placement *)
-  let upre1 = Mass_map.Pre.unitize_mass transform pre1
-  and upre2 = Mass_map.Pre.unitize_mass transform pre2
-  in
+(* Note: upre1 and upre2 must have unit mass per placement. *)
+let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
   let np1 = List.length upre1
   and np2 = List.length upre2
   and int_inv x = 1. /. (float_of_int x)

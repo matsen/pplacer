@@ -161,12 +161,17 @@ object (self)
     distance = original_dist;
     p_value =
       if 0 < n_samples then begin
+        (* We must have unitized masses so shuffling works properly. Otherwise
+         * the amount of mass per read will depend on its origin. *)
+        let upre1 = Mass_map.Pre.unitize_mass transform pre1
+        and upre2 = Mass_map.Pre.unitize_mass transform pre2
+        in
         let null_dists =
           if fv gaussian then
             Gaussian_approx.pair_approx
-              ~normalization transform rng n_samples p t pre1 pre2
+              ~normalization transform rng n_samples p t upre1 upre2
           else
-            map_shuffled_pres calc_dist rng n_samples pre1 pre2
+            map_shuffled_pres calc_dist rng n_samples upre1 upre2
         in
         if fv density then
           R_plots.write_density p type_str name1 name2 original_dist null_dists;
