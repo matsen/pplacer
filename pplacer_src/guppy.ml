@@ -36,6 +36,7 @@ let command_list () =
       "distmat", (fun () -> new Guppy_distmat.cmd ());
       "merge", (fun () -> new Guppy_merge.cmd ());
       "filter", (fun () -> new Guppy_filter.cmd ());
+      "info", (fun () -> new Guppy_info.cmd ());
     ];
   ]
 
