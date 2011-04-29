@@ -203,7 +203,7 @@ let generate_yule rng count =
           (next_id + 1)
           (Stree.node next_id nodes' :: trees')
   in
-  aux count (repeat Stree.leaf count)
+  aux (count + 1) (repeat Stree.leaf count)
 
 let get_lset =
   let rec aux accum = function
@@ -240,19 +240,20 @@ let get_sset =
   in
   aux Sset.empty Lset.empty
 
-let newick_bark_of_int n =
-  Newick_bark.map_set_name n (Printf.sprintf "n%d" n) IntMap.empty
+let newick_bark_of_prefixed_int prefix n =
+  Newick_bark.map_set_name n (Printf.sprintf "%s%d" prefix n) IntMap.empty
 
-let rec bark_of_stree_numbers = function
-  | Stree.Leaf n -> newick_bark_of_int n
+let rec bark_of_stree_numbers bark_fn = function
+  | Stree.Leaf n -> bark_fn n
   | Stree.Node (n, subtree) ->
     List.fold_left
-      (fun map node -> IntMapFuns.union map (bark_of_stree_numbers node))
-      (newick_bark_of_int n)
+      (fun map node ->
+        IntMapFuns.union map (bark_of_stree_numbers bark_fn node))
+      (bark_fn n)
       subtree
 
-let gtree_of_stree_numbers stree =
-  let bark = bark_of_stree_numbers stree in
+let gtree_of_stree_numbers bark_fn stree =
+  let bark = bark_of_stree_numbers bark_fn stree in
   Gtree.gtree stree bark
 
 let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
@@ -342,8 +343,8 @@ let main
   let cluster_tree, leaf_map = retry retries in
 
   let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
-  let _ = IntMap.fold
-    (fun _ leafss e ->
+  IntMap.iter
+    (fun e leafss ->
       let leafs = Lsetset.fold Lset.union leafss Lset.empty in
       let distr = Array.to_list
         (distribute_pqueries
@@ -364,11 +365,11 @@ let main
       Placerun_io.to_json_file
         ""
         (Printf.sprintf "%s%d.json" name_prefix e)
-        pr;
-      e + 1)
-    leaf_map
-    0
-  in
+        pr)
+    leaf_map;
 
-  let cluster_gtree = Gtree.gtree cluster_tree IntMap.empty in
+  let cluster_gtree = gtree_of_stree_numbers
+    (newick_bark_of_prefixed_int name_prefix)
+    cluster_tree
+  in
   Newick_gtree.to_file cluster_gtree (name_prefix ^ ".tre")
