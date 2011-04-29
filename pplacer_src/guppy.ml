@@ -37,6 +37,7 @@ let command_list () =
       "merge", (fun () -> new Guppy_merge.cmd ());
       "filter", (fun () -> new Guppy_filter.cmd ());
       "commiesim", (fun () -> new Guppy_commiesim.cmd ());
+      "rf_distance", (fun () -> new Guppy_rf_distance.cmd ());
     ];
   ]
 

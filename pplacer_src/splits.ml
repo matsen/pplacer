@@ -18,7 +18,6 @@ end
 module Lsetset = Set.Make(OrderedLset)
 module LsetsetFuns = SetFuns (OrderedLset) (PprLset)
 
-
 type split = Lset.t * Lset.t
 
 let sort_split p =
@@ -47,6 +46,7 @@ end
 
 module Sset = Set.Make (OrderedSplit)
 module SsetFuns = SetFuns (OrderedSplit) (PprSplit)
+
 
 let split_lset split lset =
   LsetsetFuns.of_list (
