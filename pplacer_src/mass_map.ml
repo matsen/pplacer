@@ -99,6 +99,19 @@ module Pre = struct
 
   let unitize_mass transform pre =
     List.map (unit_mass_scale transform) pre
+
+  (* Pretty printing. *)
+  let ppr_mass_unit ff mu =
+    Format.fprintf ff "@[{loc = %d; distal_bl = %f; mass = %f}@]"
+      mu.loc mu.distal_bl mu.mass
+
+  let ppr_mul ff mul = Ppr.ppr_list ppr_mass_unit ff mul
+
+  let ppr_multimul ff mmul =
+    Format.fprintf ff "@[{multi = %d; mul = %a}@]" mmul.multi ppr_mul mmul.mul
+
+  let ppr ff pre = Ppr.ppr_list ppr_multimul ff pre
+
 end
 
 
