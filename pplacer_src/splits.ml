@@ -135,14 +135,16 @@ let uniform_nonempty_partition rng n_bins lss =
 module G = Gsl_rng
 module GD = Gsl_randist
 
+exception Invalid_sample of string
+
 type weighting =
   | Array of float array
   | Function of (int -> float)
   | Uniform
 
 let sample rng ?(weighting = Uniform) n k =
-  if k > n then failwith "k > n";
-  if k < 0 then failwith "k < 0";
+  if k > n then raise (Invalid_sample "k > n");
+  if k < 0 then raise (Invalid_sample "k < 0");
   let distribution = match weighting with
     | Array a -> a
     | Function f -> Array.init n f
@@ -241,6 +243,21 @@ let get_sset =
   in
   aux Sset.empty Lset.empty
 
+let newick_bark_of_int n =
+  Newick_bark.map_set_name n (Printf.sprintf "n%d" n) IntMap.empty
+
+let rec bark_of_stree_numbers = function
+  | Stree.Leaf n -> newick_bark_of_int n
+  | Stree.Node (n, subtree) ->
+    List.fold_left
+      (fun map node -> IntMapFuns.union map (bark_of_stree_numbers node))
+      (newick_bark_of_int n)
+      subtree
+
+let gtree_of_stree_numbers stree =
+  let bark = bark_of_stree_numbers stree in
+  Gtree.gtree stree bark
+
 let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
   let k =
     max
@@ -279,19 +296,83 @@ let rec distribute_lsetset_on_stree rng splits leafss = function
       distributed
       subtree
 
-let main rng include_prob poisson_mean yule_size tree =
+let pquery_of_leaf_and_seq leaf seq =
+  Pquery.make_ml_sorted
+    [Printf.sprintf "%d_%d" leaf seq]
+    ""
+    [
+      Placement.make_ml
+        leaf
+        ~ml_ratio:1.0
+        ~dist_bl:0.0
+        ~pend_bl:1.0
+        ~log_like:0.0
+    ]
+
+let main
+    rng
+    ~include_prob
+    ~poisson_mean
+    ?(retries = 5)
+    ~yule_size
+    ~n_pqueries
+    ~tree
+    ~name_prefix =
+
+  let stree = Gtree.get_stree tree in
+  let splits = get_sset stree
+  and leafs = get_lset stree in
   let leafss =
     generate_root
       rng
       include_prob
       poisson_mean
       ~min_leafs:yule_size
-      (get_sset tree)
-      (get_lset tree)
+      splits
+      leafs
   in
-  let yule_tree = generate_yule rng yule_size in
-  leafss,
-  yule_tree
+
+  let rec retry = function
+    | 0 -> failwith "failed too many resamplings"
+    | n ->
+      let cluster_tree = generate_yule rng yule_size in
+      try
+        let map = distribute_lsetset_on_stree rng splits leafss cluster_tree in
+        cluster_tree, map
+      with
+        | Invalid_sample _ -> retry (n - 1)
+  in
+  let cluster_tree, leaf_map = retry retries in
+
+  let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
+  let _ = IntMap.fold
+    (fun _ leafss e ->
+      let leafs = Lsetset.fold Lset.union leafss Lset.empty in
+      let distr = Array.to_list
+        (distribute_pqueries
+           (Array.make (Lset.cardinal leafs) 1.0))
+      and leafl = Lset.elements leafs in
+      let pqueries =
+        List.map2
+          (fun leaf -> repeat (pquery_of_leaf_and_seq leaf))
+          leafl
+          distr
+      in
+      let pr =
+        Placerun.make
+          tree
+          (Printf.sprintf "commiesim_%d" e)
+          (List.flatten pqueries)
+      in
+      Placerun_io.to_json_file
+        ""
+        (Printf.sprintf "%s%d.json" name_prefix e)
+        pr;
+      e + 1)
+    leaf_map
+    0
+  in
+  cluster_tree
 
 (* convenience *)
 
