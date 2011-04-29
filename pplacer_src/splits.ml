@@ -132,9 +132,6 @@ let uniform_nonempty_partition rng n_bins lss =
     (nonempty_balls_in_boxes rng ~n_bins ~n_items:(Lsetset.cardinal lss))
 
 
-module G = Gsl_rng
-module GD = Gsl_randist
-
 exception Invalid_sample of string
 
 type weighting =
@@ -375,44 +372,3 @@ let main
 
   let cluster_gtree = Gtree.gtree cluster_tree IntMap.empty in
   Newick_gtree.to_file cluster_gtree (name_prefix ^ ".tre")
-
-(* convenience *)
-
-let rec range n =
-  if n > 0 then n::(range (n-1))
-  else []
-
-let n_set n = LsetFuns.of_list (range n)
-
-let outer_inner_split outer inner =
-  assert(Lset.subset inner outer);
-  make_split inner (Lset.diff outer inner)
-
-let auto_split ls =
-  let n = 1 + Lset.max_elt ls in
-  outer_inner_split (n_set n) ls
-
-let auto_list_split l =
-  auto_split (LsetFuns.of_list l)
-
-(* testing *)
-
-let sigma = auto_list_split [2;5;6]
-let sigma' = auto_list_split [6]
-let ls1 = LsetFuns.of_list [1;2]
-let ls2 = LsetFuns.of_list [3;5;6]
-let ls3 = LsetFuns.of_list [2;5]
-let lss = LsetsetFuns.of_list [ls1; ls2]
-let cut_lss = split_lsetset sigma lss
-
-(* split_lset sigma ls1 *)
-
-(* split_does_cut_lset sigma ls2 *)
-(* split_does_cut_lset sigma ls3 *)
-(* split_does_cut_lsetset sigma lss *)
-(* split_does_cut_lsetset sigma cut_lss *)
-
-(* lsetset_to_array lss *)
-
-(* uniform_nonempty_partition rng 2 cut_lss *)
-
