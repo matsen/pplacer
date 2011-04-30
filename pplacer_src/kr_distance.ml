@@ -34,10 +34,6 @@ let v_addto v1 v2 =
     v1.(i) <- v1.(i) +. v2.(i)
   done
 
-(* multiply a vector times a scalar. functional. *)
-let v_times_scalar v s =
-  Array.map (( *. ) s) v
-
 (* take the vector sum of a float array list. no side effects. *)
 let v_list_sum = function
   | hd::tl ->
@@ -46,23 +42,22 @@ let v_list_sum = function
     v
   | [] -> assert(false)
 
-
-(* total up the info from the previous step.
+(* Total up the info from the previous step.
  * note that data_sofar will be modified in place.
  * data_to_r: takes the kr info vector and turns it into a real number
  * data_info_list: list of (distal_bl, data)
  *
- * signature is
+ * Signature is
 ('a -> float) -> float -> (float * 'b) list -> ('a -> 'b -> 'c) -> float ->     'a          -> float * 'a
  data_to_r       bl       data_info_list        update_data        prev_subtot  start_data
  *
  * is what ocaml infers, but update_data is actually 'a -> 'b -> unit, as
- * update_data modifies in place
+ * update_data modifies in place.
  * *)
 let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_data =
   let rec aux ~subtotal ~prev_a data_sofar data_info_list =
-    (* next_total actually adds on the segment length times data_to_r of
-     * the kr vector *)
+    (* next_subtotal actually adds on the segment length times data_to_r of the
+     * kr vector *)
     let next_subtotal a =
       let seg_len = a -. prev_a in
       assert(seg_len >= 0.);
