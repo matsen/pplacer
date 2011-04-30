@@ -6,6 +6,7 @@
   with normalization.
 * Only one shuffle at a time is now stored in memory (big savings, obviously).
 * Fixed bug that was throwing off `guppy kr` shuffling significance estimation.
+* Closed GH-20: efficiency of kr_distance evaluated and approved.
 
 
 1.1.alpha05
