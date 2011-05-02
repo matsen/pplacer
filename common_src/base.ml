@@ -21,6 +21,16 @@ let int_pow x n =
   let rec aux accu i = if i=0 then accu else aux (x*.accu) (i-1) in
   aux 1. n
 
+(* uniformly shuffle the elements of an array using the Knuth shuffle
+ * http://en.wikipedia.org/wiki/Random_permutation
+ * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
+ *)
+let shuffle rng a =
+  let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
+  for i = Array.length a - 1 downto 1 do
+    swap i (Gsl_rng.uniform_int rng (i+1))
+  done
+
 let date_time_str () =
   let the_time = Unix.localtime (Unix.time ()) in
   Printf.sprintf "%02d/%02d/%d %02d:%02d:%02d"

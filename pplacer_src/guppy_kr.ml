@@ -9,16 +9,6 @@ type result =
     p_value : float option;
   }
 
-(* uniformly shuffle the elements of an array using the Knuth shuffle
- * http://en.wikipedia.org/wiki/Random_permutation
- * http://rosettacode.org/wiki/Knuth_shuffle#OCaml
- *)
-let shuffle rng a =
-  let swap i j = let x = a.(i) in a.(i) <- a.(j); a.(j) <- x in
-  for i = Array.length a - 1 downto 1 do
-    swap i (Gsl_rng.uniform_int rng (i+1))
-  done
-
 (* just calculate the fraction of elements of a which are geq x.
  * that's the probability that something of value x or greater was drawn from
  * the distribution of a.
@@ -50,7 +40,7 @@ let make_shuffled_pres rng transform n_shuffles pre1 pre2 =
   ListFuns.init
     n_shuffles
     (fun _ ->
-      shuffle rng pre_arr;
+      Base.shuffle rng pre_arr;
       (pquery_sub 0 n1, pquery_sub n1 n2))
 
 exception Uptri_dim_mismatch

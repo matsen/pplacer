@@ -1,5 +1,3 @@
-let rng = Gsl_rng.make (Gsl_rng.default ())
-
 open MapsSets
 
 module Lset = IntSet
@@ -83,11 +81,9 @@ let partition_lsetset (a, b) lsetset =
   in
   aux a, aux b
 
-(* lacking SPEED. *)
 let split_does_cut_lset split lset =
   1 <> Lsetset.cardinal (split_lset split lset)
 
-(* lacking SPEED. *)
 let split_does_cut_lsetset split lsetset =
   Lsetset.cardinal lsetset <> Lsetset.cardinal (split_lsetset split lsetset)
 
@@ -120,8 +116,7 @@ let lsetset_to_array lss =
  * *)
 let uniform_nonempty_partition rng n_bins lss =
   let a = lsetset_to_array lss in
-  (* XXX *)
-  Guppy_kr.shuffle rng a;
+  Base.shuffle rng a;
   let pos = ref 0 in
   List.map
     (fun n_samples ->
