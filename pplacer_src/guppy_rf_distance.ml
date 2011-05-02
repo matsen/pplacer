@@ -27,9 +27,7 @@ object (self)
       let to_ss_set tree =
         let ss = Splits.get_sset (Gtree.get_stree tree) in
         let sss = Seqsplits.seqsplitset_of_gtree_and_splitset tree ss in
-        SSS.filter
-          (fun split -> Seqsplits.split_does_cut_seqset split seqs)
-          sss
+        Seqsplits.splits_intersect_seqset sss seqs
       in
       let sss1, sss2 = to_ss_set tree1, to_ss_set tree2 in
       let symmetric_diff = SSS.union (SSS.diff sss1 sss2) (SSS.diff sss2 sss1)

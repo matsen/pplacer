@@ -74,3 +74,13 @@ let split_seqset split seqset =
 let split_does_cut_seqset split seqset =
   1 <> SseqSet.cardinal (split_seqset split seqset)
 
+let splits_intersect_seqset splits seqset =
+  SeqSplitSet.fold
+    (fun (a, b) splits ->
+      let a', b' = SeqSet.inter a seqset, SeqSet.inter b seqset in
+      if SeqSet.is_empty a' || SeqSet.is_empty b' then
+        splits
+      else
+        SeqSplitSet.add (make_seqsplit a' b') splits)
+    splits
+    SeqSplitSet.empty
