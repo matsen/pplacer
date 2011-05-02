@@ -139,6 +139,7 @@ type weighting =
   | Function of (int -> float)
   | Uniform
 
+(* Sampling without replacement. *)
 let sample rng ?(weighting = Uniform) n k =
   if k > n then raise (Invalid_sample "k > n");
   if k < 0 then raise (Invalid_sample "k < 0");

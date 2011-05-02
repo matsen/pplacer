@@ -4,8 +4,9 @@ open Guppy_cmdobjs
 class cmd () =
 object
   inherit subcommand () as super
+  inherit outfile_cmd () as super_outfile
 
-  method specl = []
+  method specl = super_outfile#specl
 
   method desc = "calculates RF distance of two trees"
   method usage = "usage: rf_distance <newick_trees>"
@@ -29,7 +30,7 @@ object
           sss
       in
       let sss1, sss2 = to_ss_set tree1, to_ss_set tree2 in
-      Printf.printf "%d\n"
+      Printf.fprintf super_outfile#out_channel "%d\n"
         (Seqsplits.SeqSplitSet.cardinal (Seqsplits.SeqSplitSet.diff sss1 sss2))
     | _ -> ()
 end
