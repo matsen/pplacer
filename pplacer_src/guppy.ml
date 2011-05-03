@@ -38,6 +38,7 @@ let command_list () =
       "filter", (fun () -> new Guppy_filter.cmd ());
       "info", (fun () -> new Guppy_info.cmd ());
       "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
+      "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
     ];
   ]
 
