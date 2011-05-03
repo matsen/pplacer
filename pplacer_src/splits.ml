@@ -321,21 +321,21 @@ let main
   let stree = Gtree.get_stree tree in
   let splits = get_sset stree
   and leafs = get_lset stree in
-  let leafss =
-    generate_root
-      rng
-      include_prob
-      poisson_mean
-      ~min_leafs:yule_size
-      splits
-      leafs
-  in
 
   let rec retry = function
     | 0 -> failwith "failed too many resamplings"
     | n ->
       let cluster_tree = generate_yule rng yule_size in
       try
+        let leafss =
+          generate_root
+            rng
+            include_prob
+            poisson_mean
+            ~min_leafs:yule_size
+            splits
+            leafs
+        in
         let map = distribute_lsetset_on_stree rng splits leafss cluster_tree in
         cluster_tree, map
       with
