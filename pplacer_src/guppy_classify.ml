@@ -1,5 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
+open MapsSets
 
 let escape = Base.sqlite_escape
 module TIAMR = AlgMap.AlgMapR (Tax_id.OrderedTaxId)
@@ -25,23 +26,36 @@ let keymap_add_by f m =
 
 (* m is a taxid_algmap and this outputs a list of string_arrays, one for each
  * placement *)
-let classif_stral td name desired_rank m =
-  List.map
-    (fun (ti, p) ->
-      [|
-        name;
-        Tax_taxonomy.get_rank_name td desired_rank;
-        Tax_taxonomy.rank_name_of_tax_id td ti;
-        Tax_id.to_string ti;
-        Printf.sprintf "%g" p;
-      |])
-    (Tax_id.TaxIdMapFuns.to_pairs m)
+let classif_stral td pq rank_map =
+  List.fold_left
+    (fun accum name ->
+      List.rev_append
+        (IntMap.fold
+           (fun desired_rank rankl accum ->
+             List.rev_append
+               (List.fold_left
+                  (fun accum (ti, p) ->
+                    [|
+                      name;
+                      Tax_taxonomy.get_rank_name td desired_rank;
+                      Tax_taxonomy.rank_name_of_tax_id td ti;
+                      Tax_id.to_string ti;
+                      Printf.sprintf "%g" p;
+                    |] :: accum)
+                  []
+                  rankl)
+               accum)
+           rank_map
+           [])
+        accum)
+    []
+    (Pquery.namel pq)
 
 let classify how criterion n_ranks td pr f =
   try
     List.iter
       (fun pq ->
-        let outl = ref [] in
+        let outmap = ref IntMap.empty in
         let m = ref
           (List.fold_right
              (fun p ->
@@ -53,14 +67,12 @@ let classify how criterion n_ranks td pr f =
         in
         for desired_rank=(n_ranks-1) downto 0 do
           m := keymap_add_by (classify_at_rank td desired_rank) !m;
-          outl :=
-            (List.flatten
-               (List.map
-                  (fun name -> classif_stral td name desired_rank !m)
-                  (Pquery.namel pq)))
-          @ (!outl);
+          outmap := IntMap.add
+            desired_rank
+            (Tax_id.TaxIdMapFuns.to_pairs (!m))
+            !outmap
         done;
-        f (!outl))
+        f pq (!outmap))
       (Placerun.get_pqueries pr)
   with
     | Placement.No_classif ->
@@ -104,31 +116,60 @@ object (self)
       if fv csv_out then
         let prn = Placerun.get_name pr in
         let ch = open_out (prn ^ ".class.csv") in
-        ch, (fun outl ->
-          output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
+        let close () = close_out ch in
+        output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
+        close, (fun pq rank_map ->
+          let outl = classif_stral td pq rank_map in
           List.iter
             (fun arr -> Printf.fprintf ch "%s,%s\n" (String.concat "," (Array.to_list arr)) prn)
             outl)
+
       else if fv sqlite_out then
         let prn = Placerun.get_name pr in
         let ch = open_out (prn ^ ".class.sqlite") in
-        ch, (fun outl ->
+        let close () =
+          output_string ch "COMMIT;\n";
+          close_out ch
+        in
+        output_string ch "BEGIN TRANSACTION;\n";
+        let place_id = ref 0 in
+        close, (fun pq rank_map ->
+          incr place_id;
+          Printf.fprintf ch
+            "INSERT INTO placements VALUES (%d, %s);\n"
+            (!place_id)
+            (escape prn);
           List.iter
-            (fun arr -> Printf.fprintf ch
-              "INSERT INTO placements VALUES (%s, %s);\n"
-              (String.concat ", " (List.map escape (Array.to_list arr)))
-              (escape prn))
-            outl)
+            (fun name -> Printf.fprintf ch
+              "INSERT INTO placement_names VALUES (%d, %s);\n"
+              (!place_id)
+              (escape name))
+            (Pquery.namel pq);
+          IntMap.iter
+            (fun desired_rank rankl ->
+              List.iter
+                (fun (tax_id, prob) -> Printf.fprintf ch
+                  "INSERT INTO placement_probabilities VALUES (%d, %s, %s, %s, %g);\n"
+                  (!place_id)
+                  (escape (Tax_taxonomy.get_rank_name td desired_rank))
+                  (escape (Tax_taxonomy.rank_name_of_tax_id td tax_id))
+                  (escape (Tax_id.to_string tax_id))
+                  prob)
+                rankl)
+            rank_map)
+
       else
         let ch = open_out ((Placerun.get_name pr)^".class.tab") in
-        ch, (fun outl ->
-          String_matrix.write_padded ch (Array.of_list outl))
+        let close () = close_out ch in
+        close, (fun pq rank_map ->
+          String_matrix.write_padded ch (Array.of_list (classif_stral td pq rank_map)))
+
     in
     List.iter
       (fun pr ->
-        let ch, out_func = out_func pr in
+        let close, out_func = out_func pr in
         classify Placement.classif criterion n_ranks td pr out_func;
-        close_out ch)
+        close ())
       prl
 
 end

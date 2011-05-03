@@ -33,12 +33,22 @@ object (self)
       );
 
       CREATE TABLE IF NOT EXISTS placements (
+        placement_id INT PRIMARY KEY NOT NULL,
+        origin TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS placement_names (
+        placement_id INT REFERENCES placements (placement_id) NOT NULL,
         name TEXT NOT NULL,
+        PRIMARY KEY (placement_id, name)
+      );
+
+      CREATE TABLE IF NOT EXISTS placement_probabilities (
+        placement_id INT REFERENCES placements (placement_id) NOT NULL,
         desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
         rank TEXT REFERENCES ranks (rank) NOT NULL,
         tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
-        likelihood REAL NOT NULL,
-        origin TEXT NOT NULL
+        likelihood REAL NOT NULL
       );
 
     \n";
