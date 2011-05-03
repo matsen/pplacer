@@ -58,7 +58,6 @@ object (self)
       (fv included_ranks)
     in
     let included = List.sort (-) (List.map int_of_string included) in
-    let is_included tid = List.mem tid included in
 
     let new_taxonomy = begin
       let seqinfo = Refpkg.get_seqinfom rp
