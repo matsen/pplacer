@@ -1,3 +1,6 @@
+
+let size_transform x = x *. x
+
 open MapsSets
 
 module Lset = IntSet
@@ -134,7 +137,10 @@ type weighting =
   | Function of (int -> float)
   | Uniform
 
-(* Sampling without replacement. *)
+(* Sampling without replacement.
+ * Note that because of the implementation of GSL's discrete distributions, the
+ * sum of the elements of an Array weighting need not total to one; it's scaled
+ * to make a probability distribution. They do need to be positive. *)
 let sample rng ?(weighting = Uniform) n k =
   if k > n then raise (Invalid_sample "k > n");
   if k < 0 then raise (Invalid_sample "k < 0");
@@ -156,14 +162,12 @@ let sample rng ?(weighting = Uniform) n k =
   in
   aux [] k
 
+(* We take the weight on a split to be proportional to weight_transform applied
+ * to the size of the smaller element of the set. *)
 let sample_sset_weighted rng =
   SsetFuns.weighted_sample
   (fun arr -> sample rng ~weighting:(Array arr))
-  (fun (k, l) ->
-    let k = float_of_int (Lset.cardinal k)
-    and l = float_of_int (Lset.cardinal l)
-    in
-    k /. (k +. l))
+  (fun (k, _) -> size_transform (float_of_int (Lset.cardinal k)))
 
 let repeat f n =
   let rec aux accum = function

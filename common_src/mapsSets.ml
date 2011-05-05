@@ -177,6 +177,10 @@ module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
         S.empty
         indices
 
+    (* sample_func takes an array, and an n and a k, then returns a list of
+     * indices to be included.
+     * weighting takes an element and returns a weight to be included in the
+     * probability. *)
     let weighted_sample sample_func weighting s k =
       let elements = Array.of_list (S.elements s) in
       let distribution = Array.map weighting elements in
