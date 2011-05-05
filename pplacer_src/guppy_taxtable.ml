@@ -7,23 +7,23 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
-  inherit outfile_cmd () as super_outfile
+  inherit sqlite_cmd () as super_sqlite
 
   method specl =
     super_refpkg#specl
-    @ super_outfile#specl
+    @ super_sqlite#specl
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
   method usage = "usage: taxtable [options] -c <refpkg>"
 
   method action _ =
     let refpkg = self#get_rp in
-    let ch = self#out_channel in
+    let db = self#get_db in
     let tax = Refpkg.get_taxonomy refpkg in
-    output_string ch "
+    Sql.check_exec db "
       CREATE TABLE IF NOT EXISTS ranks (
         rank TEXT PRIMARY KEY NOT NULL,
-        rank_order INT
+        rank_order INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS taxa (
@@ -33,40 +33,44 @@ object (self)
       );
 
       CREATE TABLE IF NOT EXISTS placements (
-        placement_id INT PRIMARY KEY NOT NULL,
-        origin TEXT NOT NULL
+        placement_id INTEGER PRIMARY KEY AUTOINCREMENT
       );
 
       CREATE TABLE IF NOT EXISTS placement_names (
-        placement_id INT REFERENCES placements (placement_id) NOT NULL,
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         name TEXT NOT NULL,
-        PRIMARY KEY (placement_id, name)
+        origin TEXT NOT NULL,
+        PRIMARY KEY (placement_id, name, origin)
       );
 
-      CREATE TABLE IF NOT EXISTS placement_probabilities (
-        placement_id INT REFERENCES placements (placement_id) NOT NULL,
+      CREATE TABLE IF NOT EXISTS placement_classifications (
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
         rank TEXT REFERENCES ranks (rank) NOT NULL,
         tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
         likelihood REAL NOT NULL
       );
 
-    \n";
+    ";
+    Sql.check_exec db "BEGIN TRANSACTION";
+    let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
       (fun idx name ->
-        Printf.fprintf ch
-          "INSERT INTO ranks VALUES (%s, %d);\n"
-          (escape name)
-          idx)
+        Sql.bind_step_reset db st [|
+          Sql.D.TEXT name;
+          Sql.D.INT (Int64.of_int idx)
+        |])
       tax.Tax_taxonomy.rank_names;
+    let st = Sqlite3.prepare db "INSERT INTO taxa VALUES (?, ?, ?)" in
     Tax_id.TaxIdMap.iter
       (fun tax_id name ->
         let rank = Tax_taxonomy.rank_name_of_tax_id tax tax_id in
-        Printf.fprintf ch
-          "INSERT INTO taxa VALUES (%s, %s, %s);\n"
-          (escape (Tax_id.to_string tax_id))
-          (escape name)
-          (escape rank))
+        Sql.bind_step_reset db st [|
+          Sql.D.TEXT (Tax_id.to_string tax_id);
+          Sql.D.TEXT name;
+          Sql.D.TEXT rank;
+        |])
       tax.Tax_taxonomy.tax_name_map;
-    close_out ch
+    Sql.check_exec db "COMMIT";
+    Sql.close db
 end

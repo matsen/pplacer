@@ -78,6 +78,7 @@ dispatch begin function
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "oUnit") "oUnit";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "sqlite3") "sqlite3";
   | _ -> ()
 end;;
 

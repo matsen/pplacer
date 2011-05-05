@@ -87,20 +87,19 @@ object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
   inherit placefile_cmd () as super_placefile
+  inherit sqlite_cmd () as super_sqlite
 
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria."))
   val csv_out = flag "--csv"
     (Plain (false, "Write .class.csv files containing CSV data."))
-  val sqlite_out = flag "--sqlite"
-    (Plain (false, "Write .class.sqlite files containing sqlite insert statements."))
 
   method specl =
     super_refpkg#specl
+  @ super_sqlite#specl
   @ [
     toggle_flag use_pp;
     toggle_flag csv_out;
-    toggle_flag sqlite_out;
   ]
 
   method desc =
@@ -112,6 +111,10 @@ object (self)
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
     let n_ranks = Tax_taxonomy.get_n_ranks td in
+    let sqlite_out = match !(sqlite_fname.Subcommand.value) with
+      | Some _ -> true
+      | None -> false
+    in
     let out_func pr =
       if fv csv_out then
         let prn = Placerun.get_name pr in
@@ -124,37 +127,39 @@ object (self)
             (fun arr -> Printf.fprintf ch "%s,%s\n" (String.concat "," (Array.to_list arr)) prn)
             outl)
 
-      else if fv sqlite_out then
+      else if sqlite_out then
         let prn = Placerun.get_name pr in
-        let ch = open_out (prn ^ ".class.sqlite") in
+        let db = self#get_db in
         let close () =
-          output_string ch "COMMIT;\n";
-          close_out ch
+          Sql.check_exec db "COMMIT";
+          Sql.close db
         in
-        output_string ch "BEGIN TRANSACTION;\n";
-        let place_id = ref 0 in
+        Sql.check_exec db "BEGIN TRANSACTION";
+        let pn_st = Sqlite3.prepare db
+          "INSERT INTO placement_names VALUES (?, ?, ?);"
+        and pc_st = Sqlite3.prepare db
+          "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
+        in
         close, (fun pq rank_map ->
-          incr place_id;
-          Printf.fprintf ch
-            "INSERT INTO placements VALUES (%d, %s);\n"
-            (!place_id)
-            (escape prn);
+          Sql.check_exec db "INSERT INTO placements VALUES (NULL)";
+          let place_id = Sqlite3.last_insert_rowid db in
           List.iter
-            (fun name -> Printf.fprintf ch
-              "INSERT INTO placement_names VALUES (%d, %s);\n"
-              (!place_id)
-              (escape name))
+            (fun name -> Sql.bind_step_reset db pn_st [|
+                Sql.D.INT place_id;
+                Sql.D.TEXT name;
+                Sql.D.TEXT prn;
+              |])
             (Pquery.namel pq);
           IntMap.iter
             (fun desired_rank rankl ->
               List.iter
-                (fun (tax_id, prob) -> Printf.fprintf ch
-                  "INSERT INTO placement_probabilities VALUES (%d, %s, %s, %s, %g);\n"
-                  (!place_id)
-                  (escape (Tax_taxonomy.get_rank_name td desired_rank))
-                  (escape (Tax_taxonomy.rank_name_of_tax_id td tax_id))
-                  (escape (Tax_id.to_string tax_id))
-                  prob)
+                (fun (tax_id, prob) -> Sql.bind_step_reset db pc_st [|
+                  Sql.D.INT place_id;
+                  Sql.D.TEXT (Tax_taxonomy.get_rank_name td desired_rank);
+                  Sql.D.TEXT (Tax_taxonomy.rank_name_of_tax_id td tax_id);
+                  Sql.D.TEXT (Tax_id.to_string tax_id);
+                  Sql.D.FLOAT prob;
+                |])
                 rankl)
             rank_map)
 
