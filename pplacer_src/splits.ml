@@ -307,7 +307,7 @@ let main
     rng
     ~include_prob
     ~poisson_mean
-    ?(retries = 5)
+    ?(retries = 100)
     ~yule_size
     ~n_pqueries
     ~tree
