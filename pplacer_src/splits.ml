@@ -1,5 +1,5 @@
 
-let size_transform x = x *. x
+let size_transform x = x ** 10.
 
 open MapsSets
 
@@ -49,6 +49,10 @@ module Sset = Set.Make (OrderedSplit)
 module SsetFuns = SetFuns (OrderedSplit) (PprSplit)
 
 
+(* If sigma does not split X, then `split_lset(sigma, X)` returns the lsetset
+ containing only X. Otherwise say sigma = U|V, in which case it returns the
+ lsetset consisting of X intersect U and X intersect V.
+ *)
 let split_lset split lset =
   LsetsetFuns.of_list (
     List.filter (fun s -> not (Lset.is_empty s))
@@ -58,38 +62,27 @@ let split_lset split lset =
       ]
   )
 
+(* `split_lsetset(sigma, A)` will give the union of all of the lsetsets
+  obtained by applying sigma to each of the lsets in A.
+*)
 let split_lsetset split lsetset =
   Lsetset.fold
     (fun ls lss -> Lsetset.union lss (split_lset split ls))
     lsetset
     Lsetset.empty
 
+(* multiple application of `split_lsetset`. Take union at end. *)
 let sset_lsetset = Sset.fold split_lsetset
 
-let partition_lset (a, b) lset =
-  Lset.inter lset a,
-  Lset.inter lset b
-
-let partition_lsetset (a, b) lsetset =
-  let aux lset =
-    Lsetset.fold
-      (fun ls lss ->
-        let ls' = Lset.inter lset ls in
-        if Lset.is_empty ls' then
-          lss
-        else
-          Lsetset.add ls' lss)
-      lsetset
-      Lsetset.empty
-  in
-  aux a, aux b
-
+(* does this split cut a given lset? *)
 let split_does_cut_lset split lset =
   1 <> Lsetset.cardinal (split_lset split lset)
 
+(* does this split cut one of the lset in the lsetset? *)
 let split_does_cut_lsetset split lsetset =
   Lsetset.cardinal lsetset <> Lsetset.cardinal (split_lsetset split lsetset)
 
+(* get the subset of splits that actually cut the given lsetset *)
 let select_sset_cutting_lsetset splits leafss =
   Sset.filter
     (fun split -> split_does_cut_lsetset split leafss)
@@ -104,8 +97,6 @@ let nonempty_balls_in_boxes rng ~n_bins ~n_items =
     counts.(which_bin) <- counts.(which_bin) + 1
   done;
   Array.to_list counts
-
-(*nonempty_balls_in_boxes rng ~n_bins:5 ~n_items:10*)
 
 let lsetset_to_array lss =
   let a = Array.make (Lsetset.cardinal lss) (Lsetset.choose lss) in
@@ -212,6 +203,7 @@ let get_lset =
   in
   aux Lset.empty
 
+(* Collect all of the splits together into a set. *)
 let get_sset =
   let rec aux accum above = function
     | Stree.Leaf n -> Sset.add (make_split above (Lset.singleton n)) accum
@@ -256,6 +248,7 @@ let gtree_of_stree_numbers bark_fn stree =
   let bark = bark_of_stree_numbers bark_fn stree in
   Gtree.gtree stree bark
 
+(* generate the root distribution *)
 let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
   let k =
     max
