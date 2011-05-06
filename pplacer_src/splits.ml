@@ -269,12 +269,12 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
        (fun _ -> Gsl_rng.uniform rng < include_prob)
        to_sample)
 
-let rec distribute_lsetset_on_stree rng splits leafss = function
+let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
   | Stree.Leaf n -> IntMap.add n leafss IntMap.empty
   | Stree.Node (_, subtree) ->
-    let splits = select_sset_cutting_lsetset splits leafss in
-    let split = Sset.choose (sample_sset_weighted rng splits 1) in
-    let leafss' = split_lsetset split leafss in
+    let n_splits = Gsl_randist.poisson rng poisson_mean in
+    let splits' = sample_sset_weighted rng splits n_splits in
+    let leafss' = sset_lsetset splits' leafss in
     let distributed =
       uniform_nonempty_partition rng (List.length subtree) leafss'
     in
@@ -282,7 +282,7 @@ let rec distribute_lsetset_on_stree rng splits leafss = function
       (fun map leafss node ->
         IntMapFuns.union
           map
-          (distribute_lsetset_on_stree rng splits leafss node))
+          (distribute_lsetset_on_stree rng poisson_mean splits leafss node))
       IntMap.empty
       distributed
       subtree
@@ -331,7 +331,7 @@ let main
               splits
               leafs
         in
-        let map = distribute_lsetset_on_stree rng splits leafss cluster_tree in
+        let map = distribute_lsetset_on_stree rng poisson_mean splits leafss cluster_tree in
         cluster_tree, map
       with
         | Invalid_sample _ -> retry (n - 1)
