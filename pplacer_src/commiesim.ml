@@ -149,23 +149,37 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
        (fun _ -> Gsl_rng.uniform rng < include_prob)
        to_sample)
 
+
+(* keep sampling poissons until you get something >= lower *)
+let rec lower_bounded_poisson rng lower mean =
+  let x = Gsl_randist.poisson rng mean in
+  if x >= lower then x
+  else lower_bounded_poisson rng lower mean
+
 let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
   | Stree.Leaf n -> IntMap.add n leafss IntMap.empty
-  | Stree.Node (_, subtree) ->
-    let n_splits = Gsl_randist.poisson rng poisson_mean in
-    let splits' = sample_sset_weighted rng splits n_splits in
-    let leafss' = sset_lsetset splits' leafss in
+  | Stree.Node (_, subtrees) ->
+    let n_splits =
+      lower_bounded_poisson rng ((List.length subtrees)-1) poisson_mean
+    in
+    (* the splits that actually cut leafss *)
+    let cutting_splits = select_sset_cutting_lsetset splits leafss in
+    (* sample some number from them *)
+    let chosen_splits = sample_sset_weighted rng cutting_splits n_splits in
+    (* apply these splits *)
+    let cut_leafss = sset_lsetset chosen_splits leafss in
+    (* throw the balls (leafs) into boxes (subtrees) *)
     let distributed =
-      uniform_nonempty_partition rng (List.length subtree) leafss'
+      uniform_nonempty_partition rng (List.length subtrees) cut_leafss
     in
     List.fold_left2
-      (fun map leafss node ->
+      (fun map leafss t ->
         IntMapFuns.union
           map
-          (distribute_lsetset_on_stree rng poisson_mean splits leafss node))
+          (distribute_lsetset_on_stree rng poisson_mean cutting_splits leafss t))
       IntMap.empty
       distributed
-      subtree
+      subtrees
 
 let pquery_of_leaf_and_seq leaf seq =
   Pquery.make_ml_sorted
