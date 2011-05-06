@@ -302,7 +302,7 @@ let pquery_of_leaf_and_seq leaf seq =
 
 let main
     rng
-    ~include_prob
+    ?include_prob
     ~poisson_mean
     ?(retries = 100)
     ~yule_size
@@ -320,13 +320,16 @@ let main
       let cluster_tree = generate_yule rng yule_size in
       try
         let leafss =
-          generate_root
-            rng
-            include_prob
-            poisson_mean
-            ~min_leafs:yule_size
-            splits
-            leafs
+          match include_prob with
+          | None -> Lsetset.singleton leafs
+          | Some include_prob ->
+            generate_root
+              rng
+              include_prob
+              poisson_mean
+              ~min_leafs:yule_size
+              splits
+              leafs
         in
         let map = distribute_lsetset_on_stree rng splits leafss cluster_tree in
         cluster_tree, map
