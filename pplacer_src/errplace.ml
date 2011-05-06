@@ -26,7 +26,7 @@ let parse_args () =
   Arg.parse args anon_arg usage;
   List.rev !files
 
-let get_name_set t = StringSetFuns.of_list (Newick_gtree.get_name_list t)
+let get_name_set t = StringSet.of_list (Newick_gtree.get_name_list t)
 
 let () =
   if not !Sys.interactive then begin

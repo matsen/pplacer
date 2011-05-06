@@ -7,7 +7,7 @@ type uptree_map = int IntMap.t
 
 let utm_of_stree t =
   let m = ref IntMap.empty in
-  let add_to_m i j = m := IntMapFuns.check_add i j (!m) in
+  let add_to_m i j = m := IntMap.check_add i j (!m) in
   let rec aux = function
     | Stree.Node (i, tL) ->
         List.iter (fun s -> add_to_m (Stree.top_id s) i; aux s) tL

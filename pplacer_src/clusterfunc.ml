@@ -167,7 +167,7 @@ module Cluster (B: BLOB) =
      * the clustering in that way. *)
     let mimic t blobl =
       let blobim = ref IntMap.empty in
-      let set_blob i b = blobim := IntMapFuns.check_add i b (!blobim) in
+      let set_blob i b = blobim := IntMap.check_add i b (!blobim) in
       ListFuns.iteri set_blob blobl;
       let _ =
         Gtree.recur

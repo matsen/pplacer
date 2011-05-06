@@ -291,3 +291,13 @@ object
        else
           (Newick_gtree.make_boot_id ref_tree))
 end
+
+class sqlite_cmd () =
+object
+  val sqlite_fname = flag "--sqlite"
+    (Formatted (":memory:", "Specify the database file to use. (default: %s)"))
+  method specl = [ string_flag sqlite_fname; ]
+
+  method private get_db =
+    Sqlite3.db_open (fv sqlite_fname)
+end

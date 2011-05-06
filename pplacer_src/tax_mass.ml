@@ -6,7 +6,7 @@ exception Tax_id_not_in_tree of tax_id
 let hashtbl_find_zero h k = if Hashtbl.mem h k then Hashtbl.find h k else 0.
 
 let reverse_ti_imap start =
-  IntMap.fold (fun k v -> TaxIdMapFuns.check_add v k) start TaxIdMap.empty
+  IntMap.fold (fun k v -> TaxIdMap.check_add v k) start TaxIdMap.empty
 
 (* here we build the pre mass map which is appropriate for the tax_gtree.
  * ti_imap takes us from the locations on the tree to taxids *)
