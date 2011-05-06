@@ -1,7 +1,7 @@
 open Subcommand
 open Guppy_cmdobjs
 
-module SSS = Seqsplits.SeqSplitSet
+module SSS = Strsplits.StrSplitSet
 
 class cmd () =
 object (self)
@@ -17,17 +17,17 @@ object (self)
     | [tree1; tree2] ->
       let tree1 = Newick_gtree.of_file tree1
       and tree2 = Newick_gtree.of_file tree2 in
-      let to_seqset tree =
-        Seqsplits.seqset_of_gtree_and_lset
+      let to_strset tree =
+        Strsplits.strset_of_gtree_and_lset
           tree
           (Splits.lset_of_tree (Gtree.get_stree tree))
       in
-      let seqs1, seqs2 = to_seqset tree1, to_seqset tree2 in
-      let seqs = Seqsplits.SeqSet.inter seqs1 seqs2 in
+      let strs1, strs2 = to_strset tree1, to_strset tree2 in
+      let strs = Strsplits.StrSet.inter strs1 strs2 in
       let to_ss_set tree =
         let ss = Splits.sset_of_tree (Gtree.get_stree tree) in
-        let sss = Seqsplits.seqsplitset_of_gtree_and_splitset tree ss in
-        Seqsplits.splits_intersect_seqset sss seqs
+        let sss = Strsplits.strsplitset_of_gtree_and_splitset tree ss in
+        Strsplits.splits_intersect_strset sss strs
       in
       let sss1, sss2 = to_ss_set tree1, to_ss_set tree2 in
       let symmetric_diff = SSS.union (SSS.diff sss1 sss2) (SSS.diff sss2 sss1)
