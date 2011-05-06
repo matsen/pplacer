@@ -20,11 +20,11 @@ let classify how criterion n_ranks td pq =
            (how p)
            (criterion p))
        (Pquery.place_list pq)
-       (CF.TIAMR.M.empty))
+       (CF.TIAMR.empty))
   in
   for desired_rank=(n_ranks-1) downto 0 do
     m := CF.keymap_add_by (CF.classify_at_rank td desired_rank) !m;
-    outl := (Tax_id.TaxIdMapFuns.to_pairs !m) :: !outl
+    outl := (CF.TIAMR.to_pairs !m) :: !outl
   done;
   List.flatten !outl
 

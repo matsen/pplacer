@@ -38,7 +38,7 @@ let transport_map transform t pre1 pre2 =
   let (_,top_heat) = List.hd heat_list in
   if top_heat > Kr_distance.tol then
     raise (Kr_distance.Total_kr_not_zero top_heat);
-  IntMapFuns.of_pairlist heat_list
+  IntMap.of_pairlist heat_list
 
 (* The commands *)
 

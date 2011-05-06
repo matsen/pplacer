@@ -67,8 +67,6 @@ module PprTaxId = struct
   let ppr = ppr
 end
 
-module TaxIdMap = Map.Make(OrderedTaxId)
-module TaxIdMapFuns = MapsSets.MapFuns (OrderedTaxId) (PprTaxId)
-module TaxIdSet = Set.Make(OrderedTaxId)
-module TaxIdSetFuns = MapsSets.SetFuns (OrderedTaxId) (PprTaxId)
+module TaxIdMap = MapsSets.BetterMap (Map.Make(OrderedTaxId)) (PprTaxId)
+module TaxIdSet = MapsSets.BetterSet (Set.Make(OrderedTaxId)) (PprTaxId)
 

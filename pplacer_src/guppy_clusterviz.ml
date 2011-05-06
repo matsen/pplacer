@@ -124,7 +124,7 @@ let clusterviz prefs = function
             and mass_trees =
               List.map
                 (fun (i, name) -> get_named_mass_tree dirname i name)
-                (IntMapFuns.to_pairs nameim)
+                (IntMap.to_pairs nameim)
             in
             (* write out the average masses corresponding to the named clusters *)
             Phyloxml.pxdata_to_file out_fname

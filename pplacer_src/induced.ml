@@ -65,7 +65,7 @@ let intersect_on_stree t ind1 ind2 =
       status_done
     end
     else
-      let ofj = IntMapFuns.opt_find j in
+      let ofj = IntMap.opt_find j in
       match (ofj ind1, ofj ind2) with
       | (Some p1, Some p2) ->
           add j (max p1 p2); status_done
@@ -104,7 +104,7 @@ let union_on_stree t ind1 ind2 =
   let m = ref IntMap.empty in
   let add k v = m := IntMap.add k v !m in
   let attempt_add j =
-    let ofj = IntMapFuns.opt_find j in
+    let ofj = IntMap.opt_find j in
     match (ofj ind1, ofj ind2) with
     | (Some p1, Some p2) ->
         add j (min p1 p2); true
@@ -136,7 +136,7 @@ let of_placerun criterion pr =
       (List.fold_right
         (fun pq ->
           let best = Pquery.best_place criterion pq in
-          IntMapFuns.add_listly
+          IntMap.add_listly
             (Placement.location best)
             (Placement.distal_bl best))
         (Placerun.get_pqueries pr)
@@ -148,7 +148,7 @@ let of_placerun criterion pr =
     else
       []
   in
-  IntMapFuns.of_pairlist
+  IntMap.of_pairlist
     (Stree.recur
       (fun i belowl ->
           let below = List.concat belowl in

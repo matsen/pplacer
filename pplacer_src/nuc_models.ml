@@ -22,7 +22,7 @@ Any 	           G or C or T or A 	N
    *)
 
 let nuc_map =
-  CharMapFuns.of_pairlist (
+  CharMap.of_pairlist (
     List.map (fun (c, v) -> (c, Gsl_vector.of_array v)) (
 (*            A   C   G   T  *)
       ['A', [|1.; 0.; 0.; 0.|];
