@@ -169,6 +169,8 @@ module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
     (* map from Set to Set of the same type. currying heaven. *)
     let map f s = S.fold (fun x -> S.add (f x)) s S.empty
 
+    (* sample_func takes an n (number of elts) and a k (number to sample), then
+     * returns a list of indices to be included. *)
     let uniform_sample sample_func s k =
       let indices = sample_func (S.cardinal s) k in
       let elements = Array.of_list (S.elements s) in
