@@ -20,12 +20,12 @@ object (self)
       let to_seqset tree =
         Seqsplits.seqset_of_gtree_and_lset
           tree
-          (Splits.get_lset (Gtree.get_stree tree))
+          (Splits.lset_of_tree (Gtree.get_stree tree))
       in
       let seqs1, seqs2 = to_seqset tree1, to_seqset tree2 in
       let seqs = Seqsplits.SeqSet.inter seqs1 seqs2 in
       let to_ss_set tree =
-        let ss = Splits.get_sset (Gtree.get_stree tree) in
+        let ss = Splits.sset_of_tree (Gtree.get_stree tree) in
         let sss = Seqsplits.seqsplitset_of_gtree_and_splitset tree ss in
         Seqsplits.splits_intersect_seqset sss seqs
       in

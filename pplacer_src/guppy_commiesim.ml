@@ -37,7 +37,7 @@ object (self)
         | 0. -> None
         | x -> assert(x > 0.); Some x
     in
-    Splits.main
+    Commiesim.main
       self#rng
       ?include_prob:ip
       ~retries:100

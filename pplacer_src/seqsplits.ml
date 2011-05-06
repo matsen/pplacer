@@ -1,3 +1,5 @@
+(* Seqsplits are string splits... the strings being names. *)
+
 open Splits
 
 module SeqSet = MapsSets.StringSet
