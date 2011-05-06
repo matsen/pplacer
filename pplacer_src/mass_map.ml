@@ -134,7 +134,7 @@ module Indiv = struct
         let scalar = factorf *. (transform multimul.Pre.multi) in
         (List.fold_left
           (fun m mu ->
-            IntMapFuns.add_listly
+            IntMap.add_listly
               mu.Pre.loc
               (mu.Pre.distal_bl, scalar *. mu.Pre.mass)
               m)
@@ -161,7 +161,7 @@ let total_mass m =
     0.
 
   let ppr =
-    IntMapFuns.ppr_gen
+    IntMap.ppr_gen
       (fun ff l ->
         List.iter
           (fun (distal, mass) ->
@@ -183,7 +183,7 @@ module By_edge = struct
    *
    * a faster version would be like
    *
-   let h = Hashtbl.create ((IntMapFuns.nkeys ti_imap)/3) in
+   let h = Hashtbl.create ((IntMap.nkeys ti_imap)/3) in
     let addto ti x = Hashtbl.replace h ti (x+.(hashtbl_find_zero h ti)) in
     List.iter
     (fun pq ->
