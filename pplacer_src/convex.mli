@@ -1,17 +1,26 @@
+open MapsSets
+open Stree
+type color = string
+
+module ColorSet: MapsSets.S with type elt = color
+module ColorMap: MapsSets.M with type key = color
+type cset = ColorSet.t
+type 'a cmap = 'a ColorMap.t
 
 type question = color option * cset (* a pair (c, X) *)
+module QuestionMap: MapsSets.M with type key = question
+type 'a qmap = 'a QuestionMap.t
 
-(* QuestionMap should be a map from questions *)
-
-type cdtree = color IntMap.t * stree
-type cset = ColorSet.t
-type csetl = ColorSet.t list
-type apart_t = color option * csetl  (* apart = almost partition *)
-type sizem = int ColorMap.t
+type csetl = cset list
+type apart = color option * csetl  (* apart = almost partition *)
+type sizem = int cmap
 type colorm = color IntMap.t
-type local_phi = apart_t QuestionMap.t
+type cdtree = colorm * stree
+type local_phi = apart qmap
 type phi = local_phi IntMap.t
 
+
+(* QuestionMap should be a map from questions *)
 
 (* Basics. *)
 
@@ -24,7 +33,7 @@ val between: csetl -> cset
 
 (* Getting ready. *)
 
-val build_sizem: stree -> colorm -> sizem IntMap.t
+val build_sizem_and_csetlm: cdtree -> sizem IntMap.t * csetl IntMap.t
 (** Given a colored tree, for every (integer-indexed) node record the number of
  * leaves below with a given color.
  *
@@ -33,17 +42,14 @@ val build_sizem: stree -> colorm -> sizem IntMap.t
  *
  * This matrix will be sparse, but not outrageously so.
  *
- * *)
-
-val build_csetlm: stree -> csetl IntMap.t
-(** Make a map that goes from every internal node to the color sets in the
+ * Make a map that goes from every internal node to the color sets in the
  * subtrees below that internal node. *)
 
 
 (* Building up aparts. *)
 
-val is_apart: apart_t -> bool
-(** Test if an apart_t is indeed an apart. *)
+val is_apart: apart -> cset -> bool
+(** Test if an apart is indeed an apart. *)
 
 val add_elt_to_apart: csetl -> apart -> color -> apart list
 (** add_elt_to_apart xl start c gives all of the aparts for xl that
@@ -75,8 +81,8 @@ val list_nu: csetl -> sizem -> int
 (** list_nu csetl sizem simply totals up the calues of single_nu applied to the
  * given csetl. *)
 
-val apart_nu: apart_t -> sizem -> int
-(** convenience function for running list_nu on the csetl of an apart_t. *)
+val apart_nu: apart -> sizem -> int
+(** convenience function for running list_nu on the csetl of an apart. *)
 
 
 (* The recursion, as it were. *)
