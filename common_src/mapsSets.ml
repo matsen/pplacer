@@ -35,6 +35,7 @@ sig
   val opt_add: key -> 'a option -> 'a t -> 'a t
   val opt_find: key -> 'a t -> 'a option
   val check_add: key -> 'a -> 'a t -> 'a t
+  val singleton: key -> 'a -> 'a t
   val union: 'a t -> 'a t -> 'a t
   val print: ('a -> string) -> 'a t -> unit
   val of_pairlist: (key * 'a) list -> 'a t
@@ -45,6 +46,7 @@ sig
   val keys: 'a t -> key list
   val values: 'a t -> 'a list
   val to_pairs: 'a t -> (key * 'a) list
+  val merge_counts: int t list -> int t
   val ppr_gen: (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   val ppr_string: Format.formatter -> string t -> unit
   val ppr_int: Format.formatter -> int t -> unit
@@ -71,6 +73,8 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
         if y = find x m then m else failwith "check_add"
       else
         add x y m
+
+    let singleton k v = add k v empty
 
     let union m1 m2 =
       fold (
@@ -124,6 +128,23 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
       let l = fold (fun k v l -> (k,v)::l) m [] in
       List.rev l
 
+    let merge_counts ml =
+      List.fold_left
+        (fun accum m ->
+          fold
+            (fun k v m ->
+              let cur_v =
+                try
+                  find k m
+                with
+                  | Not_found -> 0
+              in
+              add k (cur_v + v) m)
+            m
+            accum)
+        empty
+        ml
+
     let ppr_gen ppr_val ff m =
       Format.fprintf ff "@[[";
       ppr_list_inners (
@@ -175,6 +196,7 @@ sig
   include Set.S
   val of_list: elt list -> t
   val map: (elt -> elt) -> t -> t
+  val is_disjoint: t -> t -> bool
   val ppr: Format.formatter -> t -> unit
 end
 
@@ -186,6 +208,11 @@ module BetterSet (OS: Set.S) (PBLE: PPRABLE with type t = OS.elt) : (S with type
 
     (* map from Set to Set of the same type. currying heaven. *)
     let map f s = fold (fun x -> add (f x)) s empty
+
+    let is_disjoint s1 s2 =
+      for_all
+        (fun e -> not (mem e s2))
+        s1
 
     let ppr ff s =
       Format.fprintf ff "@[{";

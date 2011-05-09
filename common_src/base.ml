@@ -235,6 +235,18 @@ let rec list_iter_over_pairs_of_single f = function
       list_iter_over_pairs_of_single f l
   | [] -> ()
 
+let list_pairs_of_single l =
+  let rec aux accum = function
+    | x :: l ->
+      aux
+        (List.rev_append
+           (List.map (fun y -> x, y) l)
+           accum)
+        l
+    | [] -> accum
+  in
+  aux [] l
+
 (* iter over pairs from two lists.
 # list_iter_over_pairs_of_two print_pair [1;3] [4;5];;
 (1,4) (1,5) (3,4) (3,5) - : unit = ()

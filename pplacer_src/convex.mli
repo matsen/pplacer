@@ -12,7 +12,7 @@ module QuestionMap: MapsSets.M with type key = question
 type 'a qmap = 'a QuestionMap.t
 
 type csetl = cset list
-type apart = color option * csetl  (* apart = almost partition *)
+type apart = color option * (csetl list)  (* apart = almost partition *)
 type sizem = int cmap
 type colorm = color IntMap.t
 type cdtree = colorm * stree
@@ -33,7 +33,7 @@ val between: csetl -> cset
 
 (* Getting ready. *)
 
-val build_sizem_and_csetlm: cdtree -> sizem IntMap.t * csetl IntMap.t
+val build_sizem_and_csetlm: cdtree -> (sizem * cset) IntMap.t
 (** Given a colored tree, for every (integer-indexed) node record the number of
  * leaves below with a given color.
  *
