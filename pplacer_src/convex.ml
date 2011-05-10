@@ -74,27 +74,36 @@ let between colors = all
      (Base.list_pairs_of_single colors))
 
 let build_sizem_and_csetm (colors, tree) =
+  (* Building an internal_node -> szm, color_below map. *)
   let rec aux = function
     | Leaf i ->
       let color = IntMap.find i colors in
       let szm = ColorMap.singleton color 1
-      and clm = ColorSet.singleton color in
-      szm, clm, IntMap.singleton i (szm, clm)
+      and clbelow = ColorSet.singleton color in
+      szm, clbelow, IntMap.singleton i (szm, clbelow)
     | Node (i, subtrees) ->
       let maps = List.map aux subtrees in
       let szm = ColorMap.merge_counts (List.map (fun (a, _, _) -> a) maps) in
-      let clm, leafm = List.fold_left
+      let clbelow, leafm = List.fold_left
         (fun (claccum, lfaccum) (_, cl, lf) ->
           ColorSet.union claccum cl, IntMap.union lfaccum lf)
         (ColorSet.empty, IntMap.empty)
         maps
       in
-      szm, clm, IntMap.add i (szm, clm) leafm
+      szm, clbelow, IntMap.add i (szm, clbelow) leafm
   in
   let _, _, leafm = aux tree in
-  let clm = IntMap.map snd leafm
-  and leafm' = IntMap.map fst leafm in
-  let rec aux unterminated accum = function
+  let szm = IntMap.map fst leafm
+  and clm = IntMap.map snd leafm
+  in
+  (* Refines the clm to just map to the cut colors.
+   * The procedure is to erase non-between colors as we proceed down the tree.
+   * Accum is the partially-erased color set IntMap.
+   * Terminated are the colors for which exist on the "above" side of this
+   * internal node in the tree-- thus if we see a terminated color below then we
+   * know that the color is cut by the edge above this node.
+   * *)
+  let rec aux terminated accum = function
     | Leaf _ -> accum
     | Node (_, subtrees) ->
       let colorsets = List.map
@@ -103,19 +112,23 @@ let build_sizem_and_csetm (colors, tree) =
           | Node (i, _) -> IntMap.find i accum)
         subtrees
       in
-      let big_b = ColorSet.union unterminated (between colorsets) in
+      (* Update terminated. *)
+      let terminated' = ColorSet.union terminated (between colorsets) in
       List.fold_left2
         (fun accum colors tree ->
           let i = match tree with
             | Leaf i
             | Node (i, _) -> i
           in
-          let colors' = ColorSet.inter colors big_b in
+          (* colors' are just those edge colors in terminated' *)
+          let colors' = ColorSet.inter colors terminated' in
           if colors = colors' then
+          (* We don't have to cut anything from any of the edges below because
+           * we know that every color below also exists "above" this edge. *)
             accum
           else
             aux
-              big_b
+              terminated'
               (IntMap.add i colors' accum)
               tree)
         accum
@@ -123,7 +136,7 @@ let build_sizem_and_csetm (colors, tree) =
         subtrees
   in
   let clm = aux ColorSet.empty clm tree in
-  leafm', clm
+  szm, clm
 
 let rec powerset = function
   | [] -> [[]]
@@ -137,16 +150,21 @@ let build_apartl csetl (c, x) =
   ColorOptSet.fold
     (fun b accum ->
       let to_split = ColorOptSet.remove b big_b in
+      (* Prospect is list of which choices have been made so far.
+       * used = ColorSet.inter (all prospect) to_split
+       * (modulo options)
+       * Here we are recurring over the given color set list (representing the
+       * colors of the edges below.)
+       *  *)
       let rec aux used prospect accum = function
         | [] -> (List.rev prospect) :: accum
         | cset :: rest ->
           let cset = ColorSet.inter cset x in
           (* Simple colors are the ones which aren't in B \ {b}. *)
           let cs_unsimple, cs_simple = ColorSet.partition
-            (fun cs -> ColorOptSet.mem (Some cs) to_split)
+            (fun color -> ColorOptSet.mem (Some color) to_split)
             cset
           in
-          let cs_simple' = ColorSet.union cs_simple used in
           let choices = powerset (ColorSet.elements cs_unsimple) in
           List.fold_left
             (fun accum choice ->
@@ -166,7 +184,7 @@ let build_apartl csetl (c, x) =
 
               else
                 aux
-                  (ColorSet.union cs_simple' choice)
+                  (ColorSet.union used choice)
                   ((ColorSet.union cs_simple choice) :: prospect)
                   accum
                   rest)
