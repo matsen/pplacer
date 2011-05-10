@@ -58,7 +58,7 @@ module QuestionMap = BetterMap (Map.Make(OrderedQuestion)) (PprQuestion)
 type 'a qmap = 'a QuestionMap.t
 
 type csetl = ColorSet.t list
-type apart = color option * (csetl list)  (* apart = almost partition *)
+type apart = color option * csetl  (* apart = almost partition *)
 type sizem = int ColorMap.t
 type colorm = color IntMap.t
 type cdtree = colorm * stree
@@ -134,7 +134,7 @@ let coptset_of_cset cset =
 
 let build_apartl csetl (c, x) =
   let big_b = ColorOptSet.add c (coptset_of_cset (between csetl)) in
-  ColorOptSet.fold
+  let apartl = ColorOptSet.fold
     (fun b accum ->
       let to_split = ColorOptSet.remove b big_b in
       let rec aux used prospect accum = function
@@ -177,3 +177,13 @@ let build_apartl csetl (c, x) =
       (b, pi) :: accum)
     big_b
     []
+  in
+  List.fold_left
+    (fun accum (b, csetll) ->
+      List.rev_append
+        (List.map
+           (fun csetl -> b, csetl)
+           csetll)
+        accum)
+    []
+    apartl
