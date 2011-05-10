@@ -33,7 +33,7 @@ val between: csetl -> cset
 
 (* Getting ready. *)
 
-val build_sizem_and_csetlm: cdtree -> (sizem * cset) IntMap.t
+val build_sizem_and_csetm: cdtree -> sizem IntMap.t * cset IntMap.t
 (** Given a colored tree, for every (integer-indexed) node record the number of
  * leaves below with a given color.
  *

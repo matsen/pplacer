@@ -73,7 +73,7 @@ let between colors = all
      (fun (x, y) -> ColorSet.inter x y)
      (Base.list_pairs_of_single colors))
 
-let build_sizem_and_csetlm (colors, tree) =
+let build_sizem_and_csetm (colors, tree) =
   let rec aux = function
     | Leaf i ->
       let color = IntMap.find i colors in
@@ -92,7 +92,38 @@ let build_sizem_and_csetlm (colors, tree) =
       szm, clm, IntMap.add i (szm, clm) leafm
   in
   let _, _, leafm = aux tree in
-  leafm
+  let clm = IntMap.map snd leafm
+  and leafm' = IntMap.map fst leafm in
+  let rec aux unterminated accum = function
+    | Leaf _ -> accum
+    | Node (_, subtrees) ->
+      let colorsets = List.map
+        (function
+          | Leaf i
+          | Node (i, _) -> IntMap.find i accum)
+        subtrees
+      in
+      let big_b = ColorSet.union unterminated (between colorsets) in
+      List.fold_left2
+        (fun accum colors tree ->
+          let i = match tree with
+            | Leaf i
+            | Node (i, _) -> i
+          in
+          let colors' = ColorSet.inter colors big_b in
+          if colors = colors' then
+            accum
+          else
+            aux
+              big_b
+              (IntMap.add i colors' accum)
+              tree)
+        accum
+        colorsets
+        subtrees
+  in
+  let clm = aux ColorSet.empty clm tree in
+  leafm', clm
 
 let rec powerset = function
   | [] -> [[]]
