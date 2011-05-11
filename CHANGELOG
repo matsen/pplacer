@@ -8,6 +8,7 @@
 * Fixed bug that was throwing off `guppy kr` shuffling significance estimation.
 * Closed GH-20: efficiency of kr_distance evaluated and approved.
 * Closed GH-48: better error reporting when loading json placefiles.
+* Closed GH-51: only parsing the first word as a sequence name in a fasta file.
 
 
 1.1.alpha05
