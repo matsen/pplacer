@@ -152,8 +152,17 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 
 
+exception Invalid_placerun of string
+
+let json_versions = [1]
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
+  if not (Hashtbl.mem json "version") then
+    raise (Invalid_placerun "no 'version' field");
+  if not (List.mem (Jsontype.int (Hashtbl.find json "version")) json_versions)
+  then
+    raise (Invalid_placerun "invalid version");
+
   let fields = List.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
   let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
