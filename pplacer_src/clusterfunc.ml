@@ -1,10 +1,16 @@
-(* 
-* inner loop
-  * find minimally distant pair of samples i and j by folding over map
-  * merge them to make k, and normalize
-  * remove those pairs from the distance map, then add
-  * calcualate distances between i and k and j and k
-  * recalculate distances
+(*
+* Inner loop:
+*  - find minimally distant pair of samples i and j
+*  - merge them to make k, and normalize
+*  - remove those pairs from the distance map, then add
+*  - calcualate distances between i and k and j and k
+*  - recalculate distances
+*
+* The main data structures are
+*  - barkm: the bark map for the clustering tree
+*  - bmapr: map from blobs to the trees representing their clustering sequence
+*  - csetr: set of clusterables, playing the part of a distance matrix (see below)
+*  - blobim: records the blobs and their indices, for export
 *)
 
 open MapsSets
@@ -28,7 +34,8 @@ module Cluster (B: BLOB) =
 
     module BMap = Map.Make (OrderedBlob)
 
-    (* cble is short for clusterable *)
+    (* cble is short for clusterable. Such an object is maintained for every
+     * pair of samples. *)
     type cble =
       {
         dist : float;
@@ -44,7 +51,7 @@ module Cluster (B: BLOB) =
 
     let blob_in_cble b c = b = c.small || b = c.big
 
-    (* be completely sure that we sort by dist first *)
+    (* Note: be completely sure that we sort by dist first *)
     let compare_cble a b =
       let cdist = compare a.dist b.dist in
       if cdist <> 0 then cdist
@@ -65,6 +72,8 @@ module Cluster (B: BLOB) =
         let compare = compare_cble
       end
 
+    (* This is where we keep our clusterables, so that we can pluck off the
+     * smallest one each round. *)
     module CSet = Set.Make (OrderedCble)
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
@@ -86,8 +95,8 @@ module Cluster (B: BLOB) =
       | _ -> invalid_arg "get_only_binding: more than one binding"
     (* END crazy work around until 3.12 *)
 
-    (* note that the blobls can be non normalized as we call normf on them from
-     * the beginning and pass those on to distf *)
+    (* Note that the blobls can be non normalized as we call normf on them from
+     * the beginning and pass those on to distf. *)
     let of_named_blobl given_distf normf blobl =
       let counter = ref 0
       and barkm = ref IntMap.empty
