@@ -209,3 +209,24 @@ let build_apartl csetl (c, x) =
     []
   in
   apartl
+
+let single_nu cset sizem =
+  ColorSet.fold
+    (fun color accum ->
+      let size =
+        try
+          ColorMap.find color sizem
+        with
+          | Not_found -> 0
+      in
+      size + accum)
+    cset
+    0
+
+let list_nu csetl sizem =
+  List.fold_left
+    (fun accum cset -> (single_nu cset sizem) + accum)
+    0
+    csetl
+
+let apart_nu (_, csetl) sizem = list_nu csetl sizem
