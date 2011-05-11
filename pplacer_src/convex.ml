@@ -142,66 +142,70 @@ let rec powerset = function
   | [] -> [[]]
   | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
 
+let product lists =
+  let rec aux accum base = function
+    | [] -> (List.rev base) :: accum
+    | l :: rest ->
+      List.fold_left
+        (fun accum x -> aux accum (x :: base) rest)
+        accum
+        l
+  in
+  aux [] [] lists
+
+let csetdist csetl color =
+  let rec aux base accum = function
+    | [] -> List.map List.rev accum
+    | cset :: rest ->
+      let accum = List.map (fun x -> ColorSet.empty :: x) accum in
+      let accum =
+        if ColorSet.mem color cset then
+          (ColorSet.singleton color :: base) :: accum
+        else
+          accum
+      in
+      aux (ColorSet.empty :: base) accum rest
+  in
+  aux [] [] csetl
+
+let transposed_fold f start ll =
+  let rec aux prev = function
+    | [] -> prev
+    | l :: rest ->
+      aux
+        (List.map2 f prev l)
+        rest
+  in
+  aux start ll
+
 let coptset_of_cset cset =
   ColorSet.fold (fun c s -> ColorOptSet.add (Some c) s) cset ColorOptSet.empty
 
 let build_apartl csetl (c, x) =
+  let csetl = List.map (ColorSet.inter x) csetl in
   let big_b = ColorOptSet.add c (coptset_of_cset (between csetl)) in
   let apartl = ColorOptSet.fold
     (fun b accum ->
       let to_split = ColorOptSet.remove b big_b in
-      (* Prospect is list of which choices have been made so far.
-       * used = ColorSet.inter (all prospect) to_split
-       * (modulo options)
-       * Here we are recurring over the given color set list (representing the
-       * colors of the edges below.)
-       *  *)
-      let rec aux used prospect accum = function
-        | [] -> (List.rev prospect) :: accum
-        | cset :: rest ->
-          let cset = ColorSet.inter cset x in
-          (* Simple colors are the ones which aren't in B \ {b}. *)
-          let cs_unsimple, cs_simple = ColorSet.partition
-            (fun color -> ColorOptSet.mem (Some color) to_split)
-            cset
-          in
-          let choices = powerset (ColorSet.elements cs_unsimple) in
-          List.fold_left
-            (fun accum choice ->
-              let choice = ColorSet.of_list choice in
-
-              (* Check if there's any colors in this choice which have already
-               * been used by other previous color sets. *)
-              if not (ColorSet.is_disjoint choice used)
-                (* Or, if b != c, make sure that c isn't in this choice. *)
-                || begin
-                  match c with
-                    | Some c' when b != c -> ColorSet.mem c' choice
-                    | _ -> false
-                end
-              then
-                accum
-
-              else
-                aux
-                  (ColorSet.union used choice)
-                  ((ColorSet.union cs_simple choice) :: prospect)
-                  accum
-                  rest)
-            accum
-            choices
+      let csl_unsimple, csl_simple = List.split
+        (List.map
+           (ColorSet.partition
+              (fun color -> ColorOptSet.mem (Some color) to_split))
+           csetl)
       in
-      let pi = aux ColorSet.empty [] [] csetl in
-      (b, pi) :: accum)
+      let q = all csl_unsimple in
+      let dist = List.map (csetdist csetl) (ColorSet.elements q) in
+      let prod = product dist in
+      let pis =
+        List.map
+          (transposed_fold ColorSet.union csl_simple)
+          prod
+      in
+      List.fold_left
+        (fun accum pi -> (b, pi) :: accum)
+        accum
+        pis)
     big_b
     []
   in
-  List.fold_left
-    (fun accum (b, csetll) ->
-      List.rev_append
-        (List.map
-           (fun csetl -> b, csetl)
-           csetll)
-        accum)
-    []
-    apartl
+  apartl
