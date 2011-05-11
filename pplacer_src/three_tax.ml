@@ -49,13 +49,16 @@ let set_dist_bl tt dist_bl =
 
 (* we minimize the negative of the log likelihood *)
 let optimize_something tolerance set_fun ~start_v ~min_v ~max_v tt =
-  let opt_fun value =
-    incr n_like_calls;
-    set_fun value;
-    -. (log_like tt)
-  in
-  Minimization.brent
-      opt_fun start_v min_v max_v tolerance
+  if min_v = max_v then start_v
+  else begin
+    let opt_fun value =
+      incr n_like_calls;
+      set_fun value;
+      -. (log_like tt)
+    in
+    Minimization.brent
+        opt_fun start_v min_v max_v tolerance
+  end
 
 let optimize_pend_bl tolerance max_value tt =
   optimize_something
