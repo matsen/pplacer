@@ -97,7 +97,7 @@ module Cluster (B: BLOB) =
 
     (* Note that the blobls can be non normalized as we call normf on them from
      * the beginning and pass those on to distf. *)
-    let of_named_blobl given_distf normf blobl =
+    let of_named_blobl given_distf normf named_blobl =
       let counter = ref 0
       and barkm = ref IntMap.empty
       and bmapr = ref BMap.empty
@@ -113,28 +113,31 @@ module Cluster (B: BLOB) =
           blobim := IntMap.add (!counter) b (!blobim);
           incr counter;
         )
-        blobl;
+        named_blobl;
       (* we store our normf results in normm *)
-      let normm = ref (BMap.mapi (fun b _ -> normf b) (!bmapr)) in
-      let distf b b' =
-        given_distf ~x1:(BMap.find b !normm) ~x2:(BMap.find b' !normm) b b'
+      let start_normm = BMap.mapi (fun b _ -> normf b) (!bmapr) in
+      let distf normm b b' =
+        given_distf ~x1:(BMap.find b normm) ~x2:(BMap.find b' normm) b b'
       in
+      (* Build up our set of clusterables. *)
       let rec init_aux = function
         | b::l ->
             List.iter
-              (fun b' -> csetr := CSet.add (cble_of_blobs distf b b') (!csetr))
+              (fun b' ->
+                csetr :=
+                  CSet.add (cble_of_blobs (distf start_normm) b b') (!csetr))
               l;
               init_aux l
         | [] -> ()
       in
       Printf.printf "preparing the objects to be clustered...";
       flush_all ();
-      init_aux (List.map snd blobl);
+      init_aux (List.map snd named_blobl);
       print_endline "done.";
       (* now actually perform the clustering *)
       let n_blobs = IntMap.fold (fun _ _ i -> i+1) (!blobim) 0 in
       assert (n_blobs > 0);
-      let rec merge_aux bmap cset free_index =
+      let rec merge_aux bmap cset free_index normm =
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
         flush_all ();
         let set_bl_for b bl =
@@ -151,10 +154,11 @@ module Cluster (B: BLOB) =
           and tbig = BMap.find next.big bmap
           and merged = B.merge next.small next.big
           in
-          normm := BMap.add merged (normf merged) (!normm);
+          let new_normm = BMap.add merged (normf merged) normm
+          in
           blobim := IntMap.add free_index merged (!blobim);
-          set_bl_for next.small (distf next.small merged);
-          set_bl_for next.big (distf next.big merged);
+          set_bl_for next.small (distf new_normm next.small merged);
+          set_bl_for next.big (distf new_normm next.big merged);
           barkm :=
             Newick_bark.map_set_name free_index (string_of_int free_index) (!barkm);
           merge_aux
@@ -162,13 +166,14 @@ module Cluster (B: BLOB) =
               merged
               (Stree.node free_index [tsmall; tbig])
               (BMap.remove next.small (BMap.remove next.big bmap)))
-            (cset_map (perhaps_replace_blob distf ~oldb:(next.small) ~newb:merged)
-              (cset_map (perhaps_replace_blob distf ~oldb:(next.big) ~newb:merged)
+            (cset_map (perhaps_replace_blob (distf new_normm) ~oldb:(next.small) ~newb:merged)
+              (cset_map (perhaps_replace_blob (distf new_normm) ~oldb:(next.big) ~newb:merged)
                 (CSet.remove next cset)))
             (free_index+1)
+            new_normm
         end
       in
-      let t = merge_aux (!bmapr) (!csetr) (!counter) in
+      let t = merge_aux (!bmapr) (!csetr) (!counter) start_normm in
       (t, !blobim)
 
     (* mimic clusters blobl with the same steps as in the supplied tree, and
