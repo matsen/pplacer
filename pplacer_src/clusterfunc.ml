@@ -9,7 +9,7 @@
 * The main data structures are
 *  - barkm: the bark map for the clustering tree
 *  - bmapr: map from blobs to the trees representing their clustering sequence
-*  - csetr: set of clusterables, playing the part of a distance matrix (see below)
+*  - cset: set of clusterables, playing the part of a distance matrix (see below)
 *  - blobim: records the blobs and their indices, for export
 *)
 
@@ -101,7 +101,6 @@ module Cluster (B: BLOB) =
       let counter = ref 0
       and barkm = ref IntMap.empty
       and bmapr = ref BMap.empty
-      and csetr = ref CSet.empty
       and blobim = ref IntMap.empty
       in
       let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
@@ -120,19 +119,20 @@ module Cluster (B: BLOB) =
         given_distf ~x1:(BMap.find b normm) ~x2:(BMap.find b' normm) b b'
       in
       (* Build up our set of clusterables. *)
-      let rec init_aux = function
-        | b::l ->
-            List.iter
-              (fun b' ->
-                csetr :=
-                  CSet.add (cble_of_blobs (distf start_normm) b b') (!csetr))
-              l;
-              init_aux l
-        | [] -> ()
-      in
-      Printf.printf "preparing the objects to be clustered...";
+      Printf.printf "Preparing the objects to be clustered...";
       flush_all ();
-      init_aux (List.map snd named_blobl);
+      let rec init_aux accu = function
+        | b::l ->
+            init_aux
+              (List.fold_left
+                (fun accu' b' ->
+                  CSet.add (cble_of_blobs (distf start_normm) b b') accu')
+                accu
+                l)
+              l
+        | [] -> accu
+      in
+      let start_cset = init_aux CSet.empty (List.map snd named_blobl) in
       print_endline "done.";
       (* now actually perform the clustering *)
       let n_blobs = IntMap.fold (fun _ _ i -> i+1) (!blobim) 0 in
@@ -173,7 +173,7 @@ module Cluster (B: BLOB) =
             new_normm
         end
       in
-      let t = merge_aux (!bmapr) (!csetr) (!counter) start_normm in
+      let t = merge_aux (!bmapr) start_cset (!counter) start_normm in
       (t, !blobim)
 
     (* mimic clusters blobl with the same steps as in the supplied tree, and
