@@ -154,6 +154,7 @@ let product lists =
   in
   aux [] [] lists
 
+(* Find the potential distributions of a color across a list of color sets. *)
 let csetdist csetl color =
   let rec aux base accum = function
     | [] -> List.map List.rev accum
@@ -169,6 +170,8 @@ let csetdist csetl color =
   in
   aux [] [] csetl
 
+(* Transpose a list of lists, then fold a function along the new list of lists.
+ * e.g. transposed_fold (+) [0; 0] [[1; 2]; [3; 4]] -> [4; 6] *)
 let transposed_fold f start ll =
   let rec aux prev = function
     | [] -> prev
@@ -181,6 +184,16 @@ let transposed_fold f start ll =
 
 let coptset_of_cset cset =
   ColorSet.fold (fun c s -> ColorOptSet.add (Some c) s) cset ColorOptSet.empty
+
+let is_apart (b, pi) x =
+  let all_colors = all pi
+  and between_colors = between pi in
+  all_colors <= x
+  && match b, ColorSet.cardinal between_colors with
+    | Some b', 1 -> ColorSet.choose between_colors = b'
+    | Some _, 0
+    | None, 0 -> true
+    | _, _ -> false
 
 let build_apartl csetl (c, x) =
   let csetl = List.map (ColorSet.inter x) csetl in

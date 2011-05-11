@@ -51,14 +51,6 @@ val build_sizem_and_csetm: cdtree -> sizem IntMap.t * cset IntMap.t
 val is_apart: apart -> cset -> bool
 (** Test if an apart is indeed an apart. *)
 
-val add_elt_to_apart: csetl -> apart -> color -> apart list
-(** add_elt_to_apart xl start c gives all of the aparts for xl that
- * can be made from start by adding color to start. Assert that if (b,pi) =
- * start then b is not c.
- * Note that for performance it will be crucial that if a color only
- * appears in one element of the csetl that it gets added efficiently (this
- * should be easy). *)
-
 val build_apartl: csetl -> question -> apart list
 (** Given an [X1,...,Xk] and a (c, X) return a list of (b, pi)'s.
  * If c is in X or if B = B([X1,...,Xk]) is empty, then b = c.
