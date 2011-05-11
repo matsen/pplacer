@@ -98,18 +98,14 @@ module Cluster (B: BLOB) =
     (* Note that the blobls can be non normalized as we call normf on them from
      * the beginning and pass those on to distf. *)
     let of_named_blobl given_distf normf named_blobl =
-      let barkm = ref IntMap.empty
-      in
-      let set_name id name = barkm := Newick_bark.map_set_name id name (!barkm)
-      in
-      let (n_blobs, start_bmap, start_blobim) =
+      let (n_blobs, start_bmap, start_blobim, start_barkm) =
         List.fold_left
-          (fun (counter, bmap, blobim) (name, b) ->
-            set_name counter name;
+          (fun (counter, bmap, blobim, barkm) (name, b) ->
             (counter+1,
               BMap.add b (Stree.leaf counter) bmap,
-              IntMap.add counter b blobim))
-          (0, BMap.empty, IntMap.empty)
+              IntMap.add counter b blobim,
+              Newick_bark.map_set_name counter name barkm))
+          (0, BMap.empty, IntMap.empty, IntMap.empty)
           named_blobl
       in
       assert (n_blobs > 0);
@@ -136,16 +132,12 @@ module Cluster (B: BLOB) =
       print_endline "done.";
       (* now actually perform the clustering *)
       (* * Main recursion ** *)
-      let rec merge_aux bmap cset free_index normm blobim =
+      let rec merge_aux bmap cset free_index normm blobim barkm =
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
         flush_all ();
-        let set_bl_for b bl =
-          barkm := Newick_bark.map_set_bl
-                     (Stree.top_id (BMap.find b bmap)) bl (!barkm)
-        in
         if CSet.cardinal cset = 0 then begin
           let (_, stree) = get_only_binding bmap in
-          (Gtree.gtree stree (!barkm), blobim)
+          (Gtree.gtree stree barkm, blobim)
         end
         else begin
           let next = CSet.min_elt cset in
@@ -155,10 +147,12 @@ module Cluster (B: BLOB) =
           in
           let new_normm = BMap.add merged (normf merged) normm
           in
-          set_bl_for next.small (distf new_normm next.small merged);
-          set_bl_for next.big (distf new_normm next.big merged);
-          barkm :=
-            Newick_bark.map_set_name free_index (string_of_int free_index) (!barkm);
+          let add_bl b barkm =
+            Newick_bark.map_set_bl
+              (Stree.top_id (BMap.find b bmap))
+              (distf new_normm b merged)
+              barkm
+          in
           merge_aux
             (BMap.add
               merged
@@ -170,9 +164,14 @@ module Cluster (B: BLOB) =
             (free_index+1)
             new_normm
             (IntMap.add free_index merged blobim)
+            (Newick_bark.map_set_name
+              free_index
+              (string_of_int free_index)
+              (add_bl next.small (add_bl next.big barkm)))
         end
       in
-      merge_aux start_bmap start_cset n_blobs start_normm start_blobim
+      merge_aux
+        start_bmap start_cset n_blobs start_normm start_blobim start_barkm
 
     (* mimic clusters blobl with the same steps as in the supplied tree, and
      * spit out a blobim which represents what would have resulted had we done
