@@ -10,7 +10,7 @@ let fasta_regexp = Str.regexp begin
     (* a comment (not captured), *)
     ";[^\n\r]*";
     (* a sequence name (group 3; group 2 should be non-matching), *)
-    "\\(>\\([^\n\r]+\\)\\)";
+    "\\(>[ \t]*\\([^ \t\n\r]+\\)[^\n\r]*\\)";
     (* or a sequence chunk (group 4). *)
     "\\([^\ \t\n\r]+\\)";
   (* and finally, strip off any trailing whitespace. The last bit of this
