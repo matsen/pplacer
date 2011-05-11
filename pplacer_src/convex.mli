@@ -33,7 +33,7 @@ val between: csetl -> cset
 
 (* Getting ready. *)
 
-val build_sizem_and_csetm: cdtree -> sizem IntMap.t * cset IntMap.t
+val build_sizem_and_cutsetm: cdtree -> sizem IntMap.t * cset IntMap.t
 (** Given a colored tree, for every (integer-indexed) node record the number of
  * leaves below with a given color.
  *
@@ -45,6 +45,7 @@ val build_sizem_and_csetm: cdtree -> sizem IntMap.t * cset IntMap.t
  * Make a map that goes from every internal node to the color sets in the
  * subtrees below that internal node. *)
 
+val cutsetlm_of_cutsetm_and_tree: cset IntMap.t -> stree -> csetl IntMap.t
 
 (* Building up aparts. *)
 
@@ -79,7 +80,7 @@ val apart_nu: apart -> sizem -> int
 
 (* The recursion, as it were. *)
 
-val phi_recurse: int -> question -> phi -> phi * int
+val phi_recurse: csetl IntMap.t -> int -> question -> phi -> phi * int
 (** phi_recurse t node_num q phi returns a phi map which includes the answer
  * to the posed question.
  *

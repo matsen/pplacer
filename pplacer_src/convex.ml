@@ -73,7 +73,7 @@ let between colors = all
      (fun (x, y) -> ColorSet.inter x y)
      (Base.list_pairs_of_single colors))
 
-let build_sizem_and_csetm (colors, tree) =
+let build_sizem_and_cutsetm (colors, tree) =
   (* Building an internal_node -> szm, color_below map. *)
   let rec aux = function
     | Leaf i ->
@@ -138,6 +138,27 @@ let build_sizem_and_csetm (colors, tree) =
   let clm = aux ColorSet.empty clm tree in
   szm, clm
 
+let cutsetlm_of_cutsetm_and_tree cutsetm tree =
+  let rec aux accum = function
+    | [] -> accum
+    | Leaf i :: rest ->
+      aux
+        (IntMap.add i [] accum)
+        rest
+    | Node (i, subtrees) :: rest ->
+      aux
+        (IntMap.add
+           i
+           (List.map
+              (function
+                | Leaf i
+                | Node (i, _) -> IntMap.find i cutsetm)
+              subtrees)
+           accum)
+        (List.rev_append subtrees rest)
+  in
+  aux IntMap.empty [tree]
+
 let rec powerset = function
   | [] -> [[]]
   | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
@@ -154,21 +175,21 @@ let product lists =
   in
   aux [] [] lists
 
-(* Find the potential distributions of a color across a list of color sets. *)
-let csetdist csetl color =
+(* Find the potential distributions of a color across a list of cut sets. *)
+let cutsetdist cutsetl color =
   let rec aux base accum = function
     | [] -> List.map List.rev accum
-    | cset :: rest ->
+    | cutset :: rest ->
       let accum = List.map (fun x -> ColorSet.empty :: x) accum in
       let accum =
-        if ColorSet.mem color cset then
+        if ColorSet.mem color cutset then
           (ColorSet.singleton color :: base) :: accum
         else
           accum
       in
       aux (ColorSet.empty :: base) accum rest
   in
-  aux [] [] csetl
+  aux [] [] cutsetl
 
 (* Transpose a list of lists, then fold a function along the new list of lists.
  * e.g. transposed_fold (+) [0; 0] [[1; 2]; [3; 4]] -> [4; 6] *)
@@ -195,9 +216,9 @@ let is_apart (b, pi) x =
     | None, 0 -> true
     | _, _ -> false
 
-let build_apartl csetl (c, x) =
-  let csetl = List.map (ColorSet.inter x) csetl in
-  let big_b = ColorOptSet.add c (coptset_of_cset (between csetl)) in
+let build_apartl cutsetl (c, x) =
+  let cutsetl = List.map (ColorSet.inter x) cutsetl in
+  let big_b = ColorOptSet.add c (coptset_of_cset (between cutsetl)) in
   let apartl = ColorOptSet.fold
     (fun b accum ->
       let to_split = ColorOptSet.remove b big_b in
@@ -205,10 +226,10 @@ let build_apartl csetl (c, x) =
         (List.map
            (ColorSet.partition
               (fun color -> ColorOptSet.mem (Some color) to_split))
-           csetl)
+           cutsetl)
       in
       let q = all csl_unsimple in
-      let dist = List.map (csetdist csetl) (ColorSet.elements q) in
+      let dist = List.map (cutsetdist cutsetl) (ColorSet.elements q) in
       let prod = product dist in
       let pis =
         List.map
