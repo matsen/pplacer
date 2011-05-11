@@ -142,6 +142,7 @@ let rec powerset = function
   | [] -> [[]]
   | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
 
+(* Cartesian product of a list list. *)
 let product lists =
   let rec aux accum base = function
     | [] -> (List.rev base) :: accum
@@ -201,6 +202,7 @@ let build_apartl csetl (c, x) =
           (transposed_fold ColorSet.union csl_simple)
           prod
       in
+      (* Unpack from a color set list list to an apart list. *)
       List.fold_left
         (fun accum pi -> (b, pi) :: accum)
         accum

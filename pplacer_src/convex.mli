@@ -96,10 +96,11 @@ val phi_recurse: int -> question -> phi -> phi * int
  *
  * First make sure that the question isn't already answered in phi.
  * If so, return phi.
+ * If question is (b, empty set) then return 0, phi
  * Otherwise...
 
  let csetl = IntMap.find node_num csetlm
- let apartl = build_sizem csetl q in
+ let apartl = build_apartl csetl q in
  let nul = List.map apart_nu apartl in
 
  ... sort the apartl in decreasing order according to nul ...
@@ -116,6 +117,11 @@ val phi_recurse: int -> question -> phi -> phi * int
    otherwise if apart is (b, pi) then for each x_i pi, then recur down the
    subtree i with the question (b, x_i).
    take that phi and pass on to the next subtree.
+
+   If it's a leaf, then just return the same phi and 0 if the incoming question
+   is not empty and one otherwise (assert that it doesn't have more than one
+   elt.)
+
 
 *)
 
