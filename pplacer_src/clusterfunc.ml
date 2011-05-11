@@ -127,12 +127,12 @@ module Cluster (B: BLOB) =
               init_aux l
         | [] -> ()
       in
-      Printf.printf "making the cble set...";
+      Printf.printf "preparing the objects to be clustered...";
       flush_all ();
       init_aux (List.map snd blobl);
       print_endline "done.";
       (* now actually perform the clustering *)
-      let n_blobs = BMap.fold (fun _ _ i -> i+1) (!bmapr) 0 in
+      let n_blobs = IntMap.fold (fun _ _ i -> i+1) (!blobim) 0 in
       assert (n_blobs > 0);
       let rec merge_aux bmap cset free_index =
         Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
