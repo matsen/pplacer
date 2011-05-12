@@ -7,7 +7,7 @@
 open Subcommand
 open Guppy_cmdobjs
 open MapsSets
-open Clusterfunc
+open Squashfunc
 
 module NPreBlob =
   struct
@@ -16,7 +16,7 @@ module NPreBlob =
     let merge (l1, p1) (l2, p2) = (l1 @ l2, p1 @ p2)
   end
 
-module NPreCluster = Cluster (NPreBlob)
+module NPreSquash = Squash (NPreBlob)
 
 let classify_mode_str = function
   | "unit" -> Tax_gtree.of_refpkg_unit
@@ -63,7 +63,7 @@ let make_cluster transform weighting criterion refpkgo mode_str prl =
     if mode_str = "" then begin
       (* phylogenetic clustering *)
       (Decor_gtree.of_newick_gtree rt,
-        NPreCluster.of_named_blobl (distf rt) normf (prep prel))
+        NPreSquash.of_named_blobl (distf rt) normf (prep prel))
     end
     else
       (* taxonomic clustering *)
@@ -75,7 +75,7 @@ let make_cluster transform weighting criterion refpkgo mode_str prl =
             (classify_mode_str mode_str)
             weighting criterion rp prl in
         (taxt,
-          NPreCluster.of_named_blobl (distf taxt) normf (prep tax_prel))
+          NPreSquash.of_named_blobl (distf taxt) normf (prep tax_prel))
     end
   in
   (drt, cluster_t, IntMap.map snd numbered_blobim)
@@ -139,8 +139,8 @@ object (self)
       (* bootstrap turned off *)
       let (drt, cluster_t, blobim) =
         make_cluster transform weighting criterion refpkgo mode_str prl in
-      Newick_gtree.to_file cluster_t (path Cluster_common.cluster_tree_name);
-      let outdir = path Cluster_common.mass_trees_dirname in mkdir outdir;
+      Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
+      let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
       let path = Filename.concat outdir in
       (* make a tax tree here then run mimic on it *)
       match refpkgo with
@@ -153,7 +153,7 @@ object (self)
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in
           let tax_blobim =
-            IntMap.map snd (NPreCluster.mimic cluster_t (numberize tax_prel))
+            IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
           in
           IntMap.iter (self#write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
     end

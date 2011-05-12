@@ -23,7 +23,7 @@ sig
   val compare: t -> t -> int
 end
 
-module Cluster (B: BLOB) =
+module Squash (B: BLOB) =
   struct
 
     module OrderedBlob =
