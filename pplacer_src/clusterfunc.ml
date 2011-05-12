@@ -133,7 +133,7 @@ module Cluster (B: BLOB) =
       (* now actually perform the clustering *)
       (* * Main recursion ** *)
       let rec merge_aux bmap cset free_index normm blobim barkm =
-        Printf.printf "step %d of %d\n" (free_index - n_blobs) (n_blobs - 1);
+        Printf.printf "step %d of %d\n" (free_index - n_blobs + 1) n_blobs;
         flush_all ();
         if CSet.cardinal cset = 0 then begin
           let (_, stree) = get_only_binding bmap in
@@ -145,8 +145,9 @@ module Cluster (B: BLOB) =
           and tbig = BMap.find next.big bmap
           and merged = B.merge next.small next.big
           in
-          let new_normm = BMap.add merged (normf merged) normm
-          in
+          let new_normm = BMap.add merged (normf merged) normm in
+          (* Calculate the proper branch length for the blob to the merged, then
+           * add it to the given bark map. *)
           let add_bl b barkm =
             Newick_bark.map_set_bl
               (Stree.top_id (BMap.find b bmap))
@@ -191,13 +192,4 @@ module Cluster (B: BLOB) =
       !blobim
   end
 
-
-module PreBlob =
-  struct
-    type t = Mass_map.Pre.t
-    let compare = Pervasives.compare
-    let merge b1 b2 = b1 @ b2
-  end
-
-module PreCluster = Cluster (PreBlob)
 

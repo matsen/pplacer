@@ -341,6 +341,6 @@ let run_file prefs query_fname =
   let children =
     List.map
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
-      (range (Prefs.children prefs)) in
+      (Base.range (Prefs.children prefs)) in
   event_loop children;
   donefunc ()
