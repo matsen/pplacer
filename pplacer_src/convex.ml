@@ -73,7 +73,7 @@ let between colors = all
      (fun (x, y) -> ColorSet.inter x y)
      (Base.list_pairs_of_single colors))
 
-let build_sizem_and_cutsetm (colors, tree) =
+let build_sizemim_and_cutsetim (colors, tree) =
   (* Building an internal_node -> szm, color_below map. *)
   let rec aux = function
     | Leaf i ->
@@ -94,9 +94,9 @@ let build_sizem_and_cutsetm (colors, tree) =
   in
   let _, _, leafm = aux tree in
   let szm = IntMap.map fst leafm
-  and clm = IntMap.map snd leafm
+  and below_clm = IntMap.map snd leafm
   in
-  (* Refines the clm to just map to the cut colors.
+  (* Refines the below_clm to just map to the cut colors.
    * The procedure is to erase non-between colors as we proceed down the tree.
    * Accum is the partially-erased color set IntMap.
    * Terminated are the colors for which exist on the "above" side of this
@@ -135,8 +135,8 @@ let build_sizem_and_cutsetm (colors, tree) =
         colorsets
         subtrees
   in
-  let clm = aux ColorSet.empty clm tree in
-  szm, clm
+  let cut_clm = aux ColorSet.empty below_clm tree in
+  szm, cut_clm
 
 let cutsetlm_of_cutsetm_and_tree cutsetm tree =
   let rec aux accum = function
@@ -259,10 +259,26 @@ let single_nu cset sizem =
     cset
     0
 
-let list_nu csetl sizem =
-  List.fold_left
-    (fun accum cset -> (single_nu cset sizem) + accum)
-    0
-    csetl
+(* We take the total number of colors below that are not excluded by the chosen
+ * subset of cutset. *)
+let single_naive_upper sizem ~cutset ~chosen =
+  assert(chosen is a subset of cutset);
+  let below_colors = ColorMap.keys sizem in
+  assert(cutset is a subset of below_colors);
+  single_nu (ColorSet.diff below_colors (ColorSet.diff cutset chosen)) sizem
 
-let apart_nu (_, csetl) sizem = list_nu csetl sizem
+let single_naive_upper_by_map sizemim cutsetim id chosen =
+  single_naive_upper
+    (IntMap.find sizemim id)
+    ~cutset:(IntMap.find cutsetim id)
+    ~chosen:chosen
+
+let pi_naive_upper t sizemim cutsetim pi =
+  match t with
+  | Leaf id ->
+      pi should be a single element, ie. {pi}. check this.
+      return one or zero depending on if pi is empty or not
+  | Node(id, subtrees) ->
+      fold across pi and subtrees in lockstep, totalling up the single_naive
+      upper for the id of the subtree, and the chosen coming from pi
+

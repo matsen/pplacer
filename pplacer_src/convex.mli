@@ -33,14 +33,9 @@ val between: csetl -> cset
 
 (* Getting ready. *)
 
-val build_sizem_and_cutsetm: cdtree -> sizem IntMap.t * cset IntMap.t
+val build_sizemim_and_cutsetim: cdtree -> sizem IntMap.t * cset IntMap.t
 (** Given a colored tree, for every (integer-indexed) node record the number of
  * leaves below with a given color.
- *
- * NOTE: it may be easier, smaller, and faster to just have a integer matrix, indexed
- * first by the edge number and second by the color.
- *
- * This matrix will be sparse, but not outrageously so.
  *
  * Make a map that goes from every internal node to the color sets in the
  * subtrees below that internal node. *)
@@ -70,6 +65,11 @@ val single_nu: cset -> sizem -> int
  * cset. That is, it gives the number of leaves that are below with colors in
  * cset. *)
 
+val single_naive_upper: chosen:cset -> cutset:cset -> sizem -> int
+(** naive_upper chosent cutset sizem gives an naive (i.e. ignoring convexity)
+ * upper bound for the number of leaves below that could be allowed if we select
+ * the chosen subset of the cutset. *)
+
 val list_nu: csetl -> sizem -> int
 (** list_nu csetl sizem simply totals up the calues of single_nu applied to the
  * given csetl. *)
@@ -80,19 +80,30 @@ val apart_nu: apart -> sizem -> int
 
 (* The recursion, as it were. *)
 
-val phi_recurse: csetl IntMap.t -> int -> question -> phi -> phi * int
-(** phi_recurse t node_num q phi returns a phi map which includes the answer
+val phi_recurse: int -> question -> phi -> phi * int
+(** phi_recurse id q phi returns a phi map which includes the answer
  * to the posed question.
  *
  * NOTE: this is not an independent function, but a closure inside solve that
- * has access to sizem and csetlm.
+ * has access to sizem and cutsetlm.
  *
+ *
+  let cutset = IntMap.find id cutsetm in
+  let below_cutsetl = List.map (fun t -> IntMap.find (top_id t) cutsetm) in
+  let apartl = build_apartl below_cutsetl q in
+
+  ... recurse below for each apartl, and find the one with the best total ...
+  ( we will have to pass the phi on to each one through the list, accumulating )
+  add this one to phi, and return phi and the best score
+ *
+ *)
+
+(* Version with lower bounds.
  * First make sure that the question isn't already answered in phi.
  * If so, return phi.
- * If question is (b, empty set) then return 0, phi
  * Otherwise...
 
- let csetl = IntMap.find node_num csetlm
+ let csetl = IntMap.find node_num cutsetlm
  let apartl = build_apartl csetl q in
  let nul = List.map apart_nu apartl in
 
@@ -115,14 +126,12 @@ val phi_recurse: csetl IntMap.t -> int -> question -> phi -> phi * int
    is not empty and one otherwise (assert that it doesn't have more than one
    elt.)
 
-
 *)
 
 val solve: cdtree -> phi * int
 (**
 
- let sizem = build_sizem yada yada
- let csetlm = build_csetlm yada yada
+ let (sizem, cutsetm) = build_sizemim_and_cutsetim (colors, tree) in
 
 - run phi_recurse
 
