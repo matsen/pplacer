@@ -1,7 +1,22 @@
+(* This is where squash clustering actually gets used.
+ *
+ * Note that in the definition below, the objects being clustered are
+ * pairs of a number list and a pre. This means that identical pres
+ * don't get lost when we use them as keys. *)
+
 open Subcommand
 open Guppy_cmdobjs
-open Clusterfunc
 open MapsSets
+open Squashfunc
+
+module NPreBlob =
+  struct
+    type t = int list * Mass_map.Pre.t
+    let compare = Pervasives.compare
+    let merge (l1, p1) (l2, p2) = (l1 @ l2, p1 @ p2)
+  end
+
+module NPreSquash = Squash (NPreBlob)
 
 let classify_mode_str = function
   | "unit" -> Tax_gtree.of_refpkg_unit
@@ -19,29 +34,36 @@ let tax_t_prel_of_prl tgt_fun weighting criterion rp prl =
 
 let zeropad i = Printf.sprintf "%04d" i
 
-
 let mkdir path =
   try
     Unix.mkdir path 0o755
   with
     | Unix.Unix_error (Unix.EEXIST, _, _) -> ()
 
+(*
+# numberize [5;4;3];;
+- : (int list * int) list = [([0], 5); ([1], 4); ([2], 3)]
+*)
+let numberize l =
+  List.combine (List.map (fun i -> [i]) (Base.range (List.length l))) l
+
 let make_cluster transform weighting criterion refpkgo mode_str prl =
   let namel = List.map Placerun.get_name prl
-  and distf rt ~x1 ~x2 b1 b2 =
+  and distf rt ~x1 ~x2 (_,b1) (_,b2) =
     Kr_distance.dist_of_pres transform 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
-  and normf a = 1. /. (Mass_map.Pre.total_mass transform a)
+  and normf (_,a) = 1. /. (Mass_map.Pre.total_mass transform a)
   in
   let (rt, prel) = t_prel_of_prl weighting criterion prl
+  and prep prel =
+    List.combine
+      namel
+      (numberize (List.map (Mass_map.Pre.normalize_mass transform) prel))
   in
-  let (drt, (cluster_t, blobim)) =
+  let (drt, (cluster_t, numbered_blobim)) =
     if mode_str = "" then begin
       (* phylogenetic clustering *)
       (Decor_gtree.of_newick_gtree rt,
-      PreCluster.of_named_blobl (distf rt) normf
-        (List.combine
-          namel
-          (List.map (Mass_map.Pre.normalize_mass transform) prel)))
+        NPreSquash.of_named_blobl (distf rt) normf (prep prel))
     end
     else
       (* taxonomic clustering *)
@@ -53,15 +75,10 @@ let make_cluster transform weighting criterion refpkgo mode_str prl =
             (classify_mode_str mode_str)
             weighting criterion rp prl in
         (taxt,
-          PreCluster.of_named_blobl
-            (distf taxt)
-            normf
-            (List.combine
-              namel
-              (List.map (Mass_map.Pre.normalize_mass transform) tax_prel)))
+          NPreSquash.of_named_blobl (distf taxt) normf (prep tax_prel))
     end
   in
-  (drt, cluster_t, blobim)
+  (drt, cluster_t, IntMap.map snd numbered_blobim)
 
 class cmd () =
 object (self)
@@ -122,8 +139,8 @@ object (self)
       (* bootstrap turned off *)
       let (drt, cluster_t, blobim) =
         make_cluster transform weighting criterion refpkgo mode_str prl in
-      Newick_gtree.to_file cluster_t (path Cluster_common.cluster_tree_name);
-      let outdir = path Cluster_common.mass_trees_dirname in mkdir outdir;
+      Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
+      let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
       let path = Filename.concat outdir in
       (* make a tax tree here then run mimic on it *)
       match refpkgo with
@@ -135,7 +152,9 @@ object (self)
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in
-          let tax_blobim = PreCluster.mimic cluster_t tax_prel in
+          let tax_blobim =
+            IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
+          in
           IntMap.iter (self#write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
     end
     else begin
