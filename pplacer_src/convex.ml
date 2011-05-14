@@ -62,10 +62,10 @@ type apart = color option * csetl  (* apart = almost partition *)
 type sizem = int ColorMap.t
 type colorm = color IntMap.t
 type cdtree = colorm * stree
-type local_phi = apart QuestionMap.t
+type local_phi = (apart * int) QuestionMap.t
 type phi = local_phi IntMap.t
 
-module XXX = Newick_gtree
+module XXX = Refpkg
 
 let all colors = List.fold_left ColorSet.union ColorSet.empty colors
 let between colors = all
@@ -107,19 +107,14 @@ let build_sizemim_and_cutsetim (colors, tree) =
     | Leaf _ -> accum
     | Node (_, subtrees) ->
       let colorsets = List.map
-        (function
-          | Leaf i
-          | Node (i, _) -> IntMap.find i accum)
+        (fun tree -> IntMap.find (top_id tree) accum)
         subtrees
       in
       (* Update terminated. *)
       let terminated' = ColorSet.union terminated (between colorsets) in
       List.fold_left2
         (fun accum colors tree ->
-          let i = match tree with
-            | Leaf i
-            | Node (i, _) -> i
-          in
+          let i = top_id tree in
           (* colors' are just those edge colors in terminated' *)
           let colors' = ColorSet.inter colors terminated' in
           if colors = colors' then
@@ -138,26 +133,27 @@ let build_sizemim_and_cutsetim (colors, tree) =
   let cut_clm = aux ColorSet.empty below_clm tree in
   szm, cut_clm
 
-let cutsetlm_of_cutsetm_and_tree cutsetm tree =
+let subtreelist_map f tree =
   let rec aux accum = function
     | [] -> accum
     | Leaf i :: rest ->
       aux
-        (IntMap.add i [] accum)
+        (IntMap.add i [f i] accum)
         rest
     | Node (i, subtrees) :: rest ->
       aux
         (IntMap.add
            i
            (List.map
-              (function
-                | Leaf i
-                | Node (i, _) -> IntMap.find i cutsetm)
+              (fun tree -> f (top_id tree))
               subtrees)
            accum)
         (List.rev_append subtrees rest)
   in
   aux IntMap.empty [tree]
+
+let maplist_of_map_and_tree map =
+  subtreelist_map (fun i -> IntMap.find i map)
 
 let rec powerset = function
   | [] -> [[]]
@@ -206,6 +202,15 @@ let transposed_fold f start ll =
 let coptset_of_cset cset =
   ColorSet.fold (fun c s -> ColorOptSet.add (Some c) s) cset ColorOptSet.empty
 
+let cset_of_coptset coptset =
+  ColorOptSet.fold
+    (fun c s ->
+      match c with
+        | Some c' -> ColorSet.add c' s
+        | None -> s)
+    coptset
+    ColorSet.empty
+
 let is_apart (b, pi) x =
   let all_colors = all pi
   and between_colors = between pi in
@@ -216,29 +221,43 @@ let is_apart (b, pi) x =
     | None, 0 -> true
     | _, _ -> false
 
-let build_apartl cutsetl (c, x) =
-  let cutsetl = List.map (ColorSet.inter x) cutsetl in
-  let big_b = ColorOptSet.add c (coptset_of_cset (between cutsetl)) in
+let build_apartl cutsetl kappa (c, x) =
+  let x' = coptset_of_cset x in
+  let to_cut = coptset_of_cset (ColorSet.diff kappa x) in
+  let c_in_x = ColorOptSet.mem c x' in
+  let check_pi b pi =
+    if c_in_x || ColorSet.is_empty (between pi) then
+      b = c
+    else
+      true
+  in
+  let big_b = ColorOptSet.add c (ColorOptSet.diff (coptset_of_cset (between cutsetl)) to_cut) in
   let apartl = ColorOptSet.fold
     (fun b accum ->
-      let to_split = ColorOptSet.remove b big_b in
-      let csl_unsimple, csl_simple = List.split
-        (List.map
-           (ColorSet.partition
-              (fun color -> ColorOptSet.mem (Some color) to_split))
-           cutsetl)
+      let to_distribute = ColorSet.union
+        x
+        (cset_of_coptset (ColorOptSet.diff (ColorOptSet.remove b big_b) to_cut))
       in
-      let q = all csl_unsimple in
-      let dist = List.map (cutsetdist cutsetl) (ColorSet.elements q) in
+      let dist = List.map
+        (cutsetdist cutsetl)
+        (ColorSet.elements to_distribute)
+      in
       let prod = product dist in
+      let starts = List.map
+        begin match b with
+          | Some b' -> ColorSet.inter (ColorSet.singleton b')
+          | None -> fun _ -> ColorSet.empty
+        end
+        cutsetl
+      in
       let pis =
         List.map
-          (transposed_fold ColorSet.union csl_simple)
+          (transposed_fold ColorSet.union starts)
           prod
       in
       (* Unpack from a color set list list to an apart list. *)
       List.fold_left
-        (fun accum pi -> (b, pi) :: accum)
+        (fun accum pi -> if check_pi b pi then (b, pi) :: accum else accum)
         accum
         pis)
     big_b
@@ -258,27 +277,104 @@ let single_nu cset sizem =
       size + accum)
     cset
     0
+let list_nu csetl sizeml =
+  List.fold_left2
+    (fun accum cset sizem -> (single_nu cset sizem) + accum)
+    0
+    csetl
+    sizeml
 
-(* We take the total number of colors below that are not excluded by the chosen
- * subset of cutset. *)
-let single_naive_upper sizem ~cutset ~chosen =
-  assert(chosen is a subset of cutset);
-  let below_colors = ColorMap.keys sizem in
-  assert(cutset is a subset of below_colors);
-  single_nu (ColorSet.diff below_colors (ColorSet.diff cutset chosen)) sizem
+let apart_nu (_, csetl) sizeml = list_nu csetl sizeml
 
-let single_naive_upper_by_map sizemim cutsetim id chosen =
-  single_naive_upper
-    (IntMap.find sizemim id)
-    ~cutset:(IntMap.find cutsetim id)
-    ~chosen:chosen
 
-let pi_naive_upper t sizemim cutsetim pi =
-  match t with
-  | Leaf id ->
-      pi should be a single element, ie. {pi}. check this.
-      return one or zero depending on if pi is empty or not
-  | Node(id, subtrees) ->
-      fold across pi and subtrees in lockstep, totalling up the single_naive
-      upper for the id of the subtree, and the chosen coming from pi
+let add_phi node question answer phi =
+  let local_phi =
+    try
+      IntMap.find node phi
+    with
+      | Not_found -> QuestionMap.empty
+  in
+  let local_phi' = QuestionMap.add question answer local_phi in
+  IntMap.add node local_phi' phi
 
+let null_apart = None, []
+
+let rec phi_recurse cutsetm tree ((_, x) as question) phi =
+  let i = top_id tree in
+  match begin
+    try
+      Some (QuestionMap.find question (IntMap.find i phi))
+    with
+      | Not_found -> None
+  end with
+    | Some (_, nu) -> phi, nu
+    | None ->
+
+  let phi, apart, nu = match tree with
+    | Leaf _ ->
+      let nu = if x = IntMap.find i cutsetm then 1 else 0 in
+      phi, null_apart, nu
+    | Node (_, subtrees) ->
+      let cutsetl = List.map
+        (fun subtree -> IntMap.find (top_id subtree) cutsetm)
+        subtrees
+      in
+      let apartl = build_apartl cutsetl (IntMap.find i cutsetm) question in
+      let apart_nu phi (c, csetl) =
+        List.fold_left2
+          (fun (phi, cur) cset subtree ->
+            let phi, nu = phi_recurse cutsetm subtree (c, cset) phi in
+            phi, cur + nu)
+          (phi, 0)
+          csetl
+          subtrees
+      in
+      let phi, res =
+        List.fold_left
+          (fun (phi, cur) apart ->
+            let phi, nu = apart_nu phi apart in
+            match cur with
+              | None -> phi, Some (nu, apart)
+              | Some (old_nu, _) when nu > old_nu -> phi, Some (nu, apart)
+              | _ -> phi, cur)
+          (phi, None)
+          apartl
+      in
+      let nu, apart = match res with
+        | Some t -> t
+        | None -> failwith "no apartl?"
+      in
+      phi, apart, nu
+  in
+  let phi' = add_phi i question (apart, nu) phi in
+  phi', nu
+
+
+let solve ((_, tree) as cdtree) =
+  let _, cutsetm = build_sizemim_and_cutsetim cdtree in
+  let cutsetm = IntMap.add (top_id tree) ColorSet.empty cutsetm in
+  phi_recurse cutsetm tree (None, ColorSet.empty) IntMap.empty
+
+let nodeset_of_phi_and_tree phi tree =
+  let rec aux accum = function
+    | (Leaf i, question) :: rest ->
+      let _, nu = QuestionMap.find question (IntMap.find i phi) in
+      let accum =
+        if nu = 0 then
+          accum
+        else
+          IntSet.add i accum
+      in
+      aux accum rest
+    | (Node (i, subtrees), question) :: rest ->
+      let (c, csetl), _ = QuestionMap.find question (IntMap.find i phi) in
+      let rest' = List.fold_left2
+        (fun rest cset subtree -> (subtree, (c, cset)) :: rest)
+        rest
+        csetl
+        subtrees
+      in
+      aux accum rest'
+    | [] -> accum
+  in
+  aux IntSet.empty [tree, (None, ColorSet.empty)]
