@@ -77,9 +77,19 @@ let build_sizemim_and_cutsetim (colors, tree) =
   (* Building an internal_node -> szm, color_below map. *)
   let rec aux = function
     | Leaf i ->
-      let color = IntMap.find i colors in
-      let szm = ColorMap.singleton color 1
-      and clbelow = ColorSet.singleton color in
+      let szm, clbelow = match begin
+        try
+          Some (IntMap.find i colors)
+        with
+          | Not_found -> None
+      end with
+        | Some color ->
+          let szm = ColorMap.singleton color 1
+          and clbelow = ColorSet.singleton color in
+          szm, clbelow
+        | None ->
+          ColorMap.empty, ColorSet.empty
+      in
       szm, clbelow, IntMap.singleton i (szm, clbelow)
     | Node (i, subtrees) ->
       let maps = List.map aux subtrees in
@@ -265,6 +275,16 @@ let build_apartl cutsetl kappa (c, x) =
   in
   apartl
 
+let build_apartl_memo = Hashtbl.create 1024
+let build_apartl_memoized a b c =
+  try
+    Hashtbl.find build_apartl_memo (a, b, c)
+  with
+    | Not_found ->
+      let ret = build_apartl a b c in
+      Hashtbl.add build_apartl_memo (a, b, c) ret;
+      ret
+
 let single_nu cset sizem =
   ColorSet.fold
     (fun color accum ->
@@ -310,16 +330,20 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
     | Some (_, nu) -> phi, nu
     | None ->
 
-  let phi, apart, nu = match tree with
+  let phi, res = match tree with
     | Leaf _ ->
       let nu = if x = IntMap.find i cutsetm then 1 else 0 in
-      phi, null_apart, nu
+      phi, Some (nu, null_apart)
     | Node (_, subtrees) ->
       let cutsetl = List.map
         (fun subtree -> IntMap.find (top_id subtree) cutsetm)
         subtrees
       in
-      let apartl = build_apartl cutsetl (IntMap.find i cutsetm) question in
+      let apartl = build_apartl_memoized
+        cutsetl
+        (IntMap.find i cutsetm)
+        question
+      in
       let apart_nu phi (c, csetl) =
         List.fold_left2
           (fun (phi, cur) cset subtree ->
@@ -329,30 +353,41 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
           csetl
           subtrees
       in
-      let phi, res =
-        List.fold_left
-          (fun (phi, cur) apart ->
-            let phi, nu = apart_nu phi apart in
-            match cur with
-              | None -> phi, Some (nu, apart)
-              | Some (old_nu, _) when nu > old_nu -> phi, Some (nu, apart)
-              | _ -> phi, cur)
-          (phi, None)
-          apartl
-      in
-      let nu, apart = match res with
-        | Some t -> t
-        | None -> failwith "no apartl?"
-      in
-      phi, apart, nu
+      List.fold_left
+        (fun (phi, cur) apart ->
+          let phi, nu = apart_nu phi apart in
+          match cur with
+            | None -> phi, Some (nu, apart)
+            | Some (old_nu, _) when nu > old_nu -> phi, Some (nu, apart)
+            | _ -> phi, cur)
+        (phi, None)
+        apartl
   in
-  let phi' = add_phi i question (apart, nu) phi in
-  phi', nu
+  match res with
+    | Some (nu, apart) ->
+      let phi' = add_phi i question (apart, nu) phi in
+      phi', nu
+    | None -> phi, 0
 
+let badness cutsetm tree =
+  let badness_i i = max 0 ((ColorSet.cardinal (IntMap.find i cutsetm)) - 1) in
+  let rec aux worst total = function
+    | Leaf i :: rest ->
+      let b = badness_i i in
+      aux (max worst b) (total + b) rest
+    | Node (i, subtrees) :: rest ->
+      let b = badness_i i in
+      aux (max worst b) (total + b) (List.rev_append subtrees rest)
+    | [] -> worst, total
+  in
+  aux 0 0 [tree]
 
 let solve ((_, tree) as cdtree) =
   let _, cutsetm = build_sizemim_and_cutsetim cdtree in
   let cutsetm = IntMap.add (top_id tree) ColorSet.empty cutsetm in
+  let max_badness, tot_badness = badness cutsetm tree in
+  Printf.printf "%d max %d tot" max_badness tot_badness; print_newline ();
+  Hashtbl.clear build_apartl_memo;
   phi_recurse cutsetm tree (None, ColorSet.empty) IntMap.empty
 
 let nodeset_of_phi_and_tree phi tree =
@@ -378,3 +413,80 @@ let nodeset_of_phi_and_tree phi tree =
     | [] -> accum
   in
   aux IntSet.empty [tree, (None, ColorSet.empty)]
+
+let name_map_of_bark_map bark_map =
+  IntMap.fold
+    (fun i bark accum ->
+      try
+        StringMap.add bark#get_name i accum
+      with
+        | Newick_bark.No_name -> accum)
+    bark_map
+    StringMap.empty
+
+let rank_color_map_of_refpkg rp =
+  let gt = Refpkg.get_ref_tree rp in
+  let node_map = name_map_of_bark_map gt.Gtree.bark_map in
+  let td = Refpkg.get_taxonomy rp
+  and seqinfo = Refpkg.get_seqinfom rp in
+  let add_to_rankmap seq rankmap ti =
+    match begin
+      try
+        Some (StringMap.find seq node_map)
+      with
+        | Not_found -> None
+    end with
+      | Some node ->
+        let rank = Tax_taxonomy.get_tax_rank td ti in
+        let seqmap =
+          try
+            IntMap.find rank rankmap
+          with
+            | Not_found -> IntMap.empty
+        in
+        IntMap.add
+          rank
+          (IntMap.add node (Tax_taxonomy.get_tax_name td ti) seqmap)
+          rankmap
+      | None -> rankmap
+  in
+  StringMap.fold
+    (fun seq {Tax_seqinfo.tax_id = ti} rankmap ->
+      List.fold_left
+        (add_to_rankmap seq)
+        rankmap
+        (Tax_taxonomy.get_lineage td ti))
+    seqinfo
+    IntMap.empty
+
+let f () =
+  let rp = Refpkg.of_path "../microbiome-demo/vaginal_16s.refpkg" in
+  let gt = Refpkg.get_ref_tree rp in
+  let st = gt.Gtree.stree
+  and td = Refpkg.get_taxonomy rp in
+  IntMap.iter
+    (fun rank colormap ->
+      let phi, nu = solve (colormap, st)
+      and rankname = Tax_taxonomy.get_rank_name td rank in
+      Printf.printf "%s: %d\n" rankname nu;
+      let not_cut = nodeset_of_phi_and_tree phi st in
+      let rec aux accum = function
+        | Leaf i :: rest ->
+          aux
+            (if IntSet.mem i not_cut then
+                accum
+             else
+                IntMap.add i [Decor.red] accum)
+            rest
+        | Node (_, subtrees) :: rest ->
+          aux accum (List.rev_append subtrees rest)
+        | [] -> accum
+      in
+      let decor_map = aux (IntMap.empty) [st] in
+      let gt' = Decor_gtree.add_decor_by_map
+        (Decor_gtree.of_newick_gtree gt)
+        decor_map
+      in
+      Phyloxml.gtree_to_file (rankname ^".xml") gt'
+    )
+    (rank_color_map_of_refpkg rp)
