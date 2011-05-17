@@ -33,7 +33,7 @@ let numbered_distal_map_of_placemap start_num placemap =
 (* pa is an array of placements; the numbering comes from the array index *)
 let numbered_distal_map_of_place_arr pa =
   sort_numbered_distal_map_by_distal
-    (IntMapFuns.of_pairlist_listly
+    (IntMap.of_pairlist_listly
       (Array.to_list
         (Array.mapi
           (fun i p ->

@@ -8,7 +8,7 @@ let prel_of_prl weighting criterion prl =
 
 let make_bary_tree transform t prel =
   let bary_map =
-    IntMapFuns.of_pairlist_listly
+    IntMap.of_pairlist_listly
       (ListFuns.mapi
         (fun i pre ->
           let (loc, pos) = Barycenter.of_pre transform t pre in

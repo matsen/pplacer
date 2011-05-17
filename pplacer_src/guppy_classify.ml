@@ -3,7 +3,7 @@ open Guppy_cmdobjs
 open MapsSets
 
 let escape = Base.sqlite_escape
-module TIAMR = AlgMap.AlgMapR (Tax_id.OrderedTaxId)
+module TIAMR = AlgMap.AlgMapR (Tax_id.TaxIdMap)
 
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
  * the first time that the tax rank is less than or equal to rank *)
@@ -21,8 +21,8 @@ let classify_at_rank td rank ti =
 let keymap_add_by f m =
   List.fold_right
     (fun (k,v) -> (TIAMR.add_by (f k) v))
-    (Tax_id.TaxIdMapFuns.to_pairs m)
-    TIAMR.M.empty
+    (TIAMR.to_pairs m)
+    TIAMR.empty
 
 (* m is a taxid_algmap and this outputs a list of string_arrays, one for each
  * placement *)
@@ -63,13 +63,13 @@ let classify how criterion n_ranks td pr f =
                  (how p)
                  (criterion p))
              (Pquery.place_list pq)
-             (TIAMR.M.empty))
+             (TIAMR.empty))
         in
         for desired_rank=(n_ranks-1) downto 0 do
           m := keymap_add_by (classify_at_rank td desired_rank) !m;
           outmap := IntMap.add
             desired_rank
-            (Tax_id.TaxIdMapFuns.to_pairs (!m))
+            (TIAMR.to_pairs (!m))
             !outmap
         done;
         f pq (!outmap))
