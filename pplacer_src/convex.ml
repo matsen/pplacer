@@ -181,8 +181,12 @@ let product lists =
   in
   aux [] [] lists
 
-(* Find the potential distributions of a color across a list of cut sets. *)
+(* Find the potential distributions of a color across a list of cut sets. That
+ * is, we take the cartesian product of I_i for every i, where i is [{}] if the
+ * color isn't in the ith cut set, and [{color}, {}] if it is. *)
 let cutsetdist cutsetl color =
+  (* We recur over the cut sets below our internal node.
+   * Base is just a list of empty sets of the correct length. *)
   let rec aux base accum = function
     | [] -> List.map List.rev accum
     | cutset :: rest ->
@@ -224,6 +228,7 @@ let cset_of_coptset coptset =
 let is_apart (b, pi) x =
   let all_colors = all pi
   and between_colors = between pi in
+  (* XXX *)
   all_colors <= x
   && match b, ColorSet.cardinal between_colors with
     | Some b', 1 -> ColorSet.choose between_colors = b'
@@ -248,6 +253,8 @@ let build_apartl cutsetl kappa (c, x) =
         x
         (cset_of_coptset (ColorOptSet.diff (ColorOptSet.remove b big_b) to_cut))
       in
+      (* Find the potential distributions of the to_distribute colors into the
+       * cut sets below our internal node. *)
       let dist = List.map
         (cutsetdist cutsetl)
         (ColorSet.elements to_distribute)
@@ -297,6 +304,7 @@ let single_nu cset sizem =
       size + accum)
     cset
     0
+
 let list_nu csetl sizeml =
   List.fold_left2
     (fun accum cset sizem -> (single_nu cset sizem) + accum)
@@ -305,7 +313,6 @@ let list_nu csetl sizeml =
     sizeml
 
 let apart_nu (_, csetl) sizeml = list_nu csetl sizeml
-
 
 let add_phi node question answer phi =
   let local_phi =
