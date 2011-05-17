@@ -27,7 +27,12 @@ end
 
 module COS = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
 
-type question = color option * cset (* a pair (c, X) *)
+(* A question is a pair (c, X) where c is an arbitrary optional color and X is a
+ * subset of the cut set for the edge above the given internal node. The
+ * terminology comes from wanting to know the best solution for such a subtree
+ * where the colors of that cut set are restricted to X, and there is a leaf of
+ * color c attached to the root of the subtree. *)
+type question = color option * cset
 
 module PprQuestion = struct
   type t = question
@@ -344,9 +349,10 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
   end with
     | Some (_, omega) -> phi, omega
     | None ->
-
+  (* Begin real work. *)
   let phi, res = match tree with
     | Leaf _ ->
+      (* Could put in some checks here about the size of cutsetm. *)
       let omega = if x = IntMap.find i cutsetm then 1 else 0 in
       phi, Some (omega, null_apart)
     | Node (_, subtrees) ->
@@ -359,15 +365,19 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
         (IntMap.find i cutsetm)
         question
       in
-      let apart_omega phi (c, csetl) =
+      (* Recur over subtrees to calculate (omega, updated_phi) for the apart
+       * (b, pi). *)
+      let apart_omega phi (b, pi) =
         List.fold_left2
-          (fun (phi, subtotal) cset subtree ->
-            let phi, omega = phi_recurse cutsetm subtree (c, cset) phi in
+          (fun (phi, subtotal) pi_i subtree ->
+            let phi, omega = phi_recurse cutsetm subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
-          csetl
+          pi
           subtrees
       in
+      (* My understanding is that this None/Some below is just to start the
+       * folding going. *)
       List.fold_left
         (fun (phi, cur) apart ->
           let phi, omega = apart_omega phi apart in
@@ -384,6 +394,8 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
       phi', omega
     | None -> phi, 0
 
+(* XXX Do you really need to recur over the tree here? It seems to me that
+ * everything you need is in the cutsetm. *)
 let badness cutsetm tree =
   let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetm)) - 1) in
   let rec aux worst total = function
@@ -405,6 +417,12 @@ let solve ((_, tree) as cdtree) =
   Hashtbl.clear build_apartl_memo;
   phi_recurse cutsetm tree (None, CS.empty) IntMap.empty
 
+(* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
+ * the leaves to include. The recursion works as follows: maintain rest, which
+ * is the list of things that remain to be expanded. If the first element of
+ * rest has a leaf, then add it to the list if appropriate and recur. If not,
+ * expand out the subtrees of the first element of rest and recur.
+ * *)
 let nodeset_of_phi_and_tree phi tree =
   let rec aux accum = function
     | (Leaf i, question) :: rest ->
@@ -417,11 +435,11 @@ let nodeset_of_phi_and_tree phi tree =
       in
       aux accum rest
     | (Node (i, subtrees), question) :: rest ->
-      let (c, csetl), _ = QuestionMap.find question (IntMap.find i phi) in
+      let (b, pi), _ = QuestionMap.find question (IntMap.find i phi) in
       let rest' = List.fold_left2
-        (fun rest cset subtree -> (subtree, (c, cset)) :: rest)
+        (fun rest pi_i subtree -> (subtree, (b, pi_i)) :: rest)
         rest
-        csetl
+        pi
         subtrees
       in
       aux accum rest'
@@ -429,6 +447,7 @@ let nodeset_of_phi_and_tree phi tree =
   in
   aux IntSet.empty [tree, (None, CS.empty)]
 
+(* Make map from names to their respective indices. *)
 let name_map_of_bark_map bark_map =
   IntMap.fold
     (fun i bark accum ->
