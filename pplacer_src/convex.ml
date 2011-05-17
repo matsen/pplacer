@@ -45,19 +45,16 @@ module PprQuestion = struct
     Format.fprintf ff ")@]"
 end
 
-(* XXX this order seems strange to me. *)
 module OrderedQuestion = struct
   type t = question
   let compare (co1, cs1) (co2, cs2) =
     match co1, co2 with
       | Some c1, Some c2 when c1 = c2 ->
         ColorSet.compare cs1 cs2
-      | None, None ->
-        ColorSet.compare cs1 cs2
-
+      | Some c1, Some c2 -> String.compare c1 c2
       | None, Some _ -> -1
       | Some _, None -> 1
-      | Some c1, Some c2 -> String.compare c1 c2
+      | None, None -> ColorSet.compare cs1 cs2
 end
 
 module QuestionMap = BetterMap (Map.Make(OrderedQuestion)) (PprQuestion)
