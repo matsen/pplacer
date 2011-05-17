@@ -236,9 +236,12 @@ let is_apart (b, pi) x =
     | None, 0 -> true
     | _, _ -> false
 
+(* Cutsetl is the list of cut sets below, kappa are those sets colors cut from
+ * the internal node above. *)
 let build_apartl cutsetl kappa (c, x) =
   let x' = coptset_of_cset x in
-  let to_cut = coptset_of_cset (CS.diff kappa x) in
+  (* Anything in kappa - x doesn't get distributed. *)
+  let to_exclude = coptset_of_cset (CS.diff kappa x) in
   let c_in_x = COS.mem c x' in
   let check_pi b pi =
     if c_in_x || CS.is_empty (between pi) then
@@ -246,12 +249,14 @@ let build_apartl cutsetl kappa (c, x) =
     else
       true
   in
-  let big_b = COS.add c (COS.diff (coptset_of_cset (between cutsetl)) to_cut) in
+  let big_b = COS.add c (COS.diff (coptset_of_cset (between cutsetl)) to_exclude) in
   let apartl = COS.fold
     (fun b accum ->
       let to_distribute = CS.union
         x
-        (cset_of_coptset (COS.diff (COS.remove b big_b) to_cut))
+        (* XXX it appears that we are removing to_exclude here for a 2nd time.
+         * *)
+        (cset_of_coptset (COS.diff (COS.remove b big_b) to_exclude))
       in
       (* Find the potential distributions of the to_distribute colors into the
        * cut sets below our internal node. *)
@@ -259,8 +264,10 @@ let build_apartl cutsetl kappa (c, x) =
         (cutsetdist cutsetl)
         (CS.elements to_distribute)
       in
-      let prod = product dist in
-      let starts = List.map
+      (* The list of distributions of just b.
+       * XXX This doesn't quite seem right to me. Shouldn't the inclusion of b
+       * be optional? *)
+      let startsl = List.map
         begin match b with
           | Some b' -> CS.inter (CS.singleton b')
           | None -> fun _ -> CS.empty
@@ -269,10 +276,10 @@ let build_apartl cutsetl kappa (c, x) =
       in
       let pis =
         List.map
-          (transposed_fold CS.union starts)
-          prod
+          (transposed_fold CS.union startsl)
+          (product dist)
       in
-      (* Unpack from a color set list list to an apart list. *)
+      (* Collect up the legal (b, pi) pairs. *)
       List.fold_left
         (fun accum pi -> if check_pi b pi then (b, pi) :: accum else accum)
         accum
