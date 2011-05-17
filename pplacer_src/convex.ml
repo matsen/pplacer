@@ -45,6 +45,7 @@ module PprQuestion = struct
     Format.fprintf ff ")@]"
 end
 
+(* XXX this order seems strange to me. *)
 module OrderedQuestion = struct
   type t = question
   let compare (co1, cs1) (co2, cs2) =
@@ -341,7 +342,7 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
-let rec phi_recurse cutsetm tree ((_, x) as question) phi =
+let rec phi_recurse cutsetim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
     try
@@ -354,17 +355,17 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
   (* Begin real work. *)
   let phi, res = match tree with
     | Leaf _ ->
-      (* Could put in some checks here about the size of cutsetm. *)
-      let omega = if x = IntMap.find i cutsetm then 1 else 0 in
+      (* Could put in some checks here about the size of cutsetim. *)
+      let omega = if x = IntMap.find i cutsetim then 1 else 0 in
       phi, Some (omega, null_apart)
     | Node (_, subtrees) ->
       let cutsetl = List.map
-        (fun subtree -> IntMap.find (top_id subtree) cutsetm)
+        (fun subtree -> IntMap.find (top_id subtree) cutsetim)
         subtrees
       in
       let apartl = build_apartl_memoized
         cutsetl
-        (IntMap.find i cutsetm)
+        (IntMap.find i cutsetim)
         question
       in
       (* Recur over subtrees to calculate (omega, updated_phi) for the apart
@@ -372,7 +373,7 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
       let apart_omega phi (b, pi) =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse cutsetm subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse cutsetim subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
@@ -397,9 +398,9 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
     | None -> phi, 0
 
 (* XXX Do you really need to recur over the tree here? It seems to me that
- * everything you need is in the cutsetm. *)
-let badness cutsetm tree =
-  let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetm)) - 1) in
+ * everything you need is in the cutsetim. *)
+let badness cutsetim tree =
+  let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetim)) - 1) in
   let rec aux worst total = function
     | Leaf i :: rest ->
       let b = badness_i i in
@@ -412,12 +413,12 @@ let badness cutsetm tree =
   aux 0 0 [tree]
 
 let solve ((_, tree) as cdtree) =
-  let _, cutsetm = build_sizemim_and_cutsetim cdtree in
-  let cutsetm = IntMap.add (top_id tree) CS.empty cutsetm in
-  let max_badness, tot_badness = badness cutsetm tree in
+  let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+  let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
+  let max_badness, tot_badness = badness cutsetim tree in
   Printf.printf "%d max %d tot" max_badness tot_badness; print_newline ();
   Hashtbl.clear build_apartl_memo;
-  phi_recurse cutsetm tree (None, CS.empty) IntMap.empty
+  phi_recurse cutsetim tree (None, CS.empty) IntMap.empty
 
 (* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
  * the leaves to include. The recursion works as follows: maintain rest, which
