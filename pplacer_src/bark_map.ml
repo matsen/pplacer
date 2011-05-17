@@ -3,10 +3,10 @@
 
 open MapsSets
 
-let union = IntMapFuns.union
+let union = IntMap.union
 
 let ppr ff bm =
-  IntMapFuns.ppr_gen (fun ff bark -> bark#ppr ff) ff bm
+  IntMap.ppr_gen (fun ff bark -> bark#ppr ff) ff bm
 
 let boost by m =
   IntMap.fold (fun k v -> IntMap.add (k+by) v) m IntMap.empty

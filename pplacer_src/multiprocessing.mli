@@ -35,4 +35,3 @@ val fold:
 val event_loop: 'a process list -> unit
 val queue_of_list: 'a list -> 'a Queue.t
 val marshal: out_channel -> 'a -> unit
-val range: int -> int list

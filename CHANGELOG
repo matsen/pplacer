@@ -2,11 +2,15 @@
 1.1.alpha06
 ===========
 
-* Renamed the `--normal` flag for `guppy kr` to `--gaussian` to avoid confusion
-  with normalization.
-* Only one shuffle at a time is now stored in memory (big savings, obviously).
-* Fixed bug that was throwing off `guppy kr` shuffling significance estimation.
-* Closed GH-20: efficiency of kr_distance evaluated and approved.
+ * Closed GH-20: efficiency of kr_distance evaluated and approved.
+ * Closed GH-48: better error reporting when loading json placefiles.
+ * Closed GH-51: only parsing the first word as a sequence name in a fasta file.
+ * Renamed the `--normal` flag for `guppy kr` to `--gaussian` to avoid confusion
+   with normalization.
+ * Only one shuffle at a time is now stored in memory (big savings, obviously).
+ * Fixed bug that was throwing off `guppy kr` shuffling significance estimation.
+ * `guppy pca` now defaults to scaling eigenvalues to percent variance; now has
+   a --raw-eval flag to specify otherwise.
 
 
 1.1.alpha05

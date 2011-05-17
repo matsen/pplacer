@@ -39,15 +39,26 @@ in
 dispatch begin function
   | Before_options ->
       (* use static linking for native binaries *)
-      let _ = flag ["link"; "ocaml"; "native";] (
-          if is_osx then
-            (S[
-              A"-cclib"; A"-L../libs";
-              A"-ccopt"; A"-Wl,-search_paths_first";
-            ])
-          else
-            (S[A"-ccopt"; A"-static"])
-      ) in ()
+      flag ["link"; "ocaml"; "native";] (
+        if is_osx then
+          (S[
+            A"-cclib"; A"-L../libs";
+            A"-ccopt"; A"-Wl,-search_paths_first";
+          ])
+        else
+          (S[
+            A"-ccopt"; A"-static";
+          ])
+      );
+
+      flag ["link"; "ocaml"; "native"; "pthread";] (
+        if not is_osx then
+          (S[
+            A"-cclib"; A"-lpthread";
+          ])
+        else S[]
+      );
+
 
   | After_options ->
       if is_osx then setup_static_libraries ()
@@ -78,6 +89,7 @@ dispatch begin function
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "csv") "csv";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "xml-light") "xml-light";
       ocaml_lib ~extern:true ~dir:(ocamlfind_query "oUnit") "oUnit";
+      ocaml_lib ~extern:true ~dir:(ocamlfind_query "sqlite3") "sqlite3";
   | _ -> ()
 end;;
 

@@ -19,6 +19,8 @@ object (self)
     (Plain (false, "Scale variances to one before performing principal components."))
   val symmv = flag "--symmv"
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
+  val raw_eval = flag "--raw-eval"
+    (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
 
   method specl =
     super_out_prefix#specl
@@ -54,7 +56,8 @@ object (self)
         prl
     in
     let (eval, evect) =
-      Pca.gen_pca ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
+      Pca.gen_pca ~use_raw_eval:(fv raw_eval)
+                  ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl)

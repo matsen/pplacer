@@ -10,6 +10,14 @@ open MapsSets
 
 let round x = int_of_float (floor (x +. 0.5))
 
+let range n =
+  let rec aux accum n =
+    if n = 0 then
+      accum
+    else
+      aux ((n - 1) :: accum) (pred n)
+  in aux [] n
+
 (*
 # int_pow 10. 3;;
 - : float = 1000.

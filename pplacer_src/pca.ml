@@ -58,7 +58,19 @@ let covariance_matrix ?scale faa =
   done;
   m
 
-(* make an array of (eval, evect) tuples. Keep only the top n_keep. *)
-let gen_pca ?(symmv=false)?scale n_keep faa =
+(* Return (evals, evects), where only the top n_keep are kept.
+ * Optionally, scale the eigenvalues by the trace of the covariance matrix.
+ * Don't forget that the covariance matrix is positive definite, thus the
+ * eigenvalues are positive, so eigenvalue divided by the trace is the
+ * "fraction" of the variance "explained" by that principal component.
+ * *)
+let gen_pca ?(symmv=false) ?(use_raw_eval=false) ?scale n_keep faa =
   let eigen = if symmv then symmv_eigen else power_eigen in
-  eigen n_keep (covariance_matrix ?scale faa)
+  let cov = covariance_matrix ?scale faa in
+  let (raw_evals, evects) = eigen n_keep cov in
+  if use_raw_eval then (raw_evals, evects)
+  else
+    (let tr = Linear_utils.trace cov in
+    Array.map (fun eval -> assert(eval < tr); eval /. tr) raw_evals,
+    evects)
+

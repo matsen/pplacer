@@ -66,7 +66,7 @@ let make_named_tree sm t =
       (Gtree.get_bark_map t))
 
 let name_tree_and_subsets_map dirname nameim =
-  let t = Newick_gtree.of_file (Cluster_common.tree_name_of_dirname dirname) in
+  let t = Newick_gtree.of_file (Squash_common.tree_name_of_dirname dirname) in
   let nodeim = nodemap_of_tree t in
   (* shifted_nameim uses the Stree numbering rather than that given by
    * the bootstrap labels (as nameim does) *)
@@ -78,7 +78,7 @@ let name_tree_and_subsets_map dirname nameim =
         IntMap.empty
         nameim
     in
-    let ssim = Cluster_common.ssim_of_tree t in
+    let ssim = Squash_common.ssim_of_tree t in
     (make_named_tree shifted_nameim t,
       IntMap.fold
         (fun cluster_num name -> StringMap.add name (IntMap.find cluster_num ssim))
@@ -94,7 +94,7 @@ let get_named_mass_tree dirname i name =
     (List.map
       (fun infix ->
         let fname =
-          dirname^"/"^Cluster_common.mass_trees_dirname
+          dirname^"/"^Squash_common.mass_trees_dirname
             ^"/"^(Mokaphy_cluster.zeropad i)^infix^".fat.xml" in
         if Sys.file_exists fname then
           [{
@@ -113,7 +113,7 @@ let clusterviz prefs = function
         | _, "" -> failwith "please specify an out file name"
         | (cluster_fname, out_fname) ->
           try
-            let nameim = Cluster_common.nameim_of_csv cluster_fname in
+            let nameim = Squash_common.nameim_of_csv cluster_fname in
             let (nt, ssm) = name_tree_and_subsets_map dirname nameim in
             let cluster_pxtree =
               Phyloxml.pxtree_of_gtree
@@ -124,7 +124,7 @@ let clusterviz prefs = function
             and mass_trees =
               List.map
                 (fun (i, name) -> get_named_mass_tree dirname i name)
-                (IntMapFuns.to_pairs nameim)
+                (IntMap.to_pairs nameim)
             in
             (* write out the average masses corresponding to the named clusters *)
             Phyloxml.pxdata_to_file out_fname

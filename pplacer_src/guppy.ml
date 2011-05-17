@@ -37,6 +37,7 @@ let command_list () =
       "merge", (fun () -> new Guppy_merge.cmd ());
       "filter", (fun () -> new Guppy_filter.cmd ());
       "info", (fun () -> new Guppy_info.cmd ());
+      "redup", (fun () -> new Guppy_redup.cmd ());
       "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
       "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
     ];

@@ -8,7 +8,7 @@
  * Reminder: the Gsl_matrix is made with c_layout.
  *)
 
-let tolerance = 1e-15
+let tolerance = 1e-12
 
 open Bigarray
 

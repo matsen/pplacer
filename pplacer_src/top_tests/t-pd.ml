@@ -11,6 +11,6 @@ let np = normalized_of_pr Placement.ml_ratio pr
 
 let t = Placerun.get_ref_tree pr
 let s = Gtree.get_stree t
-let test pl = of_induced t (IntMapFuns.of_pairlist pl)
+let test pl = of_induced t (IntMap.of_pairlist pl)
 let single_path = test [1, 3.]
 let mrca = test [0, 1.; 1, 3.]
