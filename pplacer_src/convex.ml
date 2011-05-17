@@ -189,13 +189,22 @@ let product lists =
 (* Find the potential distributions of a color across a list of cut sets. That
  * is, we take the cartesian product of I_i for every i, where i is [{}] if the
  * color isn't in the ith cut set, and [{color}, {}] if it is. *)
-let cutsetdist cutsetl color =
+let cutsetdist cutsetl ?(allow_multiple = false) color =
   (* We recur over the cut sets below our internal node.
    * Base is just a list of empty sets of the correct length. *)
   let rec aux base accum = function
     | [] -> List.map List.rev accum
     | cutset :: rest ->
-      let accum = List.map (fun x -> CS.empty :: x) accum in
+      let accum = List.fold_left
+        (fun accum x ->
+          let accum' = (CS.empty :: x) :: accum in
+          if allow_multiple && CS.mem color cutset then
+            (CS.singleton color :: x) :: accum'
+          else
+            accum')
+        []
+        accum
+      in
       let accum =
         if CS.mem color cutset then
           (CS.singleton color :: base) :: accum
@@ -213,7 +222,7 @@ let transposed_fold f start ll =
     | [] -> prev
     | l :: rest ->
       aux
-        (List.map2 f prev l)
+        (List.rev (List.rev_map2 f prev l))
         rest
   in
   aux start ll
@@ -245,6 +254,9 @@ let is_apart (b, pi) x =
  * the internal node above. *)
 let build_apartl cutsetl kappa (c, x) =
   let x' = coptset_of_cset x in
+  let c =
+    if not (COS.mem c (coptset_of_cset (all cutsetl))) then None else c
+  in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
   let c_in_x = COS.mem c x' in
@@ -255,34 +267,24 @@ let build_apartl cutsetl kappa (c, x) =
       true
   in
   let big_b = COS.add c (COS.diff (coptset_of_cset (between cutsetl)) to_exclude) in
+  let to_distribute = COS.union x' (COS.diff big_b to_exclude) in
   let apartl = COS.fold
     (fun b accum ->
-      let to_distribute = CS.union
-        x
-        (* XXX it appears that we are removing to_exclude here for a 2nd time.
-         * *)
-        (cset_of_coptset (COS.diff (COS.remove b big_b) to_exclude))
-      in
+      let to_distribute' = cset_of_coptset (COS.remove b to_distribute) in
       (* Find the potential distributions of the to_distribute colors into the
        * cut sets below our internal node. *)
       let dist = List.map
         (cutsetdist cutsetl)
-        (CS.elements to_distribute)
+        (CS.elements to_distribute')
       in
-      (* The list of distributions of just b.
-       * XXX This doesn't quite seem right to me. Shouldn't the inclusion of b
-       * be optional? *)
-      let startsl = List.map
-        begin match b with
-          | Some b' -> CS.inter (CS.singleton b')
-          | None -> fun _ -> CS.empty
-        end
-        cutsetl
-      in
-      let pis =
-        List.map
-          (transposed_fold CS.union startsl)
-          (product dist)
+      let dist = match b with
+        | Some b' -> cutsetdist cutsetl ~allow_multiple:true b' :: dist
+        | None -> dist
+      and startsl = List.map (fun _ -> CS.empty) cutsetl in
+      let pis = List.rev
+        (List.rev_map
+           (transposed_fold CS.union startsl)
+           (product dist))
       in
       (* Collect up the legal (b, pi) pairs. *)
       List.fold_left
@@ -303,30 +305,6 @@ let build_apartl_memoized a b c =
       let ret = build_apartl a b c in
       Hashtbl.add build_apartl_memo (a, b, c) ret;
       ret
-
-(*
-let single_nu cset sizem =
-  CS.fold
-    (fun color accum ->
-      let size =
-        try
-          ColorMap.find color sizem
-        with
-          | Not_found -> 0
-      in
-      size + accum)
-    cset
-    0
-
-let list_nu csetl sizeml =
-  List.fold_left2
-    (fun accum cset sizem -> (single_nu cset sizem) + accum)
-    0
-    csetl
-    sizeml
-
-let apart_nu (_, csetl) sizeml = list_nu csetl sizeml
-*)
 
 let add_phi node question answer phi =
   let local_phi =
@@ -412,8 +390,6 @@ let badness cutsetim tree =
 let solve ((_, tree) as cdtree) =
   let _, cutsetim = build_sizemim_and_cutsetim cdtree in
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
-  let max_badness, tot_badness = badness cutsetim tree in
-  Printf.printf "%d max %d tot" max_badness tot_badness; print_newline ();
   Hashtbl.clear build_apartl_memo;
   phi_recurse cutsetim tree (None, CS.empty) IntMap.empty
 
@@ -492,35 +468,3 @@ let rank_color_map_of_refpkg rp =
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
     IntMap.empty
-
-let f () =
-  let rp = Refpkg.of_path "../microbiome-demo/vaginal_16s.refpkg" in
-  let gt = Refpkg.get_ref_tree rp in
-  let st = gt.Gtree.stree
-  and td = Refpkg.get_taxonomy rp in
-  IntMap.iter
-    (fun rank colormap ->
-      let phi, nu = solve (colormap, st)
-      and rankname = Tax_taxonomy.get_rank_name td rank in
-      Printf.printf "%s: %d\n" rankname nu;
-      let not_cut = nodeset_of_phi_and_tree phi st in
-      let rec aux accum = function
-        | Leaf i :: rest ->
-          aux
-            (if IntSet.mem i not_cut then
-                accum
-             else
-                IntMap.add i [Decor.red] accum)
-            rest
-        | Node (_, subtrees) :: rest ->
-          aux accum (List.rev_append subtrees rest)
-        | [] -> accum
-      in
-      let decor_map = aux (IntMap.empty) [st] in
-      let gt' = Decor_gtree.add_decor_by_map
-        (Decor_gtree.of_newick_gtree gt)
-        decor_map
-      in
-      Phyloxml.gtree_to_file (rankname ^".xml") gt'
-    )
-    (rank_color_map_of_refpkg rp)
