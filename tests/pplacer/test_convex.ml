@@ -4,7 +4,7 @@ open Test_util
 open Convex
 
 let suite = List.map
-  (fun (s, nu) ->
+  (fun (s, omega) ->
     let gt = Newick_gtree.of_string s in
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
@@ -18,9 +18,9 @@ let suite = List.map
       bm
       MapsSets.IntMap.empty
     in
-    let _, calculated_nu = solve (colors, st) in
+    let _, calculated_omega = solve (colors, st) in
     let testfunc () =
-      (Printf.sprintf "%d expected; got %d" nu calculated_nu) @? (nu = calculated_nu)
+      (Printf.sprintf "%d expected; got %d" omega calculated_omega) @? (omega = calculated_omega)
     in
     s >:: testfunc)
   [

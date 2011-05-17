@@ -2,9 +2,9 @@ open MapsSets
 open Stree
 
 type color = string
-module CS = StringSet
+module ColorSet = StringSet
 module ColorMap = StringMap
-type cset = CS.t
+type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
 
 type coloropt = string option
@@ -25,7 +25,7 @@ module PprColorOpt = struct
     | None -> Format.fprintf ff "--"
 end
 
-module COS = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
+module ColorOptSet = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
 
 (* A question is a pair (c, X) where c is an arbitrary optional color and X is a
  * subset of the cut set for the edge above the given internal node. The
@@ -41,7 +41,7 @@ module PprQuestion = struct
       | None -> "-"
       | Some c -> c
     end;
-    CS.ppr ff cs;
+    ColorSet.ppr ff cs;
     Format.fprintf ff ")@]"
 end
 
@@ -50,9 +50,9 @@ module OrderedQuestion = struct
   let compare (co1, cs1) (co2, cs2) =
     match co1, co2 with
       | Some c1, Some c2 when c1 = c2 ->
-        CS.compare cs1 cs2
+        ColorSet.compare cs1 cs2
       | None, None ->
-        CS.compare cs1 cs2
+        ColorSet.compare cs1 cs2
 
       | None, Some _ -> -1
       | Some _, None -> 1
@@ -62,7 +62,7 @@ end
 module QuestionMap = BetterMap (Map.Make(OrderedQuestion)) (PprQuestion)
 type 'a qmap = 'a QuestionMap.t
 
-type csetl = CS.t list
+type csetl = ColorSet.t list
 type apart = color option * csetl  (* apart = almost partition *)
 type sizem = int ColorMap.t
 type colorm = color IntMap.t
@@ -70,7 +70,9 @@ type cdtree = colorm * stree
 type local_phi = (apart * int) QuestionMap.t
 type phi = local_phi IntMap.t
 
-module XXX = Refpkg
+(* Abbreviations *)
+module CS = ColorSet
+module COS = ColorOptSet
 
 let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all

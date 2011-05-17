@@ -16,7 +16,7 @@ type apart = color option * csetl  (* apart = almost partition *)
 type sizem = int cmap
 type colorm = color IntMap.t
 type cdtree = colorm * stree
-type local_phi = apart qmap
+type local_phi = (apart * int) qmap
 type phi = local_phi IntMap.t
 
 
@@ -40,14 +40,16 @@ val build_sizemim_and_cutsetim: cdtree -> sizem IntMap.t * cset IntMap.t
  * Make a map that goes from every internal node to the color sets in the
  * subtrees below that internal node. *)
 
+(*
 val cutsetlm_of_cutsetm_and_tree: cset IntMap.t -> stree -> csetl IntMap.t
+*)
 
 (* Building up aparts. *)
 
 val is_apart: apart -> cset -> bool
 (** Test if an apart is indeed an apart. *)
 
-val build_apartl: csetl -> question -> apart list
+val build_apartl: csetl -> cset -> question -> apart list
 (** Given an [X1,...,Xk] and a (c, X) return a list of (b, pi)'s.
  * If c is in X or if B = B([X1,...,Xk]) is empty, then b = c.
  * Otherwise, b can be anything in B.
@@ -60,6 +62,7 @@ val build_apartl: csetl -> question -> apart list
 
 (* For the recursion. *)
 
+(*
 val single_nu: cset -> sizem -> int
 (** single_nu cset sizem simply totals up the entries of sizem for colors in
  * cset. That is, it gives the number of leaves that are below with colors in
@@ -76,17 +79,14 @@ val list_nu: csetl -> sizem -> int
 
 val apart_nu: apart -> sizem -> int
 (** convenience function for running list_nu on the csetl of an apart. *)
+*)
 
 
 (* The recursion, as it were. *)
 
-val phi_recurse: int -> question -> phi -> phi * int
+val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
 (** phi_recurse id q phi returns a phi map which includes the answer
  * to the posed question.
- *
- * NOTE: this is not an independent function, but a closure inside solve that
- * has access to sizem and cutsetlm.
- *
  *
   let cutset = IntMap.find id cutsetm in
   let below_cutsetl = List.map (fun t -> IntMap.find (top_id t) cutsetm) in
