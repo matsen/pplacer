@@ -299,6 +299,7 @@ let build_apartl_memoized a b c =
       Hashtbl.add build_apartl_memo (a, b, c) ret;
       ret
 
+(*
 let single_nu cset sizem =
   CS.fold
     (fun color accum ->
@@ -320,6 +321,7 @@ let list_nu csetl sizeml =
     sizeml
 
 let apart_nu (_, csetl) sizeml = list_nu csetl sizeml
+*)
 
 let add_phi node question answer phi =
   let local_phi =
@@ -328,8 +330,7 @@ let add_phi node question answer phi =
     with
       | Not_found -> QuestionMap.empty
   in
-  let local_phi' = QuestionMap.add question answer local_phi in
-  IntMap.add node local_phi' phi
+  IntMap.add node (QuestionMap.add question answer local_phi) phi
 
 let null_apart = None, []
 
@@ -341,13 +342,13 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
     with
       | Not_found -> None
   end with
-    | Some (_, nu) -> phi, nu
+    | Some (_, omega) -> phi, omega
     | None ->
 
   let phi, res = match tree with
     | Leaf _ ->
-      let nu = if x = IntMap.find i cutsetm then 1 else 0 in
-      phi, Some (nu, null_apart)
+      let omega = if x = IntMap.find i cutsetm then 1 else 0 in
+      phi, Some (omega, null_apart)
     | Node (_, subtrees) ->
       let cutsetl = List.map
         (fun subtree -> IntMap.find (top_id subtree) cutsetm)
@@ -358,29 +359,29 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
         (IntMap.find i cutsetm)
         question
       in
-      let apart_nu phi (c, csetl) =
+      let apart_omega phi (c, csetl) =
         List.fold_left2
-          (fun (phi, cur) cset subtree ->
-            let phi, nu = phi_recurse cutsetm subtree (c, cset) phi in
-            phi, cur + nu)
+          (fun (phi, subtotal) cset subtree ->
+            let phi, omega = phi_recurse cutsetm subtree (c, cset) phi in
+            phi, subtotal + omega)
           (phi, 0)
           csetl
           subtrees
       in
       List.fold_left
         (fun (phi, cur) apart ->
-          let phi, nu = apart_nu phi apart in
+          let phi, omega = apart_omega phi apart in
           match cur with
-            | None -> phi, Some (nu, apart)
-            | Some (old_nu, _) when nu > old_nu -> phi, Some (nu, apart)
+            | None -> phi, Some (omega, apart)
+            | Some (old_omega, _) when omega > old_omega -> phi, Some (omega, apart)
             | _ -> phi, cur)
         (phi, None)
         apartl
   in
   match res with
-    | Some (nu, apart) ->
-      let phi' = add_phi i question (apart, nu) phi in
-      phi', nu
+    | Some (omega, apart) ->
+      let phi' = add_phi i question (apart, omega) phi in
+      phi', omega
     | None -> phi, 0
 
 let badness cutsetm tree =
@@ -407,9 +408,9 @@ let solve ((_, tree) as cdtree) =
 let nodeset_of_phi_and_tree phi tree =
   let rec aux accum = function
     | (Leaf i, question) :: rest ->
-      let _, nu = QuestionMap.find question (IntMap.find i phi) in
+      let _, omega = QuestionMap.find question (IntMap.find i phi) in
       let accum =
-        if nu = 0 then
+        if omega = 0 then
           accum
         else
           IntSet.add i accum
