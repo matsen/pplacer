@@ -2,9 +2,9 @@ open MapsSets
 open Stree
 
 type color = string
-module ColorSet = StringSet
+module CS = StringSet
 module ColorMap = StringMap
-type cset = ColorSet.t
+type cset = CS.t
 type 'a cmap = 'a ColorMap.t
 
 type coloropt = string option
@@ -25,7 +25,7 @@ module PprColorOpt = struct
     | None -> Format.fprintf ff "--"
 end
 
-module ColorOptSet = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
+module COS = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
 
 type question = color option * cset (* a pair (c, X) *)
 
@@ -36,7 +36,7 @@ module PprQuestion = struct
       | None -> "-"
       | Some c -> c
     end;
-    ColorSet.ppr ff cs;
+    CS.ppr ff cs;
     Format.fprintf ff ")@]"
 end
 
@@ -45,9 +45,9 @@ module OrderedQuestion = struct
   let compare (co1, cs1) (co2, cs2) =
     match co1, co2 with
       | Some c1, Some c2 when c1 = c2 ->
-        ColorSet.compare cs1 cs2
+        CS.compare cs1 cs2
       | None, None ->
-        ColorSet.compare cs1 cs2
+        CS.compare cs1 cs2
 
       | None, Some _ -> -1
       | Some _, None -> 1
@@ -57,7 +57,7 @@ end
 module QuestionMap = BetterMap (Map.Make(OrderedQuestion)) (PprQuestion)
 type 'a qmap = 'a QuestionMap.t
 
-type csetl = ColorSet.t list
+type csetl = CS.t list
 type apart = color option * csetl  (* apart = almost partition *)
 type sizem = int ColorMap.t
 type colorm = color IntMap.t
@@ -67,10 +67,10 @@ type phi = local_phi IntMap.t
 
 module XXX = Refpkg
 
-let all colors = List.fold_left ColorSet.union ColorSet.empty colors
+let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all
   (List.map
-     (fun (x, y) -> ColorSet.inter x y)
+     (fun (x, y) -> CS.inter x y)
      (Base.list_pairs_of_single colors))
 
 let build_sizemim_and_cutsetim (colors, tree) =
@@ -85,10 +85,10 @@ let build_sizemim_and_cutsetim (colors, tree) =
       end with
         | Some color ->
           let szm = ColorMap.singleton color 1
-          and clbelow = ColorSet.singleton color in
+          and clbelow = CS.singleton color in
           szm, clbelow
         | None ->
-          ColorMap.empty, ColorSet.empty
+          ColorMap.empty, CS.empty
       in
       szm, clbelow, IntMap.singleton i (szm, clbelow)
     | Node (i, subtrees) ->
@@ -96,8 +96,8 @@ let build_sizemim_and_cutsetim (colors, tree) =
       let szm = ColorMap.merge_counts (List.map (fun (a, _, _) -> a) maps) in
       let clbelow, leafm = List.fold_left
         (fun (claccum, lfaccum) (_, cl, lf) ->
-          ColorSet.union claccum cl, IntMap.union lfaccum lf)
-        (ColorSet.empty, IntMap.empty)
+          CS.union claccum cl, IntMap.union lfaccum lf)
+        (CS.empty, IntMap.empty)
         maps
       in
       szm, clbelow, IntMap.add i (szm, clbelow) leafm
@@ -121,12 +121,12 @@ let build_sizemim_and_cutsetim (colors, tree) =
         subtrees
       in
       (* Update terminated. *)
-      let terminated' = ColorSet.union terminated (between colorsets) in
+      let terminated' = CS.union terminated (between colorsets) in
       List.fold_left2
         (fun accum colors tree ->
           let i = top_id tree in
           (* colors' are just those edge colors in terminated' *)
-          let colors' = ColorSet.inter colors terminated' in
+          let colors' = CS.inter colors terminated' in
           if colors = colors' then
           (* We don't have to cut anything from any of the edges below because
            * we know that every color below also exists "above" this edge. *)
@@ -140,7 +140,7 @@ let build_sizemim_and_cutsetim (colors, tree) =
         colorsets
         subtrees
   in
-  let cut_clm = aux ColorSet.empty below_clm tree in
+  let cut_clm = aux CS.empty below_clm tree in
   szm, cut_clm
 
 let subtreelist_map f tree =
@@ -190,14 +190,14 @@ let cutsetdist cutsetl color =
   let rec aux base accum = function
     | [] -> List.map List.rev accum
     | cutset :: rest ->
-      let accum = List.map (fun x -> ColorSet.empty :: x) accum in
+      let accum = List.map (fun x -> CS.empty :: x) accum in
       let accum =
-        if ColorSet.mem color cutset then
-          (ColorSet.singleton color :: base) :: accum
+        if CS.mem color cutset then
+          (CS.singleton color :: base) :: accum
         else
           accum
       in
-      aux (ColorSet.empty :: base) accum rest
+      aux (CS.empty :: base) accum rest
   in
   aux [] [] cutsetl
 
@@ -214,62 +214,62 @@ let transposed_fold f start ll =
   aux start ll
 
 let coptset_of_cset cset =
-  ColorSet.fold (fun c s -> ColorOptSet.add (Some c) s) cset ColorOptSet.empty
+  CS.fold (fun c s -> COS.add (Some c) s) cset COS.empty
 
 let cset_of_coptset coptset =
-  ColorOptSet.fold
+  COS.fold
     (fun c s ->
       match c with
-        | Some c' -> ColorSet.add c' s
+        | Some c' -> CS.add c' s
         | None -> s)
     coptset
-    ColorSet.empty
+    CS.empty
 
 let is_apart (b, pi) x =
   let all_colors = all pi
   and between_colors = between pi in
   (* XXX *)
   all_colors <= x
-  && match b, ColorSet.cardinal between_colors with
-    | Some b', 1 -> ColorSet.choose between_colors = b'
+  && match b, CS.cardinal between_colors with
+    | Some b', 1 -> CS.choose between_colors = b'
     | Some _, 0
     | None, 0 -> true
     | _, _ -> false
 
 let build_apartl cutsetl kappa (c, x) =
   let x' = coptset_of_cset x in
-  let to_cut = coptset_of_cset (ColorSet.diff kappa x) in
-  let c_in_x = ColorOptSet.mem c x' in
+  let to_cut = coptset_of_cset (CS.diff kappa x) in
+  let c_in_x = COS.mem c x' in
   let check_pi b pi =
-    if c_in_x || ColorSet.is_empty (between pi) then
+    if c_in_x || CS.is_empty (between pi) then
       b = c
     else
       true
   in
-  let big_b = ColorOptSet.add c (ColorOptSet.diff (coptset_of_cset (between cutsetl)) to_cut) in
-  let apartl = ColorOptSet.fold
+  let big_b = COS.add c (COS.diff (coptset_of_cset (between cutsetl)) to_cut) in
+  let apartl = COS.fold
     (fun b accum ->
-      let to_distribute = ColorSet.union
+      let to_distribute = CS.union
         x
-        (cset_of_coptset (ColorOptSet.diff (ColorOptSet.remove b big_b) to_cut))
+        (cset_of_coptset (COS.diff (COS.remove b big_b) to_cut))
       in
       (* Find the potential distributions of the to_distribute colors into the
        * cut sets below our internal node. *)
       let dist = List.map
         (cutsetdist cutsetl)
-        (ColorSet.elements to_distribute)
+        (CS.elements to_distribute)
       in
       let prod = product dist in
       let starts = List.map
         begin match b with
-          | Some b' -> ColorSet.inter (ColorSet.singleton b')
-          | None -> fun _ -> ColorSet.empty
+          | Some b' -> CS.inter (CS.singleton b')
+          | None -> fun _ -> CS.empty
         end
         cutsetl
       in
       let pis =
         List.map
-          (transposed_fold ColorSet.union starts)
+          (transposed_fold CS.union starts)
           prod
       in
       (* Unpack from a color set list list to an apart list. *)
@@ -293,7 +293,7 @@ let build_apartl_memoized a b c =
       ret
 
 let single_nu cset sizem =
-  ColorSet.fold
+  CS.fold
     (fun color accum ->
       let size =
         try
@@ -377,7 +377,7 @@ let rec phi_recurse cutsetm tree ((_, x) as question) phi =
     | None -> phi, 0
 
 let badness cutsetm tree =
-  let badness_i i = max 0 ((ColorSet.cardinal (IntMap.find i cutsetm)) - 1) in
+  let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetm)) - 1) in
   let rec aux worst total = function
     | Leaf i :: rest ->
       let b = badness_i i in
@@ -391,11 +391,11 @@ let badness cutsetm tree =
 
 let solve ((_, tree) as cdtree) =
   let _, cutsetm = build_sizemim_and_cutsetim cdtree in
-  let cutsetm = IntMap.add (top_id tree) ColorSet.empty cutsetm in
+  let cutsetm = IntMap.add (top_id tree) CS.empty cutsetm in
   let max_badness, tot_badness = badness cutsetm tree in
   Printf.printf "%d max %d tot" max_badness tot_badness; print_newline ();
   Hashtbl.clear build_apartl_memo;
-  phi_recurse cutsetm tree (None, ColorSet.empty) IntMap.empty
+  phi_recurse cutsetm tree (None, CS.empty) IntMap.empty
 
 let nodeset_of_phi_and_tree phi tree =
   let rec aux accum = function
@@ -419,7 +419,7 @@ let nodeset_of_phi_and_tree phi tree =
       aux accum rest'
     | [] -> accum
   in
-  aux IntSet.empty [tree, (None, ColorSet.empty)]
+  aux IntSet.empty [tree, (None, CS.empty)]
 
 let name_map_of_bark_map bark_map =
   IntMap.fold
