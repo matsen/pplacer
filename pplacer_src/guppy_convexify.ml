@@ -41,6 +41,8 @@ object (self)
     let st = gt.Gtree.stree
     and td = Refpkg.get_taxonomy rp
     and cutoff = fv badness_cutoff in
+    let leaves = leafset st in
+    Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let discordance, cut_sequences = IntMap.fold
       (fun rank colormap ((discord, cut_seqs) as accum) ->
         let rankname = Tax_taxonomy.get_rank_name td rank in
@@ -60,8 +62,8 @@ object (self)
         end else begin
           Printf.printf "  badness: %d max; %d tot" max_bad tot_bad;
           print_newline ();
-          let phi, nu = solve (colormap, st) in
-          Printf.printf "  solved nu: %d\n" nu;
+          let phi, omega = solve (colormap, st) in
+          Printf.printf "  solved omega: %d\n" omega;
           let not_cut = nodeset_of_phi_and_tree phi st in
           let rec aux accum = function
             | Leaf i :: rest ->
@@ -80,7 +82,7 @@ object (self)
             (Decor_gtree.of_newick_gtree gt)
             decor_map
           in
-          let cut_leaves = IntSet.diff (leafset st) not_cut in
+          let cut_leaves = IntSet.diff leaves not_cut in
           (Some rankname, gt') :: discord,
           IntSet.fold
             (fun i accum -> [rankname; Gtree.get_name gt i] :: accum)
