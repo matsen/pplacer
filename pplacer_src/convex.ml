@@ -255,10 +255,6 @@ let is_apart (b, pi) x =
  * sets under the internal node as defined in build_apartl below. *)
 let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
-  let check_pi b pi =
-    if CS.is_empty (between pi) then b = c
-    else true
-  in
   (* Anything in kappa - x doesn't get distributed. *)
   let big_b_excl =
     (* Because xopt never contains None, this is in fact testing c in x. In
@@ -294,11 +290,9 @@ let _build_apartl cutsetl kappa (c, x) =
            (transposed_fold CS.union startsl)
            (product dist))
       in
-      (* Collect up the legal (b, pi) pairs. *)
-      List.fold_left
-        (fun accum pi -> if check_pi b pi then (b, pi) :: accum else accum)
-        accum
-        pis)
+      (* We make sure to pass on the c as the color of the internal node in the
+       * case where between pi is empty by filtering out the ones that don't. *)
+      List.filter (fun pi -> not (CS.is_empty (between pi)) || b = c) pis)
     (* We add c to the list of things that can be colors of internal nodes. *)
     (COS.add c big_b_excl)
     []
