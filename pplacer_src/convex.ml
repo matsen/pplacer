@@ -239,17 +239,6 @@ let cset_of_coptset coptset =
     coptset
     CS.empty
 
-let is_apart (b, pi) x =
-  let all_colors = all pi
-  and between_colors = between pi in
-  (* XXX *)
-  all_colors <= x
-  && match b, CS.cardinal between_colors with
-    | Some b', 1 -> CS.choose between_colors = b'
-    | Some _, 0
-    | None, 0 -> true
-    | _, _ -> false
-
 (* As indicated by the underscore, this function is not designed to work as is.
  * Indeed, we need to preprocess with the case of c not being in any of the cut
  * sets under the internal node as defined in build_apartl below. *)
@@ -386,20 +375,13 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       phi', omega
     | None -> phi, 0
 
-(* XXX Do you really need to recur over the tree here? It seems to me that
- * everything you need is in the cutsetim. *)
-let badness cutsetim tree =
-  let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetim)) - 1) in
-  let rec aux worst total = function
-    | Leaf i :: rest ->
-      let b = badness_i i in
-      aux (max worst b) (total + b) rest
-    | Node (i, subtrees) :: rest ->
-      let b = badness_i i in
-      aux (max worst b) (total + b) (List.rev_append subtrees rest)
-    | [] -> worst, total
-  in
-  aux 0 0 [tree]
+let badness cutsetim =
+  IntMap.fold
+    (fun _ cutset (worst, total) ->
+      let badness_i = max 0 ((CS.cardinal cutset) - 1) in
+      max worst badness_i, total + badness_i)
+    cutsetim
+    (0, 0)
 
 let solve ((_, tree) as cdtree) =
   let _, cutsetim = build_sizemim_and_cutsetim cdtree in

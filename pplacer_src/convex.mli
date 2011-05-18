@@ -46,9 +46,6 @@ val cutsetlm_of_cutsetm_and_tree: cset IntMap.t -> stree -> csetl IntMap.t
 
 (* Building up aparts. *)
 
-val is_apart: apart -> cset -> bool
-(** Test if an apart is indeed an apart. *)
-
 val build_apartl: csetl -> cset -> question -> apart list
 (** Given an [X1,...,Xk] and a (c, X) return a list of (b, pi)'s.
  * If c is in X or if B = B([X1,...,Xk]) is empty, then b = c.
@@ -136,3 +133,7 @@ val solve: cdtree -> phi * int
 - run phi_recurse
 
 *)
+
+val badness: cset IntMap.t -> int * int
+val nodeset_of_phi_and_tree: phi -> stree -> IntSet.t
+val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
