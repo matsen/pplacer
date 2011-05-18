@@ -281,7 +281,13 @@ let _build_apartl cutsetl kappa (c, x) =
       in
       (* We make sure to pass on the c as the color of the internal node in the
        * case where between pi is empty by filtering out the ones that don't. *)
-      List.filter (fun pi -> not (CS.is_empty (between pi)) || b = c) pis)
+      List.fold_left
+        (fun accum pi ->
+          if not (CS.is_empty (between pi)) || b = c then
+            (b, pi) :: accum
+          else accum)
+        accum
+        pis)
     (* We add c to the list of things that can be colors of internal nodes. *)
     (COS.add c big_b_excl)
     []
