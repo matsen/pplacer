@@ -253,34 +253,50 @@ let is_apart (b, pi) x =
 (* Cutsetl is the list of cut sets below, kappa are those sets colors cut from
  * the internal node above. *)
 let build_apartl cutsetl kappa (c, x) =
-  let x' = coptset_of_cset x in
-  let c =
-    if not (COS.mem c (coptset_of_cset (all cutsetl))) then None else c
+  let xopt = coptset_of_cset x in
+  (* If c is not in any of the cut sets below, then we can replace it with None.
+   * Aaron-- it appears to me that perhaps we should be doing this step outside
+   * of this function, as we could be invoking this function with several
+   * different c just to do it with None. In fact, this might fit in well in
+   * build_apartl_memoized, but in that case we'd want to make it clear that
+   * this function is the primary way of building apartls.
+   * *)
+  let c = match c with
+    | None -> None
+    | Some c' -> if not (CS.mem c' (all cutsetl)) then None else c
+  in
+  (* Because xopt never contains None, this is in fact testing c in x. *)
+  let c_in_x = COS.mem c xopt in
+  (* Aaron-- it sure seems to me that we could take out the c_in_x part here and
+   * in that case offer c as the only internal node color.
+   * *)
+  let check_pi b pi =
+    if c_in_x || CS.is_empty (between pi) then b = c
+    else true
   in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
-  let c_in_x = COS.mem c x' in
-  let check_pi b pi =
-    if c_in_x || CS.is_empty (between pi) then
-      b = c
-    else
-      true
-  in
-  let big_b = COS.add c (COS.diff (coptset_of_cset (between cutsetl)) to_exclude) in
-  let to_distribute = COS.union x' (COS.diff big_b to_exclude) in
+  let big_b_excl = COS.diff (coptset_of_cset (between cutsetl)) to_exclude in
+  let to_distribute = COS.union xopt big_b_excl in
   let apartl = COS.fold
+    (* Fold over the possible values of b: the color of the internal node. *)
     (fun b accum ->
-      let to_distribute' = cset_of_coptset (COS.remove b to_distribute) in
-      (* Find the potential distributions of the to_distribute colors into the
-       * cut sets below our internal node. *)
+      (* The colors are distributed in two steps. Note that any color except for
+       * b can only occur once in a given pi. Thus we first find the potential
+       * distributions of the to_distribute colors (except for b) into the
+       * cut sets below our internal node. We find these distributions one at a
+       * time, then take the union below. *)
       let dist = List.map
         (cutsetdist cutsetl)
-        (CS.elements to_distribute')
+        (CS.elements (cset_of_coptset (COS.remove b to_distribute)))
       in
+      (* Next make every distribution with {} with {b} if b is in the cut set *)
       let dist = match b with
         | Some b' -> cutsetdist cutsetl ~allow_multiple:true b' :: dist
         | None -> dist
       and startsl = List.map (fun _ -> CS.empty) cutsetl in
+      (* Finish off the meat of the recursion by mapping with union over the
+       * cartesian product of the single-color distributions. *)
       let pis = List.rev
         (List.rev_map
            (transposed_fold CS.union startsl)
@@ -291,7 +307,8 @@ let build_apartl cutsetl kappa (c, x) =
         (fun accum pi -> if check_pi b pi then (b, pi) :: accum else accum)
         accum
         pis)
-    big_b
+    (* We add c to the list of things that can be colors of internal nodes. *)
+    (COS.add c big_b_excl)
     []
   in
   apartl
