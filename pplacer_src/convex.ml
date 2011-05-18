@@ -250,8 +250,9 @@ let is_apart (b, pi) x =
     | None, 0 -> true
     | _, _ -> false
 
-(* Cutsetl is the list of cut sets below, kappa are those sets colors cut from
- * the internal node above. *)
+(* As indicated by the underscore, this function is not designed to work as is.
+ * Indeed, we need to preprocess with the case of c not being in any of the cut
+ * sets under the internal node as defined in build_apartl below. *)
 let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   let check_pi b pi =
@@ -305,6 +306,10 @@ let _build_apartl cutsetl kappa (c, x) =
   apartl
 
 let build_apartl_memo = Hashtbl.create 1024
+
+(* The primary apartl builder.
+ * Cutsetl is the list of cut sets below, kappa are those sets colors cut from
+ * the internal node above. *)
 let build_apartl cutsetl kappa (c, x) =
   (* If c is not in any of the cut sets below, then we can replace it with
    * None. *)
