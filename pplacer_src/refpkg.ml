@@ -158,14 +158,14 @@ let check rp name what =
   let _ = what rp in ()
 
 let check_tree_and_aln_names tree aln =
-  let tns = StringSetFuns.of_list (Newick_gtree.get_name_list tree)
-  and ans = StringSetFuns.of_list (Array.to_list (Alignment.get_name_arr aln))
+  let tns = StringSet.of_list (Newick_gtree.get_name_list tree)
+  and ans = StringSet.of_list (Array.to_list (Alignment.get_name_arr aln))
   in
   let test (s1, n1) (s2, n2) =
     let d = StringSet.diff s1 s2 in
     if not (StringSet.is_empty d) then begin
       Format.fprintf Format.str_formatter
-        "present in %s but not %s: %a" n1 n2 StringSetFuns.ppr d;
+        "present in %s but not %s: %a" n1 n2 StringSet.ppr d;
       failwith (Format.flush_str_formatter ())
     end
   in

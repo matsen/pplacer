@@ -123,9 +123,11 @@ object (self)
         output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
         close, (fun pq rank_map ->
           let outl = classif_stral td pq rank_map in
-          List.iter
-            (fun arr -> Printf.fprintf ch "%s,%s\n" (String.concat "," (Array.to_list arr)) prn)
-            outl)
+          Csv.save_out
+            ch
+            (List.map
+               (fun arr -> (Array.to_list arr) @ [prn])
+               outl))
 
       else if sqlite_out then
         let prn = Placerun.get_name pr in
