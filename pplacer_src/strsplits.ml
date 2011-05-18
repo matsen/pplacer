@@ -1,9 +1,9 @@
 (* Strsplits are string splits... the strings being names. *)
 
+open MapsSets
 open Splits
 
 module StrSet = MapsSets.StringSet
-module StrSetFuns = MapsSets.StringSetFuns
 
 module OrderedStrSet = struct
   type t = StrSet.t
@@ -12,11 +12,10 @@ end
 
 module PprStrSet = struct
   type t = StrSet.t
-  let ppr = StrSetFuns.ppr
+  let ppr = StrSet.ppr
 end
 
-module SstrSet = Set.Make(OrderedStrSet)
-module SstrSetFuns = MapsSets.SetFuns (OrderedStrSet) (PprStrSet)
+module SstrSet = BetterSet (Set.Make(OrderedStrSet)) (PprStrSet)
 
 let strset_of_gtree_and_lset gtree leafs =
   Lset.fold
@@ -48,14 +47,13 @@ module PprStrSplit = struct
   type t = strsplit
   let ppr ff (a, b) =
     Format.fprintf ff "@[(";
-    StrSetFuns.ppr ff a;
+    StrSet.ppr ff a;
     Format.fprintf ff ",@ ";
-    StrSetFuns.ppr ff b;
+    StrSet.ppr ff b;
     Format.fprintf ff ")@]";
 end
 
-module StrSplitSet = Set.Make (OrderedStrSplit)
-module StrSplitSetFuns = MapsSets.SetFuns (OrderedStrSplit) (PprStrSplit)
+module StrSplitSet = BetterSet (Set.Make (OrderedStrSplit)) (PprStrSplit)
 
 let strsplitset_of_gtree_and_splitset gtree splits =
   let of_split = strsplit_of_gtree_and_split gtree in
@@ -65,7 +63,7 @@ let strsplitset_of_gtree_and_splitset gtree splits =
     StrSplitSet.empty
 
 let split_strset split strset =
-  SstrSetFuns.of_list (
+  SstrSet.of_list (
     List.filter (fun s -> not (StrSet.is_empty s))
       [
         StrSet.inter (fst split) strset;

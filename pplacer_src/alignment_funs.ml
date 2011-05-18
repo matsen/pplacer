@@ -34,7 +34,7 @@ let is_nuc_align aln =
 (* makeAlnIndexMap: make a map which maps from the node number to the row number of the
  * alignment. *)
 let makeAlnIndexMap taxonMap alnNameArr =
-  let n_tree = IntMapFuns.nkeys taxonMap
+  let n_tree = IntMap.nkeys taxonMap
   and n_aln = Array.length alnNameArr in
   if n_tree <> n_aln then
     failwith

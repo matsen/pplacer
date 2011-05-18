@@ -36,7 +36,7 @@ let of_csv fname =
     (fun sim al ->
       let seqname_str = safe_assoc "seqname" al in
       try
-        StringMapFuns.check_add
+        StringMap.check_add
           seqname_str
           {
             tax_id = TaxStr (safe_assoc "tax_id" al);

@@ -59,14 +59,6 @@ let event_loop children =
     else aux pipe_map'
   in aux pipe_map
 
-let range n =
-  let rec aux accum n =
-    if n = 0 then
-      accum
-    else
-      aux ((n - 1) :: accum) (pred n)
-  in aux [] n
-
 type buffer = {
   buf: string;
   mutable pos: int;
@@ -118,7 +110,7 @@ class virtual ['a] process child_func =
         let ignored = List.map fd_of_file_descr child_only in
         List.iter
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
-          (range 256)
+          (Base.range 256)
       end;
       (* Make writing to stdout or stderr instead write to the progress
        * channel. *)
@@ -270,7 +262,7 @@ let map ?(children = 4) ?progress_handler f l =
   let children =
     List.map
       (fun _ -> new map_process ?progress_handler f q)
-      (range children) in
+      (Base.range children) in
   event_loop children;
   List.flatten (List.map (fun c -> c#ret) children)
 
@@ -279,7 +271,7 @@ let iter ?(children = 4) ?progress_handler f l =
   let children =
     List.map
       (fun _ -> new map_process ?progress_handler f q)
-      (range children) in
+      (Base.range children) in
   event_loop children
 
 class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
@@ -345,7 +337,7 @@ let fold ?(children = 4) ?progress_handler f l initial =
   let children =
     List.map
       (fun _ -> new fold_process ?progress_handler f q initial)
-      (range children)
+      (Base.range children)
   in
   event_loop children;
   List.map (fun c -> c#ret) children

@@ -30,7 +30,7 @@ let uniform_nonempty_partition rng n_bins lss =
   List.map
     (fun n_samples ->
       let new_lss =
-        LsetsetFuns.of_list (Array.to_list (Array.sub a !pos n_samples)) in
+        Lsetset.of_list (Array.to_list (Array.sub a !pos n_samples)) in
       pos := !pos + n_samples;
       new_lss)
     (nonempty_balls_in_boxes rng ~n_bins ~n_items:(Lsetset.cardinal lss))
@@ -71,7 +71,7 @@ let sample rng ?(weighting = Uniform) n k =
 (* We take the weight on a split to be proportional to weight_transform applied
  * to the size of the smaller element of the set. *)
 let sample_sset_weighted rng =
-  SsetFuns.weighted_sample
+  Sset.weighted_sample
   (fun arr -> sample rng ~weighting:(Array arr))
   (fun (k, _) -> size_transform (float_of_int (Lset.cardinal k)))
 
@@ -120,7 +120,7 @@ let rec bark_of_stree_numbers bark_fn = function
   | Stree.Node (_, subtree) ->
     List.fold_left
       (fun map node ->
-        IntMapFuns.union map (bark_of_stree_numbers bark_fn node))
+        IntMap.union map (bark_of_stree_numbers bark_fn node))
       IntMap.empty
       subtree
 
@@ -137,7 +137,7 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
   in
   let splits' = sample_sset_weighted rng splits k in
   let leafss = sset_lsetset splits' (Lsetset.singleton leafs) in
-  let base_leafs = LsetsetFuns.uniform_sample (sample rng) leafss min_leafs in
+  let base_leafs = Lsetset.uniform_sample (sample rng) leafss min_leafs in
   let to_sample =
     Lsetset.filter
       (fun lset -> not (Lsetset.mem lset base_leafs))
@@ -174,7 +174,7 @@ let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
     in
     List.fold_left2
       (fun map leafss t ->
-        IntMapFuns.union
+        IntMap.union
           map
           (distribute_lsetset_on_stree rng poisson_mean cutting_splits leafss t))
       IntMap.empty

@@ -9,7 +9,7 @@ let sing_tree weighting criterion mass_width ref_tree pquery =
   | Mass_map.Weighted ->
     Gtree.add_subtrees_by_map
       ref_tree
-      (IntMapFuns.of_pairlist_listly
+      (IntMap.of_pairlist_listly
         (ListFuns.mapi
           (fun num p ->
             let mass = criterion p in
@@ -32,7 +32,7 @@ let sing_tree weighting criterion mass_width ref_tree pquery =
       let p = Pquery.best_place criterion pquery in
       Gtree.add_subtrees_by_map
         ref_tree
-        (IntMapFuns.of_pairlist_listly
+        (IntMap.of_pairlist_listly
           [Placement.location p,
             (Placement.distal_bl p,
             Visualization.make_zero_leaf

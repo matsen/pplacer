@@ -38,6 +38,8 @@ let command_list () =
       "filter", (fun () -> new Guppy_filter.cmd ());
       "commiesim", (fun () -> new Guppy_commiesim.cmd ());
       "rf_distance", (fun () -> new Guppy_rf_distance.cmd ());
+      "info", (fun () -> new Guppy_info.cmd ());
+      "redup", (fun () -> new Guppy_redup.cmd ());
     ];
   ]
 

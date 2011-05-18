@@ -1,7 +1,6 @@
 open MapsSets
 
 module Lset = IntSet
-module LsetFuns = IntSetFuns
 
 module OrderedLset = struct
   type t = Lset.t
@@ -10,11 +9,10 @@ end
 
 module PprLset = struct
   type t = Lset.t
-  let ppr = LsetFuns.ppr
+  let ppr = Lset.ppr
 end
 
-module Lsetset = Set.Make(OrderedLset)
-module LsetsetFuns = SetFuns (OrderedLset) (PprLset)
+module Lsetset = BetterSet (Set.Make(OrderedLset)) (PprLset)
 
 type split = Lset.t * Lset.t
 
@@ -36,22 +34,22 @@ module PprSplit = struct
   type t = split
   let ppr ff (a, b) =
     Format.fprintf ff "@[(";
-    LsetFuns.ppr ff a;
+    Lset.ppr ff a;
     Format.fprintf ff ",@ ";
-    LsetFuns.ppr ff b;
+    Lset.ppr ff b;
     Format.fprintf ff ")@]";
 end
 
-module Sset = Set.Make (OrderedSplit)
-module SsetFuns = SetFuns (OrderedSplit) (PprSplit)
+module Sset = BetterSet (Set.Make (OrderedSplit)) (PprSplit)
 
+let x = Sset.weighted_sample
 
 (* If sigma does not split X, then `split_lset(sigma, X)` returns the lsetset
  containing only X. Otherwise say sigma = U|V, in which case it returns the
  lsetset consisting of X intersect U and X intersect V.
  *)
 let split_lset split lset =
-  LsetsetFuns.of_list (
+  Lsetset.of_list (
     List.filter (fun s -> not (Lset.is_empty s))
       [
         Lset.inter (fst split) lset;

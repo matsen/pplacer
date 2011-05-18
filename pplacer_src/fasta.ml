@@ -10,7 +10,7 @@ let fasta_regexp = Str.regexp begin
     (* a comment (not captured), *)
     ";[^\n\r]*";
     (* a sequence name (group 3; group 2 should be non-matching), *)
-    "\\(>\\([^\n\r]+\\)\\)";
+    "\\(>[ \t]*\\([^ \t\n\r]+\\)[^\n\r]*\\)";
     (* or a sequence chunk (group 4). *)
     "\\([^\ \t\n\r]+\\)";
   (* and finally, strip off any trailing whitespace. The last bit of this
@@ -60,5 +60,5 @@ let of_string s =
 
 let of_file fname =
   let lines = File_parsing.string_list_of_file fname in
-  let tokens = List.flatten (List.map tokenize_fasta lines) in
+  let tokens = Base.map_and_flatten tokenize_fasta lines in
   parse tokens

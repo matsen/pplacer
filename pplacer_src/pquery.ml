@@ -99,7 +99,7 @@ let make_map_by_best_loc criterion pquery_list =
   let (placed_l, unplaced_l) =
     List.partition is_placed pquery_list in
   (unplaced_l,
-    IntMapFuns.of_f_list_listly
+    IntMap.of_f_list_listly
       ~key_f:(best_location criterion)
       ~val_f:(fun x -> x)
       placed_l)

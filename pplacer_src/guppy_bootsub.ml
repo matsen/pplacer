@@ -42,7 +42,7 @@ module StrBootsub =
   Bootsubfunc.Make
     (MapsSets.OrderedString)
     (MapsSets.StringSet)
-    (Cluster_common.StringSetSet)
+    (Squash_common.StringSetSet)
 
 let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname =
   if cutoff < 0. || cutoff > 1. then
@@ -50,13 +50,13 @@ let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname =
   let ct = Newick_gtree.of_file ct_fname
   and boot_tl = Newick_gtree.list_of_file boot_fname
   in
-  let boot_sssl = List.map Cluster_common.sss_of_tree boot_tl
+  let boot_sssl = List.map Squash_common.sss_of_tree boot_tl
   and taxon_list t = List.map (Gtree.get_name t) (Gtree.leaf_ids t)
   in
   let taxon_set t = List.fold_right StringSet.add (taxon_list t) StringSet.empty
   in
   let taxs = taxon_set ct
-  and ssim = Cluster_common.ssim_of_tree ct
+  and ssim = Squash_common.ssim_of_tree ct
   in
   let ssim_find id ssim =
     try IntMap.find id ssim with
@@ -76,7 +76,7 @@ let perform ch cutoff ~csv_fname ~boot_fname ~ct_fname =
               [string_of_float score;
               match stro with None -> "" | Some s -> s])
             (StrBootsub.perform cutoff (ssim_find id ssim) boot_sssl))))
-    (Cluster_common.numnamel_of_csv csv_fname)
+    (Squash_common.numnamel_of_csv csv_fname)
 
 
 let bootsub prefs = function

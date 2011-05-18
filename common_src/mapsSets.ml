@@ -21,20 +21,6 @@ module OrderedString = struct
 end
 
 
-(* *** Maps *** *)
-module FloatMap = Map.Make(OrderedFloat)
-module IntMap = Map.Make(OrderedInt)
-module CharMap = Map.Make(OrderedChar)
-module StringMap = Map.Make(OrderedString)
-
-
-(* *** Sets *** *)
-module FloatSet = Set.Make(OrderedFloat)
-module IntSet = Set.Make(OrderedInt)
-module CharSet = Set.Make(OrderedChar)
-module StringSet = Set.Make(OrderedString)
-
-
 module type PPRABLE =
 sig
   type t
@@ -43,45 +29,69 @@ end
 
 (* general things we might want to do with maps *)
 
-module MapFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
+module type M =
+sig
+  include Map.S
+  val opt_add: key -> 'a option -> 'a t -> 'a t
+  val opt_find: key -> 'a t -> 'a option
+  val check_add: key -> 'a -> 'a t -> 'a t
+  val union: 'a t -> 'a t -> 'a t
+  val print: ('a -> string) -> 'a t -> unit
+  val of_pairlist: (key * 'a) list -> 'a t
+  val add_listly: key -> 'a -> 'a list t -> 'a list t
+  val of_f_list_listly: key_f:('a -> key) -> val_f:('a -> 'b) -> 'a list -> 'b list t
+  val of_pairlist_listly: (key * 'a) list -> 'a list t
+  val nkeys: 'a t -> int
+  val keys: 'a t -> key list
+  val values: 'a t -> 'a list
+  val to_pairs: 'a t -> (key * 'a) list
+  val ppr_gen: (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
+  val ppr_string: Format.formatter -> string t -> unit
+  val ppr_int: Format.formatter -> int t -> unit
+  val ppr_float: Format.formatter -> float t -> unit
+  val ppr_char: Format.formatter -> char t -> unit
+  val ppr_bool: Format.formatter -> bool t -> unit
+end
+
+module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type key = OM.key) =
   struct
-    module M = Map.Make(OT)
+    include OM
 
     let opt_add k optX map =
       match optX with
-      | Some x -> M.add k x map
+      | Some x -> add k x map
       | None -> map
 
-    let opt_find k m = if M.mem k m then Some (M.find k m) else None
+    let opt_find k m = if mem k m then Some (find k m) else None
 
       (* if x is a key of m, make sure that it is bound to y.
        * otherwise, add (x,y) as a kv-pair to m *)
     let check_add x y m =
-      if M.mem x m then
-        if y = M.find x m then m else failwith "check_add"
+      if mem x m then
+        if y = find x m then m else failwith "check_add"
       else
-        M.add x y m
+        add x y m
 
     let union m1 m2 =
-      M.fold (
-        fun k v m -> M.add k v m
+      fold (
+        fun k v m -> add k v m
     ) m1 m2
 
     let print val_to_string m =
-      M.iter (
+      iter (
         fun k v ->
           Format.printf "%a\t-> %s\n" PBLE.ppr k (val_to_string v)
           ) m
 
 (* of_pairlist : given key, value pairs *)
     let rec of_pairlist = function
-      | (k,v)::l -> M.add k v (of_pairlist l)
-      | [] -> M.empty
+      | (k,v)::l -> add k v (of_pairlist l)
+      | [] -> empty
 
 (* listly means add values as a list associated with a key *)
     let add_listly k v m =
-      if M.mem k m then M.add k (v::(M.find k m)) m
-      else M.add k [v] m
+      if mem k m then add k (v::(find k m)) m
+      else add k [v] m
 
 (* the two given functions take the elements of the list into keys and values
  * for the map. these are then collected into a map from the key to the list of
@@ -92,26 +102,26 @@ module MapFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
         | x::l -> aux (add_listly (key_f x) (val_f x) m) l
         | [] -> m
       in
-      aux M.empty (List.rev pre_f_list) (* the above rev's things *)
+      aux empty (List.rev pre_f_list) (* the above rev's things *)
 
 (* collect key,value pairs into a map from the key to the list of all values
  * associated with that key. *)
     let of_pairlist_listly l = of_f_list_listly ~key_f:fst ~val_f:snd l
 
     let nkeys m =
-      M.fold (fun _ _ n -> n+1) m 0
+      fold (fun _ _ n -> n+1) m 0
 
   (* keys in increasing order *)
     let keys m =
-      let l = M.fold (fun k _ l -> k::l) m [] in
+      let l = fold (fun k _ l -> k::l) m [] in
       List.rev l
 
     let values m =
-      let l = M.fold (fun _ v l -> v::l) m [] in
+      let l = fold (fun _ v l -> v::l) m [] in
       List.rev l
 
     let to_pairs m =
-      let l = M.fold (fun k v l -> (k,v)::l) m [] in
+      let l = fold (fun k v l -> (k,v)::l) m [] in
       List.rev l
 
     let ppr_gen ppr_val ff m =
@@ -153,30 +163,48 @@ module PprString = struct
 end
 
 
-module FloatMapFuns = MapFuns (OrderedFloat) (PprFloat)
-module IntMapFuns = MapFuns (OrderedInt) (PprInt)
-module CharMapFuns = MapFuns (OrderedChar) (PprChar)
-module StringMapFuns = MapFuns (OrderedString) (PprString)
+module FloatMap = BetterMap (Map.Make(OrderedFloat)) (PprFloat)
+module IntMap = BetterMap (Map.Make(OrderedInt)) (PprInt)
+module CharMap = BetterMap (Map.Make(OrderedChar)) (PprChar)
+module StringMap = BetterMap (Map.Make(OrderedString)) (PprString)
 
 (* general things we might want to do with sets *)
 
-module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
-  struct
-    module S = Set.Make(OT)
+module type S =
+sig
+  include Set.S
+  val of_list: elt list -> t
+  val map: (elt -> elt) -> t -> t
+  val ppr: Format.formatter -> t -> unit
+  val uniform_sample: (int -> 'a -> int list) -> t -> 'a -> t
+  val weighted_sample: ('a array -> int -> 'b -> int list) -> (elt -> 'a) -> t -> 'b -> t
+end
 
-    let of_list l = List.fold_right S.add l S.empty
+module BetterSet (OS: Set.S) (PBLE: PPRABLE with type t = OS.elt) : (S with type elt = OS.elt) =
+  struct
+    include OS
+
+    let of_list l = List.fold_right add l empty
 
     (* map from Set to Set of the same type. currying heaven. *)
-    let map f s = S.fold (fun x -> S.add (f x)) s S.empty
+    let map f s = fold (fun x -> add (f x)) s empty
+
+    let ppr ff s =
+      Format.fprintf ff "@[{";
+      ppr_list_inners (
+        fun ff x ->
+          Format.fprintf ff "%a" PBLE.ppr x;
+          ) ff (elements s);
+          Format.fprintf ff "}@]"
 
     (* sample_func takes an n (number of elts) and a k (number to sample), then
      * returns a list of indices to be included. *)
     let uniform_sample sample_func s k =
-      let indices = sample_func (S.cardinal s) k in
-      let elements = Array.of_list (S.elements s) in
+      let indices = sample_func (OS.cardinal s) k in
+      let elements = Array.of_list (OS.elements s) in
       List.fold_left
-        (fun accum i -> S.add elements.(i) accum)
-        S.empty
+        (fun accum i -> OS.add elements.(i) accum)
+        OS.empty
         indices
 
     (* sample_func takes an array, and an n and a k, then returns a list of
@@ -184,25 +212,17 @@ module SetFuns (OT: Map.OrderedType) (PBLE: PPRABLE with type t = OT.t) =
      * weighting takes an element and returns a weight to be included in the
      * probability. *)
     let weighted_sample sample_func weighting s k =
-      let elements = Array.of_list (S.elements s) in
+      let elements = Array.of_list (OS.elements s) in
       let distribution = Array.map weighting elements in
-      let indices = sample_func distribution (S.cardinal s) k in
+      let indices = sample_func distribution (OS.cardinal s) k in
       List.fold_left
-        (fun accum i -> S.add elements.(i) accum)
-        S.empty
+        (fun accum i -> OS.add elements.(i) accum)
+        OS.empty
         indices
-
-    let ppr ff s =
-      Format.fprintf ff "@[{";
-      ppr_list_inners (
-        fun ff x ->
-          Format.fprintf ff "%a" PBLE.ppr x;
-          ) ff (S.elements s);
-          Format.fprintf ff "}@]"
   end
 
 
-module FloatSetFuns = SetFuns (OrderedFloat) (PprFloat)
-module IntSetFuns = SetFuns (OrderedInt) (PprInt)
-module CharSetFuns = SetFuns (OrderedChar) (PprChar)
-module StringSetFuns = SetFuns (OrderedString) (PprString)
+module FloatSet = BetterSet (Set.Make(OrderedFloat)) (PprFloat)
+module IntSet = BetterSet (Set.Make(OrderedInt)) (PprInt)
+module CharSet = BetterSet (Set.Make(OrderedChar)) (PprChar)
+module StringSet = BetterSet (Set.Make(OrderedString)) (PprString)

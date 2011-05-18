@@ -11,7 +11,7 @@ let total_floatol =
 let of_induced t ind =
   (* start recording the total branch length from the most distal placement *)
   let perhaps_start_path id =
-    match IntMapFuns.opt_find id ind with
+    match IntMap.opt_find id ind with
     | None -> None (* no path *)
     | Some x -> Some ((Gtree.get_bl t id) -. x)
   in
