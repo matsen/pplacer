@@ -12,9 +12,12 @@ object (self)
 
   val discord_file = flag "-d"
     (Needs_argument ("discordance file", "If specified, the path to write the discordance tree to."))
+  val badness_cutoff = flag "--cutoff"
+    (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
 
   method specl = [
     string_flag discord_file;
+    int_flag badness_cutoff;
   ] @ super_refpkg#specl
 
 
@@ -25,7 +28,8 @@ object (self)
     let rp = self#get_rp in
     let gt = Refpkg.get_ref_tree rp in
     let st = gt.Gtree.stree
-    and td = Refpkg.get_taxonomy rp in
+    and td = Refpkg.get_taxonomy rp
+    and cutoff = fv badness_cutoff in
     let discordance = IntMap.fold
       (fun rank colormap accum ->
         let rankname = Tax_taxonomy.get_rank_name td rank in
@@ -34,7 +38,12 @@ object (self)
         let cutsetim = IntMap.add (top_id st) ColorSet.empty cutsetim in
         let max_bad, tot_bad = badness cutsetim in
         if max_bad = 0 then begin
-          Printf.printf "  already convex; skipping\n";
+          Printf.printf "  skipping: already convex\n";
+          accum
+        end else if max_bad > cutoff then begin
+          Printf.printf
+            "  skipping: badness of %d above cutoff threshold\n"
+            max_bad;
           accum
         end else begin
           Printf.printf "  badness: %d max; %d tot\n" max_bad tot_bad;
