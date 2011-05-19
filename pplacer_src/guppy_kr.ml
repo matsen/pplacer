@@ -109,7 +109,7 @@ object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
   inherit kr_cmd () as super_kr
   inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
@@ -131,7 +131,7 @@ object (self)
   method specl =
     super_mass#specl
     @ super_refpkg#specl
-    @ super_outfile#specl
+    @ super_output#specl
     @ super_kr#specl
     @ super_rng#specl
     @ [

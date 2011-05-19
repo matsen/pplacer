@@ -16,7 +16,7 @@ let trees_of_refpkg path =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
 
   method desc =
 "writes a taxonomically annotated reference tree and an induced taxonomic tree"
