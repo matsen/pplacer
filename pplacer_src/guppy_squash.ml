@@ -88,9 +88,8 @@ object (self)
   inherit rng_cmd () as super_rng
   inherit fat_cmd () as super_fat
   inherit placefile_cmd () as super_placefile
+  inherit output_cmd ~show_fname:false () as super_output
 
-  val outdir = flag "-o"
-    (Needs_argument ("output directory", "The output directory. Required"))
   val nboot = flag "--bootstrap"
     (Plain (0, "the number of bootstrap replicates to run"))
   val tax_cluster_mode = flag "--tax-cluster"
@@ -102,8 +101,8 @@ object (self)
     @ super_refpkg#specl
     @ super_rng#specl
     @ super_fat#specl
+    @ super_output#specl
     @ [
-      string_flag outdir;
       int_flag nboot;
       string_flag tax_cluster_mode
     ]
@@ -123,12 +122,11 @@ object (self)
       (self#fat_tree_of_massm drt massm)
 
   method private placefile_action prl =
-    let outdir = fv outdir in mkdir outdir;
     let transform, weighting, criterion = self#mass_opts
     and refpkgo = self#get_rpo
     and mode_str = fv tax_cluster_mode
     in
-    let path = Filename.concat outdir in
+    let path = (^) self#single_prefix in
     let nboot = fv nboot in
     let width = Base.find_zero_pad_width nboot in
     let pad_str_of_int i =
