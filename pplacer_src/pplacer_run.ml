@@ -98,6 +98,12 @@ let run_file prefs query_fname =
     try Newick_gtree.of_file (StringMap.find "tree_file" rp_strmap) with
     | Not_found -> failwith "please specify a reference tree with -t or -c"
   in
+  if Newick_gtree.has_zero_bls ref_tree then
+    Printf.printf
+      "WARNING: your tree has zero pendant branch lengths. \
+      This can lead to zero likelihood values which will keep you from being \
+      able to place sequences. You can remove identical sequences with \
+      seqmagick.\n";
 
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_list = Newick_gtree.get_name_list ref_tree in
