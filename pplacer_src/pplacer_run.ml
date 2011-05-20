@@ -207,6 +207,11 @@ let run_file prefs query_fname =
 
   (* *** check tree likelihood *** *)
   if Prefs.check_like prefs then begin
+    let fp_check g str =
+      let fpc = Glv.fp_classify g in
+      if fpc > FP_zero then
+        Printf.printf "%s is a %s\n" str (Base.string_of_fpclass fpc)
+    in
     let utilv_nsites = Gsl_vector.create n_sites
     and util_d = Glv.mimic darr.(0)
     and util_p = Glv.mimic parr.(0)
@@ -219,6 +224,9 @@ let run_file prefs query_fname =
       and p = parr.(i)
       and sn = snodes.(i)
       in
+      fp_check d (Printf.sprintf "distal %d" i);
+      fp_check p (Printf.sprintf "proximal %d" i);
+      fp_check sn (Printf.sprintf "supernode %d" i);
       Glv.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
       Glv.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
       Printf.printf "%d\t%g\t%g\n"

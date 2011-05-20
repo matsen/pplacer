@@ -101,6 +101,10 @@ let set_all g ve va =
   BA1.fill g.e ve;
   Tensor.set_all g.a va
 
+(* Find the "worst" fpclass of the floats in g. *)
+let fp_classify g =
+  Tensor.fp_classify g.a
+
 (* set g according to function fe for exponenent and fa for entries *)
 let seti g fe fa =
   let n_sites = get_n_sites g
