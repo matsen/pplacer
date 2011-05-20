@@ -231,7 +231,7 @@ let run_file prefs query_fname =
       Glv.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
       Printf.printf "%d\t%g\t%g\n"
         i
-        (Glv.log_like3 utilv_nsites model util_d util_p util_one)
+        (Glv.slow_log_like3 model util_d util_p util_one)
         (Glv.logdot utilv_nsites sn util_one);
     done
   end;
