@@ -101,6 +101,10 @@ let set_all g ve va =
   BA1.fill g.e ve;
   Tensor.set_all g.a va
 
+(* Find the "worst" fpclass of the floats in g. *)
+let fp_classify g =
+  Tensor.fp_classify g.a
+
 (* set g according to function fe for exponenent and fa for entries *)
 let seti g fe fa =
   let n_sites = get_n_sites g
@@ -314,9 +318,11 @@ let slow_log_like3 model x y z =
             *. (get_a z ~rate ~site ~state)
       done;
     done;
-   ll_tot := !ll_tot
-     +. log(!site_like /. f_n_rates)
-     +. log_of_2 *.
-          (float_of_int (x.e.{site} + y.e.{site} + z.e.{site}))
+    if 0. >= !site_like then
+      failwith (Printf.sprintf "Site %d has zero likelihood." site);
+    ll_tot := !ll_tot
+      +. log(!site_like /. f_n_rates)
+      +. log_of_2 *.
+           (float_of_int (x.e.{site} + y.e.{site} + z.e.{site}))
   done;
   !ll_tot

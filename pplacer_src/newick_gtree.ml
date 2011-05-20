@@ -30,6 +30,12 @@ let get_name_list t =
   in
   aux (Gtree.node_ids t)
 
+let has_zero_bls t =
+  List.fold_left
+    (fun accum id -> accum || Gtree.get_bl t id = 0.)
+    false
+    (Stree.nonroot_node_ids (Gtree.get_stree t))
+
 (* output *)
 
 let string_of_bark ?(with_edge_labels = false) t id =
