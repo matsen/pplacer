@@ -2,14 +2,10 @@ open Subcommand
 open Guppy_cmdobjs
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
   inherit placefile_cmd () as super_placefile
-
-  val outfile = flag "-o"
-    (Plain ("", "Output file. Default is derived from the input filenames."))
-
-  method specl = [string_flag outfile]
+  inherit output_cmd () as super_output
 
   method desc = "merges placefiles together"
   method usage = "usage: merge [options] placefiles"
@@ -17,9 +13,9 @@ object
   method private placefile_action = function
     | [] -> ()
     | prl ->
-      let fname = match fv outfile with
-        | "" -> (Mokaphy_common.cat_names prl) ^ ".json"
-        | s -> s
+      let fname = self#single_file
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".json"))
+        ()
       in
       let combined = List.fold_left
         (Placerun.combine "")

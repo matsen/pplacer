@@ -4,21 +4,21 @@ open Guppy_cmdobjs
 let white_regexp = Str.regexp "[ \t]+"
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
-  inherit out_prefix_cmd () as super_out_prefix
+  inherit output_cmd ~show_fname:false () as super_output
   inherit placefile_cmd () as super_placefile
 
   val dupfile = flag "-d"
     (Needs_argument ("dupfile", "The dedup file to use to restore duplicates"))
 
-  method specl = super_out_prefix#specl @ [string_flag dupfile]
+  method specl = super_output#specl @ [string_flag dupfile]
 
   method desc = "restores duplicates to deduped placefiles"
   method usage = "usage: redup -d dupfile placefile[s]"
 
   method private placefile_action prl =
-    let prefix = fv out_prefix in
+    let prefix = self#single_prefix in
     let lines = File_parsing.string_list_of_file (fv dupfile) in
     let sequence_tbl = Hashtbl.create 1024 in
     List.iter

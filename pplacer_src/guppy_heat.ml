@@ -14,12 +14,12 @@ let named_arr_list_of_csv fname =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
   inherit heat_cmd () as super_heat
   inherit refpkg_cmd ~required:true as super_refpkg
 
   method specl =
-    super_outfile#specl
+    super_output#specl
     @ super_refpkg#specl
     @ super_heat#specl
 

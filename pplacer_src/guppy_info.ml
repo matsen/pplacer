@@ -7,9 +7,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit placefile_cmd () as super_placefile
-  inherit outfile_cmd () as super_outfile
-
-  method specl = super_outfile#specl
+  inherit output_cmd () as super_output
 
   method desc =
 "writes the number of leaves of the reference tree and the number of pqueries"

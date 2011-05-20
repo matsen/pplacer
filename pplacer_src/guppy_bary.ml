@@ -28,15 +28,9 @@ object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
+  inherit output_cmd () as super_output
 
-  val outfile = flag "-o"
-    (Plain ("", "The file to write out to. Defaults to the concatenation of the input file names."))
-
-  method specl =
-    super_mass#specl
-    @ [
-      string_flag outfile;
-    ]
+  method specl = super_mass#specl @ super_output#specl
 
   method desc =
 "draws the barycenter of a placement collection on the reference tree"
@@ -49,9 +43,9 @@ object (self)
     let prel = prel_of_prl weighting criterion prl
     in
     if prl <> [] then begin
-      let fname = match fv outfile with
-        | "" -> (Mokaphy_common.cat_names prl)^".bary.xml"
-        | s -> s
+      let fname = self#single_file
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".heat.xml"))
+        ()
       in
       Phyloxml.named_gtree_to_file
         fname
