@@ -5,7 +5,7 @@ all: $(RELEASE)
 $(RELEASE):
 	if [ ! -e bin ]; then mkdir bin; fi
 	make $@.native
-	cp `readlink $@.native` bin/$@
+	cp `readlink $@.native` /home/matsen/mokaphy/sim_squash/bin/$@
 	rm $@.native
 
 %.native %.byte %.p.native:
