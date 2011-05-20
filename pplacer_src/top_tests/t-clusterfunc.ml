@@ -5,7 +5,7 @@
 "test_all.place"
 *)
 
-open Clusterfunc
+open Squashfunc
 open MapsSets
 
 

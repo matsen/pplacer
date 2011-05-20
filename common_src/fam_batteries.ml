@@ -1,4 +1,4 @@
-(* 
+(*
 LE MENU
 -------
 ArrayFuns
@@ -155,11 +155,11 @@ let range n =
 
 let init n f =
   assert(n>=0);
-  let rec aux i =
-    if i>=n then []
-    else (f i)::(aux (i+1))
+  let rec aux accu i =
+    if i>=n then accu
+    else aux ((f i)::accu) (i+1)
   in
-  aux 0
+  List.rev (aux [] 0)
 
 let iteri f l =
   let rec aux i = function

@@ -99,6 +99,19 @@ module Pre = struct
 
   let unitize_mass transform pre =
     List.map (unit_mass_scale transform) pre
+
+  (* Pretty printing. *)
+  let ppr_mass_unit ff mu =
+    Format.fprintf ff "@[{loc = %d; distal_bl = %f; mass = %f}@]"
+      mu.loc mu.distal_bl mu.mass
+
+  let ppr_mul ff mul = Ppr.ppr_list ppr_mass_unit ff mul
+
+  let ppr_multimul ff mmul =
+    Format.fprintf ff "@[{multi = %d; mul = %a}@]" mmul.multi ppr_mul mmul.mul
+
+  let ppr ff pre = Ppr.ppr_list ppr_multimul ff pre
+
 end
 
 
@@ -121,7 +134,7 @@ module Indiv = struct
         let scalar = factorf *. (transform multimul.Pre.multi) in
         (List.fold_left
           (fun m mu ->
-            IntMapFuns.add_listly
+            IntMap.add_listly
               mu.Pre.loc
               (mu.Pre.distal_bl, scalar *. mu.Pre.mass)
               m)
@@ -148,7 +161,7 @@ let total_mass m =
     0.
 
   let ppr =
-    IntMapFuns.ppr_gen
+    IntMap.ppr_gen
       (fun ff l ->
         List.iter
           (fun (distal, mass) ->
@@ -170,7 +183,7 @@ module By_edge = struct
    *
    * a faster version would be like
    *
-   let h = Hashtbl.create ((IntMapFuns.nkeys ti_imap)/3) in
+   let h = Hashtbl.create ((IntMap.nkeys ti_imap)/3) in
     let addto ti x = Hashtbl.replace h ti (x+.(hashtbl_find_zero h ti)) in
     List.iter
     (fun pq ->

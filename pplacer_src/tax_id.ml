@@ -62,13 +62,11 @@ module OrderedTaxId = struct
   let compare = Pervasives.compare
 end
 
-module StringableTaxId = struct
+module PprTaxId = struct
   type t = tax_id
-  let to_string = to_string
+  let ppr = ppr
 end
 
-module TaxIdMap = Map.Make(OrderedTaxId)
-module TaxIdMapFuns = MapsSets.MapFuns (OrderedTaxId) (StringableTaxId)
-module TaxIdSet = Set.Make(OrderedTaxId)
-module TaxIdSetFuns = MapsSets.SetFuns (OrderedTaxId) (StringableTaxId)
+module TaxIdMap = MapsSets.BetterMap (Map.Make(OrderedTaxId)) (PprTaxId)
+module TaxIdSet = MapsSets.BetterSet (Set.Make(OrderedTaxId)) (PprTaxId)
 

@@ -38,7 +38,7 @@ let transport_map transform t pre1 pre2 =
   let (_,top_heat) = List.hd heat_list in
   if top_heat > Kr_distance.tol then
     raise (Kr_distance.Total_kr_not_zero top_heat);
-  IntMapFuns.of_pairlist heat_list
+  IntMap.of_pairlist heat_list
 
 (* The commands *)
 
@@ -50,16 +50,14 @@ object (self)
   inherit kr_cmd () as super_kr
   inherit heat_cmd () as super_heat
   inherit placefile_cmd () as super_placefile
-
-  val outfile = flag "-o"
-    (Plain ("", "Output file. Default is derived from the input filenames."))
+  inherit output_cmd () as super_output
 
   method specl =
     super_mass#specl
     @ super_refpkg#specl
     @ super_kr#specl
     @ super_heat#specl
-    @ [ string_flag outfile ]
+    @ super_output#specl
 
   method desc =
 "makes a heat tree"
@@ -67,9 +65,9 @@ object (self)
 
   method private placefile_action = function
     | [pr1; pr2] as prl ->
-      let fname = match fv outfile with
-        | "" -> (Mokaphy_common.cat_names prl)^".heat.xml"
-        | s -> s
+      let fname = self#single_file
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".heat.xml"))
+        ()
       in
       let transform, weighting, criterion = self#mass_opts
       and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in

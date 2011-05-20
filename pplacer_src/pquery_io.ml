@@ -39,11 +39,15 @@ let to_json json_state pq =
 
 (* ***** READING ***** *)
 
+let remove_fasta_gt s =
+  assert(s.[0] == '>');
+  String.sub s 1 ((String.length s)-1)
+
 let parse_pquery ?load_seq:(load_seq=true) = function
   | header::seq::places ->
       let my_seq = if load_seq then seq else no_seq_str in
       Pquery.make_ml_sorted
-      ~namel:(space_split (Alignment.remove_fasta_gt header))
+      ~namel:(space_split (remove_fasta_gt header))
       ~seq:my_seq
       (List.map Placement.placement_of_str places)
   | _ ->

@@ -101,7 +101,7 @@ let run_file prefs query_fname =
 
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_list = Newick_gtree.get_name_list ref_tree in
-  let ref_name_set = StringSetFuns.of_list ref_name_list in
+  let ref_name_set = StringSet.of_list ref_name_list in
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
   let seq_list = Alignment_funs.upper_list_of_any_file query_fname in
@@ -162,7 +162,7 @@ let run_file prefs query_fname =
     exit 0;
   end;
   (* find all the tree locations *)
-  let all_locs = IntMapFuns.keys (Gtree.get_bark_map ref_tree) in
+  let all_locs = IntMap.keys (Gtree.get_bark_map ref_tree) in
   assert(all_locs <> []);
   (* the last element in the list is the root, and we don't want to place there *)
   let locs = ListFuns.remove_last all_locs in
@@ -341,6 +341,6 @@ let run_file prefs query_fname =
   let children =
     List.map
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
-      (range (Prefs.children prefs)) in
+      (Base.range (Prefs.children prefs)) in
   event_loop children;
   donefunc ()

@@ -56,7 +56,7 @@ let get_lineage td ti =
 (* adds a lineage to the tree and the tax_rank_map *)
 let add_lineage_to_tree_and_map (t,m) l =
   let check_add k v m =
-    try TaxIdMapFuns.check_add k v m with
+    try TaxIdMap.check_add k v m with
     | Failure _ ->
         failwith
           ("Tax table broken: either "^(to_string k)^
@@ -154,7 +154,7 @@ let of_ncbi_file fname =
   | _ -> invalid_arg ("empty taxonomy: "^fname)
 
 (* *** writing *** *)
-let ppr_tax_tree = TaxIdMapFuns.ppr_gen Tax_id.ppr
+let ppr_tax_tree = TaxIdMap.ppr_gen Tax_id.ppr
 
 let sort_by_rank td ti1 ti2 =
   let l1 = get_tax_rank td ti1

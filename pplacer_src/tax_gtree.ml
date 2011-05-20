@@ -14,7 +14,7 @@ let tax_tips_of_tax_list td til =
         if TaxIdSet.mem x s then aux s accu l
         else begin
           let lin = Tax_taxonomy.get_lineage td x in
-          let removes = TaxIdSetFuns.of_list lin in
+          let removes = TaxIdSet.of_list lin in
           (* below: we add the lineage of our taxonomy
            * and take our ancestors from accu if present *)
           aux
@@ -33,7 +33,7 @@ let build_topdown_tree td tips =
   let rec add_ancestry rooto tt ti =
     if Tax_taxonomy.has_ancestor td ti then begin
       let anc = Tax_taxonomy.get_ancestor td ti in
-      let tt' = TaxIdMapFuns.add_listly anc ti tt in
+      let tt' = TaxIdMap.add_listly anc ti tt in
       (* if anc was already in tt then we don't have to add its lineage *)
       if TaxIdMap.mem anc tt then (rooto, tt')
       else add_ancestry rooto tt' anc

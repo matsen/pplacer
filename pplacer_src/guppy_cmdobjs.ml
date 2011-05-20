@@ -8,30 +8,59 @@ open MapsSets
 
 (* *** general objects *** *)
 
-class outfile_cmd () =
-object
+type outputloc =
+  | File of string
+  | Directory of string * string
+  | Unspecified
+
+class output_cmd ?(show_fname = true) () =
+object (self)
   val out_fname = flag "-o"
-    (Plain ("-", "Set the filename to write to. Otherwise write to stdout."))
-  method specl = [ string_flag out_fname; ]
+    (Needs_argument ("output file", "Specify the filename to write to."))
+  val out_dir = flag "--out-dir"
+    (Needs_argument ("output directory", "Specify the directory to write files to."))
+  val out_prefix = flag "--prefix"
+    (Plain ("", "Specify a string to be prepended to filenames."))
+  method specl =
+    let flags = [
+      string_flag out_dir;
+      string_flag out_prefix;
+    ]
+    in
+    if show_fname then
+      string_flag out_fname :: flags
+    else
+      flags
 
   method private out_channel =
-    match fv out_fname with
-      | "-" -> stdout
-      | s -> open_out s
-end
+    let prefix = fv out_prefix in
+    match fvo out_fname, fvo out_dir with
+      | None, None
+      | Some "-", None -> stdout
 
-class out_prefix_cmd () =
-object
-  val out_prefix = flag "-o"
-    (Needs_argument ("out-prefix", "Set the prefix to write to. Required."))
-  method specl = [ string_flag out_prefix; ]
-end
+      | Some fname, Some dir -> open_out (Filename.concat dir (prefix ^ fname))
+      | Some fname, None -> open_out (prefix ^ fname)
 
-class out_dir_cmd () =
-object
-  val out_dir = flag "--out-dir"
-    (Plain (".", "Specify the directory to write place files to."))
-  method specl = [ string_flag out_dir; ]
+      | None, Some _ -> failwith "directory provided with no filename"
+
+  method private out_file_or_dir ?(default = Directory (".", "")) () =
+    let prefix = fv out_prefix in
+    match fvo out_fname, fvo out_dir with
+      | None, None -> default
+      | None, Some dir -> Directory (dir, prefix)
+      | Some fname, None -> File (prefix ^ fname)
+      | Some fname, Some dir -> File (Filename.concat dir (prefix ^ fname))
+
+  method private single_prefix =
+    match self#out_file_or_dir () with
+      | Directory (dir, prefix) -> Filename.concat dir prefix
+      | _ -> failwith "can't coalesce to a single file"
+
+  method private single_file ?default () =
+    match self#out_file_or_dir ?default () with
+      | File fname -> fname
+      | _ -> failwith "directory provided with no filename"
+
 end
 
 class rng_cmd () =
@@ -268,7 +297,7 @@ object(self)
 end
 
 class classic_viz_cmd () =
-object
+object (self)
   val xml = flag "--xml"
     (Plain (false, "Write phyloXML (with colors) for all visualizations."))
   val show_node_numbers = flag "--node-numbers"
@@ -290,4 +319,33 @@ object
           ref_tree
        else
           (Newick_gtree.make_boot_id ref_tree))
+
+  method private write_trees suffix named_trees = function
+    | Directory (dir, prefix) ->
+      let prefix = Filename.concat dir prefix in
+      List.iter
+        (fun (name, trees) ->
+          Visualization.trees_to_file
+            self#fmt
+            (prefix ^ name ^ suffix)
+            trees)
+        named_trees
+    | File fname ->
+      let fname = fname ^ suffix in
+      Visualization.trees_to_file
+        self#fmt
+        fname
+        (Base.map_and_flatten snd named_trees)
+    | Unspecified -> ()
+
+end
+
+class sqlite_cmd () =
+object
+  val sqlite_fname = flag "--sqlite"
+    (Needs_argument ("sqlite database", "Specify the database file to use."))
+  method specl = [ string_flag sqlite_fname; ]
+
+  method private get_db =
+    Sqlite3.db_open (fv sqlite_fname)
 end
