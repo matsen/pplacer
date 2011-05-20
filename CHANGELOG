@@ -1,4 +1,51 @@
 
+1.1.alpha06
+===========
+
+ * Closed GH-20: efficiency of kr_distance evaluated and approved.
+ * Closed GH-44: improved sqlite3 support in guppy.
+ * Closed GH-45: better consistency of output flags across all guppy commands.
+ * Closed GH-48: better error reporting when loading json placefiles.
+ * Closed GH-50: fixed the output of `guppy classify`.
+ * Closed GH-51: only parsing the first word as a sequence name in a fasta file.
+ * Renamed the `--normal` flag for `guppy kr` to `--gaussian` to avoid confusion
+   with normalization.
+ * Only one shuffle at a time is now stored in memory (big savings, obviously).
+ * Fixed bug that was throwing off `guppy kr` shuffling significance estimation.
+ * `guppy pca` now defaults to scaling eigenvalues to percent variance; now has
+   a --raw-eval flag to specify otherwise.
+ * Fixed all of the sequence parsers to be tail-recursive, so parsing large
+   files no longer causes segfaults.
+ * Added a `guppy redup` command for re-adding duplicate sequences to
+   placefiles generated from deduplicated sequence files.
+
+
+1.1.alpha05
+===========
+
+ * Closed GH-11: options for the tree-generating subcommands are more uniform.
+ * Closed GH-22: added more unit tests for `guppy kr`.
+ * Closed GH-32: using power iteration rather than full
+   eigendecomposition. Leads to 60x speedup for PCA on demo data.
+ * Closed GH-35: added a remark in the documentation about multiple comparison.
+ * Closed GH-41: added docs for the json placefile format.
+ * Added `guppy splitify`. Spits out differences of mass across splits.
+ * Changed default behavior of `guppy kr` to not normalize, and
+   correspondingly added in a `--normalize` command line flag.
+ * Improved documentation.
+ * Moved `guppy heat` to `guppy kr_heat`.
+ * The `guppy heat` subcommand now maps an arbitrary vector to a phylogenetic
+   tree contained in a reference package.
+ * Removed redundant `classic` subcommand from guppy.
+ * Changed `guppy round` to use the new placefile format.
+ * Added support for posterior probabilities in json placefiles.
+ * Removed csv and old-placefile-format generation from pplacer.
+ * Added the ability to run pplacer in multiple processes in parallel with the
+   -j flag.
+ * Removed friend-finding from pplacer, as it was superseded by some of the
+   multiprocessing code.
+
+
 1.1.alpha03 to 1.1.alpha04
 ==========================
 
@@ -16,13 +63,3 @@
      Previously, a file was being opened and closed for every pquery in every
      placerun. This resulted in only the last pquery being classified and
      written out. Now only one file is being opened for each placerun.
-
-
-1.1.alpha05
-===========
-
-  * Added `guppy splitify`. Spits out differences of mass across splits.
-  * Changed default behavior of `guppy kr` to not normalize, and
-    correspondingly added in a `--normalize` command line flag.
-  * Improved documentation.
-

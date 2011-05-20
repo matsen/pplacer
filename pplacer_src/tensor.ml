@@ -15,7 +15,7 @@ let ppr ff x =
   let n = dim1 x in
   Format.fprintf ff "@[{";
   for i=0 to n-1 do
-    Fam_gsl_matvec.ppr_gsl_matrix ff (BA3.slice_left_2 x i);
+    Linear_utils.ppr_gsl_matrix ff (BA3.slice_left_2 x i);
     if i < n-1 then Format.fprintf ff ";@ "
   done;
   Format.fprintf ff "}@]"

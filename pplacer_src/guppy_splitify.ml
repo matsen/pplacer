@@ -21,7 +21,7 @@ let below_mass_map edgem t =
     Gtree.recur
       (fun i below_massl ->
         let below_tot = List.fold_left ( +. ) 0. below_massl in
-        m := IntMapFuns.check_add i below_tot (!m);
+        m := IntMap.check_add i below_tot (!m);
         (soft_find i edgem) +. below_tot)
       (fun i -> soft_find i edgem)
       t
@@ -56,12 +56,12 @@ let save_named_fal fname fal =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
 
   method specl =
-    super_outfile#specl
+    super_output#specl
     @ super_mass#specl
 
   method desc =

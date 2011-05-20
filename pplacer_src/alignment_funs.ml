@@ -34,7 +34,7 @@ let is_nuc_align aln =
 (* makeAlnIndexMap: make a map which maps from the node number to the row number of the
  * alignment. *)
 let makeAlnIndexMap taxonMap alnNameArr =
-  let n_tree = IntMapFuns.nkeys taxonMap
+  let n_tree = IntMap.nkeys taxonMap
   and n_aln = Array.length alnNameArr in
   if n_tree <> n_aln then
     failwith
@@ -72,7 +72,7 @@ let emper_freq nstates like_map align =
     CharMap.remove '?' ( (* we don't remove 'X'... *)
     CharMap.map (
       fun like_vect ->
-        Fam_gsl_matvec.alloc_l1_normalize like_vect) like_map)) in
+        Linear_utils.alloc_l1_normalize like_vect) like_map)) in
   let total = Gsl_vector.create ~init:0. nstates in
   Array.iter (
     fun (name, seq) ->
@@ -85,8 +85,8 @@ let emper_freq nstates like_map align =
               failwith (Printf.sprintf "'%c' not a known base in %s!" base name)
       ) seq
   ) align;
-  Fam_gsl_matvec.l1_normalize total;
-  (* Format.fprintf Format.std_formatter "%a@." Fam_gsl_matvec.ppr_gsl_vector total; *)
+  Linear_utils.l1_normalize total;
+  (* Format.fprintf Format.std_formatter "%a@." Linear_utils.ppr_gsl_vector total; *)
   total
 
 let list_of_any_file fname =

@@ -4,6 +4,7 @@ tags
 *.top
 *.native
 *.swp
+*.byte
 .ocamlinit
 .toplevel_history
 top_tests
@@ -12,3 +13,4 @@ common_src/install_common_pprs.txt
 makefile
 libs
 docs/generated_rst/
+docs/_build/doctrees/

@@ -20,11 +20,11 @@ let classify how criterion n_ranks td pq =
            (how p)
            (criterion p))
        (Pquery.place_list pq)
-       (CF.TIAMR.M.empty))
+       (CF.TIAMR.empty))
   in
   for desired_rank=(n_ranks-1) downto 0 do
     m := CF.keymap_add_by (CF.classify_at_rank td desired_rank) !m;
-    outl := (Tax_id.TaxIdMapFuns.to_pairs !m) :: !outl
+    outl := (CF.TIAMR.to_pairs !m) :: !outl
   done;
   List.flatten !outl
 
@@ -33,9 +33,8 @@ object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
+  inherit output_cmd () as super_output
 
-  val outfile = flag "-o"
-    (Plain ("", "Output file. Default is derived from the input filenames."))
   val regexp_default_exclude = flag "-Vr"
     (Plain (false, "Exclude every placement name by default."))
   val regexp_inclusions = flag "-Ir"
@@ -53,8 +52,7 @@ object (self)
   val tax_exclusions = flag "-Ex"
     (Plain ([], "Exclude placements which are likely matches for the given tax_id. May be passed multiple times."))
 
-  method specl = [
-    string_flag outfile;
+  method specl = super_output#specl @ [
     toggle_flag regexp_default_exclude;
     string_list_flag regexp_inclusions;
     string_list_flag regexp_exclusions;
@@ -72,9 +70,9 @@ object (self)
   method private placefile_action = function
     | [] -> ()
     | prl ->
-      let fname = match fv outfile with
-        | "" -> (Mokaphy_common.cat_names prl) ^ ".json"
-        | s -> s
+      let fname = self#single_file
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".json"))
+        ()
       in
       let r_inclusions = List.map Str.regexp (List.rev (fv regexp_inclusions))
       and r_exclusions = List.map Str.regexp (List.rev (fv regexp_exclusions))

@@ -1,5 +1,5 @@
 
-This subcommand outputs the classifications made by pplacer in a tabular format appropriate for use with R or SQL.
+This subcommand outputs the classifications made by pplacer in a tabular format appropriate for use with R.
 For example, here is a classification list made for one read.
 The columns are as follows: read name, attempted rank for classification, actual rank for classification, taxonomic identifier, and confidence.
 You can see that in this example, there is some uncertainty at and below species, but only one classification at the genus level.
@@ -32,4 +32,10 @@ You can see that in this example, there is some uncertainty at and below species
   GLKT0ZE01CQ2BU             below_species       species    1261   0.853561
   GLKT0ZE01CQ2BU             below_species       species  341694   0.073214
 
+Sqlite
+======
 
+``guppy classify`` can also write its output into a sqlite3 database. The
+argument to the ``--sqlite`` flag is the sqlite3 database into which the
+results should be put. This database must have first been intialized using
+``guppy taxtable``.

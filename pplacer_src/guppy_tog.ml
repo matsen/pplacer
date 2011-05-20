@@ -29,36 +29,36 @@ let write_tog_file tree_fmt criterion fname_base ref_tree placed_map =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit out_prefix_cmd () as super_out_prefix
+  inherit output_cmd () as super_output
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
-  inherit viz_command () as super_viz
+  inherit classic_viz_cmd () as super_classic_viz
 
   method specl =
     super_mass#specl
-    @ super_out_prefix#specl
-    @ super_viz#specl
+    @ super_output#specl
+    @ super_classic_viz#specl
 
   method desc = "makes a tree with each of the reads represented as a pendant edge"
   method usage = "usage: tog [options] placefile[s]"
 
   method private placefile_action prl =
     let _, _, criterion = self#mass_opts in
-    List.iter
+    let trees = List.map
       (fun pr ->
         let _, placed_map =
           Pquery.make_map_by_best_loc
             criterion
             (Placerun.get_pqueries pr)
         in
-        let fname_base =
-          (fv out_prefix) ^ (Placerun.get_name pr)
-        in
-        write_tog_file
-          self#fmt
-          criterion
-          fname_base
-          (self#decor_ref_tree pr)
-          placed_map)
+        Placerun.get_name pr,
+        [
+          tog_tree
+            criterion
+            (self#decor_ref_tree pr)
+            placed_map
+        ])
       prl
+    in
+    self#write_trees ".tog" trees (self#out_file_or_dir ())
 end

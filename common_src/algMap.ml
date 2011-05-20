@@ -4,18 +4,17 @@
  *
  *)
 
-module AlgMap (N: Number.NUMBER) (OT: Map.OrderedType) =
+module AlgMap (N: Number.NUMBER) (M: MapsSets.M) =
   struct
-    module M = Map.Make(OT)
-    type t = N.t M.t
+    include M
 
     let soft_find k m =
-      try M.find k m with
+      try find k m with
       | Not_found -> N.zero
 
       (* sets k to (soft value of k) op v *)
     let soft_op_add op k v m =
-      M.add k (op (soft_find k m) v) m
+      add k (op (soft_find k m) v) m
 
     let add_by = soft_op_add (N.add)
     let sub_by = soft_op_add (N.sub)
@@ -30,4 +29,4 @@ module AlgMapZ = AlgMap (Number.Z)
 module AlgMapR = AlgMap (Number.R)
 
 
-module IntAlgMapR = AlgMapR (MapsSets.OrderedInt)
+module IntAlgMapR = AlgMapR (MapsSets.IntMap)

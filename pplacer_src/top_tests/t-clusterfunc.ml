@@ -5,9 +5,7 @@
 "test_all.place"
 *)
 
-#cd "/home/matsen/mokaphy/ocaml/mokaphy_src/top_tests"
-
-open Clusterfunc
+open Squashfunc
 open MapsSets
 
 

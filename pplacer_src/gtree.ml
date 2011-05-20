@@ -60,7 +60,8 @@ let set_bl t id bl =
 
 (* stree related *)
 let top_id t = Stree.top_id (get_stree t)
-let n_edges t = Stree.n_edges (get_stree t)
+let n_taxa t = Stree.n_taxa (get_stree t) (* Number of non-root edges. *)
+let n_edges t = Stree.n_edges (get_stree t) (* Number of non-root edges. *)
 let recur f_node f_leaf t = Stree.recur f_node f_leaf (get_stree t)
 let recur_listly f t = Stree.recur_listly f (get_stree t)
 let node_ids t = Stree.node_ids (get_stree t)

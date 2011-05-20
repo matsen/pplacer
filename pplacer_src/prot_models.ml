@@ -1,7 +1,5 @@
 open MapsSets
 
-type model = LG | WAG
-
 (* *** translating protein sequences *** *)
 
 let prot_code = [|'A'; 'R'; 'N'; 'D'; 'C'; 'Q'; 'E'; 'G'; 'H'; 'I'; 'L'; 'K'; 'M'; 'F'; 'P'; 'S'; 'T'; 'W'; 'Y'; 'V'|]
@@ -41,7 +39,7 @@ let parseProtModel stringArr =
   in
   let nEntries = 1 + Array.length lowerTriMat in
   let qMat =
-    Fam_gsl_matvec.mat_init nEntries nEntries (
+    Linear_utils.mat_init nEntries nEntries (
       fun i j ->
         if i = j then 0. (* filled in later *)
         else lowerTriMat.((max i j)-1).(min i j)) in
@@ -109,7 +107,35 @@ parseProtModel [|
 
 let lg_statd = parseFreq "0.079066 0.055941 0.041977 0.053052 0.012937 0.040767 0.071586 0.057337 0.022355 0.062157 0.099081 0.064600 0.022951 0.042302 0.044040 0.061197 0.053287 0.012066 0.034155 0.069147"
 
+
+(* JTT *)
+let jtt_trans =
+parseProtModel [|
+  "58";
+  "54   45";
+  "81   16   528";
+  "56   113  34   10";
+  "57   310  86   49   9";
+  "105  29   58   767  5    323";
+  "179  137  81   130  59   26   119";
+  "27   328  391  112  69   597  26   23";
+  "36   22   47   11   17   9    12   6    16";
+  "30   38   12   7    23   72   9    6    56   229";
+  "35   646  263  26   7    292  181  27   45   21   14";
+  "54   44   30   15   31   43   18   14   33   479  388  65";
+  "15   5    10   4    78   4    5    5    40   89   248  4    43";
+  "194  74   15   15   14   164  18   24   115  10   102  21   16   17";
+  "378  101  503  59   223  53   30   201  73   40   59   47   29   92   285";
+  "475  64   232  38   42   51   32   33   46   245  25   103  226  12   118  477";
+  "9    126  8    4    115  18   10   55   8    9    52   10   24   53   6    35   12";
+  "11   20   70   46   209  24   7    8    573  32   24   8    18   536  10   63   21   71";
+  "298  17   16   31   62   20   45   47   11   961  180  14   323  62   23   38   112  25  16";
+|]
+
+let jtt_statd = parseFreq "0.076748 0.051691 0.042645 0.051544 0.019803 0.040752 0.061830 0.073152 0.022944 0.053761 0.091904 0.058676 0.023826 0.040126 0.050901 0.068765 0.058565 0.014261 0.032102 0.066005"
+
 let trans_and_statd_of_model_name = function
   | "LG" -> (lg_trans, lg_statd)
   | "WAG" -> (wag_trans, wag_statd)
+  | "JTT" -> (jtt_trans, jtt_statd)
   | model_name -> failwith ("unknown model: "^model_name)

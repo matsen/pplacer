@@ -1,7 +1,6 @@
 (* Our basic tree data structure without information.
  *
  * *)
-
 open MapsSets
 
 type stree = Node of int * stree list | Leaf of int
@@ -17,12 +16,13 @@ let rec n_taxa = function
   | Node(_,tL) -> List.fold_left ( + ) 0 (List.map n_taxa tL)
   | Leaf(_) -> 1
 
+(* Number of non-root edges. *)
 let n_edges stree =
   let rec aux = function
     | Node(_,tL) -> List.fold_left ( + ) 1 (List.map aux tL)
     | Leaf(_) -> 1
   in
-  (aux stree) - 1   (* exclude root edge *)
+  (aux stree) - 1
 
 let rec node_ids_aux = function
   | Node(i,tL) -> i :: (List.flatten (List.map node_ids_aux tL))

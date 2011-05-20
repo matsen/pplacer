@@ -52,5 +52,5 @@ let of_string s =
 
 let of_file fname =
   let lines = File_parsing.string_list_of_file fname in
-  let tokens = List.flatten (List.map tokenize_batchfile lines) in
+  let tokens = Base.map_and_flatten tokenize_batchfile lines in
   parse tokens
