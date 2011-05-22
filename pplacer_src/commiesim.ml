@@ -294,3 +294,30 @@ let main
     cluster_tree
   in
   Newick_gtree.to_file cluster_gtree (name_prefix ^ ".tre")
+
+let random_colored_tree size n_colors seed =
+  let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
+  Gsl_rng.set rng seed;
+  let st = generate_yule rng size in
+  let colors =
+    StringSet.of_list
+      (List.map
+         (fun i -> String.make 1 (char_of_int (i + 65)))
+         (Base.range n_colors))
+  in
+  let choose_color = StringSet.uniform_sample (sample rng) colors in
+  let rec aux accum = function
+    | Stree.Leaf i :: rest ->
+      let accum' =
+        Newick_bark.map_set_name
+          i
+          (StringSet.choose (choose_color 1)) accum
+      in
+      aux accum' rest
+    | Stree.Node (_, subtrees) :: rest ->
+      let rest' = List.rev_append subtrees rest in
+      aux accum rest'
+    | [] -> accum
+  in
+  let bark = aux IntMap.empty [st] in
+  Gtree.gtree st bark
