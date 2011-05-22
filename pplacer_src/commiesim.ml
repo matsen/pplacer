@@ -43,11 +43,11 @@ type weighting =
   | Function of (int -> float)
   | Uniform
 
-(* Sampling without replacement.
+(* Sampling with and without replacement.
  * Note that because of the implementation of GSL's discrete distributions, the
  * sum of the elements of an Array weighting need not total to one; it's scaled
  * to make a probability distribution. They do need to be positive. *)
-let sample rng ?(weighting = Uniform) n k =
+let sample ~replacement rng ?(weighting = Uniform) n k =
   if k > n then raise (Invalid_sample "k > n");
   if k < 0 then raise (Invalid_sample "k < 0");
   let distribution = match weighting with
@@ -55,7 +55,12 @@ let sample rng ?(weighting = Uniform) n k =
     | Function f -> Array.init n f
     | Uniform -> Array.make n 1.0
   in
-  let rec aux accum = function
+  let discrete_distn = Gsl_randist.discrete_preproc distribution in
+  let rec aux_repl accum = function
+    | 0 -> accum
+    | k ->
+      aux_repl ((Gsl_randist.discrete rng discrete_distn) :: accum) (k - 1)
+  and aux_no_repl accum = function
     | 0 -> accum
     | k ->
       let i =
@@ -63,16 +68,17 @@ let sample rng ?(weighting = Uniform) n k =
           rng
           (Gsl_randist.discrete_preproc distribution)
       in
+      (* clear out i from the distribution (w/o replacement *)
       distribution.(i) <- 0.0;
-      aux (i :: accum) (k - 1)
+      aux_no_repl (i :: accum) (k - 1)
   in
-  aux [] k
+  (if replacement then aux_repl else aux_no_repl) [] k
 
 (* We take the weight on a split to be proportional to weight_transform applied
  * to the size of the smaller element of the set. *)
 let sample_sset_weighted rng =
   Sset.weighted_sample
-  (fun arr -> sample rng ~weighting:(Array arr))
+  (fun arr -> sample ~replacement:true rng ~weighting:(Array arr))
   (fun (k, _) -> size_transform (float_of_int (Lset.cardinal k)))
 
 let repeat f n =
@@ -95,7 +101,7 @@ let generate_yule rng count =
     match List.length trees with
       | 1 -> List.hd trees
       | n ->
-        let nodes = sample rng n 2 in
+        let nodes = sample ~replacement:true rng n 2 in
         let _, trees', nodes' = List.fold_left
           (fun (e, l1, l2) x ->
             if List.mem e nodes then
@@ -137,7 +143,7 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
   in
   let splits' = sample_sset_weighted rng splits k in
   let leafss = sset_lsetset splits' (Lsetset.singleton leafs) in
-  let base_leafs = Lsetset.uniform_sample (sample rng) leafss min_leafs in
+  let base_leafs = Lsetset.uniform_sample (sample ~replacement:true rng) leafss min_leafs in
   let to_sample =
     Lsetset.filter
       (fun lset -> not (Lsetset.mem lset base_leafs))
@@ -162,6 +168,7 @@ let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
     let n_splits =
       lower_bounded_poisson rng ((List.length subtrees)-1) poisson_mean
     in
+    Printf.printf "using %d splits\n" n_splits;
     (* the splits that actually cut leafss *)
     let cutting_splits = select_sset_cutting_lsetset splits leafss in
     (* sample some number from them *)

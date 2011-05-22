@@ -42,8 +42,6 @@ end
 
 module Sset = BetterSet (Set.Make (OrderedSplit)) (PprSplit)
 
-let x = Sset.weighted_sample
-
 (* If sigma does not split X, then `split_lset(sigma, X)` returns the lsetset
  containing only X. Otherwise say sigma = U|V, in which case it returns the
  lsetset consisting of X intersect U and X intersect V.
