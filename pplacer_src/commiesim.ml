@@ -1,9 +1,20 @@
+open Fam_batteries
 open MapsSets
 open Splits
 
 let size_transform x = x ** 10.
 
-(* Throw n_items into n_bins such that each bin is not empty. *)
+(* Return the counts from throwing n_items into n_bins. *)
+let balls_in_boxes rng ~n_bins ~n_items =
+  let counts = Array.create n_bins 0 in
+  for i=1 to n_items do
+    let which_bin = Gsl_rng.uniform_int rng n_bins in
+    counts.(which_bin) <- counts.(which_bin) + 1
+  done;
+  Array.to_list counts
+
+(* Return the counts from throwing n_items into n_bins such that each bin is not
+ * empty. *)
 let nonempty_balls_in_boxes rng ~n_bins ~n_items =
   assert(n_items >= n_bins);
   let counts = Array.create n_bins 1 in
@@ -35,7 +46,6 @@ let uniform_nonempty_partition rng n_bins lss =
       new_lss)
     (nonempty_balls_in_boxes rng ~n_bins ~n_items:(Lsetset.cardinal lss))
 
-
 exception Invalid_sample of string
 
 type weighting =
@@ -55,31 +65,34 @@ let sample ~replacement rng ?(weighting = Uniform) n k =
     | Function f -> Array.init n f
     | Uniform -> Array.make n 1.0
   in
-  let discrete_distn = Gsl_randist.discrete_preproc distribution in
-  let rec aux_repl accum = function
-    | 0 -> accum
-    | k ->
-      aux_repl ((Gsl_randist.discrete rng discrete_distn) :: accum) (k - 1)
-  and aux_no_repl accum = function
-    | 0 -> accum
-    | k ->
-      let i =
-        Gsl_randist.discrete
-          rng
-          (Gsl_randist.discrete_preproc distribution)
-      in
-      (* clear out i from the distribution (w/o replacement *)
-      distribution.(i) <- 0.0;
-      aux_no_repl (i :: accum) (k - 1)
-  in
-  (if replacement then aux_repl else aux_no_repl) [] k
+  if k = 0 then []
+  else begin
+    let discrete_distn = Gsl_randist.discrete_preproc distribution in
+    let rec aux_repl accum = function
+      | 0 -> accum
+      | k ->
+        aux_repl ((Gsl_randist.discrete rng discrete_distn) :: accum) (k - 1)
+    and aux_no_repl accum = function
+      | 0 -> accum
+      | k ->
+        let i =
+          Gsl_randist.discrete
+            rng
+            (Gsl_randist.discrete_preproc distribution)
+        in
+        (* clear out i from the distribution (w/o replacement *)
+        distribution.(i) <- 0.0;
+        aux_no_repl (i :: accum) (k - 1)
+    in
+    (if replacement then aux_repl else aux_no_repl) [] k
+  end
 
 (* We take the weight on a split to be proportional to weight_transform applied
  * to the size of the smaller element of the set. *)
 let sample_sset_weighted rng =
   Sset.weighted_sample
-  (fun arr -> sample ~replacement:true rng ~weighting:(Array arr))
-  (fun (k, _) -> size_transform (float_of_int (Lset.cardinal k)))
+    (fun arr -> sample ~replacement:true rng ~weighting:(Array arr))
+    (fun (k, _) -> size_transform (float_of_int (Lset.cardinal k)))
 
 let repeat f n =
   let rec aux accum = function
@@ -101,7 +114,7 @@ let generate_yule rng count =
     match List.length trees with
       | 1 -> List.hd trees
       | n ->
-        let nodes = sample ~replacement:true rng n 2 in
+        let nodes = sample ~replacement:false rng n 2 in
         let _, trees', nodes' = List.fold_left
           (fun (e, l1, l2) x ->
             if List.mem e nodes then
@@ -143,7 +156,7 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
   in
   let splits' = sample_sset_weighted rng splits k in
   let leafss = sset_lsetset splits' (Lsetset.singleton leafs) in
-  let base_leafs = Lsetset.uniform_sample (sample ~replacement:true rng) leafss min_leafs in
+  let base_leafs = Lsetset.plain_sample (sample ~replacement:true rng) leafss min_leafs in
   let to_sample =
     Lsetset.filter
       (fun lset -> not (Lsetset.mem lset base_leafs))
@@ -155,29 +168,40 @@ let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
        (fun _ -> Gsl_rng.uniform rng < include_prob)
        to_sample)
 
-
 (* keep sampling poissons until you get something >= lower *)
 let rec lower_bounded_poisson rng lower mean =
   let x = Gsl_randist.poisson rng mean in
   if x >= lower then x
   else lower_bounded_poisson rng lower mean
 
+(* We want to divide the lsetsets into the subtrees.
+ * If there are more lsets than subtrees, then we do balls in boxes.
+ * If not, we do one per. *)
+let uniform_nonempty_UNpartition rng n_bins lss =
+  let n_items = Lsetset.cardinal lss in
+  List.map
+    (fun n_samples ->
+      (Lsetset.plain_sample
+        (sample ~replacement:true rng ~weighting:Uniform)
+        lss
+        n_samples))
+    (if n_items < n_bins then (ListFuns.init n_bins (fun _ -> 1))
+    else nonempty_balls_in_boxes rng ~n_bins ~n_items)
+
 let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
   | Stree.Leaf n -> IntMap.add n leafss IntMap.empty
   | Stree.Node (_, subtrees) ->
-    let n_splits =
-      lower_bounded_poisson rng ((List.length subtrees)-1) poisson_mean
-    in
-    Printf.printf "using %d splits\n" n_splits;
     (* the splits that actually cut leafss *)
     let cutting_splits = select_sset_cutting_lsetset splits leafss in
     (* sample some number from them *)
+    let n_splits = Gsl_randist.poisson rng poisson_mean in
+    Printf.printf "using %d splits\n" n_splits;
     let chosen_splits = sample_sset_weighted rng cutting_splits n_splits in
     (* apply these splits *)
     let cut_leafss = sset_lsetset chosen_splits leafss in
     (* throw the balls (leafs) into boxes (subtrees) *)
     let distributed =
-      uniform_nonempty_partition rng (List.length subtrees) cut_leafss
+      uniform_nonempty_UNpartition rng (List.length subtrees) cut_leafss
     in
     List.fold_left2
       (fun map leafss t ->

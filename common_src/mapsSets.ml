@@ -176,7 +176,7 @@ sig
   val of_list: elt list -> t
   val map: (elt -> elt) -> t -> t
   val ppr: Format.formatter -> t -> unit
-  val uniform_sample: (int -> 'a -> int list) -> t -> 'a -> t
+  val plain_sample: (int -> 'a -> int list) -> t -> 'a -> t
   val weighted_sample: ('a array -> int -> 'b -> int list) -> (elt -> 'a) -> t -> 'b -> t
 end
 
@@ -197,9 +197,12 @@ module BetterSet (OS: Set.S) (PBLE: PPRABLE with type t = OS.elt) : (S with type
           ) ff (elements s);
           Format.fprintf ff "}@]"
 
+    (* These sampling procedures take a set and a k, then return a list of k
+     * elements that are the sample from s. *)
+
     (* sample_func takes an n (number of elts) and a k (number to sample), then
      * returns a list of indices to be included. *)
-    let uniform_sample sample_func s k =
+    let plain_sample sample_func s k =
       let indices = sample_func (OS.cardinal s) k in
       let elements = Array.of_list (OS.elements s) in
       List.fold_left
