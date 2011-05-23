@@ -7,6 +7,7 @@ let command_list () =
       "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
       "sing", (fun () -> new Guppy_sing.cmd ());
       "tog", (fun () -> new Guppy_tog.cmd ());
+      "convexify", (fun () -> new Guppy_convexify.cmd ());
     ];
 
     "statistical comparison", [

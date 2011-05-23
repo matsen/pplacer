@@ -281,7 +281,13 @@ let _build_apartl cutsetl kappa (c, x) =
       in
       (* We make sure to pass on the c as the color of the internal node in the
        * case where between pi is empty by filtering out the ones that don't. *)
-      List.filter (fun pi -> not (CS.is_empty (between pi)) || b = c) pis)
+      List.fold_left
+        (fun accum pi ->
+          if not (CS.is_empty (between pi)) || b = c then
+            (b, pi) :: accum
+          else accum)
+        accum
+        pis)
     (* We add c to the list of things that can be colors of internal nodes. *)
     (COS.add c big_b_excl)
     []
@@ -392,18 +398,13 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       phi', omega
     | None -> phi, 0
 
-let badness cutsetim tree =
-  let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetim)) - 1) in
-  let rec aux worst total = function
-    | Leaf i :: rest ->
-      let b = badness_i i in
-      aux (max worst b) (total + b) rest
-    | Node (i, subtrees) :: rest ->
-      let b = badness_i i in
-      aux (max worst b) (total + b) (List.rev_append subtrees rest)
-    | [] -> worst, total
-  in
-  aux 0 0 [tree]
+let badness cutsetim =
+  IntMap.fold
+    (fun _ cutset (worst, total) ->
+      let badness_i = max 0 ((CS.cardinal cutset) - 1) in
+      max worst badness_i, total + badness_i)
+    cutsetim
+    (0, 0)
 
 let solve ((_, tree) as cdtree) =
   let _, cutsetim = build_sizemim_and_cutsetim cdtree in
