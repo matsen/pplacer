@@ -58,10 +58,7 @@ let classify how criterion n_ranks td pr f =
         let outmap = ref IntMap.empty in
         let m = ref
           (List.fold_right
-             (fun p ->
-               TIAMR.add_by
-                 (how p)
-                 (criterion p))
+             (fun p -> TIAMR.add_by (how p) (criterion p))
              (Pquery.place_list pq)
              (TIAMR.empty))
         in
