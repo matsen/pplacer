@@ -239,17 +239,6 @@ let cset_of_coptset coptset =
     coptset
     CS.empty
 
-let is_apart (b, pi) x =
-  let all_colors = all pi
-  and between_colors = between pi in
-  (* XXX *)
-  all_colors <= x
-  && match b, CS.cardinal between_colors with
-    | Some b', 1 -> CS.choose between_colors = b'
-    | Some _, 0
-    | None, 0 -> true
-    | _, _ -> false
-
 (* As indicated by the underscore, this function is not designed to work as is.
  * Indeed, we need to preprocess with the case of c not being in any of the cut
  * sets under the internal node as defined in build_apartl below. *)
@@ -331,6 +320,7 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
+(* XXX add a nu_f *)
 let rec phi_recurse cutsetim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
@@ -348,10 +338,16 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       let omega = if x = IntMap.find i cutsetim then 1 else 0 in
       phi, Some (omega, null_apart)
     | Node (_, subtrees) ->
+        (* XXX it seems to me that we will need
+         * List.map top_id subtrees
+         * as well for the nu_f
+         * *)
       let cutsetl = List.map
         (fun subtree -> IntMap.find (top_id subtree) cutsetim)
         subtrees
       in
+      (* XXX zip together the apartl with its value under nu_f and sort on these
+       * values. *)
       let apartl = build_apartl
         cutsetl
         (IntMap.find i cutsetim)
@@ -368,15 +364,25 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
           pi
           subtrees
       in
-      (* My understanding is that this None/Some below is just to start the
-       * folding going. *)
+      (* XXX let's turn this below a (tail) recursion before actually adding the
+       * nu business. Then before recurring, we compare the best value of
+       *
+        (fun (phi, current_best (apart, nu) ->
+          let (best_omega, best_phi) = current_best in
+          if nu <= best_omega then current_best
+          else recur
+
+          By the way, can you think of a situation in which build_apartl would return []?
+          If so, is 0 an appropriate return value?
+
+       * *)
       List.fold_left
-        (fun (phi, cur) apart ->
+        (fun (phi, current_best) apart ->
           let phi, omega = apart_omega phi apart in
-          match cur with
+          match current_best with
             | None -> phi, Some (omega, apart)
             | Some (old_omega, _) when omega > old_omega -> phi, Some (omega, apart)
-            | _ -> phi, cur)
+            | _ -> phi, current_best)
         (phi, None)
         apartl
   in
@@ -386,8 +392,6 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       phi', omega
     | None -> phi, 0
 
-(* XXX Do you really need to recur over the tree here? It seems to me that
- * everything you need is in the cutsetim. *)
 let badness cutsetim tree =
   let badness_i i = max 0 ((CS.cardinal (IntMap.find i cutsetim)) - 1) in
   let rec aux worst total = function
@@ -403,6 +407,12 @@ let badness cutsetim tree =
 
 let solve ((_, tree) as cdtree) =
   let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+  (*
+   * XXX actually accept our sizemim and use it to build a
+   nu_f = phi -> apart -> int list -> int
+   by totaling across the phi value below if it is available, and if not then
+   using the sizemim.
+  *)
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
   Hashtbl.clear build_apartl_memo;
   phi_recurse cutsetim tree (None, CS.empty) IntMap.empty

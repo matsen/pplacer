@@ -18,7 +18,9 @@ type colorm = color IntMap.t
 type cdtree = colorm * stree
 type local_phi = (apart * int) qmap
 type phi = local_phi IntMap.t
-
+(* Here the int list is the list of top_id's that are in parallel with the
+ * top_id's of the subtree below. *)
+type nu_f = phi -> apart -> int list -> int
 
 (* QuestionMap should be a map from questions *)
 
@@ -40,9 +42,6 @@ val build_sizemim_and_cutsetim: cdtree -> sizem IntMap.t * cset IntMap.t
  * Make a map that goes from every internal node to the color sets in the
  * subtrees below that internal node. *)
 
-(*
-val cutsetlm_of_cutsetm_and_tree: cset IntMap.t -> stree -> csetl IntMap.t
-*)
 
 (* Building up aparts. *)
 
@@ -62,6 +61,7 @@ val build_apartl: csetl -> cset -> question -> apart list
 
 (* For the recursion. *)
 
+val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
 (*
 val single_nu: cset -> sizem -> int
 (** single_nu cset sizem simply totals up the entries of sizem for colors in
@@ -87,15 +87,6 @@ val apart_nu: apart -> sizem -> int
 val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
 (** phi_recurse id q phi returns a phi map which includes the answer
  * to the posed question.
- *
-  let cutset = IntMap.find id cutsetm in
-  let below_cutsetl = List.map (fun t -> IntMap.find (top_id t) cutsetm) in
-  let apartl = build_apartl below_cutsetl q in
-
-  ... recurse below for each apartl, and find the one with the best total ...
-  ( we will have to pass the phi on to each one through the list, accumulating )
-  add this one to phi, and return phi and the best score
- *
  *)
 
 (* Version with lower bounds.
@@ -129,10 +120,3 @@ val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
 *)
 
 val solve: cdtree -> phi * int
-(**
-
- let (sizem, cutsetm) = build_sizemim_and_cutsetim (colors, tree) in
-
-- run phi_recurse
-
-*)
