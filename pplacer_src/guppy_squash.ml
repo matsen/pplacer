@@ -126,7 +126,7 @@ object (self)
     and refpkgo = self#get_rpo
     and mode_str = fv tax_cluster_mode
     in
-    let path = (^) self#single_prefix in
+    let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
     let width = Base.find_zero_pad_width nboot in
     let pad_str_of_int i =

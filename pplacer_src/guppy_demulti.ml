@@ -29,7 +29,7 @@ object (self)
   method usage = "usage: demulti [options] placefile[s]"
 
   method private placefile_action prl =
-    let prefix = self#single_prefix in
+    let prefix = self#single_prefix () in
     List.iter
       (fun pr ->
         let out_name = (prefix^(pr.Placerun.name)) in

@@ -7,7 +7,7 @@ open Fam_batteries
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit output_cmd ~show_fname:false () as super_output
+  inherit output_cmd ~show_fname:false ~prefix_required:true () as super_output
   inherit mass_cmd () as super_mass
   inherit heat_cmd () as super_heat
   inherit refpkg_cmd ~required:false as super_refpkg
@@ -43,7 +43,7 @@ object (self)
     and scale = fv scale
     and write_n = fv write_n
     and refpkgo = self#get_rpo
-    and prefix = self#single_prefix
+    and prefix = self#single_prefix ~requires_user_prefix:true ()
     in
     let prt = Mokaphy_common.list_get_same_tree prl in
     let t = match refpkgo with

@@ -13,14 +13,18 @@ type outputloc =
   | Directory of string * string
   | Unspecified
 
-class output_cmd ?(show_fname = true) () =
+class output_cmd ?(show_fname = true) ?(prefix_required = false) () =
 object (self)
   val out_fname = flag "-o"
     (Needs_argument ("output file", "Specify the filename to write to."))
   val out_dir = flag "--out-dir"
     (Needs_argument ("output directory", "Specify the directory to write files to."))
   val out_prefix = flag "--prefix"
-    (Plain ("", "Specify a string to be prepended to filenames."))
+    (Needs_argument ("output prefix",
+                     if prefix_required then
+                       "Specify a string to be prepended to filenames. Required."
+                     else
+                       "Specify a string to be prepended to filenames."))
   method specl =
     let flags = [
       string_flag out_dir;
@@ -33,28 +37,36 @@ object (self)
       flags
 
   method private out_channel =
-    let prefix = fv out_prefix in
-    match fvo out_fname, fvo out_dir with
-      | None, None
-      | Some "-", None -> stdout
+    match fvo out_fname, fvo out_dir, fvo out_prefix with
+      | None, None, None
+      | Some "-", None, None -> stdout
 
-      | Some fname, Some dir -> open_out (Filename.concat dir (prefix ^ fname))
-      | Some fname, None -> open_out (prefix ^ fname)
+      | Some fname, Some dir, Some prefix -> open_out (Filename.concat dir (prefix ^ fname))
+      | Some fname, Some dir, None -> open_out (Filename.concat dir fname)
+      | Some fname, None, Some prefix -> open_out (prefix ^ fname)
+      | Some fname, None, None -> open_out fname
 
-      | None, Some _ -> failwith "directory provided with no filename"
+      | None, Some _, _ -> failwith "directory provided with no filename"
+      | _, _, Some _ -> failwith "prefix provided with nothing else"
 
   method private out_file_or_dir ?(default = Directory (".", "")) () =
-    let prefix = fv out_prefix in
-    match fvo out_fname, fvo out_dir with
-      | None, None -> default
-      | None, Some dir -> Directory (dir, prefix)
-      | Some fname, None -> File (prefix ^ fname)
-      | Some fname, Some dir -> File (Filename.concat dir (prefix ^ fname))
+    match fvo out_fname, fvo out_dir, fvo out_prefix with
+      | None, None, None -> default
 
-  method private single_prefix =
+      | None, Some dir, None -> Directory (dir, "")
+      | None, None, Some prefix -> Directory (".", prefix)
+      | None, Some dir, Some prefix -> Directory (dir, prefix)
+
+      | Some fname, None, None -> File fname
+      | Some fname, None, Some prefix -> File (prefix ^ fname)
+      | Some fname, Some dir, None -> File (Filename.concat dir fname)
+      | Some fname, Some dir, Some prefix -> File (Filename.concat dir (prefix ^ fname))
+
+  method private single_prefix ?(requires_user_prefix = false) () =
     match self#out_file_or_dir () with
+      | Directory (_, "") when requires_user_prefix -> failwith "no prefix specified"
       | Directory (dir, prefix) -> Filename.concat dir prefix
-      | _ -> failwith "can't coalesce to a single file"
+      | _ -> failwith "can't output to a single file"
 
   method private single_file ?default () =
     match self#out_file_or_dir ?default () with

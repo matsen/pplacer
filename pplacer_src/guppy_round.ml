@@ -107,7 +107,7 @@ object (self)
   method usage = "usage: round [options] placefile[s]"
 
   method private placefile_action prl =
-    let prefix = self#single_prefix
+    let prefix = self#single_prefix ()
     and round_placerun = round_placerun (fv cutoff) (fv sig_figs) in
     List.iter
       (fun pr ->
