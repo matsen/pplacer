@@ -1,3 +1,8 @@
+1.1.alpha07
+===========
+
+ * Fixed a serious issue with any command that used a `--prefix` flag.
+
 
 1.1.alpha06
 ===========
