@@ -122,8 +122,6 @@ object (self)
   val n_samples = flag "-s"
     (Formatted (0, "Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is %d."))
-  val verbose = flag "--verbose"
-    (Plain (false, "Verbose running."))
   val gaussian = flag "--gaussian"
     (Plain (false, "Use the Gaussian process approximation for p-value \
         estimation"))
@@ -138,7 +136,6 @@ object (self)
       toggle_flag list_output;
       toggle_flag density;
       int_flag n_samples;
-      toggle_flag verbose;
       toggle_flag gaussian;
     ]
 
