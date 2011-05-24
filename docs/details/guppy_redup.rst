@@ -9,7 +9,7 @@ dedup files for use with ``guppy redup``::
     guppy redup -d sample.dedup --prefix reduped_ sample_deduped.json
 
 The format for dedup files is very simple, for ease of reading and writing.
-Each dedup file is a a series of lines, with a single-space-separated list of
+Each dedup file is a series of lines, with a single-space-separated list of
 sequences on each line. The first sequence on the line is the sequence that's
 put into the deduplicated file, and the rest are synonyms for that same
 sequence. For example::
