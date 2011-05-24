@@ -230,16 +230,16 @@ let main
     ?include_prob
     ~poisson_mean
     ?(retries = 100)
-    ~cluster_gtree
+    ~cluster_tree
     ~n_pqueries
     ~tree
     name_prefix =
 
   let stree = Gtree.get_stree tree
-  and cluster_tree = Gtree.get_stree cluster_gtree in
+  and cluster_stree = Gtree.get_stree cluster_tree in
   let splits = sset_of_tree stree
   and leafs = lset_of_tree stree
-  and yule_size = Stree.n_taxa cluster_tree in
+  and yule_size = Stree.n_taxa cluster_stree in
 
   let rec retry = function
     | 0 -> failwith "failed too many resamplings"
@@ -261,8 +261,8 @@ let main
           rng
           splits
           leafss
-          (Gtree.get_bl cluster_gtree)
-          cluster_tree
+          (Gtree.get_bl cluster_tree)
+          cluster_stree
       with
         | Invalid_sample _ -> retry (n - 1)
   in
@@ -292,17 +292,9 @@ let main
         ""
         (Printf.sprintf "%s%d.json" name_prefix e)
         pr)
-    leaf_map;
+    leaf_map
 
-  let cluster_gtree = gtree_of_stree_numbers
-    (newick_bark_of_prefixed_int name_prefix)
-    cluster_tree
-  in
-  Newick_gtree.to_file cluster_gtree (name_prefix ^ ".tre")
-
-let random_colored_tree size n_colors seed =
-  let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
-  Gsl_rng.set rng seed;
+let random_colored_tree rng size n_colors =
   let st = generate_yule rng size in
   let colors =
     StringSet.of_list

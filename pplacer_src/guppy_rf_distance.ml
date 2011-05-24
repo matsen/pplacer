@@ -6,9 +6,7 @@ module SSS = Strsplits.StrSplitSet
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit outfile_cmd () as super_outfile
-
-  method specl = super_outfile#specl
+  inherit output_cmd () as super_outfile
 
   method desc = "calculates RF distance of two trees"
   method usage = "usage: rf_distance <newick_trees>"
