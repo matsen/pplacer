@@ -1,6 +1,6 @@
 
-Documentation for pplacer and guppy
-===================================
+Pplacer documentation home
+==========================
 
 The pplacer suite consists of two separate binaries: pplacer and guppy.
 The pplacer binary actually does phylogenetic placement and produces place files, while guppy does all of the downstream analysis.

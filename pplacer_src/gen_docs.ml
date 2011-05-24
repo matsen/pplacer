@@ -36,6 +36,7 @@ let () =
       let endline () = Printf.fprintf ch "\n" in
 
       (* write top matter *)
+      Printf.fprintf ch ":tocdepth: 3\n\n";
       write_top_title ch name;
       Printf.fprintf ch "\n`%s` %s." name o#desc;
       endline ();
