@@ -51,17 +51,29 @@ let classif_stral td pq rank_map =
     []
     (Pquery.namel pq)
 
-let classify how criterion n_ranks td pr f =
+(* Write out classifications.
+ * f is the function used to write out the classification.
+ * Return the number of placements that are just proximal of an MRCA (these are
+ * the ones that are difficult to classify.) *)
+let classify how criterion n_ranks td pr f mrca_map =
+  let is_key id m =
+    try let _ = IntMap.find id m in true with
+    | Not_found -> false
+  in
+  (* Does this placement have some mass on an edge just proximal of an MRCA? *)
+  let has_mrca_proximal_mass pq =
+    List.fold_left
+      (fun accum p -> accum || is_key (Placement.location p) mrca_map)
+      false
+      (Pquery.place_list pq)
+  in
   try
-    List.iter
-      (fun pq ->
+    List.fold_left
+      (fun n_proximal pq ->
         let outmap = ref IntMap.empty in
         let m = ref
           (List.fold_right
-             (fun p ->
-               TIAMR.add_by
-                 (how p)
-                 (criterion p))
+             (fun p -> TIAMR.add_by (how p) (criterion p))
              (Pquery.place_list pq)
              (TIAMR.empty))
         in
@@ -72,7 +84,9 @@ let classify how criterion n_ranks td pr f =
             (TIAMR.to_pairs (!m))
             !outmap
         done;
-        f pq (!outmap))
+        f pq (!outmap);
+        n_proximal + if has_mrca_proximal_mass pq then 1 else 0)
+      0
       (Placerun.get_pqueries pr)
   with
     | Placement.No_classif ->
@@ -93,6 +107,8 @@ object (self)
     (Plain (false, "Use posterior probability for our criteria."))
   val csv_out = flag "--csv"
     (Plain (false, "Write .class.csv files containing CSV data."))
+  val mrca_stats = flag "--mrca-stats"
+    (Plain (false, "Print the number of placements just proximal to MRCAs."))
 
   method specl =
     super_refpkg#specl
@@ -100,6 +116,7 @@ object (self)
   @ [
     toggle_flag use_pp;
     toggle_flag csv_out;
+    toggle_flag mrca_stats;
   ]
 
   method desc =
@@ -172,10 +189,20 @@ object (self)
           String_matrix.write_padded ch (Array.of_list (classif_stral td pq rank_map)))
 
     in
+    let mrcam = Refpkg.get_mrcam rp in
+    if fv mrca_stats then Printf.printf "name\tn_prox\tn_classified\n";
     List.iter
       (fun pr ->
         let close, out_func = out_func pr in
-        classify Placement.classif criterion n_ranks td pr out_func;
+        let n_proximal =
+          classify Placement.classif criterion n_ranks td pr out_func mrcam
+        in
+        if fv mrca_stats then
+          Printf.printf
+            "%s\t%d\t%d\n"
+            (Placerun.get_name pr)
+            n_proximal
+            (Placerun.n_pqueries pr);
         close ())
       prl
 
