@@ -188,13 +188,13 @@ let uniform_nonempty_UNpartition rng n_bins lss =
     (if n_items < n_bins then (ListFuns.init n_bins (fun _ -> 1))
     else nonempty_balls_in_boxes rng ~n_bins ~n_items)
 
-let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
+let rec distribute_lsetset_on_stree rng splits leafss bl = function
   | Stree.Leaf n -> IntMap.add n leafss IntMap.empty
-  | Stree.Node (_, subtrees) ->
+  | Stree.Node (n, subtrees) ->
     (* the splits that actually cut leafss *)
     let cutting_splits = select_sset_cutting_lsetset splits leafss in
     (* sample some number from them *)
-    let n_splits = Gsl_randist.poisson rng poisson_mean in
+    let n_splits = Gsl_randist.poisson rng (bl n) in
     Printf.printf "using %d splits\n" n_splits;
     let chosen_splits = sample_sset_weighted rng cutting_splits n_splits in
     (* apply these splits *)
@@ -207,7 +207,7 @@ let rec distribute_lsetset_on_stree rng poisson_mean splits leafss = function
       (fun map leafss t ->
         IntMap.union
           map
-          (distribute_lsetset_on_stree rng poisson_mean cutting_splits leafss t))
+          (distribute_lsetset_on_stree rng cutting_splits leafss bl t))
       IntMap.empty
       distributed
       subtrees
@@ -230,19 +230,20 @@ let main
     ?include_prob
     ~poisson_mean
     ?(retries = 100)
-    ~yule_size
+    ~cluster_gtree
     ~n_pqueries
     ~tree
-    ~name_prefix =
+    name_prefix =
 
-  let stree = Gtree.get_stree tree in
+  let stree = Gtree.get_stree tree
+  and cluster_tree = Gtree.get_stree cluster_gtree in
   let splits = sset_of_tree stree
-  and leafs = lset_of_tree stree in
+  and leafs = lset_of_tree stree
+  and yule_size = Stree.n_taxa cluster_tree in
 
   let rec retry = function
     | 0 -> failwith "failed too many resamplings"
     | n ->
-      let cluster_tree = generate_yule rng yule_size in
       try
         let leafss =
           match include_prob with
@@ -256,12 +257,16 @@ let main
               splits
               leafs
         in
-        let map = distribute_lsetset_on_stree rng poisson_mean splits leafss cluster_tree in
-        cluster_tree, map
+        distribute_lsetset_on_stree
+          rng
+          splits
+          leafss
+          (Gtree.get_bl cluster_gtree)
+          cluster_tree
       with
         | Invalid_sample _ -> retry (n - 1)
   in
-  let cluster_tree, leaf_map = retry retries in
+  let leaf_map = retry retries in
 
   let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
   IntMap.iter
