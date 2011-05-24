@@ -8,7 +8,7 @@ let write_dist_mat ff pr =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
 
   method desc =
 "prints out a pairwise distance matrix between the edges"

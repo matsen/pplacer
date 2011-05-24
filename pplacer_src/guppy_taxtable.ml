@@ -38,10 +38,11 @@ object (self)
 
       CREATE TABLE IF NOT EXISTS placement_names (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,
         origin TEXT NOT NULL,
         PRIMARY KEY (placement_id, name, origin)
       );
+      CREATE INDEX placement_names_id ON placement_names (placement_id);
 
       CREATE TABLE IF NOT EXISTS placement_classifications (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
@@ -50,6 +51,23 @@ object (self)
         tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
         likelihood REAL NOT NULL
       );
+      CREATE INDEX placement_classifications_id ON placement_classifications (placement_id);
+
+      CREATE VIEW best_classifications
+      AS
+        SELECT placement_id,
+               tax_id,
+               rank,
+               likelihood
+        FROM   (SELECT *
+                FROM   placements
+                       JOIN placement_classifications USING (placement_id)
+                       JOIN ranks USING (rank)
+                WHERE  rank = desired_rank
+                ORDER  BY placement_id,
+                          rank_order ASC,
+                          likelihood ASC)
+        GROUP  BY placement_id;
 
     ";
     Sql.check_exec db "BEGIN TRANSACTION";

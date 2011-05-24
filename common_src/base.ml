@@ -29,6 +29,13 @@ let int_pow x n =
   let rec aux accu i = if i=0 then accu else aux (x*.accu) (i-1) in
   aux 1. n
 
+let string_of_fpclass = function
+  | FP_normal ->    "FP_normal"
+  | FP_subnormal -> "FP_subnormal"
+  | FP_zero ->      "FP_zero"
+  | FP_infinite ->  "FP_infinite"
+  | FP_nan ->       "FP_nan"
+
 (* uniformly shuffle the elements of an array using the Knuth shuffle
  * http://en.wikipedia.org/wiki/Random_permutation
  * http://rosettacode.org/wiki/Knuth_shuffle#OCaml

@@ -12,17 +12,15 @@ let multiply_list l =
   aux l
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
   inherit placefile_cmd () as super_placefile
+  inherit output_cmd () as super_output
 
-  val outfile = flag "-o"
-    (Plain ("", "Output file. Default is derived from the input filenames."))
   val mult = flag "-x"
     (Plain ([], "Apply a multiplier to the given placefile, e.g. -x 2:y.json"))
 
-  method specl = [
-    string_flag outfile;
+  method specl = super_output#specl @ [
     string_list_flag mult;
   ]
 
@@ -48,9 +46,9 @@ object
     in match prl with
     | [] -> ()
     | prl ->
-      let fname = match fv outfile with
-        | "" -> (Mokaphy_common.cat_names prl) ^ ".json"
-        | s -> s
+      let fname = self#single_file
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".json"))
+        ()
       in
       let combined = List.fold_left
         (Placerun.combine "")
