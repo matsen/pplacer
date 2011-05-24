@@ -305,7 +305,9 @@ let random_colored_tree size n_colors seed =
          (fun i -> String.make 1 (char_of_int (i + 65)))
          (Base.range n_colors))
   in
-  let choose_color = StringSet.uniform_sample (sample rng) colors in
+  let choose_color =
+    StringSet.plain_sample (sample ~replacement:false rng) colors
+  in
   let rec aux accum = function
     | Stree.Leaf i :: rest ->
       let accum' =
