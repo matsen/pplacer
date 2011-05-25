@@ -61,7 +61,7 @@ let adjacent_bls t =
   in
   aux IntMap.empty [None, t.Gtree.stree]
 
-let of_gtree t =
+let ldistm_of_gtree t =
   let st = t.Gtree.stree in
   let leaves = leaf_ids st
   and adjacency_map = adjacent_bls t
@@ -103,7 +103,10 @@ let of_gtree t =
         (IntMap.add n new_ldist accum)
         rest
   in
-  let ldistm = aux IntMap.empty leaves in
+  aux IntMap.empty leaves
+
+let of_gtree t =
+  let ldistm = ldistm_of_gtree t in
 
   {tree = t; marks = []; ldistm = ldistm}
   (* The algorithm is simple: first, with a two pass recursion, find the mark
