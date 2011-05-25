@@ -10,48 +10,46 @@
  *
  *)
 
-module ColorMap = MapsSet.StringMap
-type color = string
-type cotree = Newick_gtree.t * color option IntMap.t
+open MapsSets
 
-type mark =
-  {
-    edge_num: int;
-    distal_bl: float;
-    color: color;
-  }
+type leaf = int
 
-type cdist =
-  {
-    color: color;
-    distance: float;
-  }
+type mark = {
+  edge_num: int;
+  distal_bl: float;
+  leaf: leaf;
+}
 
-type v =
-  {
-    cot: cotree;
-    upper: (mark * (cdist option)) ColorMap.t; (* ? *)
-    lower: mark IntMap.t;
-    cdistm: cdist IntMap.t;
-  }
+type ldist = {
+  leaf: leaf;
+  distance: float;
+}
+
+type v = {
+  tree: Newick_gtree.t;
+  marks: mark list;
+  ldistm: ldist IntMap.t;
+}
 
 (* A portion of an edge defined by (id, start, finish), where id is the edge id,
  * start is where it starts, and finish is where it ends (measured from proximal
  * side). *)
 type edge_snip = int * float * float
 
+val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
+val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
 
-val of_gtree: cotree -> v
+val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
 
 val uncolor_leaf: v -> leaf -> v * leaf list
-(** This function returns the updated Voronoi after removing the given color, as
- * well as returning the colors that were affected by this removal. *)
+(** This function returns the updated Voronoi after removing the given leaf, as
+ * well as returning the leaves that were affected by this removal. *)
 
-val fold: v -> color -> ('a -> edge_snip -> 'a) -> 'a -> 'a
+val fold: v -> leaf -> ('a -> edge_snip -> 'a) -> 'a -> 'a
 (** Effectively fold over the edge_snipl defined below, but we don't have to
  * construct it in memory.
  *)
 
-val get_edge_snipl: v -> color -> edge_snip list
-(** Get a list of the edge_snips that are of the given color in v. *)
+val get_edge_snipl: v -> leaf -> edge_snip list
+(** Get a list of the edge_snips that are of the given leaf in v. *)
