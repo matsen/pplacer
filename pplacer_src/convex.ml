@@ -67,6 +67,7 @@ type colorm = color IntMap.t
 type cdtree = colorm * stree
 type local_phi = (apart * int) QuestionMap.t
 type phi = local_phi IntMap.t
+type nu_f = phi -> apart -> int list -> int
 
 (* Abbreviations *)
 module CS = ColorSet
