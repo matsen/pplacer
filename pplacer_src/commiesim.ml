@@ -188,29 +188,32 @@ let uniform_nonempty_UNpartition rng n_bins lss =
     (if n_items < n_bins then (ListFuns.init n_bins (fun _ -> 1))
     else nonempty_balls_in_boxes rng ~n_bins ~n_items)
 
-let rec distribute_lsetset_on_stree rng splits leafss bl = function
-  | Stree.Leaf n -> IntMap.add n leafss IntMap.empty
-  | Stree.Node (n, subtrees) ->
-    (* the splits that actually cut leafss *)
-    let cutting_splits = select_sset_cutting_lsetset splits leafss in
-    (* sample some number from them *)
-    let n_splits = Gsl_randist.poisson rng (bl n) in
-    Printf.printf "using %d splits\n" n_splits;
-    let chosen_splits = sample_sset_weighted rng cutting_splits n_splits in
-    (* apply these splits *)
-    let cut_leafss = sset_lsetset chosen_splits leafss in
-    (* throw the balls (leafs) into boxes (subtrees) *)
-    let distributed =
-      uniform_nonempty_UNpartition rng (List.length subtrees) cut_leafss
-    in
-    List.fold_left2
-      (fun map leafss t ->
-        IntMap.union
-          map
-          (distribute_lsetset_on_stree rng cutting_splits leafss bl t))
-      IntMap.empty
-      distributed
-      subtrees
+let distribute_lsetset_on_tree rng splits leafss gt =
+  let bl = Gtree.get_bl gt in
+  let name = Gtree.get_name gt in
+  let rec aux splits leafss = function
+    | Stree.Leaf n ->
+      StringMap.add (name n) (int_of_float (bl n), leafss) StringMap.empty
+    | Stree.Node (n, subtrees) ->
+      (* the splits that actually cut leafss *)
+      let cutting_splits = select_sset_cutting_lsetset splits leafss in
+      (* sample some number from them *)
+      let n_splits = Gsl_randist.poisson rng (bl n) in
+      Printf.printf "using %d splits\n" n_splits;
+      let chosen_splits = sample_sset_weighted rng cutting_splits n_splits in
+      (* apply these splits *)
+      let cut_leafss = sset_lsetset chosen_splits leafss in
+      (* throw the balls (leafs) into boxes (subtrees) *)
+      let distributed =
+        uniform_nonempty_UNpartition rng (List.length subtrees) cut_leafss
+      in
+      List.fold_left2
+        (fun map leafss t -> StringMap.union map (aux cutting_splits leafss t))
+        StringMap.empty
+        distributed
+        subtrees
+  in
+  aux splits leafss gt.Gtree.stree
 
 let pquery_of_leaf_and_seq leaf seq =
   Pquery.make_ml_sorted
@@ -257,42 +260,68 @@ let main
               splits
               leafs
         in
-        distribute_lsetset_on_stree
+        distribute_lsetset_on_tree
           rng
           splits
           leafss
-          (Gtree.get_bl cluster_tree)
-          cluster_stree
+          cluster_tree
       with
         | Invalid_sample _ -> retry (n - 1)
   in
   let leaf_map = retry retries in
 
   let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
-  IntMap.iter
-    (fun e leafss ->
-      let leafs = Lsetset.fold Lset.union leafss Lset.empty in
-      let distr = Array.to_list
-        (distribute_pqueries
-           (Array.make (Lset.cardinal leafs) 1.0))
-      and leafl = Lset.elements leafs in
-      let pqueries =
-        List.map2
-          (fun leaf -> repeat (pquery_of_leaf_and_seq leaf))
-          leafl
-          distr
-      in
-      let pr =
-        Placerun.make
-          tree
-          (Printf.sprintf "commiesim_%d" e)
-          (List.flatten pqueries)
-      in
-      Placerun_io.to_json_file
-        ""
-        (Printf.sprintf "%s%d.json" name_prefix e)
-        pr)
-    leaf_map
+  StringMap.iter
+    (fun name (multiplier, leafss) ->
+      List.iter
+        (fun i ->
+          let leafs = Lsetset.fold Lset.union leafss Lset.empty in
+          let distr = Array.to_list
+            (distribute_pqueries
+               (Array.make (Lset.cardinal leafs) 1.0))
+          and leafl = Lset.elements leafs in
+          let pqueries =
+            List.map2
+              (fun leaf -> repeat (pquery_of_leaf_and_seq leaf))
+              leafl
+              distr
+          in
+          let pr =
+            Placerun.make
+              tree
+              (Printf.sprintf "commiesim_%s_%d" name i)
+              (List.flatten pqueries)
+          in
+          Placerun_io.to_json_file
+            ""
+            (Printf.sprintf "%s%s_%d.json" name_prefix name i)
+            pr)
+        (Base.range multiplier))
+    leaf_map;
+
+  (* okay it finally got to me *)
+  let next_id = ref (Gtree.top_id cluster_tree)
+  and new_bark = ref (Gtree.get_bark_map cluster_tree) in
+  let rec aux = function
+    | Stree.Node (i, subtrees) -> Stree.node i (List.map aux subtrees)
+    | Stree.Leaf i ->
+      let mult = int_of_float (Gtree.get_bl cluster_tree i) in
+      Stree.node i
+        (List.map
+           (fun e ->
+             let old_name = Gtree.get_name cluster_tree i in
+             incr next_id;
+             new_bark :=
+               Newick_bark.map_set_name
+               (!next_id)
+               (Printf.sprintf "%s_%d" old_name e)
+               (!new_bark);
+             Stree.leaf (!next_id))
+           (Base.range mult))
+  in
+  let cluster_stree' = aux cluster_stree in
+  let new_bark' = !new_bark in
+  Gtree.gtree cluster_stree' new_bark'
 
 let random_colored_tree rng size n_colors =
   let st = generate_yule rng size in

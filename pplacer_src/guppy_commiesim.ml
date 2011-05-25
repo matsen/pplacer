@@ -4,7 +4,7 @@ open Guppy_cmdobjs
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit output_cmd ~prefix_required:true () as super_output
+  inherit output_cmd () as super_output
   inherit rng_cmd () as super_rng
   inherit refpkg_cmd ~required:true as super_refpkg
 
@@ -13,7 +13,7 @@ object (self)
   val poisson_mean = flag "-m"
     (Needs_argument ("poisson_mean", "The mean of the poisson distribution for number of splits to make"))
   val cluster_tree = flag "-t"
-    (Needs_argument ("cluster_tree", "The clustering tree, in Newick format."))
+    (Needs_argument ("cluster_tree", "A file containing the clustering tree, in Newick format."))
   val n_pqueries = flag "-q"
     (Needs_argument ("n_pqueries", "The number of placements to put in each placefile."))
 
@@ -37,13 +37,17 @@ object (self)
         | 0. -> None
         | x -> assert(x > 0.); Some x
     in
-    Commiesim.main
+    let gt = Commiesim.main
       self#rng
       ?include_prob:ip
       ~retries:100
       ~poisson_mean:(fv poisson_mean)
-      ~cluster_tree:(Newick_gtree.of_string (fv cluster_tree))
+      ~cluster_tree:(Newick_gtree.of_file (fv cluster_tree))
       ~n_pqueries:(fv n_pqueries)
       ~tree:(Refpkg.get_ref_tree self#get_rp)
-      (self#single_prefix ~requires_user_prefix:true ())
+      (self#single_prefix ())
+    in
+    Newick_gtree.to_file
+      gt
+      ((Filename.chop_suffix (fv cluster_tree) ".tre") ^ ".expand.tre")
 end
