@@ -35,10 +35,23 @@ type v =
     cdistm: cdist IntMap.t;
   }
 
-val of_cotree: cotree -> t
+(* A portion of an edge defined by (id, start, finish), where id is the edge id,
+ * start is where it starts, and finish is where it ends (measured from proximal
+ * side). *)
+type edge_snip = int * float * float
+
+
+val of_gtree: cotree -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
 
-val uncolor_leaf: v -> color -> v
-(** This function returns the updated Voronoi after removing the given color. *)
+val uncolor_leaf: v -> leaf -> v * leaf list
+(** This function returns the updated Voronoi after removing the given color, as
+ * well as returning the colors that were affected by this removal. *)
 
+val fold: v -> color -> ('a -> edge_snip -> 'a) -> 'a -> 'a
+(** Effectively fold over the edge_snipl defined below, but we don't have to
+ * construct it in memory.
+ *)
 
+val get_edge_snipl: v -> color -> edge_snip list
+(** Get a list of the edge_snips that are of the given color in v. *)
