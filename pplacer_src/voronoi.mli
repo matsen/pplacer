@@ -17,7 +17,7 @@ type leaf = int
 type mark = {
   edge_num: int;
   distal_bl: float;
-  leaf: leaf;
+  proximal_leaf: leaf;
 }
 
 type ldist = {

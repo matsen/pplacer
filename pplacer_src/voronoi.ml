@@ -6,7 +6,7 @@ type leaf = int
 type mark = {
   edge_num: int;
   distal_bl: float;
-  leaf: leaf;
+  proximal_leaf: leaf;
 }
 
 type ldist = {
@@ -61,11 +61,9 @@ let adjacent_bls t =
   in
   aux IntMap.empty [None, t.Gtree.stree]
 
-let ldistm_of_gtree t =
-  let st = t.Gtree.stree in
-  let leaves = leaf_ids st
-  and adjacency_map = adjacent_bls t
-  and bl = Gtree.get_bl t in
+let update_ldistm ldistm ?which_leaves gt =
+  let leaves = Gtree.leaf_ids gt
+  and adjacency_map = adjacent_bls gt in
   let rec aux accum = function
     | [] -> accum
     | n :: rest when List.mem n leaves ->
@@ -103,12 +101,44 @@ let ldistm_of_gtree t =
         (IntMap.add n new_ldist accum)
         rest
   in
-  aux IntMap.empty leaves
+  aux
+    ldistm
+    (match which_leaves with
+      | None -> leaves
+      | Some l -> l)
+
+let ldistm_of_gtree t =
+  update_ldistm IntMap.empty t
 
 let of_gtree t =
-  let ldistm = ldistm_of_gtree t in
+  let ldistm = ldistm_of_gtree t
+  and bl = Gtree.get_bl t in
 
-  {tree = t; marks = []; ldistm = ldistm}
+  let rec aux accum = function
+    | [] -> accum
+    | Leaf _ :: rest -> aux accum rest
+    | Node (n, subtrees) :: rest ->
+      let proximal_ldist = IntMap.find n ldistm in
+      let accum = List.fold_left
+        (fun accum st ->
+          let sn = top_id st in
+          let distal_ldist = IntMap.find sn ldistm in
+          if proximal_ldist = distal_ldist then
+            accum
+          else
+            {
+              edge_num = sn;
+              proximal_leaf = proximal_ldist.leaf;
+              distal_bl = ((bl sn) +. distal_ldist.distance -. proximal_ldist.distance) /. 2.0;
+            } :: accum)
+        accum
+        subtrees
+      in
+      aux accum (List.rev_append subtrees rest)
+  in
+  let marks = aux [] [t.Gtree.stree] in
+
+  {tree = t; marks = marks; ldistm = ldistm}
   (* The algorithm is simple: first, with a two pass recursion, find the mark
    * color and distance to the closest leaf for all of the internal nodes. Now
    * say we are on an edge of length l bounded by internal nodes i_d (distal)
