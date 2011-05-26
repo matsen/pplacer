@@ -32,8 +32,6 @@ let tax_t_prel_of_prl tgt_fun weighting criterion rp prl =
   (taxt,
     List.map (Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap) prl)
 
-let zeropad i = Printf.sprintf "%04d" i
-
 let mkdir path =
   try
     Unix.mkdir path 0o755
@@ -111,10 +109,10 @@ object (self)
 "performs squash clustering"
   method usage = "usage: squash [options] placefiles"
 
-  method private write_pre_tree transform prefix infix drt id pre =
+  method private write_pre_tree transform prefix infix drt pre =
     let tot = Mass_map.Pre.total_mass transform pre in
     assert(tot > 0.);
-    let tree_name = prefix^((zeropad id)^"."^infix) in
+    let tree_name = prefix^"."^infix in
     let massm = (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre) in
     Phyloxml.named_gtree_to_file
       (tree_name ^ ".fat.xml")
@@ -128,10 +126,6 @@ object (self)
     in
     let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
-    let width = Base.find_zero_pad_width nboot in
-    let pad_str_of_int i =
-      String_matrix.pad_to_width '0' width (string_of_int i)
-    in
     self#check_placerunl prl;
     if 0 = nboot then begin
       (* bootstrap turned off *)
@@ -139,23 +133,35 @@ object (self)
         make_cluster transform weighting criterion refpkgo mode_str prl in
       Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
       let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
-      let path = Filename.concat outdir in
+      let pad_width = Base.find_zero_pad_width (IntMap.nkeys blobim) in
+      let pad_str_of_int i =
+        Filename.concat
+          outdir
+          (String_matrix.pad_to_width '0' pad_width (string_of_int i))
+      in
       (* make a tax tree here then run mimic on it *)
+      let wpt transform infix t i =
+        self#write_pre_tree transform (pad_str_of_int i) infix t
+      in
       match refpkgo with
-        | None -> IntMap.iter (self#write_pre_tree transform (path "") "phy" drt) blobim
+        | None -> IntMap.iter (wpt transform "phy" drt) blobim
         | Some rp ->
         (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
           let tdrt = Refpkg.get_tax_ref_tree rp in
-          IntMap.iter (self#write_pre_tree transform (path "") "phy" tdrt) blobim;
+          IntMap.iter (wpt transform "phy" tdrt) blobim;
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in
           let tax_blobim =
             IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
           in
-          IntMap.iter (self#write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
+          IntMap.iter (wpt Mass_map.no_transform "tax" taxt) tax_blobim
     end
     else begin
+      let pad_width = Base.find_zero_pad_width nboot in
+      let pad_str_of_int i =
+        String_matrix.pad_to_width '0' pad_width (string_of_int i)
+      in
       let rng = self#rng in
       for i=1 to nboot do
         Printf.printf "running bootstrap %d of %d\n" i nboot;
