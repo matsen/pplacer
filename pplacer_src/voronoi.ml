@@ -37,7 +37,7 @@ let qs_push {queue = q; set = s} l =
       if not (IntSet.mem x accum) then
         Queue.push x q;
       IntSet.add x accum)
-    IntSet.empty
+    s
     l
   in {queue = q; set = s'}
 
@@ -97,7 +97,6 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
     qs_push qs (List.map fst (IntMap.find n adjacency_map))
   in
   let rec aux ((ldistm', updated_leaves) as accum) rest =
-    Printf.printf "%d\n" (Queue.length rest.queue);
     match qs_pop rest with
       | None, _ -> accum
       | Some n, rest when IntSet.mem n all_leaves ->
@@ -127,16 +126,24 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
           | adj ->
             let distance, best_leaf = list_min adj in
             let new_ldist = {leaf = best_leaf; distance = distance} in
-            let rest = match begin
+            let updated_leaves, rest = match begin
               try
                 Some (IntMap.find n ldistm')
               with
                 | Not_found -> None
             end with
-              | Some ldist when ldist = new_ldist -> rest
-              | _ -> concat_adj n rest
+              | None -> updated_leaves, concat_adj n rest
+              | Some ldist when ldist = new_ldist -> updated_leaves, rest
+              | Some prev_ldist ->
+                (if IntSet.mem prev_ldist.leaf all_leaves then
+                  IntSet.add prev_ldist.leaf updated_leaves
+                else
+                  updated_leaves),
+                concat_adj n rest
             in
-            IntMap.add n new_ldist ldistm', updated_leaves, rest
+            IntMap.add n new_ldist ldistm',
+            IntSet.add best_leaf updated_leaves,
+            rest
         in
         aux (ldistm', updated_leaves) rest
   in
