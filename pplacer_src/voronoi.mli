@@ -25,6 +25,8 @@ type ldist = {
   distance: float;
 }
 
+type ldistm = ldist IntMap.t
+
 type v = {
   tree: Newick_gtree.t;
   marks: mark list;
@@ -38,6 +40,7 @@ type edge_snip = int * float * float
 
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
+val update_ldistm: ldistm -> IntSet.t -> int list -> Newick_gtree.t -> ldistm * IntSet.t
 
 val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)

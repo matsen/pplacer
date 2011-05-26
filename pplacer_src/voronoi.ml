@@ -14,6 +14,8 @@ type ldist = {
   distance: float;
 }
 
+type ldistm = ldist IntMap.t
+
 type v = {
   tree: Newick_gtree.t;
   marks: mark list;
@@ -61,54 +63,60 @@ let adjacent_bls t =
   in
   aux IntMap.empty [None, t.Gtree.stree]
 
-let update_ldistm ldistm ?which_leaves gt =
-  let leaves = Gtree.leaf_ids gt
-  and adjacency_map = adjacent_bls gt in
-  let rec aux accum = function
+let update_ldistm ldistm all_leaves initial_leaves gt =
+  let adjacency_map = adjacent_bls gt in
+  let concat_adj n =
+    List.rev_append (List.map fst (IntMap.find n adjacency_map))
+  in
+  let rec aux ((ldistm', updated_leaves) as accum) = function
     | [] -> accum
-    | n :: rest when List.mem n leaves ->
+    | n :: rest when IntSet.mem n all_leaves ->
       aux
-        (IntMap.add n {leaf = n; distance = 0.0} accum)
-        (List.rev_append (List.map fst (IntMap.find n adjacency_map)) rest)
+        ((IntMap.add n {leaf = n; distance = 0.0} ldistm'),
+         updated_leaves)
+        (concat_adj n rest)
     | n :: rest ->
       let adj = List.fold_left
         (fun stl (sn, sbl) ->
           match begin
             try
-              Some (IntMap.find sn accum)
+              Some (IntMap.find sn ldistm')
             with
               | Not_found -> None
           end with
+            | Some {leaf = leaf} when not (IntSet.mem leaf all_leaves) ->
+              stl
             | Some {leaf = best_leaf; distance = distance} ->
               (sbl +. distance, best_leaf) :: stl
             | None -> stl)
         []
         (IntMap.find n adjacency_map)
       in
-      let distance, best_leaf = list_min adj in
-      let new_ldist = {leaf = best_leaf; distance = distance} in
-      let rest = match begin
-        try
-          Some (IntMap.find n accum)
-        with
-          | Not_found -> None
-      end with
-        | Some ldist when ldist = new_ldist -> rest
-        | _ ->
-          List.rev_append (List.map fst (IntMap.find n adjacency_map)) rest
+      let ldistm', updated_leaves, rest = match adj with
+        | [] -> IntMap.remove n ldistm', updated_leaves, concat_adj n rest
+        | adj ->
+          let distance, best_leaf = list_min adj in
+          let new_ldist = {leaf = best_leaf; distance = distance} in
+          let rest = match begin
+            try
+              Some (IntMap.find n ldistm')
+            with
+              | Not_found -> None
+          end with
+            | Some ldist when ldist = new_ldist -> rest
+            | _ -> concat_adj n rest
+          in
+          IntMap.add n new_ldist ldistm', updated_leaves, rest
       in
-      aux
-        (IntMap.add n new_ldist accum)
-        rest
+      aux (ldistm', updated_leaves) rest
   in
   aux
-    ldistm
-    (match which_leaves with
-      | None -> leaves
-      | Some l -> l)
+    (ldistm, IntSet.empty)
+    initial_leaves
 
 let ldistm_of_gtree t =
-  update_ldistm IntMap.empty t
+  let leaves = Gtree.leaf_ids t in
+  fst (update_ldistm IntMap.empty (IntSet.of_list leaves) leaves t)
 
 let of_gtree t =
   let ldistm = ldistm_of_gtree t
