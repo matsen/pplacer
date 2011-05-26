@@ -147,26 +147,6 @@ let gtree_of_stree_numbers bark_fn stree =
   let bark = bark_of_stree_numbers bark_fn stree in
   Gtree.gtree stree bark
 
-(* keep sampling poissons until you get something >= lower *)
-let rec lower_bounded_poisson rng lower mean =
-  let x = Gsl_randist.poisson rng mean in
-  if x >= lower then x
-  else lower_bounded_poisson rng lower mean
-
-(* We want to divide the lsetsets into the subtrees.
- * If there are more lsets than subtrees, then we do balls in boxes.
- * If not, we do one per. *)
-let uniform_nonempty_UNpartition rng n_bins lss =
-  let n_items = Lsetset.cardinal lss in
-  List.map
-    (fun n_samples ->
-      Lsetset.plain_sample
-        (sample ~replacement:true rng ~weighting:Uniform)
-        lss
-        n_samples)
-    (if n_items < n_bins then (ListFuns.init n_bins (fun _ -> 1))
-    else nonempty_balls_in_boxes rng ~n_bins ~n_items)
-
 let subselect rng n_select n_bins lss =
   ListFuns.init
     n_bins
