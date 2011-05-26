@@ -26,6 +26,34 @@ type edge_snip = int * float * float
 
 let mark_min m1 m2 = if (fst m1) <= (fst m2) then m1 else m2
 
+type qs = {
+  queue: int Queue.t;
+  set: IntSet.t;
+}
+
+let qs_push {queue = q; set = s} l =
+  let s' = List.fold_left
+    (fun accum x ->
+      if not (IntSet.mem x accum) then
+        Queue.push x q;
+      IntSet.add x accum)
+    IntSet.empty
+    l
+  in {queue = q; set = s'}
+
+let qs_pop ({queue = q; set = s} as qs) =
+  match begin
+    try
+      Some (Queue.pop q)
+    with
+      | Queue.Empty -> None
+  end with
+    | None -> None, qs
+    | Some x -> Some x, {qs with set = IntSet.remove x s}
+
+let qs l =
+  qs_push {queue = Queue.create (); set = IntSet.empty} l
+
 let list_min ?(key = compare) l =
   match begin
     List.fold_left
@@ -65,54 +93,56 @@ let adjacent_bls t =
 
 let update_ldistm ldistm all_leaves initial_leaves gt =
   let adjacency_map = adjacent_bls gt in
-  let concat_adj n =
-    List.rev_append (List.map fst (IntMap.find n adjacency_map))
+  let concat_adj n qs =
+    qs_push qs (List.map fst (IntMap.find n adjacency_map))
   in
-  let rec aux ((ldistm', updated_leaves) as accum) = function
-    | [] -> accum
-    | n :: rest when IntSet.mem n all_leaves ->
-      aux
-        ((IntMap.add n {leaf = n; distance = 0.0} ldistm'),
-         updated_leaves)
-        (concat_adj n rest)
-    | n :: rest ->
-      let adj = List.fold_left
-        (fun stl (sn, sbl) ->
-          match begin
-            try
-              Some (IntMap.find sn ldistm')
-            with
-              | Not_found -> None
-          end with
-            | Some {leaf = leaf} when not (IntSet.mem leaf all_leaves) ->
-              stl
-            | Some {leaf = best_leaf; distance = distance} ->
-              (sbl +. distance, best_leaf) :: stl
-            | None -> stl)
-        []
-        (IntMap.find n adjacency_map)
-      in
-      let ldistm', updated_leaves, rest = match adj with
-        | [] -> IntMap.remove n ldistm', updated_leaves, concat_adj n rest
-        | adj ->
-          let distance, best_leaf = list_min adj in
-          let new_ldist = {leaf = best_leaf; distance = distance} in
-          let rest = match begin
-            try
-              Some (IntMap.find n ldistm')
-            with
-              | Not_found -> None
-          end with
-            | Some ldist when ldist = new_ldist -> rest
-            | _ -> concat_adj n rest
-          in
-          IntMap.add n new_ldist ldistm', updated_leaves, rest
-      in
-      aux (ldistm', updated_leaves) rest
+  let rec aux ((ldistm', updated_leaves) as accum) rest =
+    Printf.printf "%d\n" (Queue.length rest.queue);
+    match qs_pop rest with
+      | None, _ -> accum
+      | Some n, rest when IntSet.mem n all_leaves ->
+        aux
+          ((IntMap.add n {leaf = n; distance = 0.0} ldistm'),
+           updated_leaves)
+          (concat_adj n rest)
+      | Some n, rest ->
+        let adj = List.fold_left
+          (fun stl (sn, sbl) ->
+            match begin
+              try
+                Some (IntMap.find sn ldistm')
+              with
+                | Not_found -> None
+            end with
+              | Some {leaf = leaf} when not (IntSet.mem leaf all_leaves) ->
+                stl
+              | Some {leaf = best_leaf; distance = distance} ->
+                (sbl +. distance, best_leaf) :: stl
+              | None -> stl)
+          []
+          (IntMap.find n adjacency_map)
+        in
+        let ldistm', updated_leaves, rest = match adj with
+          | [] -> IntMap.remove n ldistm', updated_leaves, concat_adj n rest
+          | adj ->
+            let distance, best_leaf = list_min adj in
+            let new_ldist = {leaf = best_leaf; distance = distance} in
+            let rest = match begin
+              try
+                Some (IntMap.find n ldistm')
+              with
+                | Not_found -> None
+            end with
+              | Some ldist when ldist = new_ldist -> rest
+              | _ -> concat_adj n rest
+            in
+            IntMap.add n new_ldist ldistm', updated_leaves, rest
+        in
+        aux (ldistm', updated_leaves) rest
   in
   aux
     (ldistm, IntSet.empty)
-    initial_leaves
+    (qs initial_leaves)
 
 let ldistm_of_gtree t =
   let leaves = Gtree.leaf_ids t in
@@ -159,4 +189,3 @@ let of_gtree t =
 let uncolor_leaf v l = v, [l]
 let fold _ _ _ x = x
 let get_edge_snipl _ _ = []
-
