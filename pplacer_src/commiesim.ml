@@ -181,10 +181,10 @@ let uniform_nonempty_UNpartition rng n_bins lss =
   let n_items = Lsetset.cardinal lss in
   List.map
     (fun n_samples ->
-      (Lsetset.plain_sample
+      Lsetset.plain_sample
         (sample ~replacement:true rng ~weighting:Uniform)
         lss
-        n_samples))
+        n_samples)
     (if n_items < n_bins then (ListFuns.init n_bins (fun _ -> 1))
     else nonempty_balls_in_boxes rng ~n_bins ~n_items)
 
