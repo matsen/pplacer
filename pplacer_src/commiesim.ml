@@ -228,14 +228,14 @@ let pquery_of_leaf_and_seq leaf seq =
         ~log_like:0.0
     ]
 
-let write_random_pr rng tree leafs name n_pqueries =
+let write_random_pr rng tree leafl name n_pqueries =
   let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
   let pqueries =
     List.map2
       (fun leaf -> repeat (pquery_of_leaf_and_seq leaf))
-      (Lset.elements leafs)
+      leafl
       (Array.to_list
-        (distribute_pqueries (Array.make (Lset.cardinal leafs) 1.0)))
+        (distribute_pqueries (Array.make (List.length leafl) 1.0)))
   in
   Placerun_io.to_json_file
     ""
@@ -292,7 +292,7 @@ let main
           write_random_pr
             rng
             tree
-            leafs
+            (IntSet.elements leafs)
             (Printf.sprintf "%s%s_%d" name_prefix name i)
             n_pqueries)
         (Base.range multiplier))

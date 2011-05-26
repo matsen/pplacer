@@ -44,7 +44,7 @@ let command_list () =
       "commiesim", (fun () -> new Guppy_commiesim.cmd ());
       "rf_distance", (fun () -> new Guppy_rf_distance.cmd ());
       "gen_tree", (fun () -> new Guppy_gen_tree.cmd ());
-      (* "leafnoise", (fun () -> new Guppy_leafnoise.cmd ()); *)
+      "leafnoise", (fun () -> new Guppy_leafnoise.cmd ());
     ];
   ]
 
