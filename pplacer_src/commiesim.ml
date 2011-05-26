@@ -167,7 +167,16 @@ let uniform_nonempty_UNpartition rng n_bins lss =
     (if n_items < n_bins then (ListFuns.init n_bins (fun _ -> 1))
     else nonempty_balls_in_boxes rng ~n_bins ~n_items)
 
-let distribute_lsetset_on_tree rng splits leafss gt =
+let subselect rng n_select n_bins lss =
+  ListFuns.init
+    n_bins
+    (fun _ ->
+      Lsetset.plain_sample
+        (sample ~replacement:true rng ~weighting:Uniform)
+        lss
+        n_select)
+
+let distribute_lsetset_on_tree rng n_select splits leafss gt =
   let bl = Gtree.get_bl gt in
   let name = Gtree.get_name gt in
   let rec aux splits leafss = function
@@ -184,7 +193,7 @@ let distribute_lsetset_on_tree rng splits leafss gt =
       let cut_leafss = sset_lsetset chosen_splits leafss in
       (* throw the balls (leafs) into boxes (subtrees) *)
       let distributed =
-        uniform_nonempty_UNpartition rng (List.length subtrees) cut_leafss
+        subselect rng n_select (List.length subtrees) cut_leafss
       in
       List.fold_left2
         (fun map leafss t -> StringMap.union map (aux cutting_splits leafss t))
@@ -224,6 +233,7 @@ let write_random_pr rng tree leafl name n_pqueries =
 let main
     rng
     ?(retries = 100)
+    ~n_select
     ~cluster_tree
     ~n_pqueries
     ~tree
@@ -241,6 +251,7 @@ let main
       try
         distribute_lsetset_on_tree
           rng
+          n_select
           splits
           (Lsetset.singleton leafs)
           cluster_tree

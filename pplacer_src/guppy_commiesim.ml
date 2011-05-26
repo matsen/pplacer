@@ -8,9 +8,9 @@ object (self)
   inherit rng_cmd () as super_rng
   inherit refpkg_cmd ~required:true as super_refpkg
 
-  (*val poisson_mean = flag "-m"
-    (Needs_argument ("poisson_mean", "The mean of the poisson distribution for
-    number of splits to make"))*)
+  val n_select = flag "-n"
+    (Needs_argument ("n_select", "The number of sets selected from the cut sets
+    as we move down the tree."))
   val cluster_tree = flag "-t"
     (Needs_argument ("cluster_tree", "A file containing the clustering tree, in Newick format."))
   val n_pqueries = flag "-q"
@@ -21,7 +21,7 @@ object (self)
   @ super_rng#specl
   @ super_output#specl
   @ [
-    (* float_flag poisson_mean; *)
+    int_flag n_select;
     string_flag cluster_tree;
     int_flag n_pqueries;
   ]
@@ -33,6 +33,7 @@ object (self)
     let gt = Commiesim.main
       self#rng
       ~retries:100
+      ~n_select:(fv n_select)
       ~cluster_tree:(Newick_gtree.of_file (fv cluster_tree))
       ~n_pqueries:(fv n_pqueries)
       ~tree:(Refpkg.get_ref_tree self#get_rp)
