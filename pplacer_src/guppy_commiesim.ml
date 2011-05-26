@@ -8,10 +8,9 @@ object (self)
   inherit rng_cmd () as super_rng
   inherit refpkg_cmd ~required:true as super_refpkg
 
-  val include_prob = flag "-i"
-    (Needs_argument ("include_prob", "The probability of including an individual leaf set. 0 means put all at root."))
-  val poisson_mean = flag "-m"
-    (Needs_argument ("poisson_mean", "The mean of the poisson distribution for number of splits to make"))
+  (*val poisson_mean = flag "-m"
+    (Needs_argument ("poisson_mean", "The mean of the poisson distribution for
+    number of splits to make"))*)
   val cluster_tree = flag "-t"
     (Needs_argument ("cluster_tree", "A file containing the clustering tree, in Newick format."))
   val n_pqueries = flag "-q"
@@ -22,8 +21,7 @@ object (self)
   @ super_rng#specl
   @ super_output#specl
   @ [
-    float_flag include_prob;
-    float_flag poisson_mean;
+    (* float_flag poisson_mean; *)
     string_flag cluster_tree;
     int_flag n_pqueries;
   ]
@@ -32,16 +30,9 @@ object (self)
   method usage = "usage: commiesim [options] -c my.refpkg"
 
   method action _ =
-    let ip =
-      match fv include_prob with
-        | 0. -> None
-        | x -> assert(x > 0.); Some x
-    in
     let gt = Commiesim.main
       self#rng
-      ?include_prob:ip
       ~retries:100
-      ~poisson_mean:(fv poisson_mean)
       ~cluster_tree:(Newick_gtree.of_file (fv cluster_tree))
       ~n_pqueries:(fv n_pqueries)
       ~tree:(Refpkg.get_ref_tree self#get_rp)

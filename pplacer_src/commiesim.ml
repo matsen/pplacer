@@ -147,27 +147,6 @@ let gtree_of_stree_numbers bark_fn stree =
   let bark = bark_of_stree_numbers bark_fn stree in
   Gtree.gtree stree bark
 
-(* generate the root distribution *)
-let generate_root rng include_prob poisson_mean ?(min_leafs = 0) splits leafs =
-  let k =
-    max
-      (min_leafs - 1)
-      (Gsl_randist.poisson rng poisson_mean)
-  in
-  let splits' = sample_sset_weighted rng splits k in
-  let leafss = sset_lsetset splits' (Lsetset.singleton leafs) in
-  let base_leafs = Lsetset.plain_sample (sample ~replacement:true rng) leafss min_leafs in
-  let to_sample =
-    Lsetset.filter
-      (fun lset -> not (Lsetset.mem lset base_leafs))
-      leafss
-  in
-  Lsetset.union
-    base_leafs
-    (Lsetset.filter
-       (fun _ -> Gsl_rng.uniform rng < include_prob)
-       to_sample)
-
 (* keep sampling poissons until you get something >= lower *)
 let rec lower_bounded_poisson rng lower mean =
   let x = Gsl_randist.poisson rng mean in
@@ -244,8 +223,6 @@ let write_random_pr rng tree leafl name n_pqueries =
 
 let main
     rng
-    ?include_prob
-    ~poisson_mean
     ?(retries = 100)
     ~cluster_tree
     ~n_pqueries
@@ -256,28 +233,16 @@ let main
   and cluster_stree = Gtree.get_stree cluster_tree in
   let splits = sset_of_tree stree
   and leafs = lset_of_tree stree
-  and yule_size = Stree.n_taxa cluster_stree in
+  in
 
   let rec retry = function
     | 0 -> failwith "failed too many resamplings"
     | n ->
       try
-        let leafss =
-          match include_prob with
-          | None -> Lsetset.singleton leafs
-          | Some include_prob ->
-            generate_root
-              rng
-              include_prob
-              poisson_mean
-              ~min_leafs:yule_size
-              splits
-              leafs
-        in
         distribute_lsetset_on_tree
           rng
           splits
-          leafss
+          (Lsetset.singleton leafs)
           cluster_tree
       with
         | Invalid_sample _ -> retry (n - 1)
