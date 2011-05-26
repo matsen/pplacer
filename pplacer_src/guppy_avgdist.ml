@@ -129,3 +129,7 @@ object (self)
       prl
       self#out_channel
 end
+
+Note from issues:
+  * avgdist should do something with --normalization
+  * efficiency eye needed on this file
