@@ -123,6 +123,8 @@ object (self)
     let transform, weighting, criterion = self#mass_opts
     and refpkgo = self#get_rpo
     and mode_str = fv tax_cluster_mode
+    and zero_pad_int width i =
+      String_matrix.pad_to_width '0' width (string_of_int i)
     in
     let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
@@ -134,14 +136,10 @@ object (self)
       Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
       let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
       let pad_width = Base.find_zero_pad_width (IntMap.nkeys blobim) in
-      let pad_str_of_int i =
-        Filename.concat
-          outdir
-          (String_matrix.pad_to_width '0' pad_width (string_of_int i))
-      in
+      let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)
       let wpt transform infix t i =
-        self#write_pre_tree transform (pad_str_of_int i) infix t
+        self#write_pre_tree transform (prefix_of_int i) infix t
       in
       match refpkgo with
         | None -> IntMap.iter (wpt transform "phy" drt) blobim
@@ -159,16 +157,15 @@ object (self)
     end
     else begin
       let pad_width = Base.find_zero_pad_width nboot in
-      let pad_str_of_int i =
-        String_matrix.pad_to_width '0' pad_width (string_of_int i)
-      in
       let rng = self#rng in
       for i=1 to nboot do
         Printf.printf "running bootstrap %d of %d\n" i nboot;
         let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
         let (_, cluster_t, _) =
           make_cluster transform weighting criterion refpkgo mode_str boot_prl in
-        Newick_gtree.to_file cluster_t (path ("cluster."^(pad_str_of_int i)^".tre"))
+        Newick_gtree.to_file
+          cluster_t
+          (path ("cluster."^(zero_pad_int pad_width i)^".tre"))
       done
     end
 end
