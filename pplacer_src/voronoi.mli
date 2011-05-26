@@ -31,6 +31,7 @@ type v = {
   tree: Newick_gtree.t;
   marks: mark list;
   ldistm: ldist IntMap.t;
+  all_leaves: IntSet.t;
 }
 
 (* A portion of an edge defined by (id, start, finish), where id is the edge id,
@@ -41,12 +42,11 @@ type edge_snip = int * float * float
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
 val update_ldistm: ldistm -> IntSet.t -> int list -> Newick_gtree.t -> ldistm * IntSet.t
-val ldistm_of_gtree: Newick_gtree.t -> ldistm
 
 val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
 
-val uncolor_leaf: v -> leaf -> v * leaf list
+val uncolor_leaf: v -> leaf -> v * IntSet.t
 (** This function returns the updated Voronoi after removing the given leaf, as
  * well as returning the leaves that were affected by this removal. *)
 

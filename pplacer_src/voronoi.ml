@@ -20,6 +20,7 @@ type v = {
   tree: Newick_gtree.t;
   marks: mark list;
   ldistm: ldist IntMap.t;
+  all_leaves: IntSet.t;
 }
 
 type edge_snip = int * float * float
@@ -151,14 +152,8 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
     (ldistm, IntSet.empty)
     (qs initial_leaves)
 
-let ldistm_of_gtree t =
-  let leaves = Gtree.leaf_ids t in
-  fst (update_ldistm IntMap.empty (IntSet.of_list leaves) leaves t)
-
-let of_gtree t =
-  let ldistm = ldistm_of_gtree t
-  and bl = Gtree.get_bl t in
-
+let find_marks ldistm t =
+  let bl = Gtree.get_bl t in
   let rec aux accum = function
     | [] -> accum
     | Leaf _ :: rest -> aux accum rest
@@ -181,18 +176,20 @@ let of_gtree t =
       in
       aux accum (List.rev_append subtrees rest)
   in
-  let marks = aux [] [t.Gtree.stree] in
+  aux [] [t.Gtree.stree]
 
-  {tree = t; marks = marks; ldistm = ldistm}
-  (* The algorithm is simple: first, with a two pass recursion, find the mark
-   * color and distance to the closest leaf for all of the internal nodes. Now
-   * say we are on an edge of length l bounded by internal nodes i_d (distal)
-   * and i_p (proximal). If the mark color is the same for each of i_d and i_p,
-   * then there are no marks inside the given edge. OTOH, if they are different
-   * and the distances to the closest leaves are d_d and d_p, respectively, then
-   * we should put a mark at (l + d_d - d_p)/2 with color taken from i_d.
- *)
+let of_gtree t =
+  let leaves = Gtree.leaf_ids t in
+  let all_leaves = IntSet.of_list leaves in
+  let ldistm, _ = update_ldistm IntMap.empty all_leaves leaves t in
+  let marks = find_marks ldistm t in
+  {tree = t; marks = marks; ldistm = ldistm; all_leaves = all_leaves}
 
-let uncolor_leaf v l = v, [l]
+let uncolor_leaf v l =
+  let all_leaves' = IntSet.remove l v.all_leaves in
+  let ldistm', updated = update_ldistm v.ldistm all_leaves' [l] v.tree in
+  let marks' = find_marks ldistm' v.tree in
+  {v with all_leaves = all_leaves'; ldistm = ldistm'; marks = marks'}, updated
+
 let fold _ _ _ x = x
 let get_edge_snipl _ _ = []
