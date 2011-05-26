@@ -43,7 +43,7 @@ val uncolor_leaf: v -> leaf -> v * IntSet.t
 (** This function returns the updated Voronoi after removing the given leaf, as
  * well as returning the leaves that were affected by this removal. *)
 
-val fold: v -> leaf -> ('a -> edge_snip -> 'a) -> 'a -> 'a
+val fold: ('a -> leaf -> edge_snip -> 'a) -> 'a -> v -> 'a
 (** Effectively fold over the edge_snipl defined below, but we don't have to
  * construct it in memory.
  *)

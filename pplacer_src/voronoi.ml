@@ -159,7 +159,7 @@ let uncolor_leaf v l =
   let ldistm', updated = update_ldistm v.ldistm all_leaves' [l] v.tree in
   {v with all_leaves = all_leaves'; ldistm = ldistm'}, updated
 
-let fold {tree = t; ldistm = ldistm} l f initial =
+let fold {tree = t; ldistm = ldistm} f initial =
   let bl = Gtree.get_bl t in
   let rec aux cur = function
     | [] -> cur
@@ -170,22 +170,15 @@ let fold {tree = t; ldistm = ldistm} l f initial =
         (fun cur st ->
           let sn = top_id st in
           let distal_ldist = IntMap.find sn ldistm in
-          if proximal_ldist.leaf <> l && distal_ldist.leaf <> l then
-            cur
-          else if proximal_ldist.leaf = distal_ldist.leaf then
-            let snip = sn, 0.0, bl sn in
-            f cur snip
+          if proximal_ldist.leaf = distal_ldist.leaf then
+            f cur proximal_ldist.leaf (sn, 0.0, bl sn)
           else
             let proximal_split =
               ((bl sn) +. distal_ldist.distance -. proximal_ldist.distance) /. 2.0
             in
-            let snip =
-              if l = proximal_ldist.leaf then
-                sn, 0.0, proximal_split
-              else
-                sn, proximal_split, bl sn
-            in
-            f cur snip)
+            let cur = f cur proximal_ldist.leaf (sn, 0.0, proximal_split) in
+            let cur = f cur distal_ldist.leaf (sn, proximal_split, bl sn) in
+            cur)
         cur
         subtrees
       in
@@ -193,4 +186,8 @@ let fold {tree = t; ldistm = ldistm} l f initial =
   in
   aux initial [t.Gtree.stree]
 
-let get_edge_snipl v l = fold v l (fun l x -> x :: l) []
+let get_edge_snipl v l =
+  fold (fun accum cl snip -> if l = cl then snip :: accum else accum) [] v
+
+module XXX = Mass_map
+

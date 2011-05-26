@@ -122,7 +122,7 @@ end
 module Indiv = struct
 
          (* distal_bl * mass *)
-  type t = (float     * float) IntMap.t
+  type t = (float     * float) list IntMap.t
 
   (* factor is a multiplicative factor to multiply the mass by.
    * transform is an int -> float function which given a multiplicity spits out
