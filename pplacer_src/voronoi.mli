@@ -14,12 +14,6 @@ open MapsSets
 
 type leaf = int
 
-type mark = {
-  edge_num: int;
-  distal_bl: float;
-  proximal_leaf: leaf;
-}
-
 type ldist = {
   leaf: leaf;
   distance: float;
@@ -29,14 +23,13 @@ type ldistm = ldist IntMap.t
 
 type v = {
   tree: Newick_gtree.t;
-  marks: mark list;
   ldistm: ldist IntMap.t;
   all_leaves: IntSet.t;
 }
 
-(* A portion of an edge defined by (id, start, finish), where id is the edge id,
- * start is where it starts, and finish is where it ends (measured from proximal
- * side). *)
+(* A portion of an edge defined by (id, start, finish), where id is the edge
+ * id, start is where it starts, and finish is where it ends (both are measured
+ * from proximal side; start <= finish). *)
 type edge_snip = int * float * float
 
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a

@@ -3,12 +3,6 @@ open Stree
 
 type leaf = int
 
-type mark = {
-  edge_num: int;
-  distal_bl: float;
-  proximal_leaf: leaf;
-}
-
 type ldist = {
   leaf: leaf;
   distance: float;
@@ -18,14 +12,11 @@ type ldistm = ldist IntMap.t
 
 type v = {
   tree: Newick_gtree.t;
-  marks: mark list;
   ldistm: ldist IntMap.t;
   all_leaves: IntSet.t;
 }
 
 type edge_snip = int * float * float
-
-let mark_min m1 m2 = if (fst m1) <= (fst m2) then m1 else m2
 
 type qs = {
   queue: int Queue.t;
@@ -157,44 +148,49 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
     (ldistm, IntSet.empty)
     (qs initial_leaves)
 
-let find_marks ldistm t =
-  let bl = Gtree.get_bl t in
-  let rec aux accum = function
-    | [] -> accum
-    | Leaf _ :: rest -> aux accum rest
-    | Node (n, subtrees) :: rest ->
-      let proximal_ldist = IntMap.find n ldistm in
-      let accum = List.fold_left
-        (fun accum st ->
-          let sn = top_id st in
-          let distal_ldist = IntMap.find sn ldistm in
-          if proximal_ldist = distal_ldist then
-            accum
-          else
-            {
-              edge_num = sn;
-              proximal_leaf = proximal_ldist.leaf;
-              distal_bl = ((bl sn) +. distal_ldist.distance -. proximal_ldist.distance) /. 2.0;
-            } :: accum)
-        accum
-        subtrees
-      in
-      aux accum (List.rev_append subtrees rest)
-  in
-  aux [] [t.Gtree.stree]
-
 let of_gtree t =
   let leaves = Gtree.leaf_ids t in
   let all_leaves = IntSet.of_list leaves in
   let ldistm, _ = update_ldistm IntMap.empty all_leaves leaves t in
-  let marks = find_marks ldistm t in
-  {tree = t; marks = marks; ldistm = ldistm; all_leaves = all_leaves}
+  {tree = t; ldistm = ldistm; all_leaves = all_leaves}
 
 let uncolor_leaf v l =
   let all_leaves' = IntSet.remove l v.all_leaves in
   let ldistm', updated = update_ldistm v.ldistm all_leaves' [l] v.tree in
-  let marks' = find_marks ldistm' v.tree in
-  {v with all_leaves = all_leaves'; ldistm = ldistm'; marks = marks'}, updated
+  {v with all_leaves = all_leaves'; ldistm = ldistm'}, updated
 
-let fold _ _ _ x = x
-let get_edge_snipl _ _ = []
+let fold {tree = t; ldistm = ldistm} l f initial =
+  let bl = Gtree.get_bl t in
+  let rec aux cur = function
+    | [] -> cur
+    | Leaf _ :: rest -> aux cur rest
+    | Node (n, subtrees) :: rest ->
+      let proximal_ldist = IntMap.find n ldistm in
+      let cur = List.fold_left
+        (fun cur st ->
+          let sn = top_id st in
+          let distal_ldist = IntMap.find sn ldistm in
+          if proximal_ldist.leaf <> l && distal_ldist.leaf <> l then
+            cur
+          else if proximal_ldist.leaf = distal_ldist.leaf then
+            let snip = sn, 0.0, bl sn in
+            f cur snip
+          else
+            let proximal_split =
+              ((bl sn) +. distal_ldist.distance -. proximal_ldist.distance) /. 2.0
+            in
+            let snip =
+              if l = proximal_ldist.leaf then
+                sn, 0.0, proximal_split
+              else
+                sn, proximal_split, bl sn
+            in
+            f cur snip)
+        cur
+        subtrees
+      in
+      aux cur (List.rev_append subtrees rest)
+  in
+  aux initial [t.Gtree.stree]
+
+let get_edge_snipl v l = fold v l (fun l x -> x :: l) []
