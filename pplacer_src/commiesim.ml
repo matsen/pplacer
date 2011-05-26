@@ -228,6 +228,20 @@ let pquery_of_leaf_and_seq leaf seq =
         ~log_like:0.0
     ]
 
+let write_random_pr rng tree leafs name n_pqueries =
+  let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
+  let pqueries =
+    List.map2
+      (fun leaf -> repeat (pquery_of_leaf_and_seq leaf))
+      (Lset.elements leafs)
+      (Array.to_list
+        (distribute_pqueries (Array.make (Lset.cardinal leafs) 1.0)))
+  in
+  Placerun_io.to_json_file
+    ""
+    (name^".json")
+    (Placerun.make tree name (List.flatten pqueries))
+
 let main
     rng
     ?include_prob
@@ -270,32 +284,17 @@ let main
   in
   let leaf_map = retry retries in
 
-  let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
   StringMap.iter
     (fun name (multiplier, leafss) ->
       List.iter
         (fun i ->
           let leafs = Lsetset.fold Lset.union leafss Lset.empty in
-          let distr = Array.to_list
-            (distribute_pqueries
-               (Array.make (Lset.cardinal leafs) 1.0))
-          and leafl = Lset.elements leafs in
-          let pqueries =
-            List.map2
-              (fun leaf -> repeat (pquery_of_leaf_and_seq leaf))
-              leafl
-              distr
-          in
-          let pr =
-            Placerun.make
-              tree
-              (Printf.sprintf "commiesim_%s_%d" name i)
-              (List.flatten pqueries)
-          in
-          Placerun_io.to_json_file
-            ""
-            (Printf.sprintf "%s%s_%d.json" name_prefix name i)
-            pr)
+          write_random_pr
+            rng
+            tree
+            leafs
+            (Printf.sprintf "%s%s_%d" name_prefix name i)
+            n_pqueries)
         (Base.range multiplier))
     leaf_map;
 
