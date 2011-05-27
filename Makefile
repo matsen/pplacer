@@ -1,4 +1,4 @@
-RELEASE=pplacer guppy
+RELEASE=pplacer guppy rppr
 
 all: $(RELEASE)
 
