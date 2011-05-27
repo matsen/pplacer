@@ -39,6 +39,7 @@ val update_ldistm: ldistm -> IntSet.t -> int list -> Newick_gtree.t -> ldistm * 
 val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
 
+val uncolor_leaves: v -> IntSet.t -> v * IntSet.t
 val uncolor_leaf: v -> leaf -> v * IntSet.t
 (** This function returns the updated Voronoi after removing the given leaf, as
  * well as returning the leaves that were affected by this removal. *)

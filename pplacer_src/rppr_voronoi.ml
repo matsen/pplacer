@@ -60,19 +60,23 @@ object (self)
         match IntSet.fold
           (fun leaf ->
             let mass = sum_leaf leaf in function
-              | None -> Some (leaf, mass)
-              | Some (_, prev_mass) when mass < prev_mass -> Some (leaf, mass)
+              | None -> Some (IntSet.singleton leaf, mass)
+              | Some (_, prev_mass) when mass < prev_mass ->
+                Some (IntSet.singleton leaf, mass)
+              | Some (leafs, prev_mass) when mass = prev_mass ->
+                Some (IntSet.add leaf leafs, prev_mass)
               | (Some _) as prev -> prev)
           graph.Voronoi.all_leaves
           None
         with
           | None -> failwith "no leaves?"
-          | Some (leaf, mass) ->
-            Printf.printf "smallest mass: %d (%1.6f); %d leaves remaining\n"
-              leaf
+          | Some (leafs, mass) ->
+            Printf.printf "smallest mass: %1.6f; %d leaves cut; %d leaves remaining"
               mass
+              (IntSet.cardinal leafs)
               (IntSet.cardinal graph.Voronoi.all_leaves);
-            let graph', updated = Voronoi.uncolor_leaf graph leaf in
+            print_newline ();
+            let graph', updated = Voronoi.uncolor_leaves graph leafs in
             IntSet.ppr Format.std_formatter updated;
             Format.print_newline ();
             if mass >= fv mass_cutoff then begin
