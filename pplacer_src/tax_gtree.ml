@@ -82,7 +82,7 @@ let decor_gtree_of_topdown_tree bl_of_rank td root tt =
   let (stree, ti_imap) = stree_and_map_of_topdown_tree root tt in
   let bark_of_taxid ti =
         new Decor_bark.decor_bark
-          (`Of_bl_name_boot_dlist
+          (`Of_bl_name_boot_decor
             (Some (bl_of_taxid ti), None, None,
             [Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)]))
   in

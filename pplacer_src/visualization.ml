@@ -24,13 +24,13 @@ let make_zero_leaf decor_list bl name =
       (IntMap.add
         0
         (new Decor_bark.decor_bark
-          (`Of_bl_name_boot_dlist
+          (`Of_bl_name_boot_decor
             (Some bl, Some name, None, decor_list)))
         IntMap.empty))
 
 let decor_bark_of_bl bl =
   new Decor_bark.decor_bark
-    (`Of_bl_name_boot_dlist (Some bl, None, None, []))
+    (`Of_bl_name_boot_decor (Some bl, None, None, []))
 
 (* given a function that takes a location and a list of somethings and returns a
  * (where, tree) list for that location, make a tree containing those extra

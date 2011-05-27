@@ -242,6 +242,12 @@ let run_file prefs query_fname =
     done
   end;
 
+  (* *** write out diagnostic mutations *** *)
+  if Prefs.diagnostic prefs then begin
+    (* note-- will fail if no tax info... *)
+    Taxpick.write_picks ~darr ~parr rp
+  end;
+
   (* *** analyze query sequences *** *)
   let query_bname =
     Filename.basename (Filename.chop_extension query_fname) in

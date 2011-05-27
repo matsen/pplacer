@@ -34,6 +34,7 @@ type prefs =
     only_write_best : bool ref;
     (* other *)
     pretend : bool ref;
+    diagnostic : bool ref;
     check_like : bool ref;
     children : int ref;
     version : bool ref;
@@ -74,6 +75,7 @@ let defaults () =
     only_write_best = ref false;
     (* other *)
     pretend = ref false;
+    diagnostic = ref false;
     check_like = ref false;
     children = ref 2;
     version = ref false;
@@ -113,6 +115,7 @@ let only_write_best   p = !(p.only_write_best)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let pretend           p = !(p.pretend)
+let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
 let children          p = !(p.children)
 let version           p = !(p.version)
@@ -178,6 +181,8 @@ spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Specify the directory to write place files to.";
 "--pretend", Arg.Set prefs.pretend,
 "Only check out the files then report. Do not run the analysis.";
+"--diagnostic", Arg.Set prefs.diagnostic,
+"Write file describing the 'diagnostic' mutations for various clades.";
 "--check-like", Arg.Set prefs.check_like,
 "Write out the likelihood of the reference tree, calculated two ways.";
 spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
