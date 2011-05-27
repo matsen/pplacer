@@ -189,5 +189,26 @@ let fold f initial {tree = t; ldistm = ldistm} =
 let get_edge_snipl v l =
   fold (fun accum cl snip -> if l = cl then snip :: accum else accum) [] v
 
-module XXX = Mass_map
+let get_snipdist v =
+  fold
+    (fun accum l (n, start, finish) ->
+      IntMap.add_listly n (l, start, finish) accum)
+    IntMap.empty
+    v
 
+let distribute_mass v mass =
+  let snipdist = get_snipdist v in
+  IntMap.fold
+    (fun n massl accum ->
+      let snips = IntMap.find n snipdist in
+      List.fold_left
+        (fun accum (pos, mass) ->
+          let leaf, _, _ = List.find
+            (fun (_, st, en) -> st >= pos && pos >= en)
+            snips
+          in
+          IntMap.add_listly leaf mass accum)
+        accum
+        massl)
+    mass
+    IntMap.empty

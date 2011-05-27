@@ -50,3 +50,6 @@ val fold: ('a -> leaf -> edge_snip -> 'a) -> 'a -> v -> 'a
 
 val get_edge_snipl: v -> leaf -> edge_snip list
 (** Get a list of the edge_snips that are of the given leaf in v. *)
+
+val get_snipdist: v -> edge_snip list IntMap.t
+val distribute_mass: v -> Mass_map.Indiv.t -> float list IntMap.t
