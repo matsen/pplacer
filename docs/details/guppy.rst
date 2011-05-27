@@ -109,12 +109,13 @@ If you don't see those check boxes, then use `this configuration file`_ (if you 
 List of subcommands
 ===================
 
+.. guppy-command-table
+
 .. toctree::
-   :maxdepth: 1
    :glob:
+   :hidden:
 
-   generated_rst/guppy_*
-
+   guppy_*
 
 
 .. |guppy| replace:: ``guppy``

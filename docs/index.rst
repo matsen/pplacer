@@ -10,7 +10,7 @@ Guppy can do many different things via its subcommand interface, from compressin
    :maxdepth: 2
 
    generated_rst/pplacer
-   guppy
+   generated_rst/guppy
 
 
 Acknowledgements
