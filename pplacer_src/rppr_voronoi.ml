@@ -1,12 +1,37 @@
+open Subcommand
+open Guppy_cmdobjs
+open MapsSets
+open Fam_batteries
 
-supply a cutoff value where if mass deleted > this value then stop
+class cmd () =
+object (self)
+  inherit subcommand () as super
+  inherit mass_cmd () as super_mass
+  inherit refpkg_cmd ~required:false as super_refpkg
+  inherit placefile_cmd () as super_placefile
+  inherit output_cmd () as super_output
 
-would be nice to have a csv file
+  method specl =
+    super_mass#specl
+    @ super_refpkg#specl
+    @ super_output#specl
 
-leaf 1, mass contained 1
-leaf 2, mass contained 2
-...
+  method desc = "apply voronoi"
+  method usage = "usage: voronoi [options] placefile"
 
-in order of deletion
+  method private placefile_action = function
+    | [pr] ->
+      let transform, weighting, criterion = self#mass_opts in
+      let mass = Mass_map.Indiv.of_placerun transform weighting criterion pr
+      and graph = Voronoi.of_gtree (Placerun.get_ref_tree pr) in
+      let mass_dist = Voronoi.distribute_mass graph mass in
+      IntMap.iter
+        (fun e fl ->
+          Printf.printf "%d " e;
+          List.iter (Printf.printf "%0.6f ") fl;
+          print_newline ())
+        mass_dist;
 
-also would be great to have an xml tree with the deleted leaves highlighted.
+    | _ -> failwith "voronoi takes exactly one placefile"
+
+end
