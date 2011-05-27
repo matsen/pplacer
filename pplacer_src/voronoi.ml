@@ -159,7 +159,7 @@ let uncolor_leaf v l =
   let ldistm', updated = update_ldistm v.ldistm all_leaves' [l] v.tree in
   {v with all_leaves = all_leaves'; ldistm = ldistm'}, updated
 
-let fold {tree = t; ldistm = ldistm} f initial =
+let fold f initial {tree = t; ldistm = ldistm} =
   let bl = Gtree.get_bl t in
   let rec aux cur = function
     | [] -> cur
@@ -171,13 +171,13 @@ let fold {tree = t; ldistm = ldistm} f initial =
           let sn = top_id st in
           let distal_ldist = IntMap.find sn ldistm in
           if proximal_ldist.leaf = distal_ldist.leaf then
-            f cur proximal_ldist.leaf (sn, 0.0, bl sn)
+            f cur proximal_ldist.leaf (sn, bl sn, 0.0)
           else
-            let proximal_split =
-              ((bl sn) +. distal_ldist.distance -. proximal_ldist.distance) /. 2.0
+            let distal_split =
+              ((bl sn) -. distal_ldist.distance +. proximal_ldist.distance) /. 2.0
             in
-            let cur = f cur proximal_ldist.leaf (sn, 0.0, proximal_split) in
-            let cur = f cur distal_ldist.leaf (sn, proximal_split, bl sn) in
+            let cur = f cur proximal_ldist.leaf (sn, bl sn, distal_split) in
+            let cur = f cur distal_ldist.leaf (sn, distal_split, 0.0) in
             cur)
         cur
         subtrees

@@ -29,7 +29,7 @@ type v = {
 
 (* A portion of an edge defined by (id, start, finish), where id is the edge
  * id, start is where it starts, and finish is where it ends (both are measured
- * from proximal side; start <= finish). *)
+ * from distal side; start >= finish). *)
 type edge_snip = int * float * float
 
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
