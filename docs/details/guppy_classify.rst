@@ -1,6 +1,19 @@
+This subcommand outputs the classifications made by pplacer in a database or in a tabular format appropriate for use with R.
 
-This subcommand outputs the classifications made by pplacer in a tabular format appropriate for use with R.
-For example, here is a classification list made for one read.
+*The classifications made by the current implementation of pplacer are done with a simple, root-dependent algorithm.
+We are currently working on improved algorithms.*
+For best results, first taxonomically root the tree in your reference package (so that the root of the tree corresponds to the "deepest" evolutionary event according to the taxonomy).
+This can be done automatically the `taxit reroot` command in taxtastic.
+(Note that as of 27 May 2011, this requires the dev version of biopython available on github.)
+
+The classifications are simply done by containment.
+Say clade *A* of the reference tree is the smallest such that contains a given placement.
+The most specific classification for that read will be the lowest common ancestor of the taxonomic classifications for the leaves of *A*.
+If the desired classification is more specific than that, then we get a disconnect between the desired and the actual classification.
+For example, if we try to classify at the species level and the clade LCA is a genus, then we will get a genus name.
+If there is uncertainty in read placement, then there is uncertainty in classification.
+
+For example, here is a classification list made for one read using the tabular output.
 The columns are as follows: read name, attempted rank for classification, actual rank for classification, taxonomic identifier, and confidence.
 You can see that in this example, there is some uncertainty at and below species, but only one classification at the genus level.
 
