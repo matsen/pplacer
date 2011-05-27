@@ -154,10 +154,19 @@ let of_gtree t =
   let ldistm, _ = update_ldistm IntMap.empty all_leaves leaves t in
   {tree = t; ldistm = ldistm; all_leaves = all_leaves}
 
-let uncolor_leaf v l =
-  let all_leaves' = IntSet.remove l v.all_leaves in
-  let ldistm', updated = update_ldistm v.ldistm all_leaves' [l] v.tree in
+let uncolor_leaves v ls =
+  let all_leaves' = IntSet.diff v.all_leaves ls in
+  let ldistm', updated =
+    update_ldistm
+      v.ldistm
+      all_leaves'
+      (IntSet.elements ls)
+      v.tree
+  in
   {v with all_leaves = all_leaves'; ldistm = ldistm'}, updated
+
+let uncolor_leaf v l =
+  uncolor_leaves v (IntSet.singleton l)
 
 let fold f initial {tree = t; ldistm = ldistm} =
   let bl = Gtree.get_bl t in

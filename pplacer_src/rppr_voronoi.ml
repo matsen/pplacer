@@ -31,6 +31,37 @@ object (self)
           List.iter (Printf.printf "%0.6f ") fl;
           print_newline ())
         mass_dist;
+      let sum = List.fold_left (+.) 0.0 in
+      let rec aux graph =
+        let mass_dist = Voronoi.distribute_mass graph mass in
+        let sum_leaf leaf = sum (IntMap.get leaf [] mass_dist) in
+        match IntSet.fold
+          (fun leaf ->
+            let mass = sum_leaf leaf in function
+              | None -> Some (leaf, mass)
+              | Some (_, prev_mass) when mass < prev_mass -> Some (leaf, mass)
+              | (Some _) as prev -> prev)
+          graph.Voronoi.all_leaves
+          None
+        with
+          | None -> failwith "no leaves?"
+          | Some (leaf, mass) ->
+            Printf.printf "smallest mass: %d (%1.6f); %d leaves remaining\n"
+              leaf
+              mass
+              (IntSet.cardinal graph.Voronoi.all_leaves);
+            let graph', updated = Voronoi.uncolor_leaf graph leaf in
+            IntSet.ppr Format.std_formatter updated;
+            Format.print_newline ();
+            if IntSet.cardinal graph.Voronoi.all_leaves <= 2 then begin
+              Printf.printf "remaining: ";
+              IntSet.ppr Format.std_formatter graph.Voronoi.all_leaves;
+              Format.print_newline ();
+            end else
+              aux graph'
+      in
+      aux graph
+
 
     | _ -> failwith "voronoi takes exactly one placefile"
 
