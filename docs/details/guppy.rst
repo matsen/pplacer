@@ -109,6 +109,9 @@ If you don't see those check boxes, then use `this configuration file`_ (if you 
 List of subcommands
 ===================
 
+The following table provides links to more in-depth documentation for each
+guppy subcommand:
+
 .. guppy-command-table
 
 .. toctree::
