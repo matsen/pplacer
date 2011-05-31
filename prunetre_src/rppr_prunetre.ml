@@ -9,7 +9,9 @@ object (self)
   inherit output_cmd () as super_output
 
   val cutoff = flag "--cutoff"
-    (Needs_argument ("cutoff", "Specify the maximum branch length to be trimmed (required)."))
+    (Needs_argument ("cutoff", "Specify the maximum branch length to be trimmed."))
+  val leaf_count = flag "--leaves"
+    (Needs_argument ("leaves", "Specify the maximum number of leaves to leave un-trimmed."))
   val names_only = flag "--names-only"
     (Plain (false, "Only split out a list of names, rather than names and PD decrease."))
   val safe = flag "--unsafe"
@@ -21,6 +23,7 @@ object (self)
 
   method specl = super_output#specl @ [
     float_flag cutoff;
+    int_flag leaf_count;
     toggle_flag names_only;
     toggle_flag safe;
     string_flag never_prune_from;
@@ -41,12 +44,16 @@ object (self)
         match fv never_prune_regex_from with
           | "" -> []
           | fname -> List.map Str.regexp (File_parsing.string_list_of_file fname)
-      and cutoff = fv cutoff
       and names_only = fv names_only
       and safe = fv safe
+      and criterion = match fvo cutoff, fvo leaf_count with
+        | Some cutoff, None ->
+          if cutoff <= 0. then
+            failwith "Please specify a positive cutoff value.";
+          Pd.Branch_length cutoff
+        | None, Some count -> Pd.Leaf_count count
+        | _, _ -> failwith "please specify exactly one of --cutoff and --leaves"
       in
-      if cutoff <= 0. then
-        failwith "Please specify a positive cutoff value.";
       let ss_list_add = List.fold_right StringSet.add
       and search r str =
         try let _ = Str.search_forward r str 0 in true with
@@ -86,7 +93,7 @@ object (self)
       Csv.save_out self#out_channel
         (List.map
            line_of_result
-           (Pd.until_stopping safe never_prune_ids cutoff pt))
+           (Pd.until_stopping safe never_prune_ids criterion pt))
 
     | _ -> failwith "prunetre takes exactly one tree"
 

@@ -91,12 +91,20 @@ let delete_pend pt idbl idbls =
           del_idbls
       )
 
-let until_stopping safe exclude_ids stopping_bl pt =
+type stop_criterion =
+  | Branch_length of float
+  | Leaf_count of int
+
+let until_stopping safe exclude_ids criterion pt =
+  let should_stop = match criterion with
+    | Branch_length bl -> fun s -> (IdblSet.min_elt s).bl > bl
+    | Leaf_count c -> fun s -> (IdblSet.cardinal s) <= c
+  in
   let rec aux accu s =
     if s = IdblSet.empty then accu
     else begin
       let m = IdblSet.min_elt s in
-      if m.bl > stopping_bl then accu
+      if should_stop s then accu
       else match find pt m.id with
       | Pend(orig_id, bl, _) ->
           assert(bl = m.bl);
