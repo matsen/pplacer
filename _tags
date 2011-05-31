@@ -1,4 +1,4 @@
-<{common,pplacer,json}_src>: include
+<{common,pplacer,json,prunetre}_src>: include
 <tests>: include
 <tests/{guppy,pplacer,json}>: include
 <tests/**/*.{ml,byte,native,top,p.native}>: use_oUnit
