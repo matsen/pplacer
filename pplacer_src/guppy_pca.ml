@@ -7,7 +7,7 @@ open Fam_batteries
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit out_prefix_cmd () as super_out_prefix
+  inherit output_cmd ~show_fname:false ~prefix_required:true () as super_output
   inherit mass_cmd () as super_mass
   inherit heat_cmd () as super_heat
   inherit refpkg_cmd ~required:false as super_refpkg
@@ -19,9 +19,11 @@ object (self)
     (Plain (false, "Scale variances to one before performing principal components."))
   val symmv = flag "--symmv"
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
+  val raw_eval = flag "--raw-eval"
+    (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
 
   method specl =
-    super_out_prefix#specl
+    super_output#specl
     @ super_mass#specl
     @ super_refpkg#specl
     @ super_heat#specl
@@ -41,7 +43,7 @@ object (self)
     and scale = fv scale
     and write_n = fv write_n
     and refpkgo = self#get_rpo
-    and out_prefix = fv out_prefix
+    and prefix = self#single_prefix ~requires_user_prefix:true ()
     in
     let prt = Mokaphy_common.list_get_same_tree prl in
     let t = match refpkgo with
@@ -54,28 +56,29 @@ object (self)
         prl
     in
     let (eval, evect) =
-      Pca.gen_pca ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
+      Pca.gen_pca ~use_raw_eval:(fv raw_eval)
+                  ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl)
     in
     Phyloxml.named_gtrees_to_file
-      (out_prefix^".xml")
+      (prefix^".xml")
       (List.map
         (fun (eval, evect) ->
           (Some (string_of_float eval),
           super_heat#heat_tree_of_float_arr t evect))
         combol);
     Guppy_splitify.save_named_fal
-      (out_prefix^".rot")
+      (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
     Guppy_splitify.save_named_fal
-      (out_prefix^".trans")
+      (prefix^".trans")
       (List.combine
         names
         (List.map (fun d -> Array.map (Pca.dot d) evect) data));
     Guppy_splitify.save_named_fal
-      (out_prefix^".edgediff")
+      (prefix^".edgediff")
       (List.combine names data);
     ()
 

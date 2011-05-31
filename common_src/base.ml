@@ -10,6 +10,14 @@ open MapsSets
 
 let round x = int_of_float (floor (x +. 0.5))
 
+let range n =
+  let rec aux accum n =
+    if n = 0 then
+      accum
+    else
+      aux ((n - 1) :: accum) (pred n)
+  in aux [] n
+
 (*
 # int_pow 10. 3;;
 - : float = 1000.
@@ -20,6 +28,13 @@ let int_pow x n =
   assert(n >= 0);
   let rec aux accu i = if i=0 then accu else aux (x*.accu) (i-1) in
   aux 1. n
+
+let string_of_fpclass = function
+  | FP_normal ->    "FP_normal"
+  | FP_subnormal -> "FP_subnormal"
+  | FP_zero ->      "FP_zero"
+  | FP_infinite ->  "FP_infinite"
+  | FP_nan ->       "FP_nan"
 
 let date_time_str () =
   let the_time = Unix.localtime (Unix.time ()) in

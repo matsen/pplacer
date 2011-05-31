@@ -56,12 +56,12 @@ let save_named_fal fname fal =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
 
   method specl =
-    super_outfile#specl
+    super_output#specl
     @ super_mass#specl
 
   method desc =

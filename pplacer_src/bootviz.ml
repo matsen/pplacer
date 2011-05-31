@@ -1,14 +1,14 @@
 open MapsSets
-module SSS = Cluster_common.StringSetSet
+module SSS = Squash_common.StringSetSet
 
 (* Read in two files: boot_fname, which contains a collection of bootstrapped
  * trees, and ct_fname, which is the tree with the full data.
  * Write out an XML file with those bootstrap values. *)
 let decorate_tree cutoff boot_fname ct_fname =
-  let ct = Cluster_common.ensure_numbered (Newick_gtree.of_file ct_fname)
+  let ct = Squash_common.ensure_numbered (Newick_gtree.of_file ct_fname)
   and boot_tl = Newick_gtree.list_of_file boot_fname
   in
-  let boot_sssl = List.map Cluster_common.sss_of_tree boot_tl
+  let boot_sssl = List.map Squash_common.sss_of_tree boot_tl
   and taxon_list t = List.map (Gtree.get_name t) (Gtree.leaf_ids t)
   in
   let taxon_set t = List.fold_right StringSet.add (taxon_list t) StringSet.empty
@@ -29,7 +29,7 @@ let decorate_tree cutoff boot_fname ct_fname =
           (fun bsss -> ( + ) (if SSS.mem ss bsss then 1 else 0))
           boot_sssl
           0)
-    (Cluster_common.ssim_of_tree ct)
+    (Squash_common.ssim_of_tree ct)
   in
   Gtree.set_bark_map
     ct

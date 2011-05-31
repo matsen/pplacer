@@ -109,7 +109,7 @@ object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
-  inherit outfile_cmd () as super_outfile
+  inherit output_cmd () as super_output
   inherit kr_cmd () as super_kr
   inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
@@ -122,8 +122,6 @@ object (self)
   val n_samples = flag "-s"
     (Formatted (0, "Set how many samples to use for significance calculation (0 means \
         calculate distance only). Default is %d."))
-  val verbose = flag "--verbose"
-    (Plain (false, "Verbose running."))
   val gaussian = flag "--gaussian"
     (Plain (false, "Use the Gaussian process approximation for p-value \
         estimation"))
@@ -131,14 +129,13 @@ object (self)
   method specl =
     super_mass#specl
     @ super_refpkg#specl
-    @ super_outfile#specl
+    @ super_output#specl
     @ super_kr#specl
     @ super_rng#specl
     @ [
       toggle_flag list_output;
       toggle_flag density;
       int_flag n_samples;
-      toggle_flag verbose;
       toggle_flag gaussian;
     ]
 

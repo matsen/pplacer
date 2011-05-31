@@ -67,7 +67,7 @@ let wrap_parse_argv argl specl usage =
     List.rev !anonymous
   with
   | Arg.Bad s -> print_string s; exit 1
-  | Arg.Help s -> print_string s; []
+  | Arg.Help s -> print_string s; exit 0
 
 (* Makes a specification with a default value.
 spec_with_default "--gray-level" (fun o -> Arg.Set_int o) prefs.gray_level

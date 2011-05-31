@@ -17,7 +17,7 @@ let to_numbered t =
 let make_boot_id t =
   Gtree.mapi_bark_map (fun i x -> x#set_boot (float_of_int i)) t
 
-(* make a set of the taxon names *)
+(* Make a list of the names on the tree, including the internal nodes. *)
 let get_name_list t =
   let rec aux = function
     | id::l ->
@@ -29,6 +29,12 @@ let get_name_list t =
     | [] -> []
   in
   aux (Gtree.node_ids t)
+
+let has_zero_bls t =
+  List.fold_left
+    (fun accum id -> accum || Gtree.get_bl t id = 0.)
+    false
+    (Stree.nonroot_node_ids (Gtree.get_stree t))
 
 (* output *)
 

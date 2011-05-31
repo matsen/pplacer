@@ -87,9 +87,9 @@ let round_placerun cutoff sig_figs out_name pr =
 (* UI-related *)
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
-  inherit out_prefix_cmd () as super_out_prefix
+  inherit output_cmd ~show_fname:false () as super_output
   inherit placefile_cmd () as super_placefile
 
   val sig_figs = flag "--sig-figs"
@@ -97,7 +97,7 @@ object
   val cutoff = flag "--cutoff"
     (Formatted (0.01, "Set the rounding inclusion cutoff for the ML weight ratio. Default: %g."))
 
-  method specl = super_out_prefix#specl @ [
+  method specl = super_output#specl @ [
     int_flag sig_figs;
     float_flag cutoff;
   ]
@@ -107,11 +107,11 @@ object
   method usage = "usage: round [options] placefile[s]"
 
   method private placefile_action prl =
-    let out_prefix = fv out_prefix
+    let prefix = self#single_prefix ()
     and round_placerun = round_placerun (fv cutoff) (fv sig_figs) in
     List.iter
       (fun pr ->
-        let out_name = (out_prefix^(pr.Placerun.name)) in
+        let out_name = (prefix^(pr.Placerun.name)) in
         Placerun_io.to_json_file
           "guppy round"
           (out_name^".json")

@@ -157,11 +157,28 @@ let check rp name what =
   print_endline ("Checking "^name^"...");
   let _ = what rp in ()
 
+let check_tree_and_aln_names tree aln =
+  let tns = StringSet.of_list (Newick_gtree.get_name_list tree)
+  and ans = StringSet.of_list (Array.to_list (Alignment.get_name_arr aln))
+  in
+  let test (s1, n1) (s2, n2) =
+    let d = StringSet.diff s1 s2 in
+    if not (StringSet.is_empty d) then begin
+      Format.fprintf Format.str_formatter
+        "present in %s but not %s: %a" n1 n2 StringSet.ppr d;
+      failwith (Format.flush_str_formatter ())
+    end
+  in
+  test (tns, "tree") (ans, "alignment");
+  test (ans, "alignment") (tns, "tree");
+  ()
+
 let check_refpkg rp =
   print_endline ("Checking refpkg "^(get_name rp)^"...");
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
   check rp "alignment" get_aln_fasta;
+  check_tree_and_aln_names (get_ref_tree rp) (get_aln_fasta rp);
   try
     check rp "taxonomy" get_taxonomy;
     check rp "seqinfom" get_seqinfom;

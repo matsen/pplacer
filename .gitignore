@@ -4,6 +4,7 @@ tags
 *.top
 *.native
 *.swp
+*.byte
 .ocamlinit
 .toplevel_history
 top_tests

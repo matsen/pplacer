@@ -19,9 +19,9 @@ let demulti_placerun out_name pr =
 (* UI-related *)
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
-  inherit out_prefix_cmd () as super_out_prefix
+  inherit output_cmd ~show_fname:false () as super_output
   inherit placefile_cmd () as super_placefile
 
   method desc =
@@ -29,10 +29,10 @@ object
   method usage = "usage: demulti [options] placefile[s]"
 
   method private placefile_action prl =
-    let out_prefix = fv out_prefix in
+    let prefix = self#single_prefix () in
     List.iter
       (fun pr ->
-        let out_name = (out_prefix^(pr.Placerun.name)) in
+        let out_name = (prefix^(pr.Placerun.name)) in
         Placerun_io.to_json_file
           "guppy demulti"
           (out_name^".json")
