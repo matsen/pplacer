@@ -16,7 +16,7 @@ object (self)
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
   val leaf_mass = flag "-m"
-    (Plain (0.0, "The amount of mass to be distributed across all leaves."))
+    (Plain (0.0, "The fraction of mass to be distributed uniformly across leaves."))
   val mass_cutoff = flag "--cutoff"
     (Formatted (0.001, "The minimum mass cutoff. Default: %1.6f"))
 
@@ -36,13 +36,23 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let transform, weighting, criterion = self#mass_opts
-      and gt = Placerun.get_ref_tree pr in
-      let mass = Mass_map.Indiv.of_placerun transform weighting criterion pr
+      and gt = Placerun.get_ref_tree pr
+      and leaf_mass_fract = fv leaf_mass in
+      if 0. > leaf_mass_fract || leaf_mass_fract > 1. then
+        failwith ("Leaf mass fraction not between 0 and 1.");
+      (* First get the mass that is not at the leaves. *)
+      let mass =
+        Mass_map.Indiv.scale_mass
+          (1. -. leaf_mass_fract)
+          (Mass_map.Indiv.of_placerun transform weighting criterion pr)
       and graph = Voronoi.of_gtree gt in
       let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
+      (* Next add the mass at the leaves. *)
       let mass =
         IntSet.fold
-          (flip IntMap.add_listly (0.0, (fv leaf_mass) /. (float_of_int n_leaves)))
+          (flip
+            IntMap.add_listly
+            (0.0, leaf_mass_fract /. (float_of_int n_leaves)))
           graph.Voronoi.all_leaves
           mass
       in
