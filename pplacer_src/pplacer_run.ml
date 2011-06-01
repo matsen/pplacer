@@ -378,8 +378,11 @@ let run_file prefs query_fname =
       (Base.range (Prefs.children prefs)) in
   event_loop children;
   donefunc ();
-  Printf.printf "\ntiming data:\n";
-  StringMap.iter
-    (fun name values ->
-      Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
-    (!timings)
+  if Prefs.timing prefs then begin
+    Printf.printf "\ntiming data:\n";
+    StringMap.iter
+      (fun name values ->
+        Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
+      (!timings)
+  end
+
