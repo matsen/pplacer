@@ -10,11 +10,11 @@ object (self)
   inherit placefile_cmd () as super_placefile
 
   val first_only = flag "--first-only"
-    (Plain (false, "Only print the first name for each placement."))
+    (Plain (false, "Only print the first name for each pquery."))
 
   method desc =
-    "calculates the EDPL value for a collection of pqueries (assumed to have same ref tree)"
-  method usage = "usage: edpl [options] placefiles"
+    "calculates the EDPL values for a collection of pqueries"
+  method usage = "usage: edpl [options] placefile[s]"
 
   method specl =
     super_mass#specl
