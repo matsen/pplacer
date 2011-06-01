@@ -9,15 +9,25 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
 
+  val first_only = flag "--first-only"
+    (Plain (false, "Only print the first name for each placement."))
+
   method desc =
     "calculates the EDPL value for a collection of pqueries (assumed to have same ref tree)"
   method usage = "usage: edpl [options] placefiles"
 
   method specl =
     super_mass#specl
+    @ [
+      toggle_flag first_only
+    ]
 
     method private placefile_action prl =
       let _, _, criterion = self#mass_opts in
+      let select_fn =
+        if fv first_only then fun x -> [List.hd x]
+        else fun x -> x
+      in
       List.iter
         (fun pr ->
           let dm = Edge_rdist.build_pairwise_dist pr.Placerun.ref_tree in
@@ -27,7 +37,7 @@ object (self)
             (fun pq ->
               List.iter
                 (fun name -> Printf.fprintf ch "%s\t%g\n" name (edpl pq))
-                pq.Pquery.namel)
+                (select_fn pq.Pquery.namel))
             pr.Placerun.pqueries;
           close_out ch;
         )
