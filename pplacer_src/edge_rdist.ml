@@ -76,7 +76,7 @@ let build_pairwise_dist t =
     | _ -> assert(false)
 
 (* Find the distance between two locations on the tree. *)
-let find_pairwise_dist rdist_uptri (edge1, distal1) (edge2, distal2) =
+let find_pairwise_dist rdist_uptri edge1 distal1 edge2 distal2 =
   if edge1 = edge2 then abs_float (distal1  -. distal2)
   else match Uptri.get_loose rdist_uptri edge1 edge2 with
   | Parallel x ->

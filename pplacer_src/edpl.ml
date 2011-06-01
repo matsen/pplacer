@@ -1,38 +1,29 @@
-(* This is where we compute the EDPL distance.
- *
- * "Raw" EDPL distance is not normalized to tree length.
- *
- * should we normalize by diameter instead?
- *
-*)
+(* This is where we compute the EDPL distance. *)
 
 open MapsSets
 
-(* calculate quadratic form of an uptri u and a vector v *)
-let qform u v =
-  assert(Uptri.get_dim u = Array.length v);
-  let tot = ref 0. in
-  Uptri.iterij
-    (fun i j x -> tot := !tot +. 2. *. (v.(i) *. v.(j) *. x))
-    u;
-  !tot
+let of_pquery criterion rdist_uptri pq =
+  let d p1 p2 =
+    Edge_rdist.find_pairwise_dist
+      rdist_uptri
+      p1.Placement.location p1.Placement.distal_bl
+      p2.Placement.location p2.Placement.distal_bl
+  in
+  let rec aux accum = function
+    | x :: l ->
+        aux
+          (List.fold_left
+            (fun tot y ->
+              tot +. (criterion x) *. (criterion y) *. (d x y))
+            accum
+            l)
+          l
+    | _ -> accum
+  in
+  2. *. (aux 0. pq.Pquery.place_list)
 
-let raw_edpl_of_placement_array criterion t pa =
-  let d = Distance_mat.of_placement_array t pa in
-  qform
-    d
-    (Base.arr_normalized_prob (Array.map criterion pa))
 
-let raw_edpl_of_placement_list criterion t pl =
-  raw_edpl_of_placement_array criterion t (Array.of_list pl)
-
-let raw_edpl_of_pquery criterion t pq =
-  raw_edpl_of_placement_list
-    criterion t (Pquery.place_list pq)
-
-let edpl_of_pquery criterion t pq =
-  (raw_edpl_of_pquery criterion t pq) /. (Gtree.tree_length t)
-
+  (*
 (* weight the edpl list by the mass. will throw an out of bounds if the top
  * id is not the biggest id in the tree. *)
 let weighted_edpl_map weighting criterion t pquery_list =
@@ -73,3 +64,4 @@ let weighted_edpl_map_of_pr weighting criterion pr =
     criterion
     (Placerun.get_ref_tree pr)
     (Placerun.get_pqueries pr)
+*)
