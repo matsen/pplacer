@@ -13,7 +13,7 @@ object (self)
     (Plain (false, "Only print the first name for each pquery."))
 
   method desc =
-    "calculates the EDPL values for a collection of pqueries"
+    "calculates the EDPL uncertainty values for a collection of pqueries"
   method usage = "usage: edpl [options] placefile[s]"
 
   method specl =
