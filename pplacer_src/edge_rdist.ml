@@ -1,24 +1,22 @@
-(* to construct a matrix showing common ancestry on an edge-by-edge basis.
- *
- * let A and B be two edges in a tree. let C be their common ancestor. we say
+(* Let A and B be two edges in a tree. let C be their common ancestor. we say
  * that A and B are "serial" if C is one of A or B, and "parallel" if not.
  *
- * this module supports two kinds of calculation: length of common ancestry, and
- * pairwise distances. the idea is that we want to be able to compute distances
+ * This module supports two kinds of calculation: length of common ancestry, and
+ * pairwise distances. The idea is that we want to be able to compute distances
  * between things and common ancestry without doing a tree traversal.
  *
- * the pairwise distances are standard distal-side distances except that they
+ * The pairwise distances are standard distal-side distances except that they
  * have this Parallel versus Serial thing.
  *
- * for common ancestry, for each pair of edges we store the distance from the
+ * For common ancestry, for each pair of edges we store the distance from the
  * root to their common ancestor, with an indication if the relationship between
- * the edges is serial or parallel. if they are parallel, then the distance from
+ * the edges is serial or parallel. If they are parallel, then the distance from
  * the common ancestor of two placements on those edge to the root is just the
- * included value. if they are serial, then we need to add in the distance from
+ * included value. If they are serial, then we need to add in the distance from
  * the placement to the proximal side of the placement edge.
  *
- * the v part of a ca_info gives the distance from the root to the distal side
- * of the edge. this "diagonal" part is needed when we have two placements on
+ * The v part of a ca_info gives the distance from the root to the distal side
+ * of the edge. This "diagonal" part is needed when we have two placements on
  * the same edge.
  *
  * NOTE: this function assumes that edges are numbered in a depth first manner,
@@ -39,12 +37,10 @@ let ppr_rdist_uptri ff u = Uptri.ppr_uptri ppr_rdist ff u
 
 (* ***** DISTANCE ***** *)
 
-(* build a matrix of distances between distal sides of edges with Serial and
- * Parallel labels.
- * that is, m_ij is the distance between the distal sides of the ith and jth
- * edges.
- * note that we assume that there are no placements on the root edge, and so do
- * not have an entry in our uptri for it.
+(* Build a matrix of distances between distal sides of edges with Serial and
+ * Parallel labels (i.e. m_ij is the distance between the distal sides of the
+ * ith and jth edges. Note that we assume that there are no placements on the
+ * root edge, and so do not have an entry in our uptri for it.
  * *)
 let build_pairwise_dist t =
   let stree = Gtree.get_stree t in
@@ -79,8 +75,18 @@ let build_pairwise_dist t =
         u
     | _ -> assert(false)
 
+(* Find the distance between two locations on the tree. *)
+let find_pairwise_dist rdist_uptri (edge1, distal1) (edge2, distal2) =
+  if edge1 = edge2 then abs_float (distal1  -. distal2)
+  else match Uptri.get_loose rdist_uptri edge1 edge2 with
+  | Parallel x ->
+      x -. distal1 -. distal2
+  | Serial x ->
+      if edge1 > edge2 then x +. distal1 -. distal2
+      else x +. distal2 -. distal1
 
-(* ***** COMMON ANCESTRY ***** *)
+
+(* ***** COMMON ANCESTRY (not explicitly unit tested) ***** *)
 
 type ca_info =
   { u : relation_dist Uptri.uptri;
