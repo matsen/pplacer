@@ -38,6 +38,7 @@ type prefs =
     check_like : bool ref;
     children : int ref;
     version : bool ref;
+    timing : bool ref;
   }
 
 
@@ -79,6 +80,7 @@ let defaults () =
     check_like = ref false;
     children = ref 2;
     version = ref false;
+    timing = ref false;
   }
 
 
@@ -119,6 +121,7 @@ let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
 let children          p = !(p.children)
 let version           p = !(p.version)
+let timing            p = !(p.timing)
 
 
 (* arguments and preferences *)
@@ -187,6 +190,8 @@ spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Write out the likelihood of the reference tree, calculated two ways.";
 spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "The number of child processes to spawn when doing placements. Default is %d.";
+"--timing", Arg.Set prefs.timing,
+"Display timing information after the pplacer run finishes.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

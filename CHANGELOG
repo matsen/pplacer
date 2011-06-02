@@ -1,3 +1,10 @@
+1.1.alpha08
+===========
+
+ * `guppy edpl` now calculates the EDPL (expected distance between placement
+   locations) for placements
+
+
 1.1.alpha07
 ===========
 

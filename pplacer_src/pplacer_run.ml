@@ -57,6 +57,8 @@ object (self)
 end
 
 let run_file prefs query_fname =
+  let timings = ref StringMap.empty in
+
   if (Prefs.verb_level prefs) >= 1 then
     Printf.printf
       "Running pplacer %s analysis on %s...\n"
@@ -192,7 +194,10 @@ let run_file prefs query_fname =
     ~util_glv_arr:snodes;
   if (Prefs.verb_level prefs) >= 1 then
     print_endline "done.";
-  if (Prefs.verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
+  timings := StringMap.add_listly
+    "tree likelihood"
+    ((Sys.time ()) -. curr_time)
+    (!timings);
   (* pull exponents *)
   if (Prefs.verb_level prefs) >= 1 then begin
     print_string "Pulling exponents... ";
@@ -289,10 +294,15 @@ let run_file prefs query_fname =
     and fantasy_mod = Base.round (100. *. (Prefs.fantasy_frac prefs))
     and n_fantasies = ref 0
     in
-    let gotfunc = function
-      | Core.Fantasy f ->
+    let rec gotfunc = function
+      | Core.Fantasy f :: rest ->
         Fantasy.add_to_fantasy_matrix f fantasy_mat;
-        incr n_fantasies
+        incr n_fantasies;
+        gotfunc rest
+      | Core.Timing (name, value) :: rest ->
+        timings := StringMap.add_listly name value (!timings);
+        gotfunc rest
+      | [] -> ()
       | _ -> failwith "expected fantasy result"
     and cachefunc _ =
       (* if cachefunc returns true, the current thing is skipped; modulo
@@ -310,8 +320,14 @@ let run_file prefs query_fname =
   end else begin
     (* not fantasy baseball *)
     let query_tbl = Hashtbl.create 1024 in
-    let gotfunc = function
-      | Core.Pquery (seq, pq) -> Hashtbl.add query_tbl seq pq
+    let rec gotfunc = function
+      | Core.Pquery (seq, pq) :: rest ->
+        Hashtbl.add query_tbl seq pq;
+        gotfunc rest
+      | Core.Timing (name, value) :: rest ->
+        timings := StringMap.add_listly name value (!timings);
+        gotfunc rest
+      | [] -> ()
       | _ -> failwith "expected pquery result"
     and cachefunc (name, seq) =
       match begin
@@ -367,4 +383,12 @@ let run_file prefs query_fname =
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
       (Base.range (Prefs.children prefs)) in
   event_loop children;
-  donefunc ()
+  donefunc ();
+  if Prefs.timing prefs then begin
+    Printf.printf "\ntiming data:\n";
+    StringMap.iter
+      (fun name values ->
+        Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
+      (!timings)
+  end
+
