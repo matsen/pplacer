@@ -85,21 +85,20 @@ object (self)
         with
           | None -> failwith "no leaves?"
           | Some (leafs, mass) ->
-            Printf.printf "smallest mass: %1.6f; %d leaves cut; %d leaves remaining"
+            Printf.printf "smallest mass: %1.6f (%d leaves); %d leaves currently in tree"
               mass
               (IntSet.cardinal leafs)
               (IntSet.cardinal graph.Voronoi.all_leaves);
             print_newline ();
-            let graph', updated = Voronoi.uncolor_leaves graph leafs in
-            IntSet.ppr Format.std_formatter updated;
-            Format.print_newline ();
-            if mass >= fv mass_cutoff then begin
-              Printf.printf "remaining: ";
-              IntSet.ppr Format.std_formatter graph.Voronoi.all_leaves;
+            if mass >= fv mass_cutoff then
+              graph
+            else begin
+              let graph', updated = Voronoi.uncolor_leaves graph leafs in
+              Printf.printf "updated: ";
+              IntSet.ppr Format.std_formatter updated;
               Format.print_newline ();
-              graph'
-            end else
               aux graph'
+            end
       in
       let graph' = aux graph in
       let trimmed =
@@ -113,7 +112,9 @@ object (self)
         (Gtree.get_bark_map taxtree)
       in
       let decor = Gtree.set_bark_map taxtree decor_map in
-      Phyloxml.named_gtrees_to_file "cut.xml" [Some "cut leaves", decor]
+      Phyloxml.named_gtrees_to_file
+        (self#single_file ())
+        [Some "cut leaves", decor]
 
     | _ -> failwith "voronoi takes exactly one placefile"
 
