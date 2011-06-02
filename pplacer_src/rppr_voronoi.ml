@@ -77,7 +77,7 @@ object (self)
               | None -> Some (IntSet.singleton leaf, mass)
               | Some (_, prev_mass) when mass < prev_mass ->
                 Some (IntSet.singleton leaf, mass)
-              | Some (leafs, prev_mass) when mass = prev_mass ->
+              | Some (leafs, prev_mass) when mass = prev_mass && mass = 0.0 ->
                 Some (IntSet.add leaf leafs, prev_mass)
               | (Some _) as prev -> prev)
           graph.Voronoi.all_leaves
