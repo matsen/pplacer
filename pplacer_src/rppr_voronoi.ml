@@ -37,7 +37,8 @@ object (self)
     | [pr] ->
       let transform, weighting, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
-      and leaf_mass_fract = fv leaf_mass in
+      and leaf_mass_fract = fv leaf_mass
+      and ch = self#out_channel in
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp
         | None -> Decor_gtree.of_newick_gtree gt
@@ -64,13 +65,6 @@ object (self)
             graph.Voronoi.all_leaves
             mass
       in
-      let mass_dist = Voronoi.distribute_mass graph mass in
-      IntMap.iter
-        (fun e fl ->
-          Printf.printf "%d " e;
-          List.iter (Printf.printf "%0.6f ") fl;
-          print_newline ())
-        mass_dist;
       let sum = List.fold_left (+.) 0.0 in
       let rec aux graph =
         let mass_dist = Voronoi.distribute_mass graph mass in
@@ -89,18 +83,15 @@ object (self)
         with
           | None -> failwith "no leaves?"
           | Some (leafs, mass) ->
-            Printf.printf "smallest mass: %1.6f (%d leaves); %d leaves currently in tree"
-              mass
-              (IntSet.cardinal leafs)
-              (IntSet.cardinal graph.Voronoi.all_leaves);
-            print_newline ();
             if mass >= fv mass_cutoff then
               graph
             else begin
-              let graph', updated = Voronoi.uncolor_leaves graph leafs in
-              Printf.printf "updated: ";
-              IntSet.ppr Format.std_formatter updated;
-              Format.print_newline ();
+              let graph', _ = Voronoi.uncolor_leaves graph leafs in
+              let cut = List.map
+                (fun leaf -> [string_of_int leaf; Printf.sprintf "%1.6f" mass])
+                (IntSet.elements leafs)
+              in
+              Csv.save_out ch cut;
               aux graph'
             end
       in
@@ -116,9 +107,13 @@ object (self)
         (Gtree.get_bark_map taxtree)
       in
       let decor = Gtree.set_bark_map taxtree decor_map in
-      Phyloxml.named_gtrees_to_file
-        (self#single_file ())
-        [Some "cut leaves", decor]
+      begin match fvo trimmed_tree_file with
+        | Some fname ->
+          Phyloxml.named_gtrees_to_file
+            fname
+            [Some "cut leaves", decor]
+        | None -> ()
+      end
 
     | _ -> failwith "voronoi takes exactly one placefile"
 
