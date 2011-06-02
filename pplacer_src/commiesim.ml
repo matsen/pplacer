@@ -216,6 +216,7 @@ let pquery_of_leaf_and_seq leaf seq =
         ~log_like:0.0
     ]
 
+(* Write a placerun with pqueries uniformly distributed among the leaves in leafl. *)
 let write_random_pr rng tree leafl name n_pqueries =
   let distribute_pqueries = Gsl_randist.multinomial rng ~n:n_pqueries in
   let pqueries =
@@ -229,6 +230,18 @@ let write_random_pr rng tree leafl name n_pqueries =
     ""
     (name^".json")
     (Placerun.make tree name (List.flatten pqueries))
+
+(* Uniformly select n_locations from leafl and pass off to write_random_pr. *)
+let write_clustered_random_pr rng tree leafl name ~n_locations ~n_pqueries =
+  let leaf_subl =
+    IntSet.elements
+      (IntSet.plain_sample
+        (sample ~replacement:false rng ~weighting:Uniform)
+        (IntSet.of_list leafl)
+        n_locations)
+  in
+  write_random_pr rng tree leaf_subl name n_pqueries
+
 
 let main
     rng
