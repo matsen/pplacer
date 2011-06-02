@@ -24,11 +24,6 @@ let () =
     Gsl_error.init ();
     Check.directory (Prefs.out_dir prefs);
     List.iter (Pplacer_run.run_file prefs) files;
-    if Prefs.verb_level prefs >= 1 then begin
-      Common_base.print_elapsed_time ();
-      Common_base.print_n_compactions ();
-      print_endline "";
-    end
   end
 
 
