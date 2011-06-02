@@ -46,19 +46,23 @@ object (self)
         failwith ("Leaf mass fraction not between 0 and 1.");
       (* First get the mass that is not at the leaves. *)
       let mass =
-        Mass_map.Indiv.scale_mass
-          (1. -. leaf_mass_fract)
-          (Mass_map.Indiv.of_placerun transform weighting criterion pr)
+        if leaf_mass_fract = 1. then IntMap.empty
+        else
+          Mass_map.Indiv.scale_mass
+            (1. -. leaf_mass_fract)
+            (Mass_map.Indiv.of_placerun transform weighting criterion pr)
       and graph = Voronoi.of_gtree gt in
       let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
       (* Next add the mass at the leaves. *)
       let mass =
-        IntSet.fold
-          (flip
-            IntMap.add_listly
-            (0.0, leaf_mass_fract /. (float_of_int n_leaves)))
-          graph.Voronoi.all_leaves
-          mass
+        if leaf_mass_fract = 0. then mass
+        else
+          IntSet.fold
+            (flip
+              IntMap.add_listly
+              (0.0, leaf_mass_fract /. (float_of_int n_leaves)))
+            graph.Voronoi.all_leaves
+            mass
       in
       let mass_dist = Voronoi.distribute_mass graph mass in
       IntMap.iter
