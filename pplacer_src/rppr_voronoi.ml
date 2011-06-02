@@ -38,6 +38,10 @@ object (self)
       let transform, weighting, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
       and leaf_mass_fract = fv leaf_mass in
+      let taxtree = match self#get_rpo with
+        | Some rp -> Refpkg.get_tax_ref_tree rp
+        | None -> Decor_gtree.of_newick_gtree gt
+      in
       if 0. > leaf_mass_fract || leaf_mass_fract > 1. then
         failwith ("Leaf mass fraction not between 0 and 1.");
       (* First get the mass that is not at the leaves. *)
@@ -104,14 +108,11 @@ object (self)
           graph'.Voronoi.all_leaves
       in
       let decor_map = IntSet.fold
-        (flip IntMap.add [Decor.red])
+        (flip Decor_gtree.map_add_decor_listly [Decor.red])
         trimmed
-        IntMap.empty
+        (Gtree.get_bark_map taxtree)
       in
-      let decor = Decor_gtree.add_decor_by_map
-        (Decor_gtree.of_newick_gtree gt)
-        decor_map
-      in
+      let decor = Gtree.set_bark_map taxtree decor_map in
       Phyloxml.named_gtrees_to_file "cut.xml" [Some "cut leaves", decor]
 
     | _ -> failwith "voronoi takes exactly one placefile"
