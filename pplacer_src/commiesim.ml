@@ -147,6 +147,7 @@ let gtree_of_stree_numbers bark_fn stree =
   let bark = bark_of_stree_numbers bark_fn stree in
   Gtree.gtree stree bark
 
+(* Independent samples. *)
 let subselect rng n_select n_bins lss =
   ListFuns.init
     n_bins
@@ -156,7 +157,26 @@ let subselect rng n_select n_bins lss =
         lss
         n_select)
 
-let distribute_lsetset_on_tree rng n_select splits leafss gt =
+let fill n x = ListFuns.init n (fun _ -> x)
+
+(* With probability p_same, select identical sets for each, and if not, then
+  * independent. *)
+let some_matching rng n_select p_same n_bins lss =
+  if p_same > 1. || p_same < 0. then
+    invalid_arg "p_same out of range";
+  let sample n =
+    Lsetset.plain_sample
+      (sample ~replacement:true rng ~weighting:Uniform)
+      lss
+      n
+  in
+  let n_same = Gsl_randist.binomial rng p_same n_select in
+  List.map2
+    Lsetset.union
+      (fill n_bins (sample n_same))
+      (ListFuns.init n_bins (fun _ -> sample (n_select - n_same)))
+
+let distribute_lsetset_on_tree rng n_select n_splits_mean splits leafss gt =
   let bl = Gtree.get_bl gt in
   let name = Gtree.get_name gt in
   let rec aux splits leafss = function
@@ -166,14 +186,14 @@ let distribute_lsetset_on_tree rng n_select splits leafss gt =
       (* the splits that actually cut leafss *)
       let cutting_splits = select_sset_cutting_lsetset splits leafss in
       (* sample some number from them *)
-      let n_splits = Gsl_randist.poisson rng (bl n) in
+      let n_splits = Gsl_randist.poisson rng n_splits_mean in
       Printf.printf "using %d splits\n" n_splits;
       let chosen_splits = sample_sset_weighted rng cutting_splits n_splits in
       (* apply these splits *)
       let cut_leafss = sset_lsetset chosen_splits leafss in
       (* throw the balls (leafs) into boxes (subtrees) *)
       let distributed =
-        subselect rng n_select (List.length subtrees) cut_leafss
+        some_matching rng n_select (bl n) (List.length subtrees) cut_leafss
       in
       List.fold_left2
         (fun map leafss t -> StringMap.union map (aux cutting_splits leafss t))
@@ -214,6 +234,7 @@ let main
     rng
     ?(retries = 100)
     ~n_select
+    ~n_splits_mean
     ~cluster_tree
     ~n_pqueries
     ~tree
@@ -232,6 +253,7 @@ let main
         distribute_lsetset_on_tree
           rng
           n_select
+          n_splits_mean
           splits
           (Lsetset.singleton leafs)
           cluster_tree

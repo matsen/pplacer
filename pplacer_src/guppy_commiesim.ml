@@ -11,6 +11,9 @@ object (self)
   val n_select = flag "-n"
     (Needs_argument ("n_select", "The number of sets selected from the cut sets
     as we move down the tree."))
+  val n_splits_mean = flag "-s"
+    (Needs_argument ("n_splits_mean", "The mean number of splits chosen at an
+    internal node."))
   val cluster_tree = flag "-t"
     (Needs_argument ("cluster_tree", "A file containing the clustering tree, in Newick format."))
   val n_pqueries = flag "-q"
@@ -22,6 +25,7 @@ object (self)
   @ super_output#specl
   @ [
     int_flag n_select;
+    float_flag n_splits_mean;
     string_flag cluster_tree;
     int_flag n_pqueries;
   ]
@@ -34,6 +38,7 @@ object (self)
       self#rng
       ~retries:100
       ~n_select:(fv n_select)
+      ~n_splits_mean:(fv n_splits_mean)
       ~cluster_tree:(Newick_gtree.of_file (fv cluster_tree))
       ~n_pqueries:(fv n_pqueries)
       ~tree:(Refpkg.get_ref_tree self#get_rp)
