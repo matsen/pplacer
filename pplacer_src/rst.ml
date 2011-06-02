@@ -20,3 +20,20 @@ let write_literal_block_start ch =
 let write_option ch flagstr description =
   Printf.fprintf ch "%s  %s\n" flagstr description
 
+let flip f x y = f y x
+
+let write_table ch m =
+  let padded = String_matrix.pad m in
+  let widths = Array.map String.length padded.(0) in
+  let divider = Array.map (flip String.make '=') widths in
+  let write_divider () = String_matrix.write_row ch divider in
+  Array.iteri
+    (fun e row ->
+      if e = 0 then
+        write_divider ();
+      String_matrix.write_row ch row;
+      if e = 0 then
+        write_divider ())
+    padded;
+  write_divider ()
+

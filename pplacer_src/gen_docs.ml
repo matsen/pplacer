@@ -22,20 +22,45 @@ let () =
 
   List.iter check_directory [docs_dir; details_dir; generated_dir;];
 
+  let guppy_commands = Base.map_and_flatten snd (Guppy.command_list ()) in
+  let command_matrix =
+    Array.append
+      [|[|"Command"; "Description"|]|]
+      (Array.of_list
+         (List.sort
+            compare
+            (List.map
+               (fun (name, cmd) ->
+                 [|Printf.sprintf ":ref:`%s <guppy_%s>`" name name;
+                   (cmd ())#desc|])
+               guppy_commands)))
+  in
+  let guppy_out = open_out (generated_dir ^ "guppy.rst") in
+  List.iter
+    (fun line ->
+      if line = ".. guppy-command-table" then
+        Rst.write_table guppy_out command_matrix
+      else
+        Printf.fprintf guppy_out "%s\n" line)
+    (File_parsing.string_list_of_file (details_dir ^ "guppy.rst"));
+  close_out guppy_out;
+
   List.iter
     (fun (name, prefix, pre_o) ->
       let o = pre_o ()
-      and rst_name =
-        Printf.sprintf "%s%s.rst"
-          (match prefix with
-            | None -> ""
-            | Some s -> s ^ "_")
-          name
+      and full_name =
+        (match prefix with
+          | None -> ""
+          | Some s -> s ^ "_")
+        ^ name
       in
+      let rst_name = full_name ^ ".rst" in
       let ch = open_out (generated_dir^rst_name) in
       let endline () = Printf.fprintf ch "\n" in
 
       (* write top matter *)
+      Printf.fprintf ch ":tocdepth: 3\n\n";
+      Printf.fprintf ch ".. _%s:\n\n" full_name;
       write_top_title ch name;
       Printf.fprintf ch "\n`%s` %s." name o#desc;
       endline ();
@@ -64,5 +89,4 @@ let () =
     (("pplacer", None, (fun () -> new Prefs.pplacer_cmd ()))::
         (List.map
            (fun (name, pre_o) -> name, Some "guppy", pre_o)
-           (List.flatten (List.map snd (Guppy.command_list ())))))
-
+           guppy_commands))
