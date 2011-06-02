@@ -16,6 +16,7 @@ let command_list () =
       "kr", (fun () -> new Guppy_kr.cmd ());
       "pca", (fun () -> new Guppy_pca.cmd ());
       "splitify", (fun () -> new Guppy_splitify.cmd ());
+      "edpl", (fun () -> new Guppy_edpl.cmd ());
     ];
 
     "classification", [
