@@ -34,7 +34,7 @@ object (self)
   method usage = "usage: commiesim [options] -c my.refpkg"
 
   method action _ =
-    let gt = Commiesim.main
+    Commiesim.main
       self#rng
       ~retries:100
       ~n_select:(fv n_select)
@@ -43,8 +43,4 @@ object (self)
       ~n_pqueries:(fv n_pqueries)
       ~tree:(Refpkg.get_ref_tree self#get_rp)
       (self#single_prefix ())
-    in
-    Newick_gtree.to_file
-      gt
-      ((Filename.chop_suffix (fv cluster_tree) ".tre") ^ ".expand.tre")
 end
