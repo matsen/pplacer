@@ -67,6 +67,9 @@ type colorm = color IntMap.t
 type cdtree = colorm * stree
 type local_phi = (apart * int) QuestionMap.t
 type phi = local_phi IntMap.t
+(* nu_f is a type for upper bounds for the number of leaves left in a convex
+ * subset of leaves. We pass them phi, the apart, and the list of top indices
+ * for the subtrees at our internal node. *)
 type nu_f = phi -> apart -> int list -> int
 
 (* Abbreviations *)
@@ -327,7 +330,9 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
-(* XXX add a nu_f *)
+(* XXX add a nu_f. It would seem appropriate to add one as an argument. There
+ * are different sorts of nu_f... they are just bounds and we will want to trial
+ * them. OTOH, if you think it's better to just globally set one then fine. *)
 let rec phi_recurse cutsetim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
@@ -380,7 +385,8 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
           else recur
 
           By the way, can you think of a situation in which build_apartl would return []?
-          If so, is 0 an appropriate return value?
+          If so, is 0 an appropriate return value? Or would an exception be more
+          appropriate?
 
        * *)
       List.fold_left
