@@ -66,25 +66,8 @@ object (self)
           let phi, omega = solve (colormap, st) in
           Printf.printf "  solved omega: %d\n" omega;
           let not_cut = nodeset_of_phi_and_tree phi st in
-          let rec aux accum = function
-            | Leaf i :: rest ->
-              aux
-                (if IntSet.mem i not_cut then
-                    accum
-                 else
-                    Decor_gtree.map_add_decor_listly i [Decor.red] accum)
-                rest
-            | Node (_, subtrees) :: rest ->
-              aux accum (List.rev_append subtrees rest)
-            | [] -> accum
-          in
-          let decor_map =
-            aux
-              (Gtree.get_bark_map taxtree)
-              [Gtree.get_stree taxtree]
-          in
-          let gt' = Gtree.set_bark_map taxtree decor_map in
           let cut_leaves = IntSet.diff leaves not_cut in
+          let gt' = Decor_gtree.color_clades_above cut_leaves taxtree in
           (Some rankname, gt') :: discord,
           IntSet.fold
             (fun i accum -> [rankname; Gtree.get_name gt i] :: accum)

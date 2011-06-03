@@ -126,12 +126,7 @@ object (self)
           graph.Voronoi.all_leaves
           graph'.Voronoi.all_leaves
       in
-      let decor_map = IntSet.fold
-        (flip Decor_gtree.map_add_decor_listly [Decor.red])
-        trimmed
-        (Gtree.get_bark_map taxtree)
-      in
-      let decor = Gtree.set_bark_map taxtree decor_map in
+      let decor = Decor_gtree.color_clades_above trimmed taxtree in
       begin match fvo trimmed_tree_file with
         | Some fname ->
           Phyloxml.named_gtrees_to_file

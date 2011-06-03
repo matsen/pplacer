@@ -24,3 +24,26 @@ let map_add_decor_listly id decorl barkm =
 let add_decor_by_map t decor_map =
   Gtree.set_bark_map t
     (IntMap.fold map_add_decor_listly decor_map (Gtree.get_bark_map t))
+
+let color_clades_above ?(color = Decor.red) leaves gt =
+  let rec aux accum = function
+    | Stree.Leaf i ->
+      if IntSet.mem i leaves then
+        map_add_decor_listly i [color] accum
+      else
+        accum
+    | Stree.Node (i, subtrees) ->
+      let accum' = List.fold_left aux accum subtrees in
+      if List.for_all
+        (fun t ->
+          let n = Stree.top_id t in
+          IntMap.mem n accum'
+          && List.mem color (IntMap.find n accum')#get_decor)
+        subtrees
+      then
+        map_add_decor_listly i [color] accum'
+      else
+        accum'
+  in
+  let decor_map' = aux (Gtree.get_bark_map gt) (Gtree.get_stree gt) in
+  Gtree.set_bark_map gt decor_map'
