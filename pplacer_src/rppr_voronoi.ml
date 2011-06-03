@@ -17,8 +17,10 @@ object (self)
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
   val leaf_mass = flag "-m"
     (Plain (0.0, "The fraction of mass to be distributed uniformly across leaves."))
-  val mass_cutoff = flag "--cutoff"
-    (Formatted (0.001, "The minimum mass cutoff. Default: %1.6f"))
+  val mass_cutoff = flag "--mass"
+    (Needs_argument ("mass cutoff", "If provided, the maximum value of minimum leaf mass."))
+  val leaf_cutoff = flag "--leaves"
+    (Needs_argument ("leaf cutoff", "If provided, the maximum number of leaves to cut from the tree."))
   val verbose = flag "-v"
     (Plain (false, "If specified, write progress output to stderr."))
 
@@ -30,6 +32,7 @@ object (self)
       string_flag trimmed_tree_file;
       float_flag leaf_mass;
       float_flag mass_cutoff;
+      int_flag leaf_cutoff;
       toggle_flag verbose;
     ]
 
@@ -58,6 +61,18 @@ object (self)
             (Mass_map.Indiv.of_placerun transform weighting criterion pr)
       and graph = Voronoi.of_gtree gt in
       let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
+      let criteria =
+        (match fvo mass_cutoff with
+          | Some cutoff -> [fun (mass, _) -> mass >= cutoff]
+          | None -> [])
+        @ (match fvo leaf_cutoff with
+          | Some count ->
+            [fun (_, v) ->
+              (n_leaves - (IntSet.cardinal v.Voronoi.all_leaves)) >= count]
+          | None -> [])
+      in
+      if List.length criteria = 0 then
+        failwith "at least one cutoff criteria must be specified";
       (* Next add the mass at the leaves. *)
       let mass =
         if leaf_mass_fract = 0. then mass
@@ -87,7 +102,7 @@ object (self)
         with
           | None -> failwith "no leaves?"
           | Some (leafs, mass) ->
-            if mass >= fv mass_cutoff then
+            if List.exists (fun f -> f (mass, graph)) criteria then
               graph
             else begin
               if verbose then begin
