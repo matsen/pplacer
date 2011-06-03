@@ -18,7 +18,6 @@ let write_picks ~darr ~parr rp =
   and name = Refpkg.get_name rp
   and model = Refpkg.get_model rp
   and mrcal = IntMap.keys (Refpkg.get_mrcam rp) in
-  let ch = open_out (name^".picks") in
   let code = match Model.seq_type (Refpkg.get_model rp) with
   | Alignment.Nucleotide_seq -> Nuc_models.nuc_code
   | Alignment.Protein_seq -> Prot_models.prot_code
@@ -29,13 +28,34 @@ let write_picks ~darr ~parr rp =
   let to_sym_str ind_arr =
     StringFuns.of_char_array (Array.map get_symbol ind_arr)
   in
+  let ch = open_out (name^".picks") in
+  let uname id =
+    underscoreize (extract_tax_name (Gtree.get_bark t id)#get_decor)
+  in
   IntMap.iter
     (fun id (at_d, at_p) ->
-      let uname =
-        underscoreize (extract_tax_name (Gtree.get_bark t id)#get_decor)
-      in
-      Printf.fprintf ch ">%s\n%s\n" ("d_"^uname) (to_sym_str at_d);
-      Printf.fprintf ch ">%s\n%s\n" ("p_"^uname) (to_sym_str at_p);)
+      Printf.fprintf ch ">%s\n%s\n" ("d_"^(uname id)) (to_sym_str at_d);
+      Printf.fprintf ch ">%s\n%s\n" ("p_"^(uname id)) (to_sym_str at_p);)
     (Mutpick.pickpair_map Gsl_vector.max_index (-1) model t ~darr ~parr mrcal);
   close_out ch;
+  let max_rat v = (Gsl_vector.max v) /. (Linear_utils.l1_norm v) in
+  let ch = open_out (name^".likes") in
+  let ch_nums = open_out (name^".nums") in
+  IntMap.iter
+    (fun id (at_d, at_p) ->
+      Printf.fprintf ch ">%s\n" (uname id);
+      let n_picks = ref 0 in
+      for i=0 to (Array.length at_d) - 1 do
+        let d = at_d.(i) and p = at_p.(i) in
+        if d > 0.9 && p < 0.6 then begin
+          Printf.fprintf ch "%d\t%g\t%g\t%g\n" i d p (d-.p);
+          incr n_picks
+        end;
+      done;
+      Printf.fprintf ch_nums "%s\t%d\n" (uname id) (!n_picks);
+      )
+    (Mutpick.pickpair_map max_rat 0. model t ~darr ~parr mrcal);
+  close_out ch;
+  close_out ch_nums;
+
   ()
