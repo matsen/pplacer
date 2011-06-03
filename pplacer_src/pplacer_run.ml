@@ -143,8 +143,9 @@ let run_file prefs query_fname =
           if StringSet.mem seq seen then
             failwith
               (Printf.sprintf
-                 "duplicate reference sequence '%s' in query file"
-                 seq);
+                 "duplicate reference sequence '%s' in query file %s"
+                 seq
+                 query_fname);
           StringSet.add seq seen)
         StringSet.empty
         ref_list
