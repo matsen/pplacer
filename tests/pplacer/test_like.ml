@@ -56,22 +56,24 @@ let like_test info () =
   done
 
 
+let like_tests_dir = tests_dir^"data/like/"
+
 let jtt_info = {
-  dir_name = "/home/matsen/pplacer/ocaml/tests/data/like/jtt/";
+  dir_name = like_tests_dir^"jtt/";
   fasta_fname = "actin.fasta";
   tree_fname = "actin.phy_phyml_tree.txt";
   correct_like = -2326.22075;
 }
 
 let wag_info = {
-  dir_name = "/home/matsen/pplacer/ocaml/tests/data/like/wag/";
+  dir_name = like_tests_dir^"wag/";
   fasta_fname = "actin.fasta";
   tree_fname = "actin.phy_phyml_tree.txt";
   correct_like = -2334.79151;
 }
 
 let gtr_info = {
-  dir_name = "/home/matsen/pplacer/ocaml/tests/data/like/gtr/";
+  dir_name = like_tests_dir^"gtr/";
   fasta_fname = "hiv.fasta";
   tree_fname = "hiv.phy_phyml_tree.txt";
   correct_like = -1752.42340;
