@@ -19,6 +19,8 @@ object (self)
     (Plain (0.0, "The fraction of mass to be distributed uniformly across leaves."))
   val mass_cutoff = flag "--cutoff"
     (Formatted (0.001, "The minimum mass cutoff. Default: %1.6f"))
+  val verbose = flag "-v"
+    (Plain (false, "If specified, write progress output to stderr."))
 
   method specl =
     super_mass#specl
@@ -28,6 +30,7 @@ object (self)
       string_flag trimmed_tree_file;
       float_flag leaf_mass;
       float_flag mass_cutoff;
+      toggle_flag verbose;
     ]
 
   method desc = "apply voronoi"
@@ -38,7 +41,8 @@ object (self)
       let transform, weighting, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
       and leaf_mass_fract = fv leaf_mass
-      and ch = self#out_channel in
+      and ch = self#out_channel
+      and verbose = fv verbose in
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp
         | None -> Decor_gtree.of_newick_gtree gt
@@ -86,6 +90,12 @@ object (self)
             if mass >= fv mass_cutoff then
               graph
             else begin
+              if verbose then begin
+                Printf.fprintf stderr "uncoloring %d leaves (mass %1.6f)"
+                  (IntSet.cardinal leafs)
+                  mass;
+                prerr_newline ();
+              end;
               let graph', _ = Voronoi.uncolor_leaves graph leafs in
               let cut = List.map
                 (fun leaf -> [string_of_int leaf; Printf.sprintf "%1.6f" mass])
