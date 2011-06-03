@@ -19,7 +19,7 @@ let like_test info () =
   in
   let check our_like =
     (Printf.sprintf "likelihood error: %g" our_like) @?
-      (cmp_float ~epsilon:0.01 info.correct_like our_like)
+      (cmp_float ~epsilon:1e-7 info.correct_like our_like)
   in
   (* Copied from pplacer_run.ml *)
   let like_aln_map =
@@ -70,10 +70,16 @@ let wag_info = {
   correct_like = -2334.79151;
 }
 
+let gtr_info = {
+  dir_name = "/home/matsen/pplacer/ocaml/tests/data/like/gtr/";
+  fasta_fname = "hiv.fasta";
+  tree_fname = "hiv.phy_phyml_tree.txt";
+  correct_like = -1752.42340;
+}
 
 
 let suite = [
   "jtt" >:: (like_test jtt_info);
   "wag" >:: (like_test wag_info);
+  "gtr" >:: (like_test gtr_info);
 ]
-
