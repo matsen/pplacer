@@ -138,6 +138,18 @@ let run_file prefs query_fname =
         print_endline
           "Found reference sequences in given alignment file. \
           Using those for reference alignment.";
+      let _ = List.fold_left
+        (fun seen (seq, _) ->
+          if StringSet.mem seq seen then
+            failwith
+              (Printf.sprintf
+                 "duplicate reference sequence '%s' in query file %s"
+                 seq
+                 query_fname);
+          StringSet.add seq seen)
+        StringSet.empty
+        ref_list
+      in ();
       Alignment.uppercase (Array.of_list ref_list)
     end
   in
