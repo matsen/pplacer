@@ -198,8 +198,6 @@ let run_file prefs query_fname =
   let parr = Glv_arr.mimic darr
   and snodes = Glv_arr.mimic darr
   in
-  (* do the reference tree likelihood calculation. we do so using halfd and
-   * one glv from halfp as our utility storage *)
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
     util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
