@@ -28,7 +28,36 @@ let test_suite_of_gtree_and_expected (gt_string, distr) =
     ldistl
     distr
 
-let suite =
+let test_v = of_gtree
+  (Newick_gtree.of_string "(x:.3,(x:.1,(x:.4,x:.5):.1):.4)")
+
+let suite = [
+  "test_uncoloring" >:: fun () -> begin
+    List.iter
+      (fun l ->
+        (Printf.sprintf
+           "uncoloring with _leaves and _leaf didn't match (leaf %d)"
+           l)
+        @? ((uncolor_leaves test_v (IntSet.singleton l))
+            = (uncolor_leaf test_v l)))
+      [0; 1; 2; 3];
+    List.iter
+      (fun (leaves, expected_updated) ->
+        let _, got_updated = uncolor_leaves test_v (IntSet.of_list leaves) in
+        "unexpected updated leaves when uncoloring"
+        @? (IntSet.compare got_updated (IntSet.of_list expected_updated) = 0))
+      [
+        [0], [1];
+        [1], [0; 2];
+        [2], [1];
+        [3], [1];
+        [2; 3], [1];
+        [0; 1], [2];
+      ]
+  end;
+]
+
+let suite = suite @
   List.map
     test_suite_of_gtree_and_expected
     [
