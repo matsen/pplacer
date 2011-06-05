@@ -113,7 +113,8 @@ object (self)
               end;
               let graph', _ = Voronoi.uncolor_leaves graph leafs in
               let cut = List.map
-                (fun leaf -> [string_of_int leaf; Printf.sprintf "%1.6f" mass])
+                (fun leaf -> [Gtree.get_name taxtree leaf;
+                             Printf.sprintf "%1.6f" mass])
                 (IntSet.elements leafs)
               in
               Csv.save_out ch cut;
