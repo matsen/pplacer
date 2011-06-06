@@ -52,7 +52,7 @@ let suite = [
       (fun (leaves, expected_updated) ->
         let _, got_updated = uncolor_leaves test_v (IntSet.of_list leaves) in
         "unexpected updated leaves when uncoloring"
-        @? (IntSet.compare got_updated (IntSet.of_list expected_updated) = 0))
+        @? (IntSet.equal got_updated (IntSet.of_list expected_updated)))
       [
         [0], [1];
         [1], [0; 2];
