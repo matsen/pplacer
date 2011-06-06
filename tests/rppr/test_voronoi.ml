@@ -76,6 +76,9 @@ let suite = [
           4, 0.1, 0.0;
           5, 0.3, 0.0;
         ];
+        2, [
+          2, 0.3, 0.0;
+        ];
         3, [
           3, 0.35, 0.0;
         ];
@@ -88,6 +91,34 @@ let suite = [
         (Printf.sprintf "unexpected snipl for leaf %d" leaf)
         @? (snipl_equal got_snips expected_snips))
       expected
+  end;
+
+  "test_mass_distribution" >:: begin fun () ->
+    assert_raises
+      Not_found
+      (fun () -> distribute_mass test_v (IntMap.singleton 4 [0.5, 0.0]));
+    let got_massdist = distribute_mass
+      test_v
+      (IntMap.of_pairlist [
+        3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
+        5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
+        4, [0.0, 8.0; 0.05, 9.0];
+        2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
+      ])
+    in
+    List.iter
+      (fun (leaf, masslist) ->
+        (Printf.sprintf "unexpected mass distribution for leaf %d" leaf) @?
+          (List.for_all2
+             approx_equal
+             masslist
+             (List.sort compare (IntMap.find leaf got_massdist))))
+      [
+        0, [7.];
+        1, [4.; 5.; 6.; 8.; 9.; 12.];
+        2, [10.; 11.];
+        3, [1.; 2.; 3.];
+      ]
   end;
 ]
 
