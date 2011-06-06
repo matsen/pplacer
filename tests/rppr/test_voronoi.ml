@@ -31,8 +31,15 @@ let test_suite_of_gtree_and_expected (gt_string, distr) =
 let test_v = of_gtree
   (Newick_gtree.of_string "(x:.3,(x:.1,(x:.4,x:.5):.1):.4)")
 
+let snipl_equal l1 l2 =
+  List.for_all2
+    (fun (l1, s1, f1) (l2, s2, f2) ->
+      l1 = l2 && approx_equal s1 s2 && approx_equal f1 f2)
+    l1
+    l2
+
 let suite = [
-  "test_uncoloring" >:: fun () -> begin
+  "test_uncoloring" >:: begin fun () ->
     List.iter
       (fun l ->
         (Printf.sprintf
@@ -54,6 +61,33 @@ let suite = [
         [2; 3], [1];
         [0; 1], [2];
       ]
+  end;
+
+  "test_snips" >:: begin fun () ->
+    let expected = [
+        0, [
+          0, 0.3, 0.0;
+          5, 0.4, 0.3;
+        ];
+        1, [
+          1, 0.1, 0.0;
+          2, 0.4, 0.3;
+          3, 0.5, 0.35;
+          4, 0.1, 0.0;
+          5, 0.3, 0.0;
+        ];
+        3, [
+          3, 0.35, 0.0;
+        ];
+        4, [];
+      ]
+    in
+    List.iter
+      (fun (leaf, expected_snips) ->
+        let got_snips = List.sort compare (get_edge_snipl test_v leaf) in
+        (Printf.sprintf "unexpected snipl for leaf %d" leaf)
+        @? (snipl_equal got_snips expected_snips))
+      expected
   end;
 ]
 
