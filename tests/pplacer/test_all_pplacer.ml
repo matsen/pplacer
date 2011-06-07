@@ -6,4 +6,5 @@ let suite = [
   (* "diagd" >::: Test_diagd.suite; *)
   "placefile" >::: Test_placefile.suite;
   "convex" >::: Test_convex.suite;
+  "like" >::: Test_like.suite;
 ]
