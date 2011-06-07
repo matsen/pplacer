@@ -363,16 +363,10 @@ let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
       let omega = if x = IntMap.find i cutsetim then 1 else 0 in
       phi, Some (omega, null_apart)
     | Node (_, subtrees) ->
-        (* XXX it seems to me that we will need
-         * List.map top_id subtrees
-         * as well for the nu_f
-         * *)
       let cutsetl = List.map
         (fun subtree -> IntMap.find (top_id subtree) cutsetim)
         subtrees
       in
-      (* XXX zip together the apartl with its value under nu_f and sort on these
-       * values. *)
       let apartl = build_apartl
         cutsetl
         (IntMap.find i cutsetim)
@@ -398,18 +392,6 @@ let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
         apartl
       in
       let nu_apartl = List.sort (fun (a, _) (b, _) -> b - a) nu_apartl in
-      (* XXX let's turn this below a (tail) recursion before actually adding the
-       * nu business. Then before recurring, we compare the best value of
-       *
-        (fun (phi, current_best (apart, nu) ->
-          let (best_omega, best_phi) = current_best in
-          if nu <= best_omega then current_best
-          else recur
-
-          By the way, can you think of a situation in which build_apartl would return []?
-          If so, is 0 an appropriate return value?
-
-       * *)
       let rec aux phi current_best = function
         | (nu, apart) :: rest -> (
           let phi, omega = apart_omega phi apart in
@@ -440,12 +422,6 @@ let badness cutsetim =
 
 let solve ((_, tree) as cdtree) =
   let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
-  (*
-   * XXX actually accept our sizemim and use it to build a
-   nu_f = phi -> apart -> int list -> int
-   by totaling across the phi value below if it is available, and if not then
-   using the sizemim.
-  *)
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
   let sizemlim = maplist_of_map_and_tree sizemim tree in
   Hashtbl.clear build_apartl_memo;
