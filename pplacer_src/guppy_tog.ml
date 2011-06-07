@@ -11,12 +11,40 @@ let tog_tree criterion ref_tree placed_map =
       List.map
         (fun pquery ->
           let best = Pquery.best_place criterion pquery in
-          (Placement.distal_bl best,
-          make_zero_leaf
-            [ Decor.red ]
-            (Placement.pendant_bl best)
-            (String.concat "_" pquery.Pquery.namel),
-         decor_bark_of_bl)))
+          let n_names = List.length (Pquery.namel pquery) in
+          let tree =
+            Stree.node
+              n_names
+              (List.map Stree.leaf (Base.range n_names))
+          in
+          let decor_map = IntMap.add
+            n_names
+            (new Decor_bark.decor_bark
+               (`Of_bl_name_boot_dlist
+                   (Some (Placement.pendant_bl best),
+                    None,
+                    None,
+                    [Decor.red])))
+            IntMap.empty
+          in
+          let decor_map = List.fold_left2
+            (fun accum i name ->
+              IntMap.add
+                i
+                (new Decor_bark.decor_bark
+                   (`Of_bl_name_boot_dlist
+                       (None,
+                        Some name,
+                        None,
+                        [Decor.red])))
+                accum)
+            decor_map
+            (Base.range n_names)
+            (Pquery.namel pquery)
+          in
+          Placement.distal_bl best,
+          Gtree.Subtree (Gtree.gtree tree decor_map),
+          decor_bark_of_bl))
     ref_tree
     placed_map
 
