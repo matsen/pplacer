@@ -40,7 +40,8 @@ object (self)
     let gt = Refpkg.get_ref_tree rp in
     let st = gt.Gtree.stree
     and td = Refpkg.get_taxonomy rp
-    and cutoff = fv badness_cutoff in
+    and cutoff = fv badness_cutoff
+    and taxtree = Refpkg.get_tax_ref_tree rp in
     let leaves = leafset st in
     Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let discordance, cut_sequences = IntMap.fold
@@ -65,24 +66,8 @@ object (self)
           let phi, omega = solve (colormap, st) in
           Printf.printf "  solved omega: %d\n" omega;
           let not_cut = nodeset_of_phi_and_tree phi st in
-          let rec aux accum = function
-            | Leaf i :: rest ->
-              aux
-                (if IntSet.mem i not_cut then
-                    accum
-                 else
-                    IntMap.add i [Decor.red] accum)
-                rest
-            | Node (_, subtrees) :: rest ->
-              aux accum (List.rev_append subtrees rest)
-            | [] -> accum
-          in
-          let decor_map = aux (IntMap.empty) [st] in
-          let gt' = Decor_gtree.add_decor_by_map
-            (Decor_gtree.of_newick_gtree gt)
-            decor_map
-          in
           let cut_leaves = IntSet.diff leaves not_cut in
+          let gt' = Decor_gtree.color_clades_above cut_leaves taxtree in
           (Some rankname, gt') :: discord,
           IntSet.fold
             (fun i accum -> [rankname; Gtree.get_name gt i] :: accum)
