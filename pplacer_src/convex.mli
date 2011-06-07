@@ -58,8 +58,6 @@ val build_apartl: csetl -> cset -> question -> apart list
 
 (* For the recursion. *)
 
-val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
-
 (* val single_naive_upper: chosen:cset -> cutset:cset -> sizem -> int *)
 (* (\** naive_upper chosent cutset sizem gives an naive (i.e. ignoring convexity) *)
 (*  * upper bound for the number of leaves below that could be allowed if we select *)
@@ -71,7 +69,7 @@ val apart_nu: cset -> sizem list -> apart -> int
 
 (* The recursion, as it were. *)
 
-val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
+val phi_recurse: cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question -> phi -> phi * int
 (** phi_recurse id q phi returns a phi map which includes the answer
  * to the posed question.
  *)

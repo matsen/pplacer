@@ -346,7 +346,7 @@ let add_phi node question answer phi =
 let null_apart = None, []
 
 (* XXX add a nu_f *)
-let rec phi_recurse cutsetim tree ((_, x) as question) phi =
+let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
     try
@@ -383,12 +383,21 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       let apart_omega phi (b, pi) =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse cutsetim subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse cutsetim sizemlim subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
           subtrees
       in
+      let apart_nu' = apart_nu
+        (IntMap.find i cutsetim)
+        (IntMap.find i sizemlim)
+      in
+      let nu_apartl = List.map
+        (fun apart -> apart_nu' apart, apart)
+        apartl
+      in
+      let nu_apartl = List.sort (fun (a, _) (b, _) -> b - a) nu_apartl in
       (* XXX let's turn this below a (tail) recursion before actually adding the
        * nu business. Then before recurring, we compare the best value of
        *
@@ -401,15 +410,19 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
           If so, is 0 an appropriate return value?
 
        * *)
-      List.fold_left
-        (fun (phi, current_best) apart ->
+      let rec aux phi current_best = function
+        | (nu, apart) :: rest -> (
           let phi, omega = apart_omega phi apart in
           match current_best with
-            | None -> phi, Some (omega, apart)
-            | Some (old_omega, _) when omega > old_omega -> phi, Some (omega, apart)
-            | _ -> phi, current_best)
-        (phi, None)
-        apartl
+            | None -> aux phi (Some (omega, apart)) rest
+            | Some (prev_omega, _) when omega > prev_omega ->
+              aux phi (Some (omega, apart)) rest
+            | Some (prev_omega, _) when nu < prev_omega ->
+              phi, current_best
+            | _ -> aux phi current_best rest)
+        | [] -> phi, current_best
+      in
+      aux phi None nu_apartl
   in
   match res with
     | Some (omega, apart) ->
@@ -426,7 +439,7 @@ let badness cutsetim =
     (0, 0)
 
 let solve ((_, tree) as cdtree) =
-  let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+  let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
   (*
    * XXX actually accept our sizemim and use it to build a
    nu_f = phi -> apart -> int list -> int
@@ -434,8 +447,9 @@ let solve ((_, tree) as cdtree) =
    using the sizemim.
   *)
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
+  let sizemlim = maplist_of_map_and_tree sizemim tree in
   Hashtbl.clear build_apartl_memo;
-  phi_recurse cutsetim tree (None, CS.empty) IntMap.empty
+  phi_recurse cutsetim sizemlim tree (None, CS.empty) IntMap.empty
 
 (* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
  * the leaves to include. The recursion works as follows: maintain rest, which
