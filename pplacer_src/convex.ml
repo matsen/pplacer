@@ -316,6 +316,24 @@ let build_apartl cutsetl kappa (c, x) =
       Hashtbl.add build_apartl_memo (cutsetl, kappa, q) ret;
       ret
 
+let apart_nu kappa sizeml (b, pi) =
+  let kappa = match b with
+    | Some c -> ColorSet.remove c kappa
+    | None -> kappa
+  in
+  List.fold_left2
+    (fun accum cutset sizem ->
+      let to_ignore = ColorSet.diff kappa cutset in
+      let is_ignored c = ColorSet.mem c to_ignore in
+      ColorMap.fold
+        (fun color count accum ->
+          if is_ignored color then accum else accum + count)
+        sizem
+        accum)
+    0
+    pi
+    sizeml
+
 let add_phi node question answer phi =
   let local_phi =
     try

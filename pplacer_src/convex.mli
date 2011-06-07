@@ -59,24 +59,14 @@ val build_apartl: csetl -> cset -> question -> apart list
 (* For the recursion. *)
 
 val phi_recurse: cset IntMap.t -> Stree.stree -> question -> phi -> phi * int
-(*
-val single_nu: cset -> sizem -> int
-(** single_nu cset sizem simply totals up the entries of sizem for colors in
- * cset. That is, it gives the number of leaves that are below with colors in
- * cset. *)
 
-val single_naive_upper: chosen:cset -> cutset:cset -> sizem -> int
-(** naive_upper chosent cutset sizem gives an naive (i.e. ignoring convexity)
- * upper bound for the number of leaves below that could be allowed if we select
- * the chosen subset of the cutset. *)
+(* val single_naive_upper: chosen:cset -> cutset:cset -> sizem -> int *)
+(* (\** naive_upper chosent cutset sizem gives an naive (i.e. ignoring convexity) *)
+(*  * upper bound for the number of leaves below that could be allowed if we select *)
+(*  * the chosen subset of the cutset. *\) *)
 
-val list_nu: csetl -> sizem -> int
-(** list_nu csetl sizem simply totals up the calues of single_nu applied to the
- * given csetl. *)
-
-val apart_nu: apart -> sizem -> int
+val apart_nu: cset -> sizem list -> apart -> int
 (** convenience function for running list_nu on the csetl of an apart. *)
-*)
 
 
 (* The recursion, as it were. *)
@@ -120,4 +110,5 @@ val solve: cdtree -> phi * int
 
 val badness: cset IntMap.t -> int * int
 val nodeset_of_phi_and_tree: phi -> stree -> IntSet.t
+val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
 val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
