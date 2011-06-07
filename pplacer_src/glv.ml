@@ -72,11 +72,6 @@ let make ~n_rates ~n_sites ~n_states =
   { e = iba1_create n_sites;
     a = Tensor.create n_rates n_sites n_states; }
 
-(* let print g = Linear.glv_print g.a *)
-
-let get_a g ~rate ~site ~state = BA3.get g.a rate site state
-let unsafe_get_a g ~rate ~site ~state =
-  BA3.unsafe_get g.a rate site state
 
 (* make a glv of the same dimensions *)
 let mimic x =
@@ -206,6 +201,7 @@ let perhaps_pull_exponent min_allowed_twoexp g =
     end
   done
 
+
 (* *** likelihood calculations *** *)
 
 (* total all of the stored exponents. we use a float to avoid overflow. *)
@@ -301,7 +297,11 @@ let listwise_prod dst = function
       memcpy ~dst ~src
   | [] -> assert(false)
 
-(* for verification purposes *)
+
+(* For verification purposes. *)
+
+let get_a g ~rate ~site ~state = BA3.get g.a rate site state
+
 let slow_log_like3 model x y z =
   let f_n_rates = float_of_int (Model.n_rates model)
   and ll_tot = ref 0.
