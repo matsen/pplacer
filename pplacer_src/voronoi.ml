@@ -17,6 +17,7 @@ type v = {
 }
 
 type edge_snip = int * float * float
+type leaf_snip = leaf * float * float
 
 type qs = {
   queue: int Queue.t;
@@ -205,6 +206,13 @@ let get_snipdist v =
     IntMap.empty
     v
 
+let matching_leaf snips pos =
+  let leaf, _, _ = List.find
+    (fun (_, st, en) -> st >= pos && pos >= en)
+    snips
+  in
+  leaf
+
 let distribute_mass v mass =
   let snipdist = get_snipdist v in
   IntMap.fold
@@ -212,12 +220,12 @@ let distribute_mass v mass =
       let snips = IntMap.find n snipdist in
       List.fold_left
         (fun accum (pos, mass) ->
-          let leaf, _, _ = List.find
-            (fun (_, st, en) -> st >= pos && pos >= en)
-            snips
-          in
+          let leaf = matching_leaf snips pos in
           IntMap.add_listly leaf mass accum)
         accum
         massl)
     mass
     IntMap.empty
+
+module XXX = Placerun_io
+module XXY = Convex

@@ -31,6 +31,7 @@ type v = {
  * id, start is where it starts, and finish is where it ends (both are measured
  * from distal side; start >= finish). *)
 type edge_snip = int * float * float
+type leaf_snip = leaf * float * float
 
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
@@ -52,5 +53,6 @@ val fold: ('a -> leaf -> edge_snip -> 'a) -> 'a -> v -> 'a
 val get_edge_snipl: v -> leaf -> edge_snip list
 (** Get a list of the edge_snips that are of the given leaf in v. *)
 
-val get_snipdist: v -> edge_snip list IntMap.t
+val matching_leaf: leaf_snip list -> float -> leaf
+val get_snipdist: v -> leaf_snip list IntMap.t
 val distribute_mass: v -> Mass_map.Indiv.t -> float list IntMap.t
