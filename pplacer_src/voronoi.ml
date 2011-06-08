@@ -16,8 +16,13 @@ type v = {
   all_leaves: IntSet.t;
 }
 
-type edge_snip = int * float * float
-type leaf_snip = leaf * float * float
+type snip = {
+  distal_leaf: int;
+  distal_edge: int;
+  proximal_edge: int;
+  start: float;
+  finish: float;
+}
 
 type qs = {
   queue: int Queue.t;
@@ -181,13 +186,24 @@ let fold f initial {tree = t; ldistm = ldistm} =
           let sn = top_id st in
           let distal_ldist = IntMap.find sn ldistm in
           if proximal_ldist.leaf = distal_ldist.leaf then
-            f cur proximal_ldist.leaf (sn, bl sn, 0.0)
+            f cur
+              {distal_leaf = distal_ldist.leaf;
+               distal_edge = sn; proximal_edge = sn;
+               start = bl sn; finish = 0.0}
           else
             let distal_split =
               ((bl sn) -. distal_ldist.distance +. proximal_ldist.distance) /. 2.0
             in
-            let cur = f cur proximal_ldist.leaf (sn, bl sn, distal_split) in
-            let cur = f cur distal_ldist.leaf (sn, distal_split, 0.0) in
+            let cur = f cur
+              {distal_leaf = proximal_ldist.leaf;
+               distal_edge = sn; proximal_edge = n;
+               start = bl sn; finish = distal_split}
+            in
+            let cur = f cur
+              {distal_leaf = distal_ldist.leaf;
+               distal_edge = sn; proximal_edge = sn;
+               start = distal_split; finish = 0.0}
+            in
             cur)
         cur
         subtrees
@@ -197,18 +213,18 @@ let fold f initial {tree = t; ldistm = ldistm} =
   aux initial [t.Gtree.stree]
 
 let get_edge_snipl v l =
-  fold (fun accum cl snip -> if l = cl then snip :: accum else accum) [] v
+  fold (fun accum snip -> if snip.distal_leaf = l then snip :: accum else accum) [] v
 
 let get_snipdist v =
   fold
-    (fun accum l (n, start, finish) ->
-      IntMap.add_listly n (l, start, finish) accum)
+    (fun accum snip ->
+      IntMap.add_listly snip.distal_edge snip accum)
     IntMap.empty
     v
 
 let matching_leaf snips pos =
-  let leaf, _, _ = List.find
-    (fun (_, st, en) -> st >= pos && pos >= en)
+  let {distal_leaf = leaf} = List.find
+    (fun {start = st; finish = en} -> st >= pos && pos >= en)
     snips
   in
   leaf
