@@ -28,34 +28,34 @@ let write_picks ~darr ~parr rp =
   let to_sym_str ind_arr =
     StringFuns.of_char_array (Array.map get_symbol ind_arr)
   in
-  let ch = open_out (name^".picks") in
   let uname id =
     underscoreize (extract_tax_name (Gtree.get_bark t id)#get_decor)
   in
-  IntMap.iter
-    (fun id (at_d, at_p) ->
-      Printf.fprintf ch ">%s\n%s\n" ("d_"^(uname id)) (to_sym_str at_d);
-      Printf.fprintf ch ">%s\n%s\n" ("p_"^(uname id)) (to_sym_str at_p);)
-    (Mutpick.pickpair_map Gsl_vector.max_index (-1) model t ~darr ~parr mrcal);
-  close_out ch;
+  let distal_str_map =
+    IntMap.map
+      (fun (at_d, _) -> (to_sym_str at_d))
+      (Mutpick.pickpair_map Gsl_vector.max_index (-1) model t ~darr ~parr mrcal)
+  in
+  let ch_picks = open_out (name^".picks") in
   let max_rat v = (Gsl_vector.max v) /. (Linear_utils.l1_norm v) in
-  let ch = open_out (name^".likes") in
-  let ch_nums = open_out (name^".nums") in
+  let ch_likes = open_out (name^".likes") in
   IntMap.iter
     (fun id (at_d, at_p) ->
-      Printf.fprintf ch ">%s\n" (uname id);
-      let n_picks = ref 0 in
+      Printf.fprintf ch_likes ">%s\n" (uname id);
+      Printf.fprintf ch_picks ">%s\n" (uname id);
+      let distal_str = IntMap.find id distal_str_map in
       for i=0 to (Array.length at_d) - 1 do
         let d = at_d.(i) and p = at_p.(i) in
         if d > 0.9 && p < 0.6 then begin
-          Printf.fprintf ch "%d\t%g\t%g\t%g\n" i d p (d-.p);
-          incr n_picks
-        end;
+          Printf.fprintf ch_likes "%d\t%g\t%g\n" i d p;
+          output_char ch_picks distal_str.[i];
+        end
+        else output_char ch_picks '-';
       done;
-      Printf.fprintf ch_nums "%s\t%d\n" (uname id) (!n_picks);
+      output_char ch_picks '\n';
       )
     (Mutpick.pickpair_map max_rat 0. model t ~darr ~parr mrcal);
-  close_out ch;
-  close_out ch_nums;
+  close_out ch_likes;
+  close_out ch_picks;
 
   ()
