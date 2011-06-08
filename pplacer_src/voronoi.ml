@@ -1,3 +1,4 @@
+open Fam_batteries
 open MapsSets
 open Stree
 
@@ -188,7 +189,7 @@ let fold f initial {tree = t; ldistm = ldistm} =
           if proximal_ldist.leaf = distal_ldist.leaf then
             f cur
               {distal_leaf = distal_ldist.leaf;
-               distal_edge = sn; proximal_edge = sn;
+               distal_edge = sn; proximal_edge = n;
                start = bl sn; finish = 0.0}
           else
             let distal_split =
@@ -222,12 +223,10 @@ let get_snipdist v =
     IntMap.empty
     v
 
-let matching_leaf snips pos =
-  let {distal_leaf = leaf} = List.find
+let matching_snip snips pos =
+  List.find
     (fun {start = st; finish = en} -> st >= pos && pos >= en)
     snips
-  in
-  leaf
 
 let distribute_mass v mass =
   let snipdist = get_snipdist v in
@@ -236,12 +235,51 @@ let distribute_mass v mass =
       let snips = IntMap.find n snipdist in
       List.fold_left
         (fun accum (pos, mass) ->
-          let leaf = matching_leaf snips pos in
+          let {distal_leaf = leaf} = matching_snip snips pos in
           IntMap.add_listly leaf mass accum)
         accum
         massl)
     mass
     IntMap.empty
+
+let placement_distance v ?snipdist p =
+  let snipdist = match snipdist with
+    | Some m -> m
+    | None -> get_snipdist v
+  in
+  let placement_pos = Placement.distal_bl p in
+  let snip = matching_snip
+    (IntMap.find (Placement.location p) snipdist)
+    placement_pos
+  in
+  let maybe_min a = function
+    | None -> Some a
+    | Some b when a < b -> Some a
+    | prev -> prev
+  in
+  let bl = Gtree.get_bl v.tree snip.distal_edge in
+  let res = None in
+  let res =
+    if approx_equal snip.start bl then
+      maybe_min
+        ((IntMap.find snip.proximal_edge v.ldistm).distance
+         +. (snip.start -. placement_pos))
+        res
+    else
+      res
+  in
+  let res =
+    if approx_equal snip.finish 0.0 then
+      maybe_min
+        ((IntMap.find snip.distal_edge v.ldistm).distance
+         +. placement_pos)
+        res
+    else
+      res
+  in
+  match res with
+    | Some d -> d
+    | None -> invalid_arg "dist"
 
 module XXX = Placerun_io
 module XXY = Convex

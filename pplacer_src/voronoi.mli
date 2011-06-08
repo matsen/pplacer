@@ -58,6 +58,7 @@ val fold: ('a -> snip -> 'a) -> 'a -> v -> 'a
 val get_edge_snipl: v -> leaf -> snip list
 (** Get a list of the edge_snips that are of the given leaf in v. *)
 
-val matching_leaf: snip list -> float -> leaf
+val matching_snip: snip list -> float -> snip
 val get_snipdist: v -> snip list IntMap.t
 val distribute_mass: v -> Mass_map.Indiv.t -> float list IntMap.t
+val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement -> float
