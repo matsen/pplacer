@@ -18,7 +18,7 @@ type v = {
 }
 
 type snip = {
-  distal_leaf: int;
+  assoc_leaf: int;
   distal_edge: int;
   proximal_edge: int;
   start: float;
@@ -188,7 +188,7 @@ let fold f initial {tree = t; ldistm = ldistm} =
           let distal_ldist = IntMap.find sn ldistm in
           if proximal_ldist.leaf = distal_ldist.leaf then
             f cur
-              {distal_leaf = distal_ldist.leaf;
+              {assoc_leaf = distal_ldist.leaf;
                distal_edge = sn; proximal_edge = n;
                start = bl sn; finish = 0.0}
           else
@@ -196,12 +196,12 @@ let fold f initial {tree = t; ldistm = ldistm} =
               ((bl sn) -. distal_ldist.distance +. proximal_ldist.distance) /. 2.0
             in
             let cur = f cur
-              {distal_leaf = proximal_ldist.leaf;
+              {assoc_leaf = proximal_ldist.leaf;
                distal_edge = sn; proximal_edge = n;
                start = bl sn; finish = distal_split}
             in
             let cur = f cur
-              {distal_leaf = distal_ldist.leaf;
+              {assoc_leaf = distal_ldist.leaf;
                distal_edge = sn; proximal_edge = sn;
                start = distal_split; finish = 0.0}
             in
@@ -214,7 +214,7 @@ let fold f initial {tree = t; ldistm = ldistm} =
   aux initial [t.Gtree.stree]
 
 let get_edge_snipl v l =
-  fold (fun accum snip -> if snip.distal_leaf = l then snip :: accum else accum) [] v
+  fold (fun accum snip -> if snip.assoc_leaf = l then snip :: accum else accum) [] v
 
 let get_snipdist v =
   fold
@@ -235,7 +235,7 @@ let distribute_mass v mass =
       let snips = IntMap.find n snipdist in
       List.fold_left
         (fun accum (pos, mass) ->
-          let {distal_leaf = leaf} = matching_snip snips pos in
+          let {assoc_leaf = leaf} = matching_snip snips pos in
           IntMap.add_listly leaf mass accum)
         accum
         massl)

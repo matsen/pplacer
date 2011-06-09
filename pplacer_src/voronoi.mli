@@ -31,9 +31,7 @@ type v = {
  * id, start is where it starts, and finish is where it ends (both are measured
  * from distal side; start >= finish). *)
 type snip = {
-  (* XXX if you don't mind, I think assoc_leaf might be a clearer name than
-   * distal_leaf. The associated leaf need not be distal to the given snip. *)
-  distal_leaf: int;
+  assoc_leaf: int;
   distal_edge: int;
   proximal_edge: int;
   start: float;
