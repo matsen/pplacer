@@ -32,6 +32,7 @@ let command_list () =
       "filter", (fun () -> new Guppy_filter.cmd ());
       "info", (fun () -> new Guppy_info.cmd ());
       "redup", (fun () -> new Guppy_redup.cmd ());
+      "proxplac", (fun () -> new Guppy_proxplac.cmd ());
     ];
   ]
 
