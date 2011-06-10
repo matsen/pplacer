@@ -18,18 +18,18 @@ object (self)
     let ch = self#out_channel in
 
     let mat = Array.make_matrix ((List.length prl) + 1) 4 "" in
-    mat.(0) <- [|"name"; "leaves"; "pquery_multiplicity"; "pqueries"|];
+    mat.(0) <- [|"name"; "leaves"; "pqueries"; "multi_pqueries"|];
     Array.iteri
       (fun e pr ->
         mat.(e + 1) <- [|
           pr.name;
           string_of_int (Gtree.n_taxa pr.ref_tree);
+          string_of_int (n_pqueries pr);
           string_of_int
             (List.fold_left
                (fun accum pq -> accum + (List.length (Pquery.namel pq)))
                0
                pr.pqueries);
-          string_of_int (n_pqueries pr);
         |])
       (Array.of_list prl);
 
