@@ -17,13 +17,21 @@ object (self)
 
     let ch = self#out_channel in
 
-    Printf.fprintf ch "name\tleaves\tpqueries\n";
+    let mat = Array.make_matrix ((List.length prl) + 1) 4 "" in
+    mat.(0) <- [|"name"; "leaves"; "pquery_multiplicity"; "pqueries"|];
+    Array.iteri
+      (fun e pr ->
+        mat.(e + 1) <- [|
+          pr.name;
+          string_of_int (Gtree.n_taxa pr.ref_tree);
+          string_of_int
+            (List.fold_left
+               (fun accum pq -> accum + (List.length (Pquery.namel pq)))
+               0
+               pr.pqueries);
+          string_of_int (n_pqueries pr);
+        |])
+      (Array.of_list prl);
 
-    List.iter
-      (fun pr ->
-        Printf.fprintf ch "%s\t%d\t%d\n"
-          pr.name
-          (Gtree.n_taxa pr.ref_tree)
-          (n_pqueries pr))
-      prl
+    String_matrix.write_padded ch mat
 end
