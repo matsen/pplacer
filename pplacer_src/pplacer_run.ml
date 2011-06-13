@@ -118,6 +118,11 @@ let run_file prefs query_fname =
       (fun (name,_) -> StringSet.mem name ref_name_set)
       seq_list
   in
+  (* We can just look for global non-gap columns here.
+   * Then say that f is a function that subsets the alignment string according
+   * to the global non-gap columns.
+   * We just want to apply f to the sequence strings in both query_list and
+   * ref_align. *)
   let ref_align =
     if ref_list = [] then begin
       if (Prefs.verb_level prefs) >= 1 then
