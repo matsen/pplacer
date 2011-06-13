@@ -16,9 +16,9 @@ object (self)
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
   val leaf_mass = flag "-m"
-    (Plain (0.0, "The fraction of mass to be distributed uniformly across leaves."))
+    (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
   val mass_cutoff = flag "--mass"
-    (Needs_argument ("mass cutoff", "If provided, the maximum value of minimum leaf mass."))
+    (Needs_argument ("mass cutoff", "If set to x, stop when the min mass in a Voronoi region is > x."))
   val leaf_cutoff = flag "--leaves"
     (Needs_argument ("leaf cutoff", "If provided, the maximum number of leaves to cut from the tree."))
   val verbose = flag "-v"
