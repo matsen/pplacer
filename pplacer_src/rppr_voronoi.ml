@@ -63,7 +63,7 @@ object (self)
       let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
       let criteria =
         (match fvo mass_cutoff with
-          | Some cutoff -> [fun (mass, _) -> mass >= cutoff]
+          | Some cutoff -> [fun (mass, _) -> mass > cutoff]
           | None -> [])
         @ (match fvo leaf_cutoff with
           | Some count ->
