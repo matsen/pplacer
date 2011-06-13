@@ -13,27 +13,27 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
 
+  val verbose = flag "-v"
+    (Plain (false, "If specified, write progress output to stderr."))
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
-  val leaf_mass = flag "-m"
-    (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
   val mass_cutoff = flag "--mass"
     (Needs_argument ("mass cutoff", "If set to x, stop when the min mass in a Voronoi region is > x."))
   val leaf_cutoff = flag "--leaves"
     (Needs_argument ("leaf cutoff", "If provided, the maximum number of leaves to cut from the tree."))
-  val verbose = flag "-v"
-    (Plain (false, "If specified, write progress output to stderr."))
+  val leaf_mass = flag "--leaf-mass"
+    (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
 
   method specl =
     super_mass#specl
     @ super_refpkg#specl
     @ super_output#specl
     @ [
+      toggle_flag verbose;
       string_flag trimmed_tree_file;
-      float_flag leaf_mass;
       float_flag mass_cutoff;
       int_flag leaf_cutoff;
-      toggle_flag verbose;
+      float_flag leaf_mass;
     ]
 
   method desc = "apply voronoi"
