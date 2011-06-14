@@ -27,7 +27,7 @@ let tog_tree criterion ref_tree placed_map =
               let decor_map = IntMap.add
                 n_names
                 (new Decor_bark.decor_bark
-                   (`Of_bl_name_boot_dlist
+                   (`Of_bl_name_boot_decor
                        (Some (Placement.pendant_bl best),
                         None,
                         None,
@@ -39,7 +39,7 @@ let tog_tree criterion ref_tree placed_map =
                   IntMap.add
                     i
                     (new Decor_bark.decor_bark
-                       (`Of_bl_name_boot_dlist
+                       (`Of_bl_name_boot_decor
                            (Some 0.0,
                             Some name,
                             None,
