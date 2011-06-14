@@ -38,6 +38,7 @@ type prefs =
     children : int ref;
     version : bool ref;
     timing : bool ref;
+    no_pre_mask : bool ref;
   }
 
 
@@ -79,6 +80,7 @@ let defaults () =
     children = ref 2;
     version = ref false;
     timing = ref false;
+    no_pre_mask = ref false;
   }
 
 
@@ -119,6 +121,7 @@ let check_like        p = !(p.check_like)
 let children          p = !(p.children)
 let version           p = !(p.version)
 let timing            p = !(p.timing)
+let no_pre_mask       p = !(p.no_pre_mask)
 
 
 (* arguments and preferences *)
@@ -187,6 +190,8 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "The number of child processes to spawn when doing placements. Default is %d.";
 "--timing", Arg.Set prefs.timing,
 "Display timing information after the pplacer run finishes.";
+"--no-pre-mask", Arg.Set prefs.no_pre_mask,
+"Don't pre-mask sequences before placement.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
