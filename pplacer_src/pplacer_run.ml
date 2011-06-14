@@ -161,6 +161,27 @@ let run_file prefs query_fname =
   end;
   let n_sites = Alignment.length ref_align in
 
+  let seq_tbl = Hashtbl.create 1024 in
+  List.iter
+    (fun (name, seq) -> Hashtbl.replace
+      seq_tbl
+      seq
+      (name ::
+         try
+           Hashtbl.find seq_tbl seq
+         with
+           | Not_found -> []))
+    query_list;
+  let redup_tbl = Hashtbl.create 1024 in
+  let query_list = Hashtbl.fold
+    (fun seq namel accum ->
+      let hd = List.hd namel in
+      Hashtbl.add redup_tbl hd namel;
+      (hd, seq) :: accum)
+    seq_tbl
+    []
+  in
+
 
   (* *** build reference package *** *)
   let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
@@ -329,40 +350,22 @@ let run_file prefs query_fname =
 
   end else begin
     (* not fantasy baseball *)
-    let query_tbl = Hashtbl.create 1024 in
+    let queries = ref [] in
     let rec gotfunc = function
-      | Core.Pquery (seq, pq) :: rest ->
-        Hashtbl.add query_tbl seq pq;
+      | Core.Pquery pq :: rest ->
+        queries := pq :: (!queries);
         gotfunc rest
       | Core.Timing (name, value) :: rest ->
         timings := StringMap.add_listly name value (!timings);
         gotfunc rest
       | [] -> ()
       | _ -> failwith "expected pquery result"
-    and cachefunc (name, seq) =
-      match begin
-        try
-          Some (Hashtbl.find query_tbl seq)
-        with
-          | Not_found -> None
-      end with
-        | Some pq ->
-          let pq = Pquery.set_namel pq (name :: pq.Pquery.namel) in
-          incr n_done;
-          Hashtbl.replace query_tbl seq pq;
-          true
-        | None -> false
+    and cachefunc _ = false
     and donefunc () =
-      let results = Hashtbl.fold
-        (fun _ pq l -> pq :: l)
-        query_tbl
-        []
-      in
       let pr =
-        Placerun.make
-          ref_tree
-          query_bname
-          results
+        Placerun.redup
+          redup_tbl
+          (Placerun.make ref_tree query_bname (!queries))
       in
       let final_pr =
         if not (Refpkg.tax_equipped rp) then pr
