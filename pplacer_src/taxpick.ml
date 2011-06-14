@@ -46,7 +46,7 @@ let write_picks ~darr ~parr rp =
       let distal_str = IntMap.find id distal_str_map in
       for i=0 to (Array.length at_d) - 1 do
         let d = at_d.(i) and p = at_p.(i) in
-        if d > 0.9 && p < 0.6 then begin
+        if d > 0.8 then begin
           Printf.fprintf ch_likes "%d\t%g\t%g\n" i d p;
           output_char ch_picks distal_str.[i];
         end
