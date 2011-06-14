@@ -177,15 +177,21 @@ let run_file prefs query_fname =
         print_string "Pre-masking sequences... ";
         flush_all ();
       end;
-      let mask = List.fold_left
-        (ArrayFuns.map2 (||))
-        (Array.make n_sites false)
-        (List.map
-           (fun (_, seq) ->
-             Array.init
-               n_sites
-               (compose (function '-' | '?' -> false | _ -> true) (String.get seq)))
-           query_list)
+      let mask_of_funs fold map value =
+        fold
+          (ArrayFuns.map2 (||))
+          (Array.make n_sites false)
+          (map
+             (fun (_, seq) ->
+               Array.init
+                 n_sites
+                 (compose (function '-' | '?' -> false | _ -> true) (String.get seq)))
+             value)
+      in
+      let mask = ArrayFuns.map2
+        (&&)
+        (mask_of_funs Array.fold_left Array.map ref_align)
+        (mask_of_funs List.fold_left List.map query_list)
       in
       let masklen = Array.fold_left
         (fun accum -> function true -> accum + 1 | _ -> accum)
