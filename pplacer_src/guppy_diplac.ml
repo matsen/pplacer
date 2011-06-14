@@ -17,8 +17,8 @@ object (self)
     super_mass#specl
     @ super_output#specl
 
-  method desc = "find most proximal placements"
-  method usage = "usage: proxplac [options] placefile"
+  method desc = "find the most DIstant PLACements"
+  method usage = "usage: diplac [options] placefile"
 
   method private placefile_action = function
     | [pr] ->
