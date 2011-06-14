@@ -408,12 +408,10 @@ let run_file prefs query_fname =
     and cachefunc _ = false
     and donefunc () =
       let pr =
-        Placerun.make
-          ref_tree
-          query_bname
-          (!queries)
+        Placerun.redup
+          redup_tbl
+          (Placerun.make ref_tree query_bname (!queries))
       in
-      let pr = Placerun.redup redup_tbl pr in
       let final_pr =
         if not (Refpkg.tax_equipped rp) then pr
         else Refpkg.classify rp pr
