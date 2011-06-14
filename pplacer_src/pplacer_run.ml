@@ -207,9 +207,17 @@ let run_file prefs query_fname =
         Printf.printf "sequence length cut from %d to %d." n_sites masklen;
         print_newline ()
       end;
-      List.map cut_from_mask query_list,
-      Array.map cut_from_mask ref_align,
-      masklen
+      let query_list' = List.map cut_from_mask query_list
+      and ref_align' = Array.map cut_from_mask ref_align in
+      if (Prefs.pre_masked_file prefs) <> "" then begin
+        let ch = open_out (Prefs.pre_masked_file prefs) in
+        let write_line = Alignment.write_fasta_line ch in
+        Array.iter write_line ref_align';
+        List.iter write_line query_list';
+        close_out ch;
+        exit 0;
+      end;
+      query_list', ref_align', masklen
     end
   in
 

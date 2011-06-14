@@ -39,6 +39,7 @@ type prefs =
     version : bool ref;
     timing : bool ref;
     no_pre_mask : bool ref;
+    pre_masked_file : string ref;
   }
 
 
@@ -81,6 +82,7 @@ let defaults () =
     version = ref false;
     timing = ref false;
     no_pre_mask = ref false;
+    pre_masked_file = ref "";
   }
 
 
@@ -122,6 +124,7 @@ let children          p = !(p.children)
 let version           p = !(p.version)
 let timing            p = !(p.timing)
 let no_pre_mask       p = !(p.no_pre_mask)
+let pre_masked_file   p = !(p.pre_masked_file)
 
 
 (* arguments and preferences *)
@@ -192,6 +195,8 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "Display timing information after the pplacer run finishes.";
 "--no-pre-mask", Arg.Set prefs.no_pre_mask,
 "Don't pre-mask sequences before placement.";
+"--write-pre-masked", Arg.Set_string prefs.pre_masked_file,
+"Write out the pre-masked sequences to the specified fasta file and exit.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
