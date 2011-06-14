@@ -82,3 +82,23 @@ let recur f_node f_leaf tree =
  * leaves. *)
 let recur_listly f = recur f (fun id -> f id [])
 
+let parent_map t =
+  let maybe_add accum i = function
+    | Some p -> IntMap.add i p accum
+    | None -> accum
+  in
+  let rec aux accum = function
+    | (parent, Leaf i) :: rest ->
+      aux
+        (maybe_add accum i parent)
+        rest
+    | (parent, Node (i, tL)) :: rest ->
+      aux
+        (maybe_add accum i parent)
+        (List.fold_left
+           (fun accum t -> (Some i, t) :: accum)
+           rest
+           tL)
+    | [] -> accum
+  in
+  aux IntMap.empty [None, t]

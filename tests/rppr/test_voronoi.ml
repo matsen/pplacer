@@ -33,7 +33,7 @@ let test_v = of_gtree
 
 let snipl_equal l1 l2 =
   List.for_all2
-    (fun (l1, s1, f1) (l2, s2, f2) ->
+    (fun {distal_edge = l1; start = s1; finish = f1} (l2, s2, f2) ->
       l1 = l2 && approx_equal s1 s2 && approx_equal f1 f2)
     l1
     l2

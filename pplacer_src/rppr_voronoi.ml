@@ -59,6 +59,7 @@ object (self)
           Mass_map.Indiv.scale_mass
             (1. -. leaf_mass_fract)
             (Mass_map.Indiv.of_placerun transform weighting criterion pr)
+      (* XXX may I suggest diagram over graph here? *)
       and graph = Voronoi.of_gtree gt in
       let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
       let criteria =
@@ -85,9 +86,17 @@ object (self)
             mass
       in
       let sum = List.fold_left (+.) 0.0 in
+      (* This is the central recursion that finds the Voronoi region with the
+       * least mass and deletes its leaf from the corresponding set. *)
+      (* XXX I'm sure you've already thought of this, but it seems to me that we
+       * could save a lot of computation by keeping a running mass_dist that
+       * only gets updated for the Voronoi regions that get "touched".
+       * *)
       let rec aux graph =
         let mass_dist = Voronoi.distribute_mass graph mass in
         let sum_leaf leaf = sum (IntMap.get leaf [] mass_dist) in
+        (* Find the leaf with the least mass in its Voronoi region. When there
+         * are > 1 leaves with zero mass in their regions, we get all of them. *)
         match IntSet.fold
           (fun leaf ->
             let mass = sum_leaf leaf in function
@@ -111,6 +120,7 @@ object (self)
                   mass;
                 prerr_newline ();
               end;
+              (* XXX Yes, we'd just have to accept the updated here. *)
               let graph', _ = Voronoi.uncolor_leaves graph leafs in
               let cut = List.map
                 (fun leaf -> [Gtree.get_name taxtree leaf;

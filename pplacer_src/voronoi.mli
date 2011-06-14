@@ -30,7 +30,13 @@ type v = {
 (* A portion of an edge defined by (id, start, finish), where id is the edge
  * id, start is where it starts, and finish is where it ends (both are measured
  * from distal side; start >= finish). *)
-type edge_snip = int * float * float
+type snip = {
+  assoc_leaf: int;
+  distal_edge: int;
+  proximal_edge: int;
+  start: float;
+  finish: float;
+}
 
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
@@ -44,13 +50,15 @@ val uncolor_leaf: v -> leaf -> v * IntSet.t
 (** This function returns the updated Voronoi after removing the given leaf, as
  * well as returning the leaves that were affected by this removal. *)
 
-val fold: ('a -> leaf -> edge_snip -> 'a) -> 'a -> v -> 'a
+val fold: ('a -> snip -> 'a) -> 'a -> v -> 'a
 (** Effectively fold over the edge_snipl defined below, but we don't have to
  * construct it in memory.
  *)
 
-val get_edge_snipl: v -> leaf -> edge_snip list
+val get_edge_snipl: v -> leaf -> snip list
 (** Get a list of the edge_snips that are of the given leaf in v. *)
 
-val get_snipdist: v -> edge_snip list IntMap.t
+val matching_snip: snip list -> float -> snip
+val get_snipdist: v -> snip list IntMap.t
 val distribute_mass: v -> Mass_map.Indiv.t -> float list IntMap.t
+val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement -> float

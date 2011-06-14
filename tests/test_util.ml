@@ -51,7 +51,7 @@ let placerun_equal pr1 pr2 =
 
 (* *** approximate equalities *** *)
 
-let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
+let approx_equal = Fam_batteries.approx_equal
 
 let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
   let dim = Gsl_vector.length v1 in

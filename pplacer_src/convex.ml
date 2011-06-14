@@ -197,7 +197,7 @@ let cutsetdist cutsetl ?(allow_multiple = false) color =
   (* We recur over the cut sets below our internal node.
    * Base is just a list of empty sets of the correct length. *)
   let rec aux base accum = function
-    | [] -> List.map List.rev accum
+    | [] -> List.rev (List.rev_map List.rev accum)
     | cutset :: rest ->
       let accum = List.fold_left
         (fun accum x ->
@@ -267,15 +267,16 @@ let _build_apartl cutsetl kappa (c, x) =
        * distributions of the to_distribute colors (except for b) into the
        * cut sets below our internal node. We find these distributions one at a
        * time, then take the union below. *)
-      let dist = List.map
-        (cutsetdist cutsetl)
-        (CS.elements (cset_of_coptset (COS.remove b to_distribute)))
+      let dist = List.rev
+        (List.rev_map
+           (cutsetdist cutsetl)
+           (CS.elements (cset_of_coptset (COS.remove b to_distribute))))
       in
       (* Next make every distribution with {} with {b} if b is in the cut set *)
       let dist = match b with
         | Some b' -> cutsetdist cutsetl ~allow_multiple:true b' :: dist
         | None -> dist
-      and startsl = List.map (fun _ -> CS.empty) cutsetl in
+      and startsl = List.rev_map (fun _ -> CS.empty) cutsetl in
       (* Finish off the meat of the recursion by mapping with union over the
        * cartesian product of the single-color distributions. *)
       let pis = List.rev
@@ -302,7 +303,9 @@ let build_apartl_memo = Hashtbl.create 1024
 
 (* The primary apartl builder.
  * Cutsetl is the list of cut sets below, kappa are those sets colors cut from
- * the internal node above. *)
+ * the internal node above.
+ * While this function is mostly a wrapper around the apartl memo, it /does/
+ * also update `c`, as it's useful to do so pre-memoization. *)
 let build_apartl cutsetl kappa (c, x) =
   (* If c is not in any of the cut sets below, then we can replace it with
    * None. *)
@@ -392,9 +395,10 @@ let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
         (IntMap.find i cutsetim)
         (IntMap.find i sizemlim)
       in
-      let nu_apartl = List.map
-        (fun apart -> apart_nu' apart, apart)
-        apartl
+      let nu_apartl = List.rev
+        (List.rev_map
+          (fun apart -> apart_nu' apart, apart)
+          apartl)
       in
       let nu_apartl = List.sort (fun (a, _) (b, _) -> b - a) nu_apartl in
       let rec aux phi current_best = function
