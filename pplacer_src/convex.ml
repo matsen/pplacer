@@ -303,7 +303,9 @@ let build_apartl_memo = Hashtbl.create 1024
 
 (* The primary apartl builder.
  * Cutsetl is the list of cut sets below, kappa are those sets colors cut from
- * the internal node above. *)
+ * the internal node above.
+ * While this function is mostly a wrapper around the apartl memo, it /does/
+ * also update `c`, as it's useful to do so pre-memoization. *)
 let build_apartl cutsetl kappa (c, x) =
   (* If c is not in any of the cut sets below, then we can replace it with
    * None. *)
