@@ -3,6 +3,7 @@ open Fam_batteries
 open MapsSets
 
 let compose f g a = f (g a)
+let flip f x y = f y x
 
 exception Finished
 
@@ -195,21 +196,24 @@ let run_file prefs query_fname =
         print_string "Pre-masking sequences... ";
         flush_all ();
       end;
-      let mask_of_funs fold map value =
+      let mask_of_fold fold value =
         fold
-          (ArrayFuns.map2 (||))
+          (flip
+             (compose
+                (ArrayFuns.map2 (||))
+                (fun (_, seq) ->
+                  Array.init
+                    n_sites
+                    (compose
+                       (function '-' | '?' -> false | _ -> true)
+                       (String.get seq)))))
           (Array.make n_sites false)
-          (map
-             (fun (_, seq) ->
-               Array.init
-                 n_sites
-                 (compose (function '-' | '?' -> false | _ -> true) (String.get seq)))
-             value)
+          value
       in
       let mask = ArrayFuns.map2
         (&&)
-        (mask_of_funs Array.fold_left Array.map ref_align)
-        (mask_of_funs List.fold_left List.map query_list)
+        (mask_of_fold Array.fold_left ref_align)
+        (mask_of_fold List.fold_left query_list)
       in
       let masklen = Array.fold_left
         (fun accum -> function true -> accum + 1 | _ -> accum)
