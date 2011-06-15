@@ -8,9 +8,9 @@ let underscoreize s =
   done;
   s'
 
-let extract_tax_name decor =
+let extract_tax_info decor =
   match List.filter (function | Decor.Taxinfo _ -> true | _ -> false) decor with
-  | [Decor.Taxinfo (_,n)] -> n
+  | [Decor.Taxinfo (tid,n)] -> (tid,n)
   | _ -> assert(false)
 
 let write_picks ~darr ~parr rp =
@@ -28,8 +28,11 @@ let write_picks ~darr ~parr rp =
   let to_sym_str ind_arr =
     StringFuns.of_char_array (Array.map get_symbol ind_arr)
   in
-  let uname id =
-    underscoreize (extract_tax_name (Gtree.get_bark t id)#get_decor)
+  let tax_info_of_id id = extract_tax_info (Gtree.get_bark t id)#get_decor in
+  let taxid_of_id id = match fst (tax_info_of_id id) with
+    | Tax_id.TaxStr s -> s
+    | Tax_id.NoTax -> assert(false)
+  and name_of_id id = snd (tax_info_of_id id)
   in
   let distal_str_map =
     IntMap.map
@@ -41,18 +44,19 @@ let write_picks ~darr ~parr rp =
   let ch_likes = open_out (name^".likes") in
   IntMap.iter
     (fun id (at_d, at_p) ->
-      Printf.fprintf ch_likes ">%s\n" (uname id);
-      Printf.fprintf ch_picks ">%s\n" (uname id);
+      Printf.fprintf ch_likes "%s\t" (taxid_of_id id);
+      Printf.fprintf ch_picks ">%s\n" (name_of_id id);
       let distal_str = IntMap.find id distal_str_map in
       for i=0 to (Array.length at_d) - 1 do
         let d = at_d.(i) and p = at_p.(i) in
+        Printf.fprintf ch_likes "%g\t" d;
         if d > 0.8 then begin
-          Printf.fprintf ch_likes "%d\t%g\t%g\n" i d p;
           output_char ch_picks distal_str.[i];
         end
         else output_char ch_picks '-';
       done;
       output_char ch_picks '\n';
+      output_char ch_likes '\n';
       )
     (Mutpick.pickpair_map max_rat 0. model t ~darr ~parr mrcal);
   close_out ch_likes;
