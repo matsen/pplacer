@@ -292,26 +292,26 @@ PHYML can be run like so, on non-interleaved (hence the -q) phylip-format alignm
 
 Note that pplacer only works with phyml version 3.0 (the current version).
 
+Both of these programs emit "statistics files": files that describe the phylogenetic model used.
+Pplacer then uses those same statistics to place your reads.
+For RAxML, they are called something like ``RAxML_info.test``, whereas for PHYML they are called something like ``test_aln_phyml_stats.txt``.
+
 If your taxon names have too many funny symbols, pplacer will get confused.
 We have had a difficult time with the wacky names exported by the otherwise lovely software geneious_.
 If you have a tree which isn't getting parsed properly by pplacer, and you think it should be, send it to us and we will have a look.
 
-At least for now, we do not recommend that you give pplacer a reference tree with lots of very similar sequences.
-It's certainly a bit of a waste of time-- pplacer must evaluate the resultant branches like any others.
-But worse, it can foul up the analysis.
-If one has a clade of very similar sequences, a query sequence which is similar to those sequences can fit anywhere in the clade.
-The resulting uncertainty will then be reported as a low ML ratio or posterior probability, even if pplacer is quite confident that the query fits in that clade.
-Pplacer also has computational difficulty with exceedingly short ("zero") length edges.
-We are currently considering ways to work around these issues.
+Avoid giving pplacer a reference tree with lots of very similar sequences.
+It's a waste of time-- pplacer must evaluate the resultant branches like any others.
+Identical sequences are especially bad, and the resultant zero length branches will make pplacer complain.
 
-If you give pplacer a reference tree which has been rooted, you will get a warning like::
+If you give pplacer a reference tree which has been rooted in the middle of an edge, you will get a warning like::
 
   Warning: pplacer results make the most sense when the given tree is multifurcating
   at the root. See manual for details.
 
-In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they are be artificially counted as two separate edges.
+In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they will counted as two separate edges.
 That will lead to artifactually low likelihood weight ratio and posterior probabilities for query sequences placed on those edges.
-This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the placeviz trees.
+This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the output trees.
 
 
 
