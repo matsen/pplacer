@@ -167,6 +167,24 @@ let run_file prefs query_fname =
       ref_align
   end;
   let n_sites = Alignment.length ref_align in
+  begin match begin
+    try
+      Some
+        (List.find
+           (fun (_, seq) -> (String.length seq) != n_sites)
+           query_list)
+    with
+      | Not_found -> None
+  end with
+    | Some (name, seq) ->
+      Printf.printf
+        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
+        name
+        (String.length seq)
+        n_sites;
+      exit 1;
+    | None -> ()
+  end;
 
   let query_list, ref_align, n_sites =
     if Prefs.no_pre_mask prefs then
