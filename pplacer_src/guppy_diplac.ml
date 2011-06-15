@@ -43,6 +43,6 @@ object (self)
           Csv.save_out ch namel)
         sorted_distances
 
-    | _ -> failwith "proxplac takes exactly one placefile"
+    | _ -> failwith "diplac takes exactly one placefile"
 
 end
