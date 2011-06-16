@@ -4,6 +4,7 @@ open MapsSets
 open Fam_batteries
 
 let flip f x y = f y x
+let compose f g a = f (g a)
 
 class cmd () =
 object (self)
@@ -33,7 +34,10 @@ object (self)
         (fun pr -> dist (best_placement pr), pr)
         (Placerun.get_pqueries pr)
       in
-      let sorted_distances = List.sort compare pq_distances in
+      let sorted_distances = List.sort
+        (compose (compose (~-)) compare)
+        pq_distances
+      in
       List.iter
         (fun (dist, pq) ->
           let namel = List.map
