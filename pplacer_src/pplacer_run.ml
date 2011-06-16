@@ -121,11 +121,6 @@ let run_file prefs query_fname =
       (fun (name,_) -> StringSet.mem name ref_name_set)
       seq_list
   in
-  (* We can just look for global non-gap columns here.
-   * Then say that f is a function that subsets the alignment string according
-   * to the global non-gap columns.
-   * We just want to apply f to the sequence strings in both query_list and
-   * ref_align. *)
   let ref_align =
     if ref_list = [] then begin
       if (Prefs.verb_level prefs) >= 1 then
@@ -187,10 +182,10 @@ let run_file prefs query_fname =
     | None -> ()
   end;
 
+  (* *** pre masking *** *)
   let query_list, ref_align, n_sites =
     if Prefs.no_pre_mask prefs then
       query_list, ref_align, n_sites
-
     else begin
       if (Prefs.verb_level prefs) >= 1 then begin
         print_string "Pre-masking sequences... ";
@@ -249,6 +244,7 @@ let run_file prefs query_fname =
     end
   in
 
+  (* *** deduplicate sequences *** *)
   let seq_tbl = Hashtbl.create 1024 in
   List.iter
     (fun (name, seq) -> Hashtbl.replace
