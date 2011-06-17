@@ -32,12 +32,15 @@ let get_posterior ~dst util model t ~atarr ~neigharr id =
   Glv.statd_pairwise_prod
     model ~dst util (Glv_arr.arr_get atarr id)
 
-let get_summary_pair summarize_f initial u1 u2 model t ~darr ~parr id =
-  get_posterior ~dst:u1 u2 model t ~atarr:darr ~neigharr:parr id;
-  let d_summary = summarize_post summarize_f initial u1 in
-  get_posterior ~dst:u1 u2 model t ~atarr:parr ~neigharr:darr id;
-  let p_summary = summarize_post summarize_f initial u1 in
-  (d_summary, p_summary)
+type pos = Distal | Proximal
+
+let get_summary pos summarize_f initial u1 u2 model t ~darr ~parr id =
+  let (atarr, neigharr) = match pos with
+    | Distal -> (darr, parr)
+    | Proximal -> (parr, darr)
+  in
+  get_posterior ~dst:u1 u2 model t ~atarr ~neigharr id;
+  summarize_post summarize_f initial u1
 
 (* make a map from a list of edge ids to the most likely vectors on either side
  * of the edge: order is (distal, proximal) *)
@@ -48,6 +51,7 @@ let pickpair_map summarize_f initial model t ~darr ~parr ids =
     (fun id ->
       IntMap.add
         id
-        (get_summary_pair summarize_f initial u1 u2 model t ~darr ~parr id))
+        (get_summary Distal summarize_f initial u1 u2 model t ~darr ~parr id,
+         get_summary Proximal summarize_f initial u1 u2 model t ~darr ~parr id))
     ids
     IntMap.empty
