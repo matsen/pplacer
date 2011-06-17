@@ -16,6 +16,7 @@
  * Closed GH-58: Improved navigation for the documentation on guppy commands.
  * Closed GH-59: Improved documentation for guppy commands using sqlite.
  * Closed GH-60: Improved documentation for `guppy classify`.
+ * Closed GH-65: Released alpha08.
  * Closed GH-66: Added a FAQ to the documentation.
  * Closed GH-68: Changed `guppy info` to show multiplicity.
  * Closed GH-69: Changed `guppy tog` to use polytomy instead of a _ delimiter
