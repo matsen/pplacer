@@ -2,6 +2,9 @@ open Multiprocessing
 open Fam_batteries
 open MapsSets
 
+let compose f g a = f (g a)
+let flip f x y = f y x
+
 exception Finished
 
 class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
@@ -160,7 +163,88 @@ let run_file prefs query_fname =
       ref_align
   end;
   let n_sites = Alignment.length ref_align in
+  begin match begin
+    try
+      Some
+        (List.find
+           (fun (_, seq) -> (String.length seq) != n_sites)
+           query_list)
+    with
+      | Not_found -> None
+  end with
+    | Some (name, seq) ->
+      Printf.printf
+        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
+        name
+        (String.length seq)
+        n_sites;
+      exit 1;
+    | None -> ()
+  end;
 
+  (* *** pre masking *** *)
+  let query_list, ref_align, n_sites =
+    if Prefs.no_pre_mask prefs then
+      query_list, ref_align, n_sites
+    else begin
+      if (Prefs.verb_level prefs) >= 1 then begin
+        print_string "Pre-masking sequences... ";
+        flush_all ();
+      end;
+      let mask_of_fold fold value =
+        fold
+          (flip
+             (compose
+                (ArrayFuns.map2 (||))
+                (fun (_, seq) ->
+                  Array.init
+                    n_sites
+                    (compose
+                       (function '-' | '?' -> false | _ -> true)
+                       (String.get seq)))))
+          (Array.make n_sites false)
+          value
+      in
+      let mask = ArrayFuns.map2
+        (&&)
+        (mask_of_fold Array.fold_left ref_align)
+        (mask_of_fold List.fold_left query_list)
+      in
+      let masklen = Array.fold_left
+        (fun accum -> function true -> accum + 1 | _ -> accum)
+        0
+        mask
+      in
+      let cut_from_mask (name, seq) =
+        let seq' = String.create masklen
+        and pos = ref 0 in
+        Array.iteri
+          (fun e not_masked ->
+            if not_masked then
+              (seq'.[!pos] <- seq.[e];
+               incr pos))
+          mask;
+        name, seq'
+      in
+      if (Prefs.verb_level prefs) >= 1 then begin
+        Printf.printf "sequence length cut from %d to %d." n_sites masklen;
+        print_newline ()
+      end;
+      let query_list' = List.map cut_from_mask query_list
+      and ref_align' = Array.map cut_from_mask ref_align in
+      if (Prefs.pre_masked_file prefs) <> "" then begin
+        let ch = open_out (Prefs.pre_masked_file prefs) in
+        let write_line = Alignment.write_fasta_line ch in
+        Array.iter write_line ref_align';
+        List.iter write_line query_list';
+        close_out ch;
+        exit 0;
+      end;
+      query_list', ref_align', masklen
+    end
+  in
+
+  (* *** deduplicate sequences *** *)
   let seq_tbl = Hashtbl.create 1024 in
   List.iter
     (fun (name, seq) -> Hashtbl.replace
@@ -181,7 +265,6 @@ let run_file prefs query_fname =
     seq_tbl
     []
   in
-
 
   (* *** build reference package *** *)
   let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
