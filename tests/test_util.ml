@@ -126,7 +126,7 @@ let ( =@ ) = farr_approx_equal
 let ( =@@ ) = farrarr_approx_equal
 
 
-(* *** random matrices *** *)
+(* *** random stuff *** *)
 
 let rand_symmetric n =
   let m = Gsl_matrix.create n n in
@@ -137,3 +137,9 @@ let rand_symmetric n =
     done;
   done;
   m;;
+
+let make_rng seed =
+  let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
+  Gsl_rng.set rng (Nativeint.of_int seed);
+  rng
+

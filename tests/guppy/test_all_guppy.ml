@@ -7,4 +7,5 @@ let suite = [
   "heat" >::: Test_heat.suite;
   "edge_rdist" >::: Test_edge_rdist.suite;
   "edpl" >::: Test_edpl.suite;
+  "gaussian" >::: Test_gaussian.suite;
 ]
