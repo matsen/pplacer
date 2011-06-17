@@ -122,31 +122,15 @@ but if you don't like that then here's a little script::
 Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
 path and you are ready to go!
 
+
 Pre-masking
 -----------
 
-By default, pplacer will pre-mask the query and reference alignments to ignore
-unused gaps. This is done by first finding all sites in one alignment where at
-least one sequence does not contain a gap, and then finding which non-gap sites
-are shared by both alignments. For example::
+Columns that are all gap in either the reference alignment or the query alignment do not impact the relative likelihood of placements.
+Thus, starting in v1.1alpha08, we don't compute them at all.
+This speeds things up a bunch, and uses a lot less memory.
+We call this pre-masking, and it can be disabled with the ``--no-pre-mask`` flag.
 
-    # reference alignment
-    --A-C-A-T
-    -ACAT----
-    --ACAT---
-    # resulting mask
-    -XXXXXX-X
-
-    # query alignment
-    -A-CAT---
-    A-----CAT
-    # resulting mask
-    XX-XXXXXX
-
-    # final mask
-    -X-XXXX-X
-
-Pre-masking can be disabled with the ``--no-pre-mask`` flag.
 
 JSON_ format specification
 --------------------------
