@@ -9,11 +9,17 @@ object (self)
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit fat_cmd () as super_fat
 
+  val average = flag "--average"
+    (Plain (false, "Average all input placefiles together."))
+
   method specl =
     super_output#specl
     @ super_mass#specl
     @ super_refpkg#specl
     @ super_fat#specl
+    @ [
+      toggle_flag average;
+    ]
 
   method desc =
 "makes trees with edges fattened in proportion to the number of reads"
@@ -74,25 +80,52 @@ object (self)
       | Some rp -> Some (Tax_gtree.of_refpkg_unit rp)
     in
     let pre_pairs = List.map (self#to_pre_pair tax_info) prl in
-    let trees = List.map2
-      (fun pr pair ->
-        let _, final_rt = self#get_rpo_and_tree pr in
-        pr.Placerun.name,
-        self#to_fat_tree final_rt pr.Placerun.name pair)
-      prl
-      pre_pairs
-    in
-    match self#out_file_or_dir () with
-      | Directory (dir, prefix) ->
-        List.iter
-          (fun (name, trees) ->
-            Phyloxml.named_gtrees_to_file
-              (Filename.concat dir (prefix ^ name ^ ".xml"))
-              trees)
-          trees
-      | File fname ->
-        Phyloxml.named_gtrees_to_file
-          fname
-          (Base.map_and_flatten snd trees)
-      | Unspecified -> ()
+
+    if fv average then begin
+      let transform, _, _ = self#mass_opts in
+      let pair = List.fold_left
+        (fun (phylo_accum, tax_accum) (phylo_pre, tax_pre) ->
+          let phylo_pre' = Mass_map.Pre.normalize_mass transform phylo_pre in
+          List.rev_append phylo_pre' phylo_accum,
+          match tax_accum, tax_pre with
+            | None, None -> None
+            | (Some _ as tax_accum), None -> tax_accum
+            | None, (Some _ as tax_accum) -> tax_accum
+            | Some (taxt, tax_accum), Some (_, tax_pre) ->
+              Some (taxt, List.rev_append tax_pre tax_accum))
+        ([], None)
+        pre_pairs
+      in
+      let trees = self#to_fat_tree
+        (snd (self#get_rpo_and_tree (List.hd prl)))
+        "averaged"
+        pair
+      in
+      Phyloxml.named_gtrees_to_file
+        (self#single_file ())
+        trees
+
+    end else begin
+      let trees = List.map2
+        (fun pr pair ->
+          let _, final_rt = self#get_rpo_and_tree pr in
+          pr.Placerun.name,
+          self#to_fat_tree final_rt pr.Placerun.name pair)
+        prl
+        pre_pairs
+      in
+      match self#out_file_or_dir () with
+        | Directory (dir, prefix) ->
+          List.iter
+            (fun (name, trees) ->
+              Phyloxml.named_gtrees_to_file
+                (Filename.concat dir (prefix ^ name ^ ".xml"))
+                trees)
+            trees
+        | File fname ->
+          Phyloxml.named_gtrees_to_file
+            fname
+            (Base.map_and_flatten snd trees)
+        | Unspecified -> ()
+    end
 end
