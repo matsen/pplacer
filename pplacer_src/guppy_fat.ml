@@ -24,38 +24,45 @@ object (self)
       | 0. -> fv total_width
       | x -> x *. (float_of_int total_multiplicity)
 
-  method private to_mass_pair tax_info pr =
-    let transform, weighting, criterion = self#mass_opts in
-    Mass_map.By_edge.of_placerun transform weighting criterion pr,
+  method private to_pre_pair tax_info pr =
+    let _, weighting, criterion = self#mass_opts in
+    Mass_map.Pre.of_placerun weighting criterion pr,
     try
       match tax_info with
         | None -> None
         | Some (taxt, ti_imap) ->
-          let massm =
-            Mass_map.By_edge.of_pre transform
-              (Tax_mass.pre (Gtree.top_id taxt) Placement.classif
-                 weighting criterion ti_imap pr)
+          let pre =
+            Tax_mass.pre
+              (Gtree.top_id taxt)
+              Placement.classif
+              weighting
+              criterion
+              ti_imap
+              pr
           in
-          Some (taxt, massm)
+          Some (taxt, pre)
     with
       (* if we get a No_classif exception then don't make a tax fat tree *)
       | Placement.No_classif -> None
 
-  method private to_fat_tree final_rt pr (phylo_mass, tax_mass) =
+  method private to_fat_tree final_rt name (phylo_pre, tax_pre) =
+    let transform, _, _ = self#mass_opts in
+    let phylo_mass = Mass_map.By_edge.of_pre transform phylo_pre in
     [
-      Some (pr.Placerun.name^".ref.fat"),
+      Some (name^".ref.fat"),
       self#fat_tree_of_massm final_rt phylo_mass
     ]
     @
-      (match tax_mass with
+      (match tax_pre with
         | None -> []
-        | Some (taxt, massm) -> begin
+        | Some (taxt, tax_pre) -> begin
+          let tax_mass = Mass_map.By_edge.of_pre transform tax_pre in
           let multiplier_override =
-            200. /. (Mass_map.By_edge.total_mass massm)
+            200. /. (Mass_map.By_edge.total_mass tax_mass)
           in
           [
-            Some (pr.Placerun.name^".tax.fat"),
-            self#fat_tree_of_massm ~multiplier_override taxt massm
+            Some (name^".tax.fat"),
+            self#fat_tree_of_massm ~multiplier_override taxt tax_mass
           ]
         end)
 
@@ -66,14 +73,14 @@ object (self)
       | None -> None
       | Some rp -> Some (Tax_gtree.of_refpkg_unit rp)
     in
-    let mass_maps = List.map (self#to_mass_pair tax_info) prl in
+    let pre_pairs = List.map (self#to_pre_pair tax_info) prl in
     let trees = List.map2
       (fun pr pair ->
         let _, final_rt = self#get_rpo_and_tree pr in
         pr.Placerun.name,
-        self#to_fat_tree final_rt pr pair)
+        self#to_fat_tree final_rt pr.Placerun.name pair)
       prl
-      mass_maps
+      pre_pairs
     in
     match self#out_file_or_dir () with
       | Directory (dir, prefix) ->
