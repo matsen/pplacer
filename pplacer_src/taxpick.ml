@@ -48,7 +48,7 @@ let write_picks ~darr ~parr rp =
       Printf.fprintf ch_picks ">%s\n" (name_of_id id);
       let distal_str = IntMap.find id distal_str_map in
       for i=0 to (Array.length at_d) - 1 do
-        let d = at_d.(i) and p = at_p.(i) in
+        let d = at_d.(i) and _ = at_p.(i) in
         Printf.fprintf ch_likes "%g\t" d;
         if d > 0.8 then begin
           output_char ch_picks distal_str.[i];

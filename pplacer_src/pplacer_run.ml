@@ -245,6 +245,7 @@ let run_file prefs query_fname =
   in
 
   (* *** deduplicate sequences *** *)
+  (* seq_tbl maps from sequence to the names that correspond to that seq. *)
   let seq_tbl = Hashtbl.create 1024 in
   List.iter
     (fun (name, seq) -> Hashtbl.replace
@@ -256,7 +257,9 @@ let run_file prefs query_fname =
          with
            | Not_found -> []))
     query_list;
+  (* redup_tbl maps from the first entry of namel to the rest of the namel. *)
   let redup_tbl = Hashtbl.create 1024 in
+  (* query_list is now deduped. *)
   let query_list = Hashtbl.fold
     (fun seq namel accum ->
       let hd = List.hd namel in
