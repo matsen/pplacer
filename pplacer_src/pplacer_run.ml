@@ -436,7 +436,8 @@ let run_file prefs query_fname =
 
   end else begin
     (* not fantasy baseball *)
-    let pquery_gotfunc, pquery_donefunc = if true then begin
+    let map_fasta_file = Prefs.map_fasta prefs in
+    let pquery_gotfunc, pquery_donefunc = if map_fasta_file <> "" then begin
       let result_map = ref IntMap.empty in
       let gotfunc pq =
         let best_placement = Pquery.best_place Placement.ml_ratio pq in
@@ -446,9 +447,39 @@ let run_file prefs query_fname =
           (!result_map)
       and donefunc () =
         let ref_tree = Refpkg.get_ref_tree rp
-        and mrcam = Refpkg.get_mrcam rp in
-        let _ = Map_seq.mrca_seq_map (!result_map) mrcam (ref_tree.Gtree.stree)
-        in ()
+        and mrcam = Refpkg.get_mrcam rp
+        and td = Refpkg.get_taxonomy rp in
+        let seq_map = Map_seq.mrca_seq_map
+          (!result_map)
+          mrcam
+          (ref_tree.Gtree.stree)
+        and map_map = Map_seq.of_map
+          snodes.(0)
+          snodes.(1)
+          (Refpkg.get_model rp)
+          ref_tree
+          ~darr
+          ~parr
+          mrcam
+          (Prefs.map_cutoff prefs)
+        and space = Str.regexp " " in
+        let map_fasta = IntMap.fold
+          (fun i mrca accum ->
+            if not (IntMap.mem i seq_map) then accum else
+              let tax_name = Tax_taxonomy.get_tax_name td mrca in
+              List.rev_append
+                (IntMap.find i seq_map)
+                (((Printf.sprintf "%d_%s"
+                     i
+                     (Str.global_replace space "_" tax_name)),
+                  IntMap.find i map_map)
+                 :: accum))
+          mrcam
+          []
+        in
+        Alignment.to_fasta
+          (Array.of_list (List.rev map_fasta))
+          map_fasta_file
       in
       gotfunc, donefunc
 

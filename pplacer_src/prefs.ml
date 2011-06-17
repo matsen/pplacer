@@ -41,6 +41,8 @@ type prefs =
     timing : bool ref;
     no_pre_mask : bool ref;
     pre_masked_file : string ref;
+    map_fasta : string ref;
+    map_cutoff : float ref;
   }
 
 
@@ -85,6 +87,8 @@ let defaults () =
     timing = ref false;
     no_pre_mask = ref false;
     pre_masked_file = ref "";
+    map_fasta = ref "";
+    map_cutoff = ref 0.8;
   }
 
 
@@ -128,6 +132,8 @@ let version           p = !(p.version)
 let timing            p = !(p.timing)
 let no_pre_mask       p = !(p.no_pre_mask)
 let pre_masked_file   p = !(p.pre_masked_file)
+let map_fasta         p = !(p.map_fasta)
+let map_cutoff        p = !(p.map_cutoff)
 
 
 (* arguments and preferences *)
@@ -202,6 +208,10 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "Don't pre-mask sequences before placement.";
 "--write-pre-masked", Arg.Set_string prefs.pre_masked_file,
 "Write out the pre-masked sequences to the specified fasta file and exit.";
+"--map-mrca", Arg.Set_string prefs.map_fasta,
+"Specify a file to write out MAP sequences for MRCAs and corresponding placements.";
+"--map-mrca-min", Arg.Set_float prefs.map_cutoff,
+"Specify cutoff for inclusion in MAP sequence file.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
