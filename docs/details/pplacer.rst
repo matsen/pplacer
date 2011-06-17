@@ -123,6 +123,15 @@ Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
 path and you are ready to go!
 
 
+Pre-masking
+-----------
+
+Columns that are all gap in either the reference alignment or the query alignment do not impact the relative likelihood of placements.
+Thus, starting in v1.1alpha08, we don't compute them at all.
+This speeds things up a bunch, and uses a lot less memory.
+We call this pre-masking, and it can be disabled with the ``--no-pre-mask`` flag.
+
+
 JSON_ format specification
 --------------------------
 
