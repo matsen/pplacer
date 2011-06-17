@@ -436,9 +436,29 @@ let run_file prefs query_fname =
 
   end else begin
     (* not fantasy baseball *)
+    let pquery_gotfunc, pquery_donefunc = if true then begin
+      let result_map = ref IntMap.empty in
+      let gotfunc pq =
+        let best_placement = Pquery.best_place Placement.ml_ratio pq in
+        result_map := IntMap.add_listly
+          (Placement.location best_placement)
+          ((List.hd (Pquery.namel pq)), (Pquery.seq pq))
+          (!result_map)
+      and donefunc () =
+        let ref_tree = Refpkg.get_ref_tree rp
+        and mrcam = Refpkg.get_mrcam rp in
+        let _ = Map_seq.mrca_seq_map (!result_map) mrcam (ref_tree.Gtree.stree)
+        in ()
+      in
+      gotfunc, donefunc
+
+    end else (fun _ -> ()), (fun () -> ())
+    in
+
     let queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest ->
+        pquery_gotfunc pq;
         queries := pq :: (!queries);
         gotfunc rest
       | Core.Timing (name, value) :: rest ->
@@ -448,6 +468,7 @@ let run_file prefs query_fname =
       | _ -> failwith "expected pquery result"
     and cachefunc _ = false
     and donefunc () =
+      pquery_donefunc ();
       let pr =
         Placerun.redup
           redup_tbl
