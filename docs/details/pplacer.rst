@@ -45,6 +45,93 @@ There are a couple of differences between the present version and the previous v
 * ``placeviz``, ``placeutil`` and ``mokaphy`` have been replaced by a single binary called ``guppy``
 
 
+Compiling pplacer
+-----------------
+
+Here are directions on how to install an ocaml development environment and
+compile pplacer. If you already have GSL and wget installed, you should be able
+to download `this installation script`_ and just type
+``source install_pplacer.sh``.
+
+Installing GSL
+``````````````
+
+It may well already be installed (you can check by running
+``gsl-config --prefix``) or you can install it with your OS's package manager.
+Or compile it from source::
+
+    wget ftp://mirrors.kernel.org/gnu/gsl/gsl-1.13.tar.gz && \
+    tar -xzf gsl-1.13.tar.gz && \
+    cd gsl-1.13 && \
+    ./configure && \
+    make && make install
+
+Installing ocaml with GODI
+``````````````````````````
+
+Ocaml can be installed "by hand", which requires less compilation time and
+memory, but the easiest is to use Gerd Stolpmann's ocaml pacakge manager called
+GODI. (Thanks to Ashish Agarwal for suggesting it.) The one funny thing about
+it is that it likes its own space, and so you can't set the prefix to be
+``/usr/local/``. Setting the prefix to some path in your home directory works
+great. Note that gawk is required for ocamlgsl.
+
+::
+
+    PREFIX=`pwd`/godi
+    PATH=$PREFIX/bin:$PREFIX/sbin:$PATH
+
+    #install ocaml via GODI
+    wget http://download.camlcity.org/download/godi-rocketboost-20091222.tar.gz
+    tar xzf godi-rocketboost-20091222.tar.gz
+    cd godi-rocketboost-20091222
+    ./bootstrap --prefix=$PREFIX
+    echo "GODI_BASEPKG_PCRE=yes" >> $PREFIX/etc/godi.conf
+    ./bootstrap_stage2
+
+    #build godi packages
+    godi_perform -build godi-ocamlgsl
+    godi_perform -build godi-xml-light
+    godi_perform -build godi-ocaml-csv
+    godi_perform -build godi-ounit
+    godi_perform -build godi-sqlite3
+    cd ..
+
+Compiling pplacer
+`````````````````
+
+First make sure that ocaml et al are in your path.
+
+::
+
+    which ocaml
+
+The best way to stay up to date with the source is via git::
+
+    git clone git://github.com/matsen/pplacer.git
+    cd pplacer/
+    make
+
+but if you don't like that then here's a little script::
+
+    wget http://github.com/matsen/pplacer/tarball/master
+    tar -xzf matsen-pplacer*.tar.gz
+    cd matsen-pplacer-*/
+    make
+
+Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
+path and you are ready to go!
+
+
+Pre-masking
+-----------
+
+Columns that are all gap in either the reference alignment or the query alignment do not impact the relative likelihood of placements.
+Thus, starting in v1.1alpha08, we don't compute them at all.
+This speeds things up a bunch, and uses a lot less memory.
+We call this pre-masking, and it can be disabled with the ``--no-pre-mask`` flag.
+
+
 JSON_ format specification
 --------------------------
 
@@ -214,26 +301,26 @@ PHYML can be run like so, on non-interleaved (hence the -q) phylip-format alignm
 
 Note that pplacer only works with phyml version 3.0 (the current version).
 
+Both of these programs emit "statistics files": files that describe the phylogenetic model used.
+Pplacer then uses those same statistics to place your reads.
+For RAxML, they are called something like ``RAxML_info.test``, whereas for PHYML they are called something like ``test_aln_phyml_stats.txt``.
+
 If your taxon names have too many funny symbols, pplacer will get confused.
 We have had a difficult time with the wacky names exported by the otherwise lovely software geneious_.
 If you have a tree which isn't getting parsed properly by pplacer, and you think it should be, send it to us and we will have a look.
 
-At least for now, we do not recommend that you give pplacer a reference tree with lots of very similar sequences.
-It's certainly a bit of a waste of time-- pplacer must evaluate the resultant branches like any others.
-But worse, it can foul up the analysis.
-If one has a clade of very similar sequences, a query sequence which is similar to those sequences can fit anywhere in the clade.
-The resulting uncertainty will then be reported as a low ML ratio or posterior probability, even if pplacer is quite confident that the query fits in that clade.
-Pplacer also has computational difficulty with exceedingly short ("zero") length edges.
-We are currently considering ways to work around these issues.
+Avoid giving pplacer a reference tree with lots of very similar sequences.
+It's a waste of time-- pplacer must evaluate the resultant branches like any others.
+Identical sequences are especially bad, and the resultant zero length branches will make pplacer complain.
 
-If you give pplacer a reference tree which has been rooted, you will get a warning like::
+If you give pplacer a reference tree which has been rooted in the middle of an edge, you will get a warning like::
 
   Warning: pplacer results make the most sense when the given tree is multifurcating
   at the root. See manual for details.
 
-In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they are be artificially counted as two separate edges.
+In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they will counted as two separate edges.
 That will lead to artifactually low likelihood weight ratio and posterior probabilities for query sequences placed on those edges.
-This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the placeviz trees.
+This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the output trees.
 
 
 
@@ -279,24 +366,6 @@ You can use R to plot these matrices in a heat-map like fashion like so::
      y=c(1:ncol(ba)-1),z=as.matrix(ba), main="batting average")
 
 
-About the EDPL metric
----------------------
-
-The expected distance between placement locations (EDPL) is a means of understanding the uncertainty of a placement using pplacer.
-The motivation for using such a metric comes from when there are a number of closely-related sequences present in the reference alignment.
-In this case, there may be considerable uncertainty about which edge is best as measured by posterior probability or likelihood weight ratio.
-However, the actual uncertainty as to the best region of the tree for that query sequence may be quite small.
-For instance, we may have a number of very similar subspecies of a given species in the alignment, and although it may not be possible to be sure to match a given query to a subspecies, one might be quite sure that it is one of them.
-
-The EDPL metric is one way of resolving this problem by considering the distances between the possible placements for a given query.
-It works as follows.
-Say the query bounces around to the different placement positions according to their posterior probability; i.e. the query lands with location one with probability :math:`p_1`, location two with probability :math:`p_2`, and so on.
-Then the EDPL value is simply the expected distance it will travel in one of those bounces (if you don't like probabilistic language, it's simply the average distance it will travel per bounce when allowed to bounce between the placements for a long time with their assigned probabilities).
-Here's an example, with three hypothetical locations for a given query sequence:
-
-.. image:: ../_static/edpl_formula.png
-
-
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
@@ -307,3 +376,4 @@ Here's an example, with three hypothetical locations for a given query sequence:
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
+.. _this installation script: ../_static/install_pplacer.sh

@@ -5,4 +5,5 @@ let suite = [
   "matrix" >::: Test_matrix.suite;
   (* "diagd" >::: Test_diagd.suite; *)
   "placefile" >::: Test_placefile.suite;
+  "like" >::: Test_like.suite;
 ]

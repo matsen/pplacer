@@ -35,8 +35,9 @@ UPGMA using UniFrac       "squash" clustering (squash_)
 PCA using UniFrac         Edge PCA (pca_)
 ========================  =============
 
-The heat tree (heat_) and barycenter (bary_) have no analogs in previous types of phylogenetic microbial analysis.
-Note that this table does not show strict equivalences, but rather a list of hints for further exploration.
+This table does not show equivalences, but rather a list of hints for further exploration.
+For example, the KR distance is really a generalization of weighted UniFrac, and edge PCA is a type of PCA that takes advantage of the special structure of phylogenetic placement data.
+The heat tree (kr_heat_) and barycenter (bary_) have no analogs in previous types of phylogenetic microbial analysis.
 
 
 Usage
@@ -109,12 +110,16 @@ If you don't see those check boxes, then use `this configuration file`_ (if you 
 List of subcommands
 ===================
 
+The following table provides links to more in-depth documentation for each
+guppy subcommand:
+
+.. guppy-command-table
+
 .. toctree::
-   :maxdepth: 1
    :glob:
+   :hidden:
 
-   generated_rst/guppy_*
-
+   guppy_*
 
 
 .. |guppy| replace:: ``guppy``
@@ -125,7 +130,7 @@ List of subcommands
 .. _pd: generated_rst/pd.html
 .. _squash: generated_rst/squash.html
 .. _pca: generated_rst/pca.html
-.. _heat: generated_rst/heat.html
+.. _kr_heat: generated_rst/kr_heat.html
 .. _bary: generated_rst/bary.html
 
 .. _pplacer: http://matsen.fhrcrc.org/pplacer

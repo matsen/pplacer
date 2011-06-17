@@ -46,8 +46,7 @@ object (self)
       | Some fname, None, Some prefix -> open_out (prefix ^ fname)
       | Some fname, None, None -> open_out fname
 
-      | None, Some _, _ -> failwith "directory provided with no filename"
-      | _, _, Some _ -> failwith "prefix provided with nothing else"
+      | None, _, _ -> failwith "-o option is required"
 
   method private out_file_or_dir ?(default = Directory (".", "")) () =
     match fvo out_fname, fvo out_dir, fvo out_prefix with
@@ -64,14 +63,14 @@ object (self)
 
   method private single_prefix ?(requires_user_prefix = false) () =
     match self#out_file_or_dir () with
-      | Directory (_, "") when requires_user_prefix -> failwith "no prefix specified"
+      | Directory (_, "") when requires_user_prefix -> failwith "--prefix option is required"
       | Directory (dir, prefix) -> Filename.concat dir prefix
-      | _ -> failwith "can't output to a single file"
+      | _ -> failwith "-o option is illegal"
 
   method private single_file ?default () =
     match self#out_file_or_dir ?default () with
       | File fname -> fname
-      | _ -> failwith "directory provided with no filename"
+      | _ -> failwith "-o option is required"
 
 end
 

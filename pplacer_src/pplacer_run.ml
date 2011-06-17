@@ -2,6 +2,9 @@ open Multiprocessing
 open Fam_batteries
 open MapsSets
 
+let compose f g a = f (g a)
+let flip f x y = f y x
+
 exception Finished
 
 class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
@@ -57,6 +60,8 @@ object (self)
 end
 
 let run_file prefs query_fname =
+  let timings = ref StringMap.empty in
+
   if (Prefs.verb_level prefs) >= 1 then
     Printf.printf
       "Running pplacer %s analysis on %s...\n"
@@ -136,6 +141,18 @@ let run_file prefs query_fname =
         print_endline
           "Found reference sequences in given alignment file. \
           Using those for reference alignment.";
+      let _ = List.fold_left
+        (fun seen (seq, _) ->
+          if StringSet.mem seq seen then
+            failwith
+              (Printf.sprintf
+                 "duplicate reference sequence '%s' in query file %s"
+                 seq
+                 query_fname);
+          StringSet.add seq seen)
+        StringSet.empty
+        ref_list
+      in ();
       Alignment.uppercase (Array.of_list ref_list)
     end
   in
@@ -146,7 +163,108 @@ let run_file prefs query_fname =
       ref_align
   end;
   let n_sites = Alignment.length ref_align in
+  begin match begin
+    try
+      Some
+        (List.find
+           (fun (_, seq) -> (String.length seq) != n_sites)
+           query_list)
+    with
+      | Not_found -> None
+  end with
+    | Some (name, seq) ->
+      Printf.printf
+        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
+        name
+        (String.length seq)
+        n_sites;
+      exit 1;
+    | None -> ()
+  end;
 
+  (* *** pre masking *** *)
+  let query_list, ref_align, n_sites =
+    if Prefs.no_pre_mask prefs then
+      query_list, ref_align, n_sites
+    else begin
+      if (Prefs.verb_level prefs) >= 1 then begin
+        print_string "Pre-masking sequences... ";
+        flush_all ();
+      end;
+      let mask_of_fold fold value =
+        fold
+          (flip
+             (compose
+                (ArrayFuns.map2 (||))
+                (fun (_, seq) ->
+                  Array.init
+                    n_sites
+                    (compose
+                       (function '-' | '?' -> false | _ -> true)
+                       (String.get seq)))))
+          (Array.make n_sites false)
+          value
+      in
+      let mask = ArrayFuns.map2
+        (&&)
+        (mask_of_fold Array.fold_left ref_align)
+        (mask_of_fold List.fold_left query_list)
+      in
+      let masklen = Array.fold_left
+        (fun accum -> function true -> accum + 1 | _ -> accum)
+        0
+        mask
+      in
+      let cut_from_mask (name, seq) =
+        let seq' = String.create masklen
+        and pos = ref 0 in
+        Array.iteri
+          (fun e not_masked ->
+            if not_masked then
+              (seq'.[!pos] <- seq.[e];
+               incr pos))
+          mask;
+        name, seq'
+      in
+      if (Prefs.verb_level prefs) >= 1 then begin
+        Printf.printf "sequence length cut from %d to %d." n_sites masklen;
+        print_newline ()
+      end;
+      let query_list' = List.map cut_from_mask query_list
+      and ref_align' = Array.map cut_from_mask ref_align in
+      if (Prefs.pre_masked_file prefs) <> "" then begin
+        let ch = open_out (Prefs.pre_masked_file prefs) in
+        let write_line = Alignment.write_fasta_line ch in
+        Array.iter write_line ref_align';
+        List.iter write_line query_list';
+        close_out ch;
+        exit 0;
+      end;
+      query_list', ref_align', masklen
+    end
+  in
+
+  (* *** deduplicate sequences *** *)
+  let seq_tbl = Hashtbl.create 1024 in
+  List.iter
+    (fun (name, seq) -> Hashtbl.replace
+      seq_tbl
+      seq
+      (name ::
+         try
+           Hashtbl.find seq_tbl seq
+         with
+           | Not_found -> []))
+    query_list;
+  let redup_tbl = Hashtbl.create 1024 in
+  let query_list = Hashtbl.fold
+    (fun seq namel accum ->
+      let hd = List.hd namel in
+      Hashtbl.add redup_tbl hd namel;
+      (hd, seq) :: accum)
+    seq_tbl
+    []
+  in
 
   (* *** build reference package *** *)
   let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
@@ -184,15 +302,16 @@ let run_file prefs query_fname =
   let parr = Glv_arr.mimic darr
   and snodes = Glv_arr.mimic darr
   in
-  (* do the reference tree likelihood calculation. we do so using halfd and
-   * one glv from halfp as our utility storage *)
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
     util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
     ~util_glv_arr:snodes;
   if (Prefs.verb_level prefs) >= 1 then
     print_endline "done.";
-  if (Prefs.verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
+  timings := StringMap.add_listly
+    "tree likelihood"
+    ((Sys.time ()) -. curr_time)
+    (!timings);
   (* pull exponents *)
   if (Prefs.verb_level prefs) >= 1 then begin
     print_string "Pulling exponents... ";
@@ -283,10 +402,15 @@ let run_file prefs query_fname =
     and fantasy_mod = Base.round (100. *. (Prefs.fantasy_frac prefs))
     and n_fantasies = ref 0
     in
-    let gotfunc = function
-      | Core.Fantasy f ->
+    let rec gotfunc = function
+      | Core.Fantasy f :: rest ->
         Fantasy.add_to_fantasy_matrix f fantasy_mat;
-        incr n_fantasies
+        incr n_fantasies;
+        gotfunc rest
+      | Core.Timing (name, value) :: rest ->
+        timings := StringMap.add_listly name value (!timings);
+        gotfunc rest
+      | [] -> ()
       | _ -> failwith "expected fantasy result"
     and cachefunc _ =
       (* if cachefunc returns true, the current thing is skipped; modulo
@@ -303,34 +427,22 @@ let run_file prefs query_fname =
 
   end else begin
     (* not fantasy baseball *)
-    let query_tbl = Hashtbl.create 1024 in
-    let gotfunc = function
-      | Core.Pquery (seq, pq) -> Hashtbl.add query_tbl seq pq
+    let queries = ref [] in
+    let rec gotfunc = function
+      | Core.Pquery pq :: rest ->
+        queries := pq :: (!queries);
+        gotfunc rest
+      | Core.Timing (name, value) :: rest ->
+        timings := StringMap.add_listly name value (!timings);
+        gotfunc rest
+      | [] -> ()
       | _ -> failwith "expected pquery result"
-    and cachefunc (name, seq) =
-      match begin
-        try
-          Some (Hashtbl.find query_tbl seq)
-        with
-          | Not_found -> None
-      end with
-        | Some pq ->
-          let pq = Pquery.set_namel pq (name :: pq.Pquery.namel) in
-          incr n_done;
-          Hashtbl.replace query_tbl seq pq;
-          true
-        | None -> false
+    and cachefunc _ = false
     and donefunc () =
-      let results = Hashtbl.fold
-        (fun _ pq l -> pq :: l)
-        query_tbl
-        []
-      in
       let pr =
-        Placerun.make
-          ref_tree
-          query_bname
-          results
+        Placerun.redup
+          redup_tbl
+          (Placerun.make ref_tree query_bname (!queries))
       in
       let final_pr =
         if not (Refpkg.tax_equipped rp) then pr
@@ -361,4 +473,12 @@ let run_file prefs query_fname =
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
       (Base.range (Prefs.children prefs)) in
   event_loop children;
-  donefunc ()
+  donefunc ();
+  if Prefs.timing prefs then begin
+    Printf.printf "\ntiming data:\n";
+    StringMap.iter
+      (fun name values ->
+        Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
+      (!timings)
+  end
+
