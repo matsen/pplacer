@@ -1,10 +1,18 @@
-(* taxonomic routines for gtrees.
+(* Taxonomic routines for gtrees.
+ *
+ * The purpose of this module is to make a "mrcam". A mrcam can be thought of as
+ * the map that generates the taxonomic annotations in pplacer. Thus, it is a
+ * map from an internal node to the taxid that is the MRCA of the nodes distal
+ * to that internal node.
+ *
+ * Thus the keys of a MRCA are the internal nodes that are MRCAs.
 *)
+
 
 open Fam_batteries
 open MapsSets
 
-(* here we get a map of tip taxonomic annotations *)
+(* A map of taxonomic annotations just from the bark map. *)
 let tips_map sim t =
   IntMap.fold
     (fun k newick_bark m ->
@@ -14,8 +22,8 @@ let tips_map sim t =
     (Gtree.get_bark_map t)
     IntMap.empty
 
-(* next step is to propogate the taxonomic information up the tree according to
- * common ancestry. *)
+(* Propogate the taxonomic information up the tree according to common ancestry.
+ * *)
 let fill_out td t tips_map =
   let m = ref tips_map in
   let _ =
@@ -29,7 +37,8 @@ let fill_out td t tips_map =
   in
   !m
 
-(* the next step is to attach names to actual MRCAs in the tree. *)
+(* Attach names to actual MRCAs in the tree given a map from the previous step.
+ * *)
 let mrcam_of_full_map t full_map =
   let m = ref IntMap.empty in
   let _ =
@@ -39,8 +48,8 @@ let mrcam_of_full_map t full_map =
         List.iter
           (fun (below_id, below_tax_id) ->
             if our_tax_id <> below_tax_id then
-              (* something below is not the same tax_id as us. thus it is an
-               * MRCA and we label it as such *)
+              (* Something below is not the same tax_id as us.
+               * Thus it is an MRCA and we label it as such. *)
               m := IntMap.add below_id below_tax_id (!m))
           below;
         (id, our_tax_id))
