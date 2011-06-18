@@ -14,29 +14,19 @@ type pos = Distal | Proximal
  * 1 leaf. *)
 
 let of_map u1 u2 model t ~darr ~parr m cutoff =
-  let code = match Model.seq_type model with
-  | Alignment.Nucleotide_seq -> Nuc_models.nuc_code
-  | Alignment.Protein_seq -> Prot_models.prot_code
-  in
-  let get_symbol = function
-    | -1 -> '-'
-    | i -> try code.(i) with | Invalid_argument _ -> assert(false)
-  in
-  let to_sym_str ind_arr =
-    StringFuns.of_char_array (Array.map get_symbol ind_arr)
-  in
   let bounded_max_index vec =
     let idx = Gsl_vector.max_index vec in
     if vec.{idx} /. (Linear_utils.l1_norm vec) < cutoff then -1 else idx
-  in
-  IntMap.mapi
+  and code = Model.code model in
+    IntMap.mapi
     (fun id _ ->
-      to_sym_str
+      Model.to_sym_str
+        code
         (Mutpick.get_summary
-          Mutpick.Proximal
-          bounded_max_index
-          (-1) u1 u2 model t
-          ~darr ~parr id))
+           Mutpick.Proximal
+           bounded_max_index
+           (-1) u1 u2 model t
+           ~darr ~parr id))
     m
 
 (* apply this one to the mrcam ... *)

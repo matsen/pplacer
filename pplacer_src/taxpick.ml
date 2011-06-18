@@ -17,17 +17,8 @@ let write_picks ~darr ~parr rp =
   let t = Refpkg.get_tax_ref_tree rp
   and name = Refpkg.get_name rp
   and model = Refpkg.get_model rp
-  and mrcal = IntMap.keys (Refpkg.get_mrcam rp) in
-  let code = match Model.seq_type (Refpkg.get_model rp) with
-  | Alignment.Nucleotide_seq -> Nuc_models.nuc_code
-  | Alignment.Protein_seq -> Prot_models.prot_code
-  in
-  let get_symbol i =
-    try code.(i) with | Invalid_argument _ -> assert(false)
-  in
-  let to_sym_str ind_arr =
-    StringFuns.of_char_array (Array.map get_symbol ind_arr)
-  in
+  and mrcal = IntMap.keys (Refpkg.get_mrcam rp)
+  and code = Model.code (Refpkg.get_model rp) in
   let tax_info_of_id id = extract_tax_info (Gtree.get_bark t id)#get_decor in
   let taxid_of_id id = match fst (tax_info_of_id id) with
     | Tax_id.TaxStr s -> s
@@ -36,7 +27,7 @@ let write_picks ~darr ~parr rp =
   in
   let distal_str_map =
     IntMap.map
-      (fun (at_d, _) -> (to_sym_str at_d))
+      (fun (at_d, _) -> (Model.to_sym_str code at_d))
       (Mutpick.pickpair_map Gsl_vector.max_index (-1) model t ~darr ~parr mrcal)
   in
   let ch_picks = open_out (name^".picks") in
