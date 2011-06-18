@@ -96,13 +96,14 @@ object (self)
         ([], None)
         pre_pairs
       in
+      let fname = self#single_file () in
       let trees = self#to_fat_tree
         (snd (self#get_rpo_and_tree (List.hd prl)))
-        "averaged"
+        (Base.safe_chop_suffix fname ".xml")
         pair
       in
       Phyloxml.named_gtrees_to_file
-        (self#single_file ())
+        fname
         trees
 
     end else begin
