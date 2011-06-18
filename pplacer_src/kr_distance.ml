@@ -112,11 +112,15 @@ let total_over_tree curried_edge_total
 
 (* combine two float list IntMaps into a single float 2-array list IntMap.
  * The latter is the input for the KR distance function. *)
+module I = Mass_map.Indiv
 let make_kr_map m1 m2 =
   let process_map f =
-    IntMap.map (List.map (fun (dist_bl, mass) -> (dist_bl, f mass)))
+    IntMap.map
+      (List.map
+         (fun {I.distal_bl = dist_bl; I.mass = mass} -> (dist_bl, f mass)))
   in
-  Mass_map.Indiv.sort
+  IntMap.map
+    (List.sort compare)
     (Base.combine_list_intmaps
     [
       process_map (fun mass -> [|mass; 0.|]) m1;
