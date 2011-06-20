@@ -32,7 +32,11 @@ let of_map u1 u2 model t ~darr ~parr m cutoff =
            ~darr ~parr id))
     m
 
-(* habnabit: one sentence description needed here. Given xx and yy, ... *)
+(* Given a map of tree locations to a list of something, the MRCA map of the
+ * tree, and the tree itself, build map of MRCA locations to the combined list
+ * of things below that MRCA.
+ * 'a list IntMap.t -> 'b IntMap.t -> stree -> 'a list IntMap.t
+ *)
 let mrca_map_seq_map locmap mrcam tree =
   let rec aux accum = function
     | [] -> accum
