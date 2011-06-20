@@ -3,6 +3,8 @@ open Test_util
 open Voronoi
 open MapsSets
 
+module I = Mass_map.Indiv
+
 let test_suite_of_gtree_and_expected (gt_string, distr) =
   let gt = Newick_gtree.of_string gt_string in
   let v = of_gtree gt in
@@ -96,15 +98,19 @@ let suite = [
   "test_mass_distribution" >:: begin fun () ->
     assert_raises
       Not_found
-      (fun () -> distribute_mass test_v (IntMap.singleton 4 [0.5, 0.0]));
+      (fun () -> distribute_mass
+        test_v
+        (IntMap.singleton 4 [{I.distal_bl = 0.5; I.mass = 0.0}]));
     let got_massdist = distribute_mass
       test_v
-      (IntMap.of_pairlist [
-        3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
-        5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
-        4, [0.0, 8.0; 0.05, 9.0];
-        2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
-      ])
+      (IntMap.map
+         (List.map I.of_pair)
+         (IntMap.of_pairlist [
+           3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
+           5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
+           4, [0.0, 8.0; 0.05, 9.0];
+           2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
+         ]))
     in
     List.iter
       (fun (leaf, masslist) ->

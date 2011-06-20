@@ -5,6 +5,8 @@ open Fam_batteries
 
 let flip f x y = f y x
 
+module I = Mass_map.Indiv
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -81,7 +83,8 @@ object (self)
           IntSet.fold
             (flip
               IntMap.add_listly
-              (0.0, leaf_mass_fract /. (float_of_int n_leaves)))
+              {I.distal_bl = 0.0;
+               I.mass = leaf_mass_fract /. (float_of_int n_leaves)})
             graph.Voronoi.all_leaves
             mass
       in
