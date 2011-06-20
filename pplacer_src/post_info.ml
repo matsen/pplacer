@@ -1,3 +1,9 @@
+(* Code for calculating information concerning posterior probability of bases at
+ * internal positions of the tree.
+ *
+ * This code is a bit rugged at the moment-- still figuring out exactly what we
+ * want here. It may well disappear in the future.
+ *)
 open Fam_batteries
 open MapsSets
 
@@ -13,7 +19,21 @@ let extract_tax_info decor =
   | [Decor.Taxinfo (tid,n)] -> (tid,n)
   | _ -> assert(false)
 
-let write_picks ~darr ~parr rp =
+(* make a map from a list of edge ids to the most likely vectors on either side
+ * of the edge: order is (distal, proximal) *)
+let pickpair_map summarize_f initial model t ~darr ~parr ids =
+  let u1 = Glv.mimic (Glv_arr.get_one darr)
+  and u2 = Glv.mimic (Glv_arr.get_one darr) in
+  List.fold_right
+    (fun id ->
+      IntMap.add
+        id
+        (Seq_post.get_summary Seq_post.Distal summarize_f initial u1 u2 model t ~darr ~parr id,
+         Seq_post.get_summary Seq_post.Proximal summarize_f initial u1 u2 model t ~darr ~parr id))
+    ids
+    IntMap.empty
+
+let write_map_info ~darr ~parr rp =
   let t = Refpkg.get_tax_ref_tree rp
   and name = Refpkg.get_name rp
   and model = Refpkg.get_model rp
@@ -28,7 +48,7 @@ let write_picks ~darr ~parr rp =
   let distal_str_map =
     IntMap.map
       (fun (at_d, _) -> (Model.to_sym_str code at_d))
-      (Mutpick.pickpair_map Gsl_vector.max_index (-1) model t ~darr ~parr mrcal)
+      (pickpair_map Gsl_vector.max_index (-1) model t ~darr ~parr mrcal)
   in
   let ch_picks = open_out (name^".picks") in
   let max_rat v = (Gsl_vector.max v) /. (Linear_utils.l1_norm v) in
@@ -49,7 +69,7 @@ let write_picks ~darr ~parr rp =
       output_char ch_picks '\n';
       output_char ch_likes '\n';
       )
-    (Mutpick.pickpair_map max_rat 0. model t ~darr ~parr mrcal);
+    (pickpair_map max_rat 0. model t ~darr ~parr mrcal);
   close_out ch_likes;
   close_out ch_picks;
 

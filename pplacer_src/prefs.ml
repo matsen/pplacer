@@ -34,7 +34,6 @@ type prefs =
     only_write_best : bool ref;
     (* other *)
     pretend : bool ref;
-    diagnostic : bool ref;
     check_like : bool ref;
     children : int ref;
     version : bool ref;
@@ -43,6 +42,7 @@ type prefs =
     pre_masked_file : string ref;
     map_fasta : string ref;
     map_cutoff : float ref;
+    map_info : bool ref;
   }
 
 
@@ -80,7 +80,6 @@ let defaults () =
     only_write_best = ref false;
     (* other *)
     pretend = ref false;
-    diagnostic = ref false;
     check_like = ref false;
     children = ref 2;
     version = ref false;
@@ -89,6 +88,7 @@ let defaults () =
     pre_masked_file = ref "";
     map_fasta = ref "";
     map_cutoff = ref 0.8;
+    map_info = ref false;
   }
 
 
@@ -125,7 +125,6 @@ let only_write_best   p = !(p.only_write_best)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
 let pretend           p = !(p.pretend)
-let diagnostic        p = !(p.diagnostic)
 let check_like        p = !(p.check_like)
 let children          p = !(p.children)
 let version           p = !(p.version)
@@ -134,6 +133,7 @@ let no_pre_mask       p = !(p.no_pre_mask)
 let pre_masked_file   p = !(p.pre_masked_file)
 let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
+let map_info          p = !(p.map_info)
 
 
 (* arguments and preferences *)
@@ -196,8 +196,6 @@ spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
 "Specify the directory to write place files to.";
 "--pretend", Arg.Set prefs.pretend,
 "Only check out the files then report. Do not run the analysis.";
-"--diagnostic", Arg.Set prefs.diagnostic,
-"Write file describing the 'diagnostic' mutations for various clades.";
 "--check-like", Arg.Set prefs.check_like,
 "Write out the likelihood of the reference tree, calculated two ways.";
 spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
@@ -210,8 +208,10 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "Write out the pre-masked sequences to the specified fasta file and exit.";
 "--map-mrca", Arg.Set_string prefs.map_fasta,
 "Specify a file to write out MAP sequences for MRCAs and corresponding placements.";
-"--map-mrca-min", Arg.Set_float prefs.map_cutoff,
-"Specify cutoff for inclusion in MAP sequence file.";
+spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
+"Specify cutoff for inclusion in MAP sequence file. Default is %g.";
+"--map-info", Arg.Set prefs.map_info,
+"Write file describing the 'diagnostic' mutations for various clades.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

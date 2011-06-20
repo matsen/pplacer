@@ -1,3 +1,6 @@
+(* Functions for summarizing the site-wise posterior probability of base pairs
+ * at given sites for internal positions on the tree.
+ * *)
 open MapsSets
 
 (* pick the ML state by taking the sum across rates for each state and site *)
@@ -41,17 +44,3 @@ let get_summary pos summarize_f initial u1 u2 model t ~darr ~parr id =
   in
   get_posterior ~dst:u1 u2 model t ~atarr ~neigharr id;
   summarize_post summarize_f initial u1
-
-(* make a map from a list of edge ids to the most likely vectors on either side
- * of the edge: order is (distal, proximal) *)
-let pickpair_map summarize_f initial model t ~darr ~parr ids =
-  let u1 = Glv.mimic (Glv_arr.get_one darr)
-  and u2 = Glv.mimic (Glv_arr.get_one darr) in
-  List.fold_right
-    (fun id ->
-      IntMap.add
-        id
-        (get_summary Distal summarize_f initial u1 u2 model t ~darr ~parr id,
-         get_summary Proximal summarize_f initial u1 u2 model t ~darr ~parr id))
-    ids
-    IntMap.empty

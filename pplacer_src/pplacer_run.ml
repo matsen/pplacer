@@ -364,10 +364,12 @@ let run_file prefs query_fname =
     done
   end;
 
-  (* *** write out diagnostic mutations *** *)
-  if Prefs.diagnostic prefs then begin
-    (* note-- will fail if no tax info... *)
-    Taxpick.write_picks ~darr ~parr rp
+  (* *** write out posterior probability info at internal nodes *** *)
+  if Prefs.map_info prefs then begin
+    if not (Refpkg.tax_equipped rp) then begin
+      failwith ("--map-info requires taxonomic information in ref pkg");
+    end;
+    Post_info.write_map_info ~darr ~parr rp
   end;
 
   (* *** analyze query sequences *** *)
@@ -449,7 +451,7 @@ let run_file prefs query_fname =
         let ref_tree = Refpkg.get_ref_tree rp
         and mrcam = Refpkg.get_mrcam rp
         and td = Refpkg.get_taxonomy rp in
-        let seq_map = Map_seq.mrca_seq_map
+        let seq_map = Map_seq.mrca_map_seq_map
           (!result_map)
           mrcam
           (ref_tree.Gtree.stree)
