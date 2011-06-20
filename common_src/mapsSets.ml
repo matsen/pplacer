@@ -32,6 +32,7 @@ end
 module type M =
 sig
   include Map.S
+  val get: key -> 'a -> 'a t -> 'a
   val opt_add: key -> 'a option -> 'a t -> 'a t
   val opt_find: key -> 'a t -> 'a option
   val check_add: key -> 'a -> 'a t -> 'a t
@@ -56,6 +57,12 @@ end
 module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type key = OM.key) =
   struct
     include OM
+
+    let get k default map =
+      try
+        find k map
+      with
+        | Not_found -> default
 
     let opt_add k optX map =
       match optX with

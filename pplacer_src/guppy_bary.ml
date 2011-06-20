@@ -17,7 +17,7 @@ let make_bary_tree transform t prel =
             Gtree.Internal_node,
             (fun bl ->
               new Decor_bark.decor_bark
-                (`Of_bl_name_boot_dlist
+                (`Of_bl_name_boot_decor
                    (Some bl, None, None, [Decor.dot i]))))))
         prel)
   in

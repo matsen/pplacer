@@ -245,6 +245,7 @@ let run_file prefs query_fname =
   in
 
   (* *** deduplicate sequences *** *)
+  (* seq_tbl maps from sequence to the names that correspond to that seq. *)
   let seq_tbl = Hashtbl.create 1024 in
   List.iter
     (fun (name, seq) -> Hashtbl.replace
@@ -256,7 +257,9 @@ let run_file prefs query_fname =
          with
            | Not_found -> []))
     query_list;
+  (* redup_tbl maps from the first entry of namel to the rest of the namel. *)
   let redup_tbl = Hashtbl.create 1024 in
+  (* query_list is now deduped. *)
   let query_list = Hashtbl.fold
     (fun seq namel accum ->
       let hd = List.hd namel in
@@ -361,6 +364,14 @@ let run_file prefs query_fname =
     done
   end;
 
+  (* *** write out posterior probability info at internal nodes *** *)
+  if Prefs.map_info prefs then begin
+    if not (Refpkg.tax_equipped rp) then begin
+      failwith ("--map-info requires taxonomic information in ref pkg");
+    end;
+    Post_info.write_map_info ~darr ~parr rp
+  end;
+
   (* *** analyze query sequences *** *)
   let query_bname =
     Filename.basename (Filename.chop_extension query_fname) in
@@ -427,9 +438,60 @@ let run_file prefs query_fname =
 
   end else begin
     (* not fantasy baseball *)
+    let map_fasta_file = Prefs.map_fasta prefs in
+    let pquery_gotfunc, pquery_donefunc = if map_fasta_file <> "" then begin
+      let result_map = ref IntMap.empty in
+      let gotfunc pq =
+        let best_placement = Pquery.best_place Placement.ml_ratio pq in
+        result_map := IntMap.add_listly
+          (Placement.location best_placement)
+          ((List.hd (Pquery.namel pq)), (Pquery.seq pq))
+          (!result_map)
+      and donefunc () =
+        let ref_tree = Refpkg.get_ref_tree rp
+        and mrcam = Refpkg.get_mrcam rp
+        and td = Refpkg.get_taxonomy rp in
+        let seq_map = Map_seq.mrca_map_seq_map
+          (!result_map)
+          mrcam
+          (ref_tree.Gtree.stree)
+        and map_map = Map_seq.of_map
+          snodes.(0)
+          snodes.(1)
+          (Refpkg.get_model rp)
+          ref_tree
+          ~darr
+          ~parr
+          mrcam
+          (Prefs.map_cutoff prefs)
+        and space = Str.regexp " " in
+        let map_fasta = IntMap.fold
+          (fun i mrca accum ->
+            if not (IntMap.mem i seq_map) then accum else
+              let tax_name = Tax_taxonomy.get_tax_name td mrca in
+              List.rev_append
+                (IntMap.find i seq_map)
+                (((Printf.sprintf "%d_%s"
+                     i
+                     (Str.global_replace space "_" tax_name)),
+                  IntMap.find i map_map)
+                 :: accum))
+          mrcam
+          []
+        in
+        Alignment.to_fasta
+          (Array.of_list (List.rev map_fasta))
+          map_fasta_file
+      in
+      gotfunc, donefunc
+
+    end else (fun _ -> ()), (fun () -> ())
+    in
+
     let queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest ->
+        pquery_gotfunc pq;
         queries := pq :: (!queries);
         gotfunc rest
       | Core.Timing (name, value) :: rest ->
@@ -439,6 +501,7 @@ let run_file prefs query_fname =
       | _ -> failwith "expected pquery result"
     and cachefunc _ = false
     and donefunc () =
+      pquery_donefunc ();
       let pr =
         Placerun.redup
           redup_tbl
