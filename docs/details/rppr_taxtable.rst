@@ -14,7 +14,7 @@ In addition to the tables above, a view is also created:
   classification is the classification with the most specific rank and highest
   likelihood, where ``rank = desired_rank``.
 
-See the `microbiome demo`_ for some examples of using ``guppy taxtable`` and
+See the `microbiome demo`_ for some examples of using ``rppr taxtable`` and
 ``guppy classify`` together.
 
 Example tables
