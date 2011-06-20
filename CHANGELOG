@@ -1,3 +1,9 @@
+1.1.alpha09
+===========
+
+ * Closed GH-78: Added an --average flag to `guppy fat`.
+
+
 1.1.alpha08
 ===========
 
@@ -16,6 +22,8 @@
  * Closed GH-69: Changed `guppy tog` to use polytomy instead of a _ delimiter
    joining sequence names.
  * Closed GH-70: Added documentation for how to compile pplacer.
+ * Closed GH-73: Added a pre-masking feature to cut out irrelevant columns of
+   the alignment.
  * Closed GH-74: Improved how pplacer dedupes sequences before a placerun.
  * Added a script to sort placefiles for easier visual diffs.
  * Added more informative error messages when the length of the query alignment
