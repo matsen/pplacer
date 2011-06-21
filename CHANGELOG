@@ -1,6 +1,7 @@
 1.1.alpha09
 ===========
 
+ * Closed GH-75: Changed mass maps to use records types instead of tuples.
  * Closed GH-78: Added an --average flag to `guppy fat`.
  * Closed GH-82: Merged the `pick` branch into dev.
 

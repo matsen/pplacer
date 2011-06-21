@@ -55,7 +55,7 @@ let collect_distal_ids stree wanted =
   in
   aux stree
 
-(* 
+(*
  * This time, collect the proximal ids.
  * We go down the tree, and stop until we hit wanted.
  * Note: returns all of the ids in the tree if the id is not in the tree.
@@ -77,6 +77,7 @@ type action = Continue | Stop
  * Not especially optimized, as it makes submaps for each work calculation.
  * Pos is the position along the edge, which is a distal_bl.
  *)
+module I = Mass_map.Indiv
 let find ref_tree mass_m =
   let smass = Indiv.sort mass_m in
   (* The work to move the mass in sub_mass to a point mass on edge id at the
@@ -84,7 +85,7 @@ let find ref_tree mass_m =
   let work sub_mass id pos =
     Kr_distance.dist ref_tree 1.
       sub_mass
-      (singleton_map id [pos, Indiv.total_mass sub_mass])
+      (singleton_map id [{I.distal_bl = pos; I.mass = I.total_mass sub_mass}])
   in
   (* The amount of work required to move all of the mass on the chosen side, as
    * well as the edge_mass, to pos on id. The chosen side is determined by
@@ -93,7 +94,7 @@ let find ref_tree mass_m =
    * of the chosen point. *)
   let tree_work collect_fun edge_mass id pos =
     let sub_mass =
-      IntMap.add id edge_mass 
+      IntMap.add id edge_mass
           (submap smass (collect_fun (Gtree.get_stree ref_tree) id))
     in
     work sub_mass id pos
@@ -102,10 +103,10 @@ let find ref_tree mass_m =
    * prox_ml is extra mass that is thought of as living on the proximal side of
    * the edge, i.e. the edge_mass as described above. *)
   let proximal_work prox_ml id pos =
-    List.iter (fun (m_pos,_) -> assert(m_pos >= pos)) prox_ml;
+    List.iter (fun {I.distal_bl = m_pos} -> assert(m_pos >= pos)) prox_ml;
     tree_work collect_proximal_ids prox_ml id pos
   and distal_work dist_ml id pos =
-    List.iter (fun (m_pos,_) -> assert(m_pos <= pos)) dist_ml;
+    List.iter (fun {I.distal_bl = m_pos} -> assert(m_pos <= pos)) dist_ml;
     tree_work collect_distal_ids dist_ml id pos
   in
   (* The difference between the proximal and distal work. *)
@@ -165,13 +166,13 @@ let find ref_tree mass_m =
       match prox_ml with
       | [] -> (* at the top of the edge *)
           bary ~above_pos:bl (our_delta bl)
-      | (pos, mass)::rest -> begin
+      | {I.distal_bl = pos} as v :: rest -> begin
         (* pos is now the next position up *)
         let da = our_delta pos in
         if da > 0. then
           (* we can do better by moving past this placement *)
           aux
-            ~dist_ml:((pos,mass)::dist_ml)
+            ~dist_ml:(v::dist_ml)
             ~prox_ml:rest
             pos
         else

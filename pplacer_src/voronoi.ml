@@ -228,13 +228,14 @@ let matching_snip snips pos =
     (fun {start = st; finish = en} -> st >= pos && pos >= en)
     snips
 
+module I = Mass_map.Indiv
 let distribute_mass v mass =
   let snipdist = get_snipdist v in
   IntMap.fold
     (fun n massl accum ->
       let snips = IntMap.find n snipdist in
       List.fold_left
-        (fun accum (pos, mass) ->
+        (fun accum {I.distal_bl = pos; I.mass = mass} ->
           let {assoc_leaf = leaf} = matching_snip snips pos in
           IntMap.add_listly leaf mass accum)
         accum
