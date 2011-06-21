@@ -18,8 +18,8 @@ object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
 
-  val discord_file = flag "-d"
-    (Needs_argument ("discordance file", "If specified, the path to write the discordance tree to."))
+  val discord_file = flag "-t"
+    (Needs_argument ("discordance tree file", "If specified, the path to write the discordance tree to."))
   val cut_seqs_file = flag "--cut-seqs"
     (Needs_argument ("cut sequences file", "If specified, the path to write a CSV file of cut sequences per-rank to."))
   val badness_cutoff = flag "--cutoff"
