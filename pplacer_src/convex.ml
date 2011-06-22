@@ -511,3 +511,92 @@ let rank_color_map_of_refpkg rp =
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
     IntMap.empty
+
+let add_color_setly k v m =
+  IntMap.add k (ColorSet.add v (IntMap.get k ColorSet.empty m)) m
+
+let merge_color_setly m1 m2 =
+  IntMap.fold
+    (fun k v m ->
+      IntMap.add k (ColorSet.union v (IntMap.get k ColorSet.empty m)) m)
+    m1
+    m2
+
+let alternate_colors ((colors, tree) as cdtree) =
+  let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+  let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
+  let uncolored_nodes = IntMap.fold
+    (fun i cutset accum ->
+      if ColorSet.is_empty cutset then IntSet.add i accum else accum)
+    cutsetim
+    IntSet.empty
+  in
+  let rec aux accum = function
+    | (_, Leaf _) :: rest -> aux accum rest
+    | (prev_color, Node (i, subtrees)) :: rest ->
+      let cutset = IntMap.find i cutsetim in
+      assert (ColorSet.cardinal cutset <= 1);
+      let next_color =
+        if ColorSet.is_empty cutset then prev_color
+        else Some (ColorSet.choose cutset)
+      in
+      let accum' = match prev_color with
+        | Some color when ColorSet.is_empty cutset ->
+          add_color_setly i color accum
+        | _ -> accum
+      and rest' = List.fold_left
+        (fun accum tree -> (next_color, tree) :: accum)
+        rest
+        subtrees
+      in
+      aux accum' rest'
+    | [] -> accum
+  in
+  let pre_possibilities = aux IntMap.empty [None, tree] in
+  let rec aux accum = function
+    | Leaf i -> accum,
+      (try
+         ColorSet.singleton (IntMap.find i colors)
+       with Not_found -> ColorSet.empty)
+    | Node (i, subtrees) ->
+      let accums, below_colors = List.split (List.map (aux accum) subtrees) in
+      let accum' = List.fold_left merge_color_setly accum accums in
+      let cutset = IntMap.find i cutsetim in
+      if not (ColorSet.is_empty cutset) then
+        accum', cutset
+      else
+        List.fold_left
+          (fun (map, accum_colors) colors ->
+            merge_color_setly
+              (IntMap.singleton i colors)
+              map,
+            ColorSet.union colors accum_colors)
+          (accum', ColorSet.empty)
+          below_colors
+  in
+  let possibilities, _ = aux pre_possibilities tree in
+  let rec aux accum = function
+    | (prev_colors, Leaf i) :: rest ->
+      let accum' =
+        if not (IntMap.mem i colors) then
+          IntMap.add i prev_colors accum
+        else
+          accum
+      in
+      aux accum' rest
+    | (prev_colors, Node (i, subtrees)) :: rest ->
+      let next_colors =
+        if IntMap.mem i possibilities then
+          ColorSet.union (IntMap.find i possibilities) prev_colors
+        else
+          ColorSet.empty
+      in
+      let rest' = List.fold_left
+        (fun accum tree -> (next_colors, tree) :: accum)
+        rest
+        subtrees
+      in
+      aux accum rest'
+    | [] -> accum
+  in
+  aux IntMap.empty [ColorSet.empty, tree]
