@@ -197,8 +197,9 @@ module BetterSet (OS: Set.S) (PBLE: PPRABLE with type t = OS.elt) : (S with type
           ) ff (elements s);
           Format.fprintf ff "}@]"
 
-    (* These sampling procedures take a set and a k, then return a list of k
-     * elements that are the sample from s. *)
+    (* These sampling procedures take a set and a k, then return a set of at
+     * most k elements in the sample from s. (At most when the sampling
+     * procedure returns some identical elements.) *)
 
     (* sample_func takes an n (number of elts) and a k (number to sample), then
      * returns a list of indices to be included. *)
