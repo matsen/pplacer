@@ -1,3 +1,39 @@
+1.1.alpha09
+===========
+
+ * Closed GH-75: Changed mass maps to use records types instead of tuples.
+ * Closed GH-78: Added an --average flag to `guppy fat`.
+ * Closed GH-82: Merged the `pick` branch into dev.
+
+
+1.1.alpha08
+===========
+
+ * Closed GH-46: Added a --timing flag to pplacer to show where time was spent
+   during placements.
+ * Closed GH-47: Added unit tests for gaussian kr distance.
+ * Closed GH-49: Added a more informative error message to pplacer if reference
+   sequences occur multiple times in a query file.
+ * Closed GH-52: Fixed padding in `guppy squash`.
+ * Closed GH-58: Improved navigation for the documentation on guppy commands.
+ * Closed GH-59: Improved documentation for guppy commands using sqlite.
+ * Closed GH-60: Improved documentation for `guppy classify`.
+ * Closed GH-65: Released alpha08.
+ * Closed GH-66: Added a FAQ to the documentation.
+ * Closed GH-68: Changed `guppy info` to show multiplicity.
+ * Closed GH-69: Changed `guppy tog` to use polytomy instead of a _ delimiter
+   joining sequence names.
+ * Closed GH-70: Added documentation for how to compile pplacer.
+ * Closed GH-73: Added a pre-masking feature to cut out irrelevant columns of
+   the alignment.
+ * Closed GH-74: Improved how pplacer dedupes sequences before a placerun.
+ * Added a script to sort placefiles for easier visual diffs.
+ * Added more informative error messages when the length of the query alignment
+   and reference alignment don't match.
+ * `guppy edpl` now calculates the EDPL (expected distance between placement
+   locations) for placements
+
+
 1.1.alpha07
 ===========
 

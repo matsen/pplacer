@@ -106,3 +106,16 @@ let of_json json_fname ref_align =
 (* prepare the tensor for a certain branch length *)
 let prep_tensor_for_bl model bl =
   Diagd.multi_exp model.tensor model.diagdq model.rates bl
+
+let get_symbol code = function
+  | -1 -> '-'
+  | i -> try code.(i) with | Invalid_argument _ -> assert(false)
+
+let to_sym_str code ind_arr =
+  StringFuns.of_char_array (Array.map (get_symbol code) ind_arr)
+
+let code model =
+  match seq_type model with
+    | Alignment.Nucleotide_seq -> Nuc_models.nuc_code
+    | Alignment.Protein_seq -> Prot_models.prot_code
+

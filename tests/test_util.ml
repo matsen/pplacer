@@ -51,7 +51,7 @@ let placerun_equal pr1 pr2 =
 
 (* *** approximate equalities *** *)
 
-let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
+let approx_equal = Fam_batteries.approx_equal
 
 let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
   let dim = Gsl_vector.length v1 in
@@ -126,7 +126,7 @@ let ( =@ ) = farr_approx_equal
 let ( =@@ ) = farrarr_approx_equal
 
 
-(* *** random matrices *** *)
+(* *** random stuff *** *)
 
 let rand_symmetric n =
   let m = Gsl_matrix.create n n in
@@ -137,3 +137,9 @@ let rand_symmetric n =
     done;
   done;
   m;;
+
+let make_rng seed =
+  let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
+  Gsl_rng.set rng (Nativeint.of_int seed);
+  rng
+

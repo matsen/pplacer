@@ -83,7 +83,13 @@ let cmd_map_of_list l =
     List.map
       (fun (name, l) ->
         longest := max (String.length name) !longest;
-        name, List.fold_right (fun (k, v) -> StringMap.add k v) l StringMap.empty)
+        name,
+        List.fold_right
+          (fun (k, v) ->
+            longest := max (String.length k) !longest;
+            StringMap.add k v)
+          l
+          StringMap.empty)
       l
   in
   (display_map, !longest),

@@ -1,6 +1,6 @@
 
-Documentation for pplacer and guppy
-===================================
+Pplacer documentation home
+==========================
 
 The pplacer suite consists of two separate binaries: pplacer and guppy.
 The pplacer binary actually does phylogenetic placement and produces place files, while guppy does all of the downstream analysis.
@@ -10,7 +10,21 @@ Guppy can do many different things via its subcommand interface, from compressin
    :maxdepth: 2
 
    generated_rst/pplacer
-   guppy
+   generated_rst/guppy
+
+
+Getting help
+------------
+
+Your question might be covered in the pplacer FAQ already:
+
+.. toctree::
+   :maxdepth: 2
+
+   faq
+
+Otherwise, support for pplacer happens through the `user group`_.
+If something is unclear in the manual and you can't find anything in past discussions, post to the group and we will get back to you right away.
 
 
 Acknowledgements
@@ -26,10 +40,4 @@ and
 Sujatha Srivnasan
 for their suggestions.
 
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
-
+.. _user group: http://groups.google.com/group/pplacer-users

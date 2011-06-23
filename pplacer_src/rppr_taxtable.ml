@@ -53,6 +53,17 @@ object (self)
       );
       CREATE INDEX placement_classifications_id ON placement_classifications (placement_id);
 
+      CREATE TABLE IF NOT EXISTS placement_positions (
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
+        location INTEGER NOT NULL,
+        ml_ratio REAL NOT NULL,
+        log_like REAL NOT NULL,
+        distal_bl REAL NOT NULL,
+        pendant_bl REAL NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL
+      );
+      CREATE INDEX placement_positions_id ON placement_classifications (placement_id);
+
       CREATE VIEW best_classifications
       AS
         SELECT placement_id,

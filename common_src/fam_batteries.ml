@@ -8,6 +8,8 @@ MatrixFuns
 StringFuns
 *)
 
+(* FloatFuns? *)
+let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
 (* *********** ArrayFuns *********** *)
 module ArrayFuns = struct

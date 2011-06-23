@@ -4,7 +4,6 @@ let command_list () =
     "visualization", [
       "fat", (fun () -> new Guppy_fat.cmd ());
       "heat", (fun () -> new Guppy_heat.cmd ());
-      "ref_tree", (fun () -> new Guppy_ref_tree.cmd ());
       "sing", (fun () -> new Guppy_sing.cmd ());
       "tog", (fun () -> new Guppy_tog.cmd ());
     ];
@@ -17,10 +16,7 @@ let command_list () =
       "kr", (fun () -> new Guppy_kr.cmd ());
       "pca", (fun () -> new Guppy_pca.cmd ());
       "splitify", (fun () -> new Guppy_splitify.cmd ());
-      (* untested so invisible
-      "bavgdist", (fun () -> new Guppy_avgdist.bavgdist_cmd ());
-      "uavgdist", (fun () -> new Guppy_avgdist.uavgdist_cmd ());
-      *)
+      "edpl", (fun () -> new Guppy_edpl.cmd ());
     ];
 
     "classification", [
@@ -31,13 +27,12 @@ let command_list () =
       "round", (fun () -> new Guppy_round.cmd ());
       "demulti", (fun () -> new Guppy_demulti.cmd ());
       "to_json", (fun () -> new Guppy_to_json.cmd ());
-      "taxtable", (fun () -> new Guppy_taxtable.cmd ());
-      "check_refpkg", (fun () -> new Guppy_check_refpkg.cmd ());
       "distmat", (fun () -> new Guppy_distmat.cmd ());
       "merge", (fun () -> new Guppy_merge.cmd ());
       "filter", (fun () -> new Guppy_filter.cmd ());
       "info", (fun () -> new Guppy_info.cmd ());
       "redup", (fun () -> new Guppy_redup.cmd ());
+      "diplac", (fun () -> new Guppy_diplac.cmd ());
     ];
 
     "commiesim", [

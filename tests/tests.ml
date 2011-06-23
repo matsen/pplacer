@@ -3,6 +3,7 @@ open OUnit
 let suite = "all tests" >::: [
   "guppy" >::: Test_all_guppy.suite;
   "pplacer" >::: Test_all_pplacer.suite;
+  "rppr" >::: Test_all_rppr.suite;
   "json" >::: Test_json.suite;
 ]
 
