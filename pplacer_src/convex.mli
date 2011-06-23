@@ -6,6 +6,7 @@ module ColorSet: MapsSets.S with type elt = color
 module ColorMap: MapsSets.M with type key = color
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
+val ppr_csetim: Format.formatter -> cset IntMap.t -> unit
 
 type question = color option * cset (* a pair (c, X) *)
 module QuestionMap: MapsSets.M with type key = question

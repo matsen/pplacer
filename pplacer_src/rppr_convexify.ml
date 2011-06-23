@@ -19,15 +19,18 @@ object (self)
   inherit refpkg_cmd ~required:true as super_refpkg
 
   val discord_file = flag "-d"
-    (Needs_argument ("discordance file", "If specified, the path to write the discordance tree to."))
+    (Needs_argument ("", "If specified, the path to write the discordance tree to."))
   val cut_seqs_file = flag "--cut-seqs"
-    (Needs_argument ("cut sequences file", "If specified, the path to write a CSV file of cut sequences per-rank to."))
+    (Needs_argument ("", "If specified, the path to write a CSV file of cut sequences per-rank to."))
+  val alternates_file = flag "--alternates"
+    (Needs_argument ("", "If specified, the path to write a CSV file of alternate colors per-sequence to."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
 
   method specl = [
     string_flag discord_file;
     string_flag cut_seqs_file;
+    string_flag alternates_file;
     int_flag badness_cutoff;
   ] @ super_refpkg#specl
 
@@ -44,8 +47,8 @@ object (self)
     and taxtree = Refpkg.get_tax_ref_tree rp in
     let leaves = leafset st in
     Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
-    let discordance, cut_sequences = IntMap.fold
-      (fun rank colormap ((discord, cut_seqs) as accum) ->
+    let discordance, cut_sequences, alternates = IntMap.fold
+      (fun rank colormap ((discord, cut_seqs, alternates) as accum) ->
         let rankname = Tax_taxonomy.get_rank_name td rank in
         Printf.printf "solving %s" rankname;
         print_newline ();
@@ -68,14 +71,28 @@ object (self)
           let not_cut = nodeset_of_phi_and_tree phi st in
           let cut_leaves = IntSet.diff leaves not_cut in
           let gt' = Decor_gtree.color_clades_above cut_leaves taxtree in
+          let colormap' = IntMap.filter
+            (fun k _ -> IntSet.mem k not_cut)
+            colormap
+          in
+          let rank_alternates = alternate_colors (colormap', st) in
           (Some rankname, gt') :: discord,
           IntSet.fold
             (fun i accum -> [rankname; Gtree.get_name gt i] :: accum)
             cut_leaves
-            cut_seqs
+            cut_seqs,
+          IntSet.fold
+            (fun i accum ->
+              ColorSet.fold
+                (fun color accum ->
+                  [rankname; Gtree.get_name gt i; color] :: accum)
+                (IntMap.find i rank_alternates)
+                accum)
+            cut_leaves
+            alternates
         end)
       (rank_color_map_of_refpkg rp)
-      ([], [])
+      ([], [], [])
     in
     begin match fvo discord_file with
       | Some path -> Phyloxml.named_gtrees_to_file path discordance
@@ -83,6 +100,10 @@ object (self)
     end;
     begin match fvo cut_seqs_file with
       | Some path -> Csv.save path cut_sequences
+      | None -> ()
+    end;
+    begin match fvo alternates_file with
+      | Some path -> Csv.save path alternates
       | None -> ()
     end
 
