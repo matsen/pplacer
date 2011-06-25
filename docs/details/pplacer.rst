@@ -176,13 +176,19 @@ Key   Value
 ``p`` An array of arrays containing placement data in the same order as ``fields``.
 ===== =====
 
-An example JSON document follows::
+An example JSON document follows, with the first placement showing uncertainty
+in location, and the second showing two reads that had identical placements::
 
     {
       "tree": "((A:2[0],B:9[1]):7[2],C:5[3],D:1[4]):0[5];",
       "placements": [
-        {"p": [[0, -1309.830000, 1.000000, 1.000000, 10.000000]], "n": ["one_x"]},
-        {"p": [[1, -1309.830000, 1.000000, 2.000000, 10.000000]], "n": ["one_y"]}
+        {"p":
+          [[0, -1091.576026, 0.762438, 0.000008, 0.019642],
+            [1, -10982.742117, 0.237562, 0.000008, 0.019579]
+          ], "n": ["GLKT0ZE01CQ1P1"]
+        },
+        {"p": [[2, -1061.467623, 1.0, 0.003555, 0.000006]],
+         "n": ["GLKT0ZE01C36CH", "GLKT0ZE01A0IBO"]}
       ],
       "metadata": {"invocation": "guppy to_json"},
       "version": 1,
