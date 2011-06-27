@@ -87,21 +87,22 @@ object (self)
           let rank_alternates = alternate_colors (colormap', st) in
           (Some rankname, gt') :: discord,
           IntSet.fold
-            (fun i accum -> [rankname; Gtree.get_name gt i] :: accum)
+            (fun i accum ->
+              let seqname = Gtree.get_name gt i in
+              let ti = IntMap.find i taxmap in
+              [rankname;
+               seqname;
+               Tax_id.to_string ti;
+               Tax_taxonomy.get_tax_name td ti;
+               string_of_int (Tax_id.TaxIdMap.find ti taxcounts)]
+              :: accum)
             cut_leaves
             cut_seqs,
           IntSet.fold
             (fun i accum ->
               let seqname = Gtree.get_name gt i in
-              let ti = IntMap.find i taxmap in
               ColorSet.fold
-                (fun color accum ->
-                  [rankname;
-                   seqname;
-                   Tax_id.to_string ti;
-                   Tax_taxonomy.get_tax_name td ti;
-                   string_of_int (Tax_id.TaxIdMap.find ti taxcounts);
-                   color] :: accum)
+                (fun color accum -> [rankname; seqname; color] :: accum)
                 (IntMap.find i rank_alternates)
                 accum)
             cut_leaves
