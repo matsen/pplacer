@@ -110,6 +110,6 @@ val solve: cdtree -> phi * int
 val badness: cset IntMap.t -> int * int
 val nodeset_of_phi_and_tree: phi -> stree -> IntSet.t
 val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
-val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
+val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
 
 val alternate_colors: cdtree -> cset IntMap.t

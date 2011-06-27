@@ -48,7 +48,16 @@ object (self)
     let leaves = leafset st in
     Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let discordance, cut_sequences, alternates = IntMap.fold
-      (fun rank colormap ((discord, cut_seqs, alternates) as accum) ->
+      (fun rank taxmap ((discord, cut_seqs, alternates) as accum) ->
+        let taxcounts = IntMap.fold
+          (fun _ ti accum ->
+            Tax_id.TaxIdMap.add
+              ti
+              ((Tax_id.TaxIdMap.get ti 0 accum) + 1)
+              accum)
+          taxmap
+          Tax_id.TaxIdMap.empty
+        and colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
         let rankname = Tax_taxonomy.get_rank_name td rank in
         Printf.printf "solving %s" rankname;
         print_newline ();
@@ -83,15 +92,22 @@ object (self)
             cut_seqs,
           IntSet.fold
             (fun i accum ->
+              let seqname = Gtree.get_name gt i in
+              let ti = IntMap.find i taxmap in
               ColorSet.fold
                 (fun color accum ->
-                  [rankname; Gtree.get_name gt i; color] :: accum)
+                  [rankname;
+                   seqname;
+                   Tax_id.to_string ti;
+                   Tax_taxonomy.get_tax_name td ti;
+                   string_of_int (Tax_id.TaxIdMap.find ti taxcounts);
+                   color] :: accum)
                 (IntMap.find i rank_alternates)
                 accum)
             cut_leaves
             alternates
         end)
-      (rank_color_map_of_refpkg rp)
+      (rank_tax_map_of_refpkg rp)
       ([], [], [])
     in
     begin match fvo discord_file with

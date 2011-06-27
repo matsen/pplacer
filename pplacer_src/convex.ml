@@ -482,7 +482,7 @@ let name_map_of_bark_map bark_map =
     bark_map
     StringMap.empty
 
-let rank_color_map_of_refpkg rp =
+let rank_tax_map_of_refpkg rp =
   let gt = Refpkg.get_ref_tree rp in
   let node_map = name_map_of_bark_map gt.Gtree.bark_map in
   let td = Refpkg.get_taxonomy rp
@@ -496,15 +496,10 @@ let rank_color_map_of_refpkg rp =
     end with
       | Some node ->
         let rank = Tax_taxonomy.get_tax_rank td ti in
-        let seqmap =
-          try
-            IntMap.find rank rankmap
-          with
-            | Not_found -> IntMap.empty
-        in
+        let seqmap = IntMap.get rank IntMap.empty rankmap in
         IntMap.add
           rank
-          (IntMap.add node (Tax_taxonomy.get_tax_name td ti) seqmap)
+          (IntMap.add node ti seqmap)
           rankmap
       | None -> rankmap
   in
