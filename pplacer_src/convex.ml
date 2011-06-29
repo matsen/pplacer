@@ -254,16 +254,19 @@ let cset_of_coptset coptset =
 let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
+  let to_exclude = coptset_of_cset (CS.diff kappa x) in
   let big_b_excl =
     (* Because xopt never contains None, this is in fact testing c in x. In
      * this case, b will only be c, since c is added to big_b_excl later. *)
     if COS.mem c xopt then
       COS.empty
     else
-      let to_exclude = coptset_of_cset (CS.diff kappa x) in
       COS.diff (coptset_of_cset (between cutsetl)) to_exclude
   in
-  let to_distribute = COS.union xopt big_b_excl in
+  let to_distribute = COS.union
+    xopt
+    (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
+  in
   let apartl = COS.fold
     (* Fold over the possible values of b: the color of the internal node. *)
     (fun b accum ->
