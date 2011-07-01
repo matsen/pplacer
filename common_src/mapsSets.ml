@@ -32,6 +32,7 @@ end
 module type M =
 sig
   include Map.S
+  val get: key -> 'a -> 'a t -> 'a
   val opt_add: key -> 'a option -> 'a t -> 'a t
   val opt_find: key -> 'a t -> 'a option
   val check_add: key -> 'a -> 'a t -> 'a t
@@ -46,6 +47,7 @@ sig
   val keys: 'a t -> key list
   val values: 'a t -> 'a list
   val to_pairs: 'a t -> (key * 'a) list
+  val filter: (key -> 'a -> bool) -> 'a t -> 'a t
   val merge_counts: int t list -> int t
   val ppr_gen: (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   val ppr_string: Format.formatter -> string t -> unit
@@ -58,6 +60,12 @@ end
 module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type key = OM.key) =
   struct
     include OM
+
+    let get k default map =
+      try
+        find k map
+      with
+        | Not_found -> default
 
     let opt_add k optX map =
       match optX with
@@ -127,6 +135,16 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
     let to_pairs m =
       let l = fold (fun k v l -> (k,v)::l) m [] in
       List.rev l
+
+    let filter pred m =
+      fold
+        (fun k v accum ->
+          if pred k v then
+            add k v accum
+          else
+            accum)
+        m
+        empty
 
     let merge_counts ml =
       List.fold_left

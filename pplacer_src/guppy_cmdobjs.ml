@@ -185,7 +185,7 @@ end
 class kr_cmd () =
 object
   val p_exp = flag "-p"
-    (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
+    (Formatted (1., "Exponent for KR integration, i.e. value of p in Z_p. Default %g."))
   val normalize = flag "--normalize"
     (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
   method specl = [ float_flag p_exp; string_flag normalize; ]

@@ -38,6 +38,11 @@ type prefs =
     children : int ref;
     version : bool ref;
     timing : bool ref;
+    no_pre_mask : bool ref;
+    pre_masked_file : string ref;
+    map_fasta : string ref;
+    map_cutoff : float ref;
+    map_info : bool ref;
   }
 
 
@@ -79,6 +84,11 @@ let defaults () =
     children = ref 2;
     version = ref false;
     timing = ref false;
+    no_pre_mask = ref false;
+    pre_masked_file = ref "";
+    map_fasta = ref "";
+    map_cutoff = ref 0.8;
+    map_info = ref false;
   }
 
 
@@ -119,6 +129,11 @@ let check_like        p = !(p.check_like)
 let children          p = !(p.children)
 let version           p = !(p.version)
 let timing            p = !(p.timing)
+let no_pre_mask       p = !(p.no_pre_mask)
+let pre_masked_file   p = !(p.pre_masked_file)
+let map_fasta         p = !(p.map_fasta)
+let map_cutoff        p = !(p.map_cutoff)
+let map_info          p = !(p.map_info)
 
 
 (* arguments and preferences *)
@@ -187,6 +202,16 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "The number of child processes to spawn when doing placements. Default is %d.";
 "--timing", Arg.Set prefs.timing,
 "Display timing information after the pplacer run finishes.";
+"--no-pre-mask", Arg.Set prefs.no_pre_mask,
+"Don't pre-mask sequences before placement.";
+"--write-pre-masked", Arg.Set_string prefs.pre_masked_file,
+"Write out the pre-masked sequences to the specified fasta file and exit.";
+"--map-mrca", Arg.Set_string prefs.map_fasta,
+"Specify a file to write out MAP sequences for MRCAs and corresponding placements.";
+spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
+"Specify cutoff for inclusion in MAP sequence file. Default is %g.";
+"--map-info", Arg.Set prefs.map_info,
+"Write file describing the 'diagnostic' mutations for various clades.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

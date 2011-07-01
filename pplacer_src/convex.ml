@@ -67,6 +67,9 @@ type colorm = color IntMap.t
 type cdtree = colorm * stree
 type local_phi = (apart * int) QuestionMap.t
 type phi = local_phi IntMap.t
+(* nu_f is a type for upper bounds for the number of leaves left in a convex
+ * subset of leaves. We pass them phi, the apart, and the list of top indices
+ * for the subtrees at our internal node. *)
 type nu_f = phi -> apart -> int list -> int
 
 (* Abbreviations *)
@@ -194,7 +197,7 @@ let cutsetdist cutsetl ?(allow_multiple = false) color =
   (* We recur over the cut sets below our internal node.
    * Base is just a list of empty sets of the correct length. *)
   let rec aux base accum = function
-    | [] -> List.map List.rev accum
+    | [] -> List.rev (List.rev_map List.rev accum)
     | cutset :: rest ->
       let accum = List.fold_left
         (fun accum x ->
@@ -264,15 +267,16 @@ let _build_apartl cutsetl kappa (c, x) =
        * distributions of the to_distribute colors (except for b) into the
        * cut sets below our internal node. We find these distributions one at a
        * time, then take the union below. *)
-      let dist = List.map
-        (cutsetdist cutsetl)
-        (CS.elements (cset_of_coptset (COS.remove b to_distribute)))
+      let dist = List.rev
+        (List.rev_map
+           (cutsetdist cutsetl)
+           (CS.elements (cset_of_coptset (COS.remove b to_distribute))))
       in
       (* Next make every distribution with {} with {b} if b is in the cut set *)
       let dist = match b with
         | Some b' -> cutsetdist cutsetl ~allow_multiple:true b' :: dist
         | None -> dist
-      and startsl = List.map (fun _ -> CS.empty) cutsetl in
+      and startsl = List.rev_map (fun _ -> CS.empty) cutsetl in
       (* Finish off the meat of the recursion by mapping with union over the
        * cartesian product of the single-color distributions. *)
       let pis = List.rev
@@ -299,7 +303,9 @@ let build_apartl_memo = Hashtbl.create 1024
 
 (* The primary apartl builder.
  * Cutsetl is the list of cut sets below, kappa are those sets colors cut from
- * the internal node above. *)
+ * the internal node above.
+ * While this function is mostly a wrapper around the apartl memo, it /does/
+ * also update `c`, as it's useful to do so pre-memoization. *)
 let build_apartl cutsetl kappa (c, x) =
   (* If c is not in any of the cut sets below, then we can replace it with
    * None. *)
@@ -316,6 +322,24 @@ let build_apartl cutsetl kappa (c, x) =
       Hashtbl.add build_apartl_memo (cutsetl, kappa, q) ret;
       ret
 
+let apart_nu kappa sizeml (b, pi) =
+  let kappa = match b with
+    | Some c -> ColorSet.remove c kappa
+    | None -> kappa
+  in
+  List.fold_left2
+    (fun accum cutset sizem ->
+      let to_ignore = ColorSet.diff kappa cutset in
+      let is_ignored c = ColorSet.mem c to_ignore in
+      ColorMap.fold
+        (fun color count accum ->
+          if is_ignored color then accum else accum + count)
+        sizem
+        accum)
+    0
+    pi
+    sizeml
+
 let add_phi node question answer phi =
   let local_phi =
     try
@@ -327,8 +351,10 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
-(* XXX add a nu_f *)
-let rec phi_recurse cutsetim tree ((_, x) as question) phi =
+(* XXX add a nu_f. It would seem appropriate to add one as an argument. There
+ * are different sorts of nu_f... they are just bounds and we will want to trial
+ * them. OTOH, if you think it's better to just globally set one then fine. *)
+let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
     try
@@ -345,16 +371,10 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       let omega = if x = IntMap.find i cutsetim then 1 else 0 in
       phi, Some (omega, null_apart)
     | Node (_, subtrees) ->
-        (* XXX it seems to me that we will need
-         * List.map top_id subtrees
-         * as well for the nu_f
-         * *)
       let cutsetl = List.map
         (fun subtree -> IntMap.find (top_id subtree) cutsetim)
         subtrees
       in
-      (* XXX zip together the apartl with its value under nu_f and sort on these
-       * values. *)
       let apartl = build_apartl
         cutsetl
         (IntMap.find i cutsetim)
@@ -365,33 +385,35 @@ let rec phi_recurse cutsetim tree ((_, x) as question) phi =
       let apart_omega phi (b, pi) =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse cutsetim subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse cutsetim sizemlim subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
           subtrees
       in
-      (* XXX let's turn this below a (tail) recursion before actually adding the
-       * nu business. Then before recurring, we compare the best value of
-       *
-        (fun (phi, current_best (apart, nu) ->
-          let (best_omega, best_phi) = current_best in
-          if nu <= best_omega then current_best
-          else recur
-
-          By the way, can you think of a situation in which build_apartl would return []?
-          If so, is 0 an appropriate return value?
-
-       * *)
-      List.fold_left
-        (fun (phi, current_best) apart ->
+      let apart_nu' = apart_nu
+        (IntMap.find i cutsetim)
+        (IntMap.find i sizemlim)
+      in
+      let nu_apartl = List.rev
+        (List.rev_map
+          (fun apart -> apart_nu' apart, apart)
+          apartl)
+      in
+      let nu_apartl = List.sort (fun (a, _) (b, _) -> b - a) nu_apartl in
+      let rec aux phi current_best = function
+        | (nu, apart) :: rest -> (
           let phi, omega = apart_omega phi apart in
           match current_best with
-            | None -> phi, Some (omega, apart)
-            | Some (old_omega, _) when omega > old_omega -> phi, Some (omega, apart)
-            | _ -> phi, current_best)
-        (phi, None)
-        apartl
+            | None -> aux phi (Some (omega, apart)) rest
+            | Some (prev_omega, _) when omega > prev_omega ->
+              aux phi (Some (omega, apart)) rest
+            | Some (prev_omega, _) when nu < prev_omega ->
+              phi, current_best
+            | _ -> aux phi current_best rest)
+        | [] -> phi, current_best
+      in
+      aux phi None nu_apartl
   in
   match res with
     | Some (omega, apart) ->
@@ -408,16 +430,11 @@ let badness cutsetim =
     (0, 0)
 
 let solve ((_, tree) as cdtree) =
-  let _, cutsetim = build_sizemim_and_cutsetim cdtree in
-  (*
-   * XXX actually accept our sizemim and use it to build a
-   nu_f = phi -> apart -> int list -> int
-   by totaling across the phi value below if it is available, and if not then
-   using the sizemim.
-  *)
+  let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
+  let sizemlim = maplist_of_map_and_tree sizemim tree in
   Hashtbl.clear build_apartl_memo;
-  phi_recurse cutsetim tree (None, CS.empty) IntMap.empty
+  phi_recurse cutsetim sizemlim tree (None, CS.empty) IntMap.empty
 
 (* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
  * the leaves to include. The recursion works as follows: maintain rest, which

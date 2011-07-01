@@ -19,7 +19,7 @@ let final_tolerance = 1e-5
 type prior = Uniform_prior | Exponential_prior of float
 type result =
   | Fantasy of (int * (float * float * float)) list
-  | Pquery of string * Pquery.pquery
+  | Pquery of Pquery.pquery
   | Timing of string * float
 
 (* pplacer_core :
@@ -290,7 +290,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
         end
         else results, sorted_ml_placements
       in
-      Pquery (query_seq, Pquery.make_ml_sorted
+      Pquery (Pquery.make_ml_sorted
         ~namel:[query_name]
         ~seq:query_seq
         placements) :: results

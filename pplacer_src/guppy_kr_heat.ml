@@ -74,9 +74,11 @@ object (self)
       let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
       let make_heat_tree decor_t pre1 pre2 =
-        Decor_gtree.add_decor_by_map
-          decor_t
-          (self#decor_map_of_float_map (transport_map transform decor_t pre1 pre2))
+        self#spread_short_fat
+          (Decor_gtree.add_decor_by_map
+            decor_t
+            (self#decor_map_of_float_map
+              (transport_map transform decor_t pre1 pre2)))
       in
       Phyloxml.named_gtrees_to_file
         fname

@@ -11,6 +11,8 @@ type decoration =
   | Dot of int
   | Taxinfo of Tax_id.tax_id * string
 
+type decor = decoration list
+
 let assert_ubyte i = assert(i >= 0 || i <= 255)
 let assert_ubytes = List.iter assert_ubyte
 let assert_unit_interval x = assert(0. <= x && x <= 1.)

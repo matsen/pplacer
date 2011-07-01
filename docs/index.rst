@@ -14,6 +14,20 @@ Guppy can do many different things via its subcommand interface, from compressin
    generated_rst/rppr
 
 
+Getting help
+------------
+
+Your question might be covered in the pplacer FAQ already:
+
+.. toctree::
+   :maxdepth: 2
+
+   faq
+
+Otherwise, support for pplacer happens through the `user group`_.
+If something is unclear in the manual and you can't find anything in past discussions, post to the group and we will get back to you right away.
+
+
 Acknowledgements
 ----------------
 The pplacer code and documentation is written and maintained by Erick Matsen and Aaron Gallagher.
@@ -27,10 +41,4 @@ and
 Sujatha Srivnasan
 for their suggestions.
 
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
-
+.. _user group: http://groups.google.com/group/pplacer-users

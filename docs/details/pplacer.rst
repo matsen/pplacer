@@ -45,6 +45,93 @@ There are a couple of differences between the present version and the previous v
 * ``placeviz``, ``placeutil`` and ``mokaphy`` have been replaced by a single binary called ``guppy``
 
 
+Compiling pplacer
+-----------------
+
+Here are directions on how to install an ocaml development environment and
+compile pplacer. If you already have GSL and wget installed, you should be able
+to download `this installation script`_ and just type
+``source install_pplacer.sh``.
+
+Installing GSL
+``````````````
+
+It may well already be installed (you can check by running
+``gsl-config --prefix``) or you can install it with your OS's package manager.
+Or compile it from source::
+
+    wget ftp://mirrors.kernel.org/gnu/gsl/gsl-1.13.tar.gz && \
+    tar -xzf gsl-1.13.tar.gz && \
+    cd gsl-1.13 && \
+    ./configure && \
+    make && make install
+
+Installing ocaml with GODI
+``````````````````````````
+
+Ocaml can be installed "by hand", which requires less compilation time and
+memory, but the easiest is to use Gerd Stolpmann's ocaml pacakge manager called
+GODI. (Thanks to Ashish Agarwal for suggesting it.) The one funny thing about
+it is that it likes its own space, and so you can't set the prefix to be
+``/usr/local/``. Setting the prefix to some path in your home directory works
+great. Note that gawk is required for ocamlgsl.
+
+::
+
+    PREFIX=`pwd`/godi
+    PATH=$PREFIX/bin:$PREFIX/sbin:$PATH
+
+    #install ocaml via GODI
+    wget http://download.camlcity.org/download/godi-rocketboost-20091222.tar.gz
+    tar xzf godi-rocketboost-20091222.tar.gz
+    cd godi-rocketboost-20091222
+    ./bootstrap --prefix=$PREFIX
+    echo "GODI_BASEPKG_PCRE=yes" >> $PREFIX/etc/godi.conf
+    ./bootstrap_stage2
+
+    #build godi packages
+    godi_perform -build godi-ocamlgsl
+    godi_perform -build godi-xml-light
+    godi_perform -build godi-ocaml-csv
+    godi_perform -build godi-ounit
+    godi_perform -build godi-sqlite3
+    cd ..
+
+Compiling pplacer
+`````````````````
+
+First make sure that ocaml et al are in your path.
+
+::
+
+    which ocaml
+
+The best way to stay up to date with the source is via git::
+
+    git clone git://github.com/matsen/pplacer.git
+    cd pplacer/
+    make
+
+but if you don't like that then here's a little script::
+
+    wget http://github.com/matsen/pplacer/tarball/master
+    tar -xzf matsen-pplacer*.tar.gz
+    cd matsen-pplacer-*/
+    make
+
+Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
+path and you are ready to go!
+
+
+Pre-masking
+-----------
+
+Columns that are all gap in either the reference alignment or the query alignment do not impact the relative likelihood of placements.
+Thus, starting in v1.1alpha08, we don't compute them at all.
+This speeds things up a bunch, and uses a lot less memory.
+We call this pre-masking, and it can be disabled with the ``--no-pre-mask`` flag.
+
+
 JSON_ format specification
 --------------------------
 
@@ -89,13 +176,19 @@ Key   Value
 ``p`` An array of arrays containing placement data in the same order as ``fields``.
 ===== =====
 
-An example JSON document follows::
+An example JSON document follows, with the first placement showing uncertainty
+in location, and the second showing two reads that had identical placements::
 
     {
       "tree": "((A:2[0],B:9[1]):7[2],C:5[3],D:1[4]):0[5];",
       "placements": [
-        {"p": [[0, -1309.830000, 1.000000, 1.000000, 10.000000]], "n": ["one_x"]},
-        {"p": [[1, -1309.830000, 1.000000, 2.000000, 10.000000]], "n": ["one_y"]}
+        {"p":
+          [[0, -1091.576026, 0.762438, 0.000008, 0.019642],
+            [1, -10982.742117, 0.237562, 0.000008, 0.019579]
+          ], "n": ["GLKT0ZE01CQ1P1"]
+        },
+        {"p": [[2, -1061.467623, 1.0, 0.003555, 0.000006]],
+         "n": ["GLKT0ZE01C36CH", "GLKT0ZE01A0IBO"]}
       ],
       "metadata": {"invocation": "guppy to_json"},
       "version": 1,
@@ -214,26 +307,26 @@ PHYML can be run like so, on non-interleaved (hence the -q) phylip-format alignm
 
 Note that pplacer only works with phyml version 3.0 (the current version).
 
+Both of these programs emit "statistics files": files that describe the phylogenetic model used.
+Pplacer then uses those same statistics to place your reads.
+For RAxML, they are called something like ``RAxML_info.test``, whereas for PHYML they are called something like ``test_aln_phyml_stats.txt``.
+
 If your taxon names have too many funny symbols, pplacer will get confused.
 We have had a difficult time with the wacky names exported by the otherwise lovely software geneious_.
 If you have a tree which isn't getting parsed properly by pplacer, and you think it should be, send it to us and we will have a look.
 
-At least for now, we do not recommend that you give pplacer a reference tree with lots of very similar sequences.
-It's certainly a bit of a waste of time-- pplacer must evaluate the resultant branches like any others.
-But worse, it can foul up the analysis.
-If one has a clade of very similar sequences, a query sequence which is similar to those sequences can fit anywhere in the clade.
-The resulting uncertainty will then be reported as a low ML ratio or posterior probability, even if pplacer is quite confident that the query fits in that clade.
-Pplacer also has computational difficulty with exceedingly short ("zero") length edges.
-We are currently considering ways to work around these issues.
+Avoid giving pplacer a reference tree with lots of very similar sequences.
+It's a waste of time-- pplacer must evaluate the resultant branches like any others.
+Identical sequences are especially bad, and the resultant zero length branches will make pplacer complain.
 
-If you give pplacer a reference tree which has been rooted, you will get a warning like::
+If you give pplacer a reference tree which has been rooted in the middle of an edge, you will get a warning like::
 
   Warning: pplacer results make the most sense when the given tree is multifurcating
   at the root. See manual for details.
 
-In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they are be artificially counted as two separate edges.
+In pplacer the two edges coming off of the root have the same status as the rest of the edges; therefore they will counted as two separate edges.
 That will lead to artifactually low likelihood weight ratio and posterior probabilities for query sequences placed on those edges.
-This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the placeviz trees.
+This doesn't matter if your query sequences do not get placed next to the root, but you can avoid the problem altogether by rooting the tree at an internal node, or by leaving the outgroup in and rerooting the output trees.
 
 
 
@@ -289,3 +382,4 @@ You can use R to plot these matrices in a heat-map like fashion like so::
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
+.. _this installation script: ../_static/install_pplacer.sh

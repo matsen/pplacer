@@ -134,4 +134,18 @@ let multifilter_by_regex named_regex_list placerun =
     placerun
     *)
 
+let redup sequence_tbl pr =
+  set_pqueries
+    pr
+    (List.map
+       (fun pq ->
+         try
+           Pquery.set_namel
+             pq
+             (Base.map_and_flatten
+                (Hashtbl.find sequence_tbl)
+                (Pquery.namel pq))
+         with
+           | Not_found -> pq)
+       (get_pqueries pr))
 
