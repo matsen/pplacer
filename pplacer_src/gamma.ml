@@ -11,8 +11,17 @@
 
 open Fam_batteries
 
+(* THIS IS NOT RIGHT-- but it runs. *)
 let inverse_gamma_cdf ~alpha ~beta x =
-  Gsl_cdf.gamma_Pinv ~p:x ~a:alpha ~b:(1. /. beta)
+  if alpha < 0.1 then 0.
+  else Gsl_cdf.gamma_Pinv ~p:x ~a:alpha ~b:(1. /. beta)
+
+(* THIS IS THE RIGHT ONE-- but it doesn't catch the exception. *)
+let correct_inverse_gamma_cdf ~alpha ~beta x =
+  try Gsl_cdf.gamma_Pinv ~p:x ~a:alpha ~b:(1. /. beta) with
+  | Gsl_error.Gsl_exn(_, _) ->
+    if alpha < 0.1 then 0. (* alpha is small and we are close to zero. *)
+    else failwith "inverse_gamma_cdf failed in a bizarre way"
 
 let make_mean_one v =
   let tot = Array.fold_left (+.) 0. v
