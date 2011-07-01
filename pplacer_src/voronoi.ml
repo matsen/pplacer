@@ -281,6 +281,3 @@ let placement_distance v ?snipdist p =
   match res with
     | Some d -> d
     | None -> invalid_arg "dist"
-
-module XXX = Placerun_io
-module XXY = Convex

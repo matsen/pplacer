@@ -30,7 +30,7 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prunes the tree"
+  method desc = "greedy pruning algorithm for maximizing PD"
   method usage = "usage: prunetre [options] tree"
 
   method action = function

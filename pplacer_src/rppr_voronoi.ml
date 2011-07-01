@@ -38,7 +38,7 @@ object (self)
       float_flag leaf_mass;
     ]
 
-  method desc = "apply voronoi"
+  method desc = "apply a Voronoi-based algorithm to find places to cut down the ref tree"
   method usage = "usage: voronoi [options] placefile"
 
   method private placefile_action = function

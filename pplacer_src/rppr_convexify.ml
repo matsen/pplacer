@@ -32,8 +32,8 @@ object (self)
   ] @ super_refpkg#specl
 
 
-  method desc = "check a reference package"
-  method usage = "usage: check_refpkg -c my.refpkg"
+  method desc = "find the minimal subset of leaves to delete for taxonomic concordance"
+  method usage = "usage: convexify [options] -c my.refpkg"
 
   method action _ =
     let rp = self#get_rp in
