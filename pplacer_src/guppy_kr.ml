@@ -95,6 +95,7 @@ object (self)
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit output_cmd () as super_output
   inherit kr_cmd () as super_kr
+  inherit normalization_cmd () as super_normalization
   inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
 
@@ -115,6 +116,7 @@ object (self)
     @ super_refpkg#specl
     @ super_output#specl
     @ super_kr#specl
+    @ super_normalization#specl
     @ super_rng#specl
     @ [
       toggle_flag list_output;

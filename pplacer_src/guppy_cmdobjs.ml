@@ -185,7 +185,7 @@ end
 (* For normalizing by various things related to the tree. *)
 class normalization_cmd () =
   let no_normalization _ = 1.
-  and tree_length t = Gtree.tree_length t
+  and tree_length (t:(< get_bl : float >) Gtree.gtree) = Gtree.tree_length t
   in
   let normalization_map =
     List.fold_right
