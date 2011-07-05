@@ -139,9 +139,12 @@ let redup sequence_tbl pr =
     pr
     (List.map
        (fun pq ->
-         let name = List.hd (Pquery.namel pq) in
          try
-           Pquery.set_namel pq (Hashtbl.find sequence_tbl name)
+           Pquery.set_namel
+             pq
+             (Base.map_and_flatten
+                (Hashtbl.find sequence_tbl)
+                (Pquery.namel pq))
          with
            | Not_found -> pq)
        (get_pqueries pr))

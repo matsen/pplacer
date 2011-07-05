@@ -18,7 +18,7 @@ object (self)
     super_mass#specl
     @ super_output#specl
 
-  method desc = "find the most DIstant PLACements"
+  method desc = "find the most DIstant PLACements from the leaves"
   method usage = "usage: diplac [options] placefile"
 
   method private placefile_action = function
