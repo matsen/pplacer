@@ -185,26 +185,30 @@ end
 (* For normalizing by various things related to the tree. *)
 class normalization_cmd () =
   let no_normalization _ = 1.
-  and tree_length (t:(< get_bl : float >) Gtree.gtree) = Gtree.tree_length t
+  and tree_length t = Gtree.tree_length t
   in
   let normalization_map =
-    List.fold_right
-      (fun (k,v) -> StringMap.add k v)
+    StringMap.of_pairlist
       [
         "", no_normalization;
         "tree-length", tree_length;
       ]
-      StringMap.empty
   in
-  object
-    val normalize = flag "--normalize"
-      (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
-    method specl = [ string_flag normalize; ]
 
-  method get_normalization =
-      let s = fv normalize in
-      try StringMap.find s normalization_map with
-      | Not_found -> failwith ("Normalization "^s^" not known.")
+object
+  val normalize = flag "--normalize"
+    (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
+  method specl = [ string_flag normalize; ]
+
+  method private get_normalization: Newick_gtree.t -> float = fun t ->
+    let s = fv normalize in
+    let f =
+      try
+        StringMap.find s normalization_map
+      with
+        | Not_found -> failwith ("Normalization "^s^" not known.")
+    in
+    f t
 end
 
 class kr_cmd () =

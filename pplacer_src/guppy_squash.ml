@@ -63,7 +63,7 @@ let make_cluster p denom_f transform weighting criterion refpkgo mode_str prl =
   let (drt, (cluster_t, numbered_blobim)) =
     if mode_str = "" then begin
       (* phylogenetic clustering *)
-      let denom = denom_f rt in
+      let denom = denom_f (rt :> Newick_gtree.t) in
       (Decor_gtree.of_newick_gtree rt,
         NPreSquash.of_named_blobl (distf denom rt) normf (prep prel))
     end
@@ -76,7 +76,7 @@ let make_cluster p denom_f transform weighting criterion refpkgo mode_str prl =
           tax_t_prel_of_prl
             (classify_mode_str mode_str)
             weighting criterion rp prl in
-        let denom = denom_f taxt in
+        let denom = denom_f (taxt :> Newick_gtree.t) in
         (taxt,
           NPreSquash.of_named_blobl (distf denom taxt) normf (prep tax_prel))
     end
@@ -93,6 +93,7 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit output_cmd ~show_fname:false () as super_output
   inherit kr_cmd () as super_kr
+  inherit normalization_cmd () as super_normalization
 
   val nboot = flag "--bootstrap"
     (Plain (0, "the number of bootstrap replicates to run"))
@@ -107,6 +108,7 @@ object (self)
     @ super_fat#specl
     @ super_output#specl
     @ super_kr#specl
+    @ super_normalization#specl
     @ [
       int_flag nboot;
       string_flag tax_cluster_mode
