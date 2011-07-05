@@ -200,7 +200,7 @@ object
     (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
   method specl = [ string_flag normalize; ]
 
-  method private get_normalization: Newick_gtree.t -> float = fun t ->
+  method private get_normalization: <get_bl: float; ..> Gtree.gtree -> float = fun t ->
     let s = fv normalize in
     let f =
       try
