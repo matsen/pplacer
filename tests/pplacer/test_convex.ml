@@ -9,7 +9,15 @@ let suite = List.map
     let gt = Newick_gtree.of_string s in
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
-    let colors = IntMap.map (fun v -> v#get_name) bm in
+    let colors = MapsSets.IntMap.fold
+      (fun key value map ->
+        try
+          let name = value#get_name in
+          MapsSets.IntMap.add key name map
+        with Newick_bark.No_name -> map)
+      bm
+      MapsSets.IntMap.empty
+    in
     let _, calculated_omega = solve (colors, st) in
     let testfunc () =
       (Printf.sprintf "%d expected; got %d" omega calculated_omega) @? (omega = calculated_omega)
@@ -22,6 +30,8 @@ let suite = List.map
     "(((A,B),B),(A,A))", 4;
     "(A,(A,(B,C)))", 4;
     "(A,((A,(B,A)),B))", 4;
+    "(A,((A,B),(A,B)));", 4;
+    "(A,(B,(A,(B,A))));", 4;
   ]
 
 let suite =
