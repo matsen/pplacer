@@ -116,6 +116,13 @@ let run_file prefs query_fname =
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
   let seq_list = Alignment_funs.upper_list_of_any_file query_fname in
+  if List.length seq_list = 0 then begin
+    Printf.printf
+      "The provided query sequence file contained no sequences: %s\n"
+      query_fname;
+    exit 1
+  end;
+
   let ref_list, query_list =
     List.partition
       (fun (name,_) -> StringSet.mem name ref_name_set)
