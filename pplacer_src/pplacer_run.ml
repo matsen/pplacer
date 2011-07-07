@@ -230,6 +230,20 @@ let run_file prefs query_fname =
         Printf.printf "sequence length cut from %d to %d." n_sites masklen;
         print_newline ()
       end;
+      if masklen = 0 then
+        (print_endline
+           "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
+         exit 1)
+      else if masklen <= 10 then
+        Printf.printf
+          "WARNING: you have %d sites after pre-masking. \
+          That means there is very little information in these sequences for placement."
+          masklen
+      else if masklen <= 100 then
+        Printf.printf
+          "Note: you have %d sites after pre-masking. \
+          That means there is rather little information in these sequences for placement."
+          masklen;
       let query_list' = List.map cut_from_mask query_list
       and ref_align' = Array.map cut_from_mask ref_align in
       if (Prefs.pre_masked_file prefs) <> "" then begin

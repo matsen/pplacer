@@ -4,6 +4,10 @@
  * Closed GH-75: Changed mass maps to use records types instead of tuples.
  * Closed GH-78: Added an --average flag to `guppy fat`.
  * Closed GH-82: Merged the `pick` branch into dev.
+ * Closed GH-85: Added better error messages for potential premasking failures.
+ * Closed GH-88: Handling very small alphas in pplacer.
+ * Closed GH-90: Added an error message for if pplacer is invoked with no
+   arguments.
 
 
 1.1.alpha08
