@@ -158,7 +158,7 @@ object (self)
 end
 
 
-(* *** mass-related objects *** *)
+(* *** mass and kr-related objects *** *)
 
 class mass_cmd () =
 object
@@ -182,13 +182,41 @@ object
   )
 end
 
-class kr_cmd () =
+(* For normalizing by various things related to the tree. *)
+class normalization_cmd () =
+  let no_normalization _ = 1.
+  and tree_length t = Gtree.tree_length t
+  in
+  let normalization_map =
+    StringMap.of_pairlist
+      [
+        "", no_normalization;
+        "tree-length", tree_length;
+      ]
+  in
+
 object
-  val p_exp = flag "-p"
-    (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
   val normalize = flag "--normalize"
     (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
-  method specl = [ float_flag p_exp; string_flag normalize; ]
+  method specl = [ string_flag normalize; ]
+
+  method private get_normalization: <get_bl: float; ..> Gtree.gtree -> float = fun t ->
+    let s = fv normalize in
+    let f =
+      try
+        StringMap.find s normalization_map
+      with
+        | Not_found -> failwith ("Normalization "^s^" not known.")
+    in
+    f t
+end
+
+class kr_cmd () =
+  object
+  (* normalizations. We can divide by these to get a given perspective on KR. *)
+    val p_exp = flag "-p"
+      (Formatted (1., "Exponent for KR integration, i.e. value of p in Z_p. Default %g."))
+    method specl = [ float_flag p_exp; ]
 end
 
 

@@ -84,22 +84,6 @@ let write_uptril list_output namea fun_namel ul ch =
       fun_namel ul
   end
 
-(* normalizations. We can divide by these to get a given perspective on KR. *)
-let no_normalization _ = 1.
-let tree_length = Gtree.tree_length
-
-let normalization_map =
-  List.fold_right
-    (fun (k,v) -> StringMap.add k v)
-    [
-      "", no_normalization;
-      "tree-length", tree_length;
-    ]
-    StringMap.empty
-
-let normalization_of_str s =
-  try StringMap.find s normalization_map with
-  | Not_found -> failwith ("Normalization "^s^" not known.")
 
 (* core
  * run pair_core for each unique pair
@@ -111,6 +95,7 @@ object (self)
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit output_cmd () as super_output
   inherit kr_cmd () as super_kr
+  inherit normalization_cmd () as super_normalization
   inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
 
@@ -131,6 +116,7 @@ object (self)
     @ super_refpkg#specl
     @ super_output#specl
     @ super_kr#specl
+    @ super_normalization#specl
     @ super_rng#specl
     @ [
       toggle_flag list_output;
@@ -147,7 +133,7 @@ object (self)
   (* Note that we don't call self#rng to avoid re-seeding the rng. *)
   method private pair_core rng transform n_samples t name1 pre1 name2 pre2 =
   let p = fv p_exp
-  and normalization = (normalization_of_str (fv normalize)) t
+  and normalization = self#get_normalization t
   in
   let calc_dist =
     Kr_distance.scaled_dist_of_pres ~normalization transform p t in
