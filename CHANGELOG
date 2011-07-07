@@ -5,7 +5,9 @@
  * Closed GH-78: Added an --average flag to `guppy fat`.
  * Closed GH-82: Merged the `pick` branch into dev.
  * Closed GH-85: Added better error messages for potential premasking failures.
- * Closed GH-88: Handling very small alphas in pplacer.
+ * Closed GH-88: Improved handling very small alphas in pplacer, working around
+   a problem with the GSL that wasn't allowing us to invert the CDF for the
+   gamma distribution.
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
 
