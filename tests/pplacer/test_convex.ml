@@ -2,6 +2,7 @@ open OUnit
 open Test_util
 
 open Convex
+open MapsSets
 
 let suite = List.map
   (fun (s, omega) ->
@@ -10,11 +11,10 @@ let suite = List.map
     and bm = gt.Gtree.bark_map in
     let colors = MapsSets.IntMap.fold
       (fun key value map ->
-        let name = value#get_name in
-        if name = "" then
-          map
-        else
-          MapsSets.IntMap.add key name map)
+        try
+          let name = value#get_name in
+          MapsSets.IntMap.add key name map
+        with Newick_bark.No_name -> map)
       bm
       MapsSets.IntMap.empty
     in
@@ -29,4 +29,55 @@ let suite = List.map
     "(((A,B),(A,B)),(C,C))", 5;
     "(((A,B),B),(A,A))", 4;
     "(A,(A,(B,C)))", 4;
+    "(A,((A,(B,A)),B))", 4;
+    "(A,((A,B),(A,B)));", 4;
+    "(A,(B,(A,(B,A))));", 4;
+    "(A,(A,(B,(C,(C,(A,C))))));", 6;
   ]
+
+let suite =
+  ("alternate_colors" >::
+      fun () ->
+        let gt = Newick_gtree.of_string "(A,(A,(X,(B,(X,B)))))" in
+        let st = gt.Gtree.stree
+        and bm = gt.Gtree.bark_map in
+        let colors = IntMap.filter
+          (fun _ v -> v <> "X")
+          (IntMap.map (fun v -> v#get_name) bm)
+        in
+        let alt_colors = alternate_colors (colors, st) in
+        assert_equal (IntMap.nkeys alt_colors) 2;
+        "first color sets not equal" @?
+          (ColorSet.equal
+             (IntMap.find 2 alt_colors)
+             (ColorSet.of_list ["A"; "B"]));
+        "second color sets not equal" @?
+          (ColorSet.equal
+             (IntMap.find 4 alt_colors)
+             (ColorSet.of_list ["B"]))
+  ) :: (
+    "building_cutsets" >::
+      fun () ->
+        let gt = Newick_gtree.of_string "(A,(A,(B,(C,C))))" in
+        let st = gt.Gtree.stree
+        and bm = gt.Gtree.bark_map in
+        let colors = IntMap.map (fun v -> v#get_name) bm in
+        let _, cutset = build_sizemim_and_cutsetim (colors, st) in
+        let expected = IntMap.map
+          ColorSet.of_list
+          (IntMap.of_pairlist
+             [
+               0, ["A"];
+               1, ["A"];
+               2, [];
+               3, ["C"];
+               4, ["C"];
+               5, [];
+               6, [];
+               7, ["A"];
+               8, ["A"; "B"; "C"];
+             ])
+        in
+        assert_equal (IntMap.compare ColorSet.compare cutset expected) 0
+  ) :: suite
+

@@ -7,6 +7,8 @@ module ColorMap = StringMap
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
 
+let ppr_csetim = IntMap.ppr_gen ColorSet.ppr
+
 type coloropt = string option
 module OrderedColorOpt = struct
   type t = coloropt
@@ -75,6 +77,9 @@ type nu_f = phi -> apart -> int list -> int
 (* Abbreviations *)
 module CS = ColorSet
 module COS = ColorOptSet
+
+let flip f x y = f y x
+let compose f g a = f (g a)
 
 let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all
@@ -249,16 +254,19 @@ let cset_of_coptset coptset =
 let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
+  let to_exclude = coptset_of_cset (CS.diff kappa x) in
   let big_b_excl =
     (* Because xopt never contains None, this is in fact testing c in x. In
      * this case, b will only be c, since c is added to big_b_excl later. *)
     if COS.mem c xopt then
       COS.empty
     else
-      let to_exclude = coptset_of_cset (CS.diff kappa x) in
       COS.diff (coptset_of_cset (between cutsetl)) to_exclude
   in
-  let to_distribute = COS.union xopt big_b_excl in
+  let to_distribute = COS.union
+    xopt
+    (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
+  in
   let apartl = COS.fold
     (* Fold over the possible values of b: the color of the internal node. *)
     (fun b accum ->
@@ -297,7 +305,9 @@ let _build_apartl cutsetl kappa (c, x) =
     (COS.add c big_b_excl)
     []
   in
-  apartl
+  let null_apart = None, List.map (fun _ -> ColorSet.empty) cutsetl in
+  if List.mem null_apart apartl then apartl
+  else null_apart :: apartl
 
 let build_apartl_memo = Hashtbl.create 1024
 
@@ -477,7 +487,7 @@ let name_map_of_bark_map bark_map =
     bark_map
     StringMap.empty
 
-let rank_color_map_of_refpkg rp =
+let rank_tax_map_of_refpkg rp =
   let gt = Refpkg.get_ref_tree rp in
   let node_map = name_map_of_bark_map gt.Gtree.bark_map in
   let td = Refpkg.get_taxonomy rp
@@ -491,15 +501,10 @@ let rank_color_map_of_refpkg rp =
     end with
       | Some node ->
         let rank = Tax_taxonomy.get_tax_rank td ti in
-        let seqmap =
-          try
-            IntMap.find rank rankmap
-          with
-            | Not_found -> IntMap.empty
-        in
+        let seqmap = IntMap.get rank IntMap.empty rankmap in
         IntMap.add
           rank
-          (IntMap.add node (Tax_taxonomy.get_tax_name td ti) seqmap)
+          (IntMap.add node ti seqmap)
           rankmap
       | None -> rankmap
   in
@@ -510,4 +515,110 @@ let rank_color_map_of_refpkg rp =
         rankmap
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
+    IntMap.empty
+
+let add_color_setly k v m =
+  IntMap.add k (CS.add v (IntMap.get k CS.empty m)) m
+
+let merge_color_setly m1 m2 =
+  IntMap.fold
+    (fun k v m ->
+      IntMap.add k (CS.union v (IntMap.get k CS.empty m)) m)
+    m1
+    m2
+
+let alternate_colors ((colors, tree) as cdtree) =
+  let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+  let cutsetlim = maplist_of_map_and_tree cutsetim tree in
+  let rec aux accum counter = function
+    | [] -> accum
+    | (group, cur_tree) :: rest ->
+      let i = top_id cur_tree in
+      let cutsetl = IntMap.find i cutsetlim in
+      let cutset = all cutsetl in
+      assert (CS.cardinal cutset <= 1);
+      let node_relevant = CS.is_empty cutset in
+      let accum', counter', group' = match group, cur_tree with
+        | Some g, Leaf _ ->
+          IntMap.add_listly g (i, true) accum, counter, group
+        | None, Leaf _ when not (IntMap.mem i colors) ->
+          IntMap.add_listly counter (i, true) accum, counter + 1, Some counter
+        | Some g, Node _ when node_relevant ->
+          IntMap.add_listly g (i, false) accum, counter, group
+        | None, Node _ when node_relevant ->
+          IntMap.add_listly counter (i, false) accum, counter + 1, Some counter
+        | _ -> accum, counter, None
+      in
+      let rest' = match cur_tree with
+        | Leaf _ -> rest
+        | Node (_, subtrees) ->
+          List.fold_left
+            (fun accum subtree -> (group', subtree) :: accum)
+            rest
+            subtrees
+      in
+      aux accum' counter' rest'
+  in
+  let groupmap = aux IntMap.empty 0 [None, tree] in
+  let rev_groupmap = IntMap.fold
+    (fun group entries accum ->
+      List.fold_left
+        (fun accum (i, _) -> IntMap.add i group accum)
+        accum
+        entries)
+    groupmap
+    IntMap.empty
+  in
+  let rec aux accum = function
+    | [] -> accum
+    | (_, Leaf _) :: rest -> aux accum rest
+    | (parent, (Node (i, subtrees) as cur_tree)) :: rest ->
+      let accum' =
+        if IntMap.mem i rev_groupmap then
+          let g = IntMap.find i rev_groupmap in
+          let subtrees' = match parent with
+            | Some parent -> parent :: subtrees
+            | None -> subtrees
+          in
+          List.fold_left
+            (fun accum -> function
+              | Leaf i | Node (i, _) ->
+                merge_color_setly
+                  accum
+                  (IntMap.singleton g (all (IntMap.find i cutsetlim))))
+            accum
+            subtrees'
+        else
+          List.fold_left
+            (fun accum -> function
+              | Leaf j when IntMap.mem j rev_groupmap ->
+                let g = IntMap.find j rev_groupmap in
+                merge_color_setly
+                  accum
+                  (IntMap.singleton g (all (IntMap.find i cutsetlim)))
+              | _ -> accum)
+            accum
+            subtrees
+      in
+      let parent' = Some cur_tree in
+      let rest' = List.fold_left
+        (fun accum subtree -> (parent', subtree) :: accum)
+        rest
+        subtrees
+      in
+      aux accum' rest'
+  in
+  let group_colors = aux IntMap.empty [None, tree] in
+  IntMap.fold
+    (fun g entries accum ->
+      let g_colors = IntMap.get g CS.empty group_colors in
+      List.fold_left
+        (fun accum (i, is_leaf) ->
+          if is_leaf then
+            IntMap.add i g_colors accum
+          else
+            accum)
+        accum
+        entries)
+    groupmap
     IntMap.empty

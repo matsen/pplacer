@@ -5,6 +5,9 @@ open Convex
 open MapsSets
 open Stree
 
+let flip f x y = f y x
+let apply f x = f x
+
 let leafset tree =
   let rec aux accum = function
     | Leaf i :: rest -> aux (IntSet.add i accum) rest
@@ -13,21 +16,43 @@ let leafset tree =
   in
   aux IntSet.empty [tree]
 
+type data = {
+  stree: stree;
+  rank: int;
+  rankname: string;
+  taxmap: Tax_id.tax_id IntMap.t;
+  rank_tax_map: Tax_id.tax_id IntMap.t IntMap.t;
+  colormap: color IntMap.t;
+  not_cut: IntSet.t;
+  cut_leaves: IntSet.t;
+  rank_cutseqs: IntSet.t IntMap.t;
+}
+
+let build_reducer f fname lst =
+  let init, foldf, finalize = f fname in
+  finalize (List.fold_left foldf init lst)
+
 class cmd () =
 object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
 
   val discord_file = flag "-t"
-    (Needs_argument ("discordance tree file", "If specified, the path to write the discordance tree to."))
+    (Needs_argument ("", "If specified, the path to write the discordance tree to."))
   val cut_seqs_file = flag "--cut-seqs"
-    (Needs_argument ("cut sequences file", "If specified, the path to write a CSV file of cut sequences per-rank to."))
+    (Needs_argument ("", "If specified, the path to write a CSV file of cut sequences per-rank to."))
+  val alternates_file = flag "--alternates"
+    (Needs_argument ("", "If specified, the path to write a CSV file of alternate colors per-sequence to."))
+  val check_all_ranks = flag "--check-all-ranks"
+    (Plain (false, "When determining alternate colors, check all ranks instead of the least recent uncut rank."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
 
   method specl = [
     string_flag discord_file;
     string_flag cut_seqs_file;
+    string_flag alternates_file;
+    toggle_flag check_all_ranks;
     int_flag badness_cutoff;
   ] @ super_refpkg#specl
 
@@ -35,17 +60,113 @@ object (self)
   method desc = "check a reference package"
   method usage = "usage: check_refpkg -c my.refpkg"
 
+  method private discordance_tree fname =
+    let rp = self#get_rp in
+    let taxtree = Refpkg.get_tax_ref_tree rp in
+    let foldf discord data =
+      let gt' = Decor_gtree.color_clades_above data.cut_leaves taxtree in
+      (Some data.rankname, gt') :: discord
+    and finalize = Phyloxml.named_gtrees_to_file fname in
+    [], foldf, finalize
+
+  method private cut_sequences fname =
+    let rp = self#get_rp in
+    let td = Refpkg.get_taxonomy rp
+    and gt = Refpkg.get_ref_tree rp in
+    let foldf cut_seqs data =
+      let taxcounts = IntMap.fold
+        (fun _ ti accum ->
+          Tax_id.TaxIdMap.add
+            ti
+            ((Tax_id.TaxIdMap.get ti 0 accum) + 1)
+            accum)
+        data.taxmap
+        Tax_id.TaxIdMap.empty
+      in
+      IntSet.fold
+        (fun i accum ->
+          let seqname = Gtree.get_name gt i in
+          let ti = IntMap.find i data.taxmap in
+          [data.rankname;
+           seqname;
+           Tax_id.to_string ti;
+           Tax_taxonomy.get_tax_name td ti;
+           string_of_int (Tax_id.TaxIdMap.find ti taxcounts)]
+          :: accum)
+        data.cut_leaves
+        cut_seqs
+    and finalize = Csv.save fname in
+    [], foldf, finalize
+
+  method private alternate_colors fname =
+    let rp = self#get_rp
+    and check_all_ranks = fv check_all_ranks in
+    let td = Refpkg.get_taxonomy rp
+    and gt = Refpkg.get_ref_tree rp in
+    let foldf alternates data =
+      let colormap' = IntMap.filter
+        (fun k _ -> IntSet.mem k data.not_cut)
+        data.colormap
+      in
+      let rank_alternates = alternate_colors (colormap', data.stree) in
+      let rev_colormap = IntMap.fold
+        (fun _ ti -> StringMap.add (Tax_taxonomy.get_tax_name td ti) ti)
+        data.taxmap
+        StringMap.empty
+      in
+      IntSet.fold
+        (fun i accum ->
+          let seqname = Gtree.get_name gt i in
+          ColorSet.fold
+            (fun candidate accum ->
+              let c_ti = StringMap.find candidate rev_colormap in
+              let lineage = Tax_taxonomy.get_lineage td c_ti in
+              let rec aux = function
+                | [] -> true
+                | [ancestor] when ancestor = c_ti -> true
+                | ancestor :: rest ->
+                  let ancestor_rank = Tax_taxonomy.get_tax_rank td ancestor in
+                  if IntMap.mem ancestor_rank data.rank_cutseqs
+                    && IntSet.mem i (IntMap.find ancestor_rank data.rank_cutseqs)
+                  then
+                    aux rest
+                  else
+                    match begin
+                      try
+                        let orig_ancestor = IntMap.find
+                          i
+                          (IntMap.find ancestor_rank data.rank_tax_map)
+                        in
+                        ancestor = orig_ancestor
+                      with
+                        | Not_found -> false
+                    end with
+                      | true when check_all_ranks -> aux rest
+                      | x -> x
+              in
+              if aux (List.rev lineage) then
+                [data.rankname; seqname; candidate] :: accum
+              else
+                accum)
+            (IntMap.find i rank_alternates)
+            accum)
+        data.cut_leaves
+        alternates
+    and finalize = Csv.save fname in
+    [], foldf, finalize
+
   method action _ =
     let rp = self#get_rp in
     let gt = Refpkg.get_ref_tree rp in
     let st = gt.Gtree.stree
     and td = Refpkg.get_taxonomy rp
-    and cutoff = fv badness_cutoff
-    and taxtree = Refpkg.get_tax_ref_tree rp in
+    and cutoff = fv badness_cutoff in
     let leaves = leafset st in
     Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
-    let discordance, cut_sequences = IntMap.fold
-      (fun rank colormap ((discord, cut_seqs) as accum) ->
+    let rank_tax_map = rank_tax_map_of_refpkg rp in
+    let _, results = IntMap.fold
+      (fun rank taxmap ((rank_cutseqs, data_list) as accum) ->
+        let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
         let rankname = Tax_taxonomy.get_rank_name td rank in
         Printf.printf "solving %s" rankname;
         print_newline ();
@@ -67,23 +188,35 @@ object (self)
           Printf.printf "  solved omega: %d\n" omega;
           let not_cut = nodeset_of_phi_and_tree phi st in
           let cut_leaves = IntSet.diff leaves not_cut in
-          let gt' = Decor_gtree.color_clades_above cut_leaves taxtree in
-          (Some rankname, gt') :: discord,
-          IntSet.fold
-            (fun i accum -> [rankname; Gtree.get_name gt i] :: accum)
+          let rank_cutseqs' = IntMap.add
+            rank
             cut_leaves
-            cut_seqs
+            rank_cutseqs
+          in
+          let data = {
+            stree = st; rank = rank; rankname = rankname; taxmap = taxmap;
+            colormap = colormap; cut_leaves = cut_leaves; not_cut = not_cut;
+            rank_cutseqs = rank_cutseqs'; rank_tax_map = rank_tax_map;
+          }
+          in
+          rank_cutseqs', data :: data_list
         end)
-      (rank_color_map_of_refpkg rp)
-      ([], [])
+      rank_tax_map
+      (IntMap.empty, [])
     in
-    begin match fvo discord_file with
-      | Some path -> Phyloxml.named_gtrees_to_file path discordance
-      | None -> ()
-    end;
-    begin match fvo cut_seqs_file with
-      | Some path -> Csv.save path cut_sequences
-      | None -> ()
-    end
+    let maybe_reducer (flag, reducer) =
+      match fvo flag with
+        | Some fname -> [reducer fname]
+        | None -> []
+    in
+    let reducers = Base.map_and_flatten
+      maybe_reducer
+      [
+        discord_file, build_reducer self#discordance_tree;
+        cut_seqs_file, build_reducer self#cut_sequences;
+        alternates_file, build_reducer self#alternate_colors;
+      ]
+    in
+    List.iter ((flip apply) results) reducers
 
 end

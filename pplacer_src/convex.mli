@@ -6,6 +6,7 @@ module ColorSet: MapsSets.S with type elt = color
 module ColorMap: MapsSets.M with type key = color
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
+val ppr_csetim: Format.formatter -> cset IntMap.t -> unit
 
 type question = color option * cset (* a pair (c, X) *)
 module QuestionMap: MapsSets.M with type key = question
@@ -109,4 +110,6 @@ val solve: cdtree -> phi * int
 val badness: cset IntMap.t -> int * int
 val nodeset_of_phi_and_tree: phi -> stree -> IntSet.t
 val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
-val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
+val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
+
+val alternate_colors: cdtree -> cset IntMap.t
