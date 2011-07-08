@@ -13,6 +13,7 @@
    gamma distribution.
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
+ * Closed GH-91: Added more documentation to .mli files.
 
 
 1.1.alpha08
