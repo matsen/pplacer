@@ -65,11 +65,6 @@ let list_min ?(key = compare) l =
     | Some x -> x
     | None -> invalid_arg "list_min"
 
-(* adjacent_bls produces a map from each id in a Newick_gtree.t to a list of
- * (neighbor_id, distance) pairs for every neighboring node for the given node,
- * where the distance is the edge length between the two nodes. The parent of a
- * node counts as a neighbor.
- *)
 let adjacent_bls t =
   let bl = Gtree.get_bl t in
   let rec aux accum = function
