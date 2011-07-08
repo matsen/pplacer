@@ -58,13 +58,9 @@ val build_apartl: csetl -> cset -> question -> apart list
 
 (* For the recursion. *)
 
-(* val single_naive_upper: chosen:cset -> cutset:cset -> sizem -> int *)
-(* (\** naive_upper chosent cutset sizem gives an naive (i.e. ignoring convexity) *)
-(*  * upper bound for the number of leaves below that could be allowed if we select *)
-(*  * the chosen subset of the cutset. *\) *)
-
 val apart_nu: cset -> sizem list -> apart -> int
-(** convenience function for running list_nu on the csetl of an apart. *)
+(** Calculate the nu of an apart, given a sizem list for the nodes below it,
+    and the color set of the kappa above it. *)
 
 
 (* The recursion, as it were. *)
@@ -105,8 +101,20 @@ val phi_recurse: cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question
 *)
 
 val solve: cdtree -> phi * int
+(** Solve a tree, returning the solved phi and the omega of the best
+    solution. *)
 
 val badness: cset IntMap.t -> int * int
+(** Calculate (respectively) the maximum and total badness of a cutsetim. *)
+
 val nodeset_of_phi_and_tree: phi -> stree -> IntSet.t
+(** From a solved phi, find the set of leaves on the provided tree which were
+    not cut. *)
+
 val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
+(** From a tree and a map from node numbers to 'a, build a map from internal
+    node numbers to a list of the values of the map at each of the subtrees of
+    that internal node. *)
+
 val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
+(** Build a color map for each rank of the taxonomy in a reference package. *)
