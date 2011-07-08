@@ -43,6 +43,8 @@ object (self)
     (Needs_argument ("", "If specified, the path to write a CSV file of cut sequences per-rank to."))
   val alternates_file = flag "--alternates"
     (Needs_argument ("", "If specified, the path to write a CSV file of alternate colors per-sequence to."))
+  val check_all_ranks = flag "--check-all-ranks"
+    (Plain (false, "When determining alternate colors, check all ranks instead of the least recent uncut rank."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
 
@@ -50,6 +52,7 @@ object (self)
     string_flag discord_file;
     string_flag cut_seqs_file;
     string_flag alternates_file;
+    toggle_flag check_all_ranks;
     int_flag badness_cutoff;
   ] @ super_refpkg#specl
 
@@ -96,7 +99,8 @@ object (self)
     [], foldf, finalize
 
   method private alternate_colors fname =
-    let rp = self#get_rp in
+    let rp = self#get_rp
+    and check_all_ranks = fv check_all_ranks in
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
     let foldf alternates data =
@@ -127,10 +131,18 @@ object (self)
                   then
                     aux rest
                   else
-                    try
-                      IntMap.find i (IntMap.find ancestor_rank data.rank_tax_map) = ancestor
-                    with
-                      | Not_found -> false
+                    match begin
+                      try
+                        let orig_ancestor = IntMap.find
+                          i
+                          (IntMap.find ancestor_rank data.rank_tax_map)
+                        in
+                        ancestor = orig_ancestor
+                      with
+                        | Not_found -> false
+                    end with
+                      | true when check_all_ranks -> aux rest
+                      | x -> x
               in
               if aux (List.rev lineage) then
                 [data.rankname; seqname; candidate] :: accum
