@@ -32,6 +32,7 @@ let suite = List.map
     "(A,((A,(B,A)),B))", 4;
     "(A,((A,B),(A,B)));", 4;
     "(A,(B,(A,(B,A))));", 4;
+    "(A,(A,(B,(C,(C,(A,C))))));", 6;
   ]
 
 let suite =

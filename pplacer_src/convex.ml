@@ -305,7 +305,9 @@ let _build_apartl cutsetl kappa (c, x) =
     (COS.add c big_b_excl)
     []
   in
-  apartl
+  let null_apart = None, List.map (fun _ -> ColorSet.empty) cutsetl in
+  if List.mem null_apart apartl then apartl
+  else null_apart :: apartl
 
 let build_apartl_memo = Hashtbl.create 1024
 
