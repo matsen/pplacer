@@ -132,7 +132,7 @@ object (self)
                     with
                       | Not_found -> false
               in
-              if aux lineage then
+              if aux (List.rev lineage) then
                 [data.rankname; seqname; candidate] :: accum
               else
                 accum)
