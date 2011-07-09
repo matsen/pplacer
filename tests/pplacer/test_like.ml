@@ -14,7 +14,7 @@ let like_test info () =
   let aln = Alignment_funs.upper_aln_of_any_file (d info.fasta_fname)
   and tree = Newick_gtree.of_file (d info.tree_fname)
   in
-  let model = Model.of_json (d "phylo_model.json") aln
+  let model = Model.of_json (d "phylo_model.jplace") aln
   and n_sites = Alignment.length aln
   in
   let check our_like =

@@ -14,7 +14,7 @@ object (self)
     | [] -> ()
     | prl ->
       let fname = self#single_file
-        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".json"))
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".jplace"))
         ()
       in
       let combined = List.fold_left

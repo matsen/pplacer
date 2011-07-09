@@ -199,7 +199,8 @@ let ppr_placerun ff pr =
 let of_any_file fname =
   if Filename.check_suffix fname ".place" then
     of_file fname
-  else if Filename.check_suffix fname ".json" then
+  else if Filename.check_suffix fname ".json"
+      || Filename.check_suffix fname ".jplace" then
     of_json_file fname
   else
     failwith ("unfamiliar suffix on " ^ fname)
