@@ -117,8 +117,10 @@ val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
     node numbers to a list of the values of the map at each of the subtrees of
     that internal node. *)
 
-val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
-val alternate_colors: cdtree -> cset IntMap.t
-val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
 val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
-(** Build a map for each rank of the taxonomy in a reference package. *)
+(** Build a map from leaves to tax_ids for each rank of the taxonomy in a
+    reference package. *)
+
+val alternate_colors: cdtree -> cset IntMap.t
+(** From a partially-uncolored tree, determine the potential colors of
+    uncolored leaves. *)
