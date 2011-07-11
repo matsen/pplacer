@@ -277,6 +277,44 @@ def align(arguments):
     aligner.align(arguments.seqfile, arguments.outfile)
 
 
+def extract(arguments):
+    """
+    Extract a reference alignment from a reference package
+    """
+    refpkg = arguments.refpkg
+
+    # If not masking, just copy the sequences, reformatting if appropriate
+    if not arguments.use_mask:
+        with refpkg.resource('aln_sto') as input_fp:
+            with arguments.output_file as output_fp:
+                result = SeqIO.convert(input_fp, 'stockholm', output_fp,
+                        arguments.output_format)
+        logging.info("Wrote %d sequences", result)
+        return
+
+
+    # Mask will be applied if available
+    with refpkg.resource('aln_sto') as fp:
+        alignment_length = len(next(SeqIO.parse(fp, 'stockholm')))
+
+        # Rewind
+        fp.seek(0)
+        sequences = SeqIO.parse(fp, 'stockholm')
+
+        try:
+            with refpkg.resource('mask') as fp:
+                mask = AlignmentMask.from_csv_file(fp, alignment_length)
+            logging.info("Applying mask - keeping %d/%d positions",
+                    mask.unmasked_count, len(mask))
+            sequences = mask.mask_records(sequences)
+        except KeyError:
+            log.warn("No mask found. Extracting all columns.")
+
+        with arguments.output_file as output_fp:
+            result = SeqIO.write(sequences, output_fp, arguments.output_format)
+        logging.info("Wrote %d sequences.", result)
+
+
 def search_align(arguments):
     """
     Search input sequences for matches to reference alignment, align
@@ -317,7 +355,8 @@ def main(argv=sys.argv[1:]):
     Parse command-line arguments.
     """
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.INFO,
+            format="%(levelname)s: %(message)s")
     # Build up a list of search and align defaults, for help text used below.
     search_defaults = ''
     for profile in ALIGNMENT_DEFAULTS['search_options']:
@@ -343,6 +382,20 @@ def main(argv=sys.argv[1:]):
             help=align.__doc__)
     parser_align.set_defaults(func=align)
 
+    # extract
+    parser_extract = subparsers.add_parser('extract',
+            help=extract.__doc__)
+    parser_extract.set_defaults(func=extract)
+    parser_extract.add_argument("--output-format",
+            default="stockholm", help="output format [default: %(default)s]")
+    parser_extract.add_argument("--no-mask", dest='use_mask', default=True,
+            action="store_false", help="""Do not apply mask to alignment
+            [default: apply]""")
+    parser_extract.add_argument('refpkg', type=reference_package,
+            help='Reference package directory')
+    parser_extract.add_argument('output_file', type=argparse.FileType('w'),
+            help="""Destination""")
+
     # search_align
     parser_searchalign = subparsers.add_parser('search-align',
                 help=search_align.__doc__)
@@ -356,7 +409,7 @@ def main(argv=sys.argv[1:]):
     # With the exception of 'help', all subcommands share a certain
     # number of arguments, which are added here.
     for subcommand, subparser in subparsers.choices.items():
-        if subcommand == 'help':
+        if subcommand in ('help', 'extract'):
             continue
 
         subparser.add_argument('--align-opts', dest='alignment_options',
