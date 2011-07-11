@@ -390,7 +390,7 @@ def main(argv=sys.argv[1:]):
             default="stockholm", help="output format [default: %(default)s]")
     parser_extract.add_argument("--no-mask", dest='use_mask', default=True,
             action="store_false", help="""Do not apply mask to alignment
-            [default: apply]""")
+            [default: apply mask if it exists]""")
     parser_extract.add_argument('refpkg', type=reference_package,
             help='Reference package directory')
     parser_extract.add_argument('output_file', type=argparse.FileType('w'),
@@ -421,16 +421,17 @@ def main(argv=sys.argv[1:]):
         subparser.add_argument('--profile-version', dest='profile_version',
                 default=ALIGNMENT_DEFAULTS['profile'], choices=ALIGNERS.keys(),
                 help='Profile version to use. [default: %(default)s]')
-        subparser.add_argument('--use-mask', default=False,
-                action='store_true', help="""If a mask exists for the refpkg,
+        subparser.add_argument('--no-mask', default=True, dest="use_mask",
+                action='store_false', help="""Do not
                 trim the alignment to unmasked columns. [default:
-                %(default)s]""")
+                apply mask if it exists]""")
         #subparser.add_argument('--format', dest='sequence_file_format',
                 #default=ALIGNMENT_DEFAULTS['sequence_file_format'],
                 #help='Specify format of seqfile.  Default: %(default)s')
         subparser.add_argument('refpkg', type=reference_package,
                 help='Reference package directory')
-        subparser.add_argument('seqfile', help='A single fasta file')
+        subparser.add_argument('seqfile', help="""Input file, in FASTA
+                format.""")
         subparser.add_argument('outfile', help="""Output file""")
         subparser.add_argument('--debug', action='store_true',
                 help='Enable debug output', default=False)

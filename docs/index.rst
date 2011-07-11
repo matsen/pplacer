@@ -11,6 +11,7 @@ Guppy can do many different things via its subcommand interface, from compressin
 
    generated_rst/pplacer
    generated_rst/guppy
+   scripts
 
 
 Getting help
