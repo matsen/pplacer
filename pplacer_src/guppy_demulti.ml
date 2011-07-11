@@ -35,7 +35,7 @@ object (self)
         let out_name = (prefix^(pr.Placerun.name)) in
         Placerun_io.to_json_file
           "guppy demulti"
-          (out_name^".json")
+          (out_name^".jplace")
           (demulti_placerun out_name pr))
       prl
 end

@@ -529,7 +529,7 @@ let run_file prefs query_fname =
       in
       Placerun_io.to_json_file
         invocation
-        (out_prefix ^ ".json")
+        (out_prefix ^ ".jplace")
         final_pr
     in
     gotfunc, cachefunc, donefunc

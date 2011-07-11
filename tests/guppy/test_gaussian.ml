@@ -32,7 +32,7 @@ let suite = [
   "gaussian" >::: [
     "coastal.v.upwelling" >::
       (fun _ ->
-         test_gaussian 0.715 "data/psbA/coastal.json" "data/psbA/upwelling.json");
+         test_gaussian 0.715 "data/psbA/coastal.jplace" "data/psbA/upwelling.jplace");
   ]
 ]
 

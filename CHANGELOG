@@ -7,6 +7,7 @@
  * Closed GH-75: Changed mass maps to use records types instead of tuples.
  * Closed GH-78: Added an --average flag to `guppy fat`.
  * Closed GH-82: Merged the `pick` branch into dev.
+ * Closed GH-84: Renamed .json to .jplace for new-format placefiles.
  * Closed GH-85: Added better error messages for potential premasking failures.
  * Closed GH-88: Improved handling very small alphas in pplacer, working around
    a problem with the GSL that wasn't allowing us to invert the CDF for the

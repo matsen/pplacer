@@ -6,7 +6,7 @@ dedup files for use with ``guppy redup``::
 
     seqmagick convert --deduplicated-sequences-file=sample.dedup sample.fasta sample_deduped.fasta
     pplacer -c sample.refpkg sample_deduped.fasta
-    guppy redup -d sample.dedup --prefix reduped_ sample_deduped.json
+    guppy redup -d sample.dedup --prefix reduped_ sample_deduped.jplace
 
 The format for dedup files is very simple, for ease of reading and writing.
 Each dedup file is a series of lines, with a single-space-separated list of

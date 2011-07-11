@@ -56,7 +56,7 @@ Command line interface
 The general way to invoke |guppy| is ``guppy COMMAND [options] placefile[s]`` where COMMAND is one of the |guppy| commands.
 For example::
 
-  guppy heat --gray-black coastal.json DCM.json
+  guppy heat --gray-black coastal.jplace DCM.jplace
 
 These programs are listed with more detail below, and can always be found using ``guppy --cmds`` .
 
@@ -73,15 +73,15 @@ Batch files are files with one guppy command per line, specified exactly as
 would be written in a shell, except without the leading ``guppy``. Arguments
 can be enclosed in double quotes to preserve whitespace, and double quotes
 within quoted strings are quoted by doubling (e.g. ``"spam ""and""
-eggs"``. Globbing (e.g. ``*.json``) is not allowed. Comments are also allowed
+eggs"``. Globbing (e.g. ``*.jplace``) is not allowed. Comments are also allowed
 in batch files; everything on a line after a ``#`` is ignored.
 
 An example batch file::
 
   # Whole-line comment.
-  pca -o pca -c some.refpkg src/a.json src/b.json
-  squash -c some.refpkg -o squash_out src/a.json src/b.json
-  classify -c some.refpkg some.json  # inline comment
+  pca -o pca -c some.refpkg src/a.jplace src/b.jplace
+  squash -c some.refpkg -o squash_out src/a.jplace src/b.jplace
+  classify -c some.refpkg some.jplace  # inline comment
 
 ..
 

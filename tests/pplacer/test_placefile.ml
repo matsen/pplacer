@@ -6,7 +6,7 @@ let suite_of_prl name =
     (fun pr ->
       (pr.Placerun.name) >:: fun () ->
         "not equal to self" @? placerun_equal pr pr;
-        let fname = Filename.temp_file "pr" ".json" in
+        let fname = Filename.temp_file "pr" ".jplace" in
         let finish () = Unix.unlink fname in begin
           try
             Placerun_io.to_json_file "" fname pr;
