@@ -11,6 +11,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
+  inherit kr_cmd () as super_kr
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
@@ -19,21 +20,22 @@ object (self)
     (Plain (false, "If specified, write progress output to stderr."))
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
-  val mass_cutoff = flag "--mass"
-    (Needs_argument ("mass cutoff", "If set to x, stop when the min mass in a Voronoi region is > x."))
+  val dist_cutoff = flag "--distance"
+    (Needs_argument ("", "If set to x, stop when the minimum KR distance from a voronoi region to ."))
   val leaf_cutoff = flag "--leaves"
-    (Needs_argument ("leaf cutoff", "If provided, the maximum number of leaves to cut from the tree."))
+    (Needs_argument ("", "If provided, the maximum number of leaves to cut from the tree."))
   val leaf_mass = flag "--leaf-mass"
     (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
 
   method specl =
     super_mass#specl
+    @ super_kr#specl
     @ super_refpkg#specl
     @ super_output#specl
     @ [
       toggle_flag verbose;
       string_flag trimmed_tree_file;
-      float_flag mass_cutoff;
+      float_flag dist_cutoff;
       int_flag leaf_cutoff;
       float_flag leaf_mass;
     ]
@@ -65,8 +67,8 @@ object (self)
       and graph = Voronoi.of_gtree gt in
       let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
       let criteria =
-        (match fvo mass_cutoff with
-          | Some cutoff -> [fun (mass, _) -> mass > cutoff]
+        (match fvo dist_cutoff with
+          | Some cutoff -> [fun (dist, _) -> dist > cutoff]
           | None -> [])
         @ (match fvo leaf_cutoff with
           | Some count ->
@@ -88,7 +90,6 @@ object (self)
             graph.Voronoi.all_leaves
             mass
       in
-      let sum = List.fold_left (+.) 0.0 in
       (* This is the central recursion that finds the Voronoi region with the
        * least mass and deletes its leaf from the corresponding set. *)
       (* XXX I'm sure you've already thought of this, but it seems to me that we
@@ -96,38 +97,46 @@ object (self)
        * only gets updated for the Voronoi regions that get "touched".
        * *)
       let rec aux graph =
-        let mass_dist = Voronoi.distribute_mass graph mass in
-        let sum_leaf leaf = sum (IntMap.get leaf [] mass_dist) in
+        let indiv_map = Voronoi.partition_indiv_on_leaves graph mass in
+        let score leaf =
+          if not (IntMap.mem leaf indiv_map) then 0.0 else
+            let indiv = IntMap.find leaf indiv_map in
+            let squashed_indiv = IntMap.singleton
+              leaf
+              [{I.distal_bl = 0.0; I.mass = I.total_mass indiv}]
+            in
+            Kr_distance.dist gt (fv p_exp) indiv squashed_indiv
+        in
         (* Find the leaf with the least mass in its Voronoi region. When there
          * are > 1 leaves with zero mass in their regions, we get all of them. *)
         match IntSet.fold
           (fun leaf ->
-            let mass = sum_leaf leaf in function
-              | None -> Some (IntSet.singleton leaf, mass)
-              | Some (_, prev_mass) when mass < prev_mass ->
-                Some (IntSet.singleton leaf, mass)
-              | Some (leafs, prev_mass) when mass = prev_mass && mass = 0.0 ->
-                Some (IntSet.add leaf leafs, prev_mass)
-              | (Some _) as prev -> prev)
+            let dist = score leaf in function
+              | None -> Some (IntSet.singleton leaf, dist)
+              | Some (_, prev_dist) when dist < prev_dist ->
+                Some (IntSet.singleton leaf, dist)
+              | Some (leafs, prev_dist) when dist = prev_dist && dist = 0.0 ->
+                Some (IntSet.add leaf leafs, prev_dist)
+              | prev -> prev)
           graph.Voronoi.all_leaves
           None
         with
           | None -> failwith "no leaves?"
-          | Some (leafs, mass) ->
-            if List.exists (fun f -> f (mass, graph)) criteria then
+          | Some (leafs, dist) ->
+            if List.exists (fun f -> f (dist, graph)) criteria then
               graph
             else begin
               if verbose then begin
-                Printf.fprintf stderr "uncoloring %d leaves (mass %1.6f)"
+                Printf.fprintf stderr "uncoloring %d leaves (dist %1.6f)"
                   (IntSet.cardinal leafs)
-                  mass;
+                  dist;
                 prerr_newline ();
               end;
               (* XXX Yes, we'd just have to accept the updated here. *)
               let graph', _ = Voronoi.uncolor_leaves graph leafs in
               let cut = List.map
                 (fun leaf -> [Gtree.get_name taxtree leaf;
-                             Printf.sprintf "%1.6f" mass])
+                             Printf.sprintf "%1.6f" dist])
                 (IntSet.elements leafs)
               in
               Csv.save_out ch cut;
