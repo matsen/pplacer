@@ -4,6 +4,7 @@ open MapsSets
 
 let compose f g a = f (g a)
 let flip f x y = f y x
+let id x = x
 
 exception Finished
 
@@ -453,31 +454,66 @@ let run_file prefs query_fname =
   end else begin
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
-    let pquery_gotfunc, pquery_donefunc = if map_fasta_file <> "" then begin
-      let result_map = ref IntMap.empty in
+    let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
+    let pquery_gotfunc, pquery_donefunc = if do_map then begin
+      let ref_tree = Refpkg.get_ref_tree rp
+      and mrcam = Refpkg.get_mrcam rp
+      and td = Refpkg.get_taxonomy rp
+      and glvs = Glv_arr.make
+        ~n_glvs:2
+        ~n_sites
+        ~n_rates:(Model.n_rates model)
+        ~n_states:(Model.n_states model)
+      in
+      let map_map = Map_seq.of_map
+        glvs.(0)
+        glvs.(1)
+        (Refpkg.get_model rp)
+        ref_tree
+        ~darr
+        ~parr
+        mrcam
+        (Prefs.map_cutoff prefs)
+      and result_map = ref IntMap.empty in
       let gotfunc pq =
         let best_placement = Pquery.best_place Placement.ml_ratio pq in
         result_map := IntMap.add_listly
           (Placement.location best_placement)
           ((List.hd (Pquery.namel pq)), (Pquery.seq pq))
-          (!result_map)
-      and donefunc () =
-        let ref_tree = Refpkg.get_ref_tree rp
-        and mrcam = Refpkg.get_mrcam rp
-        and td = Refpkg.get_taxonomy rp in
+          (!result_map);
+        if not (Prefs.map_identity prefs) then pq else
+          let placement_map = List.fold_left
+            (fun accum p ->
+              IntMap.add_listly
+                (Placement.location p)
+                p
+                accum)
+            IntMap.empty
+            (Pquery.place_list pq)
+          in
+          let placement_map' = Map_seq.mrca_map_seq_map
+            placement_map
+            mrcam
+            (ref_tree.Gtree.stree)
+          in
+          let identity = Alignment_funs.identity (Pquery.seq pq) in
+          let placements' = IntMap.fold
+            (fun mrca pl accum ->
+              List.fold_left
+                (fun accum p ->
+                  let map_seq = IntMap.find mrca map_map in
+                  (Placement.add_map_identity p (identity map_seq)) :: accum)
+                accum
+                pl)
+            placement_map'
+            []
+          in
+          {pq with Pquery.place_list = placements'}
+      and donefunc = if map_fasta_file = "" then id else fun () ->
         let seq_map = Map_seq.mrca_map_seq_map
           (!result_map)
           mrcam
           (ref_tree.Gtree.stree)
-        and map_map = Map_seq.of_map
-          snodes.(0)
-          snodes.(1)
-          (Refpkg.get_model rp)
-          ref_tree
-          ~darr
-          ~parr
-          mrcam
-          (Prefs.map_cutoff prefs)
         and space = Str.regexp " " in
         let map_fasta = IntMap.fold
           (fun i mrca accum ->
@@ -499,13 +535,13 @@ let run_file prefs query_fname =
       in
       gotfunc, donefunc
 
-    end else (fun _ -> ()), (fun () -> ())
+    end else (id, id)
     in
 
     let queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest ->
-        pquery_gotfunc pq;
+        let pq = pquery_gotfunc pq in
         queries := pq :: (!queries);
         gotfunc rest
       | Core.Timing (name, value) :: rest ->
