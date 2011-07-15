@@ -23,6 +23,7 @@ type placement =
     distal_bl       : float;
     pendant_bl      : float;
     classif         : Tax_id.tax_id option;
+    map_identity    : (float * int) option;
   }
 
 let location            p = p.location
@@ -46,6 +47,7 @@ let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl = {
   marginal_prob    =  None;
   post_prob        =  None;
   classif          =  None;
+  map_identity     =  None;
 }
 
 let add_pp p ~marginal_prob ~post_prob =
@@ -54,6 +56,7 @@ let add_pp p ~marginal_prob ~post_prob =
     marginal_prob  =  Some marginal_prob}
 
 let add_classif p c = {p with classif = Some c}
+let add_map_identity p i = {p with map_identity = Some i}
 
 let compare_placements criterion rp1 rp2 =
   compare (criterion rp1) (criterion rp2)
@@ -109,6 +112,7 @@ let placement_of_str str =
         distal_bl        =  float_of_string      strs.(5);
         pendant_bl       =  float_of_string      strs.(6);
         classif          =  None;
+        map_identity     =  None;
       }
     in
     if len = 7 then basic
@@ -153,7 +157,7 @@ let to_str place = String.concat "\t" (to_strl place)
 
 let to_json json_state place =
   begin match !json_state with
-    | Some (has_post_prob, has_classif) ->
+    | Some (has_post_prob, has_classif, has_map_identity) ->
       begin match place.post_prob, place.marginal_prob, has_post_prob with
         | Some _, Some _, true
         | None, None, false -> ()
@@ -163,7 +167,12 @@ let to_json json_state place =
         | Some _, true
         | None, false -> ()
         | _, _ -> failwith "not all placements are classified"
-      end
+      end;
+      begin match place.map_identity, has_map_identity with
+        | Some _, true
+        | None, false -> ()
+        | _, _ -> failwith "not all placement have MAP identity"
+      end;
     | None ->
       let t = begin match place.post_prob, place.marginal_prob with
         | Some _, Some _ -> true
@@ -171,6 +180,9 @@ let to_json json_state place =
         | _, _ ->
           failwith "placement has posterior probability but not marginal probability ???"
       end, begin match place.classif with
+        | Some _ -> true
+        | None -> false
+      end, begin match place.map_identity with
         | Some _ -> true
         | None -> false
       end
@@ -192,6 +204,10 @@ let to_json json_state place =
     @ begin match place.classif with
       | Some c -> [Tax_id.to_json c]
       | _ -> []
+    end
+    @ begin match place.map_identity with
+      | Some (f, d) -> [Jsontype.Array [Jsontype.Float f; Jsontype.Int d]]
+      | _ -> []
     end)
 
 let of_json fields a =
@@ -208,6 +224,9 @@ let of_json fields a =
       Some (f (StringMap.find k map))
     with
       | Not_found -> None
+  and map_identity = function
+    | Jsontype.Array [Jsontype.Float f; Jsontype.Int d] -> f, d
+    | _ -> failwith "malformed map_identity in json"
   in {
     location = Jsontype.int (get "edge_num");
     log_like = Jsontype.float (get "likelihood");
@@ -217,6 +236,7 @@ let of_json fields a =
     post_prob = maybe_get Jsontype.float "post_prob";
     marginal_prob = maybe_get Jsontype.float "marginal_prob";
     classif = maybe_get Tax_id.of_json "classification";
+    map_identity = maybe_get map_identity "map_identity";
   }
 
 (* CSV *)

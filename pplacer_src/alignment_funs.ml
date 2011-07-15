@@ -103,3 +103,18 @@ let upper_list_of_any_file fname = uppercase_list (list_of_any_file fname)
 
 let aln_of_any_file fname = Array.of_list (list_of_any_file fname)
 let upper_aln_of_any_file fname = Alignment.uppercase (aln_of_any_file fname)
+
+let identity s1 s2 =
+  let s1' = StringFuns.to_char_array s1
+  and s2' = StringFuns.to_char_array s2 in
+  let num, denom = ArrayFuns.fold_left2
+    (fun (num, denom) c1 c2 ->
+      if c1 = '-' || c2 = '-' then
+        num, denom
+      else
+        num + (if c1 = c2 then 1 else 0), succ denom)
+    (0, 0)
+    s1'
+    s2'
+  in
+  (float_of_int num) /. (float_of_int denom), denom

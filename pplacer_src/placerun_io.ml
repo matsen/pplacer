@@ -67,10 +67,11 @@ let to_json_file invocation out_fname placerun =
     ["edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"]
     @ begin match !json_state with
       | None
-      | Some (false, false) -> []
-      | Some (has_post_prob, has_classif) ->
+      | Some (false, false, false) -> []
+      | Some (has_post_prob, has_classif, has_map_identity) ->
         begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
         @ begin if has_classif then ["classification"] else [] end
+        @ begin if has_map_identity then ["map_identity"] else [] end
     end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));

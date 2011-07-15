@@ -15,6 +15,7 @@
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
+ * Closed GH-98: Adding a --map-identity flag to pplacer.
 
 
 1.1.alpha08
