@@ -23,7 +23,7 @@ type placement =
     distal_bl       : float;
     pendant_bl      : float;
     classif         : Tax_id.tax_id option;
-    map_identity    : float option;
+    map_identity    : (float * int) option;
   }
 
 let location            p = p.location
@@ -206,7 +206,7 @@ let to_json json_state place =
       | _ -> []
     end
     @ begin match place.map_identity with
-      | Some i -> [Jsontype.Float i]
+      | Some (f, d) -> [Jsontype.Array [Jsontype.Float f; Jsontype.Int d]]
       | _ -> []
     end)
 
@@ -224,6 +224,9 @@ let of_json fields a =
       Some (f (StringMap.find k map))
     with
       | Not_found -> None
+  and map_identity = function
+    | Jsontype.Array [Jsontype.Float f; Jsontype.Int d] -> f, d
+    | _ -> failwith "malformed map_identity in json"
   in {
     location = Jsontype.int (get "edge_num");
     log_like = Jsontype.float (get "likelihood");
@@ -233,7 +236,7 @@ let of_json fields a =
     post_prob = maybe_get Jsontype.float "post_prob";
     marginal_prob = maybe_get Jsontype.float "marginal_prob";
     classif = maybe_get Tax_id.of_json "classification";
-    map_identity = maybe_get Jsontype.float "map_identity";
+    map_identity = maybe_get map_identity "map_identity";
   }
 
 (* CSV *)

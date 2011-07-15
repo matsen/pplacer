@@ -117,4 +117,4 @@ let identity s1 s2 =
     s1'
     s2'
   in
-  (float_of_int num) /. (float_of_int denom)
+  (float_of_int num) /. (float_of_int denom), denom
