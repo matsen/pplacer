@@ -87,7 +87,28 @@ If this was saved as ``example.batch``, it would be invoked from guppy as::
 
   guppy --batch example.batch
 
-..
+Advanced features
+^^^^^^^^^^^^^^^^^
+
+Batch files also have two unique features: virtual placefiles, and parameter
+substitution.
+
+Within a batch file, if a placefile is saved to or loaded from a path beginning
+with a ``@``, the data will be stored in memory instead of written to disk. For
+example::
+
+  merge -o @merged.jplace src/a.jplace src/b.jplace
+  info @merged.jplace
+
+Additionally, parameters can be passed in from the command line to the batch
+file. On the command line, parameters are specified as additional arguments to
+guppy in ``key=value`` format. In the batch file, substitutions are done from
+identifiers in ``{key}`` format. For example::
+
+  # invoked with ``guppy --batch example.batch k1=1.jplace k2=2.jplace``
+  info {k1} {k2}
+
+Braces can also be quoted by doubling (e.g. ``{{foo}}`` will become ``{foo}``).
 
 
 About multiplicities
