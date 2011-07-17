@@ -59,17 +59,31 @@ let of_file fname =
   let tokens = Base.map_and_flatten tokenize_batchfile lines in
   parse tokens
 
-let placeholder_regexp = Str.regexp "{\\([a-zA-Z0-9_-]+\\)}"
-let substitute_placeholders m =
-  let nice_find s =
-    try
-      StringMap.find s m
-    with Not_found ->
-      failwith ("unspecified batchfile substitution: " ^ s)
+let placeholder_regexp = Str.regexp begin
+  String.concat "\\|" [
+    (* an escaped brace (group 1) *)
+    "\\({{\\|}}\\)";
+    (* an identifier to substitute (group 2) *)
+    "{\\([a-zA-Z0-9_-]+\\)}";
+  ]
+end
+let substitute_placeholders m s =
+  let substitute s =
+    match Base.first_match [1; 2] s with
+    | 1, "{{" -> "{"
+    | 1, "}}" -> "}"
+    | 2, identifier -> begin
+      try
+        StringMap.find identifier m
+      with Not_found ->
+        failwith ("unspecified batchfile substitution: " ^ identifier)
+    end
+    | _, _ -> invalid_arg "substitute"
   in
   Str.global_substitute
     placeholder_regexp
-    (compose nice_find (Str.matched_group 1))
+    substitute
+    s
 
 let argument_regexp = Str.regexp "^\\([a-zA-Z0-9_-]+\\)=\\(.*\\)$"
 let split_arguments l =
