@@ -1,3 +1,7 @@
+open MapsSets
+
+let compose f g a = f (g a)
+
 let batchfile_regexp = Str.regexp begin
   String.concat "\\|" [
     (* whitespace (ignored) *)
@@ -54,3 +58,28 @@ let of_file fname =
   let lines = File_parsing.string_list_of_file fname in
   let tokens = Base.map_and_flatten tokenize_batchfile lines in
   parse tokens
+
+let placeholder_regexp = Str.regexp "{\\([a-zA-Z0-9_-]+\\)}"
+let substitute_placeholders m =
+  let nice_find s =
+    try
+      StringMap.find s m
+    with Not_found ->
+      failwith ("unspecified batchfile substitution: " ^ s)
+  in
+  Str.global_substitute
+    placeholder_regexp
+    (compose nice_find (Str.matched_group 1))
+
+let argument_regexp = Str.regexp "^\\([a-zA-Z0-9_-]+\\)=\\(.*\\)$"
+let split_arguments l =
+  List.fold_left
+    (fun accum s ->
+      if not (Str.string_match argument_regexp s 0) then
+        failwith ("malformed batchfile argument: " ^ s);
+      StringMap.add
+        (Str.matched_group 1 s)
+        (Str.matched_group 2 s)
+        accum)
+    StringMap.empty
+    l
