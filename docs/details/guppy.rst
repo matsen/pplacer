@@ -72,9 +72,9 @@ time it is used in a command.
 Batch files are files with one guppy command per line, specified exactly as
 would be written in a shell, except without the leading ``guppy``. Arguments
 can be enclosed in double quotes to preserve whitespace, and double quotes
-within quoted strings are quoted by doubling (e.g. ``"spam ""and""
-eggs"``. Globbing (e.g. ``*.jplace``) is not allowed. Comments are also allowed
-in batch files; everything on a line after a ``#`` is ignored.
+within quoted strings are quoted by doubling (e.g. ``"spam ""and"" eggs"``).
+Globbing (e.g. ``*.jplace``) is not allowed. Comments are also allowed in batch
+files; everything on a line after a ``#`` is ignored.
 
 An example batch file::
 
@@ -82,6 +82,10 @@ An example batch file::
   pca -o pca -c some.refpkg src/a.jplace src/b.jplace
   squash -c some.refpkg -o squash_out src/a.jplace src/b.jplace
   classify -c some.refpkg some.jplace  # inline comment
+
+If this was saved as ``example.batch``, it would be invoked from guppy as::
+
+  guppy --batch example.batch
 
 ..
 

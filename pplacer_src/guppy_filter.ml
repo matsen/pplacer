@@ -144,5 +144,5 @@ object (self)
         (List.hd filtered)
         (List.tl filtered)
       in
-      Placerun_io.to_json_file "guppy filter" fname combined
+      self#write_placefile "guppy filter" fname combined
 end

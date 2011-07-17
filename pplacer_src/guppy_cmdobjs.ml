@@ -155,6 +155,16 @@ object (self)
   method action fnamel =
     let prl = List.map placerun_by_name fnamel in
     self#placefile_action prl
+
+  method private write_placefile invocation fname pr =
+    if fname.[0] = '@' then
+      let name = Filename.chop_extension
+        (String.sub fname 1 ((String.length fname) - 1))
+      in
+      placerun_map := SM.add fname (Placerun.set_name pr name) !placerun_map
+    else
+      Placerun_io.to_json_file invocation fname pr
+
 end
 
 

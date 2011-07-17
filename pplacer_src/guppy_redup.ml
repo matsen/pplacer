@@ -26,7 +26,7 @@ object (self)
           let sequences = Str.split white_regexp line in
           Hashtbl.add sequence_tbl (List.hd sequences) sequences)
         lines;
-      Placerun_io.to_json_file
+      self#write_placefile
         "guppy to_json"
         (self#single_file ())
         (Placerun.redup sequence_tbl pr)
