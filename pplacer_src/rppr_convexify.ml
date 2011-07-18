@@ -55,7 +55,7 @@ object (self)
   val use_naive = flag "--naive"
     (Plain (false, "Use the naive convexify algorithm."))
   val timing = flag "--timing"
-    (Plain (false, "Show timing information for solved trees."))
+    (Needs_argument ("", "If specified, save timing information for solved trees to a CSV file."))
 
   method specl = [
     string_flag discord_file;
@@ -64,7 +64,7 @@ object (self)
     toggle_flag check_all_ranks;
     int_flag badness_cutoff;
     toggle_flag use_naive;
-    toggle_flag timing;
+    string_flag timing;
   ] @ super_refpkg#specl
 
 
@@ -166,20 +166,14 @@ object (self)
     and finalize = Csv.save fname in
     [], foldf, finalize
 
-  method private timing do_timing =
-    let foldf accum data =
-      IntMap.add data.rank data accum
-    and finalize = if not do_timing then fun _ -> () else fun timing ->
-      print_endline "\ntiming information:";
-      IntMap.iter
-        (fun _ data ->
-          Printf.printf "%s (%d): %0.4fs\n"
-            data.rankname
-            data.max_badness
-            data.time_delta)
-        timing
-    in
-    IntMap.empty, foldf, finalize
+  method private timing fname =
+    let foldf timing data =
+      [data.rankname;
+       string_of_int data.max_badness;
+       Printf.sprintf "%0.6f" data.time_delta]
+      :: timing
+    and finalize = Csv.save fname in
+    [], foldf, finalize
 
   method action _ =
     let rp = self#get_rp in
