@@ -129,6 +129,6 @@ val alternate_colors: cdtree -> cset IntMap.t
     uncolored leaves. *)
 
 module Naive: sig
-  val solve: ColorMap.key MapsSets.IntMap.t * Stree.stree -> MapsSets.IntSet.t ColorSetMap.t ColorOptMap.t
+  val solve: cdtree -> IntSet.t
 end
 

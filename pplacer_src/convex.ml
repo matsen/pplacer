@@ -655,10 +655,9 @@ let add_longest k v m =
 module Naive = struct
 
   let solve ((_, tree) as cdtree) =
-    let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
+    let _, cutsetim = build_sizemim_and_cutsetim cdtree in
     let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
-    let sizemlim = maplist_of_map_and_tree sizemim tree
-    and cutsetlim = maplist_of_map_and_tree cutsetim tree in
+    let cutsetlim = maplist_of_map_and_tree cutsetim tree in
 
     let rec walk = function
       | Leaf i ->
@@ -673,7 +672,7 @@ module Naive = struct
         let phi = List.map walk subtrees
         and big_b = between (IntMap.find i cutsetlim)
         and kappa = IntMap.find i cutsetim in
-        COS.fold
+        let ret = COS.fold
           (fun c accum ->
             let c' = copt_singleton c in
             let ret_c = COS.fold
@@ -692,7 +691,11 @@ module Naive = struct
                         if CS.is_empty (CS.diff (CS.inter x_i used_colors) b')
                           && (b = c || CS.is_empty (CS.inter x_i c'))
                         then
-                          aux (CS.union used_colors x_i) (IntSet.union used_nodes nodes) accum rest
+                          aux
+                            (CS.union used_colors x_i)
+                            (IntSet.union used_nodes nodes)
+                            accum
+                            rest
                         else
                           accum)
                       x_is
@@ -705,9 +708,24 @@ module Naive = struct
             COM.add c ret_c accum)
           (COS.add None (coptset_of_cset kappa))
           COM.empty
+        in
+        if CS.is_empty kappa then
+          let best = CSM.fold
+            (fun _ cur -> function
+              | Some prev when IntSet.cardinal cur <= IntSet.cardinal prev ->
+                Some prev
+              | _ -> Some cur)
+            (COM.find None ret)
+            None
+          in
+          match best with
+            | Some best -> COM.singleton None (CSM.singleton CS.empty best)
+            | None -> failwith "no clades on an internal node ???"
+        else
+          ret
 
     in
-    walk tree
+    CSM.find CS.empty (COM.find None (walk tree))
 
 end
 
