@@ -47,6 +47,8 @@ object (self)
     (Plain (false, "When determining alternate colors, check all ranks instead of the least recent uncut rank."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
+  val use_naive = flag "--naive"
+    (Plain (false, "Use the naive convexify algorithm."))
 
   method specl = [
     string_flag discord_file;
@@ -54,6 +56,7 @@ object (self)
     string_flag alternates_file;
     toggle_flag check_all_ranks;
     int_flag badness_cutoff;
+    toggle_flag use_naive;
   ] @ super_refpkg#specl
 
 
@@ -184,9 +187,15 @@ object (self)
         end else begin
           Printf.printf "  badness: %d max; %d tot" max_bad tot_bad;
           print_newline ();
-          let phi, omega = solve (colormap, st) in
+          let not_cut, omega =
+            if fv use_naive then
+              let not_cut = Naive.solve (colormap, st) in
+              not_cut, IntSet.cardinal not_cut
+            else
+              let phi, omega = solve (colormap, st) in
+              nodeset_of_phi_and_tree phi st, omega
+          in
           Printf.printf "  solved omega: %d\n" omega;
-          let not_cut = nodeset_of_phi_and_tree phi st in
           let cut_leaves = IntSet.diff leaves not_cut in
           let rank_cutseqs' = IntMap.add
             rank
