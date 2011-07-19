@@ -19,9 +19,9 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
 
-  val max_dist = flag "--md"
+  val max_dist = flag "--min-distance"
     (Needs_argument ("min distance", "Specify the minimum distance to leaves to report"))
-  val max_reported = flag "--mr"
+  val max_reported = flag "--max-matches"
     (Needs_argument ("N", "Only report the deepest N placements"))
 
   method specl = super_mass#specl @ [
