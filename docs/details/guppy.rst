@@ -100,13 +100,23 @@ example::
   merge -o @merged.jplace src/a.jplace src/b.jplace
   info @merged.jplace
 
+will effectively run ``guppy info`` on the placefile resulting from merging the
+two arguments, but without ever writing that merged file to disk.
+
 Additionally, parameters can be passed in from the command line to the batch
 file. On the command line, parameters are specified as additional arguments to
 guppy in ``key=value`` format. In the batch file, substitutions are done from
-identifiers in ``{key}`` format. For example::
+identifiers in ``{key}`` format. For example, when a batch file containing ::
 
-  # invoked with ``guppy --batch example.batch k1=1.jplace k2=2.jplace``
   info {k1} {k2}
+
+is invoked with ::
+
+  guppy --batch example.batch k1=1.jplace k2=2.jplace
+
+the impact will be the same as running ::
+
+  guppy 1.jplace 2.jplace
 
 Braces can also be quoted by doubling (e.g. ``{{foo}}`` will become ``{foo}``).
 
