@@ -27,6 +27,10 @@ let namel p      = p.namel
 let seq p        = p.seq
 let place_list p = p.place_list
 
+let set_pq_mass mass p = {p with pq_mass = mass}
+let multiply_mass mul p =
+  {p with pq_mass = p.pq_mass *. mul}
+
 let multiplicity p = List.length p.namel
 let total_multiplicity =
   List.fold_left (fun acc x -> acc + (multiplicity x)) 0

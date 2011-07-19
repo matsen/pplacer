@@ -113,10 +113,18 @@ let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
         batchfile := Some (Batchfile.of_file fname)),
       "Run the provided batch file of guppy commands";
     ]
-    (fun arg -> args := arg :: !args)
+    (* Sys.argv and Arg.current are used here so that /this/ invocation of
+       Arg.parse won't try to parse the flags that are destined for the
+       subcommand. *)
+    (fun _ ->
+      let nargs = Array.length (Sys.argv) in
+      for i = !Arg.current to (nargs - 1) do
+        args := Sys.argv.(i) :: !args
+      done;
+      Arg.current := nargs)
     (Printf.sprintf
-      "Type %s --cmds to see the list of available commands."
-      prg_name);
+       "Type %s --cmds to see the list of available commands."
+       prg_name);
   match !batchfile with
     | None -> process (List.rev !args)
     | Some argll ->
