@@ -153,7 +153,10 @@ class virtual placefile_cmd () =
 object (self)
   method virtual private placefile_action: 'a Placerun.placerun list -> unit
   method action fnamel =
-    let prl = List.map placerun_by_name fnamel in
+    let prl = Base.map_and_flatten
+      (Placerun_io.maybe_of_split_file ~getfunc:placerun_by_name)
+      fnamel
+    in
     self#placefile_action prl
 
   method private write_placefile invocation fname pr =
