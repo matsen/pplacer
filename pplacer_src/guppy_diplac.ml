@@ -5,6 +5,11 @@ open Fam_batteries
 
 let flip f x y = f y x
 let compose f g a = f (g a)
+let rec take n cs = match cs with
+  | [] -> []
+  | c::cs -> match n with
+      | 0 -> []
+      | n -> c :: (take (n-1) cs)
 
 class cmd () =
 object (self)
@@ -14,9 +19,15 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
 
-  method specl =
-    super_mass#specl
-    @ super_output#specl
+  val max_dist = flag "--min-distance"
+    (Needs_argument ("min distance", "Specify the minimum distance to leaves to report"))
+  val max_reported = flag "--max-matches"
+    (Needs_argument ("N", "Only report the deepest N placements"))
+
+  method specl = super_mass#specl @ [
+    float_flag max_dist;
+    int_flag max_reported
+  ] @ super_output#specl
 
   method desc = "find the most DIstant PLACements from the leaves"
   method usage = "usage: diplac [options] placefile"
@@ -25,6 +36,8 @@ object (self)
     | [pr] ->
       let _, _, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
+      and md = fvo max_dist
+      and mr = fvo max_reported
       and ch = self#out_channel in
       let graph = Voronoi.of_gtree gt in
       let snipdist = Voronoi.get_snipdist graph in
@@ -38,14 +51,22 @@ object (self)
         (compose (compose (~-)) compare)
         pq_distances
       in
-      List.iter
-        (fun (dist, pq) ->
-          let namel = List.map
-            (fun name -> [name; Printf.sprintf "%1.6f" dist])
-            (Pquery.namel pq)
-          in
-          Csv.save_out ch namel)
-        sorted_distances
+      let queried_distances = 
+        List.concat (List.map 
+                  (fun (dist,pq) -> 
+                    (List.map (fun name -> (name, dist)) (Pquery.namel pq)))
+                  sorted_distances)
+      in 
+      let within_limit = match md with
+        | Some x -> List.filter (fun (_,dist) -> dist > x) queried_distances
+        | None -> queried_distances
+      in
+      let trimmed = match mr with
+        | Some x -> take x within_limit
+        | None -> within_limit
+      in List.iter 
+           (fun (name,dist) -> Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
+           trimmed
 
     | _ -> failwith "diplac takes exactly one placefile"
 
