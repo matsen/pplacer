@@ -2,7 +2,7 @@ open Subcommand
 open Guppy_cmdobjs
 
 class cmd () =
-object
+object (self)
   inherit subcommand () as super
   inherit placefile_cmd () as super_placefile
 
@@ -16,7 +16,7 @@ object
     List.iter
       (fun pr ->
         let out_name = (pr.Placerun.name ^ ".jplace") in
-        Placerun_io.to_json_file
+        self#write_placefile
           "guppy to_json"
           out_name
           pr)

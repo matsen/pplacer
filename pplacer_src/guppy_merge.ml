@@ -22,5 +22,5 @@ object (self)
         (List.hd prl)
         (List.tl prl)
       in
-      Placerun_io.to_json_file "guppy merge" fname combined
+      self#write_placefile "guppy merge" fname combined
 end
