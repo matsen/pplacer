@@ -1,6 +1,7 @@
 open Ppatteries
 
 let flip f x y = f y x
+let compose f g a = f (g a)
 
 let compatible_versions = [ "v0.3"; "v1.0"; "v1.1"; ]
 
@@ -233,13 +234,13 @@ let of_split_file ?(getfunc = of_any_file) fname =
               Some (StringMap.find name split_map)
             with Not_found -> None
           end with
-            | Some group -> StringSet.add group accum
+            | Some group -> StringMap.add_listly group name accum
             | None -> accum)
-        StringSet.empty
+        StringMap.empty
         (Pquery.namel pq)
       in
-      StringSet.fold
-        ((flip StringMap.add_listly) pq)
+      StringMap.fold
+        (flip (compose (flip StringMap.add_listly) (Pquery.set_namel pq)))
         groups
         accum)
     StringMap.empty
