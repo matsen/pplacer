@@ -27,7 +27,7 @@ let print_avail_cmds prg_name (display_map, longest) =
 let process_cmd prg_name display_map cmd_map argl =
   let print_need_cmd_error () =
     Printf.printf
-      "please specify a %s command, e.g. %s COMMAND [...]"
+      "please specify a %s command, e.g. %s COMMAND [...]\n"
       prg_name prg_name;
     print_avail_cmds prg_name display_map;
     exit 1
@@ -107,7 +107,7 @@ let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
     [
       "--version", Arg.Unit (fun () -> print_endline version; exit 0),
       "Print version and exit";
-      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map),
+      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map; exit 0),
       "Print a list of the available commands.";
       "--batch", Arg.String (fun fname ->
         batchfile := Some (Batchfile.of_file fname)),
