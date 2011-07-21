@@ -7,6 +7,9 @@ module ColorMap: MapsSets.M with type key = color
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
 val ppr_csetim: Format.formatter -> cset IntMap.t -> unit
+module ColorSetMap: MapsSets.M with type key = cset
+type coloropt = color option
+module ColorOptMap: MapsSets.M with type key = coloropt
 
 type question = color option * cset (* a pair (c, X) *)
 module QuestionMap: MapsSets.M with type key = question
@@ -124,3 +127,8 @@ val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
 val alternate_colors: cdtree -> cset IntMap.t
 (** From a partially-uncolored tree, determine the potential colors of
     uncolored leaves. *)
+
+module Naive: sig
+  val solve: cdtree -> IntSet.t
+end
+

@@ -9,6 +9,18 @@ type 'a cmap = 'a ColorMap.t
 
 let ppr_csetim = IntMap.ppr_gen ColorSet.ppr
 
+module OrderedColorSet = struct
+  type t = cset
+  let compare = ColorSet.compare
+end
+
+module PprColorSet = struct
+  type t = cset
+  let ppr = ColorSet.ppr
+end
+
+module ColorSetMap = BetterMap (Map.Make(OrderedColorSet)) (PprColorSet)
+
 type coloropt = string option
 module OrderedColorOpt = struct
   type t = coloropt
@@ -28,6 +40,7 @@ module PprColorOpt = struct
 end
 
 module ColorOptSet = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
+module ColorOptMap = BetterMap (Map.Make(OrderedColorOpt)) (PprColorOpt)
 
 (* A question is a pair (c, X) where c is an arbitrary optional color and X is a
  * subset of the cut set for the edge above the given internal node. The
@@ -77,6 +90,8 @@ type nu_f = phi -> apart -> int list -> int
 (* Abbreviations *)
 module CS = ColorSet
 module COS = ColorOptSet
+module COM = ColorOptMap
+module CSM = ColorSetMap
 
 let flip f x y = f y x
 let compose f g a = f (g a)
@@ -622,3 +637,96 @@ let alternate_colors ((colors, tree) as cdtree) =
         entries)
     groupmap
     IntMap.empty
+
+
+let copt_singleton = function
+  | Some color -> CS.singleton color
+  | None -> CS.empty
+
+let add_longest k v m =
+  match begin
+    try
+      Some (CSM.find k m)
+    with Not_found -> None
+  end with
+    | Some prev when IntSet.cardinal v <= IntSet.cardinal prev -> m
+    | _ -> CSM.add k v m
+
+module Naive = struct
+
+  let solve ((_, tree) as cdtree) =
+    let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+    let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
+    let cutsetlim = maplist_of_map_and_tree cutsetim tree in
+
+    let rec walk = function
+      | Leaf i ->
+        let kappa = IntMap.find i cutsetim in
+        if CS.is_empty kappa then
+          COM.singleton None (CSM.singleton CS.empty (IntSet.singleton i))
+        else
+          let color = CS.choose kappa in
+          let csm = CSM.singleton (CS.singleton color) (IntSet.singleton i) in
+          COM.of_pairlist [Some color, csm; None, csm]
+      | Node (i, subtrees) ->
+        let phi = List.map walk subtrees
+        and big_b = between (IntMap.find i cutsetlim)
+        and kappa = IntMap.find i cutsetim in
+        let ret = COS.fold
+          (fun c accum ->
+            let c' = copt_singleton c in
+            let ret_c = COS.fold
+              (fun b accum ->
+                let b' = copt_singleton b in
+                let rec aux used_colors used_nodes accum = function
+                  | [] -> add_longest used_colors used_nodes accum
+                  | phi_i :: rest ->
+                    let accum' = aux used_colors used_nodes accum rest in
+                    let x_is = match COM.get b CSM.empty phi_i with
+                      | x when CSM.is_empty x -> COM.find None phi_i
+                      | x -> x
+                    in
+                    CSM.fold
+                      (fun x_i nodes accum ->
+                        if CS.is_empty (CS.diff (CS.inter x_i used_colors) b')
+                          && (b = c || CS.is_empty (CS.inter x_i c'))
+                        then
+                          aux
+                            (CS.union used_colors x_i)
+                            (IntSet.union used_nodes nodes)
+                            accum
+                            rest
+                        else
+                          accum)
+                      x_is
+                      accum'
+                in
+                aux CS.empty IntSet.empty accum phi)
+              (COS.add c (coptset_of_cset big_b))
+              CSM.empty
+            in
+            COM.add c ret_c accum)
+          (COS.add None (coptset_of_cset kappa))
+          COM.empty
+        in
+        if CS.is_empty kappa then
+          let best = CSM.fold
+            (fun _ cur -> function
+              | Some prev when IntSet.cardinal cur <= IntSet.cardinal prev ->
+                Some prev
+              | _ -> Some cur)
+            (COM.find None ret)
+            None
+          in
+          match best with
+            | Some best -> COM.singleton None (CSM.singleton CS.empty best)
+            | None -> failwith "no clades on an internal node ???"
+        else
+          ret
+
+    in
+    CSM.find CS.empty (COM.find None (walk tree))
+
+end
+
+
