@@ -22,7 +22,7 @@ object (self)
     let st = gt.Gtree.stree in
     Csv.save_out
       ch
-      [["rank"; "all_colors"; "unconvex_colors"; "max_bad"; "tot_bad"]];
+      [["rank"; "n_taxids"; "n_nonconvex"; "max_bad"; "tot_bad"]];
     IntMap.iter
       (fun rank taxmap ->
         let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
