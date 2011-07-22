@@ -15,3 +15,4 @@ makefile
 libs
 docs/generated_rst/
 docs/_build/doctrees/
+wiki
