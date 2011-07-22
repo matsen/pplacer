@@ -63,9 +63,8 @@ object (self)
           Mass_map.Indiv.scale_mass
             (1. -. leaf_mass_fract)
             (Mass_map.Indiv.of_placerun transform weighting criterion pr)
-      (* XXX may I suggest diagram over graph here? *)
-      and graph = Voronoi.of_gtree gt in
-      let n_leaves = IntSet.cardinal graph.Voronoi.all_leaves in
+      and digram = Voronoi.of_gtree gt in
+      let n_leaves = IntSet.cardinal digram.Voronoi.all_leaves in
       let criteria =
         (match fvo dist_cutoff with
           | Some cutoff -> [fun (dist, _) -> dist > cutoff]
@@ -87,18 +86,13 @@ object (self)
               IntMap.add_listly
               {I.distal_bl = 0.0;
                I.mass = leaf_mass_fract /. (float_of_int n_leaves)})
-            graph.Voronoi.all_leaves
+            digram.Voronoi.all_leaves
             mass
       in
       (* This is the central recursion that finds the Voronoi region with the
        * least mass and deletes its leaf from the corresponding set. *)
-      (* XXX I'm sure you've already thought of this, but it seems to me that we
-       * could save a lot of computation by keeping a running mass_dist that
-       * only gets updated for the Voronoi regions that get "touched".
-       * *)
-      let rec aux graph =
-        let indiv_map = Voronoi.partition_indiv_on_leaves graph mass in
-        let score leaf =
+      let update_score indiv_map leaf map =
+        let score =
           if not (IntMap.mem leaf indiv_map) then 0.0 else
             let indiv = IntMap.find leaf indiv_map in
             let squashed_indiv = IntMap.singleton
@@ -107,24 +101,32 @@ object (self)
             in
             Kr_distance.dist gt (fv p_exp) indiv squashed_indiv
         in
+        IntMap.add leaf score map
+      in
+      let rec aux digram score_map updated_leaves =
+        let indiv_map = Voronoi.partition_indiv_on_leaves digram mass in
+        let score_map' = IntSet.fold
+          (update_score indiv_map)
+          updated_leaves
+          score_map
+        in
         (* Find the leaf with the least mass in its Voronoi region. When there
          * are > 1 leaves with zero mass in their regions, we get all of them. *)
-        match IntSet.fold
-          (fun leaf ->
-            let dist = score leaf in function
-              | None -> Some (IntSet.singleton leaf, dist)
-              | Some (_, prev_dist) when dist < prev_dist ->
-                Some (IntSet.singleton leaf, dist)
-              | Some (leafs, prev_dist) when dist = prev_dist && dist = 0.0 ->
-                Some (IntSet.add leaf leafs, prev_dist)
-              | prev -> prev)
-          graph.Voronoi.all_leaves
+        match IntMap.fold
+          (fun leaf dist -> function
+            | None -> Some (IntSet.singleton leaf, dist)
+            | Some (_, prev_dist) when dist < prev_dist ->
+              Some (IntSet.singleton leaf, dist)
+            | Some (leafs, prev_dist) when dist = prev_dist && dist = 0.0 ->
+              Some (IntSet.add leaf leafs, prev_dist)
+            | prev -> prev)
+          score_map'
           None
         with
           | None -> failwith "no leaves?"
           | Some (leafs, dist) ->
-            if List.exists (fun f -> f (dist, graph)) criteria then
-              graph
+            if List.exists (fun f -> f (dist, digram)) criteria then
+              digram
             else begin
               if verbose then begin
                 Printf.fprintf stderr "uncoloring %d leaves (dist %1.6f)"
@@ -132,22 +134,24 @@ object (self)
                   dist;
                 prerr_newline ();
               end;
-              (* XXX Yes, we'd just have to accept the updated here. *)
-              let graph', _ = Voronoi.uncolor_leaves graph leafs in
-              let cut = List.map
+              let digram', updated_leaves' = Voronoi.uncolor_leaves
+                digram
+                leafs
+              and cut = List.map
                 (fun leaf -> [Gtree.get_name taxtree leaf;
                              Printf.sprintf "%1.6f" dist])
                 (IntSet.elements leafs)
               in
               Csv.save_out ch cut;
-              aux graph'
+              let score_map'' = IntSet.fold IntMap.remove leafs score_map' in
+              aux digram' score_map'' (IntSet.diff updated_leaves' leafs)
             end
       in
-      let graph' = aux graph in
+      let digram' = aux digram IntMap.empty digram.Voronoi.all_leaves in
       let trimmed =
         IntSet.diff
-          graph.Voronoi.all_leaves
-          graph'.Voronoi.all_leaves
+          digram.Voronoi.all_leaves
+          digram'.Voronoi.all_leaves
       in
       let decor = Decor_gtree.color_clades_above trimmed taxtree in
       begin match fvo trimmed_tree_file with
