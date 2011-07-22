@@ -7,5 +7,6 @@ let command_list () =
       "ref_tree", (fun () -> new Rppr_ref_tree.cmd ());
       "voronoi", (fun () -> new Rppr_voronoi.cmd ());
       "prunetre", (fun () -> new Rppr_prunetre.cmd ());
+      "info", (fun () -> new Rppr_info.cmd ());
     ];
   ]
