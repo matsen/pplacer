@@ -22,7 +22,9 @@ let () =
 
   List.iter check_directory [docs_dir; details_dir; generated_dir;];
 
-  let guppy_commands = Base.map_and_flatten snd (Guppy.command_list ()) in
+  let guppy_commands =
+    Base.map_and_flatten snd (Guppy_commands.command_list ())
+  in
   let command_matrix =
     Array.append
       [|[|"Command"; "Description"|]|]

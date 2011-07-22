@@ -7,6 +7,7 @@ open Stree
 
 let flip f x y = f y x
 let apply f x = f x
+let uncurry f (a, b) = f a b
 
 let leafset tree =
   let rec aux accum = function
@@ -26,11 +27,15 @@ type data = {
   not_cut: IntSet.t;
   cut_leaves: IntSet.t;
   rank_cutseqs: IntSet.t IntMap.t;
+  time_delta: float;
+  max_badness: int;
 }
 
-let build_reducer f fname lst =
-  let init, foldf, finalize = f fname in
-  finalize (List.fold_left foldf init lst)
+let build_reducer f argopt lst = match argopt with
+  | Some arg ->
+    let init, foldf, finalize = f arg in
+    finalize (List.fold_left foldf init lst)
+  | None -> ()
 
 class cmd () =
 object (self)
@@ -47,6 +52,10 @@ object (self)
     (Plain (false, "When determining alternate colors, check all ranks instead of the least recent uncut rank."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
+  val use_naive = flag "--naive"
+    (Plain (false, "Use the naive convexify algorithm."))
+  val timing = flag "--timing"
+    (Needs_argument ("", "If specified, save timing information for solved trees to a CSV file."))
 
   method specl = [
     string_flag discord_file;
@@ -54,6 +63,8 @@ object (self)
     string_flag alternates_file;
     toggle_flag check_all_ranks;
     int_flag badness_cutoff;
+    toggle_flag use_naive;
+    string_flag timing;
   ] @ super_refpkg#specl
 
 
@@ -155,6 +166,15 @@ object (self)
     and finalize = Csv.save fname in
     [], foldf, finalize
 
+  method private timing fname =
+    let foldf timing data =
+      [data.rankname;
+       string_of_int data.max_badness;
+       Printf.sprintf "%0.6f" data.time_delta]
+      :: timing
+    and finalize = Csv.save fname in
+    [], foldf, finalize
+
   method action _ =
     let rp = self#get_rp in
     let gt = Refpkg.get_ref_tree rp in
@@ -184,9 +204,19 @@ object (self)
         end else begin
           Printf.printf "  badness: %d max; %d tot" max_bad tot_bad;
           print_newline ();
-          let phi, omega = solve (colormap, st) in
+          let not_cut, omega, time_delta =
+            if fv use_naive then
+              let start = Sys.time () in
+              let not_cut = Naive.solve (colormap, st) in
+              let delta = (Sys.time ()) -. start in
+              not_cut, IntSet.cardinal not_cut, delta
+            else
+              let start = Sys.time () in
+              let phi, omega = solve (colormap, st) in
+              let delta = (Sys.time ()) -. start in
+              nodeset_of_phi_and_tree phi st, omega, delta
+          in
           Printf.printf "  solved omega: %d\n" omega;
-          let not_cut = nodeset_of_phi_and_tree phi st in
           let cut_leaves = IntSet.diff leaves not_cut in
           let rank_cutseqs' = IntMap.add
             rank
@@ -197,6 +227,7 @@ object (self)
             stree = st; rank = rank; rankname = rankname; taxmap = taxmap;
             colormap = colormap; cut_leaves = cut_leaves; not_cut = not_cut;
             rank_cutseqs = rank_cutseqs'; rank_tax_map = rank_tax_map;
+            time_delta = time_delta; max_badness = max_bad;
           }
           in
           rank_cutseqs', data :: data_list
@@ -204,17 +235,12 @@ object (self)
       rank_tax_map
       (IntMap.empty, [])
     in
-    let maybe_reducer (flag, reducer) =
-      match fvo flag with
-        | Some fname -> [reducer fname]
-        | None -> []
-    in
-    let reducers = Base.map_and_flatten
-      maybe_reducer
+    let reducers =
       [
-        discord_file, build_reducer self#discordance_tree;
-        cut_seqs_file, build_reducer self#cut_sequences;
-        alternates_file, build_reducer self#alternate_colors;
+        build_reducer self#discordance_tree (fvo discord_file);
+        build_reducer self#cut_sequences (fvo cut_seqs_file);
+        build_reducer self#alternate_colors (fvo alternates_file);
+        build_reducer self#timing (fvo timing);
       ]
     in
     List.iter ((flip apply) results) reducers

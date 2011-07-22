@@ -72,9 +72,9 @@ time it is used in a command.
 Batch files are files with one guppy command per line, specified exactly as
 would be written in a shell, except without the leading ``guppy``. Arguments
 can be enclosed in double quotes to preserve whitespace, and double quotes
-within quoted strings are quoted by doubling (e.g. ``"spam ""and""
-eggs"``. Globbing (e.g. ``*.jplace``) is not allowed. Comments are also allowed
-in batch files; everything on a line after a ``#`` is ignored.
+within quoted strings are quoted by doubling (e.g. ``"spam ""and"" eggs"``).
+Globbing (e.g. ``*.jplace``) is not allowed. Comments are also allowed in batch
+files; everything on a line after a ``#`` is ignored.
 
 An example batch file::
 
@@ -83,7 +83,42 @@ An example batch file::
   squash -c some.refpkg -o squash_out src/a.jplace src/b.jplace
   classify -c some.refpkg some.jplace  # inline comment
 
-..
+If this was saved as ``example.batch``, it would be invoked from guppy as::
+
+  guppy --batch example.batch
+
+Advanced features
+^^^^^^^^^^^^^^^^^
+
+Batch files also have two unique features: virtual placefiles, and parameter
+substitution.
+
+Within a batch file, if a placefile is saved to or loaded from a path beginning
+with a ``@``, the data will be stored in memory instead of written to disk. For
+example::
+
+  merge -o @merged.jplace src/a.jplace src/b.jplace
+  info @merged.jplace
+
+will effectively run ``guppy info`` on the placefile resulting from merging the
+two arguments, but without ever writing that merged file to disk.
+
+Additionally, parameters can be passed in from the command line to the batch
+file. On the command line, parameters are specified as additional arguments to
+guppy in ``key=value`` format. In the batch file, substitutions are done from
+identifiers in ``{key}`` format. For example, when a batch file containing ::
+
+  info {k1} {k2}
+
+is invoked with ::
+
+  guppy --batch example.batch k1=1.jplace k2=2.jplace
+
+the impact will be the same as running ::
+
+  guppy 1.jplace 2.jplace
+
+Braces can also be quoted by doubling (e.g. ``{{foo}}`` will become ``{foo}``).
 
 
 About multiplicities

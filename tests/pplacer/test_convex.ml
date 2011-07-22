@@ -19,8 +19,11 @@ let suite = List.map
       MapsSets.IntMap.empty
     in
     let _, calculated_omega = solve (colors, st) in
+    let naive_nodes = Naive.solve (colors, st) in
+    let naive_omega = IntSet.cardinal naive_nodes in
     let testfunc () =
-      (Printf.sprintf "%d expected; got %d" omega calculated_omega) @? (omega = calculated_omega)
+      (Printf.sprintf "%d expected; got %d" omega calculated_omega) @? (omega = calculated_omega);
+      (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
     in
     s >:: testfunc)
   [

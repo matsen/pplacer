@@ -88,7 +88,7 @@ let run_file prefs query_fname =
         if v = "" then m
         else StringMap.add k (ref_dir_complete^v) m)
       [
-        "tree_file", Prefs.tree_fname prefs;
+        "tree", Prefs.tree_fname prefs;
         "aln_fasta", Prefs.ref_align_fname prefs;
         "tree_stats", Prefs.stats_fname prefs;
       ]
@@ -101,7 +101,7 @@ let run_file prefs query_fname =
   in
 
   let ref_tree =
-    try Newick_gtree.of_file (StringMap.find "tree_file" rp_strmap) with
+    try Newick_gtree.of_file (StringMap.find "tree" rp_strmap) with
     | Not_found -> failwith "please specify a reference tree with -t or -c"
   in
   if Newick_gtree.has_zero_bls ref_tree then
