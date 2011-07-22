@@ -4,6 +4,7 @@ open MapsSets
 open Fam_batteries
 
 let flip f x y = f y x
+let apply f x = f x
 
 module I = Mass_map.Indiv
 
@@ -90,7 +91,9 @@ object (self)
             mass
       in
       (* This is the central recursion that finds the Voronoi region with the
-       * least mass and deletes its leaf from the corresponding set. *)
+       * least mass and deletes its leaf from the corresponding set. We keep a
+       * map of the scores for each leaf in the Voronoi region, updated at each
+       * iteration with only the leaves which were touched in the last pass. *)
       let update_score indiv_map leaf map =
         let score =
           if not (IntMap.mem leaf indiv_map) then 0.0 else
@@ -125,7 +128,7 @@ object (self)
         with
           | None -> failwith "no leaves?"
           | Some (leafs, dist) ->
-            if List.exists (fun f -> f (dist, digram)) criteria then
+            if List.exists ((flip apply) (dist, digram)) criteria then
               digram
             else begin
               if verbose then begin
@@ -143,8 +146,10 @@ object (self)
                 (IntSet.elements leafs)
               in
               Csv.save_out ch cut;
-              let score_map'' = IntSet.fold IntMap.remove leafs score_map' in
-              aux digram' score_map'' (IntSet.diff updated_leaves' leafs)
+              aux
+                digram'
+                (IntSet.fold IntMap.remove leafs score_map')
+                (IntSet.diff updated_leaves' leafs)
             end
       in
       let digram' = aux digram IntMap.empty digram.Voronoi.all_leaves in
