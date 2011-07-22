@@ -8,6 +8,7 @@ open Stree
 
 exception No_PP
 exception No_classif
+exception No_map_identity
 
 let get_some except = function
   | Some pp -> pp
@@ -37,6 +38,8 @@ let distal_bl           p = p.distal_bl
 let pendant_bl          p = p.pendant_bl
 let classif_opt         p = p.classif
 let classif             p = get_some No_classif p.classif
+let map_identity_opt    p = p.map_identity
+let map_identity        p = get_some No_map_identity p.map_identity
 
 let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl = {
   location         =  loc;
