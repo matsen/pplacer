@@ -60,8 +60,10 @@ object (self)
         log_like REAL NOT NULL,
         distal_bl REAL NOT NULL,
         pendant_bl REAL NOT NULL,
-        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL
-      );
+        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        map_identity_ratio REAL,
+        map_identity_denom INTEGER
+       );
       CREATE INDEX placement_positions_id ON placement_classifications (placement_id);
 
       CREATE VIEW best_classifications
