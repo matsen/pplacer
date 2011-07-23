@@ -1,6 +1,8 @@
 1.1.alpha09
 ===========
 
+ * Fixed a bug that was making classifications appear too specific when the
+   placement was on the edge just proximal to an MRCA.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
    implementation of the convexify algorithm, as it cut too many leaves in some
    corner cases.
