@@ -14,6 +14,7 @@
  * Closed GH-88: Improved handling very small alphas in pplacer, working around
    a problem with the GSL that wasn't allowing us to invert the CDF for the
    gamma distribution.
+ * Closed GH-89: Fixed some bugs in the convexify algorithm.
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
@@ -23,6 +24,8 @@
  * Closed GH-104: Added a naive reference implementation of convexify,
    accessible with a --naive flag.
  * Closed GH-105: Added parameter substitution to guppy batchfiles.
+ * Closed GH-109: Added a `rppr info` subcommand.
+ * Closed GH-111: Added a script to update reference packages to version 1.1.
 
 
 1.1.alpha08

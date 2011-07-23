@@ -270,13 +270,14 @@ let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
-  let big_b_excl =
+  let potential_internals =
     (* Because xopt never contains None, this is in fact testing c in x. In
-     * this case, b will only be c, since c is added to big_b_excl later. *)
+     * this case, b will only be c, since c is added to potential_internals
+     * later. *)
     if COS.mem c xopt then
       COS.empty
     else
-      COS.diff (coptset_of_cset (between cutsetl)) to_exclude
+      COS.add None (COS.diff (coptset_of_cset (between cutsetl)) to_exclude)
   in
   let to_distribute = COS.union
     xopt
@@ -308,21 +309,20 @@ let _build_apartl cutsetl kappa (c, x) =
            (product dist))
       in
       (* We make sure to pass on the c as the color of the internal node in the
-       * case where between pi is empty by filtering out the ones that don't. *)
+       * case where between pi is empty by filtering out the ones that don't,
+       * unless b is None.. *)
       List.fold_left
         (fun accum pi ->
-          if not (CS.is_empty (between pi)) || b = c then
+          if not (CS.is_empty (between pi)) || b = c || b = None then
             (b, pi) :: accum
           else accum)
         accum
         pis)
     (* We add c to the list of things that can be colors of internal nodes. *)
-    (COS.add c big_b_excl)
+    (COS.add c potential_internals)
     []
   in
-  let null_apart = None, List.map (fun _ -> ColorSet.empty) cutsetl in
-  if List.mem null_apart apartl then apartl
-  else null_apart :: apartl
+  apartl
 
 let build_apartl_memo = Hashtbl.create 1024
 
