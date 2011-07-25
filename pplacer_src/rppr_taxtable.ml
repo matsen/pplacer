@@ -9,9 +9,15 @@ object (self)
   inherit refpkg_cmd ~required:true as super_refpkg
   inherit sqlite_cmd () as super_sqlite
 
+  val default_cutoff = flag "--default-cutoff"
+    (Formatted (0.9, "The default value for the likelihood_cutoff table. Default: %0.2f"))
+
   method specl =
     super_refpkg#specl
     @ super_sqlite#specl
+    @ [
+      float_flag default_cutoff;
+    ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
   method usage = "usage: taxtable [options] -c <refpkg>"
@@ -20,6 +26,10 @@ object (self)
     let refpkg = self#get_rp in
     let db = self#get_db in
     let tax = Refpkg.get_taxonomy refpkg in
+    Sql.check_exec db "BEGIN TRANSACTION";
+    let st = Sqlite3.prepare db
+      "CREATE TABLE likelihood_cutoff AS SELECT ? AS val;" in
+    Sql.bind_step_reset db st [| Sql.D.FLOAT (fv default_cutoff) |];
     Sql.check_exec db "
       CREATE TABLE IF NOT EXISTS ranks (
         rank TEXT PRIMARY KEY NOT NULL,
@@ -60,8 +70,10 @@ object (self)
         log_like REAL NOT NULL,
         distal_bl REAL NOT NULL,
         pendant_bl REAL NOT NULL,
-        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL
-      );
+        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        map_identity_ratio REAL,
+        map_identity_denom INTEGER
+       );
       CREATE INDEX placement_positions_id ON placement_classifications (placement_id);
 
       CREATE VIEW best_classifications
@@ -75,13 +87,13 @@ object (self)
                        JOIN placement_classifications USING (placement_id)
                        JOIN ranks USING (rank)
                 WHERE  rank = desired_rank
+                       AND likelihood > (SELECT val FROM likelihood_cutoff)
                 ORDER  BY placement_id,
                           rank_order ASC,
                           likelihood ASC)
         GROUP  BY placement_id;
 
     ";
-    Sql.check_exec db "BEGIN TRANSACTION";
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
       (fun idx name ->

@@ -159,7 +159,7 @@ object (self)
         and pc_st = Sqlite3.prepare db
           "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
         and pp_st = Sqlite3.prepare db
-          "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?)"
+          "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         in
         close, (fun pq rank_map ->
           Sql.check_exec db "INSERT INTO placements VALUES (NULL)";
@@ -192,6 +192,12 @@ object (self)
               Sql.D.FLOAT (Placement.distal_bl p);
               Sql.D.FLOAT (Placement.pendant_bl p);
               Sql.D.TEXT (Tax_id.to_string (Placement.classif p));
+              (match Placement.map_identity_opt p with
+                | None -> Sql.D.NULL
+                | Some (ratio, _) -> Sql.D.FLOAT ratio);
+              (match Placement.map_identity_opt p with
+                | None -> Sql.D.NULL
+                | Some (_, denom) -> Sql.D.INT (Int64.of_int denom));
             |])
             (Pquery.place_list pq));
 
