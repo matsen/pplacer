@@ -29,6 +29,7 @@
  * Closed GH-108: Added more data from jplace files into the taxtable schema;
    added a way to change the cutoff for best_classifications.
  * Closed GH-109: Added a `rppr info` subcommand.
+ * Closed GH-110: Added a --no-early flag to `rppr convexify`.
  * Closed GH-111: Added a script to update reference packages to version 1.1.
 
 

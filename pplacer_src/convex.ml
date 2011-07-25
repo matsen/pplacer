@@ -85,7 +85,7 @@ type phi = local_phi IntMap.t
 (* nu_f is a type for upper bounds for the number of leaves left in a convex
  * subset of leaves. We pass them phi, the apart, and the list of top indices
  * for the subtrees at our internal node. *)
-type nu_f = phi -> apart -> int list -> int
+type nu_f = cset -> sizem list -> apart -> int
 
 (* Abbreviations *)
 module CS = ColorSet
@@ -376,10 +376,7 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
-(* XXX add a nu_f. It would seem appropriate to add one as an argument. There
- * are different sorts of nu_f... they are just bounds and we will want to trial
- * them. OTOH, if you think it's better to just globally set one then fine. *)
-let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
+let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
     try
@@ -410,32 +407,35 @@ let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
       let apart_omega phi (b, pi) =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse cutsetim sizemlim subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse ?nu_f cutsetim sizemlim subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
           subtrees
       in
-      let apart_nu' = apart_nu
-        (IntMap.find i cutsetim)
-        (IntMap.find i sizemlim)
+      let nu_apartl = match nu_f with
+        | None -> List.rev (List.rev_map (fun apart -> None, apart) apartl)
+        | Some nu_f ->
+          let apart_nu' = nu_f
+            (IntMap.find i cutsetim)
+            (IntMap.find i sizemlim)
+          in
+          let nu_apartl = List.rev_map
+            (fun apart -> apart_nu' apart, apart)
+            apartl
+          in
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
       in
-      let nu_apartl = List.rev
-        (List.rev_map
-          (fun apart -> apart_nu' apart, apart)
-          apartl)
-      in
-      let nu_apartl = List.sort (fun (a, _) (b, _) -> b - a) nu_apartl in
       let rec aux phi current_best = function
-        | (nu, apart) :: rest -> (
+        | (nu_opt, apart) :: rest -> (
           let phi, omega = apart_omega phi apart in
-          match current_best with
-            | None -> aux phi (Some (omega, apart)) rest
-            | Some (prev_omega, _) when omega > prev_omega ->
+          match current_best, nu_opt with
+            | None, _ -> aux phi (Some (omega, apart)) rest
+            | Some (prev_omega, _), _ when omega > prev_omega ->
               aux phi (Some (omega, apart)) rest
-            | Some (prev_omega, _) when nu < prev_omega ->
+            | Some (prev_omega, _), Some nu when nu < prev_omega ->
               phi, current_best
-            | _ -> aux phi current_best rest)
+            | _, _ -> aux phi current_best rest)
         | [] -> phi, current_best
       in
       aux phi None nu_apartl
@@ -454,12 +454,12 @@ let badness cutsetim =
     cutsetim
     (0, 0)
 
-let solve ((_, tree) as cdtree) =
+let solve ?nu_f ((_, tree) as cdtree) =
   let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
   let sizemlim = maplist_of_map_and_tree sizemim tree in
   Hashtbl.clear build_apartl_memo;
-  phi_recurse cutsetim sizemlim tree (None, CS.empty) IntMap.empty
+  phi_recurse ?nu_f cutsetim sizemlim tree (None, CS.empty) IntMap.empty
 
 (* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
  * the leaves to include. The recursion works as follows: maintain rest, which

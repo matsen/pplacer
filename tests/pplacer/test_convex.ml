@@ -18,11 +18,13 @@ let suite = List.map
       bm
       MapsSets.IntMap.empty
     in
-    let _, calculated_omega = solve (colors, st) in
     let naive_nodes = Naive.solve (colors, st) in
-    let naive_omega = IntSet.cardinal naive_nodes in
+    let _, early_omega = solve ~nu_f:apart_nu (colors, st)
+    and _, not_early_omega = solve ?nu_f:None (colors, st)
+    and naive_omega = IntSet.cardinal naive_nodes in
     let testfunc () =
-      (Printf.sprintf "%d expected; got %d" omega calculated_omega) @? (omega = calculated_omega);
+      (Printf.sprintf "%d expected; got %d with early termination" omega early_omega) @? (omega = early_omega);
+      (Printf.sprintf "%d expected; got %d without early termination" omega not_early_omega) @? (omega = not_early_omega);
       (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
     in
     s >:: testfunc)

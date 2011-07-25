@@ -56,6 +56,8 @@ object (self)
     (Plain (false, "Use the naive convexify algorithm."))
   val timing = flag "--timing"
     (Needs_argument ("", "If specified, save timing information for solved trees to a CSV file."))
+  val no_early = flag "--no-early"
+    (Plain (false, "Don't terminate early when convexifying."))
 
   method specl = [
     string_flag discord_file;
@@ -65,6 +67,7 @@ object (self)
     int_flag badness_cutoff;
     toggle_flag use_naive;
     string_flag timing;
+    toggle_flag no_early;
   ] @ super_refpkg#specl
 
 
@@ -184,6 +187,7 @@ object (self)
     let leaves = leafset st in
     Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let rank_tax_map = rank_tax_map_of_refpkg rp in
+    let nu_f = if fv no_early then None else Some apart_nu in
     let _, results = IntMap.fold
       (fun rank taxmap ((rank_cutseqs, data_list) as accum) ->
         let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
@@ -212,7 +216,7 @@ object (self)
               not_cut, IntSet.cardinal not_cut, delta
             else
               let start = Sys.time () in
-              let phi, omega = solve (colormap, st) in
+              let phi, omega = solve ?nu_f (colormap, st) in
               let delta = (Sys.time ()) -. start in
               nodeset_of_phi_and_tree phi st, omega, delta
           in
