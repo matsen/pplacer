@@ -48,6 +48,11 @@ let get_uptree_map  rp = Lazy.force rp.uptree_map
 
 let refpkg_versions = ["1.1"]
 
+let show_supported_versions () =
+  Printf.printf
+    "Supported versions: %s.\n"
+    (String.concat ", " refpkg_versions)
+
 (* deprecated now *)
 let model_of_stats_fname prefs stats_fname ref_align =
   prefs.Prefs.stats_fname := stats_fname;
@@ -55,22 +60,28 @@ let model_of_stats_fname prefs stats_fname ref_align =
 
 (* This is the primary builder. We have the option of specifying an actual
  * alignment and a tree if we have them already. *)
-let of_strmap ?ref_tree ?ref_align prefs m =
+let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
   let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
-  if StringMap.mem "format_version" m then begin
-    let format_version = StringMap.find "format_version" m in
-    if not (List.mem format_version refpkg_versions) then begin
-      Printf.printf
-        "This reference package's format is version %s, which is not supported.\n"
-        format_version;
-      Printf.printf
-        "Supported versions: %s.\n"
-        (String.concat ", " refpkg_versions);
+  if not ignore_version then begin
+    if StringMap.mem "format_version" m then begin
+      let format_version = StringMap.find "format_version" m in
+      if not (List.mem format_version refpkg_versions) then begin
+        Printf.printf
+          "This reference package's format is version %s, which is not supported.\n"
+          format_version;
+        show_supported_versions ();
+        invalid_arg "of_strmap"
+      end
+    end else begin
+      print_endline
+        "This reference package has no version information specified in it, \
+      which most likely means it is an older, incompatible format.";
+      show_supported_versions ();
       invalid_arg "of_strmap"
-    end
+    end;
   end;
   let lfasta_aln =
     lazy

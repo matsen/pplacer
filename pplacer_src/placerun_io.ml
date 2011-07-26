@@ -37,7 +37,7 @@ let to_legacy_file invocation out_fname placerun =
   and ref_tree = Placerun.get_ref_tree placerun
   in
   Printf.fprintf ch "# pplacer %s run, %s\n"
-    Version.version_revision (Base.date_time_str ());
+    Version.version (Base.date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
   Printf.fprintf ch "%s\n" output_fmt_str;
   if not (Stree.multifurcating_at_root (Gtree.get_stree ref_tree)) then
@@ -94,7 +94,7 @@ let rt_of_header hlines =
       Scanf.sscanf version_line "# pplacer %s run"
         (fun file_vers ->
           if not (List.mem
-                   (Version.chop_revision file_vers)
+                   (String.sub file_vers 0 4)
                    compatible_versions) then
             failwith
               (Printf.sprintf

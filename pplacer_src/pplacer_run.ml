@@ -66,7 +66,7 @@ let run_file prefs query_fname =
   if (Prefs.verb_level prefs) >= 1 then
     Printf.printf
       "Running pplacer %s analysis on %s...\n"
-      Version.version_revision
+      Version.version
       query_fname;
   let ref_dir_complete =
     match Prefs.ref_dir prefs with
@@ -99,11 +99,31 @@ let run_file prefs query_fname =
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
 
   let ref_tree =
-    try Newick_gtree.of_file (StringMap.find "tree" rp_strmap) with
-    | Not_found -> failwith "please specify a reference tree with -t or -c"
+    try
+      Refpkg.get_ref_tree rp
+    with Refpkg.Missing_element "tree" ->
+      failwith "please specify a reference tree with -t or -c"
+  and _ =
+    try
+      Refpkg.get_aln_fasta rp
+    with Refpkg.Missing_element "aln_fasta" ->
+      failwith
+        "Please specify a reference alignment with -r or -c, or include all \
+        reference sequences in the primary alignment."
+  and _ =
+    try
+      Refpkg.get_model rp
+    with Refpkg.Missing_element "tree_stats" ->
+      failwith "please specify a tree model with -s or -c"
   in
+
   if Newick_gtree.has_zero_bls ref_tree then
     Printf.printf
       "WARNING: your tree has zero pendant branch lengths. \
@@ -128,14 +148,7 @@ let run_file prefs query_fname =
         print_endline
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
-      try
-        Alignment_funs.upper_aln_of_any_file
-          (StringMap.find "aln_fasta" rp_strmap)
-      with
-      | Not_found ->
-          failwith
-          "Please specify a reference alignment with -r or -c, or include all \
-          reference sequences in the primary alignment."
+      Refpkg.get_aln_fasta rp
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
@@ -284,8 +297,6 @@ let run_file prefs query_fname =
     []
   in
 
-  (* *** build reference package *** *)
-  let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
   let model = Refpkg.get_model rp in
   if (Prefs.verb_level prefs) > 0 &&
     not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then

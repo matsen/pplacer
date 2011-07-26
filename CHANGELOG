@@ -31,6 +31,9 @@
  * Closed GH-109: Added a `rppr info` subcommand.
  * Closed GH-110: Added a --no-early flag to `rppr convexify`.
  * Closed GH-111: Added a script to update reference packages to version 1.1.
+ * Closed GH-112: Improved some of pplacer's error messages.
+ * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
+ * Closed GH-117: Added the output of `git describe` to --version output.
 
 
 1.1.alpha08

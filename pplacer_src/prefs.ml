@@ -44,6 +44,8 @@ type prefs =
     map_cutoff : float ref;
     map_info : bool ref;
     map_identity : bool ref;
+    keep_at_most : int ref;
+    keep_factor : float ref;
   }
 
 
@@ -91,6 +93,8 @@ let defaults () =
     map_cutoff = ref 0.8;
     map_info = ref false;
     map_identity = ref false;
+    keep_at_most = ref 7;
+    keep_factor = ref 0.01;
   }
 
 
@@ -137,6 +141,8 @@ let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
 let map_info          p = !(p.map_info)
 let map_identity      p = !(p.map_identity)
+let keep_at_most      p = !(p.keep_at_most)
+let keep_factor       p = !(p.keep_factor)
 
 
 (* arguments and preferences *)
@@ -217,6 +223,10 @@ spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
 "Write file describing the 'diagnostic' mutations for various clades.";
 "--map-identity", Arg.Set prefs.map_identity,
 "Add the percent identity of the query sequence to the nearest MAP sequence to each placement.";
+spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
+"The maximum number of placements we keep. Default is %d.";
+spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
+"Throw away anything that has ml_ratio below keep_factor times (best ml_ratio). Default is %g.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
