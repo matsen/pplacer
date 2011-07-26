@@ -6,11 +6,6 @@ open MapsSets
 open Prefs
 
 let max_iter = 200
-(* the most number of placements we keep *)
-let keep_at_most = 7
-(* we throw away anything that has ml_ratio below keep_factor times (best ml_ratio) *)
-let keep_factor = 0.01
-let log_keep_factor = log keep_factor
 
 (* the second stage tolerance for branch length optimization. modify in online
  * help if changed here. *)
@@ -25,6 +20,9 @@ type result =
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
 let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
+  let keep_at_most = Prefs.keep_at_most prefs
+  and keep_factor = Prefs.keep_factor prefs in
+  let log_keep_factor = log keep_factor in
   let seq_type = Model.seq_type model
   and prior_fun =
     match prior with
