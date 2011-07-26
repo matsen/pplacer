@@ -32,8 +32,6 @@ let tax_t_prel_of_prl tgt_fun weighting criterion rp prl =
   (taxt,
     List.map (Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap) prl)
 
-let zeropad i = Printf.sprintf "%04d" i
-
 let mkdir path =
   try
     Unix.mkdir path 0o755
@@ -47,10 +45,13 @@ let mkdir path =
 let numberize l =
   List.combine (List.map (fun i -> [i]) (Base.range (List.length l))) l
 
-let make_cluster transform weighting criterion refpkgo mode_str prl =
+(* Note that denom_f is a function that gives us a denominator to normalize by
+ * when calculating branch lengths, i.e. the setting of the --normalize flag.
+ * Called denom here to avoid confusion with the normalization of the mass. *)
+let make_cluster p denom_f transform weighting criterion refpkgo mode_str prl =
   let namel = List.map Placerun.get_name prl
-  and distf rt ~x1 ~x2 (_,b1) (_,b2) =
-    Kr_distance.dist_of_pres transform 1. rt ~x1 ~x2 ~pre1:b1 ~pre2:b2
+  and distf denom rt ~x1 ~x2 (_,b1) (_,b2) =
+    (Kr_distance.dist_of_pres transform p rt ~x1 ~x2 ~pre1:b1 ~pre2:b2) /. denom
   and normf (_,a) = 1. /. (Mass_map.Pre.total_mass transform a)
   in
   let (rt, prel) = t_prel_of_prl weighting criterion prl
@@ -62,8 +63,9 @@ let make_cluster transform weighting criterion refpkgo mode_str prl =
   let (drt, (cluster_t, numbered_blobim)) =
     if mode_str = "" then begin
       (* phylogenetic clustering *)
+      let denom = denom_f (rt :> Newick_gtree.t) in
       (Decor_gtree.of_newick_gtree rt,
-        NPreSquash.of_named_blobl (distf rt) normf (prep prel))
+        NPreSquash.of_named_blobl (distf denom rt) normf (prep prel))
     end
     else
       (* taxonomic clustering *)
@@ -74,8 +76,9 @@ let make_cluster transform weighting criterion refpkgo mode_str prl =
           tax_t_prel_of_prl
             (classify_mode_str mode_str)
             weighting criterion rp prl in
+        let denom = denom_f (taxt :> Newick_gtree.t) in
         (taxt,
-          NPreSquash.of_named_blobl (distf taxt) normf (prep tax_prel))
+          NPreSquash.of_named_blobl (distf denom taxt) normf (prep tax_prel))
     end
   in
   (drt, cluster_t, IntMap.map snd numbered_blobim)
@@ -89,6 +92,8 @@ object (self)
   inherit fat_cmd () as super_fat
   inherit placefile_cmd () as super_placefile
   inherit output_cmd ~show_fname:false () as super_output
+  inherit kr_cmd () as super_kr
+  inherit normalization_cmd () as super_normalization
 
   val nboot = flag "--bootstrap"
     (Plain (0, "the number of bootstrap replicates to run"))
@@ -102,6 +107,8 @@ object (self)
     @ super_rng#specl
     @ super_fat#specl
     @ super_output#specl
+    @ super_kr#specl
+    @ super_normalization#specl
     @ [
       int_flag nboot;
       string_flag tax_cluster_mode
@@ -111,10 +118,10 @@ object (self)
 "performs squash clustering"
   method usage = "usage: squash [options] placefiles"
 
-  method private write_pre_tree transform prefix infix drt id pre =
+  method private write_pre_tree transform prefix infix drt pre =
     let tot = Mass_map.Pre.total_mass transform pre in
     assert(tot > 0.);
-    let tree_name = prefix^((zeropad id)^"."^infix) in
+    let tree_name = prefix^"."^infix in
     let massm = (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre) in
     Phyloxml.named_gtree_to_file
       (tree_name ^ ".fat.xml")
@@ -125,44 +132,51 @@ object (self)
     let transform, weighting, criterion = self#mass_opts
     and refpkgo = self#get_rpo
     and mode_str = fv tax_cluster_mode
+    and zero_pad_int width i =
+      String_matrix.pad_to_width '0' width (string_of_int i)
+    and p = fv p_exp
+    and denom_f = self#get_normalization
     in
+    let our_make_cluster =
+      make_cluster p denom_f transform weighting criterion in
     let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
-    let width = Base.find_zero_pad_width nboot in
-    let pad_str_of_int i =
-      String_matrix.pad_to_width '0' width (string_of_int i)
-    in
     self#check_placerunl prl;
     if 0 = nboot then begin
       (* bootstrap turned off *)
-      let (drt, cluster_t, blobim) =
-        make_cluster transform weighting criterion refpkgo mode_str prl in
+      let (drt, cluster_t, blobim) = our_make_cluster refpkgo mode_str prl in
       Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
       let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
-      let path = Filename.concat outdir in
+      let pad_width = Base.find_zero_pad_width (IntMap.nkeys blobim) in
+      let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)
+      let wpt transform infix t i =
+        self#write_pre_tree transform (prefix_of_int i) infix t
+      in
       match refpkgo with
-        | None -> IntMap.iter (self#write_pre_tree transform (path "") "phy" drt) blobim
+        | None -> IntMap.iter (wpt transform "phy" drt) blobim
         | Some rp ->
         (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
           let tdrt = Refpkg.get_tax_ref_tree rp in
-          IntMap.iter (self#write_pre_tree transform (path "") "phy" tdrt) blobim;
+          IntMap.iter (wpt transform "phy" tdrt) blobim;
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in
           let tax_blobim =
             IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
           in
-          IntMap.iter (self#write_pre_tree Mass_map.no_transform (path "") "tax" taxt) tax_blobim
+          IntMap.iter (wpt Mass_map.no_transform "tax" taxt) tax_blobim
     end
     else begin
+      let pad_width = Base.find_zero_pad_width nboot in
       let rng = self#rng in
       for i=1 to nboot do
         Printf.printf "running bootstrap %d of %d\n" i nboot;
         let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
-        let (_, cluster_t, _) =
-          make_cluster transform weighting criterion refpkgo mode_str boot_prl in
-        Newick_gtree.to_file cluster_t (path ("cluster."^(pad_str_of_int i)^".tre"))
+        let (_, cluster_t, _) = our_make_cluster refpkgo mode_str boot_prl in
+        Newick_gtree.to_file
+          cluster_t
+          (path ("cluster."^(zero_pad_int pad_width i)^".tre"))
       done
     end
 end

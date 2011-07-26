@@ -19,5 +19,5 @@ let suite = List.map
       | _ -> failwith (Printf.sprintf "unexpected json file %s" fname)
   )
   (Common_base.get_dir_contents
-     ~pred:(fun name -> Filename.check_suffix name "json")
+     ~pred:(fun name -> Filename.check_suffix name "jtest")
      (tests_dir ^ "data/json"))

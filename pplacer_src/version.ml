@@ -1,6 +1,4 @@
-let chop_revision s = Str.replace_first (Str.regexp "\\.[a-z]+[0-9]+") "" s
-
-let version_revision = "v1.1.alpha07"
-let version = chop_revision version_revision
-
-
+let base_version = "v1.1.alpha09"
+let version = match Git_version.version with
+  | Some git_version -> Printf.sprintf "%s (git %s)" base_version git_version
+  | None -> base_version

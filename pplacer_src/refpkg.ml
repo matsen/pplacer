@@ -46,6 +46,13 @@ let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 
+let refpkg_versions = ["1.1"]
+
+let show_supported_versions () =
+  Printf.printf
+    "Supported versions: %s.\n"
+    (String.concat ", " refpkg_versions)
+
 (* deprecated now *)
 let model_of_stats_fname prefs stats_fname ref_align =
   prefs.Prefs.stats_fname := stats_fname;
@@ -53,11 +60,29 @@ let model_of_stats_fname prefs stats_fname ref_align =
 
 (* This is the primary builder. We have the option of specifying an actual
  * alignment and a tree if we have them already. *)
-let of_strmap ?ref_tree ?ref_align prefs m =
+let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
   let get what =
     try StringMap.find what m with
     | Not_found -> raise (Missing_element what)
   in
+  if not ignore_version then begin
+    if StringMap.mem "format_version" m then begin
+      let format_version = StringMap.find "format_version" m in
+      if not (List.mem format_version refpkg_versions) then begin
+        Printf.printf
+          "This reference package's format is version %s, which is not supported.\n"
+          format_version;
+        show_supported_versions ();
+        invalid_arg "of_strmap"
+      end
+    end else begin
+      print_endline
+        "This reference package has no version information specified in it, \
+      which most likely means it is an older, incompatible format.";
+      show_supported_versions ();
+      invalid_arg "of_strmap"
+    end;
+  end;
   let lfasta_aln =
     lazy
       (match ref_align with
@@ -67,13 +92,13 @@ let of_strmap ?ref_tree ?ref_align prefs m =
   let lref_tree =
     lazy
       (match ref_tree with
-      | Some t -> t
-      | None -> Newick_gtree.of_file (get "tree_file"))
+        | Some t -> t
+        | None -> Newick_gtree.of_file (get "tree"))
   and lmodel =
       lazy
         (let aln = Lazy.force lfasta_aln in
-        if StringMap.mem "phylo_model_file" m then
-          Model.of_json (StringMap.find "phylo_model_file" m) aln
+        if StringMap.mem "phylo_model" m then
+          Model.of_json (StringMap.find "phylo_model" m) aln
         else begin
           print_endline
             "Warning: using a statistics file directly is now deprecated. \

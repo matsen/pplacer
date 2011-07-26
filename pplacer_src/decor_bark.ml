@@ -11,8 +11,8 @@ class decor_bark arg =
     | `Empty -> (None, None, None, [])
     | `Of_newick_bark nb ->
         (nb#get_bl_opt, nb#get_name_opt, nb#get_boot_opt, [])
-    | `Of_bl_name_boot_dlist (bl, name, boot, dlist) ->
-        (bl, name, boot, dlist)
+    | `Of_bl_name_boot_decor (bl, name, boot, decor) ->
+        (bl, name, boot, decor)
   in
   object (* (self) *)
     val decor = decor

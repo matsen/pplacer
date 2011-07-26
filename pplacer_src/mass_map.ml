@@ -69,15 +69,13 @@ module Pre = struct
           (Base.normalized_prob (List.map criterion pc));
     }
 
-  (* assume that the list of pqueries in have unit mass. split that mass up to
-   * each of the pqueries, breaking it up by weighted placements if desired.
-   *)
   let of_pquery_list weighting criterion pql =
     let mass_per_read = 1. /. (float_of_int (Pquery.total_multiplicity pql)) in
     List.map
       (multimul_of_pquery weighting criterion mass_per_read)
       pql
 
+  (* A unit of mass spread across the tree according to pr. *)
   let of_placerun weighting criterion pr =
     try
       of_pquery_list
@@ -93,9 +91,11 @@ module Pre = struct
     let f = multimul_total_mass transform in
     List.fold_left (fun x mm -> x +. f mm) 0.
 
-  let normalize_mass transform pre =
-    let scalar = 1. /. (total_mass transform pre) in
+  let scale_mass scalar pre =
     List.map (scale_multimul scalar) pre
+
+  let normalize_mass transform pre =
+    scale_mass (1. /. (total_mass transform pre)) pre
 
   let unitize_mass transform pre =
     List.map (unit_mass_scale transform) pre
@@ -120,9 +120,11 @@ end
  * for each placement.
  *)
 module Indiv = struct
+  type v = {distal_bl: float; mass: float}
+  type t = v list IntMap.t
 
-         (* distal_bl * mass *)
-  type t = (float     * float) IntMap.t
+  let of_pair (bl, mass) = {distal_bl = bl; mass = mass}
+  let to_pair {distal_bl = bl; mass = mass} = bl, mass
 
   (* factor is a multiplicative factor to multiply the mass by.
    * transform is an int -> float function which given a multiplicity spits out
@@ -136,7 +138,7 @@ module Indiv = struct
           (fun m mu ->
             IntMap.add_listly
               mu.Pre.loc
-              (mu.Pre.distal_bl, scalar *. mu.Pre.mass)
+              {distal_bl = mu.Pre.distal_bl; mass = scalar *. mu.Pre.mass}
               m)
           m'
           multimul.Pre.mul))
@@ -150,21 +152,25 @@ module Indiv = struct
  * the edge in an increasing manner. *)
   let sort m =
     IntMap.map
-      (List.sort (fun (a1,_) (a2,_) -> compare a1 a2))
+      (List.sort (fun {distal_bl = a1} {distal_bl = a2} -> compare a1 a2))
       m
 
-let total_mass m =
-  IntMap.fold
-    (fun _ mass_l accu ->
-      List.fold_right (fun (_, mass) -> ( +. ) mass) mass_l accu)
-    m
-    0.
+  let total_mass m =
+    IntMap.fold
+      (fun _ mass_l accu ->
+        List.fold_right (fun {mass = mass} -> ( +. ) mass) mass_l accu)
+      m
+      0.
+
+  let scale_mass scalar =
+    IntMap.map
+      (List.map (fun v -> {v with mass = v.mass *. scalar}))
 
   let ppr =
     IntMap.ppr_gen
       (fun ff l ->
         List.iter
-          (fun (distal, mass) ->
+          (fun {distal_bl = distal; mass = mass} ->
             Format.fprintf ff "@[{d = %g; m = %g}@]" distal mass)
           l)
 
@@ -177,7 +183,8 @@ module By_edge = struct
   type t = float IntMap.t
 
   let of_indiv =
-    IntMap.map (List.fold_left (fun tot (_,weight) -> tot +. weight) 0.)
+    IntMap.map
+      (List.fold_left (fun tot {Indiv.mass = weight} -> tot +. weight) 0.)
 
   (* SPEED
    *

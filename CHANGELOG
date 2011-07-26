@@ -1,3 +1,69 @@
+1.1.alpha09
+===========
+
+ * Fixed a bug that was making classifications appear too specific when the
+   placement was on the edge just proximal to an MRCA.
+ * Closed GH-72: Added new features to `rppr convexify` and fixed the
+   implementation of the convexify algorithm, as it cut too many leaves in some
+   corner cases.
+ * Closed GH-75: Changed mass maps to use records types instead of tuples.
+ * Closed GH-78: Added an --average flag to `guppy fat`.
+ * Closed GH-82: Merged the `pick` branch into dev.
+ * Closed GH-84: Renamed .json to .jplace for new-format placefiles.
+ * Closed GH-85: Added better error messages for potential premasking failures.
+ * Closed GH-86: Dropped support for older versions of the reference package
+   format.
+ * Closed GH-88: Improved handling very small alphas in pplacer, working around
+   a problem with the GSL that wasn't allowing us to invert the CDF for the
+   gamma distribution.
+ * Closed GH-89: Fixed some bugs in the convexify algorithm.
+ * Closed GH-90: Added an error message for if pplacer is invoked with no
+   arguments.
+ * Closed GH-91: Added more documentation to .mli files.
+ * Closed GH-98: Adding a --map-identity flag to pplacer.
+ * Closed GH-99: Added more examples for guppy batchfiles.
+ * Closed GH-101: Added virtual placefiles to guppy batchfiles.
+ * Closed GH-104: Added a naive reference implementation of convexify,
+   accessible with a --naive flag.
+ * Closed GH-105: Added parameter substitution to guppy batchfiles.
+ * Closed GH-108: Added more data from jplace files into the taxtable schema;
+   added a way to change the cutoff for best_classifications.
+ * Closed GH-109: Added a `rppr info` subcommand.
+ * Closed GH-110: Added a --no-early flag to `rppr convexify`.
+ * Closed GH-111: Added a script to update reference packages to version 1.1.
+ * Closed GH-112: Improved some of pplacer's error messages.
+ * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
+ * Closed GH-117: Added the output of `git describe` to --version output.
+
+
+1.1.alpha08
+===========
+
+ * Closed GH-46: Added a --timing flag to pplacer to show where time was spent
+   during placements.
+ * Closed GH-47: Added unit tests for gaussian kr distance.
+ * Closed GH-49: Added a more informative error message to pplacer if reference
+   sequences occur multiple times in a query file.
+ * Closed GH-52: Fixed padding in `guppy squash`.
+ * Closed GH-58: Improved navigation for the documentation on guppy commands.
+ * Closed GH-59: Improved documentation for guppy commands using sqlite.
+ * Closed GH-60: Improved documentation for `guppy classify`.
+ * Closed GH-65: Released alpha08.
+ * Closed GH-66: Added a FAQ to the documentation.
+ * Closed GH-68: Changed `guppy info` to show multiplicity.
+ * Closed GH-69: Changed `guppy tog` to use polytomy instead of a _ delimiter
+   joining sequence names.
+ * Closed GH-70: Added documentation for how to compile pplacer.
+ * Closed GH-73: Added a pre-masking feature to cut out irrelevant columns of
+   the alignment.
+ * Closed GH-74: Improved how pplacer dedupes sequences before a placerun.
+ * Added a script to sort placefiles for easier visual diffs.
+ * Added more informative error messages when the length of the query alignment
+   and reference alignment don't match.
+ * `guppy edpl` now calculates the EDPL (expected distance between placement
+   locations) for placements
+
+
 1.1.alpha07
 ===========
 

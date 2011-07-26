@@ -1,9 +1,9 @@
-<{common,pplacer,json}_src>: include
+<{common,pplacer,json,prunetre}_src>: include
 <tests>: include
-<tests/{guppy,pplacer,json}>: include
+<tests/{guppy,pplacer,json,rppr}>: include
 <tests/**/*.{ml,byte,native,top,p.native}>: use_oUnit
 <tests.{top,native}>: use_oUnit
 <**/*.{byte,native,top,p.native}>: use_str, use_unix, use_bigarray, use_gsl, use_csv, use_xml-light, use_pplacer
-<**/{gen_docs,guppy,tests}.{byte,native,top,p.native,d.byte}>: use_sqlite3, pthread
+<**/{gen_docs,guppy,rppr,tests}.{byte,native,top,p.native,d.byte}>: use_sqlite3, pthread
 <**/*.ml>: warn_Z, annot, use_gsl, use_csv, use_xml-light, use_pplacer, use_sqlite3
 <libs/*.a>: precious

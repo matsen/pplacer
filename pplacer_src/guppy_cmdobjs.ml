@@ -46,8 +46,7 @@ object (self)
       | Some fname, None, Some prefix -> open_out (prefix ^ fname)
       | Some fname, None, None -> open_out fname
 
-      | None, Some _, _ -> failwith "directory provided with no filename"
-      | _, _, Some _ -> failwith "prefix provided with nothing else"
+      | None, _, _ -> failwith "-o option is required"
 
   method private out_file_or_dir ?(default = Directory (".", "")) () =
     match fvo out_fname, fvo out_dir, fvo out_prefix with
@@ -64,14 +63,14 @@ object (self)
 
   method private single_prefix ?(requires_user_prefix = false) () =
     match self#out_file_or_dir () with
-      | Directory (_, "") when requires_user_prefix -> failwith "no prefix specified"
+      | Directory (_, "") when requires_user_prefix -> failwith "--prefix option is required"
       | Directory (dir, prefix) -> Filename.concat dir prefix
-      | _ -> failwith "can't output to a single file"
+      | _ -> failwith "-o option is illegal"
 
   method private single_file ?default () =
     match self#out_file_or_dir ?default () with
       | File fname -> fname
-      | _ -> failwith "directory provided with no filename"
+      | _ -> failwith "-o option is required"
 
 end
 
@@ -156,10 +155,20 @@ object (self)
   method action fnamel =
     let prl = List.map placerun_by_name fnamel in
     self#placefile_action prl
+
+  method private write_placefile invocation fname pr =
+    if fname.[0] = '@' then
+      let name = Filename.chop_extension
+        (String.sub fname 1 ((String.length fname) - 1))
+      in
+      placerun_map := SM.add fname (Placerun.set_name pr name) !placerun_map
+    else
+      Placerun_io.to_json_file invocation fname pr
+
 end
 
 
-(* *** mass-related objects *** *)
+(* *** mass and kr-related objects *** *)
 
 class mass_cmd () =
 object
@@ -183,13 +192,41 @@ object
   )
 end
 
-class kr_cmd () =
+(* For normalizing by various things related to the tree. *)
+class normalization_cmd () =
+  let no_normalization _ = 1.
+  and tree_length t = Gtree.tree_length t
+  in
+  let normalization_map =
+    StringMap.of_pairlist
+      [
+        "", no_normalization;
+        "tree-length", tree_length;
+      ]
+  in
+
 object
-  val p_exp = flag "-p"
-    (Plain (1., "The exponent for the integration, i.e. the value of p in Z_p."))
   val normalize = flag "--normalize"
     (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
-  method specl = [ float_flag p_exp; string_flag normalize; ]
+  method specl = [ string_flag normalize; ]
+
+  method private get_normalization: <get_bl: float; ..> Gtree.gtree -> float = fun t ->
+    let s = fv normalize in
+    let f =
+      try
+        StringMap.find s normalization_map
+      with
+        | Not_found -> failwith ("Normalization "^s^" not known.")
+    in
+    f t
+end
+
+class kr_cmd () =
+  object
+  (* normalizations. We can divide by these to get a given perspective on KR. *)
+    val p_exp = flag "-p"
+      (Formatted (1., "Exponent for KR integration, i.e. value of p in Z_p. Default %g."))
+    method specl = [ float_flag p_exp; ]
 end
 
 

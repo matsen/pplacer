@@ -6,11 +6,6 @@ open MapsSets
 open Prefs
 
 let max_iter = 200
-(* the most number of placements we keep *)
-let keep_at_most = 7
-(* we throw away anything that has ml_ratio below keep_factor times (best ml_ratio) *)
-let keep_factor = 0.01
-let log_keep_factor = log keep_factor
 
 (* the second stage tolerance for branch length optimization. modify in online
  * help if changed here. *)
@@ -19,11 +14,15 @@ let final_tolerance = 1e-5
 type prior = Uniform_prior | Exponential_prior of float
 type result =
   | Fantasy of (int * (float * float * float)) list
-  | Pquery of string * Pquery.pquery
+  | Pquery of Pquery.pquery
+  | Timing of string * float
 
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
 let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
+  let keep_at_most = Prefs.keep_at_most prefs
+  and keep_factor = Prefs.keep_factor prefs in
+  let log_keep_factor = log keep_factor in
   let seq_type = Model.seq_type model
   and prior_fun =
     match prior with
@@ -116,7 +115,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
                 (Glv_arr.get snodes loc) first_informative last_informative))
            locs)
     in
-    if (verb_level prefs) >= 2 then Printf.printf "ranking took\t%g\n" ((Sys.time ()) -. curr_time);
+    let results = [Timing ("ranking", (Sys.time ()) -. curr_time)] in
     let h_ranking = List.map fst h_r in
     (* first get the results from ML *)
     let curr_time = Sys.time () in
@@ -223,9 +222,9 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     if ml_results = [] then
       failwith
         (Printf.sprintf "empty results for %s!\n" query_name);
-    if (verb_level prefs) >= 2 then Printf.printf "ML calc took\t%g\n" ((Sys.time ()) -. curr_time);
+    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results in
     if fantasy prefs <> 0. then
-      Fantasy ml_results
+      Fantasy ml_results :: results
     else begin
       (* these tuples are ugly but that way we don't need
        * to make a special type for ml results. *)
@@ -265,13 +264,11 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
           (Base.ll_normalized_prob (List.map get_like refined_results))
           refined_results
       in
-      Pquery (query_seq, Pquery.make_ml_sorted
-        ~namel:[query_name]
-        ~seq:query_seq
-        (if (calc_pp prefs) then begin
-        (* pp calculation *)
+      let results, placements =
+        if calc_pp prefs then begin
+          (* pp calculation *)
           let curr_time = Sys.time () in
-        (* calculate marginal likes for those placements we will keep *)
+          (* calculate marginal likes for those placements we will keep *)
           let marginal_probs =
             List.map
               (fun placement ->
@@ -280,8 +277,8 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
                   prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
               sorted_ml_placements
           in
-        (* add pp *)
-          if (verb_level prefs) >= 2 then Printf.printf "PP calc took\t%g\n" ((Sys.time ()) -. curr_time);
+          (* add pp *)
+          Timing ("PP calculation", (Sys.time ()) -. curr_time) :: results,
           ((ListFuns.map3
               (fun placement marginal_prob post_prob ->
                 Placement.add_pp placement ~marginal_prob ~post_prob)
@@ -289,7 +286,12 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
               marginal_probs
               (Base.ll_normalized_prob marginal_probs)))
         end
-         else sorted_ml_placements))
+        else results, sorted_ml_placements
+      in
+      Pquery (Pquery.make_ml_sorted
+        ~namel:[query_name]
+        ~seq:query_seq
+        placements) :: results
     end
   in
   process_query

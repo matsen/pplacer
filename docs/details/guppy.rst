@@ -35,8 +35,9 @@ UPGMA using UniFrac       "squash" clustering (squash_)
 PCA using UniFrac         Edge PCA (pca_)
 ========================  =============
 
-The heat tree (heat_) and barycenter (bary_) have no analogs in previous types of phylogenetic microbial analysis.
-Note that this table does not show strict equivalences, but rather a list of hints for further exploration.
+This table does not show equivalences, but rather a list of hints for further exploration.
+For example, the KR distance is really a generalization of weighted UniFrac, and edge PCA is a type of PCA that takes advantage of the special structure of phylogenetic placement data.
+The heat tree (kr_heat_) and barycenter (bary_) have no analogs in previous types of phylogenetic microbial analysis.
 
 
 Usage
@@ -55,7 +56,7 @@ Command line interface
 The general way to invoke |guppy| is ``guppy COMMAND [options] placefile[s]`` where COMMAND is one of the |guppy| commands.
 For example::
 
-  guppy heat --gray-black coastal.json DCM.json
+  guppy heat --gray-black coastal.jplace DCM.jplace
 
 These programs are listed with more detail below, and can always be found using ``guppy --cmds`` .
 
@@ -71,18 +72,53 @@ time it is used in a command.
 Batch files are files with one guppy command per line, specified exactly as
 would be written in a shell, except without the leading ``guppy``. Arguments
 can be enclosed in double quotes to preserve whitespace, and double quotes
-within quoted strings are quoted by doubling (e.g. ``"spam ""and""
-eggs"``. Globbing (e.g. ``*.json``) is not allowed. Comments are also allowed
-in batch files; everything on a line after a ``#`` is ignored.
+within quoted strings are quoted by doubling (e.g. ``"spam ""and"" eggs"``).
+Globbing (e.g. ``*.jplace``) is not allowed. Comments are also allowed in batch
+files; everything on a line after a ``#`` is ignored.
 
 An example batch file::
 
   # Whole-line comment.
-  pca -o pca -c some.refpkg src/a.json src/b.json
-  squash -c some.refpkg -o squash_out src/a.json src/b.json
-  classify -c some.refpkg some.json  # inline comment
+  pca -o pca -c some.refpkg src/a.jplace src/b.jplace
+  squash -c some.refpkg -o squash_out src/a.jplace src/b.jplace
+  classify -c some.refpkg some.jplace  # inline comment
 
-..
+If this was saved as ``example.batch``, it would be invoked from guppy as::
+
+  guppy --batch example.batch
+
+Advanced features
+^^^^^^^^^^^^^^^^^
+
+Batch files also have two unique features: virtual placefiles, and parameter
+substitution.
+
+Within a batch file, if a placefile is saved to or loaded from a path beginning
+with a ``@``, the data will be stored in memory instead of written to disk. For
+example::
+
+  merge -o @merged.jplace src/a.jplace src/b.jplace
+  info @merged.jplace
+
+will effectively run ``guppy info`` on the placefile resulting from merging the
+two arguments, but without ever writing that merged file to disk.
+
+Additionally, parameters can be passed in from the command line to the batch
+file. On the command line, parameters are specified as additional arguments to
+guppy in ``key=value`` format. In the batch file, substitutions are done from
+identifiers in ``{key}`` format. For example, when a batch file containing ::
+
+  info {k1} {k2}
+
+is invoked with ::
+
+  guppy --batch example.batch k1=1.jplace k2=2.jplace
+
+the impact will be the same as running ::
+
+  guppy 1.jplace 2.jplace
+
+Braces can also be quoted by doubling (e.g. ``{{foo}}`` will become ``{foo}``).
 
 
 About multiplicities
@@ -109,12 +145,16 @@ If you don't see those check boxes, then use `this configuration file`_ (if you 
 List of subcommands
 ===================
 
+The following table provides links to more in-depth documentation for each
+guppy subcommand:
+
+.. guppy-command-table
+
 .. toctree::
-   :maxdepth: 1
    :glob:
+   :hidden:
 
-   generated_rst/guppy_*
-
+   guppy_*
 
 
 .. |guppy| replace:: ``guppy``
@@ -125,7 +165,7 @@ List of subcommands
 .. _pd: generated_rst/pd.html
 .. _squash: generated_rst/squash.html
 .. _pca: generated_rst/pca.html
-.. _heat: generated_rst/heat.html
+.. _kr_heat: generated_rst/kr_heat.html
 .. _bary: generated_rst/bary.html
 
 .. _pplacer: http://matsen.fhrcrc.org/pplacer

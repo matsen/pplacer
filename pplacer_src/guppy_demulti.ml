@@ -33,9 +33,9 @@ object (self)
     List.iter
       (fun pr ->
         let out_name = (prefix^(pr.Placerun.name)) in
-        Placerun_io.to_json_file
+        self#write_placefile
           "guppy demulti"
-          (out_name^".json")
+          (out_name^".jplace")
           (demulti_placerun out_name pr))
       prl
 end

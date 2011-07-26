@@ -71,7 +71,7 @@ object (self)
     | [] -> ()
     | prl ->
       let fname = self#single_file
-        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".json"))
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".jplace"))
         ()
       in
       let r_inclusions = List.map Str.regexp (List.rev (fv regexp_inclusions))
@@ -144,5 +144,5 @@ object (self)
         (List.hd filtered)
         (List.tl filtered)
       in
-      Placerun_io.to_json_file "guppy filter" fname combined
+      self#write_placefile "guppy filter" fname combined
 end

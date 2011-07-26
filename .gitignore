@@ -5,12 +5,15 @@ tags
 *.native
 *.swp
 *.byte
+*.annot
 .ocamlinit
 .toplevel_history
 top_tests
 bin
 common_src/install_common_pprs.txt
+common_src/git_version.ml
 makefile
 libs
 docs/generated_rst/
 docs/_build/doctrees/
+wiki

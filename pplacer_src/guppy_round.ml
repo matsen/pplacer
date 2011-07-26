@@ -112,9 +112,9 @@ object (self)
     List.iter
       (fun pr ->
         let out_name = (prefix^(pr.Placerun.name)) in
-        Placerun_io.to_json_file
+        self#write_placefile
           "guppy round"
-          (out_name^".json")
+          (out_name^".jplace")
           (round_placerun out_name pr))
       prl
 end

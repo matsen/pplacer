@@ -2,6 +2,10 @@ open Multiprocessing
 open Fam_batteries
 open MapsSets
 
+let compose f g a = f (g a)
+let flip f x y = f y x
+let id x = x
+
 exception Finished
 
 class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
@@ -57,10 +61,12 @@ object (self)
 end
 
 let run_file prefs query_fname =
+  let timings = ref StringMap.empty in
+
   if (Prefs.verb_level prefs) >= 1 then
     Printf.printf
       "Running pplacer %s analysis on %s...\n"
-      Version.version_revision
+      Version.version
       query_fname;
   let ref_dir_complete =
     match Prefs.ref_dir prefs with
@@ -82,7 +88,7 @@ let run_file prefs query_fname =
         if v = "" then m
         else StringMap.add k (ref_dir_complete^v) m)
       [
-        "tree_file", Prefs.tree_fname prefs;
+        "tree", Prefs.tree_fname prefs;
         "aln_fasta", Prefs.ref_align_fname prefs;
         "tree_stats", Prefs.stats_fname prefs;
       ]
@@ -93,11 +99,31 @@ let run_file prefs query_fname =
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
 
   let ref_tree =
-    try Newick_gtree.of_file (StringMap.find "tree_file" rp_strmap) with
-    | Not_found -> failwith "please specify a reference tree with -t or -c"
+    try
+      Refpkg.get_ref_tree rp
+    with Refpkg.Missing_element "tree" ->
+      failwith "please specify a reference tree with -t or -c"
+  and _ =
+    try
+      Refpkg.get_aln_fasta rp
+    with Refpkg.Missing_element "aln_fasta" ->
+      failwith
+        "Please specify a reference alignment with -r or -c, or include all \
+        reference sequences in the primary alignment."
+  and _ =
+    try
+      Refpkg.get_model rp
+    with Refpkg.Missing_element "tree_stats" ->
+      failwith "please specify a tree model with -s or -c"
   in
+
   if Newick_gtree.has_zero_bls ref_tree then
     Printf.printf
       "WARNING: your tree has zero pendant branch lengths. \
@@ -122,20 +148,25 @@ let run_file prefs query_fname =
         print_endline
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
-      try
-        Alignment_funs.upper_aln_of_any_file
-          (StringMap.find "aln_fasta" rp_strmap)
-      with
-      | Not_found ->
-          failwith
-          "Please specify a reference alignment with -r or -c, or include all \
-          reference sequences in the primary alignment."
+      Refpkg.get_aln_fasta rp
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
         print_endline
           "Found reference sequences in given alignment file. \
           Using those for reference alignment.";
+      let _ = List.fold_left
+        (fun seen (seq, _) ->
+          if StringSet.mem seq seen then
+            failwith
+              (Printf.sprintf
+                 "duplicate reference sequence '%s' in query file %s"
+                 seq
+                 query_fname);
+          StringSet.add seq seen)
+        StringSet.empty
+        ref_list
+      in ();
       Alignment.uppercase (Array.of_list ref_list)
     end
   in
@@ -146,10 +177,126 @@ let run_file prefs query_fname =
       ref_align
   end;
   let n_sites = Alignment.length ref_align in
+  begin match begin
+    try
+      Some
+        (List.find
+           (fun (_, seq) -> (String.length seq) != n_sites)
+           query_list)
+    with
+      | Not_found -> None
+  end with
+    | Some (name, seq) ->
+      Printf.printf
+        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
+        name
+        (String.length seq)
+        n_sites;
+      exit 1;
+    | None -> ()
+  end;
 
+  (* *** pre masking *** *)
+  let query_list, ref_align, n_sites =
+    if Prefs.no_pre_mask prefs then
+      query_list, ref_align, n_sites
+    else begin
+      if (Prefs.verb_level prefs) >= 1 then begin
+        print_string "Pre-masking sequences... ";
+        flush_all ();
+      end;
+      let mask_of_fold fold value =
+        fold
+          (flip
+             (compose
+                (ArrayFuns.map2 (||))
+                (fun (_, seq) ->
+                  Array.init
+                    n_sites
+                    (compose
+                       (function '-' | '?' -> false | _ -> true)
+                       (String.get seq)))))
+          (Array.make n_sites false)
+          value
+      in
+      let mask = ArrayFuns.map2
+        (&&)
+        (mask_of_fold Array.fold_left ref_align)
+        (mask_of_fold List.fold_left query_list)
+      in
+      let masklen = Array.fold_left
+        (fun accum -> function true -> accum + 1 | _ -> accum)
+        0
+        mask
+      in
+      let cut_from_mask (name, seq) =
+        let seq' = String.create masklen
+        and pos = ref 0 in
+        Array.iteri
+          (fun e not_masked ->
+            if not_masked then
+              (seq'.[!pos] <- seq.[e];
+               incr pos))
+          mask;
+        name, seq'
+      in
+      if (Prefs.verb_level prefs) >= 1 then begin
+        Printf.printf "sequence length cut from %d to %d." n_sites masklen;
+        print_newline ()
+      end;
+      if masklen = 0 then
+        (print_endline
+           "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
+         exit 1)
+      else if masklen <= 10 then
+        Printf.printf
+          "WARNING: you have %d sites after pre-masking. \
+          That means there is very little information in these sequences for placement."
+          masklen
+      else if masklen <= 100 then
+        Printf.printf
+          "Note: you have %d sites after pre-masking. \
+          That means there is rather little information in these sequences for placement."
+          masklen;
+      let query_list' = List.map cut_from_mask query_list
+      and ref_align' = Array.map cut_from_mask ref_align in
+      if (Prefs.pre_masked_file prefs) <> "" then begin
+        let ch = open_out (Prefs.pre_masked_file prefs) in
+        let write_line = Alignment.write_fasta_line ch in
+        Array.iter write_line ref_align';
+        List.iter write_line query_list';
+        close_out ch;
+        exit 0;
+      end;
+      query_list', ref_align', masklen
+    end
+  in
 
-  (* *** build reference package *** *)
-  let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
+  (* *** deduplicate sequences *** *)
+  (* seq_tbl maps from sequence to the names that correspond to that seq. *)
+  let seq_tbl = Hashtbl.create 1024 in
+  List.iter
+    (fun (name, seq) -> Hashtbl.replace
+      seq_tbl
+      seq
+      (name ::
+         try
+           Hashtbl.find seq_tbl seq
+         with
+           | Not_found -> []))
+    query_list;
+  (* redup_tbl maps from the first entry of namel to the rest of the namel. *)
+  let redup_tbl = Hashtbl.create 1024 in
+  (* query_list is now deduped. *)
+  let query_list = Hashtbl.fold
+    (fun seq namel accum ->
+      let hd = List.hd namel in
+      Hashtbl.add redup_tbl hd namel;
+      (hd, seq) :: accum)
+    seq_tbl
+    []
+  in
+
   let model = Refpkg.get_model rp in
   if (Prefs.verb_level prefs) > 0 &&
     not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
@@ -184,15 +331,16 @@ let run_file prefs query_fname =
   let parr = Glv_arr.mimic darr
   and snodes = Glv_arr.mimic darr
   in
-  (* do the reference tree likelihood calculation. we do so using halfd and
-   * one glv from halfp as our utility storage *)
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
     util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
     ~util_glv_arr:snodes;
   if (Prefs.verb_level prefs) >= 1 then
     print_endline "done.";
-  if (Prefs.verb_level prefs) >= 2 then Printf.printf "tree like took\t%g\n" ((Sys.time ()) -. curr_time);
+  timings := StringMap.add_listly
+    "tree likelihood"
+    ((Sys.time ()) -. curr_time)
+    (!timings);
   (* pull exponents *)
   if (Prefs.verb_level prefs) >= 1 then begin
     print_string "Pulling exponents... ";
@@ -242,6 +390,14 @@ let run_file prefs query_fname =
     done
   end;
 
+  (* *** write out posterior probability info at internal nodes *** *)
+  if Prefs.map_info prefs then begin
+    if not (Refpkg.tax_equipped rp) then begin
+      failwith ("--map-info requires taxonomic information in ref pkg");
+    end;
+    Post_info.write_map_info ~darr ~parr rp
+  end;
+
   (* *** analyze query sequences *** *)
   let query_bname =
     Filename.basename (Filename.chop_extension query_fname) in
@@ -283,10 +439,15 @@ let run_file prefs query_fname =
     and fantasy_mod = Base.round (100. *. (Prefs.fantasy_frac prefs))
     and n_fantasies = ref 0
     in
-    let gotfunc = function
-      | Core.Fantasy f ->
+    let rec gotfunc = function
+      | Core.Fantasy f :: rest ->
         Fantasy.add_to_fantasy_matrix f fantasy_mat;
-        incr n_fantasies
+        incr n_fantasies;
+        gotfunc rest
+      | Core.Timing (name, value) :: rest ->
+        timings := StringMap.add_listly name value (!timings);
+        gotfunc rest
+      | [] -> ()
       | _ -> failwith "expected fantasy result"
     and cachefunc _ =
       (* if cachefunc returns true, the current thing is skipped; modulo
@@ -303,34 +464,109 @@ let run_file prefs query_fname =
 
   end else begin
     (* not fantasy baseball *)
-    let query_tbl = Hashtbl.create 1024 in
-    let gotfunc = function
-      | Core.Pquery (seq, pq) -> Hashtbl.add query_tbl seq pq
-      | _ -> failwith "expected pquery result"
-    and cachefunc (name, seq) =
-      match begin
-        try
-          Some (Hashtbl.find query_tbl seq)
-        with
-          | Not_found -> None
-      end with
-        | Some pq ->
-          let pq = Pquery.set_namel pq (name :: pq.Pquery.namel) in
-          incr n_done;
-          Hashtbl.replace query_tbl seq pq;
-          true
-        | None -> false
-    and donefunc () =
-      let results = Hashtbl.fold
-        (fun _ pq l -> pq :: l)
-        query_tbl
-        []
+    let map_fasta_file = Prefs.map_fasta prefs in
+    let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
+    let pquery_gotfunc, pquery_donefunc = if do_map then begin
+      let ref_tree = Refpkg.get_ref_tree rp
+      and mrcam = Refpkg.get_mrcam rp
+      and td = Refpkg.get_taxonomy rp
+      and glvs = Glv_arr.make
+        ~n_glvs:2
+        ~n_sites
+        ~n_rates:(Model.n_rates model)
+        ~n_states:(Model.n_states model)
       in
+      let map_map = Map_seq.of_map
+        glvs.(0)
+        glvs.(1)
+        (Refpkg.get_model rp)
+        ref_tree
+        ~darr
+        ~parr
+        mrcam
+        (Prefs.map_cutoff prefs)
+      and result_map = ref IntMap.empty in
+      let gotfunc pq =
+        let best_placement = Pquery.best_place Placement.ml_ratio pq in
+        result_map := IntMap.add_listly
+          (Placement.location best_placement)
+          ((List.hd (Pquery.namel pq)), (Pquery.seq pq))
+          (!result_map);
+        if not (Prefs.map_identity prefs) then pq else
+          let placement_map = List.fold_left
+            (fun accum p ->
+              IntMap.add_listly
+                (Placement.location p)
+                p
+                accum)
+            IntMap.empty
+            (Pquery.place_list pq)
+          in
+          let placement_map' = Map_seq.mrca_map_seq_map
+            placement_map
+            mrcam
+            (ref_tree.Gtree.stree)
+          in
+          let identity = Alignment_funs.identity (Pquery.seq pq) in
+          let placements' = IntMap.fold
+            (fun mrca pl accum ->
+              List.fold_left
+                (fun accum p ->
+                  let map_seq = IntMap.find mrca map_map in
+                  (Placement.add_map_identity p (identity map_seq)) :: accum)
+                accum
+                pl)
+            placement_map'
+            []
+          in
+          {pq with Pquery.place_list = placements'}
+      and donefunc = if map_fasta_file = "" then id else fun () ->
+        let seq_map = Map_seq.mrca_map_seq_map
+          (!result_map)
+          mrcam
+          (ref_tree.Gtree.stree)
+        and space = Str.regexp " " in
+        let map_fasta = IntMap.fold
+          (fun i mrca accum ->
+            if not (IntMap.mem i seq_map) then accum else
+              let tax_name = Tax_taxonomy.get_tax_name td mrca in
+              List.rev_append
+                (IntMap.find i seq_map)
+                (((Printf.sprintf "%d_%s"
+                     i
+                     (Str.global_replace space "_" tax_name)),
+                  IntMap.find i map_map)
+                 :: accum))
+          mrcam
+          []
+        in
+        Alignment.to_fasta
+          (Array.of_list (List.rev map_fasta))
+          map_fasta_file
+      in
+      gotfunc, donefunc
+
+    end else (id, id)
+    in
+
+    let queries = ref [] in
+    let rec gotfunc = function
+      | Core.Pquery pq :: rest ->
+        let pq = pquery_gotfunc pq in
+        queries := pq :: (!queries);
+        gotfunc rest
+      | Core.Timing (name, value) :: rest ->
+        timings := StringMap.add_listly name value (!timings);
+        gotfunc rest
+      | [] -> ()
+      | _ -> failwith "expected pquery result"
+    and cachefunc _ = false
+    and donefunc () =
+      pquery_donefunc ();
       let pr =
-        Placerun.make
-          ref_tree
-          query_bname
-          results
+        Placerun.redup
+          redup_tbl
+          (Placerun.make ref_tree query_bname (!queries))
       in
       let final_pr =
         if not (Refpkg.tax_equipped rp) then pr
@@ -340,7 +576,7 @@ let run_file prefs query_fname =
       in
       Placerun_io.to_json_file
         invocation
-        (out_prefix ^ ".json")
+        (out_prefix ^ ".jplace")
         final_pr
     in
     gotfunc, cachefunc, donefunc
@@ -361,4 +597,12 @@ let run_file prefs query_fname =
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
       (Base.range (Prefs.children prefs)) in
   event_loop children;
-  donefunc ()
+  donefunc ();
+  if Prefs.timing prefs then begin
+    Printf.printf "\ntiming data:\n";
+    StringMap.iter
+      (fun name values ->
+        Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
+      (!timings)
+  end
+

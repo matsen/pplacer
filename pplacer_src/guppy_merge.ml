@@ -14,7 +14,7 @@ object (self)
     | [] -> ()
     | prl ->
       let fname = self#single_file
-        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".json"))
+        ~default:(File ((Mokaphy_common.cat_names prl) ^ ".jplace"))
         ()
       in
       let combined = List.fold_left
@@ -22,5 +22,5 @@ object (self)
         (List.hd prl)
         (List.tl prl)
       in
-      Placerun_io.to_json_file "guppy merge" fname combined
+      self#write_placefile "guppy merge" fname combined
 end

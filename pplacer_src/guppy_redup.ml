@@ -26,21 +26,10 @@ object (self)
           let sequences = Str.split white_regexp line in
           Hashtbl.add sequence_tbl (List.hd sequences) sequences)
         lines;
-      let pr = Placerun.set_pqueries
-        pr
-        (List.map
-           (fun pq ->
-             let name = List.hd (Pquery.namel pq) in
-             try
-               Pquery.set_namel pq (Hashtbl.find sequence_tbl name)
-             with
-               | Not_found -> pq)
-           (Placerun.get_pqueries pr))
-      in
-      Placerun_io.to_json_file
+      self#write_placefile
         "guppy to_json"
         (self#single_file ())
-        pr
+        (Placerun.redup sequence_tbl pr)
 
     | _ -> failwith "guppy redup takes exactly one placefile"
 end
