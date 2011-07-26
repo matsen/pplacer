@@ -110,14 +110,18 @@ let run_file prefs query_fname =
       Refpkg.get_ref_tree rp
     with Refpkg.Missing_element "tree" ->
       failwith "please specify a reference tree with -t or -c"
-  in
-  let _ =
+  and _ =
     try
       Refpkg.get_aln_fasta rp
     with Refpkg.Missing_element "aln_fasta" ->
       failwith
         "Please specify a reference alignment with -r or -c, or include all \
         reference sequences in the primary alignment."
+  and _ =
+    try
+      Refpkg.get_model rp
+    with Refpkg.Missing_element "tree_stats" ->
+      failwith "please specify a tree model with -s or -c"
   in
 
   if Newick_gtree.has_zero_bls ref_tree then
