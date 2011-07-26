@@ -32,6 +32,16 @@ let setup_static_libraries () =
   if result then let _ = syscall "cp $(gsl-config --prefix)/lib/*.a libs" in ()
 in
 
+let setup_git_version () =
+  let version_string = match syscall "git describe --long" with
+    | "" -> "None"
+    | version -> Printf.sprintf "Some \"%s\"" (String.escaped version)
+  in
+  let ch = open_out "common_src/git_version.ml" in
+  Printf.fprintf ch "let version = %s\n" version_string;
+  close_out ch
+in
+
 let is_osx =
   (syscall "uname -s") = "Darwin"
 in
@@ -61,7 +71,8 @@ dispatch begin function
 
 
   | After_options ->
-      if is_osx then setup_static_libraries ()
+      if is_osx then setup_static_libraries ();
+      setup_git_version ()
 
   | After_rules ->
       (* c compilation options *)

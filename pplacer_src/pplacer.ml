@@ -17,7 +17,7 @@ let () =
   if not !Sys.interactive then begin
     let (files, prefs) = parse_args () in
     if Prefs.version prefs then begin
-      print_endline Version.version_revision;
+      print_endline Version.version;
       exit 0;
     end;
     Prefs.check prefs;

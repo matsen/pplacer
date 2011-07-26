@@ -66,7 +66,7 @@ let run_file prefs query_fname =
   if (Prefs.verb_level prefs) >= 1 then
     Printf.printf
       "Running pplacer %s analysis on %s...\n"
-      Version.version_revision
+      Version.version
       query_fname;
   let ref_dir_complete =
     match Prefs.ref_dir prefs with
