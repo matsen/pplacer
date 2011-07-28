@@ -1,6 +1,7 @@
 (* Here we actually do the work.
 *)
 
+open Batteries
 open Fam_batteries
 open MapsSets
 open Prefs
@@ -107,7 +108,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let curr_time = Sys.time () in
     let h_r =
       List.sort
-        (fun (_,l1) (_,l2) -> - compare l1 l2)
+        ~cmp:(fun (_,l1) (_,l2) -> - compare l1 l2)
         (List.map
            (fun loc ->
              (loc,
@@ -232,7 +233,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
       let decreasing_cmp_likes r1 r2 =
         - compare (get_like r1) (get_like r2) in
       let sorted_ml_results =
-        List.sort decreasing_cmp_likes ml_results in
+        List.sort ~cmp:decreasing_cmp_likes ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =

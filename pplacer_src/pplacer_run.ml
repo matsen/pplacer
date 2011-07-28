@@ -1,10 +1,9 @@
+open Batteries
 open Multiprocessing
 open Fam_batteries
 open MapsSets
 
 let compose f g a = f (g a)
-let flip f x y = f y x
-let id x = x
 
 exception Finished
 
@@ -20,7 +19,7 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
     let rec aux () =
       match begin
         try
-          Some (Marshal.from_channel rd)
+          Some (Legacy.Marshal.from_channel rd)
         with
           | End_of_file -> None
       end with
@@ -34,7 +33,7 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
                 | exn -> Exception exn
             end;
           aux ()
-        | None -> close_in rd; close_out wr
+        | None -> Legacy.close_in rd; Legacy.close_out wr
     in aux ()
   in
 
@@ -205,24 +204,22 @@ let run_file prefs query_fname =
         print_string "Pre-masking sequences... ";
         flush_all ();
       end;
-      let mask_of_fold fold value =
-        fold
-          (flip
-             (compose
-                (ArrayFuns.map2 (||))
-                (fun (_, seq) ->
-                  Array.init
-                    n_sites
-                    (compose
-                       (function '-' | '?' -> false | _ -> true)
-                       (String.get seq)))))
-          (Array.make n_sites false)
-          value
+      let initial_mask = Array.make n_sites false in
+      let mask_of_enum enum =
+        Enum.fold
+          (snd
+              |- String.enum
+              |- Enum.map (function '-' | '?' -> false | _ -> true)
+              |- Array.of_enum
+              |- Array.map2 (||)
+              |> flip)
+          initial_mask
+          enum
       in
-      let mask = ArrayFuns.map2
+      let mask = Array.map2
         (&&)
-        (mask_of_fold Array.fold_left ref_align)
-        (mask_of_fold List.fold_left query_list)
+        (Array.enum ref_align |> mask_of_enum)
+        (List.enum query_list |> mask_of_enum)
       in
       let masklen = Array.fold_left
         (fun accum -> function true -> accum + 1 | _ -> accum)
@@ -520,7 +517,7 @@ let run_file prefs query_fname =
             []
           in
           {pq with Pquery.place_list = placements'}
-      and donefunc = if map_fasta_file = "" then id else fun () ->
+      and donefunc = if map_fasta_file = "" then identity else fun () ->
         let seq_map = Map_seq.mrca_map_seq_map
           (!result_map)
           mrcam
@@ -546,7 +543,7 @@ let run_file prefs query_fname =
       in
       gotfunc, donefunc
 
-    end else (id, id)
+    end else (identity, identity)
     in
 
     let queries = ref [] in
