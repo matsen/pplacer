@@ -118,7 +118,7 @@ object (self)
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
     let foldf alternates data =
-      let colormap' = IntMap.filter
+      let colormap' = IntMap.filteri
         (fun k _ -> IntSet.mem k data.not_cut)
         data.colormap
       in

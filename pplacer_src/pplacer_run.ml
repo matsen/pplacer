@@ -312,7 +312,7 @@ let run_file prefs query_fname =
     exit 0;
   end;
   (* find all the tree locations *)
-  let all_locs = IntMap.keys (Gtree.get_bark_map ref_tree) in
+  let all_locs = IntMap.keylist (Gtree.get_bark_map ref_tree) in
   assert(all_locs <> []);
   (* the last element in the list is the root, and we don't want to place there *)
   let locs = ListFuns.remove_last all_locs in

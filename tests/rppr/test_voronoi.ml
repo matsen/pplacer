@@ -8,7 +8,7 @@ module I = Mass_map.Indiv
 let test_suite_of_gtree_and_expected (gt_string, distr) =
   let gt = Newick_gtree.of_string gt_string in
   let v = of_gtree gt in
-  let ldistm' = IntMap.filter
+  let ldistm' = IntMap.filteri
     (fun k _ -> not (IntSet.mem k v.all_leaves))
     v.ldistm
   in

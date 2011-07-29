@@ -1,6 +1,5 @@
+open Batteries
 open MapsSets
-
-let compose f g a = f (g a)
 
 let batchfile_regexp = Str.regexp begin
   String.concat "\\|" [

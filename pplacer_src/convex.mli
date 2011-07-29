@@ -1,3 +1,4 @@
+open Batteries
 open MapsSets
 open Stree
 type color = string
