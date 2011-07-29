@@ -310,9 +310,13 @@ let _build_apartl cutsetl kappa (c, x) =
            (transposed_fold CS.union startsl)
            (product dist))
       in
-      (* We make sure to pass on the c as the color of the internal node in the
-       * case where between pi is empty by filtering out the ones that don't,
-       * unless b is None.. *)
+      (* By the construction of the pis, between pi can only be empty or b. Here
+       * we filter out those aparts such that b is not c or None. Recall (see
+       * the intro to convex.mli) that None represents any color that is not
+       * "forced" by convexity considerations. c is None when there is not an
+       * above color that is in x. b is None when c is None and there are no
+       * colors shared between the pi_i.
+       *)
       List.fold_left
         (fun accum pi ->
           if not (CS.is_empty (between pi)) || b = c || b = None then
