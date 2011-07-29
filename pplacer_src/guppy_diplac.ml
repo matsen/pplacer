@@ -1,15 +1,8 @@
+open Batteries
 open Subcommand
 open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
-
-let flip f x y = f y x
-let compose f g a = f (g a)
-let rec take n cs = match cs with
-  | [] -> []
-  | c::cs -> match n with
-      | 0 -> []
-      | n -> c :: (take (n-1) cs)
 
 class cmd () =
 object (self)
@@ -47,26 +40,27 @@ object (self)
         (fun pr -> dist (best_placement pr), pr)
         (Placerun.get_pqueries pr)
       in
-      let sorted_distances = List.sort
-        (compose (compose (~-)) compare)
-        pq_distances
+      let sorted_distances = List.sort ~cmp:(flip compare) pq_distances in
+      let queried_distances = List.enum sorted_distances
+        |> Enum.map
+            (fun (dist, pq) ->
+              Pquery.namel pq
+              |> List.enum
+              |> (dist |> curry identity |> Enum.map))
+        |> Enum.flatten
       in
-      let queried_distances = 
-        List.concat (List.map 
-                  (fun (dist,pq) -> 
-                    (List.map (fun name -> (name, dist)) (Pquery.namel pq)))
-                  sorted_distances)
-      in 
       let within_limit = match md with
-        | Some x -> List.filter (fun (_,dist) -> dist > x) queried_distances
+        | Some x -> (fst |- (<) x |> Enum.filter) queried_distances
         | None -> queried_distances
       in
       let trimmed = match mr with
-        | Some x -> take x within_limit
+        | Some x -> Enum.take x within_limit
         | None -> within_limit
-      in List.iter 
-           (fun (name,dist) -> Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
-           trimmed
+      in
+      Enum.iter
+        (fun (dist, name) ->
+          Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
+        trimmed
 
     | _ -> failwith "diplac takes exactly one placefile"
 

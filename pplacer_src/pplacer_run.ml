@@ -3,8 +3,6 @@ open Multiprocessing
 open Fam_batteries
 open MapsSets
 
-let compose f g a = f (g a)
-
 exception Finished
 
 class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
@@ -208,11 +206,11 @@ let run_file prefs query_fname =
       let mask_of_enum enum =
         Enum.fold
           (snd
-              |- String.enum
-              |- Enum.map (function '-' | '?' -> false | _ -> true)
-              |- Array.of_enum
-              |- Array.map2 (||)
-              |> flip)
+           |- String.enum
+           |- Enum.map (function '-' | '?' -> false | _ -> true)
+           |- Array.of_enum
+           |- Array.map2 (||)
+           |> flip)
           initial_mask
           enum
       in

@@ -1,5 +1,6 @@
 (* generate reStructuredText *)
 
+open Batteries
 open Fam_batteries
 
 let underline_levels = StringFuns.to_char_array "=-~`'\""
@@ -19,8 +20,6 @@ let write_literal_block_start ch =
 
 let write_option ch flagstr description =
   Printf.fprintf ch "%s  %s\n" flagstr description
-
-let flip f x y = f y x
 
 let write_table ch m =
   let padded = String_matrix.pad m in
