@@ -23,6 +23,7 @@
  * Closed GH-98: Adding a --map-identity flag to pplacer.
  * Closed GH-99: Added more examples for guppy batchfiles.
  * Closed GH-101: Added virtual placefiles to guppy batchfiles.
+ * Closed GH-103: Added batteries as a dependency.
  * Closed GH-104: Added a naive reference implementation of convexify,
    accessible with a --naive flag.
  * Closed GH-105: Added parameter substitution to guppy batchfiles.

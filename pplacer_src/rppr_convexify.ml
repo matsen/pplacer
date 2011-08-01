@@ -1,13 +1,10 @@
+open Batteries
 open Subcommand
 open Guppy_cmdobjs
 
 open Convex
 open MapsSets
 open Stree
-
-let flip f x y = f y x
-let apply f x = f x
-let uncurry f (a, b) = f a b
 
 let leafset tree =
   let rec aux accum = function
@@ -118,7 +115,7 @@ object (self)
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
     let foldf alternates data =
-      let colormap' = IntMap.filter
+      let colormap' = IntMap.filteri
         (fun k _ -> IntSet.mem k data.not_cut)
         data.colormap
       in
@@ -247,6 +244,6 @@ object (self)
         build_reducer self#timing (fvo timing);
       ]
     in
-    List.iter ((flip apply) results) reducers
+    List.iter ((|>) results) reducers
 
 end

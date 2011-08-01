@@ -1,9 +1,8 @@
+open Batteries
 open Subcommand
 open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
-
-let flip f x y = f y x
 
 module I = Mass_map.Indiv
 

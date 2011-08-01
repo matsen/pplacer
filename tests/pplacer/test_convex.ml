@@ -47,12 +47,12 @@ let suite =
         let gt = Newick_gtree.of_string "(A,(A,(X,(B,(X,B)))))" in
         let st = gt.Gtree.stree
         and bm = gt.Gtree.bark_map in
-        let colors = IntMap.filter
+        let colors = IntMap.filteri
           (fun _ v -> v <> "X")
           (IntMap.map (fun v -> v#get_name) bm)
         in
         let alt_colors = alternate_colors (colors, st) in
-        assert_equal (IntMap.nkeys alt_colors) 2;
+        assert_equal (IntMap.cardinal alt_colors) 2;
         "first color sets not equal" @?
           (ColorSet.equal
              (IntMap.find 2 alt_colors)

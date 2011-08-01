@@ -1,3 +1,4 @@
+open Batteries
 open MapsSets
 open Stree
 
@@ -92,9 +93,6 @@ module CS = ColorSet
 module COS = ColorOptSet
 module COM = ColorOptMap
 module CSM = ColorSetMap
-
-let flip f x y = f y x
-let compose f g a = f (g a)
 
 let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all
@@ -217,7 +215,7 @@ let cutsetdist cutsetl ?(allow_multiple = false) color =
   (* We recur over the cut sets below our internal node.
    * Base is just a list of empty sets of the correct length. *)
   let rec aux base accum = function
-    | [] -> List.rev (List.rev_map List.rev accum)
+    | [] -> List.map List.rev accum
     | cutset :: rest ->
       let accum = List.fold_left
         (fun accum x ->
@@ -246,7 +244,7 @@ let transposed_fold f start ll =
     | [] -> prev
     | l :: rest ->
       aux
-        (List.rev (List.rev_map2 f prev l))
+        (List.map2 f prev l)
         rest
   in
   aux start ll
@@ -291,10 +289,9 @@ let _build_apartl cutsetl kappa (c, x) =
        * distributions of the to_distribute colors (except for b) into the
        * cut sets below our internal node. We find these distributions one at a
        * time, then take the union below. *)
-      let dist = List.rev
-        (List.rev_map
-           (cutsetdist cutsetl)
-           (CS.elements (cset_of_coptset (COS.remove b to_distribute))))
+      let dist = List.map
+        (cutsetdist cutsetl)
+        (CS.elements (cset_of_coptset (COS.remove b to_distribute)))
       in
       (* Next make every distribution with {} with {b} if b is in the cut set *)
       let dist = match b with
@@ -303,10 +300,9 @@ let _build_apartl cutsetl kappa (c, x) =
       and startsl = List.rev_map (fun _ -> CS.empty) cutsetl in
       (* Finish off the meat of the recursion by mapping with union over the
        * cartesian product of the single-color distributions. *)
-      let pis = List.rev
-        (List.rev_map
-           (transposed_fold CS.union startsl)
-           (product dist))
+      let pis = List.map
+        (transposed_fold CS.union startsl)
+        (product dist)
       in
       (* We make sure to pass on the c as the color of the internal node in the
        * case where between pi is empty by filtering out the ones that don't,
@@ -414,17 +410,17 @@ let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
           subtrees
       in
       let nu_apartl = match nu_f with
-        | None -> List.rev (List.rev_map (fun apart -> None, apart) apartl)
+        | None -> List.map (fun apart -> None, apart) apartl
         | Some nu_f ->
           let apart_nu' = nu_f
             (IntMap.find i cutsetim)
             (IntMap.find i sizemlim)
           in
-          let nu_apartl = List.rev_map
+          let nu_apartl = List.map
             (fun apart -> apart_nu' apart, apart)
             apartl
           in
-          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort nu_apartl)
       in
       let rec aux phi current_best = function
         | (nu_opt, apart) :: rest -> (
