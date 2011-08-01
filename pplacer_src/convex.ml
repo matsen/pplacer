@@ -268,15 +268,17 @@ let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
-  let potential_internals =
-    (* Because xopt never contains None, this is in fact testing c in x. In
-     * this case, b will only be c, since c is added to potential_internals
-     * later. *)
+  (* The potential b's for our apartl. *)
+  let potential_bs =
+    (* Because xopt never contains None, this is in fact testing c in x. Tf that
+     * is true, b will only be c, since c is added to potential_bs later.
+     * *)
     if COS.mem c xopt then
       COS.empty
     else
       COS.add None (COS.diff (coptset_of_cset (between cutsetl)) to_exclude)
   in
+  (* These are the colors that we need to put in the different subsets. *)
   let to_distribute = COS.union
     xopt
     (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
@@ -304,9 +306,13 @@ let _build_apartl cutsetl kappa (c, x) =
         (transposed_fold CS.union startsl)
         (product dist)
       in
-      (* We make sure to pass on the c as the color of the internal node in the
-       * case where between pi is empty by filtering out the ones that don't,
-       * unless b is None.. *)
+      (* By the construction of the pis, between pi can only be empty or b. Here
+       * we filter out those aparts such that b is not c or None. Recall (see
+       * the intro to convex.mli) that None represents any color that is not
+       * "forced" by convexity considerations. c is None when there is not an
+       * above color that is in x. b is None when c is None and there are no
+       * colors shared between the pi_i.
+       *)
       List.fold_left
         (fun accum pi ->
           if not (CS.is_empty (between pi)) || b = c || b = None then
@@ -315,7 +321,7 @@ let _build_apartl cutsetl kappa (c, x) =
         accum
         pis)
     (* We add c to the list of things that can be colors of internal nodes. *)
-    (COS.add c potential_internals)
+    (COS.add c potential_bs)
     []
   in
   apartl
