@@ -187,7 +187,7 @@ object (self)
       | [] -> None
       | ranks -> Some
         (List.enum ranks
-         |> Enum.map ((flip String.nsplit) ",")
+         |> Enum.map (flip String.nsplit ",")
          |> Enum.map List.enum
          |> Enum.flatten
          |> Enum.map (fun rk -> Array.findi ((=) rk) td.Tax_taxonomy.rank_names)
@@ -250,7 +250,7 @@ object (self)
         | None -> identity
         | Some ranks ->
           fst
-          |- (flip IntSet.mem) ranks
+          |- flip IntSet.mem ranks
           |> Enum.filter)
     in
     let reducers =
