@@ -34,27 +34,26 @@ object (self)
       let snipdist = Voronoi.get_snipdist graph in
       let dist = Voronoi.placement_distance graph ~snipdist
       and best_placement = Pquery.best_place criterion in
-      let pq_distances = List.map
+      Placerun.get_pqueries pr
+      |> List.map
         (fun pr -> dist (best_placement pr), pr)
-        (Placerun.get_pqueries pr)
-      in
-      let sorted_distances = List.sort ~cmp:(flip compare) pq_distances in
-      List.enum sorted_distances
-        |> Enum.map
-            (fun (dist, pq) ->
-              Pquery.namel pq
-              |> List.enum
-              |> (dist |> curry identity |> Enum.map))
-        |> Enum.flatten
-        |> (match fvo max_dist with
-            | Some max_dist -> Enum.filter (fun (dist, _) -> dist > max_dist)
-            | None -> identity)
-        |> (match fvo max_reported with
-            | Some n -> Enum.take n
-            | None -> identity)
-        |> Enum.iter
-            (fun (dist, name) ->
-              Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
+      |> List.sort ~cmp:(flip compare)
+      |> List.enum
+      |> Enum.map
+          (fun (dist, pq) ->
+            Pquery.namel pq
+            |> List.enum
+            |> (dist |> curry identity |> Enum.map))
+      |> Enum.flatten
+      |> (match fvo max_dist with
+          | Some max_dist -> Enum.filter (fun (dist, _) -> dist > max_dist)
+          | None -> identity)
+      |> (match fvo max_reported with
+          | Some n -> Enum.take n
+          | None -> identity)
+      |> Enum.iter
+          (fun (dist, name) ->
+            Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
 
     | _ -> failwith "diplac takes exactly one placefile"
 
