@@ -1,6 +1,7 @@
 (* Our basic tree data structure without information.
  *
  * *)
+open Batteries
 open MapsSets
 
 type stree = Node of int * stree list | Leaf of int
@@ -28,9 +29,9 @@ let rec node_ids_aux = function
   | Node(i,tL) -> i :: (List.flatten (List.map node_ids_aux tL))
   | Leaf(i) -> [i]
 
-let node_ids stree = List.sort compare (node_ids_aux stree)
+let node_ids stree = List.sort (node_ids_aux stree)
 let nonroot_node_ids stree =
-  try List.sort compare (List.tl (node_ids_aux stree)) with
+  try List.sort (List.tl (node_ids_aux stree)) with
   | Failure "tl" -> invalid_arg "nonroot_node_ids"
 
 let rec leaf_ids = function
