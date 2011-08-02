@@ -5,6 +5,7 @@ open Batteries
 open MapsSets
 
 type stree = Node of int * stree list | Leaf of int
+type t = stree
 
 let node i tL = Node(i, tL)
 let leaf i = Leaf i
@@ -103,3 +104,28 @@ let parent_map t =
     | [] -> accum
   in
   aux IntMap.empty [None, t]
+
+let reroot tree root =
+  if root = tree then tree else
+  let rec aux = function
+    | [] -> failwith "root not found"
+    | (cur, path) :: _ when cur = root -> path
+    | (Leaf _, _) :: rest -> aux rest
+    | (Node (_, subtrees) as n, path) :: rest ->
+      List.map
+        (fun subtree ->
+          let path' = List.remove subtrees subtree :: path in
+          subtree, path')
+        subtrees
+      |> List.append rest
+      |> aux
+  in
+  let path = aux [tree, []]
+    |> List.rev
+    |> List.reduce (node 0 |- List.cons)
+  in
+  node
+    0
+    (match root with
+      | Leaf _ -> root :: path
+      | Node (_, subtrees) -> subtrees @ path)
