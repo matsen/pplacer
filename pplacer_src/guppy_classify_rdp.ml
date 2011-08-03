@@ -50,8 +50,7 @@ object (self)
               Sql.D.TEXT origin;
             |];
           List.iter
-            (List.map (fun x -> Sql.D.TEXT x)
-             |- Array.of_list
+            (Array.map (fun x -> Sql.D.TEXT x)
              |- Array.append [| Sql.D.INT place_id |]
              |- Sql.bind_step_reset db pc_st)
 
@@ -81,12 +80,12 @@ object (self)
       let splut = String.nsplit line "\t" |> Array.of_list in
       splut.(0), List.fold_left
         (fun accum idx ->
-          [
+          [|
             splut.(idx + 1);
             splut.(idx + 1);
             (MapsSets.StringMap.find splut.(idx) name_map);
             splut.(idx + 2);
-          ] :: accum)
+          |] :: accum)
         []
         [8; 11; 14; 17; 20]
 
