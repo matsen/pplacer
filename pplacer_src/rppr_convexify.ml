@@ -1,13 +1,10 @@
+open Batteries
 open Subcommand
 open Guppy_cmdobjs
 
 open Convex
 open MapsSets
 open Stree
-
-let flip f x y = f y x
-let apply f x = f x
-let uncurry f (a, b) = f a b
 
 let leafset tree =
   let rec aux accum = function
@@ -58,6 +55,8 @@ object (self)
     (Needs_argument ("", "If specified, save timing information for solved trees to a CSV file."))
   val no_early = flag "--no-early"
     (Plain (false, "Don't terminate early when convexifying."))
+  val limit_ranks = flag "--limit-rank"
+    (Plain ([], "If specified, only convexify at the given ranks. Ranks are given as a comma-delimited list of names."))
 
   method specl = [
     string_flag discord_file;
@@ -68,11 +67,12 @@ object (self)
     toggle_flag use_naive;
     string_flag timing;
     toggle_flag no_early;
+    string_list_flag limit_ranks;
   ] @ super_refpkg#specl
 
 
-  method desc = "check a reference package"
-  method usage = "usage: check_refpkg -c my.refpkg"
+  method desc = "make the phylogeny in a reference package convex"
+  method usage = "usage: convexify -c my.refpkg"
 
   method private discordance_tree fname =
     let rp = self#get_rp in
@@ -118,7 +118,7 @@ object (self)
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
     let foldf alternates data =
-      let colormap' = IntMap.filter
+      let colormap' = IntMap.filteri
         (fun k _ -> IntSet.mem k data.not_cut)
         data.colormap
       in
@@ -182,14 +182,23 @@ object (self)
     let rp = self#get_rp in
     let gt = Refpkg.get_ref_tree rp in
     let st = gt.Gtree.stree
-    and td = Refpkg.get_taxonomy rp
+    and td = Refpkg.get_taxonomy rp in
+    let limit_ranks = match fv limit_ranks with
+      | [] -> None
+      | ranks -> Some
+        (List.enum ranks
+         |> Enum.map (flip String.nsplit ",")
+         |> Enum.map List.enum
+         |> Enum.flatten
+         |> Enum.map (fun rk -> Array.findi ((=) rk) td.Tax_taxonomy.rank_names)
+         |> IntSet.of_enum)
     and cutoff = fv badness_cutoff in
     let leaves = leafset st in
     Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let rank_tax_map = rank_tax_map_of_refpkg rp in
     let nu_f = if fv no_early then None else Some apart_nu in
-    let _, results = IntMap.fold
-      (fun rank taxmap ((rank_cutseqs, data_list) as accum) ->
+    let _, results = Enum.fold
+      (fun ((rank_cutseqs, data_list) as accum) (rank, taxmap) ->
         let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
         let rankname = Tax_taxonomy.get_rank_name td rank in
         Printf.printf "solving %s" rankname;
@@ -236,8 +245,13 @@ object (self)
           in
           rank_cutseqs', data :: data_list
         end)
-      rank_tax_map
       (IntMap.empty, [])
+      (IntMap.enum rank_tax_map |> match limit_ranks with
+        | None -> identity
+        | Some ranks ->
+          fst
+          |- flip IntSet.mem ranks
+          |> Enum.filter)
     in
     let reducers =
       [
@@ -247,6 +261,6 @@ object (self)
         build_reducer self#timing (fvo timing);
       ]
     in
-    List.iter ((flip apply) results) reducers
+    List.iter ((|>) results) reducers
 
 end

@@ -1,11 +1,10 @@
 (* For calculating Maximum A Posteriori sequences for internal locations on the
  * tree. For us, these internal locations will be mrcams. *)
 
+open Batteries
 open Fam_batteries
 open MapsSets
 open Tax_id
-
-let flip f x y = f y x
 
 (* Given
  * u1 and u2: utility Glvs

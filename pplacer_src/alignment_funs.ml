@@ -1,6 +1,7 @@
 (* functions for dealing with alignments, especially for likelihoods
 *)
 
+open Batteries
 open MapsSets
 open Fam_batteries
 
@@ -34,7 +35,7 @@ let is_nuc_align aln =
 (* makeAlnIndexMap: make a map which maps from the node number to the row number of the
  * alignment. *)
 let makeAlnIndexMap taxonMap alnNameArr =
-  let n_tree = IntMap.nkeys taxonMap
+  let n_tree = IntMap.cardinal taxonMap
   and n_aln = Array.length alnNameArr in
   if n_tree <> n_aln then
     failwith

@@ -1,5 +1,6 @@
 exception Unknown_format of string
 
+open Batteries
 open Fam_batteries
 open MapsSets
 

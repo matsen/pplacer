@@ -1,3 +1,15 @@
+(* Notes:
+
+ In the manuscript, there is no notion of optional color.
+ However, that notion is useful here.
+ In the aparts, an between color of None is any color that is not in B(\pi), and
+ is not forced upon us by the above color.
+ In this situation, the between color b can be any color from one of the pis;
+ all such colors are equivalent so we just use None to decrease the complexity
+ slightly.
+*)
+
+open Batteries
 open MapsSets
 open Stree
 type color = string

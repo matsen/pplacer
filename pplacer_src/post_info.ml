@@ -4,6 +4,7 @@
  * This code is a bit rugged at the moment-- still figuring out exactly what we
  * want here. It may well disappear in the future.
  *)
+open Batteries
 open Fam_batteries
 open MapsSets
 
@@ -37,7 +38,7 @@ let write_map_info ~darr ~parr rp =
   let t = Refpkg.get_tax_ref_tree rp
   and name = Refpkg.get_name rp
   and model = Refpkg.get_model rp
-  and mrcal = IntMap.keys (Refpkg.get_mrcam rp)
+  and mrcal = Refpkg.get_mrcam rp |> IntMap.keylist
   and code = Model.code (Refpkg.get_model rp) in
   let tax_info_of_id id = extract_tax_info (Gtree.get_bark t id)#get_decor in
   let taxid_of_id id = match fst (tax_info_of_id id) with
