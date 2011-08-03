@@ -100,6 +100,8 @@ object (self)
     List.enum argl
       |> Enum.map
           (identity &&& (File.lines_of |- Enum.map (classify |- List.enum) |- Enum.flatten))
+      |> Enum.map
+          (fun (name, enum) -> name, Enum.map (flip Array.append [| name |]) enum)
       |> Enum.iter (uncurry out_func)
 
 end
