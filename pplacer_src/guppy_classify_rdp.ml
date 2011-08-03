@@ -37,7 +37,7 @@ object (self)
         and process name =
           Sql.check_exec db "BEGIN TRANSACTION";
           let pn_st = Sqlite3.prepare db
-            "INSERT INTO placement_names VALUES (?, ?, ?);"
+            "INSERT OR IGNORE INTO placement_names VALUES (?, ?, ?);"
           and pc_st = Sqlite3.prepare db
             "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
           in
