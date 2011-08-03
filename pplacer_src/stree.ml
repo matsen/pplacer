@@ -105,27 +105,27 @@ let parent_map t =
   in
   aux IntMap.empty [None, t]
 
+let children = function
+  | Leaf _ as n -> [n]
+  | Node (_, subtrees) -> subtrees
+
 let reroot tree root =
-  if root = tree then tree else
+  if top_id tree = root then tree else
   let rec aux = function
     | [] -> failwith "root not found"
-    | (cur, path) :: _ when cur = root -> path
+    | (cur, path) :: _ when top_id cur = root ->
+      (root, children cur) :: path
     | (Leaf _, _) :: rest -> aux rest
-    | (Node (_, subtrees) as n, path) :: rest ->
+    | (Node (i, subtrees), path) :: rest ->
       List.map
         (fun subtree ->
-          let path' = List.remove subtrees subtree :: path in
+          let path' = (i, List.remove subtrees subtree) :: path in
           subtree, path')
         subtrees
       |> List.append rest
       |> aux
   in
-  let path = aux [tree, []]
+  aux [tree, []]
     |> List.rev
-    |> List.reduce (node 0 |- List.cons)
-  in
-  node
-    0
-    (match root with
-      | Leaf _ -> root :: path
-      | Node (_, subtrees) -> subtrees @ path)
+    |> List.reduce (fun (bi, btl) (ai, atl) -> ai, node bi btl :: atl)
+    |> uncurry node
