@@ -1,6 +1,8 @@
 open Batteries
 open Guppy_cmdobjs
 open Subcommand
+open MapsSets
+open Tax_id
 open Stree
 
 exception Found_root of stree
@@ -10,20 +12,23 @@ let maybe_cons transform = function
   | Some x -> transform x |> List.cons
 let some x = Some x
 
-let find_root rp =
+let find_root rp gt =
   let td = Refpkg.get_taxonomy rp
-  and gt = Refpkg.get_ref_tree rp
   and seqinfom = Refpkg.get_seqinfom rp in
   let st = Gtree.get_stree gt in
   let node_mrca node =
     node
     |> Stree.leaf_ids
-    |> List.map
-        (Gtree.get_name gt
-         |- Tax_seqinfo.tax_id_by_name seqinfom)
+    |> List.filter_map
+        (fun leaf ->
+          try
+            Gtree.get_name gt leaf
+            |> Tax_seqinfo.tax_id_by_name seqinfom
+            |> some
+          with Gtree.Lacking_bark _ -> None)
     |> Tax_taxonomy.list_mrca td
   in
-  let rec aux ?top_mrca = function
+  let rec aux: ?top_mrca:Tax_id.t -> stree -> unit = fun ?top_mrca -> function
     | Leaf _ as n -> raise (Found_root n)
     | Node (_, subtrees) as n ->
       let subrks = List.map (node_mrca &&& some) subtrees
@@ -44,13 +49,18 @@ let find_root rp =
           aux ~top_mrca node
         | _ -> raise (Found_root n)
   in
-  aux st
+  try
+    aux st; failwith "no root found?"
+  with Found_root root -> root
 
 
 class cmd () =
 object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
+  inherit output_cmd () as super_output
+
+  method specl = super_refpkg#specl @ super_output#specl
 
   method desc = "reroots a given reference package in place"
   method usage = "usage: reroot -c my.refpkg"
@@ -58,7 +68,28 @@ object (self)
   method action = function
     | [] ->
       let rp = self#get_rp in
-      find_root rp
+      let gt = Refpkg.get_ref_tree rp in
+      let st = gt.Gtree.stree
+      and td = Refpkg.get_taxonomy rp in
+      let rank_tax_map = Convex.rank_tax_map_of_refpkg rp in
+      let rank, taxmap = Enum.find
+        (snd |- IntMap.values |- TaxIdSet.of_enum |- TaxIdSet.cardinal |- (<) 1)
+        (IntMap.enum rank_tax_map)
+      in
+      let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
+      Tax_taxonomy.get_rank_name td rank
+        |> Printf.sprintf "rerooting at %s"
+        |> print_endline;
+      let phi, _ = Convex.solve (colormap, st) in
+      let not_cut = Convex.nodeset_of_phi_and_tree phi st in
+      Gtree.get_bark_map gt
+        |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
+        |> Gtree.set_bark_map gt
+        |> find_root rp
+        |> top_id
+        |> reroot st
+        |> Gtree.set_stree gt
+        |> flip Newick_gtree.to_file (self#single_file ())
 
     | _ -> failwith "reroot doesn't take any positional arguments"
 
