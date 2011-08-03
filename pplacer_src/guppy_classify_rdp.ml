@@ -8,11 +8,16 @@ object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
   inherit sqlite_cmd () as super_sqlite
+  inherit output_cmd ~prefix_required:true () as super_output
 
   val csv_out = flag "--csv"
     (Plain (false, "Write .class.csv files containing CSV data."))
 
-  method specl = toggle_flag csv_out :: super_refpkg#specl @ super_sqlite#specl
+  method specl =
+     toggle_flag csv_out
+  :: super_refpkg#specl
+   @ super_sqlite#specl
+   @ super_output#specl
 
   method desc = "converts RDP output to something resmbling guppy classify output"
   method usage = "usage: classify_rdp -c some.refpkg rdp_output_file[s]"
@@ -28,8 +33,12 @@ object (self)
       | None -> false
     in
 
+    let open_out name =
+      (self#single_prefix ()) ^ (Filename.basename name) |> Legacy.open_out
+    in
+
     let out_func =
-      (* if sqlite_out then begin *)
+      if sqlite_out then begin
         let db = self#get_db in
         Sql.check_exec db "BEGIN TRANSACTION";
         let pn_st = Sqlite3.prepare db
@@ -57,23 +66,23 @@ object (self)
         in
         finally close process
 
-      (* end else if fv csv_out then begin fun name -> *)
-      (*   let ch = Legacy.open_out (name ^ ".class.csv") in *)
-      (*   Csv.save_out *)
-      (*     ch *)
-      (*     [["name"; "origin"; "desired_rank"; "rank"; "tax_id"; "likelihood"]]; *)
-      (*   Enum.map Array.to_list *)
-      (*     |- List.of_enum *)
-      (*     |- Csv.save_out ch *)
-      (*     |> finally (fun () -> Legacy.close_out ch) *)
+      end else if fv csv_out then begin fun origin ->
+        let ch = open_out origin in
+        Csv.save_out
+          ch
+          [["name"; "origin"; "desired_rank"; "rank"; "tax_id"; "likelihood"]];
+        fun name -> List.map (Array.append [| name; origin |] |- Array.to_list)
+          |- Csv.save_out ch
+          |> finally (fun () -> Legacy.close_out ch)
 
-      (* end else begin fun name -> *)
-      (*   let ch = Legacy.open_out (name ^ ".class.tab") in *)
-      (*   Array.of_enum *)
-      (*     |- String_matrix.write_padded ch *)
-      (*     |> finally (fun () -> Legacy.close_out ch) *)
+      end else begin fun origin ->
+        let ch = open_out origin in
+        fun name -> List.map (Array.append [| name; origin |])
+          |- Array.of_list
+          |- String_matrix.write_padded ch
+          |> finally (fun () -> Legacy.close_out ch)
 
-      (* end *)
+      end
 
     and classify line =
       (* past participle of 'to split' *)
