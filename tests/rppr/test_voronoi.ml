@@ -128,23 +128,39 @@ let suite = [
   end;
 
   "test_kr_voronoi" >:: begin fun () ->
-    let update_score = Rppr_voronoi.update_score ~gt:test_gt ~p_exp:1. in
-    let indiv_map = partition_indiv_on_leaves test_v test_indiv in
-    let score_map = IntSet.enum test_v.all_leaves
-      |> (update_score indiv_map |> flip |> flip Enum.fold IntMap.empty)
-    and expected_scores = IntMap.of_pairlist [
-      0, 2.45;
-      1, 10.05;
-      2, 3.3;
-      3, 1.55;
-    ]
-    in
-    Enum.iter2
+    let check_maps = Enum.iter2
       (fun (k1, v1) (k2, v2) ->
         (Printf.sprintf "unequal (%d and %d)" k1 k2)
         @? (k1 = k2 && approx_equal v1 v2))
+    and update_score = Rppr_voronoi.update_score ~gt:test_gt ~p_exp:1.
+    and indiv_map = partition_indiv_on_leaves test_v test_indiv in
+    let score_map = IntSet.enum test_v.all_leaves
+      |> (update_score indiv_map |> flip |> flip Enum.fold IntMap.empty)
+    in
+    check_maps
       (IntMap.enum score_map)
-      (IntMap.enum expected_scores)
+      (List.enum [
+        0, 2.45;
+        1, 10.05;
+        2, 3.3;
+        3, 1.55;
+      ]);
+    let test_v', updated = uncolor_leaf test_v 1 in
+    let indiv_map' = partition_indiv_on_leaves test_v' test_indiv in
+    let score_map' = IntSet.remove 1 updated
+      |> IntSet.enum
+      |> (update_score indiv_map'
+          |> flip
+          |> flip Enum.fold (IntMap.remove 1 score_map))
+    in
+    check_maps
+      (IntMap.enum score_map')
+      (List.enum [
+        0, 4.85;
+        2, 17.25;
+        3, 1.55;
+      ]);
+
   end
 
 ]
