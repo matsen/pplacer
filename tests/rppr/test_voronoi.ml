@@ -139,9 +139,13 @@ let suite = [
       3, 1.55;
     ]
     in
-    (IntMap.enum score_map, IntMap.enum expected_scores)
-    |> ((fst *** fst) &&& (snd *** snd) |- ((uncurry (=) *** uncurry approx_equal) |- uncurry (&&) &&& (fst |- uncurry (Printf.sprintf "unequal (%d and %d)"))) |- (flip (@?) |> uncurry) |> curry |> Enum.iter2 |> uncurry)
-  end;
+    Enum.iter2
+      (fun (k1, v1) (k2, v2) ->
+        (Printf.sprintf "unequal (%d and %d)" k1 k2)
+        @? (k1 = k2 && approx_equal v1 v2))
+      (IntMap.enum score_map)
+      (IntMap.enum expected_scores)
+  end
 
 ]
 
