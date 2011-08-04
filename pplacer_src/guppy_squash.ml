@@ -4,6 +4,7 @@
  * pairs of a number list and a pre. This means that identical pres
  * don't get lost when we use them as keys. *)
 
+open Batteries
 open Subcommand
 open Guppy_cmdobjs
 open MapsSets
@@ -147,7 +148,7 @@ object (self)
       let (drt, cluster_t, blobim) = our_make_cluster refpkgo mode_str prl in
       Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
       let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
-      let pad_width = Base.find_zero_pad_width (IntMap.nkeys blobim) in
+      let pad_width = Base.find_zero_pad_width (IntMap.cardinal blobim) in
       let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)
       let wpt transform infix t i =

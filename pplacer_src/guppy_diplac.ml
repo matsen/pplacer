@@ -1,10 +1,8 @@
+open Batteries
 open Subcommand
 open Guppy_cmdobjs
 open MapsSets
 open Fam_batteries
-
-let flip f x y = f y x
-let compose f g a = f (g a)
 
 class cmd () =
 object (self)
@@ -14,9 +12,15 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
 
-  method specl =
-    super_mass#specl
-    @ super_output#specl
+  val max_dist = flag "--min-distance"
+    (Needs_argument ("min distance", "Specify the minimum distance to leaves to report"))
+  val max_reported = flag "--max-matches"
+    (Needs_argument ("N", "Only report the deepest N placements"))
+
+  method specl = super_mass#specl @ [
+    float_flag max_dist;
+    int_flag max_reported
+  ] @ super_output#specl
 
   method desc = "find the most DIstant PLACements from the leaves"
   method usage = "usage: diplac [options] placefile"
@@ -30,22 +34,26 @@ object (self)
       let snipdist = Voronoi.get_snipdist graph in
       let dist = Voronoi.placement_distance graph ~snipdist
       and best_placement = Pquery.best_place criterion in
-      let pq_distances = List.map
+      Placerun.get_pqueries pr
+      |> List.map
         (fun pr -> dist (best_placement pr), pr)
-        (Placerun.get_pqueries pr)
-      in
-      let sorted_distances = List.sort
-        (compose (compose (~-)) compare)
-        pq_distances
-      in
-      List.iter
-        (fun (dist, pq) ->
-          let namel = List.map
-            (fun name -> [name; Printf.sprintf "%1.6f" dist])
-            (Pquery.namel pq)
-          in
-          Csv.save_out ch namel)
-        sorted_distances
+      |> List.sort ~cmp:(flip compare)
+      |> List.enum
+      |> Enum.map
+          (fun (dist, pq) ->
+            Pquery.namel pq
+            |> List.enum
+            |> (dist |> curry identity |> Enum.map))
+      |> Enum.flatten
+      |> (match fvo max_dist with
+          | Some max_dist -> Enum.filter (fun (dist, _) -> dist > max_dist)
+          | None -> identity)
+      |> (match fvo max_reported with
+          | Some n -> Enum.take n
+          | None -> identity)
+      |> Enum.iter
+          (fun (dist, name) ->
+            Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
 
     | _ -> failwith "diplac takes exactly one placefile"
 

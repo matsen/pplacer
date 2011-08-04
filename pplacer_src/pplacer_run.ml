@@ -1,9 +1,7 @@
+open Batteries
 open Multiprocessing
 open Fam_batteries
 open MapsSets
-
-let compose f g a = f (g a)
-let flip f x y = f y x
 
 exception Finished
 
@@ -19,7 +17,7 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
     let rec aux () =
       match begin
         try
-          Some (Marshal.from_channel rd)
+          Some (Legacy.Marshal.from_channel rd)
         with
           | End_of_file -> None
       end with
@@ -33,7 +31,7 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
                 | exn -> Exception exn
             end;
           aux ()
-        | None -> close_in rd; close_out wr
+        | None -> Legacy.close_in rd; Legacy.close_out wr
     in aux ()
   in
 
@@ -65,7 +63,7 @@ let run_file prefs query_fname =
   if (Prefs.verb_level prefs) >= 1 then
     Printf.printf
       "Running pplacer %s analysis on %s...\n"
-      Version.version_revision
+      Version.version
       query_fname;
   let ref_dir_complete =
     match Prefs.ref_dir prefs with
@@ -87,7 +85,7 @@ let run_file prefs query_fname =
         if v = "" then m
         else StringMap.add k (ref_dir_complete^v) m)
       [
-        "tree_file", Prefs.tree_fname prefs;
+        "tree", Prefs.tree_fname prefs;
         "aln_fasta", Prefs.ref_align_fname prefs;
         "tree_stats", Prefs.stats_fname prefs;
       ]
@@ -98,11 +96,31 @@ let run_file prefs query_fname =
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
 
   let ref_tree =
-    try Newick_gtree.of_file (StringMap.find "tree_file" rp_strmap) with
-    | Not_found -> failwith "please specify a reference tree with -t or -c"
+    try
+      Refpkg.get_ref_tree rp
+    with Refpkg.Missing_element "tree" ->
+      failwith "please specify a reference tree with -t or -c"
+  and _ =
+    try
+      Refpkg.get_aln_fasta rp
+    with Refpkg.Missing_element "aln_fasta" ->
+      failwith
+        "Please specify a reference alignment with -r or -c, or include all \
+        reference sequences in the primary alignment."
+  and _ =
+    try
+      Refpkg.get_model rp
+    with Refpkg.Missing_element "tree_stats" ->
+      failwith "please specify a tree model with -s or -c"
   in
+
   if Newick_gtree.has_zero_bls ref_tree then
     Printf.printf
       "WARNING: your tree has zero pendant branch lengths. \
@@ -127,14 +145,7 @@ let run_file prefs query_fname =
         print_endline
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
-      try
-        Alignment_funs.upper_aln_of_any_file
-          (StringMap.find "aln_fasta" rp_strmap)
-      with
-      | Not_found ->
-          failwith
-          "Please specify a reference alignment with -r or -c, or include all \
-          reference sequences in the primary alignment."
+      Refpkg.get_aln_fasta rp
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
@@ -191,24 +202,22 @@ let run_file prefs query_fname =
         print_string "Pre-masking sequences... ";
         flush_all ();
       end;
-      let mask_of_fold fold value =
-        fold
-          (flip
-             (compose
-                (ArrayFuns.map2 (||))
-                (fun (_, seq) ->
-                  Array.init
-                    n_sites
-                    (compose
-                       (function '-' | '?' -> false | _ -> true)
-                       (String.get seq)))))
-          (Array.make n_sites false)
-          value
+      let initial_mask = Array.make n_sites false in
+      let mask_of_enum enum =
+        Enum.fold
+          (snd
+           |- String.enum
+           |- Enum.map (function '-' | '?' -> false | _ -> true)
+           |- Array.of_enum
+           |- Array.map2 (||)
+           |> flip)
+          initial_mask
+          enum
       in
-      let mask = ArrayFuns.map2
+      let mask = Array.map2
         (&&)
-        (mask_of_fold Array.fold_left ref_align)
-        (mask_of_fold List.fold_left query_list)
+        (Array.enum ref_align |> mask_of_enum)
+        (List.enum query_list |> mask_of_enum)
       in
       let masklen = Array.fold_left
         (fun accum -> function true -> accum + 1 | _ -> accum)
@@ -283,8 +292,6 @@ let run_file prefs query_fname =
     []
   in
 
-  (* *** build reference package *** *)
-  let rp = Refpkg.of_strmap ~ref_tree ~ref_align prefs rp_strmap in
   let model = Refpkg.get_model rp in
   if (Prefs.verb_level prefs) > 0 &&
     not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
@@ -303,7 +310,7 @@ let run_file prefs query_fname =
     exit 0;
   end;
   (* find all the tree locations *)
-  let all_locs = IntMap.keys (Gtree.get_bark_map ref_tree) in
+  let all_locs = IntMap.keylist (Gtree.get_bark_map ref_tree) in
   assert(all_locs <> []);
   (* the last element in the list is the root, and we don't want to place there *)
   let locs = ListFuns.remove_last all_locs in
@@ -453,31 +460,66 @@ let run_file prefs query_fname =
   end else begin
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
-    let pquery_gotfunc, pquery_donefunc = if map_fasta_file <> "" then begin
-      let result_map = ref IntMap.empty in
+    let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
+    let pquery_gotfunc, pquery_donefunc = if do_map then begin
+      let ref_tree = Refpkg.get_ref_tree rp
+      and mrcam = Refpkg.get_mrcam rp
+      and td = Refpkg.get_taxonomy rp
+      and glvs = Glv_arr.make
+        ~n_glvs:2
+        ~n_sites
+        ~n_rates:(Model.n_rates model)
+        ~n_states:(Model.n_states model)
+      in
+      let map_map = Map_seq.of_map
+        glvs.(0)
+        glvs.(1)
+        (Refpkg.get_model rp)
+        ref_tree
+        ~darr
+        ~parr
+        mrcam
+        (Prefs.map_cutoff prefs)
+      and result_map = ref IntMap.empty in
       let gotfunc pq =
         let best_placement = Pquery.best_place Placement.ml_ratio pq in
         result_map := IntMap.add_listly
           (Placement.location best_placement)
           ((List.hd (Pquery.namel pq)), (Pquery.seq pq))
-          (!result_map)
-      and donefunc () =
-        let ref_tree = Refpkg.get_ref_tree rp
-        and mrcam = Refpkg.get_mrcam rp
-        and td = Refpkg.get_taxonomy rp in
+          (!result_map);
+        if not (Prefs.map_identity prefs) then pq else
+          let placement_map = List.fold_left
+            (fun accum p ->
+              IntMap.add_listly
+                (Placement.location p)
+                p
+                accum)
+            IntMap.empty
+            (Pquery.place_list pq)
+          in
+          let placement_map' = Map_seq.mrca_map_seq_map
+            placement_map
+            mrcam
+            (ref_tree.Gtree.stree)
+          in
+          let identity = Alignment_funs.identity (Pquery.seq pq) in
+          let placements' = IntMap.fold
+            (fun mrca pl accum ->
+              List.fold_left
+                (fun accum p ->
+                  let map_seq = IntMap.find mrca map_map in
+                  (Placement.add_map_identity p (identity map_seq)) :: accum)
+                accum
+                pl)
+            placement_map'
+            []
+          in
+          {pq with Pquery.place_list = placements'}
+      and donefunc = if map_fasta_file = "" then identity else fun () ->
         let seq_map = Map_seq.mrca_map_seq_map
           (!result_map)
           mrcam
           (ref_tree.Gtree.stree)
-        and map_map = Map_seq.of_map
-          snodes.(0)
-          snodes.(1)
-          (Refpkg.get_model rp)
-          ref_tree
-          ~darr
-          ~parr
-          mrcam
-          (Prefs.map_cutoff prefs)
         and space = Str.regexp " " in
         let map_fasta = IntMap.fold
           (fun i mrca accum ->
@@ -499,13 +541,13 @@ let run_file prefs query_fname =
       in
       gotfunc, donefunc
 
-    end else (fun _ -> ()), (fun () -> ())
+    end else (identity, identity)
     in
 
     let queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest ->
-        pquery_gotfunc pq;
+        let pq = pquery_gotfunc pq in
         queries := pq :: (!queries);
         gotfunc rest
       | Core.Timing (name, value) :: rest ->

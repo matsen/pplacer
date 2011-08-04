@@ -1,3 +1,4 @@
+open Batteries
 open OUnit
 open Test_util
 
@@ -29,17 +30,17 @@ let simple () =
   in
   let gt = snd (List.hd trees) in
   let decor =
-    List.map
+    Enum.map
       (fun x -> x#get_decor)
       (MapsSets.IntMap.values (gt.Gtree.bark_map))
   in
-  let _ = List.fold_left2
-    (fun n got expected ->
+  let _ = Enum.fold2
+    (fun got expected n ->
       (Printf.sprintf "#%d" n) @? (got = expected);
       n + 1)
     0
     decor
-    expected
+    (List.enum expected)
   in ()
 
 let suite = [

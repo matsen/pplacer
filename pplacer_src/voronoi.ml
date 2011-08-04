@@ -1,3 +1,4 @@
+open Batteries
 open Fam_batteries
 open MapsSets
 open Stree

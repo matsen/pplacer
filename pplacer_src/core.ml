@@ -1,16 +1,12 @@
 (* Here we actually do the work.
 *)
 
+open Batteries
 open Fam_batteries
 open MapsSets
 open Prefs
 
 let max_iter = 200
-(* the most number of placements we keep *)
-let keep_at_most = 7
-(* we throw away anything that has ml_ratio below keep_factor times (best ml_ratio) *)
-let keep_factor = 0.01
-let log_keep_factor = log keep_factor
 
 (* the second stage tolerance for branch length optimization. modify in online
  * help if changed here. *)
@@ -25,6 +21,9 @@ type result =
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
 let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
+  let keep_at_most = Prefs.keep_at_most prefs
+  and keep_factor = Prefs.keep_factor prefs in
+  let log_keep_factor = log keep_factor in
   let seq_type = Model.seq_type model
   and prior_fun =
     match prior with
@@ -109,7 +108,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let curr_time = Sys.time () in
     let h_r =
       List.sort
-        (fun (_,l1) (_,l2) -> - compare l1 l2)
+        ~cmp:(fun (_,l1) (_,l2) -> - compare l1 l2)
         (List.map
            (fun loc ->
              (loc,
@@ -234,7 +233,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
       let decreasing_cmp_likes r1 r2 =
         - compare (get_like r1) (get_like r2) in
       let sorted_ml_results =
-        List.sort decreasing_cmp_likes ml_results in
+        List.sort ~cmp:decreasing_cmp_likes ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =

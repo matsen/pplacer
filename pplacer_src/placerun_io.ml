@@ -37,7 +37,7 @@ let to_legacy_file invocation out_fname placerun =
   and ref_tree = Placerun.get_ref_tree placerun
   in
   Printf.fprintf ch "# pplacer %s run, %s\n"
-    Version.version_revision (Base.date_time_str ());
+    Version.version (Base.date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
   Printf.fprintf ch "%s\n" output_fmt_str;
   if not (Stree.multifurcating_at_root (Gtree.get_stree ref_tree)) then
@@ -67,10 +67,11 @@ let to_json_file invocation out_fname placerun =
     ["edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"]
     @ begin match !json_state with
       | None
-      | Some (false, false) -> []
-      | Some (has_post_prob, has_classif) ->
+      | Some (false, false, false) -> []
+      | Some (has_post_prob, has_classif, has_map_identity) ->
         begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
         @ begin if has_classif then ["classification"] else [] end
+        @ begin if has_map_identity then ["map_identity"] else [] end
     end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
@@ -93,7 +94,7 @@ let rt_of_header hlines =
       Scanf.sscanf version_line "# pplacer %s run"
         (fun file_vers ->
           if not (List.mem
-                   (Version.chop_revision file_vers)
+                   (String.sub file_vers 0 4)
                    compatible_versions) then
             failwith
               (Printf.sprintf

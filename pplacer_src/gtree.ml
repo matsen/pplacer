@@ -51,6 +51,7 @@ let get_boot t id =
   try (get_bark t id)#get_boot with
   | Not_found -> raise (Lacking_bootstrap id)
 
+let set_stree t stree = {t with stree = stree}
 let set_bark_map t bark_map = {t with bark_map = bark_map}
 let add_bark t id bark =
   set_bark_map t (IntMap.add id bark (get_bark_map t))

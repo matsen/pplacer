@@ -1,3 +1,4 @@
+open Batteries
 open Ppr
 
 module OrderedFloat = struct
@@ -36,18 +37,13 @@ sig
   val opt_add: key -> 'a option -> 'a t -> 'a t
   val opt_find: key -> 'a t -> 'a option
   val check_add: key -> 'a -> 'a t -> 'a t
-  val singleton: key -> 'a -> 'a t
   val union: 'a t -> 'a t -> 'a t
-  val print: ('a -> string) -> 'a t -> unit
   val of_pairlist: (key * 'a) list -> 'a t
   val add_listly: key -> 'a -> 'a list t -> 'a list t
   val of_f_list_listly: key_f:('a -> key) -> val_f:('a -> 'b) -> 'a list -> 'b list t
   val of_pairlist_listly: (key * 'a) list -> 'a list t
-  val nkeys: 'a t -> int
-  val keys: 'a t -> key list
-  val values: 'a t -> 'a list
+  val keylist: 'a t -> key list
   val to_pairs: 'a t -> (key * 'a) list
-  val filter: (key -> 'a -> bool) -> 'a t -> 'a t
   val merge_counts: int t list -> int t
   val ppr_gen: (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   val ppr_string: Format.formatter -> string t -> unit
@@ -82,18 +78,11 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
       else
         add x y m
 
-    let singleton k v = add k v empty
-
     let union m1 m2 =
       fold (
         fun k v m -> add k v m
     ) m1 m2
 
-    let print val_to_string m =
-      iter (
-        fun k v ->
-          Format.printf "%a\t-> %s\n" PBLE.ppr k (val_to_string v)
-          ) m
 
 (* of_pairlist : given key, value pairs *)
     let rec of_pairlist = function
@@ -120,31 +109,8 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
  * associated with that key. *)
     let of_pairlist_listly l = of_f_list_listly ~key_f:fst ~val_f:snd l
 
-    let nkeys m =
-      fold (fun _ _ n -> n+1) m 0
-
-  (* keys in increasing order *)
-    let keys m =
-      let l = fold (fun k _ l -> k::l) m [] in
-      List.rev l
-
-    let values m =
-      let l = fold (fun _ v l -> v::l) m [] in
-      List.rev l
-
-    let to_pairs m =
-      let l = fold (fun k v l -> (k,v)::l) m [] in
-      List.rev l
-
-    let filter pred m =
-      fold
-        (fun k v accum ->
-          if pred k v then
-            add k v accum
-          else
-            accum)
-        m
-        empty
+    let keylist m = keys m |> List.of_enum
+    let to_pairs m = enum m |> List.of_enum
 
     let merge_counts ml =
       List.fold_left
@@ -213,7 +179,6 @@ module type S =
 sig
   include Set.S
   val of_list: elt list -> t
-  val map: (elt -> elt) -> t -> t
   val is_disjoint: t -> t -> bool
   val ppr: Format.formatter -> t -> unit
 end
@@ -223,9 +188,6 @@ module BetterSet (OS: Set.S) (PBLE: PPRABLE with type t = OS.elt) : (S with type
     include OS
 
     let of_list l = List.fold_right add l empty
-
-    (* map from Set to Set of the same type. currying heaven. *)
-    let map f s = fold (fun x -> add (f x)) s empty
 
     let is_disjoint s1 s2 =
       for_all

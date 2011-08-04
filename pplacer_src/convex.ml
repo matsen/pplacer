@@ -1,3 +1,4 @@
+open Batteries
 open MapsSets
 open Stree
 
@@ -8,6 +9,18 @@ type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
 
 let ppr_csetim = IntMap.ppr_gen ColorSet.ppr
+
+module OrderedColorSet = struct
+  type t = cset
+  let compare = ColorSet.compare
+end
+
+module PprColorSet = struct
+  type t = cset
+  let ppr = ColorSet.ppr
+end
+
+module ColorSetMap = BetterMap (Map.Make(OrderedColorSet)) (PprColorSet)
 
 type coloropt = string option
 module OrderedColorOpt = struct
@@ -28,6 +41,7 @@ module PprColorOpt = struct
 end
 
 module ColorOptSet = BetterSet (Set.Make(OrderedColorOpt)) (PprColorOpt)
+module ColorOptMap = BetterMap (Map.Make(OrderedColorOpt)) (PprColorOpt)
 
 (* A question is a pair (c, X) where c is an arbitrary optional color and X is a
  * subset of the cut set for the edge above the given internal node. The
@@ -72,14 +86,13 @@ type phi = local_phi IntMap.t
 (* nu_f is a type for upper bounds for the number of leaves left in a convex
  * subset of leaves. We pass them phi, the apart, and the list of top indices
  * for the subtrees at our internal node. *)
-type nu_f = phi -> apart -> int list -> int
+type nu_f = cset -> sizem list -> apart -> int
 
 (* Abbreviations *)
 module CS = ColorSet
 module COS = ColorOptSet
-
-let flip f x y = f y x
-let compose f g a = f (g a)
+module COM = ColorOptMap
+module CSM = ColorSetMap
 
 let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all
@@ -202,7 +215,7 @@ let cutsetdist cutsetl ?(allow_multiple = false) color =
   (* We recur over the cut sets below our internal node.
    * Base is just a list of empty sets of the correct length. *)
   let rec aux base accum = function
-    | [] -> List.rev (List.rev_map List.rev accum)
+    | [] -> List.map List.rev accum
     | cutset :: rest ->
       let accum = List.fold_left
         (fun accum x ->
@@ -231,7 +244,7 @@ let transposed_fold f start ll =
     | [] -> prev
     | l :: rest ->
       aux
-        (List.rev (List.rev_map2 f prev l))
+        (List.map2 f prev l)
         rest
   in
   aux start ll
@@ -255,14 +268,17 @@ let _build_apartl cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
-  let big_b_excl =
-    (* Because xopt never contains None, this is in fact testing c in x. In
-     * this case, b will only be c, since c is added to big_b_excl later. *)
+  (* The potential b's for our apartl. *)
+  let potential_bs =
+    (* Because xopt never contains None, this is in fact testing c in x. Tf that
+     * is true, b will only be c, since c is added to potential_bs later.
+     * *)
     if COS.mem c xopt then
       COS.empty
     else
-      COS.diff (coptset_of_cset (between cutsetl)) to_exclude
+      COS.add None (COS.diff (coptset_of_cset (between cutsetl)) to_exclude)
   in
+  (* These are the colors that we need to put in the different subsets. *)
   let to_distribute = COS.union
     xopt
     (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
@@ -275,10 +291,9 @@ let _build_apartl cutsetl kappa (c, x) =
        * distributions of the to_distribute colors (except for b) into the
        * cut sets below our internal node. We find these distributions one at a
        * time, then take the union below. *)
-      let dist = List.rev
-        (List.rev_map
-           (cutsetdist cutsetl)
-           (CS.elements (cset_of_coptset (COS.remove b to_distribute))))
+      let dist = List.map
+        (cutsetdist cutsetl)
+        (CS.elements (cset_of_coptset (COS.remove b to_distribute)))
       in
       (* Next make every distribution with {} with {b} if b is in the cut set *)
       let dist = match b with
@@ -287,27 +302,29 @@ let _build_apartl cutsetl kappa (c, x) =
       and startsl = List.rev_map (fun _ -> CS.empty) cutsetl in
       (* Finish off the meat of the recursion by mapping with union over the
        * cartesian product of the single-color distributions. *)
-      let pis = List.rev
-        (List.rev_map
-           (transposed_fold CS.union startsl)
-           (product dist))
+      let pis = List.map
+        (transposed_fold CS.union startsl)
+        (product dist)
       in
-      (* We make sure to pass on the c as the color of the internal node in the
-       * case where between pi is empty by filtering out the ones that don't. *)
+      (* By the construction of the pis, between pi can only be empty or b. Here
+       * we filter out those aparts such that b is not c or None. Recall (see
+       * the intro to convex.mli) that None represents any color that is not
+       * "forced" by convexity considerations. c is None when there is not an
+       * above color that is in x. b is None when c is None and there are no
+       * colors shared between the pi_i.
+       *)
       List.fold_left
         (fun accum pi ->
-          if not (CS.is_empty (between pi)) || b = c then
+          if not (CS.is_empty (between pi)) || b = c || b = None then
             (b, pi) :: accum
           else accum)
         accum
         pis)
     (* We add c to the list of things that can be colors of internal nodes. *)
-    (COS.add c big_b_excl)
+    (COS.add c potential_bs)
     []
   in
-  let null_apart = None, List.map (fun _ -> ColorSet.empty) cutsetl in
-  if List.mem null_apart apartl then apartl
-  else null_apart :: apartl
+  apartl
 
 let build_apartl_memo = Hashtbl.create 1024
 
@@ -361,10 +378,7 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
-(* XXX add a nu_f. It would seem appropriate to add one as an argument. There
- * are different sorts of nu_f... they are just bounds and we will want to trial
- * them. OTOH, if you think it's better to just globally set one then fine. *)
-let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
+let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
     try
@@ -395,32 +409,35 @@ let rec phi_recurse cutsetim sizemlim tree ((_, x) as question) phi =
       let apart_omega phi (b, pi) =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse cutsetim sizemlim subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse ?nu_f cutsetim sizemlim subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
           subtrees
       in
-      let apart_nu' = apart_nu
-        (IntMap.find i cutsetim)
-        (IntMap.find i sizemlim)
+      let nu_apartl = match nu_f with
+        | None -> List.map (fun apart -> None, apart) apartl
+        | Some nu_f ->
+          let apart_nu' = nu_f
+            (IntMap.find i cutsetim)
+            (IntMap.find i sizemlim)
+          in
+          let nu_apartl = List.map
+            (fun apart -> apart_nu' apart, apart)
+            apartl
+          in
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort nu_apartl)
       in
-      let nu_apartl = List.rev
-        (List.rev_map
-          (fun apart -> apart_nu' apart, apart)
-          apartl)
-      in
-      let nu_apartl = List.sort (fun (a, _) (b, _) -> b - a) nu_apartl in
       let rec aux phi current_best = function
-        | (nu, apart) :: rest -> (
+        | (nu_opt, apart) :: rest -> (
           let phi, omega = apart_omega phi apart in
-          match current_best with
-            | None -> aux phi (Some (omega, apart)) rest
-            | Some (prev_omega, _) when omega > prev_omega ->
+          match current_best, nu_opt with
+            | None, _ -> aux phi (Some (omega, apart)) rest
+            | Some (prev_omega, _), _ when omega > prev_omega ->
               aux phi (Some (omega, apart)) rest
-            | Some (prev_omega, _) when nu < prev_omega ->
+            | Some (prev_omega, _), Some nu when nu < prev_omega ->
               phi, current_best
-            | _ -> aux phi current_best rest)
+            | _, _ -> aux phi current_best rest)
         | [] -> phi, current_best
       in
       aux phi None nu_apartl
@@ -439,12 +456,12 @@ let badness cutsetim =
     cutsetim
     (0, 0)
 
-let solve ((_, tree) as cdtree) =
+let solve ?nu_f ((_, tree) as cdtree) =
   let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
   let sizemlim = maplist_of_map_and_tree sizemim tree in
   Hashtbl.clear build_apartl_memo;
-  phi_recurse cutsetim sizemlim tree (None, CS.empty) IntMap.empty
+  phi_recurse ?nu_f cutsetim sizemlim tree (None, CS.empty) IntMap.empty
 
 (* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
  * the leaves to include. The recursion works as follows: maintain rest, which
@@ -622,3 +639,96 @@ let alternate_colors ((colors, tree) as cdtree) =
         entries)
     groupmap
     IntMap.empty
+
+
+let copt_singleton = function
+  | Some color -> CS.singleton color
+  | None -> CS.empty
+
+let add_longest k v m =
+  match begin
+    try
+      Some (CSM.find k m)
+    with Not_found -> None
+  end with
+    | Some prev when IntSet.cardinal v <= IntSet.cardinal prev -> m
+    | _ -> CSM.add k v m
+
+module Naive = struct
+
+  let solve ((_, tree) as cdtree) =
+    let _, cutsetim = build_sizemim_and_cutsetim cdtree in
+    let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
+    let cutsetlim = maplist_of_map_and_tree cutsetim tree in
+
+    let rec walk = function
+      | Leaf i ->
+        let kappa = IntMap.find i cutsetim in
+        if CS.is_empty kappa then
+          COM.singleton None (CSM.singleton CS.empty (IntSet.singleton i))
+        else
+          let color = CS.choose kappa in
+          let csm = CSM.singleton (CS.singleton color) (IntSet.singleton i) in
+          COM.of_pairlist [Some color, csm; None, csm]
+      | Node (i, subtrees) ->
+        let phi = List.map walk subtrees
+        and big_b = between (IntMap.find i cutsetlim)
+        and kappa = IntMap.find i cutsetim in
+        let ret = COS.fold
+          (fun c accum ->
+            let c' = copt_singleton c in
+            let ret_c = COS.fold
+              (fun b accum ->
+                let b' = copt_singleton b in
+                let rec aux used_colors used_nodes accum = function
+                  | [] -> add_longest used_colors used_nodes accum
+                  | phi_i :: rest ->
+                    let accum' = aux used_colors used_nodes accum rest in
+                    let x_is = match COM.get b CSM.empty phi_i with
+                      | x when CSM.is_empty x -> COM.find None phi_i
+                      | x -> x
+                    in
+                    CSM.fold
+                      (fun x_i nodes accum ->
+                        if CS.is_empty (CS.diff (CS.inter x_i used_colors) b')
+                          && (b = c || CS.is_empty (CS.inter x_i c'))
+                        then
+                          aux
+                            (CS.union used_colors x_i)
+                            (IntSet.union used_nodes nodes)
+                            accum
+                            rest
+                        else
+                          accum)
+                      x_is
+                      accum'
+                in
+                aux CS.empty IntSet.empty accum phi)
+              (COS.add c (coptset_of_cset big_b))
+              CSM.empty
+            in
+            COM.add c ret_c accum)
+          (COS.add None (coptset_of_cset kappa))
+          COM.empty
+        in
+        if CS.is_empty kappa then
+          let best = CSM.fold
+            (fun _ cur -> function
+              | Some prev when IntSet.cardinal cur <= IntSet.cardinal prev ->
+                Some prev
+              | _ -> Some cur)
+            (COM.find None ret)
+            None
+          in
+          match best with
+            | Some best -> COM.singleton None (CSM.singleton CS.empty best)
+            | None -> failwith "no clades on an internal node ???"
+        else
+          ret
+
+    in
+    CSM.find CS.empty (COM.find None (walk tree))
+
+end
+
+

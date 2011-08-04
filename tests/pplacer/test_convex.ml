@@ -18,9 +18,14 @@ let suite = List.map
       bm
       MapsSets.IntMap.empty
     in
-    let _, calculated_omega = solve (colors, st) in
+    let naive_nodes = Naive.solve (colors, st) in
+    let _, early_omega = solve ~nu_f:apart_nu (colors, st)
+    and _, not_early_omega = solve ?nu_f:None (colors, st)
+    and naive_omega = IntSet.cardinal naive_nodes in
     let testfunc () =
-      (Printf.sprintf "%d expected; got %d" omega calculated_omega) @? (omega = calculated_omega)
+      (Printf.sprintf "%d expected; got %d with early termination" omega early_omega) @? (omega = early_omega);
+      (Printf.sprintf "%d expected; got %d without early termination" omega not_early_omega) @? (omega = not_early_omega);
+      (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
     in
     s >:: testfunc)
   [
@@ -33,6 +38,7 @@ let suite = List.map
     "(A,((A,B),(A,B)));", 4;
     "(A,(B,(A,(B,A))));", 4;
     "(A,(A,(B,(C,(C,(A,C))))));", 6;
+    "(A,(A,(B,(C,((A,C),(B,C))))));", 6;
   ]
 
 let suite =
@@ -41,12 +47,12 @@ let suite =
         let gt = Newick_gtree.of_string "(A,(A,(X,(B,(X,B)))))" in
         let st = gt.Gtree.stree
         and bm = gt.Gtree.bark_map in
-        let colors = IntMap.filter
+        let colors = IntMap.filteri
           (fun _ v -> v <> "X")
           (IntMap.map (fun v -> v#get_name) bm)
         in
         let alt_colors = alternate_colors (colors, st) in
-        assert_equal (IntMap.nkeys alt_colors) 2;
+        assert_equal (IntMap.cardinal alt_colors) 2;
         "first color sets not equal" @?
           (ColorSet.equal
              (IntMap.find 2 alt_colors)
