@@ -7,6 +7,7 @@ open Batteries
 exception UnknownTaxIDPrefix of char
 
 type tax_id = TaxStr of string | NoTax
+type t = tax_id
 
 let none_str = "none"
 

@@ -35,6 +35,7 @@
  * Closed GH-112: Improved some of pplacer's error messages.
  * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
  * Closed GH-117: Added the output of `git describe` to --version output.
+ * Closed GH-119: Added a `rppr reroot` subcommand.
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
 
 

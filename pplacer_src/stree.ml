@@ -1,9 +1,11 @@
 (* Our basic tree data structure without information.
  *
  * *)
+open Batteries
 open MapsSets
 
 type stree = Node of int * stree list | Leaf of int
+type t = stree
 
 let node i tL = Node(i, tL)
 let leaf i = Leaf i
@@ -28,9 +30,9 @@ let rec node_ids_aux = function
   | Node(i,tL) -> i :: (List.flatten (List.map node_ids_aux tL))
   | Leaf(i) -> [i]
 
-let node_ids stree = List.sort compare (node_ids_aux stree)
+let node_ids stree = List.sort (node_ids_aux stree)
 let nonroot_node_ids stree =
-  try List.sort compare (List.tl (node_ids_aux stree)) with
+  try List.sort (List.tl (node_ids_aux stree)) with
   | Failure "tl" -> invalid_arg "nonroot_node_ids"
 
 let rec leaf_ids = function
@@ -102,3 +104,24 @@ let parent_map t =
     | [] -> accum
   in
   aux IntMap.empty [None, t]
+
+let reroot tree root =
+  if top_id tree = root then tree else
+  let rec aux = function
+    | [] -> failwith "root not found"
+    | (Node (i, subtrees), path) :: _ when i = root ->
+      (i, subtrees) :: path
+    | (Leaf _, _) :: rest -> aux rest
+    | (Node (i, subtrees), path) :: rest ->
+      List.map
+        (fun subtree ->
+          let path' = (i, List.remove subtrees subtree) :: path in
+          subtree, path')
+        subtrees
+      |> List.append rest
+      |> aux
+  in
+  aux [tree, []]
+    |> List.rev
+    |> List.reduce (fun (bi, btl) (ai, atl) -> ai, node bi btl :: atl)
+    |> uncurry node

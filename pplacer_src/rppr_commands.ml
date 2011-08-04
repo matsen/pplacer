@@ -8,5 +8,6 @@ let command_list () =
       "voronoi", (fun () -> new Rppr_voronoi.cmd ());
       "prunetre", (fun () -> new Rppr_prunetre.cmd ());
       "info", (fun () -> new Rppr_info.cmd ());
+      "reroot", (fun () -> new Rppr_reroot.cmd ());
     ];
   ]
