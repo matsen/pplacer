@@ -62,8 +62,8 @@ object (self)
           Mass_map.Indiv.scale_mass
             (1. -. leaf_mass_fract)
             (Mass_map.Indiv.of_placerun transform weighting criterion pr)
-      and digram = Voronoi.of_gtree gt in
-      let n_leaves = IntSet.cardinal digram.Voronoi.all_leaves in
+      and diagram = Voronoi.of_gtree gt in
+      let n_leaves = IntSet.cardinal diagram.Voronoi.all_leaves in
       let criteria =
         (match fvo dist_cutoff with
           | Some cutoff -> [fun (dist, _) -> dist > cutoff]
@@ -85,7 +85,7 @@ object (self)
               IntMap.add_listly
               {I.distal_bl = 0.0;
                I.mass = leaf_mass_fract /. (float_of_int n_leaves)})
-            digram.Voronoi.all_leaves
+            diagram.Voronoi.all_leaves
             mass
       in
       (* This is the central recursion that finds the Voronoi region with the
@@ -104,8 +104,8 @@ object (self)
         in
         IntMap.add leaf score map
       in
-      let rec aux digram score_map updated_leaves =
-        let indiv_map = Voronoi.partition_indiv_on_leaves digram mass in
+      let rec aux diagram score_map updated_leaves =
+        let indiv_map = Voronoi.partition_indiv_on_leaves diagram mass in
         let score_map' = IntSet.fold
           (update_score indiv_map)
           updated_leaves
@@ -126,8 +126,8 @@ object (self)
         with
           | None -> failwith "no leaves?"
           | Some (leafs, dist) ->
-            if List.exists ((flip apply) (dist, digram)) criteria then
-              digram
+            if List.exists ((|>) (dist, diagram)) criteria then
+              diagram
             else begin
               if verbose then begin
                 Printf.fprintf stderr "uncoloring %d leaves (dist %1.6f)"
@@ -135,8 +135,8 @@ object (self)
                   dist;
                 prerr_newline ();
               end;
-              let digram', updated_leaves' = Voronoi.uncolor_leaves
-                digram
+              let diagram', updated_leaves' = Voronoi.uncolor_leaves
+                diagram
                 leafs
               and cut = List.map
                 (fun leaf -> [Gtree.get_name taxtree leaf;
@@ -145,16 +145,16 @@ object (self)
               in
               Csv.save_out ch cut;
               aux
-                digram'
+                diagram'
                 (IntSet.fold IntMap.remove leafs score_map')
                 (IntSet.diff updated_leaves' leafs)
             end
       in
-      let digram' = aux digram IntMap.empty digram.Voronoi.all_leaves in
+      let diagram' = aux diagram IntMap.empty diagram.Voronoi.all_leaves in
       let trimmed =
         IntSet.diff
-          digram.Voronoi.all_leaves
-          digram'.Voronoi.all_leaves
+          diagram.Voronoi.all_leaves
+          diagram'.Voronoi.all_leaves
       in
       let decor = Decor_gtree.color_clades_above trimmed taxtree in
       begin match fvo trimmed_tree_file with
