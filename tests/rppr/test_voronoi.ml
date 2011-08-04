@@ -1,9 +1,11 @@
+open Batteries
 open OUnit
 open Test_util
 open Voronoi
 open MapsSets
 
 module I = Mass_map.Indiv
+module XXX = Rppr_voronoi
 
 let test_suite_of_gtree_and_expected (gt_string, distr) =
   let gt = Newick_gtree.of_string gt_string in
@@ -30,8 +32,16 @@ let test_suite_of_gtree_and_expected (gt_string, distr) =
     ldistl
     distr
 
-let test_v = of_gtree
-  (Newick_gtree.of_string "(x:.3,(x:.1,(x:.4,x:.5):.1):.4)")
+let test_gt = Newick_gtree.of_string "(x:.3,(x:.1,(x:.4,x:.5):.1):.4):0."
+let test_v = of_gtree test_gt
+let test_indiv = IntMap.map
+  (List.map I.of_pair)
+  (IntMap.of_pairlist [
+    3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
+    5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
+    4, [0.0, 8.0; 0.05, 9.0];
+    2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
+  ])
 
 let snipl_equal l1 l2 =
   List.for_all2
@@ -89,7 +99,7 @@ let suite = [
     in
     List.iter
       (fun (leaf, expected_snips) ->
-        let got_snips = List.sort compare (get_edge_snipl test_v leaf) in
+        let got_snips = List.sort (get_edge_snipl test_v leaf) in
         (Printf.sprintf "unexpected snipl for leaf %d" leaf)
         @? (snipl_equal got_snips expected_snips))
       expected
@@ -101,24 +111,14 @@ let suite = [
       (fun () -> distribute_mass
         test_v
         (IntMap.singleton 4 [{I.distal_bl = 0.5; I.mass = 0.0}]));
-    let got_massdist = distribute_mass
-      test_v
-      (IntMap.map
-         (List.map I.of_pair)
-         (IntMap.of_pairlist [
-           3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
-           5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
-           4, [0.0, 8.0; 0.05, 9.0];
-           2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
-         ]))
-    in
+    let got_massdist = distribute_mass test_v test_indiv in
     List.iter
       (fun (leaf, masslist) ->
         (Printf.sprintf "unexpected mass distribution for leaf %d" leaf) @?
           (List.for_all2
              approx_equal
              masslist
-             (List.sort compare (IntMap.find leaf got_massdist))))
+             (List.sort (IntMap.find leaf got_massdist))))
       [
         0, [7.];
         1, [4.; 5.; 6.; 8.; 9.; 12.];
@@ -126,6 +126,23 @@ let suite = [
         3, [1.; 2.; 3.];
       ]
   end;
+
+  "test_kr_voronoi" >:: begin fun () ->
+    let update_score = Rppr_voronoi.update_score ~gt:test_gt ~p_exp:1. in
+    let indiv_map = partition_indiv_on_leaves test_v test_indiv in
+    let score_map = IntSet.enum test_v.all_leaves
+      |> (update_score indiv_map |> flip |> flip Enum.fold IntMap.empty)
+    and expected_scores = IntMap.of_pairlist [
+      0, 2.45;
+      1, 10.05;
+      2, 3.3;
+      3, 1.55;
+    ]
+    in
+    (IntMap.enum score_map, IntMap.enum expected_scores)
+    |> ((fst *** fst) &&& (snd *** snd) |- ((uncurry (=) *** uncurry approx_equal) |- uncurry (&&) &&& (fst |- uncurry (Printf.sprintf "unequal (%d and %d)"))) |- (flip (@?) |> uncurry) |> curry |> Enum.iter2 |> uncurry)
+  end;
+
 ]
 
 let suite = suite @

@@ -6,6 +6,18 @@ open Fam_batteries
 
 module I = Mass_map.Indiv
 
+let update_score ~gt ~p_exp indiv_map leaf map =
+  let score =
+    if not (IntMap.mem leaf indiv_map) then 0.0 else
+      let indiv = IntMap.find leaf indiv_map in
+      let squashed_indiv = IntMap.singleton
+        leaf
+        [{I.distal_bl = 0.0; I.mass = I.total_mass indiv}]
+      in
+      Kr_distance.dist gt p_exp indiv squashed_indiv
+  in
+  IntMap.add leaf score map
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -52,7 +64,7 @@ object (self)
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp
         | None -> Decor_gtree.of_newick_gtree gt
-      in
+      and update_score = update_score ~gt ~p_exp:(fv p_exp) in
       if 0. > leaf_mass_fract || leaf_mass_fract > 1. then
         failwith ("Leaf mass fraction not between 0 and 1.");
       (* First get the mass that is not at the leaves. *)
@@ -92,18 +104,6 @@ object (self)
        * least mass and deletes its leaf from the corresponding set. We keep a
        * map of the scores for each leaf in the Voronoi region, updated at each
        * iteration with only the leaves which were touched in the last pass. *)
-      let update_score indiv_map leaf map =
-        let score =
-          if not (IntMap.mem leaf indiv_map) then 0.0 else
-            let indiv = IntMap.find leaf indiv_map in
-            let squashed_indiv = IntMap.singleton
-              leaf
-              [{I.distal_bl = 0.0; I.mass = I.total_mass indiv}]
-            in
-            Kr_distance.dist gt (fv p_exp) indiv squashed_indiv
-        in
-        IntMap.add leaf score map
-      in
       let rec aux diagram score_map updated_leaves =
         let indiv_map = Voronoi.partition_indiv_on_leaves diagram mass in
         let score_map' = IntSet.fold
