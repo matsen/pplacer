@@ -105,16 +105,12 @@ let parent_map t =
   in
   aux IntMap.empty [None, t]
 
-let children = function
-  | Leaf _ as n -> [n]
-  | Node (_, subtrees) -> subtrees
-
 let reroot tree root =
   if top_id tree = root then tree else
   let rec aux = function
     | [] -> failwith "root not found"
-    | (cur, path) :: _ when top_id cur = root ->
-      (root, children cur) :: path
+    | (Node (i, subtrees), path) :: _ when i = root ->
+      (i, subtrees) :: path
     | (Leaf _, _) :: rest -> aux rest
     | (Node (i, subtrees), path) :: rest ->
       List.map
