@@ -1,7 +1,7 @@
 (* decor gives types and routines for attaching information to trees
 *)
 
-open MapsSets
+open Ppatteries
 
 (* note that order is important so the xml comes out right when we sort using
  * polymorphic compare *)

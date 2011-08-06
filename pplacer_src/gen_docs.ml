@@ -1,3 +1,4 @@
+open Ppatteries
 open Rst
 
 let docs_dir = "docs/"
@@ -22,8 +23,9 @@ let () =
 
   List.iter check_directory [docs_dir; details_dir; generated_dir;];
 
-  let guppy_commands =
-    Base.map_and_flatten snd (Guppy_commands.command_list ())
+  let guppy_commands = Guppy_commands.command_list ()
+    |> List.map snd
+    |> List.flatten
   in
   let command_matrix =
     Array.append

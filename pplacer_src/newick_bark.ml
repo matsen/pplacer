@@ -1,8 +1,7 @@
 (* The bark for newick gtrees, i.e. trees that only have bl, name, and boot.
 *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 exception No_bl
 exception No_name
@@ -97,12 +96,12 @@ let floato_approx_compare epsilon a b =
 let compare ?epsilon:(epsilon=0.) ?cmp_boot:(cmp_boot=true) b1 b2 =
   let fc = floato_approx_compare epsilon in
   try
-    Base.raise_if_different fc b1#get_bl_opt b2#get_bl_opt;
-    Base.raise_if_different compare b1#get_name_opt b2#get_name_opt;
-    if cmp_boot then Base.raise_if_different fc b1#get_boot_opt b2#get_boot_opt;
+    raise_if_different fc b1#get_bl_opt b2#get_bl_opt;
+    raise_if_different compare b1#get_name_opt b2#get_name_opt;
+    if cmp_boot then raise_if_different fc b1#get_boot_opt b2#get_boot_opt;
     0
   with
-  | Base.Different c -> c
+  | Different c -> c
 
 let map_find_loose id m =
   if IntMap.mem id m then IntMap.find id m

@@ -1,9 +1,7 @@
 (* functions for dealing with alignments, especially for likelihoods
 *)
 
-open Batteries
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 let check_for_repeats name_arr =
   let _ =

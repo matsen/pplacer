@@ -8,8 +8,7 @@
  * the chosen edge.
  * *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 (* these are raised when we are asked for something that isn't in a bark map *)
 exception Lacking_bark of int
@@ -79,14 +78,14 @@ let mapi_bark_map f t = {t with bark_map = IntMap.mapi f (get_bark_map t)}
 
 let compare bark_compare t1 t2 =
   try
-    Base.raise_if_different compare (get_stree t1) (get_stree t2);
-    Base.raise_if_different
+    raise_if_different compare (get_stree t1) (get_stree t2);
+    raise_if_different
       (IntMap.compare bark_compare)
       (get_bark_map t1)
       (get_bark_map t2);
     0
   with
-  | Base.Different c -> c
+  | Different c -> c
 
 let tree_length tree =
   let get_our_bl id = get_bl tree id in
@@ -128,7 +127,7 @@ let copy_bark ~dest ~src id =
 let join new_id tL =
   gtree
     (Stree.node new_id (List.map get_stree tL))
-    (ListFuns.complete_fold_left
+    (List.reduce
       Bark_map.union
       (List.map get_bark_map tL))
 
@@ -216,8 +215,7 @@ let add_subtrees_above avail_id tree where_subtree_list =
     tree
     avail_id
     (List.sort
-      (fun pos_t1 pos_t2 ->
-        Pervasives.compare (get_where pos_t1) (get_where pos_t2))
+      ~cmp:(comparing get_where)
       where_subtree_list)
 
 (* where_subtree_map is a map from a location to a triple (pos, tree,

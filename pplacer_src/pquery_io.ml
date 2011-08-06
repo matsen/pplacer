@@ -1,8 +1,7 @@
 (* reading and writing pqueries.
  *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 let no_seq_str = "<sequence not loaded>"
 
@@ -22,7 +21,7 @@ let write ch pq =
 (* convert to a string list list appropriate for using with the Csv module. *)
 let to_csv_strl pq =
   let qname = String.concat " " (Pquery.namel pq) in
-  ListFuns.mapi
+  List.mapi
     (fun i p -> qname::(string_of_int i)::(Placement.to_csv_strl p))
     (Pquery.place_list pq)
 

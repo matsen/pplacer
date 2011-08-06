@@ -4,10 +4,9 @@
  * pairs of a number list and a pre. This means that identical pres
  * don't get lost when we use them as keys. *)
 
-open Batteries
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
 open Squashfunc
 
 module NPreBlob =
@@ -44,7 +43,7 @@ let mkdir path =
 - : (int list * int) list = [([0], 5); ([1], 4); ([2], 3)]
 *)
 let numberize l =
-  List.combine (List.map (fun i -> [i]) (Base.range (List.length l))) l
+  (flip List.cons [] |- curry identity |> List.mapi) l
 
 (* Note that denom_f is a function that gives us a denominator to normalize by
  * when calculating branch lengths, i.e. the setting of the --normalize flag.
@@ -148,7 +147,7 @@ object (self)
       let (drt, cluster_t, blobim) = our_make_cluster refpkgo mode_str prl in
       Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
       let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
-      let pad_width = Base.find_zero_pad_width (IntMap.cardinal blobim) in
+      let pad_width = find_zero_pad_width (IntMap.cardinal blobim) in
       let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)
       let wpt transform infix t i =
@@ -169,7 +168,7 @@ object (self)
           IntMap.iter (wpt Mass_map.no_transform "tax" taxt) tax_blobim
     end
     else begin
-      let pad_width = Base.find_zero_pad_width nboot in
+      let pad_width = find_zero_pad_width nboot in
       let rng = self#rng in
       for i=1 to nboot do
         Printf.printf "running bootstrap %d of %d\n" i nboot;

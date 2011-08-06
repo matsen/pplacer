@@ -1,9 +1,8 @@
-open Batteries
+open Ppatteries
 open OUnit
 open Test_util
 
 open Convex
-open MapsSets
 
 let suite = List.map
   (fun (before, reroot_at, after) ->

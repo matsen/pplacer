@@ -1,8 +1,7 @@
 type tree_fmt = Newick | Phyloxml
 
 open Subcommand
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 let intmap_of_arr a =
   let m = ref IntMap.empty in

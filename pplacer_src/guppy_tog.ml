@@ -1,7 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
+open Ppatteries
 open Visualization
 
 (* tog tree *)
@@ -22,7 +21,7 @@ let tog_tree criterion ref_tree placed_map =
               let tree =
                 Stree.node
                   n_names
-                  (List.map Stree.leaf (Base.range n_names))
+                  (0 --^ n_names |> Enum.map Stree.leaf |> List.of_enum)
               in
               let decor_map = IntMap.add
                 n_names
@@ -34,8 +33,8 @@ let tog_tree criterion ref_tree placed_map =
                         [Decor.red])))
                 IntMap.empty
               in
-              let decor_map = List.fold_left2
-                (fun accum i name ->
+              let decor_map = Enum.fold2
+                (fun i name ->
                   IntMap.add
                     i
                     (new Decor_bark.decor_bark
@@ -43,11 +42,10 @@ let tog_tree criterion ref_tree placed_map =
                            (Some 0.0,
                             Some name,
                             None,
-                            [Decor.red])))
-                    accum)
+                            [Decor.red]))))
                 decor_map
-                (Base.range n_names)
-                (Pquery.namel pquery)
+                (0 --^ n_names)
+                (Pquery.namel pquery |> List.enum)
               in
               Gtree.Subtree (Gtree.gtree tree decor_map)
           in

@@ -2,8 +2,7 @@
  * reference tree.
  *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 open Stree
 
 (* below 2^-50 = 1e-15 we pull out the exponent into the int *)
@@ -77,7 +76,7 @@ let calc_proximal model tree
               (evolved_prox::
                 (List.map (glv_from_stree evolv_dist_glv_arr) rest));
             Glv.perhaps_pull_exponent min_allowed_twoexp prox_below)
-          (Base.pull_each_out tL);
+          (ListFuns.pull_each_out tL);
         List.iter calc tL
     | Stree.Leaf _ -> ()
   in

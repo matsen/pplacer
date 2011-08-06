@@ -1,8 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
 
-let escape = Base.sqlite_escape
-
 class cmd () =
 object (self)
   inherit subcommand () as super

@@ -1,4 +1,4 @@
-open Batteries
+open Ppatteries
 open OUnit
 open Test_util
 
@@ -32,7 +32,7 @@ let simple () =
   let decor =
     Enum.map
       (fun x -> x#get_decor)
-      (MapsSets.IntMap.values (gt.Gtree.bark_map))
+      (IntMap.values (gt.Gtree.bark_map))
   in
   let _ = Enum.fold2
     (fun got expected n ->

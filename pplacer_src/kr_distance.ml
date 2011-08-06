@@ -12,8 +12,7 @@
  * any placements. This gives the total KR distance.
 *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 exception Invalid_place_loc of float
 exception Total_kr_not_zero of float
@@ -120,8 +119,8 @@ let make_kr_map m1 m2 =
          (fun {I.distal_bl = dist_bl; I.mass = mass} -> (dist_bl, f mass)))
   in
   IntMap.map
-    (List.sort compare)
-    (Base.combine_list_intmaps
+    List.sort
+    (combine_list_intmaps
     [
       process_map (fun mass -> [|mass; 0.|]) m1;
       process_map (fun mass -> [|0.; mass|]) m2;
@@ -135,7 +134,7 @@ let dist ?(normalization=1.) ref_tree p m1 m2 =
     total_along_edge
       (exp_kr_diff p)
       (Gtree.get_bl ref_tree id)
-      (Base.get_from_list_intmap id kr_map)
+      (IntMap.get id [] kr_map)
       v_addto
   (* make sure that the kr_v totals to zero *)
   and check_final_kr final_kr_v =

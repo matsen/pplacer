@@ -4,9 +4,7 @@
  * This code is a bit rugged at the moment-- still figuring out exactly what we
  * want here. It may well disappear in the future.
  *)
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 let underscoreize s =
   let s' = String.copy s in

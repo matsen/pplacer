@@ -1,7 +1,7 @@
 (* translating nucleotide sequences into likelihood vectors
  * *)
 
-open MapsSets
+open Ppatteries
 
   (*
 Adenine 	   A 	                A
