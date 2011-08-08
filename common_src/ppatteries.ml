@@ -1,10 +1,6 @@
-(* some basic functions.
- *
- * This definitely needs some cleaning out, as much functionality isn't used or
- * duplicated somewhere else.
- *
- * Some of the code here is not very good!
-*)
+(** A common base for code in pplacer. This module is designed to be opened.
+    Opening it includes Batteries, MapsSets, and some generally useful
+    functions. *)
 
 open Batteries
 open MapsSets
@@ -12,10 +8,10 @@ open MapsSets
 let round x = int_of_float (floor (x +. 0.5))
 
 (*
-# int_pow 10. 3;;
-- : float = 1000.
-# int_pow 10. 0;;
-- : float = 1.
+  # int_pow 10. 3;;
+  - : float = 1000.
+  # int_pow 10. 0;;
+  - : float = 1.
 *)
 let int_pow x n =
   assert(n >= 0);
@@ -76,6 +72,8 @@ let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
 
 let comparing f a b = compare (f a) (f b)
 
+let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
+
 (* parsing *)
 module Sparse = struct
 
@@ -130,20 +128,6 @@ module Sparse = struct
 
 end
 
-(*
-LE MENU
--------
-ArrayFuns
-HashtblFuns
-ListFuns
-MatrixFuns
-StringFuns
-*)
-
-(* FloatFuns? *)
-let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
-
-(* *********** ArrayFuns *********** *)
 module ArrayFuns = struct
 
   (* find the first element of an array satisfying a predicate *)
@@ -287,9 +271,6 @@ module ArrayFuns = struct
 
 end
 
-
-
-(* *********** ListFuns *********** *)
 module ListFuns = struct
 
   (* pull_each_out :
@@ -423,9 +404,8 @@ module ListFuns = struct
 
 end
 
-
-(* *********** MatrixFuns *********** *)
 module MatrixFuns = struct
+
   let assert_rectangular m =
     if m <> [||] then begin
       let n_cols = Array.length m.(0) in
@@ -453,10 +433,8 @@ module MatrixFuns = struct
 
 end
 
-
-
-(* *********** StringFuns *********** *)
 module StringFuns = struct
+
   let of_char_array a = Array.enum a |> String.of_enum
 
   let to_char_array s = String.enum s |> Array.of_enum
