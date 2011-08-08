@@ -1,7 +1,7 @@
 (* for making and aligning matrices of strings
  *)
 
-open Fam_batteries
+open Ppatteries
 
 let range n = Array.init n (fun i -> i)
 

@@ -1,5 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
+open Ppatteries
 
 class cmd () =
 object (self)
@@ -99,7 +100,7 @@ object (self)
       let fname = self#single_file () in
       let trees = self#to_fat_tree
         (snd (self#get_rpo_and_tree (List.hd prl)))
-        (Base.safe_chop_suffix fname ".xml")
+        (safe_chop_suffix fname ".xml")
         pair
       in
       Phyloxml.named_gtrees_to_file
@@ -126,7 +127,7 @@ object (self)
         | File fname ->
           Phyloxml.named_gtrees_to_file
             fname
-            (Base.map_and_flatten snd trees)
+            (List.map snd trees |> List.flatten)
         | Unspecified -> ()
     end
 end

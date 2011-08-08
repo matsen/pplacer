@@ -1,8 +1,7 @@
 open Subcommand
 open Guppy_cmdobjs
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 let tolerance = 1e-3
 
@@ -48,10 +47,9 @@ let fal_to_strll fal =
     fal
 
 let save_out_named_fal ch fal =
-  Csv.save_out ch (fal_to_strll fal)
-
-let save_named_fal fname fal =
-  Csv.save fname (fal_to_strll fal)
+  csv_out_channel ch
+    |> Csv.to_out_obj
+    |> flip Csv.output_all (fal_to_strll fal)
 
 class cmd () =
 object (self)

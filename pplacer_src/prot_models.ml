@@ -1,4 +1,4 @@
-open MapsSets
+open Ppatteries
 
 (* *** translating protein sequences *** *)
 

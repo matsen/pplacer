@@ -1,8 +1,6 @@
 exception Unknown_format of string
 
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 (* NOTE: zero is the beginning of the alignment! *)
 (* NOTE: strings have maximum length of 16777211 (on stoke) *)

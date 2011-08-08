@@ -1,5 +1,4 @@
-open Batteries
-open MapsSets
+open Ppatteries
 
 let batchfile_regexp = Str.regexp begin
   String.concat "\\|" [
@@ -22,20 +21,20 @@ type token =
   | EOF
 
 let token_of_match s =
-  match Base.first_match [1; 2; 3] s with
+  match Sparse.first_match [1; 2; 3] s with
     | 1, _ -> Newline
     | 2, s
     | 3, s -> String s
     | _, _ -> invalid_arg "token_of_match"
 
-let tokenize_batchfile = Base.tokenize_string
+let tokenize_batchfile = Sparse.tokenize_string
   batchfile_regexp
   token_of_match
   ~eof_token:EOF
 
 let quote_regexp = Str.regexp "\"\""
 let parse tokens =
-  let _, sll = List.fold_left
+  let _, sll = Enum.fold
     (fun (sl, sll) -> function
       | String s ->
         let s = Str.global_replace quote_regexp "\"" s
@@ -50,13 +49,7 @@ let parse tokens =
     tokens
   in List.rev sll
 
-let of_string s =
-  parse (tokenize_batchfile s)
-
-let of_file fname =
-  let lines = File_parsing.string_list_of_file fname in
-  let tokens = Base.map_and_flatten tokenize_batchfile lines in
-  parse tokens
+let of_string, of_file = Sparse.gen_parsers tokenize_batchfile parse
 
 let placeholder_regexp = Str.regexp begin
   String.concat "\\|" [
@@ -68,7 +61,7 @@ let placeholder_regexp = Str.regexp begin
 end
 let substitute_placeholders m s =
   let substitute s =
-    match Base.first_match [1; 2] s with
+    match Sparse.first_match [1; 2] s with
     | 1, "{{" -> "{"
     | 1, "}}" -> "}"
     | 2, identifier -> begin

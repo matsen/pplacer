@@ -1,4 +1,4 @@
-open Fam_batteries
+open Ppatteries
 (* a module for STRICTLY uppper tri matrices *)
 
 (* some utils *)

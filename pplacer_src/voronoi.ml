@@ -1,6 +1,4 @@
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Stree
 
 type leaf = int

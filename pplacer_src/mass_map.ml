@@ -8,7 +8,7 @@
  * not squashed into a single data type.
 *)
 
-open MapsSets
+open Ppatteries
 
 type weighting_choice = Weighted | Unweighted
 
@@ -19,6 +19,10 @@ let place_list_of_pquery weighting criterion pquery =
   | Weighted -> Pquery.place_list pquery
   | Unweighted -> [ Pquery.best_place criterion pquery ]
 
+(* the L_1 norm of a float list *)
+let normalized_prob fl =
+  let sum = List.fold_left ( +. ) 0. fl in
+  List.map (fun x -> x /. sum) fl
 
 (* Pre as in pre-mass-map *)
 module Pre = struct
@@ -66,7 +70,7 @@ module Pre = struct
               mass = mass_per_read *. weight
             })
           pc
-          (Base.normalized_prob (List.map criterion pc));
+          (normalized_prob (List.map criterion pc));
     }
 
   let of_pquery_list weighting criterion pql =
@@ -152,7 +156,7 @@ module Indiv = struct
  * the edge in an increasing manner. *)
   let sort m =
     IntMap.map
-      (List.sort (fun {distal_bl = a1} {distal_bl = a2} -> compare a1 a2))
+      (List.sort ~cmp:(fun {distal_bl = a1} {distal_bl = a2} -> compare a1 a2))
       m
 
   let total_mass m =

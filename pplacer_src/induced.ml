@@ -6,8 +6,7 @@
  * smallest. make smallest in fam.batteries?
  *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 exception Invalid_induced
 

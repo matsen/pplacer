@@ -5,7 +5,7 @@
  * allocate for it. see prep_mats_for_bl below.
  * *)
 
-open Fam_batteries
+open Ppatteries
 
 type t =
   {

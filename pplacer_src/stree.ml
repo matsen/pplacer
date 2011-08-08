@@ -1,8 +1,7 @@
 (* Our basic tree data structure without information.
  *
  * *)
-open Batteries
-open MapsSets
+open Ppatteries
 
 type stree = Node of int * stree list | Leaf of int
 type t = stree

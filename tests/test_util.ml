@@ -1,5 +1,5 @@
 open Mass_map
-open Fam_batteries
+open Ppatteries
 
 (* Assume the test runner is running in the project root. We can't do much
    better than this. *)
@@ -42,7 +42,7 @@ let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
 (* *** equalities *** *)
 let gtree_equal g1 g2 =
   g1.Gtree.stree = g2.Gtree.stree
-  && MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
+  && IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
 
 let placerun_equal pr1 pr2 =
   gtree_equal pr1.Placerun.ref_tree pr2.Placerun.ref_tree
@@ -50,8 +50,6 @@ let placerun_equal pr1 pr2 =
 
 
 (* *** approximate equalities *** *)
-
-let approx_equal = Fam_batteries.approx_equal
 
 let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
   let dim = Gsl_vector.length v1 in

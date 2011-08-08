@@ -1,7 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 class cmd () =
 object (self)
@@ -35,15 +34,12 @@ object (self)
 
   method action = function
     | [fname] ->
-      let never_prune_names =
-        match fv never_prune_from with
-          | "" -> StringSet.empty
-          | fname ->
-            StringSet.of_list (File_parsing.string_list_of_file fname)
-      and never_prune_regexl =
-        match fv never_prune_regex_from with
-          | "" -> []
-          | fname -> List.map Str.regexp (File_parsing.string_list_of_file fname)
+      let never_prune_names = match fv never_prune_from with
+        | "" -> StringSet.empty
+        | fname -> File.lines_of fname |> StringSet.of_enum
+      and never_prune_regexl = match fv never_prune_regex_from with
+        | "" -> []
+        | fname -> File.lines_of fname |> Enum.map Str.regexp |> List.of_enum
       and names_only = fv names_only
       and safe = fv safe
       and criterion = match fvo cutoff, fvo leaf_count with
@@ -90,7 +86,8 @@ object (self)
         if names_only then (fun (id,_,_) -> [get_name id])
         else (fun (id,bl,_) -> [get_name id; string_of_float bl])
       in
-      Csv.save_out self#out_channel
+      Csv.output_all
+        (self#out_channel |> csv_out_channel |> Csv.to_out_obj)
         (List.map
            line_of_result
            (Pd.until_stopping safe never_prune_ids criterion pt))

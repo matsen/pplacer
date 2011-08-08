@@ -8,18 +8,20 @@
 %%
 
 %{
+  open Ppatteries
+
   (* parse state *)
   type 'a ps = {
     stree: Stree.stree;
-    bark: 'a MapsSets.IntMap.t;
+    bark: 'a IntMap.t;
   }
   (* list parse state *)
   type 'a lps = {
     stree_l: Stree.stree list;
-    bark_l: 'a MapsSets.IntMap.t;
+    bark_l: 'a IntMap.t;
   }
 
-  let combine = MapsSets.IntMap.fold MapsSets.IntMap.add
+  let combine = IntMap.fold IntMap.add
 
   let node_num = ref (-1)
   let add_bark add_fun ?label x s =
@@ -38,7 +40,7 @@
     incr node_num;
     add_name leafname {
       stree = Stree.leaf !node_num;
-      bark = MapsSets.IntMap.empty;
+      bark = IntMap.empty;
     }
   let add_internal ls =
     incr node_num;
@@ -63,9 +65,9 @@ subtree:
       stree = Stree.of_id $2 $1.stree;
       bark =
         let old_id = Stree.top_id $1.stree in
-        MapsSets.IntMap.fold (fun k v m ->
-          MapsSets.IntMap.add (if k = old_id then $2 else k) v m
-        ) $1.bark MapsSets.IntMap.empty
+        IntMap.fold (fun k v m ->
+          IntMap.add (if k = old_id then $2 else k) v m
+        ) $1.bark IntMap.empty
     }
   }
   | subtree COLON REAL

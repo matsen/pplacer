@@ -3,7 +3,7 @@
  * note use of Pervasives.compare should be redone if speed needed.
 *)
 
-open Batteries
+open Ppatteries
 exception UnknownTaxIDPrefix of char
 
 type tax_id = TaxStr of string | NoTax
@@ -69,6 +69,6 @@ module PprTaxId = struct
   let ppr = ppr
 end
 
-module TaxIdMap = MapsSets.BetterMap (Map.Make(OrderedTaxId)) (PprTaxId)
-module TaxIdSet = MapsSets.BetterSet (Set.Make(OrderedTaxId)) (PprTaxId)
+module TaxIdMap = BetterMap (Map.Make(OrderedTaxId)) (PprTaxId)
+module TaxIdSet = BetterSet (Set.Make(OrderedTaxId)) (PprTaxId)
 

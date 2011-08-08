@@ -1,4 +1,4 @@
-open MapsSets
+open Ppatteries
 
 
 let refpkg_str = "CONTENTS.json"
@@ -39,5 +39,5 @@ let strmap_of_path path =
   in
   StringMap.add
     "name"
-    (Base.safe_chop_suffix (Filename.basename noslash) ".refpkg")
+    (safe_chop_suffix (Filename.basename noslash) ".refpkg")
     map'

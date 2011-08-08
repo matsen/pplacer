@@ -1,13 +1,13 @@
 (* pquery stands for placed query.
  *)
 
-open MapsSets
+open Ppatteries
 
 exception Unplaced_pquery of string list
 
 let sort_placement_list criterion pl =
   List.sort
-    (fun x y -> - Placement.compare_placements criterion x y)
+    ~cmp:(Placement.compare_placements criterion |> flip)
     pl
 
 let rec is_decreasing criterion = function

@@ -1,9 +1,7 @@
 (* Here we actually do the work.
 *)
 
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Prefs
 
 let max_iter = 200
@@ -17,6 +15,21 @@ type result =
   | Fantasy of (int * (float * float * float)) list
   | Pquery of Pquery.pquery
   | Timing of string * float
+
+(* ll_normalized_prob :
+ * ll_list is a list of log likelihoods. this function gives the normalized
+ * probabilities, i.e. exponentiate then our_like / (sum other_likes)
+ * have to do it this way to avoid underflow problems.
+ * *)
+let ll_normalized_prob ll_list =
+  List.map
+    (fun log_like ->
+      1. /.
+        (List.fold_left ( +. ) 0.
+          (List.map
+            (fun other_ll -> exp (other_ll -. log_like))
+            ll_list)))
+    ll_list
 
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
@@ -67,8 +80,8 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
       Alignment.array_filteri (fun _ c -> informative c) query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = Base.array_first informative query_arr
-    and last_informative = Base.array_last informative query_arr in
+    let first_informative = ArrayFuns.first informative query_arr
+    and last_informative = ArrayFuns.last informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -108,7 +121,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let curr_time = Sys.time () in
     let h_r =
       List.sort
-        ~cmp:(fun (_,l1) (_,l2) -> - compare l1 l2)
+        ~cmp:(comparing snd |> flip)
         (List.map
            (fun loc ->
              (loc,
@@ -230,10 +243,8 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
       (* these tuples are ugly but that way we don't need
        * to make a special type for ml results. *)
       let get_like (_, (like, _, _)) = like in
-      let decreasing_cmp_likes r1 r2 =
-        - compare (get_like r1) (get_like r2) in
       let sorted_ml_results =
-        List.sort ~cmp:decreasing_cmp_likes ml_results in
+        List.sort ~cmp:(comparing get_like |> flip) ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =
@@ -262,7 +273,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
           (fun ml_ratio (loc, (log_like, pend_bl, dist_bl)) ->
             Placement.make_ml
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
-          (Base.ll_normalized_prob (List.map get_like refined_results))
+          (ll_normalized_prob (List.map get_like refined_results))
           refined_results
       in
       let results, placements =
@@ -285,7 +296,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
                 Placement.add_pp placement ~marginal_prob ~post_prob)
               sorted_ml_placements
               marginal_probs
-              (Base.ll_normalized_prob marginal_probs)))
+              (ll_normalized_prob marginal_probs)))
         end
         else results, sorted_ml_placements
       in

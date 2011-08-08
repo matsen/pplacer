@@ -1,3 +1,5 @@
+open Ppatteries
+
 (* This builds a matrix of distances between pqueries.
  * In fact, it does the following.
  * Say pquery x has placements x_i, with weights P(x_i).
@@ -19,7 +21,7 @@ let exponentiate_function exponent f =
 (* take the weighted average over placements of the pquery *)
 let weighted_pquery_dist criterion ca_info pqa pqb =
   let total = ref 0. in
-  Base.list_iter_over_pairs_of_two
+  ListFuns.list_iter_over_pairs_of_two
     (fun p1 p2 ->
       total := !total +.
         ((criterion p1) *. (criterion p2) *.

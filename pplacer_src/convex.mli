@@ -9,8 +9,7 @@
  slightly.
 *)
 
-open Batteries
-open MapsSets
+open Ppatteries
 open Stree
 type color = string
 

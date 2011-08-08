@@ -2,8 +2,7 @@
  *
  *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Stree
 
 exception No_PP
@@ -65,7 +64,7 @@ let compare_placements criterion rp1 rp2 =
   compare (criterion rp1) (criterion rp2)
 
 let sort_placecoll criterion pc =
-  List.sort (fun x y -> - (compare_placements criterion) x y) pc
+  List.sort ~cmp:(compare_placements criterion |> flip) pc
 
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc

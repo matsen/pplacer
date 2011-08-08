@@ -1,7 +1,5 @@
-open Batteries
+open Ppatteries
 open Multiprocessing
-open Fam_batteries
-open MapsSets
 
 exception Finished
 
@@ -92,7 +90,7 @@ let run_file prefs query_fname =
       (match Prefs.refpkg_path prefs with
         | "" ->
             StringMap.add "name"
-              (Base.safe_chop_extension (Prefs.ref_align_fname prefs))
+              (safe_chop_extension (Prefs.ref_align_fname prefs))
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
@@ -359,7 +357,7 @@ let run_file prefs query_fname =
     let fp_check g str =
       let fpc = Glv.fp_classify g in
       if fpc > FP_zero then
-        Printf.printf "%s is a %s\n" str (Base.string_of_fpclass fpc)
+        Printf.printf "%s is a %s\n" str (string_of_fpclass fpc)
     in
     let utilv_nsites = Gsl_vector.create n_sites
     and util_d = Glv.mimic darr.(0)
@@ -431,7 +429,7 @@ let run_file prefs query_fname =
       Fantasy.make_fantasy_matrix
         ~max_strike_box:(int_of_float (Prefs.strike_box prefs))
         ~max_strikes:(Prefs.max_strikes prefs)
-    and fantasy_mod = Base.round (100. *. (Prefs.fantasy_frac prefs))
+    and fantasy_mod = round (100. *. (Prefs.fantasy_frac prefs))
     and n_fantasies = ref 0
     in
     let rec gotfunc = function
@@ -587,11 +585,11 @@ let run_file prefs query_fname =
     if cachefunc x then nextfunc ()
     else x
   in
-  let children =
-    List.map
+  1 -- Prefs.children prefs
+    |> Enum.map
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
-      (Base.range (Prefs.children prefs)) in
-  event_loop children;
+    |> List.of_enum
+    |> event_loop;
   donefunc ();
   if Prefs.timing prefs then begin
     Printf.printf "\ntiming data:\n";

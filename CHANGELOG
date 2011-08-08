@@ -8,6 +8,8 @@
    corner cases.
  * Closed GH-75: Changed mass maps to use records types instead of tuples.
  * Closed GH-78: Added an --average flag to `guppy fat`.
+ * Closed GH-81: Removed old code that was deprecated by batteries; changed
+   most code to be using batteries.
  * Closed GH-82: Merged the `pick` branch into dev.
  * Closed GH-84: Renamed .json to .jplace for new-format placefiles.
  * Closed GH-85: Added better error messages for potential premasking failures.

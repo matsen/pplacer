@@ -1,15 +1,12 @@
-open Batteries
+open Ppatteries
 open Guppy_cmdobjs
 open Subcommand
-open MapsSets
+
 open Tax_id
 open Stree
 
 exception Found_root of stree
 
-let maybe_cons transform = function
-  | None -> identity
-  | Some x -> transform x |> List.cons
 let some x = Some x
 
 let find_root rp gt =
@@ -32,7 +29,7 @@ let find_root rp gt =
     | Leaf _ as n -> raise (Found_root n)
     | Node (_, subtrees) as n ->
       let subrks = List.map (node_mrca &&& some) subtrees
-        |> maybe_cons (None |> (curry identity |> flip)) top_mrca
+        |> maybe_map_cons (None |> (curry identity |> flip)) top_mrca
         |> List.map (Tax_taxonomy.get_tax_rank td |> first)
         |> List.sort
       in
@@ -43,7 +40,7 @@ let find_root rp gt =
         | _, Some node ->
           let top_mrca = List.remove subtrees node
             |> List.map node_mrca
-            |> maybe_cons identity top_mrca
+            |> maybe_cons top_mrca
             |> Tax_taxonomy.list_mrca td
           in
           aux ~top_mrca node

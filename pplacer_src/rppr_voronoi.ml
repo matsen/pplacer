@@ -1,8 +1,6 @@
-open Batteries
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
 
 module I = Mass_map.Indiv
 
@@ -45,7 +43,7 @@ object (self)
       let transform, weighting, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
       and leaf_mass_fract = fv leaf_mass
-      and ch = self#out_channel
+      and ch = self#out_channel |> csv_out_channel |> Csv.to_out_obj
       and verbose = fv verbose in
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp
@@ -129,7 +127,7 @@ object (self)
                              Printf.sprintf "%1.6f" mass])
                 (IntSet.elements leafs)
               in
-              Csv.save_out ch cut;
+              Csv.output_all ch cut;
               aux graph'
             end
       in

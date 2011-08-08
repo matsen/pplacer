@@ -24,7 +24,7 @@
 *)
 
 
-open Fam_batteries
+open Ppatteries
 
 type relation_dist = Parallel of float | Serial of float
 
@@ -47,8 +47,8 @@ let build_pairwise_dist t =
   let u = Uptri.create (Stree.n_edges stree) (Parallel 0.) in
   (* set all pairs of the below with (Parallel distance) *)
   let parallel_set below =
-    Base.list_iter_over_pairs_of_single
-      (Base.list_iter_over_pairs_of_two
+    ListFuns.list_iter_over_pairs_of_single
+      (ListFuns.list_iter_over_pairs_of_two
         (fun (i,di) (j,dj) -> Uptri.set u i j (Parallel (di+.dj))))
       below
   in
@@ -104,8 +104,8 @@ let build_ca_info t =
   and v = Array.make (Stree.n_edges stree) 0. in
   (* set all pairs of the below with (Parallel curr_dist) *)
   let parallel_set below curr_dist =
-    Base.list_iter_over_pairs_of_single
-      (Base.list_iter_over_pairs_of_two
+    ListFuns.list_iter_over_pairs_of_single
+      (ListFuns.list_iter_over_pairs_of_two
         (fun i j -> Uptri.set u i j (Parallel curr_dist)))
       below
   in

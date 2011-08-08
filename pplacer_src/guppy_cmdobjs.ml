@@ -3,7 +3,7 @@
  *)
 
 open Subcommand
-open MapsSets
+open Ppatteries
 
 
 (* *** general objects *** *)
@@ -384,7 +384,7 @@ object (self)
       Visualization.trees_to_file
         self#fmt
         fname
-        (Base.map_and_flatten snd named_trees)
+        (List.map snd named_trees |> List.flatten)
     | Unspecified -> ()
 
 end

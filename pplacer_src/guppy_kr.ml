@@ -1,5 +1,4 @@
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
@@ -45,7 +44,7 @@ let map_shuffled_pres f rng n_shuffles pre1 pre2 =
   and n2 = List.length pre2
   in
   let pquery_sub start len = Array.to_list (Array.sub pre_arr start len) in
-  ListFuns.init
+  List.init
     n_shuffles
     (fun _ ->
       shuffle rng pre_arr;
