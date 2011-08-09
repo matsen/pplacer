@@ -39,6 +39,8 @@
  * Closed GH-117: Added the output of `git describe` to --version output.
  * Closed GH-119: Added a `rppr reroot` subcommand.
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
+ * Closed GH-129: Added the ability for `rppr convexify` to convexify a tree
+   not in a reference package.
 
 
 1.1.alpha08
