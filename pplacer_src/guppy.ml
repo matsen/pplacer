@@ -1,4 +1,4 @@
-let () =
+let () = if !Sys.interactive then () else
   Subcommand.inner_loop
     ~prg_name:"guppy"
     ~version:Version.version
