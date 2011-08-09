@@ -33,8 +33,7 @@ object (self)
       let dist = Voronoi.placement_distance graph ~snipdist
       and best_placement = Pquery.best_place criterion in
       Placerun.get_pqueries pr
-      |> List.map
-        (fun pr -> dist (best_placement pr), pr)
+      |> List.map (best_placement |- dist &&& identity)
       |> List.sort ~cmp:(flip compare)
       |> List.enum
       |> Enum.map
