@@ -151,6 +151,12 @@ object (self)
           Sql.check_exec db "COMMIT";
           Sql.close db
         in
+        Sql.check_exec
+          db
+          ~cb:(fun row _ -> match row with
+            | [| Some "1" |] -> ()
+            | _ -> failwith "run `rppr prep_db` before running `guppy classify`")
+          "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name = 'placement_classifications')";
         Sql.check_exec db "BEGIN TRANSACTION";
         let pn_st = Sqlite3.prepare db
           "INSERT INTO placement_names VALUES (?, ?, ?);"
