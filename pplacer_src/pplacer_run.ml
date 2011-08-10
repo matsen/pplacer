@@ -396,8 +396,8 @@ let run_file prefs query_fname =
     Filename.basename (Filename.chop_extension query_fname) in
   let prior =
     if Prefs.uniform_prior prefs then Core.Uniform_prior
-    else if Prefs.informative_prior prefs then Core.Informative_exp_prior
-      (IntMap.empty)
+    else if Prefs.informative_prior prefs then
+      Core.Informative_exp_prior (Core.exp_prior_map ref_tree)
     else Core.Flat_exp_prior
       (* exponential with mean = average branch length *)
       ((Gtree.tree_length ref_tree) /.

@@ -10,6 +10,23 @@ let max_iter = 200
  * help if changed here. *)
 let final_tolerance = 1e-5
 
+let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
+
+let exp_prior_map t =
+  let bl = Gtree.get_bl t in
+  let rec aux = function
+    | Stree.Leaf i -> IntMap.singleton i (bl i /. 2.), [bl i]
+    | Stree.Node (i, subtrees) ->
+      let map, distances = List.map aux subtrees
+        |> List.reduce (fun (a, b) (c, d) -> IntMap.union a c, List.append b d)
+      in
+      List.map ((+.) (bl i /. 2.)) distances
+        |> avg
+        |> flip (IntMap.add i) map,
+      List.map ((+.) (bl i)) distances
+  in
+  aux t.Gtree.stree |> fst
+
 type prior =
   | Uniform_prior
   | Flat_exp_prior of float
