@@ -12,17 +12,22 @@ let final_tolerance = 1e-5
 
 let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
 
+(* This function returns a map from the internal nodes i to the average distance
+ * from the midpoint of edge i to the leaves below i. *)
 let exp_prior_map t =
   let bl = Gtree.get_bl t in
   let rec aux = function
     | Stree.Leaf i -> IntMap.singleton i (bl i /. 2.), [bl i]
     | Stree.Node (i, subtrees) ->
       let map, distances = List.map aux subtrees
-        |> List.reduce (fun (a, b) (c, d) -> IntMap.union a c, List.append b d)
+        |> List.reduce
+             (fun (m1, l1) (m2, l2) -> IntMap.union m1 m2, List.append l1 l2)
       in
+      (* Add the average distance for i onto the map. *)
       List.map ((+.) (bl i /. 2.)) distances
         |> avg
         |> flip (IntMap.add i) map,
+      (* Increase the collection of distances by the given branch length. *)
       List.map ((+.) (bl i)) distances
   in
   aux t.Gtree.stree |> fst
