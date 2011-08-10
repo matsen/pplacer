@@ -92,7 +92,7 @@ let copy_bls ~src ~dest =
 
 (* write out the likelihood surface, with base_ll discounted. this is what
  * integrate actually integrates, sampled on an integer-plus-half lattice. *)
-let write_like_surf prior_fun max_pend tt fname n_samples =
+let write_like_surf prior max_pend tt fname n_samples =
   let base_ll = log_like tt
   and cut_bl = get_cut_bl tt in
   let dist_incr = cut_bl /. (float_of_int n_samples)
@@ -106,49 +106,50 @@ let write_like_surf prior_fun max_pend tt fname n_samples =
       let pend_bl = pend_incr *. (float_and_half j) in
       set_pend_bl tt pend_bl;
       Printf.fprintf ch "%g\t"
-        ((exp ((log_like tt) -. base_ll)) *. (prior_fun pend_bl));
+        ((exp ((log_like tt) -. base_ll)) *. (prior pend_bl));
     done;
     Printf.fprintf ch "\n";
   done;
   close_out ch
 
-(* find an appropriate upper limit for pendant branch length integration. if we
+(* Find an appropriate upper limit for pendant branch length integration. If we
  * come up with a resonable upper limit then we get better results than
  * integrating out to max_pend.
- * this function uses the current pend branch length and moves right in
+ * This function uses the current pend branch length and moves right in
  * increments of the current branch length, stopping when the ll function drops
  * below 1e-10*orig_ll.
- * note 1: this does change the pend_bl.
- * note 2: this assumes that the likelihood function is monotonic in the pendant
+ * Note 1: this does change the pend_bl.
+ * Note 2: this assumes that the likelihood function is monotonic in the pendant
  * branch length.
  *)
-let find_upper_limit max_pend orig_ll tt =
-  let orig_pend_bl = get_pend_bl tt
-  and min_ll = 1e-10 *. orig_ll
+let find_upper_limit max_pend prior orig_ll tt =
+  let log_prior x = log (prior x)
+  and orig_pend_bl = get_pend_bl tt
   in
+  let log_cutoff = -10. +. orig_ll +. (log_prior orig_pend_bl) in
   let rec aux next_pend_bl =
     set_pend_bl tt next_pend_bl;
-    if min_ll > log_like tt then get_pend_bl tt
+    if log_cutoff > (log_like tt) +. (log_prior next_pend_bl) then get_pend_bl tt
     else if next_pend_bl > max_pend then max_pend
     else aux (orig_pend_bl +. next_pend_bl)
   in
   aux (get_pend_bl tt)
 
-(* the idea here is to properly integrate log likelihood functions by removing
+(* The idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
  * underflow problems.
- * we use the original branch lengths in tt give us a baseLL.
- * this calculates then
+ * We use the original branch lengths in tt to get a baseLL.
+ * This calculates then
  * baseLL + \log ( cut_bl^{-1} \int \int \exp(llF - baseLL) * prior(x) dx dy )
  * Note: modifies the branch lengths in tt!
 *)
-let calc_marg_prob prior_fun rel_err max_pend tt =
+let calc_marg_prob prior rel_err max_pend tt =
   let abs_err = 0. in (* do not specify an absolute error *)
   (* first calculate a base_ll. we use the given base_pend and the midpoint of
    * the edge *)
   let base_ll = log_like tt
   and cut_bl = get_cut_bl tt in
-  let upper_limit = find_upper_limit max_pend base_ll tt in
+  let upper_limit = find_upper_limit max_pend prior base_ll tt in
   try
     base_ll +.
       log
@@ -159,7 +160,7 @@ let calc_marg_prob prior_fun rel_err max_pend tt =
               (fun pend_bl ->
                 set_pend_bl tt pend_bl;
                 (exp ((log_like tt) -. base_ll))
-                  *. (prior_fun pend_bl))
+                  *. (prior pend_bl))
               0. upper_limit ~abs_err ~rel_err)
           0. cut_bl ~abs_err ~rel_err)
         /. cut_bl)
