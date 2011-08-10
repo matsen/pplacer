@@ -10,7 +10,11 @@ let max_iter = 200
  * help if changed here. *)
 let final_tolerance = 1e-5
 
-type prior = Uniform_prior | Exponential_prior of float
+type prior =
+  | Uniform_prior
+  | Flat_exp_prior of float
+  | Informative_exp_prior of float IntMap.t
+
 type result =
   | Fantasy of (int * (float * float * float)) list
   | Pquery of Pquery.pquery
@@ -38,11 +42,13 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
   let seq_type = Model.seq_type model
+  (* the prior function takes an edge number and a pendant BL *)
   and prior_fun =
     match prior with
-      | Uniform_prior -> (fun _ -> 1.)
-      | Exponential_prior mean ->
-        fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
+      | Uniform_prior -> (fun _ _ -> 1.)
+      | Flat_exp_prior mean -> fun _ -> Gsl_randist.exponential_pdf ~mu:mean
+      | Informative_exp_prior mean_map ->
+        fun id -> Gsl_randist.exponential_pdf ~mu:(IntMap.find id mean_map)
   and ref_length = Alignment.length ref_align in
   let utilv_nsites = Gsl_vector.create ref_length in
   (* set up the number of pitches and strikes according to the prefs *)
@@ -286,7 +292,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
               (fun placement ->
                 tt_edges_from_placement placement;
                 Three_tax.calc_marg_prob
-                  prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
+                  (prior_fun (Placement.location placement))
+                  (pp_rel_err prefs)
+                  (max_pend prefs)
+                  tt)
               sorted_ml_placements
           in
           (* add pp *)
