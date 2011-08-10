@@ -30,7 +30,7 @@ object (self)
         let gt = Placerun.get_ref_tree pr
         and mass = indiv_of pr in
         let partial_total id = Kr_distance.total_along_edge
-          (fun r -> 1. -. 2. *. !r)
+          (fun r -> abs_float (1. -. 2. *. !r))
           (Gtree.get_bl gt id)
           (IntMap.get id [] mass |> List.map I.to_pair |> List.sort)
           merge
