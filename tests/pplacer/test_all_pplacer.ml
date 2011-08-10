@@ -8,4 +8,5 @@ let suite = [
   "convex" >::: Test_convex.suite;
   "like" >::: Test_like.suite;
   "rerooting" >::: Test_rerooting.suite;
+  "exp_priors" >::: Test_exp_priors.suite;
 ]

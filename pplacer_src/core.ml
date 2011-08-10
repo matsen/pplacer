@@ -21,16 +21,17 @@ let exp_prior_map t =
     | Stree.Node (i, subtrees) ->
       let map, distances = List.map aux subtrees
         |> List.reduce
-             (fun (m1, l1) (m2, l2) -> IntMap.union m1 m2, List.append l1 l2)
+            (fun (m1, l1) (m2, l2) -> IntMap.union m1 m2, List.append l1 l2)
       in
       (* Add the average distance for i onto the map. *)
-      List.map ((+.) (bl i /. 2.)) distances
+      distances
+        |> List.map ((+.) (bl i /. 2.))
         |> avg
         |> flip (IntMap.add i) map,
       (* Increase the collection of distances by the given branch length. *)
       List.map ((+.) (bl i)) distances
   in
-  aux t.Gtree.stree |> fst
+  aux t.Gtree.stree |> fst |> IntMap.remove (Gtree.top_id t)
 
 type prior =
   | Uniform_prior
