@@ -7,6 +7,8 @@
    implementation of the convexify algorithm, as it cut too many leaves in some
    corner cases.
  * Closed GH-75: Changed mass maps to use records types instead of tuples.
+ * Closed GH-76: Added a check in `guppy classify` to ensure that the sqlite
+   database has been properly initialized.
  * Closed GH-78: Added an --average flag to `guppy fat`.
  * Closed GH-81: Removed old code that was deprecated by batteries; changed
    most code to be using batteries.
@@ -22,6 +24,7 @@
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
+ * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
  * Closed GH-98: Adding a --map-identity flag to pplacer.
  * Closed GH-99: Added more examples for guppy batchfiles.
  * Closed GH-101: Added virtual placefiles to guppy batchfiles.
@@ -40,6 +43,7 @@
  * Closed GH-119: Added a `rppr reroot` subcommand.
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
  * Closed GH-122: Renamed `rppr taxtable` to `rppr prep_db`.
+ * Closed GH-125: Added a --rooted flag to `rppr convexify`.
  * Closed GH-129: Added the ability for `rppr convexify` to convexify a tree
    not in a reference package.
 
