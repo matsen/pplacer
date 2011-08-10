@@ -56,6 +56,8 @@ object (self)
     (Plain (false, "Don't terminate early when convexifying."))
   val limit_ranks = flag "--limit-rank"
     (Plain ([], "If specified, only convexify at the given ranks. Ranks are given as a comma-delimited list of names."))
+  val strict = flag "--rooted"
+    (Plain (false, "Strictly evaluate convexity; ensure that each color sits in its own rooted subtree."))
   val input_tree = flag "--tree"
     (Needs_argument ("input tree", "A tree file in newick format to work on in place of a reference package."))
   val input_colors = flag "--colors"
@@ -71,6 +73,7 @@ object (self)
     string_flag timing;
     toggle_flag no_early;
     string_list_flag limit_ranks;
+    toggle_flag strict;
     string_flag input_tree;
     string_flag input_colors;
   ] @ super_refpkg#specl
@@ -228,7 +231,11 @@ object (self)
               not_cut, IntSet.cardinal not_cut, delta
             else
               let start = Sys.time () in
-              let phi, omega = solve ?nu_f (colormap, st) in
+              let phi, omega = solve
+                ~strict:(fv strict)
+                ?nu_f
+                (colormap, st)
+              in
               let delta = (Sys.time ()) -. start in
               nodeset_of_phi_and_tree phi st, omega, delta
           in
@@ -300,7 +307,7 @@ object (self)
           let not_cut = Naive.solve (colormap, st) in
           not_cut, IntSet.cardinal not_cut
         else
-          let phi, omega = solve ?nu_f (colormap, st) in
+          let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st) in
           nodeset_of_phi_and_tree phi st, omega
       in
       Printf.printf "solved omega: %d\n" omega;
