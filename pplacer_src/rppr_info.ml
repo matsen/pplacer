@@ -1,6 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
+open Ppatteries
 open Convex
 
 class cmd () =
@@ -15,14 +15,14 @@ object (self)
   method usage = "usage: check_refpkg -c my.refpkg"
 
   method action _ =
-    let ch = self#out_channel
+    let ch = self#out_channel |> csv_out_channel |> Csv.to_out_obj
     and rp = self#get_rp in
     let gt = Refpkg.get_ref_tree rp
     and td = Refpkg.get_taxonomy rp in
     let st = gt.Gtree.stree in
-    Csv.save_out
+    Csv.output_record
       ch
-      [["rank"; "n_taxids"; "n_nonconvex"; "max_bad"; "tot_bad"]];
+      ["rank"; "n_taxids"; "n_nonconvex"; "max_bad"; "tot_bad"];
     IntMap.iter
       (fun rank taxmap ->
         let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
@@ -36,7 +36,7 @@ object (self)
           cutsetim
           (ColorSet.empty, ColorSet.empty)
         and max_bad, tot_bad = badness cutsetim in
-        Csv.save_out
+        Csv.output_all
           ch
           [(Tax_taxonomy.get_rank_name td rank) ::
               (List.map

@@ -1,3 +1,5 @@
+open Ppatteries
+
 type token =
   | Name of string
   | Sequence of string
@@ -23,12 +25,12 @@ let fasta_regexp = Str.regexp begin
 end
 
 let token_of_match s =
-  match Base.first_match [2; 4] s with
+  match Sparse.first_match [2; 4] s with
     | 2, _ -> Name (Str.matched_group 3 s)
     | 4, s -> Sequence s
     | _, _ -> invalid_arg "token_of_match"
 
-let tokenize_fasta = Base.tokenize_string fasta_regexp token_of_match
+let tokenize_fasta = Sparse.tokenize_string fasta_regexp token_of_match
 
 exception Parse_error of string
 
@@ -38,7 +40,7 @@ type phase =
 
 let parse tokens =
   let combine res name seql = (name, String.concat "" (List.rev seql)) :: res in
-  let res = List.fold_left
+  let res = Enum.fold
     (fun state tok ->
       match state, tok with
         | Beginning, Name n -> Accumulating ([], n, [])
@@ -55,10 +57,4 @@ let parse tokens =
     | Accumulating (res, name, seql) -> List.rev (combine res name seql)
     | Beginning -> []
 
-let of_string s =
-  parse (tokenize_fasta s)
-
-let of_file fname =
-  let lines = File_parsing.string_list_of_file fname in
-  let tokens = Base.map_and_flatten tokenize_fasta lines in
-  parse tokens
+let of_string, of_file = Sparse.gen_parsers tokenize_fasta parse

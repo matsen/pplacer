@@ -1,5 +1,4 @@
-open Batteries
-open MapsSets
+open Ppatteries
 open Stree
 
 type color = string
@@ -98,7 +97,7 @@ let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all
   (List.map
      (fun (x, y) -> CS.inter x y)
-     (Base.list_pairs_of_single colors))
+     (ListFuns.list_pairs_of_single colors))
 
 let build_sizemim_and_cutsetim (colors, tree) =
   (* Building an internal_node -> szm, color_below map. *)

@@ -1,8 +1,9 @@
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
-open MapsSets
-open Fam_batteries
+let save_named_fal fname fal =
+  Csv.save fname (Guppy_splitify.fal_to_strll fal)
 
 class cmd () =
 object (self)
@@ -69,15 +70,15 @@ object (self)
           (Some (string_of_float eval),
           super_heat#heat_tree_of_float_arr t evect))
         combol);
-    Guppy_splitify.save_named_fal
+    save_named_fal
       (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
-    Guppy_splitify.save_named_fal
+    save_named_fal
       (prefix^".trans")
       (List.combine
         names
         (List.map (fun d -> Array.map (Pca.dot d) evect) data));
-    Guppy_splitify.save_named_fal
+    save_named_fal
       (prefix^".edgediff")
       (List.combine names data);
     ()

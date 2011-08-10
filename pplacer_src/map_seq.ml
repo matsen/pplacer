@@ -1,9 +1,7 @@
 (* For calculating Maximum A Posteriori sequences for internal locations on the
  * tree. For us, these internal locations will be mrcams. *)
 
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Tax_id
 
 (* Given

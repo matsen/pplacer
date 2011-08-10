@@ -2,21 +2,21 @@ open OUnit
 open Test_util
 
 open Convex
-open MapsSets
+open Ppatteries
 
 let suite = List.map
   (fun (s, omega) ->
     let gt = Newick_gtree.of_string s in
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
-    let colors = MapsSets.IntMap.fold
+    let colors = IntMap.fold
       (fun key value map ->
         try
           let name = value#get_name in
-          MapsSets.IntMap.add key name map
+          IntMap.add key name map
         with Newick_bark.No_name -> map)
       bm
-      MapsSets.IntMap.empty
+      IntMap.empty
     in
     let naive_nodes = Naive.solve (colors, st) in
     let _, early_omega = solve ~nu_f:apart_nu (colors, st)

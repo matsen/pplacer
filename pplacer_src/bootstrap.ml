@@ -1,4 +1,4 @@
-open Fam_batteries
+open Ppatteries
 
 (* bootstrap a list, with an option to modify the elements of the list through f
  * # boot_list (fun i x -> i+100*x) [1;2;3;4;5;6];;

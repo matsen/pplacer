@@ -1,3 +1,4 @@
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
@@ -19,13 +20,11 @@ object (self)
 
   method private placefile_action = function
     | [pr] ->
-      let lines = File_parsing.string_list_of_file (fv dupfile) in
       let sequence_tbl = Hashtbl.create 1024 in
-      List.iter
-        (fun line ->
-          let sequences = Str.split white_regexp line in
-          Hashtbl.add sequence_tbl (List.hd sequences) sequences)
-        lines;
+      fv dupfile
+        |> File.lines_of
+        |> Enum.map (Str.split white_regexp |- (List.hd &&& identity))
+        |> Enum.iter (Hashtbl.add sequence_tbl |> uncurry);
       self#write_placefile
         "guppy to_json"
         (self#single_file ())

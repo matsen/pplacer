@@ -1,3 +1,5 @@
+open Ppatteries
+
 type sline =
   | Header
   | Footer
@@ -23,14 +25,14 @@ let stockholm_regexp = Str.regexp begin
 end
 
 let sline_of_match s =
-  match Base.first_match [2; 3; 4; 5] s with
+  match Sparse.first_match [2; 3; 4; 5] s with
     | 2, _ -> Header
     | 3, _ -> Footer
     | 4, s -> Markup s
     | 5, _ -> Alignment (Str.matched_group 6 s, Str.matched_group 7 s)
     | _, _ -> invalid_arg "sline_of_match"
 
-let tokenize_stockholm = Base.tokenize_string stockholm_regexp sline_of_match
+let tokenize_stockholm = Sparse.tokenize_string stockholm_regexp sline_of_match
 
 exception Parse_error of string
 
@@ -42,7 +44,7 @@ type phase =
 
 let gap_regexp = Str.regexp "\\."
 let parse tokens =
-  let res = List.fold_left
+  let res = Enum.fold
     (fun state tok ->
       match state, tok with
         | Needs_header, Header -> Needs_footer SM.empty
@@ -78,10 +80,4 @@ let parse tokens =
     | Found_footer l -> l
     | _ -> raise (Parse_error "didn't reach footer by EOF")
 
-let of_string s =
-  parse (tokenize_stockholm s)
-
-let of_file fname =
-  let lines = File_parsing.string_list_of_file fname in
-  let tokens = Base.map_and_flatten tokenize_stockholm lines in
-  parse tokens
+let of_string, of_file = Sparse.gen_parsers tokenize_stockholm parse

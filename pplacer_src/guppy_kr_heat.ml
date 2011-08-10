@@ -1,7 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 (* Make a map with the amount of transport along each edge. *)
 let transport_map transform t pre1 pre2 =
@@ -15,7 +14,7 @@ let transport_map transform t pre1 pre2 =
   let sum_over_krs_of_id id =
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
-      (Base.get_from_list_intmap id kr_map)
+      (IntMap.get id [] kr_map)
   in
   let heat_list =
     Stree.recur_listly

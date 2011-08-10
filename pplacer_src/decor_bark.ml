@@ -1,8 +1,7 @@
 (* bark for trees that have newick + a list of Decor decorations.
 *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 
 class decor_bark arg =
@@ -29,7 +28,7 @@ class decor_bark arg =
 
     method to_xml =
       super#to_xml
-      @ List.flatten (List.map Decor.to_xml (List.sort compare decor))
+      @ List.flatten (List.map Decor.to_xml (List.sort decor))
 
     method append_decor decor_list =
       {< decor = decor @ decor_list >}
@@ -38,11 +37,11 @@ class decor_bark arg =
 
 let compare b1 b2 =
   try
-    Base.raise_if_different Newick_bark.compare b1 b2;
-    Base.raise_if_different compare b1#get_decor b2#get_decor;
+    raise_if_different Newick_bark.compare b1 b2;
+    raise_if_different compare b1#get_decor b2#get_decor;
     0
   with
-  | Base.Different c -> c
+  | Different c -> c
 
 let of_newick_bark nb = new decor_bark (`Of_newick_bark nb)
 let to_newick_bark db =

@@ -2,7 +2,7 @@ open Batteries
 open OUnit
 open Test_util
 open Voronoi
-open MapsSets
+open Ppatteries
 
 module I = Mass_map.Indiv
 module XXX = Rppr_voronoi

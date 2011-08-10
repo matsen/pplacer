@@ -2,7 +2,7 @@
  * numberings in their internal nodes, where the bootstrap values go.
  *)
 
-open MapsSets
+open Ppatteries
 
 module StringSetSet =
   Set.Make(struct type t = StringSet.t let compare = StringSet.compare end)

@@ -1,7 +1,6 @@
 (* generate reStructuredText *)
 
-open Batteries
-open Fam_batteries
+open Ppatteries
 
 let underline_levels = StringFuns.to_char_array "=-~`'\""
 

@@ -1,7 +1,6 @@
 (* routines for doing sanity checks *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 exception Duplicate_name of string
 

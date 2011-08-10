@@ -1,8 +1,7 @@
 (* Calculating the barycenter of a mass distribution on a tree.
 *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 open Mass_map
 
 (* masses *)

@@ -1,8 +1,7 @@
 (* routines for gtrees which have a Decor bark map.
 *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 type t = Decor_bark.decor_bark Gtree.gtree
 

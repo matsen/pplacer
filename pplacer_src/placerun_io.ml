@@ -1,5 +1,4 @@
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 let compatible_versions = [ "v0.3"; "v1.0"; "v1.1"; ]
 
@@ -37,7 +36,7 @@ let to_legacy_file invocation out_fname placerun =
   and ref_tree = Placerun.get_ref_tree placerun
   in
   Printf.fprintf ch "# pplacer %s run, %s\n"
-    Version.version (Base.date_time_str ());
+    Version.version (date_time_str ());
   Printf.fprintf ch "# invocation: %s\n" invocation;
   Printf.fprintf ch "%s\n" output_fmt_str;
   if not (Stree.multifurcating_at_root (Gtree.get_stree ref_tree)) then
@@ -127,7 +126,7 @@ let rt_of_header hlines =
 *)
 let of_file ?load_seq:(load_seq=true) place_fname =
   let fastaname_rex = Str.regexp "^>"
-  and ch = open_in place_fname
+  and ch = Legacy.open_in place_fname
   in
   let next_batch () =
     File_parsing.read_lines_until ch fastaname_rex

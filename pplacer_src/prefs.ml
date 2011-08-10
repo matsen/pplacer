@@ -231,28 +231,6 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Write out the version number and exit.";
   ]
 
-(* include a pref here if it should go in the place file *)
-let titled_typed_prefs p =
-  [
-    MutString p.tree_fname,       "reference tree file"         ;
-    MutString p.ref_align_fname,  "reference alignment file"    ;
-    MutString p.stats_fname,      "statistics file"             ;
-    MutString p.ref_dir,          "reference data directory"    ;
-    MutString p.model_name,       "substitution model"          ;
-    MutBool p.emperical_freqs,    "use emperical frequencies"   ;
-    MutInt p.gamma_n_cat,         "number of gamma categories"  ;
-    MutFloat p.gamma_alpha,       "gamma alpha"                 ;
-    MutInt p.max_strikes,         "max number of strikes"       ;
-    MutFloat p.strike_box,        "strike box"                  ;
-    MutInt p.max_pitches,         "max number of pitches"       ;
-    MutBool p.calc_pp,            "calculate PP"                ;
-    MutBool p.uniform_prior,      "uniform prior"               ;
-    MutFloat p.start_pend,        "starting pendant length"     ;
-    MutFloat p.max_pend,          "maximal pendant length"      ;
-    MutFloat p.initial_tolerance, "ML tolerance"                ;
-    MutFloat p.pp_rel_err,        "relative error for PP"       ;
-  ]
-
 (* do a sanity check on the preferences *)
 let check p =
   if start_pend p <= 0. then

@@ -1,7 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 let sing_tree weighting criterion mass_width ref_tree pquery =
   let pqname = String.concat "_" pquery.Pquery.namel in
@@ -10,7 +9,7 @@ let sing_tree weighting criterion mass_width ref_tree pquery =
     Gtree.add_subtrees_by_map
       ref_tree
       (IntMap.of_pairlist_listly
-        (ListFuns.mapi
+        (List.mapi
           (fun num p ->
             let mass = criterion p in
             (Placement.location p,
