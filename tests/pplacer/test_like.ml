@@ -11,7 +11,7 @@ type like_test_info = {
 
 let like_test info () =
   let d str = (info.dir_name^str) in
-  let aln = Alignment_funs.upper_aln_of_any_file (d info.fasta_fname)
+  let aln = Alignment.upper_aln_of_any_file (d info.fasta_fname)
   and tree = Newick_gtree.of_file (d info.tree_fname)
   in
   let model = Model.of_json (d "phylo_model.jplace") aln

@@ -32,7 +32,7 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
       match opt_transitions with
       | Some transitions ->
           (Nuc_models.b_of_trans_vector transitions,
-          Alignment_funs.emper_freq 4 Nuc_models.nuc_map ref_align)
+          Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
       | None -> failwith "GTR specified but no substitution rates given.")
     else
       (Alignment.Protein_seq,
@@ -40,7 +40,7 @@ let build model_name emperical_freqs opt_transitions ref_align rates =
           Prot_models.trans_and_statd_of_model_name model_name in
         (model_trans,
           if emperical_freqs then
-            Alignment_funs.emper_freq 20 Prot_models.prot_map ref_align
+            Alignment.emper_freq 20 Prot_models.prot_map ref_align
           else
             model_statd))
   in
@@ -62,7 +62,7 @@ let of_prefs ref_dir_complete prefs ref_align =
       None
   | _ -> Parse_stats.parse_stats ref_dir_complete prefs
   in
-  if Alignment_funs.is_nuc_align ref_align && (Prefs.model_name prefs) <> "GTR" then
+  if Alignment.is_nuc_align ref_align && (Prefs.model_name prefs) <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
   build
     (Prefs.model_name prefs)
@@ -75,7 +75,7 @@ let of_prefs ref_dir_complete prefs ref_align =
 let of_json json_fname ref_align =
   let o = Simple_json.of_file json_fname in
   let model_name = (Simple_json.find_string o "subs_model") in
-  if Alignment_funs.is_nuc_align ref_align && model_name <> "GTR" then
+  if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
   if "gamma" <> Simple_json.find_string o "ras_model" then
     failwith "For the time being, we only support gamma rates-across-sites model.";

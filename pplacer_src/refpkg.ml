@@ -87,7 +87,7 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     lazy
       (match ref_align with
       | Some a -> a
-      | None -> Alignment_funs.upper_aln_of_any_file (get "aln_fasta"))
+      | None -> Alignment.upper_aln_of_any_file (get "aln_fasta"))
   in
   let lref_tree =
     lazy

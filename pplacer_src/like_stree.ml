@@ -11,10 +11,10 @@ let min_allowed_twoexp = -50
 (* make a map which goes from node number to the associated likelihood vector
  * for each named node (generally these are assumed to be the leaves) *)
 let like_aln_map_of_data seq_type align tree =
-  let like_aln = Alignment_funs.like_aln_of_align seq_type align in
+  let like_aln = Alignment.like_aln_of_align seq_type align in
   IntMap.map
     (Array.get like_aln)
-    (Alignment_funs.makeAlnIndexMap
+    (Alignment.make_aln_index_map
       (Bark_map.to_name_map (Gtree.get_bark_map tree))
       (Array.map fst align))
 

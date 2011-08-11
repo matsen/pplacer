@@ -131,7 +131,7 @@ let run_file prefs query_fname =
   let ref_name_set = StringSet.of_list ref_name_list in
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
-  let seq_list = Alignment_funs.upper_list_of_any_file query_fname in
+  let seq_list = Alignment.upper_list_of_any_file query_fname in
   let ref_list, query_list =
     List.partition
       (fun (name,_) -> StringSet.mem name ref_name_set)
@@ -500,7 +500,7 @@ let run_file prefs query_fname =
             mrcam
             (ref_tree.Gtree.stree)
           in
-          let identity = Alignment_funs.identity (Pquery.seq pq) in
+          let identity = Alignment.identity (Pquery.seq pq) in
           let placements' = IntMap.fold
             (fun mrca pl accum ->
               List.fold_left

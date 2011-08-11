@@ -77,7 +77,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let informative c = c <> '?' && c <> '-' in
     let mask_arr = Array.map informative query_arr in
     let masked_query_arr =
-      Alignment.array_filteri (fun _ c -> informative c) query_arr in
+      Array.filteri (fun _ c -> informative c) query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
     let first_informative = ArrayFuns.first informative query_arr
