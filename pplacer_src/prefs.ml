@@ -163,7 +163,11 @@ let specl prefs =
 "Supply a phyml stats.txt or a RAxML info file giving the model parameters.";
 "-d", Arg.Set_string prefs.ref_dir,
 "Specify the directory containing the reference information.";
-"-p", Arg.Set prefs.calc_pp,
+"-p", Arg.Unit (fun () ->
+  prefs.calc_pp := true;
+  prefs.keep_at_most := 20;
+  prefs.keep_factor := 0.001;
+  prefs.max_strikes := 20),
 "Calculate posterior probabilities.";
 "-m", Arg.Set_string prefs.model_name,
 "Substitution model. Protein: are LG, WAG, or JTT. Nucleotides: GTR.";
