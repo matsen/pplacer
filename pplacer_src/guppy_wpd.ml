@@ -2,10 +2,11 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
-module I = Mass_map.Indiv
-
-let merge a x = a := x +. !a
-let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
+let wpd_of_placerun indiv_of pr =
+  Guppy_pd.total_along_mass
+    (Placerun.get_ref_tree pr)
+    (indiv_of pr)
+    (fun r -> 2. *. (min !r (1. -. !r)))
 
 class cmd () =
 object (self)
@@ -24,14 +25,11 @@ object (self)
 
   method private placefile_action prl =
     let transform, weighting, criterion = self#mass_opts in
-    let indiv_of = I.of_placerun transform weighting criterion in
+    let indiv_of = Mass_map.Indiv.of_placerun transform weighting criterion in
+    let wpd = wpd_of_placerun indiv_of in
     List.iter
       (fun pr ->
-        Guppy_pd.total_along_mass
-          (Placerun.get_ref_tree pr)
-          (indiv_of pr)
-          (fun r -> 1. -. 2. *. !r)
-        |> Printf.printf "%s: %g\n" (Placerun.get_name pr))
+        wpd pr |> Printf.printf "%s: %g\n" (Placerun.get_name pr))
       prl
 
 end
