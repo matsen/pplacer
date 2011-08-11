@@ -124,9 +124,9 @@ let ( =|| ) = mat_approx_equal
 let ( =@ ) = farr_approx_equal
 let ( =@@ ) = farrarr_approx_equal
 
-let check_map_approx_equal = Enum.iter2
+let check_map_approx_equal message = Enum.iter2
   (fun (k1, v1) (k2, v2) ->
-    (Printf.sprintf "unequal (%d and %d)" k1 k2)
+    (Printf.sprintf message k1 k2)
     @? (k1 = k2 && approx_equal v1 v2))
 
 (* *** random stuff *** *)

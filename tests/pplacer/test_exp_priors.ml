@@ -14,6 +14,7 @@ let suite = [
       |> Core.midpoint_leaf_dist_map
     in
     check_map_approx_equal
+      "unequal (%d and %d)"
       (IntMap.enum prior_map)
       (List.enum [
         0, 1.;
