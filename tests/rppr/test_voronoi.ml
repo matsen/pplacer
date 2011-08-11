@@ -1,9 +1,11 @@
+open Batteries
 open OUnit
 open Test_util
 open Voronoi
 open Ppatteries
 
 module I = Mass_map.Indiv
+module XXX = Rppr_voronoi
 
 let test_suite_of_gtree_and_expected (gt_string, distr) =
   let gt = Newick_gtree.of_string gt_string in
@@ -30,8 +32,16 @@ let test_suite_of_gtree_and_expected (gt_string, distr) =
     ldistl
     distr
 
-let test_v = of_gtree
-  (Newick_gtree.of_string "(x:.3,(x:.1,(x:.4,x:.5):.1):.4)")
+let test_gt = Newick_gtree.of_string "(x:.3,(x:.1,(x:.4,x:.5):.1):.4):0."
+let test_v = of_gtree test_gt
+let test_indiv = IntMap.map
+  (List.map I.of_pair)
+  (IntMap.of_pairlist [
+    3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
+    5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
+    4, [0.0, 8.0; 0.05, 9.0];
+    2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
+  ])
 
 let snipl_equal l1 l2 =
   List.for_all2
@@ -101,17 +111,7 @@ let suite = [
       (fun () -> distribute_mass
         test_v
         (IntMap.singleton 4 [{I.distal_bl = 0.5; I.mass = 0.0}]));
-    let got_massdist = distribute_mass
-      test_v
-      (IntMap.map
-         (List.map I.of_pair)
-         (IntMap.of_pairlist [
-           3, [0.0, 1.0; 0.25, 2.0; 0.35, 3.0; 0.4, 4.0];
-           5, [0.0, 5.0; 0.3, 6.0; 0.35, 7.0];
-           4, [0.0, 8.0; 0.05, 9.0];
-           2, [0.0, 10.0; 0.3, 11.0; 0.35, 12.0];
-         ]))
-    in
+    let got_massdist = distribute_mass test_v test_indiv in
     List.iter
       (fun (leaf, masslist) ->
         (Printf.sprintf "unexpected mass distribution for leaf %d" leaf) @?
@@ -126,6 +126,53 @@ let suite = [
         3, [1.; 2.; 3.];
       ]
   end;
+
+  "test_kr_voronoi" >:: begin fun () ->
+    let pr = Test_util.placeruns_of_dir "simple"
+      |> List.find (Placerun.get_name |- (=) "test1")
+    in
+    let indiv = I.of_placerun
+      Mass_map.unit_transform
+      Mass_map.Weighted
+      Placement.ml_ratio
+      pr
+    and gt = Placerun.get_ref_tree pr in
+    let v = of_gtree gt in
+    let check_maps = Enum.iter2
+      (fun (k1, v1) (k2, v2) ->
+        (Printf.sprintf "unequal (%d and %d)" k1 k2)
+        @? (k1 = k2 && approx_equal v1 v2))
+    and update_score = Rppr_voronoi.update_score ~gt ~p_exp:1.
+    and indiv_map = partition_indiv_on_leaves v indiv in
+    let score_map = IntSet.enum v.all_leaves
+      |> (update_score indiv_map |> flip |> flip Enum.fold IntMap.empty)
+    in
+    check_maps
+      (IntMap.enum score_map)
+      (List.enum [
+        0, 0.5;
+        1, 1.;
+        3, 0.;
+        4, 0.;
+      ]);
+    let v', updated = uncolor_leaf v 1 in
+    let indiv_map' = partition_indiv_on_leaves v' indiv in
+    let score_map' = IntSet.remove 1 updated
+      |> IntSet.enum
+      |> (update_score indiv_map'
+          |> flip
+          |> flip Enum.fold (IntMap.remove 1 score_map))
+    in
+    check_maps
+      (IntMap.enum score_map')
+      (List.enum [
+        0, 5.;
+        3, 0.;
+        4, 0.;
+      ]);
+
+  end
+
 ]
 
 let suite = suite @

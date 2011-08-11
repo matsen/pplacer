@@ -83,6 +83,16 @@ let recur f_node f_leaf tree =
  * leaves. *)
 let recur_listly f = recur f (fun id -> f id [])
 
+let find target tree =
+  let rec aux = function
+    | (Leaf i as x) :: _
+    | (Node (i, _) as x) :: _ when i = target -> x
+    | Leaf _ :: rest -> aux rest
+    | Node (_, subtrees) :: rest -> List.append subtrees rest |> aux
+    | [] -> raise Not_found
+  in
+  aux [tree]
+
 let parent_map t =
   let maybe_add accum i = function
     | Some p -> IntMap.add i p accum

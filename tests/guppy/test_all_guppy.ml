@@ -8,4 +8,5 @@ let suite = [
   "edge_rdist" >::: Test_edge_rdist.suite;
   "edpl" >::: Test_edpl.suite;
   "gaussian" >::: Test_gaussian.suite;
+  "pd" >::: Test_pd.suite;
 ]

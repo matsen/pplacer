@@ -1,44 +1,60 @@
+open Subcommand
+open Guppy_cmdobjs
+open Ppatteries
 
-module Prefs = struct
-  type mokaphy_prefs =
-    {
-      use_pp: bool ref;
-      out_fname: string ref;
-      normalized: bool ref;
-    }
+let merge a x = a := x +. !a
+let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
 
-  let use_pp            p = !(p.use_pp)
-  let out_fname         p = !(p.out_fname)
-  let normalized        p = !(p.normalized)
+module I = Mass_map.Indiv
 
-  let defaults () =
-    {
-      use_pp = ref false;
-      out_fname = ref "";
-      normalized = ref false;
-    }
-
-  (* arguments *)
-  let specl_of_prefs prefs = [
-    "-o", Arg.Set_string prefs.out_fname,
-    "Set the filename to write to. Otherwise write to stdout.";
-    "-p", Arg.Set prefs.use_pp,
-    "Use posterior probability.";
-    "--normalized", Arg.Set prefs.normalized,
-    "Divide by total tree length.";
-    ]
-end
-
-
-let pd prefs prl =
-  let pd_cmd =
-    if Prefs.normalized prefs then Pd.normalized_of_pr
-    else Pd.of_pr
+let pd_of_placerun indiv_of normalized pr =
+  let gt = Placerun.get_ref_tree pr
+  and mass = indiv_of pr in
+  let total_mass = I.total_mass mass in
+  let partial_total id = Kr_distance.total_along_edge
+    (* When we're passing along the induced tree, the mass will be on the range
+     * (0, total_mass), and the branch length multiplier should be 1. Otherwise,
+     * we're either before or after the induced tree and the multiplier should
+     * be 0. *)
+    (fun r -> if !r = 0. || approx_equal !r total_mass then 0. else 1.)
+    (Gtree.get_bl gt id)
+    (IntMap.get id [] mass |> List.map I.to_pair |> List.sort)
+    merge
   in
-  Mokaphy_common.wrap_output
-    (Prefs.out_fname prefs)
-    (Mokaphy_common.write_unary
-      (pd_cmd (Mokaphy_common.criterion_of_bool (Prefs.use_pp prefs)))
-      prl)
+  Kr_distance.total_over_tree
+    partial_total
+    (const ())
+    lmerge
+    (fun () -> ref 0.)
+    gt
+  |> (if not normalized then identity
+    else fun pd -> pd /. (Gtree.tree_length gt))
 
+class cmd () =
+object (self)
+  inherit subcommand () as super
+  inherit mass_cmd () as super_mass
+  inherit placefile_cmd () as super_placefile
+  inherit output_cmd () as super_output
 
+  val normalized = flag "--normalized"
+    (Plain (false, "Divide by total tree length."))
+
+  method specl =
+    super_mass#specl
+  @ super_output#specl
+  @ [toggle_flag normalized]
+
+  method desc = "calculate phylogenetic diversity"
+  method usage = "usage: pd [options] placefile[s]"
+
+  method private placefile_action prl =
+    let transform, weighting, criterion = self#mass_opts in
+    let indiv_of = I.of_placerun transform weighting criterion in
+    let pd = pd_of_placerun indiv_of (fv normalized) in
+    List.iter
+      (fun pr ->
+        pd pr |> Printf.printf "%s: %g\n" (Placerun.get_name pr))
+      prl
+
+end
