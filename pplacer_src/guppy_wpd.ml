@@ -27,20 +27,10 @@ object (self)
     let indiv_of = I.of_placerun transform weighting criterion in
     List.iter
       (fun pr ->
-        let gt = Placerun.get_ref_tree pr
-        and mass = indiv_of pr in
-        let partial_total id = Kr_distance.total_along_edge
+        Guppy_pd.total_along_mass
+          (Placerun.get_ref_tree pr)
+          (indiv_of pr)
           (fun r -> 1. -. 2. *. !r)
-          (Gtree.get_bl gt id)
-          (IntMap.get id [] mass |> List.map I.to_pair |> List.sort)
-          merge
-        in
-        Kr_distance.total_over_tree
-          partial_total
-          (const ())
-          lmerge
-          (fun () -> ref 0.)
-          gt
         |> Printf.printf "%s: %g\n" (Placerun.get_name pr))
       prl
 
