@@ -2,11 +2,6 @@ open Ppatteries
 open OUnit
 open Test_util
 
-let test_eigen l1 l2 v1 v2 =
-  "eigenvalues not equal" @? (l1 =@ l2);
-  "eigenvectors not equal" @? (v1 =@@ v2);
-  ()
-
 let suite = [
   "test_simple" >:: begin fun () ->
     let indiv_of = Mass_map.Indiv.of_placerun
