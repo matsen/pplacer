@@ -159,35 +159,46 @@ let find_upper_limit max_pend prior orig_ll tt =
  * Note: modifies the branch lengths in tt!
 *)
 let calc_marg_prob prior rel_err max_pend tt =
-  let abs_err = 0. in (* do not specify an absolute error *)
-  (* first calculate a base_ll. we use the given base_pend and the midpoint of
-   * the edge *)
-  let base_ll = log_like tt
-  and cut_bl = get_cut_bl tt in
-  let upper_limit = find_upper_limit max_pend prior base_ll tt in
-  try
-    base_ll +.
-      log
-        ((Integration.value_integrate
-          (fun dist_bl ->
-            set_dist_bl tt dist_bl;
-            Integration.value_integrate
-              (fun pend_bl ->
-                set_pend_bl tt pend_bl;
-                (exp ((log_like tt) -. base_ll))
-                  *. (prior pend_bl))
-              0. upper_limit ~abs_err ~rel_err)
-          0. cut_bl ~abs_err ~rel_err)
-        /. cut_bl)
-        (* normalize out the integration over a branch length *)
-  with
-  | Gsl_error.Gsl_exn(error_num, error_str) ->
+  let abs_err = 0. (* do not specify an absolute error *)
+  and max_n_exceptions = 10
+  and base_ll = log_like tt
+  and cut_bl = get_cut_bl tt
+  and n_exceptions = ref 0
+  in
+  let rec perform upper_limit =
+    if !n_exceptions >= max_n_exceptions then begin
+      Printf.printf
+        "Warning: integration did not converge after changing bounds %d times\n"
+        max_n_exceptions;
+      base_ll (* return the base LL *)
+    end
+    else try
+      base_ll +.
+        log
+          ((Integration.value_integrate
+            (fun dist_bl ->
+              set_dist_bl tt dist_bl;
+              Integration.value_integrate
+                (fun pend_bl ->
+                  set_pend_bl tt pend_bl;
+                  (exp ((log_like tt) -. base_ll))
+                    *. (prior pend_bl))
+                0. upper_limit ~abs_err ~rel_err)
+            0. cut_bl ~abs_err ~rel_err)
+          /. cut_bl)
+    with
+    | Gsl_error.Gsl_exn(error_num, error_str) ->
       if error_num = Gsl_error.ETOL then begin
-(* Integration failed to reach tolerance with highest-order rule *)
-        Printf.printf "Warning: %s\n" error_str;
-(* return the base LL *)
-        base_ll
+      (* Integration failed to reach tolerance with highest-order rule. Because
+       * these functions are smooth, the problem is too-wide integration bounds.
+       * We halve and try again. This is obviously pretty rough, but if we
+       * aren't reaching tolerance then the posterior surface is dropping off
+       * really fast compared to the size of the interval, so missing a little
+       * of it is not going to make a difference. *)
+        incr n_exceptions;
+        perform (upper_limit /. 2.)
       end
       else
         raise (Gsl_error.Gsl_exn(error_num, error_str))
-
+  in
+  perform (find_upper_limit max_pend prior base_ll tt)

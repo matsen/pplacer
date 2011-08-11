@@ -4,12 +4,14 @@ open Test_util
 
 open Convex
 
+(* Testing Core.midpoint_leaf_dist_map *)
+
 let suite = [
   "test_exp_prior_map" >:: begin fun () ->
     let prior_map = Test_util.placeruns_of_dir "simple"
       |> List.find (Placerun.get_name |- (=) "test1")
       |> Placerun.get_ref_tree
-      |> Core.exp_prior_map
+      |> Core.midpoint_leaf_dist_map
     in
     check_map_approx_equal
       (IntMap.enum prior_map)
