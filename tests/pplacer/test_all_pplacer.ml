@@ -8,4 +8,5 @@ let suite = [
   "convex" >::: Test_convex.suite;
   "like" >::: Test_like.suite;
   "rerooting" >::: Test_rerooting.suite;
+  "newick_parser" >::: Test_newick_parser.suite;
 ]
