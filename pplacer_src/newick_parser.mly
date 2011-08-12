@@ -98,17 +98,15 @@ bare_subtree_group:
   | OPENP subtree_list CLOSEP
       { add_internal $2 }
 
-named_subtree_group:
-  | bare_subtree_group LABEL
-      { add_name $2 $1 }
+bootstrapped_subtree_group:
   | bare_subtree_group REAL
-      { add_name (string_of_float $2) $1 }
+      { add_boot $2 $1 }
   | bare_subtree_group { $1 }
 
 lengthy_subtree_group:
-  | named_subtree_group COLON REAL
+  | bootstrapped_subtree_group COLON REAL
       { add_bl $3 $1 }
-  | named_subtree_group { $1 }
+  | bootstrapped_subtree_group { $1 }
 
 subtree_group:
   | lengthy_subtree_group EDGE_LABEL
