@@ -16,6 +16,7 @@ type prefs =
     initial_tolerance : float ref;
     calc_pp : bool ref;
     uniform_prior : bool ref;
+    informative_prior : bool ref;
     pp_rel_err : float ref;
     (* playing ball *)
     max_strikes : int ref;
@@ -65,6 +66,7 @@ let defaults () =
     initial_tolerance = ref 0.01;
     calc_pp = ref false;
     uniform_prior = ref false;
+    informative_prior = ref false;
     pp_rel_err = ref 0.01;
     (* playing ball *)
     max_strikes = ref 6;
@@ -115,6 +117,7 @@ let max_pend          p = !(p.max_pend)
 let initial_tolerance p = !(p.initial_tolerance)
 let calc_pp           p = !(p.calc_pp)
 let uniform_prior     p = !(p.uniform_prior)
+let informative_prior p = !(p.informative_prior)
 let pp_rel_err        p = !(p.pp_rel_err)
 let max_strikes       p = !(p.max_strikes)
 let strike_box        p = !(p.strike_box)
@@ -163,7 +166,11 @@ let specl prefs =
 "Supply a phyml stats.txt or a RAxML info file giving the model parameters.";
 "-d", Arg.Set_string prefs.ref_dir,
 "Specify the directory containing the reference information.";
-"-p", Arg.Set prefs.calc_pp,
+"-p", Arg.Unit (fun () ->
+  prefs.calc_pp := true;
+  prefs.keep_at_most := 20;
+  prefs.keep_factor := 0.001;
+  prefs.max_strikes := 20),
 "Calculate posterior probabilities.";
 "-m", Arg.Set_string prefs.model_name,
 "Substitution model. Protein: are LG, WAG, or JTT. Nucleotides: GTR.";
@@ -181,6 +188,8 @@ spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
 "Relative error for the posterior probability calculation. Default is %g.";
 "--unif-prior", Arg.Set prefs.uniform_prior,
 "Use a uniform prior rather than exponential.";
+"--inform-prior", Arg.Set prefs.informative_prior,
+"Use an informative exponential prior based on rooted distance to leaves.";
 spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
 "Starting pendant branch length. Default is %g.";
 spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend

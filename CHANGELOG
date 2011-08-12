@@ -3,6 +3,8 @@
 
  * Fixed a bug that was making classifications appear too specific when the
    placement was on the edge just proximal to an MRCA.
+ * Closed GH-27: Reorganized functions that operate on alignments.
+ * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
    implementation of the convexify algorithm, as it cut too many leaves in some
    corner cases.
@@ -44,8 +46,11 @@
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
  * Closed GH-122: Renamed `rppr taxtable` to `rppr prep_db`.
  * Closed GH-125: Added a --rooted flag to `rppr convexify`.
+ * Closed GH-128: Added informative priors to pplacer integration.
  * Closed GH-129: Added the ability for `rppr convexify` to convexify a tree
    not in a reference package.
+ * Closed GH-130: Added `guppy pd`.
+ * Closed GH-131: Changed pplacer to set some defaults with the -p flag.
 
 
 1.1.alpha08
