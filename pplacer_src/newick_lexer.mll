@@ -3,8 +3,9 @@
 
 (* this stuff gets evaluated automatically *)
 {
+  open Ppatteries
   open Newick_parser
-  let line = ref 1
+  open Lexing
 
   let dequote s =
     let len = String.length s in
@@ -35,7 +36,7 @@ let edgelabel = '[' 'I'? digit+ ']'
 
 rule token = parse
   | [' ' '\t']      { token lexbuf }
-  | '\n'            { incr line; CR }
+  | '\n'            { Sparse.incr_lineno lexbuf; token lexbuf }
   (* because taxnames can be floats, we have to have float first *)
   | floating        { REAL(float_of_string(Lexing.lexeme lexbuf)) }
   | unquotedlabel   { LABEL(Lexing.lexeme lexbuf) }
@@ -47,6 +48,5 @@ rule token = parse
   | openp           { OPENP }
   | closep          { CLOSEP }
   | eof             { EOF }
-  | _               { failwith ("Problem reading tree at line "^(string_of_int !line)) }
-
-
+  | _
+      { raise (Sparse.parse_error_of_positions "syntax error lexing" lexbuf.lex_start_p lexbuf.lex_curr_p) }

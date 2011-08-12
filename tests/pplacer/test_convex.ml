@@ -9,14 +9,12 @@ let suite = List.map
     let gt = Newick_gtree.of_string s in
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
-    let colors = IntMap.fold
-      (fun key value map ->
+    let colors = IntMap.filter_map
+      (fun _ value ->
         try
-          let name = value#get_name in
-          IntMap.add key name map
-        with Newick_bark.No_name -> map)
+          Some value#get_name
+        with Newick_bark.No_name -> None)
       bm
-      IntMap.empty
     in
     let naive_nodes = Naive.solve (colors, st) in
     let _, early_omega = solve ~nu_f:apart_nu (colors, st)
@@ -47,9 +45,13 @@ let suite =
         let gt = Newick_gtree.of_string "(A,(A,(X,(B,(X,B)))))" in
         let st = gt.Gtree.stree
         and bm = gt.Gtree.bark_map in
-        let colors = IntMap.filteri
-          (fun _ v -> v <> "X")
-          (IntMap.map (fun v -> v#get_name) bm)
+        let colors = IntMap.filter_map
+          (fun _ value ->
+            try
+              let name = value#get_name in
+              if name <> "X" then Some name else None
+            with Newick_bark.No_name -> None)
+          bm
         in
         let alt_colors = alternate_colors (colors, st) in
         assert_equal (IntMap.cardinal alt_colors) 2;
@@ -67,7 +69,13 @@ let suite =
         let gt = Newick_gtree.of_string "(A,(A,(B,(C,C))))" in
         let st = gt.Gtree.stree
         and bm = gt.Gtree.bark_map in
-        let colors = IntMap.map (fun v -> v#get_name) bm in
+        let colors = IntMap.filter_map
+          (fun _ value ->
+            try
+              Some value#get_name
+            with Newick_bark.No_name -> None)
+          bm
+        in
         let _, cutset = build_sizemim_and_cutsetim (colors, st) in
         let expected = IntMap.map
           ColorSet.of_list
