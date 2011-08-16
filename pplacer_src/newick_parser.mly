@@ -50,14 +50,14 @@ let add_id id lp =
 
 let add_leaf () =
   incr node_num;
-  add_bl 0. {
+  {
     stree = Stree.leaf !node_num;
     bark = IntMap.empty;
     my_bark = IntMap.empty;
   }
 let add_internal ls =
   incr node_num;
-  add_bl 0. {
+  {
     stree = Stree.node !node_num ls.stree_l;
     bark = combine ls.bark_l ls.my_bark_l;
     my_bark = IntMap.empty;
