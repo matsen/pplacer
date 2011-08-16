@@ -1,4 +1,4 @@
-open MapsSets
+open Ppatteries
 module SSS = Squash_common.StringSetSet
 
 (* Read in two files: boot_fname, which contains a collection of bootstrapped

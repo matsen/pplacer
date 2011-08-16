@@ -9,8 +9,7 @@
  slightly.
 *)
 
-open Batteries
-open MapsSets
+open Ppatteries
 open Stree
 type color = string
 
@@ -61,7 +60,7 @@ val build_sizemim_and_cutsetim: cdtree -> sizem IntMap.t * cset IntMap.t
 
 (* Building up aparts. *)
 
-val build_apartl: csetl -> cset -> question -> apart list
+val build_apartl: ?strict:bool -> csetl -> cset -> question -> apart list
 (** Given an [X1,...,Xk] and a (c, X) return a list of (b, pi)'s.
  * If c is in X or if B = B([X1,...,Xk]) is empty, then b = c.
  * Otherwise, b can be anything in B.
@@ -81,7 +80,8 @@ val apart_nu: nu_f
 
 (* The recursion, as it were. *)
 
-val phi_recurse: ?nu_f:nu_f -> cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question -> phi -> phi * int
+val phi_recurse: ?strict:bool -> ?nu_f:nu_f ->
+  cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question -> phi -> phi * int
 (** phi_recurse id q phi returns a phi map which includes the answer
  * to the posed question.
  *)
@@ -116,7 +116,7 @@ val phi_recurse: ?nu_f:nu_f -> cset IntMap.t -> sizem list IntMap.t -> Stree.str
 
 *)
 
-val solve: ?nu_f:nu_f -> cdtree -> phi * int
+val solve: ?strict:bool -> ?nu_f:nu_f -> cdtree -> phi * int
 (** Solve a tree, returning the solved phi and the omega of the best
     solution. *)
 

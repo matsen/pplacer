@@ -6,7 +6,7 @@
 *)
 
 open Squashfunc
-open MapsSets
+open Ppatteries
 
 
 let prl = List.map Placerun_io.of_file ["test1.place"; "test2.place"; "test3.place"]

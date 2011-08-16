@@ -1,6 +1,8 @@
+open Ppatteries
+
 let write_named_float_uptri ch names u =
   String_matrix.write_named_padded ch names
-    (Fam_batteries.MatrixFuns.init (Uptri.get_dim u) (Uptri.get_dim u)
+    (MatrixFuns.init (Uptri.get_dim u) (Uptri.get_dim u)
       (fun i j ->
         if i < j then (Printf.sprintf "%g" (Uptri.get u i j))
         else ""))

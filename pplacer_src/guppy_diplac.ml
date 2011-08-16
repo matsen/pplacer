@@ -1,8 +1,6 @@
-open Batteries
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
 
 class cmd () =
 object (self)
@@ -29,14 +27,13 @@ object (self)
     | [pr] ->
       let _, _, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
-      and ch = self#out_channel in
+      and ch = self#out_channel |> csv_out_channel |> Csv.to_out_obj in
       let graph = Voronoi.of_gtree gt in
       let snipdist = Voronoi.get_snipdist graph in
       let dist = Voronoi.placement_distance graph ~snipdist
       and best_placement = Pquery.best_place criterion in
       Placerun.get_pqueries pr
-      |> List.map
-        (fun pr -> dist (best_placement pr), pr)
+      |> List.map (best_placement |- dist &&& identity)
       |> List.sort ~cmp:(flip compare)
       |> List.enum
       |> Enum.map
@@ -53,7 +50,7 @@ object (self)
           | None -> identity)
       |> Enum.iter
           (fun (dist, name) ->
-            Csv.save_out ch [[name; Printf.sprintf "%1.6f" dist]])
+            Csv.output_all ch [[name; Printf.sprintf "%1.6f" dist]])
 
     | _ -> failwith "diplac takes exactly one placefile"
 

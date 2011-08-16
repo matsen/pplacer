@@ -1,8 +1,7 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
+open Ppatteries
 
-let escape = Base.sqlite_escape
 module TIAMR = AlgMap.AlgMapR (Tax_id.TaxIdMap)
 
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
@@ -135,16 +134,15 @@ object (self)
     let out_func pr =
       if fv csv_out then
         let prn = Placerun.get_name pr in
-        let ch = open_out (prn ^ ".class.csv") in
-        let close () = close_out ch in
+        let ch = prn ^ ".class.csv" |> open_out in
+        let close () = close_out ch
+        and csvch = csv_out_channel ch |> Csv.to_out_obj in
         output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
         close, (fun pq rank_map ->
-          let outl = classif_stral td pq rank_map in
-          Csv.save_out
-            ch
-            (List.map
-               (fun arr -> (Array.to_list arr) @ [prn])
-               outl))
+          classif_stral td pq rank_map
+            |> List.map
+                (fun arr -> (Array.to_list arr) @ [prn])
+            |> Csv.output_all csvch)
 
       else if sqlite_out then
         let prn = Placerun.get_name pr in
@@ -153,6 +151,12 @@ object (self)
           Sql.check_exec db "COMMIT";
           Sql.close db
         in
+        Sql.check_exec
+          db
+          ~cb:(fun row _ -> match row with
+            | [| Some "1" |] -> ()
+            | _ -> failwith "run `rppr prep_db` before running `guppy classify`")
+          "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name = 'placement_classifications')";
         Sql.check_exec db "BEGIN TRANSACTION";
         let pn_st = Sqlite3.prepare db
           "INSERT INTO placement_names VALUES (?, ?, ?);"

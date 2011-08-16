@@ -1,7 +1,5 @@
-open Batteries
+open Ppatteries
 open Multiprocessing
-open Fam_batteries
-open MapsSets
 
 exception Finished
 
@@ -92,7 +90,7 @@ let run_file prefs query_fname =
       (match Prefs.refpkg_path prefs with
         | "" ->
             StringMap.add "name"
-              (Base.safe_chop_extension (Prefs.ref_align_fname prefs))
+              (safe_chop_extension (Prefs.ref_align_fname prefs))
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
@@ -133,7 +131,7 @@ let run_file prefs query_fname =
   let ref_name_set = StringSet.of_list ref_name_list in
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
-  let seq_list = Alignment_funs.upper_list_of_any_file query_fname in
+  let seq_list = Alignment.upper_list_of_any_file query_fname in
   let ref_list, query_list =
     List.partition
       (fun (name,_) -> StringSet.mem name ref_name_set)
@@ -359,7 +357,7 @@ let run_file prefs query_fname =
     let fp_check g str =
       let fpc = Glv.fp_classify g in
       if fpc > FP_zero then
-        Printf.printf "%s is a %s\n" str (Base.string_of_fpclass fpc)
+        Printf.printf "%s is a %s\n" str (string_of_fpclass fpc)
     in
     let utilv_nsites = Gsl_vector.create n_sites
     and util_d = Glv.mimic darr.(0)
@@ -398,7 +396,9 @@ let run_file prefs query_fname =
     Filename.basename (Filename.chop_extension query_fname) in
   let prior =
     if Prefs.uniform_prior prefs then Core.Uniform_prior
-    else Core.Exponential_prior
+    else if Prefs.informative_prior prefs then
+      Core.Informative_exp_prior (Core.midpoint_leaf_dist_map ref_tree)
+    else Core.Flat_exp_prior
       (* exponential with mean = average branch length *)
       ((Gtree.tree_length ref_tree) /.
         (float_of_int (Gtree.n_edges ref_tree)))
@@ -431,7 +431,7 @@ let run_file prefs query_fname =
       Fantasy.make_fantasy_matrix
         ~max_strike_box:(int_of_float (Prefs.strike_box prefs))
         ~max_strikes:(Prefs.max_strikes prefs)
-    and fantasy_mod = Base.round (100. *. (Prefs.fantasy_frac prefs))
+    and fantasy_mod = round (100. *. (Prefs.fantasy_frac prefs))
     and n_fantasies = ref 0
     in
     let rec gotfunc = function
@@ -502,7 +502,7 @@ let run_file prefs query_fname =
             mrcam
             (ref_tree.Gtree.stree)
           in
-          let identity = Alignment_funs.identity (Pquery.seq pq) in
+          let identity = Alignment.identity (Pquery.seq pq) in
           let placements' = IntMap.fold
             (fun mrca pl accum ->
               List.fold_left
@@ -587,11 +587,11 @@ let run_file prefs query_fname =
     if cachefunc x then nextfunc ()
     else x
   in
-  let children =
-    List.map
+  1 -- Prefs.children prefs
+    |> Enum.map
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
-      (Base.range (Prefs.children prefs)) in
-  event_loop children;
+    |> List.of_enum
+    |> event_loop;
   donefunc ();
   if Prefs.timing prefs then begin
     Printf.printf "\ntiming data:\n";

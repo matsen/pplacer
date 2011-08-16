@@ -1,9 +1,7 @@
 (* Here we actually do the work.
 *)
 
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Prefs
 
 let max_iter = 200
@@ -12,11 +10,53 @@ let max_iter = 200
  * help if changed here. *)
 let final_tolerance = 1e-5
 
-type prior = Uniform_prior | Exponential_prior of float
+let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
+
+(* This function returns a map from the internal nodes i to the average distance
+ * from the midpoint of edge i to the leaves below i. *)
+let midpoint_leaf_dist_map t =
+  let bl = Gtree.get_bl t in
+  let rec aux = function
+    | Stree.Leaf i -> IntMap.singleton i (bl i /. 2.), [bl i]
+    | Stree.Node (i, subtrees) ->
+      let map, distances = List.map aux subtrees
+        |> List.reduce
+            (fun (m1, l1) (m2, l2) -> IntMap.union m1 m2, List.append l1 l2)
+      in
+      (* Add the average distance for i onto the map. *)
+      distances
+        |> List.map ((+.) (bl i /. 2.))
+        |> avg
+        |> flip (IntMap.add i) map,
+      (* Increase the collection of distances by the given branch length. *)
+      List.map ((+.) (bl i)) distances
+  in
+  aux t.Gtree.stree |> fst |> IntMap.remove (Gtree.top_id t)
+
+type prior =
+  | Uniform_prior
+  | Flat_exp_prior of float
+  | Informative_exp_prior of float IntMap.t
+
 type result =
   | Fantasy of (int * (float * float * float)) list
   | Pquery of Pquery.pquery
   | Timing of string * float
+
+(* ll_normalized_prob :
+ * ll_list is a list of log likelihoods. this function gives the normalized
+ * probabilities, i.e. exponentiate then our_like / (sum other_likes)
+ * have to do it this way to avoid underflow problems.
+ * *)
+let ll_normalized_prob ll_list =
+  List.map
+    (fun log_like ->
+      1. /.
+        (List.fold_left ( +. ) 0.
+          (List.map
+            (fun other_ll -> exp (other_ll -. log_like))
+            ll_list)))
+    ll_list
 
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
@@ -25,11 +65,13 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
   let seq_type = Model.seq_type model
+  (* the prior function takes an edge number and a pendant BL *)
   and prior_fun =
     match prior with
-      | Uniform_prior -> (fun _ -> 1.)
-      | Exponential_prior mean ->
-        fun pend -> Gsl_randist.exponential_pdf ~mu:mean pend
+      | Uniform_prior -> (fun _ _ -> 1.)
+      | Flat_exp_prior mean -> fun _ -> Gsl_randist.exponential_pdf ~mu:mean
+      | Informative_exp_prior mean_map ->
+        fun id -> Gsl_randist.exponential_pdf ~mu:(IntMap.find id mean_map)
   and ref_length = Alignment.length ref_align in
   let utilv_nsites = Gsl_vector.create ref_length in
   (* set up the number of pitches and strikes according to the prefs *)
@@ -64,11 +106,11 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let informative c = c <> '?' && c <> '-' in
     let mask_arr = Array.map informative query_arr in
     let masked_query_arr =
-      Alignment.array_filteri (fun _ c -> informative c) query_arr in
+      Array.filteri (fun _ c -> informative c) query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = Base.array_first informative query_arr
-    and last_informative = Base.array_last informative query_arr in
+    let first_informative = ArrayFuns.first informative query_arr
+    and last_informative = ArrayFuns.last informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -108,7 +150,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let curr_time = Sys.time () in
     let h_r =
       List.sort
-        ~cmp:(fun (_,l1) (_,l2) -> - compare l1 l2)
+        ~cmp:(comparing snd |> flip)
         (List.map
            (fun loc ->
              (loc,
@@ -230,10 +272,8 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
       (* these tuples are ugly but that way we don't need
        * to make a special type for ml results. *)
       let get_like (_, (like, _, _)) = like in
-      let decreasing_cmp_likes r1 r2 =
-        - compare (get_like r1) (get_like r2) in
       let sorted_ml_results =
-        List.sort ~cmp:decreasing_cmp_likes ml_results in
+        List.sort ~cmp:(comparing get_like |> flip) ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =
@@ -262,7 +302,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
           (fun ml_ratio (loc, (log_like, pend_bl, dist_bl)) ->
             Placement.make_ml
               loc ~ml_ratio ~log_like ~pend_bl ~dist_bl)
-          (Base.ll_normalized_prob (List.map get_like refined_results))
+          (ll_normalized_prob (List.map get_like refined_results))
           refined_results
       in
       let results, placements =
@@ -275,7 +315,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
               (fun placement ->
                 tt_edges_from_placement placement;
                 Three_tax.calc_marg_prob
-                  prior_fun (pp_rel_err prefs) (max_pend prefs) tt)
+                  (prior_fun (Placement.location placement))
+                  (pp_rel_err prefs)
+                  (max_pend prefs)
+                  tt)
               sorted_ml_placements
           in
           (* add pp *)
@@ -285,7 +328,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
                 Placement.add_pp placement ~marginal_prob ~post_prob)
               sorted_ml_placements
               marginal_probs
-              (Base.ll_normalized_prob marginal_probs)))
+              (ll_normalized_prob marginal_probs)))
         end
         else results, sorted_ml_placements
       in

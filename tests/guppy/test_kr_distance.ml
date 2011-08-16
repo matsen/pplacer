@@ -14,6 +14,7 @@
  *
  *)
 
+open Ppatteries
 open OUnit
 open Test_util
 

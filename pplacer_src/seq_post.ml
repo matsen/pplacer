@@ -1,7 +1,7 @@
 (* Functions for summarizing the site-wise posterior probability of base pairs
  * at given sites for internal positions on the tree.
  * *)
-open MapsSets
+open Ppatteries
 
 (* pick the ML state by taking the sum across rates for each state and site *)
 let summarize_post summarize_f initial g =

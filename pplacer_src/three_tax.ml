@@ -3,8 +3,7 @@
  * set_dist_bl.
  *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 let n_like_calls = ref 0
 
@@ -93,7 +92,7 @@ let copy_bls ~src ~dest =
 
 (* write out the likelihood surface, with base_ll discounted. this is what
  * integrate actually integrates, sampled on an integer-plus-half lattice. *)
-let write_like_surf prior_fun max_pend tt fname n_samples =
+let write_like_surf prior max_pend tt fname n_samples =
   let base_ll = log_like tt
   and cut_bl = get_cut_bl tt in
   let dist_incr = cut_bl /. (float_of_int n_samples)
@@ -107,72 +106,99 @@ let write_like_surf prior_fun max_pend tt fname n_samples =
       let pend_bl = pend_incr *. (float_and_half j) in
       set_pend_bl tt pend_bl;
       Printf.fprintf ch "%g\t"
-        ((exp ((log_like tt) -. base_ll)) *. (prior_fun pend_bl));
+        ((exp ((log_like tt) -. base_ll)) *. (prior pend_bl));
     done;
     Printf.fprintf ch "\n";
   done;
   close_out ch
 
-(* find an appropriate upper limit for pendant branch length integration. if we
+(* Find an appropriate upper limit for pendant branch length integration. If we
  * come up with a resonable upper limit then we get better results than
  * integrating out to max_pend.
- * this function uses the current pend branch length and moves right in
- * increments of the current branch length, stopping when the ll function drops
- * below 1e-10*orig_ll.
- * note 1: this does change the pend_bl.
- * note 2: this assumes that the likelihood function is monotonic in the pendant
- * branch length.
+ * Note 1: this does change the pend_bl.
+ * Note 2: this assumes that the likelihood function times the prior is
+ * monotonically decreasing in the pendant branch length beyond the original
+ * branch length, (in our applications, the original branch length is the ML
+ * branch length, and the prior is monotonically decreasing.)
+ * Note 3: we assume that the prior is monotonically decreasing in pendant
+ * branch length (yes for us).
  *)
-let find_upper_limit max_pend orig_ll tt =
-  let orig_pend_bl = get_pend_bl tt
-  and min_ll = 1e-10 *. orig_ll
-  in
-  let rec aux next_pend_bl =
-    set_pend_bl tt next_pend_bl;
-    if min_ll > log_like tt then get_pend_bl tt
-    else if next_pend_bl > max_pend then max_pend
-    else aux (orig_pend_bl +. next_pend_bl)
-  in
-  aux (get_pend_bl tt)
+let find_upper_limit max_pend prior orig_ll tt =
+  let orig_pend_bl = get_pend_bl tt in
+  if prior orig_pend_bl = 0. then begin
+    (* Prior is zero. We just rewind to someplace reasonably small where the
+     * prior is still below some small quantity. *)
+    let rec aux curr_pend_bl =
+      let next_pend_bl = curr_pend_bl /. 2. in
+      if prior next_pend_bl > exp (-10.) then curr_pend_bl else aux next_pend_bl
+    in
+    aux orig_pend_bl
+  end
+  else begin
+    (* Move right uses the current pend branch length and moves right in
+      * increments of the current branch length, stopping when the ll function
+      * drops 10 log units. *)
+    let log_prior x = log (prior x) in
+    let log_cutoff = -10. +. orig_ll +. (log_prior orig_pend_bl) in
+    let rec aux next_pend_bl =
+      set_pend_bl tt next_pend_bl;
+      if log_cutoff > (log_like tt) +. (log_prior next_pend_bl) then
+        next_pend_bl
+      else if next_pend_bl > max_pend then max_pend
+      else aux (orig_pend_bl +. next_pend_bl)
+    in
+    aux (get_pend_bl tt)
+  end
 
-(* the idea here is to properly integrate log likelihood functions by removing
+(* The idea here is to properly integrate log likelihood functions by removing
  * some portion so that when we actually do the integration, we don't have
  * underflow problems.
- * we use the original branch lengths in tt give us a baseLL.
- * this calculates then
+ * We use the original branch lengths in tt to get a baseLL.
+ * This calculates then
  * baseLL + \log ( cut_bl^{-1} \int \int \exp(llF - baseLL) * prior(x) dx dy )
  * Note: modifies the branch lengths in tt!
 *)
-let calc_marg_prob prior_fun rel_err max_pend tt =
-  let abs_err = 0. in (* do not specify an absolute error *)
-  (* first calculate a base_ll. we use the given base_pend and the midpoint of
-   * the edge *)
-  let base_ll = log_like tt
-  and cut_bl = get_cut_bl tt in
-  let upper_limit = find_upper_limit max_pend base_ll tt in
-  try
-    base_ll +.
-      log
-        ((Integration.value_integrate
-          (fun dist_bl ->
-            set_dist_bl tt dist_bl;
-            Integration.value_integrate
-              (fun pend_bl ->
-                set_pend_bl tt pend_bl;
-                (exp ((log_like tt) -. base_ll))
-                  *. (prior_fun pend_bl))
-              0. upper_limit ~abs_err ~rel_err)
-          0. cut_bl ~abs_err ~rel_err)
-        /. cut_bl)
-        (* normalize out the integration over a branch length *)
-  with
-  | Gsl_error.Gsl_exn(error_num, error_str) ->
+let calc_marg_prob prior rel_err max_pend tt =
+  let abs_err = 0. (* do not specify an absolute error *)
+  and max_n_exceptions = 10
+  and base_ll = log_like tt
+  and cut_bl = get_cut_bl tt
+  and n_exceptions = ref 0
+  in
+  let rec perform upper_limit =
+    if !n_exceptions >= max_n_exceptions then begin
+      Printf.printf
+        "Warning: integration did not converge after changing bounds %d times\n"
+        max_n_exceptions;
+      base_ll (* return the base LL *)
+    end
+    else try
+      base_ll +.
+        log
+          ((Integration.value_integrate
+            (fun dist_bl ->
+              set_dist_bl tt dist_bl;
+              Integration.value_integrate
+                (fun pend_bl ->
+                  set_pend_bl tt pend_bl;
+                  (exp ((log_like tt) -. base_ll))
+                    *. (prior pend_bl))
+                0. upper_limit ~abs_err ~rel_err)
+            0. cut_bl ~abs_err ~rel_err)
+          /. cut_bl)
+    with
+    | Gsl_error.Gsl_exn(error_num, error_str) ->
       if error_num = Gsl_error.ETOL then begin
-(* Integration failed to reach tolerance with highest-order rule *)
-        Printf.printf "Warning: %s\n" error_str;
-(* return the base LL *)
-        base_ll
+      (* Integration failed to reach tolerance with highest-order rule. Because
+       * these functions are smooth, the problem is too-wide integration bounds.
+       * We halve and try again. This is obviously pretty rough, but if we
+       * aren't reaching tolerance then the posterior surface is dropping off
+       * really fast compared to the size of the interval, so missing a little
+       * of it is not going to make a difference. *)
+        incr n_exceptions;
+        perform (upper_limit /. 2.)
       end
       else
         raise (Gsl_error.Gsl_exn(error_num, error_str))
-
+  in
+  perform (find_upper_limit max_pend prior base_ll tt)

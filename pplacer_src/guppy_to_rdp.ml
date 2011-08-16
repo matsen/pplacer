@@ -1,3 +1,4 @@
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
@@ -53,11 +54,11 @@ object (self)
   method private real_action =
     let rp = self#get_rp in
     let tax = Refpkg.get_taxonomy rp in
-    let included = Base.map_and_flatten
-      (Str.split (Str.regexp ","))
-      (fv included_ranks)
+    let included = fv included_ranks
+      |> List.map (flip String.nsplit ",")
+      |> List.flatten
     in
-    let included = List.sort (-) (List.map int_of_string included) in
+    let included = List.sort (List.map int_of_string included) in
     let prefix = self#single_prefix ~requires_user_prefix:true () in
 
     let new_taxonomy = begin
@@ -125,7 +126,7 @@ object (self)
         new_taxonomy
         []
       in
-      let taxonomy = List.sort (fun (_, a, _) (_, b, _) -> a - b) taxonomy in
+      let taxonomy = List.sort ~cmp:(comparing (fun (_, x, _) -> x)) taxonomy in
       List.iter
         (fun (tax_id, rank, parent) ->
           Printf.fprintf out_ch

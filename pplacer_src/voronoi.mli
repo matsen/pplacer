@@ -10,7 +10,7 @@
  *
  *)
 
-open MapsSets
+open Ppatteries
 
 type leaf = int
 
@@ -75,6 +75,10 @@ val matching_snip: snip list -> float -> snip
 
 val get_snipdist: v -> snip list IntMap.t
 (** Find all of the snips on the tree of a voronoi diagram. *)
+
+val partition_indiv_on_leaves: v -> Mass_map.Indiv.t -> Mass_map.Indiv.t IntMap.t
+(** Given a voronoi diagram and mass map, generate a map from leaves to mass
+    maps containing only the mass on that leaf. *)
 
 val distribute_mass: v -> Mass_map.Indiv.t -> float list IntMap.t
 (** Given a voronoi diagram and mass map, distribute the mass onto all of the

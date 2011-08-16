@@ -1,8 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
 
-let escape = Base.sqlite_escape
-
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -20,7 +18,7 @@ object (self)
     ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
-  method usage = "usage: taxtable [options] -c <refpkg>"
+  method usage = "usage: prep_db [options] -c <refpkg>"
 
   method action _ =
     let refpkg = self#get_rp in

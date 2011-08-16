@@ -1,7 +1,6 @@
-open Batteries
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
 
 class cmd () =
 object (self)
@@ -34,7 +33,7 @@ object (self)
     in
 
     let open_out name =
-      (self#single_prefix ()) ^ (Filename.basename name) |> Legacy.open_out
+      (self#single_prefix ()) ^ (Filename.basename name) |> open_out
     in
 
     let out_func =
@@ -68,19 +67,20 @@ object (self)
 
       end else if fv csv_out then begin fun origin ->
         let ch = open_out origin in
-        Csv.save_out
-          ch
-          [["name"; "origin"; "desired_rank"; "rank"; "tax_id"; "likelihood"]];
+        let csvch = csv_out_channel ch |> Csv.to_out_obj in
+        Csv.output_record
+          csvch
+          ["name"; "origin"; "desired_rank"; "rank"; "tax_id"; "likelihood"];
         fun name -> List.map (Array.append [| name; origin |] |- Array.to_list)
-          |- Csv.save_out ch
-          |> finally (fun () -> Legacy.close_out ch)
+          |- Csv.output_all csvch
+          |> finally (fun () -> close_out ch)
 
       end else begin fun origin ->
         let ch = open_out origin in
         fun name -> List.map (Array.append [| name; origin |])
           |- Array.of_list
           |- String_matrix.write_padded ch
-          |> finally (fun () -> Legacy.close_out ch)
+          |> finally (fun () -> close_out ch)
 
       end
 
@@ -92,7 +92,7 @@ object (self)
           [|
             splut.(idx + 1);
             splut.(idx + 1);
-            (MapsSets.StringMap.find splut.(idx) name_map);
+            (StringMap.find splut.(idx) name_map);
             splut.(idx + 2);
           |] :: accum)
         []

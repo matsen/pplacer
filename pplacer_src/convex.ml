@@ -1,5 +1,4 @@
-open Batteries
-open MapsSets
+open Ppatteries
 open Stree
 
 type color = string
@@ -98,7 +97,7 @@ let all colors = List.fold_left CS.union CS.empty colors
 let between colors = all
   (List.map
      (fun (x, y) -> CS.inter x y)
-     (Base.list_pairs_of_single colors))
+     (ListFuns.list_pairs_of_single colors))
 
 let build_sizemim_and_cutsetim (colors, tree) =
   (* Building an internal_node -> szm, color_below map. *)
@@ -264,7 +263,7 @@ let cset_of_coptset coptset =
 (* As indicated by the underscore, this function is not designed to work as is.
  * Indeed, we need to preprocess with the case of c not being in any of the cut
  * sets under the internal node as defined in build_apartl below. *)
-let _build_apartl cutsetl kappa (c, x) =
+let _build_apartl strict cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
@@ -313,10 +312,16 @@ let _build_apartl cutsetl kappa (c, x) =
        * above color that is in x. b is None when c is None and there are no
        * colors shared between the pi_i.
        *)
+      let is_valid =
+        if strict then
+          let b' = COS.singleton b |> cset_of_coptset in
+          fun pi -> c = None || (b = c && CS.subset (all pi) b')
+        else
+          fun pi -> not (CS.is_empty (between pi)) || b = c || b = None
+      in
       List.fold_left
         (fun accum pi ->
-          if not (CS.is_empty (between pi)) || b = c || b = None then
-            (b, pi) :: accum
+          if is_valid pi then (b, pi) :: accum
           else accum)
         accum
         pis)
@@ -333,19 +338,19 @@ let build_apartl_memo = Hashtbl.create 1024
  * the internal node above.
  * While this function is mostly a wrapper around the apartl memo, it /does/
  * also update `c`, as it's useful to do so pre-memoization. *)
-let build_apartl cutsetl kappa (c, x) =
-  (* If c is not in any of the cut sets below, then we can replace it with
-   * None. *)
+let build_apartl ?(strict = false) cutsetl kappa (c, x) =
+  (* If c is not in any of the cut sets below and we're not building strict
+   * apartls, then we can replace it with None. *)
   let c = match c with
-    | None -> None
-    | Some c' -> if not (List.exists (CS.mem c') cutsetl) then None else c
+    | Some c' when not strict && not (List.exists (CS.mem c') cutsetl) -> None
+    | x -> x
   in
   let q = c, x in
   try
     Hashtbl.find build_apartl_memo (cutsetl, kappa, q)
   with
     | Not_found ->
-      let ret = _build_apartl cutsetl kappa q in
+      let ret = _build_apartl strict cutsetl kappa q in
       Hashtbl.add build_apartl_memo (cutsetl, kappa, q) ret;
       ret
 
@@ -378,7 +383,7 @@ let add_phi node question answer phi =
 
 let null_apart = None, []
 
-let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
+let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
     try
@@ -389,6 +394,7 @@ let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
     | Some (_, omega) -> phi, omega
     | None ->
   (* Begin real work. *)
+  let phi_recurse = phi_recurse ?strict ?nu_f cutsetim sizemlim in
   let phi, res = match tree with
     | Leaf _ ->
       (* Could put in some checks here about the size of cutsetim. *)
@@ -400,6 +406,7 @@ let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
         subtrees
       in
       let apartl = build_apartl
+        ?strict
         cutsetl
         (IntMap.find i cutsetim)
         question
@@ -409,7 +416,7 @@ let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
       let apart_omega phi (b, pi) =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse ?nu_f cutsetim sizemlim subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse subtree (b, pi_i) phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
@@ -446,7 +453,12 @@ let rec phi_recurse ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
     | Some (omega, apart) ->
       let phi' = add_phi i question (apart, omega) phi in
       phi', omega
-    | None -> phi, 0
+    | None ->
+      (* In this case, there's no viable candidates below this node on the
+       * tree. The important part is that since there's no viable apart, this
+       * can't be stored in phi. So: if a question is not found in the final
+       * phi, the answer is "ignore this node and all below it." *)
+      phi, 0
 
 let badness cutsetim =
   IntMap.fold
@@ -456,19 +468,18 @@ let badness cutsetim =
     cutsetim
     (0, 0)
 
-let solve ?nu_f ((_, tree) as cdtree) =
+let solve ?strict ?nu_f ((_, tree) as cdtree) =
   let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in
   let sizemlim = maplist_of_map_and_tree sizemim tree in
   Hashtbl.clear build_apartl_memo;
-  phi_recurse ?nu_f cutsetim sizemlim tree (None, CS.empty) IntMap.empty
+  phi_recurse ?strict ?nu_f cutsetim sizemlim tree (None, CS.empty) IntMap.empty
 
 (* Given a phi (an implicit solution) get an actual solution, i.e. a subset of
  * the leaves to include. The recursion works as follows: maintain rest, which
  * is the list of things that remain to be expanded. If the first element of
  * rest has a leaf, then add it to the list if appropriate and recur. If not,
- * expand out the subtrees of the first element of rest and recur.
- * *)
+ * expand out the subtrees of the first element of rest and recur. *)
 let nodeset_of_phi_and_tree phi tree =
   let rec aux accum = function
     | (Leaf i, question) :: rest ->
@@ -481,14 +492,18 @@ let nodeset_of_phi_and_tree phi tree =
       in
       aux accum rest
     | (Node (i, subtrees), question) :: rest ->
-      let (b, pi), _ = QuestionMap.find question (IntMap.find i phi) in
-      let rest' = List.fold_left2
-        (fun rest pi_i subtree -> (subtree, (b, pi_i)) :: rest)
-        rest
-        pi
-        subtrees
-      in
-      aux accum rest'
+      let qmap = IntMap.find i phi in
+      (* As above, if a question isn't found in the final phi, we should be
+       * ignoring this node and all the nodes below it. *)
+      if not (QuestionMap.mem question qmap) then aux accum rest else
+        let (b, pi), _ = QuestionMap.find question qmap in
+        let rest' = List.fold_left2
+          (fun rest pi_i subtree -> (subtree, (b, pi_i)) :: rest)
+          rest
+          pi
+          subtrees
+        in
+        aux accum rest'
     | [] -> accum
   in
   aux IntSet.empty [tree, (None, CS.empty)]

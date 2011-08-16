@@ -1,9 +1,8 @@
-open Batteries
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
 open Convex
-open MapsSets
 open Stree
 
 let leafset tree =
@@ -57,6 +56,12 @@ object (self)
     (Plain (false, "Don't terminate early when convexifying."))
   val limit_ranks = flag "--limit-rank"
     (Plain ([], "If specified, only convexify at the given ranks. Ranks are given as a comma-delimited list of names."))
+  val strict = flag "--rooted"
+    (Plain (false, "Strictly evaluate convexity; ensure that each color sits in its own rooted subtree."))
+  val input_tree = flag "--tree"
+    (Needs_argument ("input tree", "A tree file in newick format to work on in place of a reference package."))
+  val input_colors = flag "--colors"
+    (Needs_argument ("input colors", "A csv file of the colors on the tree corresponding to --tree."))
 
   method specl = [
     string_flag discord_file;
@@ -68,11 +73,13 @@ object (self)
     string_flag timing;
     toggle_flag no_early;
     string_list_flag limit_ranks;
+    toggle_flag strict;
+    string_flag input_tree;
+    string_flag input_colors;
   ] @ super_refpkg#specl
 
-
   method desc = "make the phylogeny in a reference package convex"
-  method usage = "usage: convexify -c my.refpkg"
+  method usage = "usage: convexify [-c my.refpkg | --tree my.tre --colors my.csv]"
 
   method private discordance_tree fname =
     let rp = self#get_rp in
@@ -178,8 +185,7 @@ object (self)
     and finalize = Csv.save fname in
     [], foldf, finalize
 
-  method action _ =
-    let rp = self#get_rp in
+  method private rp_action rp =
     let gt = Refpkg.get_ref_tree rp in
     let st = gt.Gtree.stree
     and td = Refpkg.get_taxonomy rp in
@@ -225,7 +231,11 @@ object (self)
               not_cut, IntSet.cardinal not_cut, delta
             else
               let start = Sys.time () in
-              let phi, omega = solve ?nu_f (colormap, st) in
+              let phi, omega = solve
+                ~strict:(fv strict)
+                ?nu_f
+                (colormap, st)
+              in
               let delta = (Sys.time ()) -. start in
               nodeset_of_phi_and_tree phi st, omega, delta
           in
@@ -262,5 +272,68 @@ object (self)
       ]
     in
     List.iter ((|>) results) reducers
+
+  method private csv_action =
+    let gt = fv input_tree |> Newick_gtree.of_file in
+    let namemap = gt.Gtree.bark_map
+      |> IntMap.filter_map
+          (fun _ b -> try Some b#get_name with Newick_bark.No_name -> None)
+      |> IntMap.enum
+      |> Enum.map swap
+      |> StringMap.of_enum
+    in
+    let colormap = fv input_colors
+      |> Csv.load |> List.enum
+      |> Enum.map
+          (function
+            | [a; b] -> StringMap.find a namemap, b
+            | _ -> failwith "malformed colors csv file")
+      |> IntMap.of_enum
+    and st = gt.Gtree.stree
+    and nu_f = if fv no_early then None else Some apart_nu in
+    let leaves = leafset st in
+    let _, cutsetim = build_sizemim_and_cutsetim (colormap, st) in
+    let cutsetim = IntMap.add (top_id st) ColorSet.empty cutsetim in
+    let max_bad, tot_bad = badness cutsetim in
+    if max_bad = 0 then
+      print_endline "skipped: already convex"
+    else if max_bad > fv badness_cutoff then
+      Printf.printf "skipped: badness of %d above cutoff threshold" max_bad
+    else begin
+      Printf.printf "badness: %d max; %d tot" max_bad tot_bad;
+      print_newline ();
+      let not_cut, omega =
+        if fv use_naive then
+          let not_cut = Naive.solve (colormap, st) in
+          not_cut, IntSet.cardinal not_cut
+        else
+          let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st) in
+          nodeset_of_phi_and_tree phi st, omega
+      in
+      Printf.printf "solved omega: %d\n" omega;
+      let cut_leaves = IntSet.diff leaves not_cut in
+      begin match fvo cut_seqs_file with
+        | Some fname ->
+          cut_leaves
+            |> IntSet.enum
+            |> Enum.map (Gtree.get_name gt |- flip List.cons [])
+            |> List.of_enum
+            |> Csv.save fname
+        | None -> ()
+      end;
+      begin match fvo discord_file with
+        | Some fname ->
+          Decor_gtree.of_newick_gtree gt
+            |> Decor_gtree.color_clades_above cut_leaves
+            |> Phyloxml.gtree_to_file fname
+        | None -> ()
+      end;
+
+    end
+
+  method action _ =
+    match self#get_rpo with
+      | Some rp -> self#rp_action rp
+      | None -> self#csv_action
 
 end

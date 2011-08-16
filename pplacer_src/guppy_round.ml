@@ -1,5 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
+open Ppatteries
 
 (* Note that this version of rounded placements does not take the likelihood
  * weight ratio into account. However, we do preserve the order of appearance of
@@ -15,7 +16,7 @@ type rounded_placement =
 
 let rounded_placement_of_placement multiplier p =
   let round = match multiplier with
-    | Some mult -> fun x -> float_of_int (Base.round (mult *. x))
+    | Some mult -> fun x -> float_of_int (round (mult *. x))
     | None -> fun x -> x
   in
   {
@@ -38,7 +39,7 @@ let rounded_pquery_of_pquery cutoff multiplier pq =
   List.map
     (rounded_placement_of_placement multiplier)
     (List.sort
-      compare_by_ml_ratio
+      ~cmp:compare_by_ml_ratio
       (List.filter
         (fun p -> p.Placement.ml_ratio >= cutoff)
         pq.Pquery.place_list))
@@ -60,7 +61,7 @@ let round_pquery_list cutoff sig_figs pql =
   assert(sig_figs > 0);
   let multiplier = match sig_figs with
     | 0 -> None
-    | f -> Some (Base.int_pow 10. f)
+    | f -> Some (int_pow 10. f)
   in
   (* collect placements together using a map *)
   let m =

@@ -5,7 +5,7 @@
  * array of transition frequencies.
  *)
 
-open Fam_batteries
+open Ppatteries
 
 exception Stats_parsing_error of string
 
@@ -175,7 +175,7 @@ let parse_raxml_re_estimated_info lines prefs =
             match final_lines with
             | _::rate_lines ->
               Some
-                (ArrayFuns.map2
+                (Array.map2
                   assert_and_extract_float
                   [|
                     "rate A <-> C:";

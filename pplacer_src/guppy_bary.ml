@@ -1,7 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 let prel_of_prl weighting criterion prl =
   List.map (Mass_map.Pre.of_placerun weighting criterion) prl
@@ -9,7 +8,7 @@ let prel_of_prl weighting criterion prl =
 let make_bary_tree transform t prel =
   let bary_map =
     IntMap.of_pairlist_listly
-      (ListFuns.mapi
+      (List.mapi
         (fun i pre ->
           let (loc, pos) = Barycenter.of_pre transform t pre in
           (loc,

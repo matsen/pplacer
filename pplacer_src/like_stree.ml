@@ -2,8 +2,7 @@
  * reference tree.
  *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 open Stree
 
 (* below 2^-50 = 1e-15 we pull out the exponent into the int *)
@@ -12,10 +11,10 @@ let min_allowed_twoexp = -50
 (* make a map which goes from node number to the associated likelihood vector
  * for each named node (generally these are assumed to be the leaves) *)
 let like_aln_map_of_data seq_type align tree =
-  let like_aln = Alignment_funs.like_aln_of_align seq_type align in
+  let like_aln = Alignment.like_aln_of_align seq_type align in
   IntMap.map
     (Array.get like_aln)
-    (Alignment_funs.makeAlnIndexMap
+    (Alignment.make_aln_index_map
       (Bark_map.to_name_map (Gtree.get_bark_map tree))
       (Array.map fst align))
 
@@ -77,7 +76,7 @@ let calc_proximal model tree
               (evolved_prox::
                 (List.map (glv_from_stree evolv_dist_glv_arr) rest));
             Glv.perhaps_pull_exponent min_allowed_twoexp prox_below)
-          (Base.pull_each_out tL);
+          (ListFuns.pull_each_out tL);
         List.iter calc tL
     | Stree.Leaf _ -> ()
   in

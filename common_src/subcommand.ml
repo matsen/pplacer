@@ -3,7 +3,7 @@
  * with those options.
 *)
 
-open MapsSets
+open Ppatteries
 
 let option_rex = Str.regexp "-.*"
 

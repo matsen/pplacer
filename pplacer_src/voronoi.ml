@@ -1,6 +1,4 @@
-open Batteries
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Stree
 
 type leaf = int
@@ -225,19 +223,35 @@ let matching_snip snips pos =
     snips
 
 module I = Mass_map.Indiv
-let distribute_mass v mass =
+let partition_indiv_on_leaves v mass =
   let snipdist = get_snipdist v in
   IntMap.fold
     (fun n massl accum ->
       let snips = IntMap.find n snipdist in
       List.fold_left
-        (fun accum {I.distal_bl = pos; I.mass = mass} ->
+        (fun accum ({I.distal_bl = pos} as unit) ->
           let {assoc_leaf = leaf} = matching_snip snips pos in
-          IntMap.add_listly leaf mass accum)
+          IntMap.add
+            leaf
+            (IntMap.add_listly n unit (IntMap.get leaf IntMap.empty accum))
+            accum)
         accum
         massl)
     mass
     IntMap.empty
+
+let distribute_mass v mass =
+  IntMap.map
+    (fun indiv ->
+      IntMap.fold
+        (fun _ units accum ->
+          List.fold_left
+            (fun accum {I.mass = mass} -> mass :: accum)
+            accum
+            units)
+        indiv
+        [])
+    (partition_indiv_on_leaves v mass)
 
 let placement_distance v ?snipdist p =
   let snipdist = match snipdist with

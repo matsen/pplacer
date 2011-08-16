@@ -9,7 +9,7 @@
  * and beta is the rate parameter, which is one over the scale parameter.
  *)
 
-open Fam_batteries
+open Ppatteries
 
 let inverse_gamma_cdf ~alpha ~beta ?(epsilon = 1e-7) y =
   let beta = 1. /. beta in
