@@ -130,8 +130,8 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     uptree_map  = luptree_map;
   }
 
-let of_path path =
-  of_strmap (Prefs.defaults ()) (Refpkg_parse.strmap_of_path path)
+let of_path ?ref_tree path =
+  of_strmap ?ref_tree (Prefs.defaults ()) (Refpkg_parse.strmap_of_path path)
 
 (* *** ACCESSORIES *** *)
 
