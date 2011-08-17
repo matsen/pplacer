@@ -4,7 +4,7 @@
  * be fixed for the life of the Pre. That would be convenient, but would make
  * bootstrapping, etc, impossible.
  *
- * Bootstraping, etc, is also the reason why we have mass_units and weighted_muls
+ * Bootstraping, etc, is also the reason why we have mass_units and multimuls
  * not squashed into a single data type.
 *)
 
@@ -36,30 +36,31 @@ module Pre = struct
 
   let scale_mu scalar mu = {mu with mass = scalar *. mu.mass}
 
-  type weighted_mul = {
-    weight: float;
+  type multimul = {
+    (* multiplicity *)
+    multi: float;
     (* mul is Mass Unit List *)
     (* list across mass for a given placement. *)
     mul: mass_unit list;
     }
 
   let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0.
-  let weighted_mul_total_mass transform mumu =
-    (transform mumu.weight) *. (mul_total_mass mumu.mul)
-  let scale_weighted_mul scalar mumu =
+  let multimul_total_mass transform mumu =
+    (transform mumu.multi) *. (mul_total_mass mumu.mul)
+  let scale_multimul scalar mumu =
     {mumu with mul = List.map (scale_mu scalar) mumu.mul}
   let unit_mass_scale transform mumu =
-    scale_weighted_mul (1. /. (weighted_mul_total_mass transform mumu)) mumu
+    scale_multimul (1. /. (multimul_total_mass transform mumu)) mumu
 
 
   (* list across pqueries *)
-  type t = weighted_mul list
+  type t = multimul list
 
   (* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
-  let weighted_mul_of_pquery weighting criterion mass_per_read pq =
+  let multimul_of_pquery weighting criterion mass_per_read pq =
     let pc = place_list_of_pquery weighting criterion pq in
     {
-      weight = float_of_int (Pquery.multiplicity pq);
+      multi = Pquery.multiplicity pq;
       mul =
         List.map2
           (fun place weight ->
@@ -73,9 +74,9 @@ module Pre = struct
     }
 
   let of_pquery_list weighting criterion pql =
-    let mass_per_read = 1. /. (float_of_int (Pquery.total_multiplicity pql)) in
+    let mass_per_read = 1. /. (Pquery.total_multiplicity pql) in
     List.map
-      (weighted_mul_of_pquery weighting criterion mass_per_read)
+      (multimul_of_pquery weighting criterion mass_per_read)
       pql
 
   (* A unit of mass spread across the tree according to pr. *)
@@ -91,11 +92,11 @@ module Pre = struct
                      (Placerun.get_name pr))
 
   let total_mass transform =
-    let f = weighted_mul_total_mass transform in
+    let f = multimul_total_mass transform in
     List.fold_left (fun x mm -> x +. f mm) 0.
 
   let scale_mass scalar pre =
-    List.map (scale_weighted_mul scalar) pre
+    List.map (scale_multimul scalar) pre
 
   let normalize_mass transform pre =
     scale_mass (1. /. (total_mass transform pre)) pre
@@ -110,10 +111,10 @@ module Pre = struct
 
   let ppr_mul ff mul = Ppr.ppr_list ppr_mass_unit ff mul
 
-  let ppr_weighted_mul ff mmul =
-    Format.fprintf ff "@[{weight = %g; mul = %a}@]" mmul.weight ppr_mul mmul.mul
+  let ppr_multimul ff mmul =
+    Format.fprintf ff "@[{multi = %g; mul = %a}@]" mmul.multi ppr_mul mmul.mul
 
-  let ppr ff pre = Ppr.ppr_list ppr_weighted_mul ff pre
+  let ppr ff pre = Ppr.ppr_list ppr_multimul ff pre
 
 end
 
@@ -135,8 +136,8 @@ module Indiv = struct
   let of_pre transform ?factor pmm =
     let factorf = match factor with | None -> 1. | Some x -> x in
     List.fold_left
-      (fun m' weighted_mul ->
-        let scalar = factorf *. (transform weighted_mul.Pre.weight) in
+      (fun m' multimul ->
+        let scalar = factorf *. (transform multimul.Pre.multi) in
         (List.fold_left
           (fun m mu ->
             IntMap.add_listly
@@ -144,7 +145,7 @@ module Indiv = struct
               {distal_bl = mu.Pre.distal_bl; mass = scalar *. mu.Pre.mass}
               m)
           m'
-          weighted_mul.Pre.mul))
+          multimul.Pre.mul))
       IntMap.empty
       pmm
 

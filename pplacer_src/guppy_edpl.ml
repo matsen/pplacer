@@ -36,7 +36,7 @@ object (self)
             (fun pq ->
               List.iter
                 (fun name -> Printf.fprintf ch "%s\t%g\n" name (edpl pq))
-                (select_fn pq.Pquery.namel))
+                (Pquery.namel pq |> select_fn))
             pr.Placerun.pqueries;
           close_out ch;
         )

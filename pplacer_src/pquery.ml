@@ -16,20 +16,37 @@ let rec is_decreasing criterion = function
       else false
   | _ -> true
 
-type pquery =
-  {
-    namel      : string list;
-    seq        : string;
-    place_list : Placement.placement list;
-  }
+exception Name_list_needed
 
-let namel p      = p.namel
-let seq p        = p.seq
+type namlom =
+  | Name_list of string list
+  | Named_float of string * float
+
+type pquery = {
+  namlom: namlom;
+  seq: string;
+  place_list: Placement.placement list;
+}
+type t = pquery
+
+let seq p = p.seq
 let place_list p = p.place_list
+let namel p =
+  match p.namlom with
+    | Name_list l -> l
+    | _ -> raise Name_list_needed
 
-let multiplicity p = List.length p.namel
+let multiplicity p =
+  match p.namlom with
+    | Name_list l -> List.length l |> float_of_int
+    | Named_float (_, f) -> f
+let naml_multiplicity p =
+  match p.namlom with
+    | Name_list l -> List.length l
+    | _ -> raise Name_list_needed
+
 let total_multiplicity =
-  List.fold_left (fun acc x -> acc + (multiplicity x)) 0
+  List.fold_left (multiplicity |- (+.) |> flip) 0.
 
 let opt_best_something thing criterion pq =
   match place_list pq with
@@ -77,15 +94,17 @@ let is_placed pq =
 
 let make criterion ~namel ~seq pl =
   {
-    namel = namel;
+    namlom = Name_list namel;
     seq = seq;
-    place_list = sort_placement_list criterion pl
+    place_list = sort_placement_list criterion pl;
   }
 
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
-let set_namel pq namel = { pq with namel = namel }
+let set_namel pq namel = { pq with namlom = Name_list namel }
+let set_mass pq n m = { pq with namlom = Named_float (n, m) }
+let set_namlom pq nm = { pq with namlom = nm }
 
 let apply_to_place_list f pq =
   { pq with place_list = f (pq.place_list) }

@@ -68,9 +68,9 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
   (* Initialize the labeled_mass_arr array with mass from both samples. *)
   List.iter
     (List.iter
-    (* recall weighted_mul = mass unit list with multiplicity *)
-      (fun weighted_mul ->
-        let trans_multi = transform weighted_mul.Pre.weight in
+    (* recall multimul = mass unit list with multiplicity *)
+      (fun multimul ->
+        let trans_multi = transform multimul.Pre.multi in
         if trans_multi <> 1. then
           failwith
             "Nontrivial transformed multiplicity for Gaussian significance not \
@@ -82,7 +82,7 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
               { pquery_num = !pquery_counter;
               mass = trans_multi *. mu.Pre.mass })
                 :: (labeled_mass_arr.(mu.Pre.loc)))
-          weighted_mul.Pre.mul;
+          multimul.Pre.mul;
         incr pquery_counter))
     [upre1; upre2];
   (* Sort by position along the edge. *)

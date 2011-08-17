@@ -70,9 +70,7 @@ let warn_about_duplicate_names placerun =
         StringSet.add name accu)
       StringSet.empty
       (List.flatten
-        (List.map
-          (fun pq -> pq.Pquery.namel)
-          (get_pqueries placerun)))
+        (List.map Pquery.namel (get_pqueries placerun)))
   in
   ()
 

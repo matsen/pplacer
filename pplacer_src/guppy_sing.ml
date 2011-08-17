@@ -3,7 +3,7 @@ open Guppy_cmdobjs
 open Ppatteries
 
 let sing_tree weighting criterion mass_width ref_tree pquery =
-  let pqname = String.concat "_" pquery.Pquery.namel in
+  let pqname = Pquery.namel pquery |> String.concat "_" in
   match weighting with
   | Mass_map.Weighted ->
     Gtree.add_subtrees_by_map
