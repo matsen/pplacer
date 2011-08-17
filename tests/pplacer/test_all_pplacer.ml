@@ -9,4 +9,5 @@ let suite = [
   "like" >::: Test_like.suite;
   "rerooting" >::: Test_rerooting.suite;
   "exp_priors" >::: Test_exp_priors.suite;
+  "painting" >::: Test_painting.suite;
 ]

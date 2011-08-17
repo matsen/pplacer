@@ -18,6 +18,8 @@ let of_refpkg rp =
             let cset = IntMap.find rank rankmap |> IntMap.find i in
             if ColorSet.cardinal cset = 1 then
               i, ColorSet.choose cset
+            else if rank = 0 then
+              failwith (Printf.sprintf "couldn't evaluate %d" i)
             else
               aux (rank - 1)
           in
