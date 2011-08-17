@@ -153,11 +153,15 @@ let tax_equipped rp =
   try let _ = get_taxonomy rp and _ = get_seqinfom rp in true with
   | Missing_element _ -> false
 
-let classify rp pr =
+let classify rp ?tax_map pr =
+  let tax_map' = match tax_map with
+    | None -> get_mrcam rp
+    | Some m -> m
+  in
   Tax_classify.classify_pr
     Placement.add_classif
     (Tax_classify.classify
-      (get_mrcam rp)
+      tax_map'
       (get_uptree_map rp))
     pr
 

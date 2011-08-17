@@ -544,7 +544,15 @@ let run_file prefs query_fname =
     end else (identity, identity)
     in
 
-    let queries = ref [] in
+    let classify =
+      if Refpkg.tax_equipped rp then
+        Refpkg.classify
+          rp
+          ?tax_map:(if Prefs.mrca_class prefs then None
+            else Some (Edge_painting.of_refpkg rp))
+      else
+        identity
+    and queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest ->
         let pq = pquery_gotfunc pq in
@@ -558,21 +566,14 @@ let run_file prefs query_fname =
     and cachefunc _ = false
     and donefunc () =
       pquery_donefunc ();
-      let pr =
-        Placerun.redup
-          redup_tbl
-          (Placerun.make ref_tree query_bname (!queries))
-      in
-      let final_pr =
-        if not (Refpkg.tax_equipped rp) then pr
-        else Refpkg.classify rp pr
-      and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
-      and invocation = (String.concat " " (Array.to_list Sys.argv))
-      in
-      Placerun_io.to_json_file
-        invocation
-        (out_prefix ^ ".jplace")
-        final_pr
+      let out_prefix = (Prefs.out_dir prefs)^"/"^query_bname
+      and invocation = (String.concat " " (Array.to_list Sys.argv)) in
+      Placerun.make ref_tree query_bname (!queries)
+        |> Placerun.redup redup_tbl
+        |> classify
+        |> Placerun_io.to_json_file
+            invocation
+            (out_prefix ^ ".jplace")
     in
     gotfunc, cachefunc, donefunc
 
