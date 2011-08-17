@@ -1,3 +1,4 @@
+open Ppatteries
 open OUnit
 open Test_util
 
@@ -14,7 +15,7 @@ let suite = List.map
           try
             let _ = Json.of_file fname in false
           with
-            | Jsontype.Parse_error _ -> true
+            | Sparse.Parse_error _ -> true
         end
       | _ -> failwith (Printf.sprintf "unexpected json file %s" fname)
   )

@@ -47,6 +47,7 @@ type prefs =
     map_identity : bool ref;
     keep_at_most : int ref;
     keep_factor : float ref;
+    mrca_class : bool ref;
   }
 
 
@@ -97,6 +98,7 @@ let defaults () =
     map_identity = ref false;
     keep_at_most = ref 7;
     keep_factor = ref 0.01;
+    mrca_class = ref false;
   }
 
 
@@ -146,6 +148,7 @@ let map_info          p = !(p.map_info)
 let map_identity      p = !(p.map_identity)
 let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
+let mrca_class        p = !(p.mrca_class)
 
 
 (* arguments and preferences *)
@@ -236,6 +239,8 @@ spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
 "The maximum number of placements we keep. Default is %d.";
 spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Throw away anything that has ml_ratio below keep_factor times (best ml_ratio). Default is %g.";
+"--mrca-class", Arg.Set prefs.mrca_class,
+"Classify with MRCAs instead of a painted tree.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
