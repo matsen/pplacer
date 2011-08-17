@@ -549,8 +549,6 @@ let run_file prefs query_fname =
         if Prefs.mrca_class prefs then
           Refpkg.mrca_classify rp
         else
-          (* XXX this is fairly ugly. Seems like the edge painting should be
-           * part of the refpkg, but dependency ouchie. *)
          Tax_classify.classify_pr
            Placement.add_classif
            (Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
