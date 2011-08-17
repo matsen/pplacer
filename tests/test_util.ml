@@ -146,3 +146,4 @@ let make_rng seed =
   Gsl_rng.set rng (Nativeint.of_int seed);
   rng
 
+let colorset_of_strings = List.map Tax_id.of_string |- Convex.ColorSet.of_list
