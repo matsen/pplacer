@@ -566,14 +566,12 @@ let run_file prefs query_fname =
     and cachefunc _ = false
     and donefunc () =
       pquery_donefunc ();
-      let out_prefix = (Prefs.out_dir prefs)^"/"^query_bname
-      and invocation = (String.concat " " (Array.to_list Sys.argv)) in
       Placerun.make ref_tree query_bname (!queries)
         |> Placerun.redup redup_tbl
         |> classify
         |> Placerun_io.to_json_file
-            invocation
-            (out_prefix ^ ".jplace")
+            (Array.to_list Sys.argv |> String.concat " ")
+            ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
     in
     gotfunc, cachefunc, donefunc
 
