@@ -546,10 +546,14 @@ let run_file prefs query_fname =
 
     let classify =
       if Refpkg.tax_equipped rp then
-        Refpkg.classify
-          rp
-          ?tax_map:(if Prefs.mrca_class prefs then None
-            else Some (Edge_painting.of_refpkg rp))
+        if Prefs.mrca_class prefs then
+          Refpkg.mrca_classify rp
+        else
+          (* XXX this is fairly ugly. Seems like the edge painting should be
+           * part of the refpkg, but dependency ouchie. *)
+         Tax_classify.classify_pr
+           Placement.add_classif
+           (Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
       else
         identity
     and queries = ref [] in
