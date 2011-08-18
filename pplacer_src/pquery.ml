@@ -31,6 +31,12 @@ type t = pquery
 
 let seq p = p.seq
 let place_list p = p.place_list
+let namlom p = p.namlom
+let name p =
+  match p.namlom with
+    | Name_list (n :: _)
+    | Named_float (n, _) -> n
+    | _ -> failwith "no name"
 let namel p =
   match p.namlom with
     | Name_list l -> l
@@ -40,6 +46,7 @@ let multiplicity p =
   match p.namlom with
     | Name_list l -> List.length l |> float_of_int
     | Named_float (_, f) -> f
+
 let naml_multiplicity p =
   match p.namlom with
     | Name_list l -> List.length l
@@ -103,7 +110,7 @@ let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
 let set_namel pq namel = { pq with namlom = Name_list namel }
-let set_mass pq n m = { pq with namlom = Named_float (n, m) }
+let set_mass pq m = { pq with namlom = Named_float (name pq, m) }
 let set_namlom pq nm = { pq with namlom = nm }
 
 let apply_to_place_list f pq =

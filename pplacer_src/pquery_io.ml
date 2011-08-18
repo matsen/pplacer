@@ -27,8 +27,16 @@ let to_csv_strl pq =
 
 let to_json json_state pq =
   let tbl = Hashtbl.create 4 in
-  let namel = List.map (fun s -> Jsontype.String s) (Pquery.namel pq) in
-  Hashtbl.add tbl "n" (Jsontype.Array namel);
+  begin match Pquery.namlom pq with
+    | Pquery.Name_list l ->
+      l
+        |> List.map (fun s -> Jsontype.String s)
+        |> (fun l -> Jsontype.Array l)
+        |> Hashtbl.add tbl "n"
+    | Pquery.Named_float (n, m) ->
+      Hashtbl.add tbl "n" (Jsontype.String n);
+      Hashtbl.add tbl "m" (Jsontype.Float m)
+  end;
   Hashtbl.add tbl "p" (Jsontype.Array (
     List.map
       (Placement.to_json json_state)
@@ -58,6 +66,12 @@ let of_json fields o =
     | Jsontype.String s -> [s]
     | Jsontype.Array arr -> List.map Jsontype.string arr
     | x -> Jsontype.unexpected x "string or string array"
-  and pa = List.map (Placement.of_json fields) (Jsontype.array (Hashtbl.find tbl "p")) in
-  Pquery.make_ml_sorted ~namel ~seq:no_seq_str pa
-
+  in
+  List.map
+    (Placement.of_json fields)
+    (Hashtbl.find tbl "p" |> Jsontype.array)
+  |> Pquery.make_ml_sorted ~namel ~seq:no_seq_str
+  |> if Hashtbl.mem tbl "m" then
+      Hashtbl.find tbl "m" |> Jsontype.float |> flip Pquery.set_mass
+    else
+      identity
