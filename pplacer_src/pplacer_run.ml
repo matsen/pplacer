@@ -397,8 +397,9 @@ let run_file prefs query_fname =
   let prior =
     if Prefs.uniform_prior prefs then Core.Uniform_prior
     else if Prefs.informative_prior prefs then
+    (* Below: add on the prior lower bound onto the top branch length. *)
       Core.Informative_exp_prior
-        (Core.prior_mean_map (Prefs.prior_lower prefs) ref_tree)
+        (Core.prior_mean_map ((+.) (Prefs.prior_lower prefs)) ref_tree)
     else Core.Flat_exp_prior
       (* exponential with mean = average branch length *)
       ((Gtree.tree_length ref_tree) /.

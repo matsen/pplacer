@@ -12,14 +12,14 @@ let final_tolerance = 1e-5
 
 let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
 
-(* This function returns a map from the internal nodes i to lower_bound plus the
- * average distance from the proximal side of edge i to the leaves below i. *)
-let prior_mean_map lower_bound t =
+(* This function returns a map from the internal nodes i to the mean of the
+ * prior used for the pendant branch lengths. This is the average of the leaf
+ * distances strictly below the edge corresponding to the internal node i, plus
+ * top_segment_f applied to the edge labeled i. *)
+let prior_mean_map top_segment_f t =
   let bl = Gtree.get_bl t in
-  (* top_segment is the amount that we add representing the topmost edge. *)
-  let top_segment i = lower_bound +. (bl i) in
   let rec aux = function
-    | Stree.Leaf i -> IntMap.singleton i (top_segment i), [bl i]
+    | Stree.Leaf i -> IntMap.singleton i (top_segment_f (bl i)), [bl i]
     | Stree.Node (i, subtrees) ->
       let map, distances = List.map aux subtrees
         |> List.reduce
@@ -27,7 +27,7 @@ let prior_mean_map lower_bound t =
       in
       (* Add the average distance for i onto the map. *)
       distances
-        |> List.map ((+.) (top_segment i))
+        |> List.map ((+.) (top_segment_f (bl i)))
         |> avg
         |> flip (IntMap.add i) map,
       (* Increase the collection of distances by the given branch length. *)
