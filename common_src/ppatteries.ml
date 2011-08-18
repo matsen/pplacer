@@ -77,6 +77,28 @@ let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
 (* parsing *)
 module Sparse = struct
+  open Lexing
+
+  let location_of_position p = p.pos_lnum, p.pos_cnum - p.pos_bol
+
+  exception Parse_error of string * (int * int) * (int * int)
+  let parse_error_of_positions s p1 p2 =
+    Parse_error (s, location_of_position p1, location_of_position p2)
+
+  let format_error = function
+    | Parse_error (msg, (l1, c1), (l2, c2)) ->
+      Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
+    | _ -> raise (Invalid_argument "format_error")
+
+  let incr_lineno lexbuf =
+    let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
+    }
+
+  let syntax_error tok msg =
+    raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
 
   exception Syntax_error of int * int
 

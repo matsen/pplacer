@@ -45,12 +45,15 @@
  * Closed GH-119: Added a `rppr reroot` subcommand.
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
  * Closed GH-122: Renamed `rppr taxtable` to `rppr prep_db`.
+ * Closed GH-124: Rewrote the Newick parser.
  * Closed GH-125: Added a --rooted flag to `rppr convexify`.
  * Closed GH-128: Added informative priors to pplacer integration.
  * Closed GH-129: Added the ability for `rppr convexify` to convexify a tree
    not in a reference package.
  * Closed GH-130: Added `guppy pd`.
  * Closed GH-131: Changed pplacer to set some defaults with the -p flag.
+ * Closed GH-133: Added edge painting classification by default to pplacer and
+   a corresponding --painted flag to `rppr ref_tree`.
 
 
 1.1.alpha08

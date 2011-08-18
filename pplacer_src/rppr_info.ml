@@ -25,8 +25,7 @@ object (self)
       ["rank"; "n_taxids"; "n_nonconvex"; "max_bad"; "tot_bad"];
     IntMap.iter
       (fun rank taxmap ->
-        let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
-        let _, cutsetim = build_sizemim_and_cutsetim (colormap, st) in
+        let _, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
         let cutsetim = IntMap.add (Stree.top_id st) ColorSet.empty cutsetim in
         let all_colors, unconvex_colors = IntMap.fold
           (fun _ colors (all, unconvex) ->

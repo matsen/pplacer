@@ -15,7 +15,7 @@ let classify_pr what how pr =
 (* Classify a placement at a given location.
  * Simply bounce up the tree until we hit an MRCA.
  *)
-let classify_loc mrcam utm loc =
+let mrca_classify_loc mrcam utm loc =
   let rec aux i =
     if IntMap.mem i mrcam then IntMap.find i mrcam
     else aux (IntMap.find i utm)
@@ -27,7 +27,9 @@ let classify_loc mrcam utm loc =
    * *)
   try aux (IntMap.find loc utm) with | Not_found -> Tax_id.NoTax
 
-let classify mrcam utm p =
-  classify_loc mrcam utm (Placement.location p)
+let mrca_classify mrcam utm p =
+  mrca_classify_loc mrcam utm (Placement.location p)
 
+let paint_classify paintm p =
+  try IntMap.find (Placement.location p) paintm with | Not_found -> Tax_id.NoTax
 

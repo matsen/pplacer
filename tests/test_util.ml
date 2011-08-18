@@ -146,3 +146,9 @@ let make_rng seed =
   Gsl_rng.set rng (Nativeint.of_int seed);
   rng
 
+let colorset_of_strings = List.map Tax_id.of_string |- Convex.ColorSet.of_list
+
+let simple_refpkg tree_string =
+  Refpkg.of_path
+    ~ref_tree:(Newick_gtree.of_string tree_string)
+    (tests_dir ^ "data/simple.refpkg")
