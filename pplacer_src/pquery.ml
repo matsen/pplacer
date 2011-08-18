@@ -41,6 +41,14 @@ let namel p =
   match p.namlom with
     | Name_list l -> l
     | _ -> raise Name_list_needed
+let force_namel p =
+  match p.namlom with
+    | Name_list l -> l
+    | Named_float (n, _) -> [n]
+let has_single_mult p =
+  match p.namlom with
+    | Named_float _ -> true
+    | Name_list _ -> false
 
 let multiplicity p =
   match p.namlom with
