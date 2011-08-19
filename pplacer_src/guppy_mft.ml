@@ -8,8 +8,8 @@ object (self)
   inherit output_cmd () as super_output
   inherit placefile_cmd () as super_placefile
 
-  val average = flag "--average"
-    (Plain (false, "Give equal weight to each pquery per-placerun."))
+  val average = flag "--unitize"
+    (Plain (false, "Make total unit mass per placerun by multiplying with a scalar."))
 
   method specl = super_output#specl @ [toggle_flag average]
 

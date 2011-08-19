@@ -18,6 +18,7 @@ let rec is_decreasing criterion = function
 
 exception Name_list_needed
 
+(* namlom is short for Name List Or Mass *)
 type namlom =
   | Name_list of string list
   | Named_float of string * float
