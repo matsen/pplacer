@@ -305,12 +305,14 @@ let _build_apartl strict cutsetl kappa (c, x) =
         (transposed_fold CS.union startsl)
         (product dist)
       in
-      (* By the construction of the pis, between pi can only be empty or b. Here
-       * we filter out those aparts such that b is not c or None. Recall (see
-       * the intro to convex.mli) that None represents any color that is not
-       * "forced" by convexity considerations. c is None when there is not an
-       * above color that is in x. b is None when c is None and there are no
-       * colors shared between the pi_i.
+      (* By the construction of the pis, between pi can only be empty or b.
+       * In the case of strict convexity, we require all pi to be just the set
+       * {b} if b is not None.
+       * In the usual case, we filter out those aparts such that b is not c or
+       * None. Recall (see the intro to convex.mli) that None represents any
+       * color that is not "forced" by convexity considerations. c is None when
+       * there is not an above color that is in x. b is None when c is None and
+       * there are no colors shared between the pi_i.
        *)
       let is_valid =
         if strict then
