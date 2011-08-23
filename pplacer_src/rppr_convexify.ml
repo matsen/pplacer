@@ -279,6 +279,8 @@ object (self)
       |> Csv.load |> List.enum
       |> Enum.map
           (function
+            | [a; _] when not (StringMap.mem a namemap) ->
+              failwith (Printf.sprintf "leaf '%s' not found on tree" a)
             | [a; b] -> StringMap.find a namemap, Tax_id.of_string b
             | _ -> failwith "malformed colors csv file")
       |> IntMap.of_enum
