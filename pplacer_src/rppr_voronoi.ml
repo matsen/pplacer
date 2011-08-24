@@ -23,7 +23,7 @@ object (self)
   inherit kr_cmd () as super_kr
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
-  inherit output_cmd () as super_output
+  inherit tabular_cmd ~default_to_csv:true () as super_tabular
 
   val verbose = flag "-v"
     (Plain (false, "If specified, write progress output to stderr."))
@@ -40,7 +40,7 @@ object (self)
     super_mass#specl
     @ super_kr#specl
     @ super_refpkg#specl
-    @ super_output#specl
+    @ super_tabular#specl
     @ [
       toggle_flag verbose;
       string_flag trimmed_tree_file;
@@ -57,7 +57,6 @@ object (self)
       let transform, weighting, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
       and leaf_mass_fract = fv leaf_mass
-      and ch = self#out_channel |> csv_out_channel |> Csv.to_out_obj
       and verbose = fv verbose in
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp
@@ -102,7 +101,7 @@ object (self)
        * least mass and deletes its leaf from the corresponding set. We keep a
        * map of the scores for each leaf in the Voronoi region, updated at each
        * iteration with only the leaves which were touched in the last pass. *)
-      let rec aux diagram score_map updated_leaves =
+      let rec aux diagram cut score_map updated_leaves =
         let indiv_map = Voronoi.partition_indiv_on_leaves diagram mass in
         let score_map' = IntSet.fold
           (update_score indiv_map)
@@ -113,11 +112,8 @@ object (self)
          * are > 1 leaves with zero mass in their regions, we get all of them. *)
         let leaf, dist = IntMap.enum score_map' |> Enum.arg_min snd in
         if List.exists ((|>) (dist, diagram)) criteria then
-          diagram
+          diagram, cut
         else begin
-          Csv.output_record
-            ch
-            [Gtree.get_name taxtree leaf; Printf.sprintf "%1.6f" dist];
           if verbose then begin
             Printf.fprintf stderr "uncoloring %d (dist %1.6f)" leaf dist;
             prerr_newline ();
@@ -125,11 +121,18 @@ object (self)
           let diagram', updated_leaves' = Voronoi.uncolor_leaf diagram leaf in
           aux
             diagram'
+            ([Gtree.get_name taxtree leaf; Printf.sprintf "%1.6f" dist] :: cut)
             (IntMap.remove leaf score_map')
             (IntSet.remove leaf updated_leaves')
         end
       in
-      let diagram' = aux diagram IntMap.empty diagram.Voronoi.all_leaves in
+      let diagram', cut = aux
+        diagram
+        []
+        IntMap.empty
+        diagram.Voronoi.all_leaves
+      in
+      self#write_ll_tab cut;
       let trimmed =
         IntSet.diff
           diagram.Voronoi.all_leaves
