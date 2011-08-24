@@ -18,9 +18,8 @@ object (self)
 
   method private placefile_action = function
     | [pr] ->
-      let transform, weighting, criterion = self#mass_opts in
-      let indiv_of = Mass_map.Indiv.of_placerun transform weighting criterion in
-      Rarefaction.of_placerun indiv_of pr
+      let _, _, criterion = self#mass_opts in
+      Rarefaction.of_placerun criterion pr
         |> Enum.map (fun (a, b) -> [string_of_int a; Printf.sprintf "%g" b])
         |> List.of_enum
         |> List.cons ["k"; "r"]

@@ -20,10 +20,15 @@ let count_along_mass gt mass cb =
     (fun () -> ref 0)
     gt
 
-let of_placerun indiv_of ?k_max pr =
+let of_placerun criterion ?k_max pr =
   let gt = Placerun.get_ref_tree pr
-  and mass = indiv_of pr in
-  let n = IntMap.values mass |> Enum.map List.length |> Enum.reduce (+) in
+  and mass = I.of_placerun
+    Mass_map.no_transform
+    Mass_map.Unweighted
+    criterion
+    pr
+  in
+  let n = Placerun.get_pqueries pr |> List.length in
   let n' = float_of_int n
   and k_max = match k_max with
     | Some k when k < n -> k
