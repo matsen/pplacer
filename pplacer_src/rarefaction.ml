@@ -27,7 +27,7 @@ let of_placerun indiv_of ?k_max pr =
   let n' = float_of_int n
   and k_max = match k_max with
     | Some k when k < n -> k
-    | _ -> n - 1
+    | _ -> n
   and base_k_map = 0 -- n
     |> Enum.map (identity &&& const 1.)
     |> IntMap.of_enum
@@ -35,15 +35,15 @@ let of_placerun indiv_of ?k_max pr =
   in
   let k_maps = Enum.fold
     (fun k_maps k ->
-      let prev_map = IntMap.find (k - 1) k_maps
+      let prev_map = IntMap.find k k_maps
       and diff = n' -. float_of_int k in
       let q_k r = (diff -. float_of_int r) /. diff *. IntMap.find r prev_map in
       0 -- n
         |> Enum.map (identity &&& q_k)
         |> IntMap.of_enum
-        |> flip (IntMap.add k) k_maps)
+        |> flip (IntMap.add (k + 1)) k_maps)
     base_k_map
-    (1 --^ k_max)
+    (0 --^ k_max)
   in
   let count k =
     let q_k = IntMap.find k k_maps |> flip IntMap.find in
@@ -55,5 +55,5 @@ let of_placerun indiv_of ?k_max pr =
         let p = n - d in
         1. -. (q_k d) -. (q_k p))
   in
-  1 --^ k_max
+  2 -- k_max
     |> Enum.map (identity &&& count)
