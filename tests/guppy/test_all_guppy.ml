@@ -10,4 +10,5 @@ let suite = [
   "gaussian" >::: Test_gaussian.suite;
   "pd" >::: Test_pd.suite;
   "wpd" >::: Test_wpd.suite;
+  "rarefact" >::: Test_rarefact.suite;
 ]
