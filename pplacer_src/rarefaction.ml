@@ -43,7 +43,7 @@ let of_placerun indiv_of ?k_max pr =
         |> IntMap.of_enum
         |> flip (IntMap.add k) k_maps)
     base_k_map
-    (1 -- k_max)
+    (1 --^ k_max)
   in
   let count k =
     let q_k = IntMap.find k k_maps |> flip IntMap.find in
@@ -55,5 +55,5 @@ let of_placerun indiv_of ?k_max pr =
         let p = n - d in
         1. -. (q_k d) -. (q_k p))
   in
-  1 -- k_max
+  1 --^ k_max
     |> Enum.map (identity &&& count)
