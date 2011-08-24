@@ -13,11 +13,11 @@ object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
-  inherit output_cmd () as super_output
+  inherit tabular_cmd () as super_tabular
 
   method specl =
     super_mass#specl
-    @ super_output#specl
+    @ super_tabular#specl
 
   method desc =
 "calculate weighted phylogenetic diversity of placefiles"
@@ -27,9 +27,10 @@ object (self)
     let transform, weighting, criterion = self#mass_opts in
     let indiv_of = Mass_map.Indiv.of_placerun transform weighting criterion in
     let wpd = wpd_of_placerun indiv_of in
-    List.iter
-      (fun pr ->
-        wpd pr |> Printf.printf "%s: %g\n" (Placerun.get_name pr))
-      prl
+    prl
+      |> List.map
+          (fun pr -> [Placerun.get_name pr; wpd pr |> Printf.sprintf "%g"])
+      |> List.cons ["name"; "wpd"]
+      |> self#write_ll_tab
 
 end

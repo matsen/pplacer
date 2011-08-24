@@ -5,7 +5,7 @@ open Ppatteries
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit output_cmd () as super_output
+  inherit tabular_cmd () as super_tabular
 
   val cutoff = flag "--cutoff"
     (Needs_argument ("cutoff", "Specify the maximum branch length to be trimmed."))
@@ -20,7 +20,7 @@ object (self)
   val never_prune_regex_from = flag "--never-prune-regex-from"
     (Plain ("", "Provide a file containing regular expressions; taxa matching one of these will not be pruned."))
 
-  method specl = super_output#specl @ [
+  method specl = super_tabular#specl @ [
     float_flag cutoff;
     int_flag leaf_count;
     toggle_flag names_only;
@@ -86,11 +86,10 @@ object (self)
         if names_only then (fun (id,_,_) -> [get_name id])
         else (fun (id,bl,_) -> [get_name id; string_of_float bl])
       in
-      Csv.output_all
-        (self#out_channel |> csv_out_channel |> Csv.to_out_obj)
-        (List.map
-           line_of_result
-           (Pd.until_stopping safe never_prune_ids criterion pt))
+      List.map
+        line_of_result
+        (Pd.until_stopping safe never_prune_ids criterion pt)
+      |> self#write_ll_tab
 
     | _ -> failwith "prunetre takes exactly one tree"
 

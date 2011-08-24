@@ -74,6 +74,53 @@ object (self)
 
 end
 
+class tabular_cmd ?(default_to_csv = false) () =
+object (self)
+  inherit output_cmd () as super_output
+
+  val as_csv =
+    if default_to_csv then
+      flag "--no-csv"
+        (Plain (true, "Output the results as a padded matrix instead of csv."))
+    else
+      flag "--csv"
+        (Plain (false, "Output the results as csv instead of a padded matrix."))
+
+  method specl =
+    super_output#specl
+  @ [toggle_flag as_csv]
+
+  method private channel_opt ch =
+    match ch with
+      | Some x -> x
+      | None -> self#out_channel
+
+  method private write_csv ?ch data =
+    self#channel_opt ch
+      |> csv_out_channel
+      |> Csv.to_out_obj
+      |> flip Csv.output_all data
+
+  method private write_matrix ?ch data =
+    self#channel_opt ch
+      |> flip String_matrix.write_padded data
+
+  method private write_ll_tab ?ch data =
+    if fv as_csv then self#write_csv ?ch data
+    else
+      List.map Array.of_list data
+        |> Array.of_list
+        |> self#write_matrix ?ch
+
+  method private write_aa_tab ?ch data =
+    if not (fv as_csv) then self#write_matrix ?ch data
+    else
+      Array.map Array.to_list data
+        |> Array.to_list
+        |> self#write_csv ?ch
+
+end
+
 class rng_cmd () =
 object
   val seed = flag "--seed"
