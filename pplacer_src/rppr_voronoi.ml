@@ -111,42 +111,23 @@ object (self)
         in
         (* Find the leaf with the least mass in its Voronoi region. When there
          * are > 1 leaves with zero mass in their regions, we get all of them. *)
-        match IntMap.fold
-          (fun leaf dist -> function
-            | None -> Some (IntSet.singleton leaf, dist)
-            | Some (_, prev_dist) when dist < prev_dist ->
-              Some (IntSet.singleton leaf, dist)
-            | Some (leafs, prev_dist) when dist = prev_dist && dist = 0.0 ->
-              Some (IntSet.add leaf leafs, prev_dist)
-            | prev -> prev)
-          score_map'
-          None
-        with
-          | None -> failwith "no leaves?"
-          | Some (leafs, dist) ->
-            if List.exists ((|>) (dist, diagram)) criteria then
-              diagram
-            else begin
-              if verbose then begin
-                Printf.fprintf stderr "uncoloring %d leaves (dist %1.6f)"
-                  (IntSet.cardinal leafs)
-                  dist;
-                prerr_newline ();
-              end;
-              let diagram', updated_leaves' = Voronoi.uncolor_leaves
-                diagram
-                leafs
-              and cut = List.map
-                (fun leaf -> [Gtree.get_name taxtree leaf;
-                             Printf.sprintf "%1.6f" dist])
-                (IntSet.elements leafs)
-              in
-              Csv.output_all ch cut;
-              aux
-                diagram'
-                (IntSet.fold IntMap.remove leafs score_map')
-                (IntSet.diff updated_leaves' leafs)
-            end
+        let leaf, dist = IntMap.enum score_map' |> Enum.arg_min snd in
+        if List.exists ((|>) (dist, diagram)) criteria then
+          diagram
+        else begin
+          Csv.output_record
+            ch
+            [Gtree.get_name taxtree leaf; Printf.sprintf "%1.6f" dist];
+          if verbose then begin
+            Printf.fprintf stderr "uncoloring %d (dist %1.6f)" leaf dist;
+            prerr_newline ();
+          end;
+          let diagram', updated_leaves' = Voronoi.uncolor_leaf diagram leaf in
+          aux
+            diagram'
+            (IntMap.remove leaf score_map')
+            (IntSet.remove leaf updated_leaves')
+        end
       in
       let diagram' = aux diagram IntMap.empty diagram.Voronoi.all_leaves in
       let trimmed =
