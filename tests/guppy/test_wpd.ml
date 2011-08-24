@@ -5,9 +5,7 @@ open Test_util
 let suite = [
   "test_simple" >:: begin fun () ->
     placeruns_of_dir "simple"
-      |> List.cons
-          (placeruns_of_dir "multi"
-           |> List.find (Placerun.get_name |- (=) "test1and3"))
+      |> List.cons (placerun_of_dir "multi" "test1and3")
       |> List.map
           (Placerun.get_name &&& Guppy_wpd.wpd_of_placerun Placement.ml_ratio)
       |> List.sort
