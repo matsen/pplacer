@@ -2,8 +2,8 @@
     Opening it includes Batteries, MapsSets, and some generally useful
     functions. *)
 
-open Batteries
-open MapsSets
+include MapsSets
+include Batteries
 
 let round x = int_of_float (floor (x +. 0.5))
 
@@ -74,6 +74,17 @@ let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
+
+(*
+ * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
+ * combine all the maps into a single one, with k bound to the concatenated set
+ * of bindings for k in map_list.
+ *)
+let combine_list_intmaps l =
+  (IntMap.fold
+     (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
+   |> flip List.fold_left IntMap.empty)
+    l
 
 (* parsing *)
 module Sparse = struct
@@ -470,17 +481,3 @@ module StringFuns = struct
     new_s
 
 end
-
-include MapsSets
-include Batteries
-
-(*
- * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
- * combine all the maps into a single one, with k bound to the concatenated set
- * of bindings for k in map_list.
- *)
-let combine_list_intmaps l =
-  (IntMap.fold
-     (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
-   |> flip List.fold_left IntMap.empty)
-    l
