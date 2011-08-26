@@ -29,6 +29,7 @@
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
  * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
+ * Closed GH-96: Now using colors from colorbrewer2.org for heat.
  * Closed GH-98: Adding a --map-identity flag to pplacer.
  * Closed GH-99: Added more examples for guppy batchfiles.
  * Closed GH-101: Added virtual placefiles to guppy batchfiles.
