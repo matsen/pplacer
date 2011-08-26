@@ -1,6 +1,8 @@
 RELEASE=pplacer guppy rppr
+DEBUG=pplacer.d guppy.d rppr.d
 
 all: $(RELEASE)
+debug: $(DEBUG)
 
 $(RELEASE):
 	if [ ! -e bin ]; then mkdir bin; fi
@@ -16,6 +18,10 @@ clean:
 	rm -f tests.native
 	ocamlbuild -clean
 	rm -f *.mltop
+
+%.d: %.d.byte
+	if [ ! -e bin ]; then mkdir bin; fi
+	cp "$<" "bin/$@"
 
 %.top: %.byte
 	find _build -name '*.cmo' -print0 | xargs -0I% basename % .cmo > $*.mltop

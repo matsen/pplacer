@@ -17,6 +17,7 @@ type prefs =
     calc_pp : bool ref;
     uniform_prior : bool ref;
     informative_prior : bool ref;
+    prior_lower : float ref;
     pp_rel_err : float ref;
     (* playing ball *)
     max_strikes : int ref;
@@ -47,6 +48,7 @@ type prefs =
     map_identity : bool ref;
     keep_at_most : int ref;
     keep_factor : float ref;
+    mrca_class : bool ref;
   }
 
 
@@ -67,6 +69,7 @@ let defaults () =
     calc_pp = ref false;
     uniform_prior = ref false;
     informative_prior = ref false;
+    prior_lower = ref 0.;
     pp_rel_err = ref 0.01;
     (* playing ball *)
     max_strikes = ref 6;
@@ -97,6 +100,7 @@ let defaults () =
     map_identity = ref false;
     keep_at_most = ref 7;
     keep_factor = ref 0.01;
+    mrca_class = ref false;
   }
 
 
@@ -118,6 +122,7 @@ let initial_tolerance p = !(p.initial_tolerance)
 let calc_pp           p = !(p.calc_pp)
 let uniform_prior     p = !(p.uniform_prior)
 let informative_prior p = !(p.informative_prior)
+let prior_lower       p = !(p.prior_lower)
 let pp_rel_err        p = !(p.pp_rel_err)
 let max_strikes       p = !(p.max_strikes)
 let strike_box        p = !(p.strike_box)
@@ -146,6 +151,7 @@ let map_info          p = !(p.map_info)
 let map_identity      p = !(p.map_identity)
 let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
+let mrca_class        p = !(p.mrca_class)
 
 
 (* arguments and preferences *)
@@ -190,6 +196,8 @@ spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
 "Use a uniform prior rather than exponential.";
 "--inform-prior", Arg.Set prefs.informative_prior,
 "Use an informative exponential prior based on rooted distance to leaves.";
+spec_with_default "--prior-lower" (fun o -> Arg.Set_float o) prefs.prior_lower
+"Lower bound for the informative prior mean. Default is %g.";
 spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
 "Starting pendant branch length. Default is %g.";
 spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
@@ -236,6 +244,8 @@ spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
 "The maximum number of placements we keep. Default is %d.";
 spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Throw away anything that has ml_ratio below keep_factor times (best ml_ratio). Default is %g.";
+"--mrca-class", Arg.Set prefs.mrca_class,
+"Classify with MRCAs instead of a painted tree.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

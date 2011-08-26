@@ -17,6 +17,10 @@ let placeruns_of_dir which =
     Placerun_io.of_any_file
     files
 
+let placerun_of_dir dir which =
+  placeruns_of_dir dir
+    |> List.find (Placerun.get_name |- (=) which)
+
 let pres_of_dir weighting criterion which =
   let tbl = Hashtbl.create 10 in
   List.iter
@@ -146,3 +150,9 @@ let make_rng seed =
   Gsl_rng.set rng (Nativeint.of_int seed);
   rng
 
+let colorset_of_strings = List.map Tax_id.of_string |- Convex.ColorSet.of_list
+
+let simple_refpkg tree_string =
+  Refpkg.of_path
+    ~ref_tree:(Newick_gtree.of_string tree_string)
+    (tests_dir ^ "data/simple.refpkg")

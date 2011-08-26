@@ -19,7 +19,6 @@ type data = {
   rankname: string;
   taxmap: Tax_id.tax_id IntMap.t;
   rank_tax_map: Tax_id.tax_id IntMap.t IntMap.t;
-  colormap: color IntMap.t;
   not_cut: IntSet.t;
   cut_leaves: IntSet.t;
   rank_cutseqs: IntSet.t IntMap.t;
@@ -124,23 +123,18 @@ object (self)
     and check_all_ranks = fv check_all_ranks in
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
+    let tax_name = Tax_taxonomy.get_tax_name td in
     let foldf alternates data =
-      let colormap' = IntMap.filteri
+      let taxmap' = IntMap.filteri
         (fun k _ -> IntSet.mem k data.not_cut)
-        data.colormap
-      in
-      let rank_alternates = alternate_colors (colormap', data.stree) in
-      let rev_colormap = IntMap.fold
-        (fun _ ti -> StringMap.add (Tax_taxonomy.get_tax_name td ti) ti)
         data.taxmap
-        StringMap.empty
       in
+      let rank_alternates = alternate_colors (taxmap', data.stree) in
       IntSet.fold
         (fun i accum ->
           let seqname = Gtree.get_name gt i in
           ColorSet.fold
-            (fun candidate accum ->
-              let c_ti = StringMap.find candidate rev_colormap in
+            (fun c_ti accum ->
               let lineage = Tax_taxonomy.get_lineage td c_ti in
               let rec aux = function
                 | [] -> true
@@ -166,7 +160,7 @@ object (self)
                       | x -> x
               in
               if aux (List.rev lineage) then
-                [data.rankname; seqname; candidate] :: accum
+                [data.rankname; seqname; tax_name c_ti] :: accum
               else
                 accum)
             (IntMap.find i rank_alternates)
@@ -205,11 +199,10 @@ object (self)
     let nu_f = if fv no_early then None else Some apart_nu in
     let _, results = Enum.fold
       (fun ((rank_cutseqs, data_list) as accum) (rank, taxmap) ->
-        let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
         let rankname = Tax_taxonomy.get_rank_name td rank in
         Printf.printf "solving %s" rankname;
         print_newline ();
-        let _, cutsetim = build_sizemim_and_cutsetim (colormap, st) in
+        let _, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
         let cutsetim = IntMap.add (top_id st) ColorSet.empty cutsetim in
         let max_bad, tot_bad = badness cutsetim in
         if max_bad = 0 then begin
@@ -226,7 +219,7 @@ object (self)
           let not_cut, omega, time_delta =
             if fv use_naive then
               let start = Sys.time () in
-              let not_cut = Naive.solve (colormap, st) in
+              let not_cut = Naive.solve (taxmap, st) in
               let delta = (Sys.time ()) -. start in
               not_cut, IntSet.cardinal not_cut, delta
             else
@@ -234,7 +227,7 @@ object (self)
               let phi, omega = solve
                 ~strict:(fv strict)
                 ?nu_f
-                (colormap, st)
+                (taxmap, st)
               in
               let delta = (Sys.time ()) -. start in
               nodeset_of_phi_and_tree phi st, omega, delta
@@ -248,7 +241,7 @@ object (self)
           in
           let data = {
             stree = st; rank = rank; rankname = rankname; taxmap = taxmap;
-            colormap = colormap; cut_leaves = cut_leaves; not_cut = not_cut;
+            cut_leaves = cut_leaves; not_cut = not_cut;
             rank_cutseqs = rank_cutseqs'; rank_tax_map = rank_tax_map;
             time_delta = time_delta; max_badness = max_bad;
           }
@@ -286,7 +279,9 @@ object (self)
       |> Csv.load |> List.enum
       |> Enum.map
           (function
-            | [a; b] -> StringMap.find a namemap, b
+            | [a; _] when not (StringMap.mem a namemap) ->
+              failwith (Printf.sprintf "leaf '%s' not found on tree" a)
+            | [a; b] -> StringMap.find a namemap, Tax_id.of_string b
             | _ -> failwith "malformed colors csv file")
       |> IntMap.of_enum
     and st = gt.Gtree.stree

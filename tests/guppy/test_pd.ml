@@ -4,14 +4,9 @@ open Test_util
 
 let suite = [
   "test_simple" >:: begin fun () ->
-    let indiv_of = Mass_map.Indiv.of_placerun
-      Mass_map.unit_transform
-      Mass_map.Weighted
-      Placement.ml_ratio
-    in
     placeruns_of_dir "simple"
       |> List.map
-          (Placerun.get_name &&& Guppy_pd.pd_of_placerun indiv_of false)
+          (Placerun.get_name &&& Guppy_pd.pd_of_placerun Placement.ml_ratio false)
       |> List.sort
       |> List.enum
       |> check_map_approx_equal

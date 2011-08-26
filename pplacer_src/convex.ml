@@ -1,9 +1,9 @@
 open Ppatteries
 open Stree
 
-type color = string
-module ColorSet = StringSet
-module ColorMap = StringMap
+type color = Tax_id.t
+module ColorSet = Tax_id.TaxIdSet
+module ColorMap = Tax_id.TaxIdMap
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
 
@@ -21,7 +21,7 @@ end
 
 module ColorSetMap = BetterMap (Map.Make(OrderedColorSet)) (PprColorSet)
 
-type coloropt = string option
+type coloropt = color option
 module OrderedColorOpt = struct
   type t = coloropt
   let compare co1 co2 =
@@ -29,13 +29,13 @@ module OrderedColorOpt = struct
       | None, Some _ -> -1
       | Some _, None -> 1
       | None, None -> 0
-      | Some c1, Some c2 -> String.compare c1 c2
+      | Some c1, Some c2 -> compare c1 c2
 end
 
 module PprColorOpt = struct
   type t = coloropt
   let ppr ff = function
-    | Some c -> Format.fprintf ff "<%s>" c
+    | Some c -> Format.fprintf ff "<%s>" (Tax_id.to_string c)
     | None -> Format.fprintf ff "--"
 end
 
@@ -54,7 +54,7 @@ module PprQuestion = struct
   let ppr ff (co, cs) =
     Format.fprintf ff "@[(%s,@ " begin match co with
       | None -> "-"
-      | Some c -> c
+      | Some c -> Tax_id.to_string c
     end;
     ColorSet.ppr ff cs;
     Format.fprintf ff ")@]"
@@ -66,7 +66,7 @@ module OrderedQuestion = struct
     match co1, co2 with
       | Some c1, Some c2 when c1 = c2 ->
         ColorSet.compare cs1 cs2
-      | Some c1, Some c2 -> String.compare c1 c2
+      | Some c1, Some c2 -> compare c1 c2
       | None, Some _ -> -1
       | Some _, None -> 1
       | None, None -> ColorSet.compare cs1 cs2

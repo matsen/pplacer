@@ -73,11 +73,10 @@ object (self)
         (snd |- IntMap.values |- TaxIdSet.of_enum |- TaxIdSet.cardinal |- (<) 1)
         (IntMap.enum rank_tax_map)
       in
-      let colormap = IntMap.map (Tax_taxonomy.get_tax_name td) taxmap in
       Tax_taxonomy.get_rank_name td rank
         |> Printf.sprintf "rerooting at %s"
         |> print_endline;
-      let phi, _ = Convex.solve (colormap, st) in
+      let phi, _ = Convex.solve (taxmap, st) in
       let not_cut = Convex.nodeset_of_phi_and_tree phi st in
       Gtree.get_bark_map gt
         |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)

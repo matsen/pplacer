@@ -49,7 +49,7 @@ let get_tax_name td ti =
 
 let get_lineage td ti =
   let rec aux accu ti' =
-    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else accu
+    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else ti' :: accu
   in
   aux [] ti
 

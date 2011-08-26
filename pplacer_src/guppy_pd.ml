@@ -21,9 +21,14 @@ let total_along_mass gt mass cb =
     (fun () -> ref 0.)
     gt
 
-let pd_of_placerun indiv_of normalized pr =
+let pd_of_placerun criterion normalized pr =
   let gt = Placerun.get_ref_tree pr
-  and mass = indiv_of pr in
+  and mass = I.of_placerun
+    Mass_map.no_transform
+    Mass_map.Unweighted
+    criterion
+    pr
+  in
   let total_mass = I.total_mass mass in
   total_along_mass
     gt
@@ -41,26 +46,26 @@ object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
-  inherit output_cmd () as super_output
+  inherit tabular_cmd () as super_tabular
 
   val normalized = flag "--normalized"
     (Plain (false, "Divide by total tree length."))
 
   method specl =
     super_mass#specl
-  @ super_output#specl
+  @ super_tabular#specl
   @ [toggle_flag normalized]
 
   method desc = "calculate phylogenetic diversity"
   method usage = "usage: pd [options] placefile[s]"
 
   method private placefile_action prl =
-    let transform, weighting, criterion = self#mass_opts in
-    let indiv_of = I.of_placerun transform weighting criterion in
-    let pd = pd_of_placerun indiv_of (fv normalized) in
-    List.iter
-      (fun pr ->
-        pd pr |> Printf.printf "%s: %g\n" (Placerun.get_name pr))
-      prl
+    let _, _, criterion = self#mass_opts in
+    let pd = pd_of_placerun criterion (fv normalized) in
+    prl
+      |> List.map
+          (fun pr -> [Placerun.get_name pr; pd pr |> Printf.sprintf "%g"])
+      |> List.cons ["name"; "pd"]
+      |> self#write_ll_tab
 
 end

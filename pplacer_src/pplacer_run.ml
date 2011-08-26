@@ -397,7 +397,9 @@ let run_file prefs query_fname =
   let prior =
     if Prefs.uniform_prior prefs then Core.Uniform_prior
     else if Prefs.informative_prior prefs then
-      Core.Informative_exp_prior (Core.midpoint_leaf_dist_map ref_tree)
+    (* Below: add on the prior lower bound onto the top branch length. *)
+      Core.Informative_exp_prior
+        (Core.prior_mean_map ((+.) (Prefs.prior_lower prefs)) ref_tree)
     else Core.Flat_exp_prior
       (* exponential with mean = average branch length *)
       ((Gtree.tree_length ref_tree) /.
@@ -544,7 +546,17 @@ let run_file prefs query_fname =
     end else (identity, identity)
     in
 
-    let queries = ref [] in
+    let classify =
+      if Refpkg.tax_equipped rp then
+        if Prefs.mrca_class prefs then
+          Refpkg.mrca_classify rp
+        else
+         Tax_classify.classify_pr
+           Placement.add_classif
+           (Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
+      else
+        identity
+    and queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest ->
         let pq = pquery_gotfunc pq in
@@ -558,21 +570,12 @@ let run_file prefs query_fname =
     and cachefunc _ = false
     and donefunc () =
       pquery_donefunc ();
-      let pr =
-        Placerun.redup
-          redup_tbl
-          (Placerun.make ref_tree query_bname (!queries))
-      in
-      let final_pr =
-        if not (Refpkg.tax_equipped rp) then pr
-        else Refpkg.classify rp pr
-      and out_prefix = (Prefs.out_dir prefs)^"/"^(Placerun.get_name pr)
-      and invocation = (String.concat " " (Array.to_list Sys.argv))
-      in
-      Placerun_io.to_json_file
-        invocation
-        (out_prefix ^ ".jplace")
-        final_pr
+      Placerun.make ref_tree query_bname (!queries)
+        |> Placerun.redup redup_tbl
+        |> classify
+        |> Placerun_io.to_json_file
+            (Array.to_list Sys.argv |> String.concat " ")
+            ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
     in
     gotfunc, cachefunc, donefunc
 
