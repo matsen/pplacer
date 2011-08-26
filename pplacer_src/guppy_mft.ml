@@ -8,17 +8,17 @@ object (self)
   inherit output_cmd () as super_output
   inherit placefile_cmd () as super_placefile
 
-  val average = flag "--unitize"
+  val unitize = flag "--unitize"
     (Plain (false, "Make total unit mass per placerun by multiplying with a scalar."))
 
-  method specl = super_output#specl @ [toggle_flag average]
+  method specl = super_output#specl @ [toggle_flag unitize]
 
   method desc = "filter and transform placefiles"
   method usage = "usage: mft [options] placefile[s]"
 
   method private placefile_action prl =
     let prl =
-      if not (fv average) then prl else
+      if not (fv unitize) then prl else
         List.map
           (fun pr ->
             let tot_mass = Placerun.get_pqueries pr
