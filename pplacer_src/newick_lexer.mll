@@ -38,7 +38,7 @@ rule token = parse
   | [' ' '\t']      { token lexbuf }
   | '\n'            { Sparse.incr_lineno lexbuf; token lexbuf }
   (* because taxnames can be floats, we have to have float first *)
-  | floating        { REAL(float_of_string(Lexing.lexeme lexbuf)) }
+  | floating        { REAL(Lexing.lexeme lexbuf) }
   | unquotedlabel   { LABEL(Lexing.lexeme lexbuf) }
   | quotedlabel     { LABEL(dequote(Lexing.lexeme lexbuf)) }
   | edgelabel       { EDGE_LABEL(untag(Lexing.lexeme lexbuf)) }

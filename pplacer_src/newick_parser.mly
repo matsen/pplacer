@@ -1,7 +1,6 @@
 %token EOF COLON SEMICOLON COMMA OPENP CLOSEP
 %token <int> EDGE_LABEL
-%token <float> REAL
-%token <string> LABEL
+%token <string> LABEL REAL
 
 %start tree
 %type <Newick_bark.newick_bark Gtree.gtree> tree
@@ -33,9 +32,9 @@ let lps_append lp lps =
 let node_num = ref (-1)
 let add_bark add_fun x s =
   {s with my_bark = add_fun (Stree.top_id s.stree) x s.my_bark}
-let add_bl = add_bark Newick_bark.map_set_bl
+let add_bl = float_of_string |- add_bark Newick_bark.map_set_bl
 let add_name = add_bark Newick_bark.map_set_name
-let add_boot = add_bark Newick_bark.map_set_boot
+let add_boot = float_of_string |- add_bark Newick_bark.map_set_boot
 let add_id id lp =
   {lp with
     stree = Stree.of_id id lp.stree;
@@ -72,7 +71,7 @@ named_leaf:
   | LABEL
       { add_leaf () |> add_name $1 }
   | REAL
-      { add_leaf () |> add_name (string_of_float $1) }
+      { add_leaf () |> add_name $1 }
 
 lengthy_leaf:
   | COLON REAL

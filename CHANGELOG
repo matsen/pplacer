@@ -3,6 +3,8 @@
 
  * Fixed a bug that was making classifications appear too specific when the
    placement was on the edge just proximal to an MRCA.
+ * Fixed a bug wherein the Newick parser would add a '.' to the end of leaf
+   names if the name was an integer.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the

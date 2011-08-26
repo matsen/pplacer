@@ -157,6 +157,8 @@ let of_gtree t =
 
 let uncolor_leaves v ls =
   let all_leaves' = IntSet.diff v.all_leaves ls in
+  if IntSet.is_empty all_leaves' then
+    failwith "can't remove all leaves from a voronoi graph";
   let ldistm', updated =
     update_ldistm
       v.ldistm
