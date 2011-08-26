@@ -313,7 +313,7 @@ object(self)
     ]
 
   method private color_of_heat heat =
-    if heat >= 0. then Decor.brew_orange else Decor.brew_blue
+    if heat >= 0. then Decor.brew_orange else Decor.brew_green
 
   method private gray_black_of_heat heat =
     if heat >= 0. then Decor.gray 180 else Decor.black
