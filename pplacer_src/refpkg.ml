@@ -22,7 +22,7 @@ type t =
   {
     (* specified *)
     ref_tree    : Newick_bark.newick_bark Gtree.gtree Lazy.t;
-    model       : Model.t Lazy.t;
+    model       : Glvm.t Lazy.t;
     aln_fasta   : Alignment.t Lazy.t;
     aln_sto     : unit;
     aln_profile : unit;
@@ -52,11 +52,6 @@ let show_supported_versions () =
   Printf.printf
     "Supported versions: %s.\n"
     (String.concat ", " refpkg_versions)
-
-(* deprecated now *)
-let model_of_stats_fname prefs stats_fname ref_align =
-  prefs.Prefs.stats_fname := stats_fname;
-  Model.of_prefs "" prefs ref_align
 
 (* This is the primary builder. We have the option of specifying an actual
  * alignment and a tree if we have them already. *)
@@ -96,16 +91,17 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
         | None -> Newick_gtree.of_file (get "tree"))
   and lmodel =
       lazy
-        (let aln = Lazy.force lfasta_aln in
-        if StringMap.mem "phylo_model" m then
-          Model.of_json (StringMap.find "phylo_model" m) aln
-        else begin
-          print_endline
-            "Warning: using a statistics file directly is now deprecated. \
+        ((module Gmix_model.Model: Glvm.Model),
+         let aln = Lazy.force lfasta_aln in
+         if StringMap.mem "phylo_model" m then
+           Gmix_model.init_of_json (StringMap.find "phylo_model" m) aln
+         else begin
+           print_endline
+             "Warning: using a statistics file directly is now deprecated. \
             We suggest using a reference package. If you already are, then \
             please use the latest version of taxtastic.";
-          model_of_stats_fname prefs (get "tree_stats") aln
-        end)
+           Gmix_model.init_of_stats_fname prefs (get "tree_stats") aln
+         end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in

@@ -290,7 +290,12 @@ let run_file prefs query_fname =
     []
   in
 
-  let model = Refpkg.get_model rp in
+  let m, i = Refpkg.get_model rp in
+  let module Model = (val m: Glvm.Model) in
+  let module Glv = Model.Glv in
+  let module Glv_arr = Glv_arr.Make(Model) in
+  let module Like_stree = Like_stree.Make(Model) in
+  let model = Model.build ref_align i in
   if (Prefs.verb_level prefs) > 0 &&
     not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
        print_endline Placerun_io.bifurcation_warning;
@@ -303,7 +308,7 @@ let run_file prefs query_fname =
   in
   (* pretending *)
   if Prefs.pretend prefs then begin
-    Check.pretend model ref_align [query_fname];
+    Check.pretend (m, i) ref_align [query_fname];
     print_endline "everything looks OK.";
     exit 0;
   end;
@@ -374,22 +379,22 @@ let run_file prefs query_fname =
       fp_check d (Printf.sprintf "distal %d" i);
       fp_check p (Printf.sprintf "proximal %d" i);
       fp_check sn (Printf.sprintf "supernode %d" i);
-      Glv.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
-      Glv.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
+      Model.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
+      Model.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
       Printf.printf "%d\t%g\t%g\n"
         i
-        (Glv.slow_log_like3 model util_d util_p util_one)
+        (Model.slow_log_like3 model util_d util_p util_one)
         (Glv.logdot utilv_nsites sn util_one);
     done
   end;
 
   (* *** write out posterior probability info at internal nodes *** *)
-  if Prefs.map_info prefs then begin
-    if not (Refpkg.tax_equipped rp) then begin
-      failwith ("--map-info requires taxonomic information in ref pkg");
-    end;
-    Post_info.write_map_info ~darr ~parr rp
-  end;
+  (* if Prefs.map_info prefs then begin *)
+  (*   if not (Refpkg.tax_equipped rp) then begin *)
+  (*     failwith ("--map-info requires taxonomic information in ref pkg"); *)
+  (*   end; *)
+  (*   Post_info.write_map_info ~darr ~parr rp *)
+  (* end; *)
 
   (* *** analyze query sequences *** *)
   let query_bname =
@@ -406,7 +411,7 @@ let run_file prefs query_fname =
         (float_of_int (Gtree.n_edges ref_tree)))
   in
   let partial = Core.pplacer_core
-    prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
+    (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t) prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
   let n_done = ref 0 in
   let queries = List.length query_list in
@@ -468,15 +473,15 @@ let run_file prefs query_fname =
       and mrcam = Refpkg.get_mrcam rp
       and td = Refpkg.get_taxonomy rp
       and glvs = Glv_arr.make
+        model
         ~n_glvs:2
         ~n_sites
-        ~n_rates:(Model.n_rates model)
-        ~n_states:(Model.n_states model)
       in
       let map_map = Map_seq.of_map
+        (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
         glvs.(0)
         glvs.(1)
-        (Refpkg.get_model rp)
+        model
         ref_tree
         ~darr
         ~parr

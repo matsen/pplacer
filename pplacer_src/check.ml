@@ -5,7 +5,9 @@ open Ppatteries
 exception Duplicate_name of string
 
 (* run through the query sequences and make sure everything looks OK *)
-let pretend model ref_align query_fnames =
+let pretend (m, i) ref_align query_fnames =
+  let module Model = (val m: Glvm.Model) in
+  let model = Model.build ref_align i in
   let len = Alignment.length ref_align in
   Printf.printf "found %d reference sequences of length %d.\n"
     (Alignment.n_seqs ref_align) len;
