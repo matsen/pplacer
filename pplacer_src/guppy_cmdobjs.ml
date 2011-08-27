@@ -200,8 +200,10 @@ class virtual placefile_cmd () =
 object (self)
   method virtual private placefile_action: 'a Placerun.placerun list -> unit
   method action fnamel =
-    let prl = List.map placerun_by_name fnamel in
-    self#placefile_action prl
+    fnamel
+      |> List.map (Placerun_io.maybe_of_split_file ~getfunc:placerun_by_name)
+      |> List.flatten
+      |> self#placefile_action
 
   method private write_placefile invocation fname pr =
     if fname.[0] = '@' then

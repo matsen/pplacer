@@ -38,7 +38,7 @@ module Pre = struct
 
   type multimul = {
     (* multiplicity *)
-    multi: int;
+    multi: float;
     (* mul is Mass Unit List *)
     (* list across mass for a given placement. *)
     mul: mass_unit list;
@@ -74,7 +74,7 @@ module Pre = struct
     }
 
   let of_pquery_list weighting criterion pql =
-    let mass_per_read = 1. /. (float_of_int (Pquery.total_multiplicity pql)) in
+    let mass_per_read = 1. /. (Pquery.total_multiplicity pql) in
     List.map
       (multimul_of_pquery weighting criterion mass_per_read)
       pql
@@ -112,7 +112,7 @@ module Pre = struct
   let ppr_mul ff mul = Ppr.ppr_list ppr_mass_unit ff mul
 
   let ppr_multimul ff mmul =
-    Format.fprintf ff "@[{multi = %d; mul = %a}@]" mmul.multi ppr_mul mmul.mul
+    Format.fprintf ff "@[{multi = %g; mul = %a}@]" mmul.multi ppr_mul mmul.mul
 
   let ppr ff pre = Ppr.ppr_list ppr_multimul ff pre
 
@@ -239,9 +239,9 @@ module By_edge = struct
 end
 
 (* multiplicity transforms for of_pre *)
-let no_transform = float_of_int
+let no_transform = identity
 let unit_transform _ = 1.
-let asinh_transform x = Gsl_math.asinh (float_of_int x)
+let asinh_transform x = Gsl_math.asinh x
 
 let transform_map =
   List.fold_right

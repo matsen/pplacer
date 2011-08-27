@@ -130,7 +130,7 @@ object (self)
           if namel = [] then
             pqs
           else
-            {pq with Pquery.namel = namel} :: pqs
+            (Pquery.set_namel pq namel) :: pqs
       in
       let filtered = List.map
         (fun pr ->
