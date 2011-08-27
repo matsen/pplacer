@@ -14,11 +14,11 @@ end
 
 let expected = [
   [];
-  [Decor.red; Decor.Width 90.];
+  [Decor.brew_orange; Decor.Width 90.];
   [];
   [];
-  [Decor.blue; Decor.Width 180.];
-  [Decor.red; Decor.Width 30.];
+  [Decor.brew_green; Decor.Width 180.];
+  [Decor.brew_orange; Decor.Width 30.];
 ]
 
 let simple () =
