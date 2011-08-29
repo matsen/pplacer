@@ -388,14 +388,6 @@ let run_file prefs query_fname =
     done
   end;
 
-  (* *** write out posterior probability info at internal nodes *** *)
-  (* if Prefs.map_info prefs then begin *)
-  (*   if not (Refpkg.tax_equipped rp) then begin *)
-  (*     failwith ("--map-info requires taxonomic information in ref pkg"); *)
-  (*   end; *)
-  (*   Post_info.write_map_info ~darr ~parr rp *)
-  (* end; *)
-
   (* *** analyze query sequences *** *)
   let query_bname =
     Filename.basename (Filename.chop_extension query_fname) in
