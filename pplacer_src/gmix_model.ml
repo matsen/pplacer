@@ -24,6 +24,16 @@ let iba1_pairwise_sum dest x y =
       dest i ((BA1.unsafe_get x i) + (BA1.unsafe_get y i))
   done
 
+(* gets the base two exponent *)
+let get_twoexp x = snd (frexp x)
+
+(* makes a float given a base two exponent. we use 0.5 because:
+   # frexp (ldexp 1. 3);;
+   - : float * int = (0.5, 4)
+   so that's how ocaml interprets 2^i anyway.
+*)
+let of_twoexp i = ldexp 0.5 (i+1)
+
 module Model: Glvm.Model =
 struct
 
@@ -43,13 +53,13 @@ struct
   }
   type model_t = t
 
-  let statd    model = model.statd
-  let diagdq   model = model.diagdq
-  let rates    model = model.rates
-  let tensor   model = model.tensor
+  let statd model = model.statd
+  let diagdq model = model.diagdq
+  let rates model = model.rates
+  let tensor model = model.tensor
   let seq_type model = model.seq_type
   let n_states model = Alignment.nstates_of_seq_type model.seq_type
-  let n_rates  model = Array.length (rates model)
+  let n_rates model = Array.length (rates model)
 
   let build ref_align = function
     | Glvm.Gmix_model (model_name, emperical_freqs, opt_transitions, rates) ->
@@ -134,7 +144,7 @@ struct
       a = Tensor.mimic x.a;
     }
 
-(* deep copy *)
+    (* deep copy *)
     let copy x = { x with
       e = iba1_copy x.e;
       a = Tensor.copy x.a;
@@ -144,7 +154,7 @@ struct
       BA1.blit src.e dst.e;
       BA3.blit src.a dst.a
 
-(* set all of the entries of the glv to some float *)
+    (* set all of the entries of the glv to some float *)
     let set_exp_and_all_entries g e x =
       BA1.fill g.e e;
       BA3.fill g.a x
@@ -153,11 +163,11 @@ struct
       BA1.fill g.e ve;
       Tensor.set_all g.a va
 
-(* Find the "worst" fpclass of the floats in g. *)
+    (* Find the "worst" fpclass of the floats in g. *)
     let fp_classify g =
       Tensor.fp_classify g.a
 
-(* set g according to function fe for exponenent and fa for entries *)
+    (* set g according to function fe for exponenent and fa for entries *)
     let seti g fe fa =
       let n_sites = get_n_sites g
       and n_rates = get_n_rates g
@@ -171,7 +181,7 @@ struct
         g.e.{site} <- fe site
       done
 
-(* copy the site information from src to dst. _i is which site to copy. *)
+    (* copy the site information from src to dst. _i is which site to copy. *)
     let copy_site ~src_i ~src ~dst_i ~dst =
       (dst.e).{dst_i} <- (src.e).{src_i};
       for rate=0 to (get_n_rates src)-1 do
@@ -179,8 +189,8 @@ struct
           (BA3.slice_left_1 dst.a rate dst_i)
       done
 
-(* copy the sites marked with true in site_mask_arr from src to dst. the number
- * of trues in site_mask_arr should be equal to the number of sites in dst. *)
+    (* copy the sites marked with true in site_mask_arr from src to dst. the number
+     * of trues in site_mask_arr should be equal to the number of sites in dst. *)
     let mask_into site_mask_arr ~src ~dst =
       let dst_n_sites = get_n_sites dst in
       let dst_i = ref 0 in
@@ -194,8 +204,8 @@ struct
         site_mask_arr;
       assert(!dst_i = dst_n_sites)
 
-(* this is used when we have a pre-allocated GLV and want to fill it with a
- * same-length lv array. zero pulled exponents as well. *)
+    (* this is used when we have a pre-allocated GLV and want to fill it with a
+     * same-length lv array. zero pulled exponents as well. *)
     let prep_constant_rate_glv_from_lv_arr g lv_arr =
       assert(lv_arr <> [||]);
       assert(get_n_sites g = Array.length lv_arr);
@@ -205,51 +215,40 @@ struct
         (fun ~rate:_ ~site ~state ->
           lv_arr.(site).{state})
 
-(* *** pulling exponent *** *)
+    (* *** pulling exponent *** *)
 
-(* gets the base two exponent *)
-    let get_twoexp x = snd (frexp x)
-
-(* makes a float given a base two exponent. we use 0.5 because:
-   # frexp (ldexp 1. 3);;
-   - : float * int = (0.5, 4)
-   so that's how ocaml interprets 2^i anyway.
-*)
-    let of_twoexp i = ldexp 0.5 (i+1)
-
-(* pull out the exponent if it's below min_allowed_twoexp and return it. this
- * process is a bit complicated by the fact that we are partitioned by rate, as
- * can be seen below. *)
+    (* pull out the exponent if it's below min_allowed_twoexp and return it. this
+     * process is a bit complicated by the fact that we are partitioned by rate, as
+     * can be seen below. *)
     let perhaps_pull_exponent min_allowed_twoexp g =
       let n_rates = get_n_rates g
       and n_sites = get_n_sites g in
       let max_twoexp = ref (-max_int) in
-  (* cycle through sites *)
+      (* cycle through sites *)
       for site=0 to n_sites-1 do
         max_twoexp := (-max_int);
-    (* first find the max twoexp *)
+        (* first find the max twoexp *)
         for rate=0 to n_rates-1 do
           let s = BA3.slice_left_1 g.a rate site in
           let (_, twoexp) = frexp (Gsl_vector.max s) in
           if twoexp > !max_twoexp then max_twoexp := twoexp
         done;
-    (* now scale if it's needed *)
+        (* now scale if it's needed *)
         if !max_twoexp < min_allowed_twoexp then begin
           for rate=0 to n_rates-1 do
-        (* take the negative so that we "divide" by 2^our_twoexp *)
+            (* take the negative so that we "divide" by 2^our_twoexp *)
             Gsl_vector.scale
               (BA3.slice_left_1 g.a rate site)
               (of_twoexp (-(!max_twoexp)));
           done;
-      (* bring the exponent out *)
+          (* bring the exponent out *)
           g.e.{site} <- g.e.{site} + !max_twoexp;
         end
       done
 
+    (* *** likelihood calculations *** *)
 
-(* *** likelihood calculations *** *)
-
-(* total all of the stored exponents. we use a float to avoid overflow. *)
+    (* total all of the stored exponents. we use a float to avoid overflow. *)
     let total_twoexp g =
       let tot = ref 0. in
       for i=0 to (get_n_sites g)-1 do
@@ -257,7 +256,7 @@ struct
       done;
       !tot
 
-(* total all of the stored exponents in a specified range. *)
+    (* total all of the stored exponents in a specified range. *)
     let bounded_total_twoexp g start last =
       let tot = ref 0. in
       for i=start to last do
@@ -265,8 +264,8 @@ struct
       done;
       !tot
 
-(* the log "dot" of the likelihood vectors in the 0-indexed interval
- * [start,last] *)
+    (* the log "dot" of the likelihood vectors in the 0-indexed interval
+     * [start,last] *)
     let bounded_logdot utilv_nsites x y start last =
       assert(dims x = dims y);
       assert(start >= 0 && start <= last && last < get_n_sites x);
@@ -275,13 +274,13 @@ struct
       +. (log_of_2 *. ((bounded_total_twoexp x start last) +.
                           (bounded_total_twoexp y start last)))
 
-(* just take the log "dot" of the likelihood vectors *)
+    (* just take the log "dot" of the likelihood vectors *)
     let logdot utilv_nsites x y =
       bounded_logdot utilv_nsites x y 0 ((get_n_sites x)-1)
 
-(* multiply by a tensor *)
+    (* multiply by a tensor *)
     let tensor_mul tensor ~dst ~src =
-  (* iter over rates *)
+      (* iter over rates *)
       for i=0 to (Tensor.dim1 src.a)-1 do
         let src_mat = BA3.slice_left_2 src.a i
         and evo_mat = BA3.slice_left_2 tensor i
@@ -290,32 +289,31 @@ struct
         Linear.gemmish dst_mat evo_mat src_mat
       done
 
-(* take the pairwise product of glvs g1 and g2, then store in dest. *)
+    (* take the pairwise product of glvs g1 and g2, then store in dest. *)
     let pairwise_prod ~dst g1 g2 =
       assert(dims g1 = dims g2);
       iba1_pairwise_sum dst.e g1.e g2.e;
       Linear.pairwise_prod dst.a g1.a g2.a
 
-(* take the product of all of the GLV's in the list, then store in dst.
- * could probably be implemented more quickly, but typically we are only taking
- * pairwise products anyway. we pull out the x::y below to optimize for that
- * case. *)
+    (* take the product of all of the GLV's in the list, then store in dst.
+     * could probably be implemented more quickly, but typically we are only
+     * taking pairwise products anyway. we pull out the x::y below to optimize
+     * for that case. *)
     let listwise_prod dst = function
       | x::y::rest ->
-      (* first product of first two *)
+        (* first product of first two *)
         pairwise_prod ~dst x y;
-      (* now take product with each of the rest *)
+        (* now take product with each of the rest *)
         List.iter (pairwise_prod ~dst dst) rest
       | [src] ->
-      (* just copy over *)
+        (* just copy over *)
         memcpy ~dst ~src
       | [] -> assert(false)
 
 
-(* For verification purposes. *)
+    (* For verification purposes. *)
 
     let get_a g ~rate ~site ~state = BA3.get g.a rate site state
-
 
   end
 
@@ -340,61 +338,59 @@ struct
     g
 
 
-(* take the log like of the product of three things then dot with the stationary
- * distribution. *)
-    let log_like3 model utilv_nsites x y z =
-      assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
-      (Linear.log_like3 (statd model)
-         x.Glv.a
-         y.Glv.a
-         z.Glv.a
-         utilv_nsites)
-      +. (log_of_2 *.
-            ((Glv.total_twoexp x) +. (Glv.total_twoexp y) +. (Glv.total_twoexp z)))
+  (* take the log like of the product of three things then dot with the stationary
+   * distribution. *)
+  let log_like3 model utilv_nsites x y z =
+    assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
+    (Linear.log_like3 (statd model)
+       x.Glv.a
+       y.Glv.a
+       z.Glv.a
+       utilv_nsites)
+    +. (log_of_2 *.
+          ((Glv.total_twoexp x) +. (Glv.total_twoexp y) +. (Glv.total_twoexp z)))
 
-(* evolve_into:
- * evolve src according to model for branch length bl, then store the
- * results in dst.
- *)
-    let evolve_into model ~dst ~src bl =
-  (* copy over the exponents *)
-      BA1.blit src.Glv.e dst.Glv.e;
-  (* prepare the matrices in our matrix cache *)
-      prep_tensor_for_bl model bl;
-  (* iter over rates *)
-      Glv.tensor_mul (tensor model) ~dst ~src
+  (* evolve_into: evolve src according to model for branch length bl, then
+   * store the results in dst. *)
+  let evolve_into model ~dst ~src bl =
+    (* copy over the exponents *)
+    BA1.blit src.Glv.e dst.Glv.e;
+      (* prepare the matrices in our matrix cache *)
+    prep_tensor_for_bl model bl;
+      (* iter over rates *)
+    Glv.tensor_mul (tensor model) ~dst ~src
 
-(* take the pairwise product of glvs g1 and g2, incorporating the stationary
- * distribution, then store in dest. *)
-    let statd_pairwise_prod model ~dst g1 g2 =
-      assert(Glv.dims g1 = Glv.dims g2);
-      iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
-      Linear.statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
+  (* take the pairwise product of glvs g1 and g2, incorporating the
+   * stationary distribution, then store in dest. *)
+  let statd_pairwise_prod model ~dst g1 g2 =
+    assert(Glv.dims g1 = Glv.dims g2);
+    iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
+    Linear.statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
 
-    let slow_log_like3 model x y z =
-      let f_n_rates = float_of_int (n_rates model)
-      and ll_tot = ref 0.
-      and statd = statd model
-      in
-      for site=0 to (Glv.get_n_sites x)-1 do
-        let site_like = ref 0. in
-        for rate=0 to (Glv.get_n_rates x)-1 do
-          for state=0 to (Glv.get_n_states x)-1 do
-            site_like := !site_like +.
-              statd.{state}
-            *. (Glv.get_a x ~rate ~site ~state)
-            *. (Glv.get_a y ~rate ~site ~state)
-            *. (Glv.get_a z ~rate ~site ~state)
-          done;
+  let slow_log_like3 model x y z =
+    let f_n_rates = float_of_int (n_rates model)
+    and ll_tot = ref 0.
+    and statd = statd model
+    in
+    for site=0 to (Glv.get_n_sites x)-1 do
+      let site_like = ref 0. in
+      for rate=0 to (Glv.get_n_rates x)-1 do
+        for state=0 to (Glv.get_n_states x)-1 do
+          site_like := !site_like +.
+            statd.{state}
+          *. (Glv.get_a x ~rate ~site ~state)
+          *. (Glv.get_a y ~rate ~site ~state)
+          *. (Glv.get_a z ~rate ~site ~state)
         done;
-        if 0. >= !site_like then
-          failwith (Printf.sprintf "Site %d has zero likelihood." site);
-        ll_tot := !ll_tot
-        +. log(!site_like /. f_n_rates)
-        +. log_of_2 *.
-          (float_of_int (x.Glv.e.{site} + y.Glv.e.{site} + z.Glv.e.{site}))
       done;
-      !ll_tot
+      if 0. >= !site_like then
+        failwith (Printf.sprintf "Site %d has zero likelihood." site);
+      ll_tot := !ll_tot
+      +. log(!site_like /. f_n_rates)
+      +. log_of_2 *.
+        (float_of_int (x.Glv.e.{site} + y.Glv.e.{site} + z.Glv.e.{site}))
+    done;
+    !ll_tot
 
 end
 

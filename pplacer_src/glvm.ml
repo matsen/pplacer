@@ -33,29 +33,16 @@ sig
     val get_n_rates: t -> int
     val get_n_sites: t -> int
     val get_n_states: t -> int
-    val dims: t -> int * int * int
     val ppr: Format.formatter -> t -> unit
     val mimic: t -> t
     val copy: t -> t
-    val memcpy: dst:t -> src:t -> unit
     val set_exp_and_all_entries: t -> int -> float -> unit
     val set_all: t -> int -> float -> unit
     val fp_classify: t -> fpclass
-    val seti:
-      t -> (int -> int) -> (rate:int -> site:int -> state:int -> float) -> unit
-    val copy_site: src_i:int -> src:t -> dst_i:int -> dst:t -> unit
     val mask_into: bool array -> src:t -> dst:t -> unit
-    val get_twoexp: float -> int
-    val of_twoexp: int -> float
     val perhaps_pull_exponent: int -> t -> unit
-    val total_twoexp: t -> float
-    val bounded_total_twoexp: t -> int -> int -> float
     val bounded_logdot: Gsl_vector.vector -> t -> t -> int -> int -> float
     val logdot: Gsl_vector.vector -> t -> t -> float
-    val tensor_mul:
-      (float, Tensor.BA.float64_elt, BA.c_layout) BA3.t ->
-      dst:t -> src:t -> unit
-    val pairwise_prod: dst:t -> t -> t -> unit
     val listwise_prod: t -> t list -> unit
     val get_a: t -> rate:int -> site:int -> state:int -> float
     val prep_constant_rate_glv_from_lv_arr: t -> Gsl_vector.vector array -> unit
