@@ -96,18 +96,6 @@ struct
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp model.tensor model.diagdq model.rates bl
 
-  let get_symbol code = function
-    | -1 -> '-'
-    | i -> try code.(i) with | Invalid_argument _ -> assert(false)
-
-  let to_sym_str code ind_arr =
-    StringFuns.of_char_array (Array.map (get_symbol code) ind_arr)
-
-  let code model =
-    match seq_type model with
-      | Alignment.Nucleotide_seq -> Nuc_models.nuc_code
-      | Alignment.Protein_seq -> Prot_models.prot_code
-
   module Glv =
   struct
 
@@ -154,14 +142,9 @@ struct
       BA1.blit src.e dst.e;
       BA3.blit src.a dst.a
 
-    (* set all of the entries of the glv to some float *)
-    let set_exp_and_all_entries g e x =
-      BA1.fill g.e e;
-      BA3.fill g.a x
-
-    let set_all g ve va =
-      BA1.fill g.e ve;
-      Tensor.set_all g.a va
+    let set_unit g =
+      BA1.fill g.e 0;
+      BA3.fill g.a 1.
 
     (* Find the "worst" fpclass of the floats in g. *)
     let fp_classify g =
@@ -315,6 +298,24 @@ struct
 
     let get_a g ~rate ~site ~state = BA3.get g.a rate site state
 
+    (* pick the ML state by taking the sum across rates for each state and site *)
+    let summarize_post summarize_f initial g =
+      let n_sites = get_n_sites g
+      and n_states = get_n_states g
+      and n_rates = get_n_rates g in
+      let summary = Array.make n_sites initial
+      and u = Gsl_vector.create ~init:0. n_states in
+      for site=0 to n_sites-1 do
+        Gsl_vector.set_all u 0.;
+        for rate=0 to n_rates-1 do
+          for state=0 to n_states-1 do
+            u.{state} <- u.{state} +. (get_a ~rate ~site ~state g)
+          done
+        done;
+        summary.(site) <- summarize_f u
+      done;
+      summary
+
   end
 
   type glv_t = Glv.t
@@ -326,12 +327,13 @@ struct
       ~n_rates:(n_rates model)
 
   (* this is used when we want to make a glv out of a list of likelihood
-   * vectors. differs from below because we want to make a new one. *)
-  let lv_arr_to_constant_rate_glv model n_rates lv_arr =
+   * vectors. differs from below because we want to make a new one. used to be
+   * called `lv_arr_to_constant_rate_glv`. *)
+  let lv_arr_to_glv model lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
       model
-      ~n_rates
+      ~n_rates:(n_rates model)
       ~n_sites:(Array.length lv_arr)
       ~n_states:(Gsl_vector.length lv_arr.(0)) in
     Glv.prep_constant_rate_glv_from_lv_arr g lv_arr;

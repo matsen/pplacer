@@ -46,7 +46,7 @@ let like_test info () =
   and util_p = Glv.mimic parr.(0)
   and util_one = Glv.mimic darr.(0)
   in
-  Glv.set_all util_one 0 1.;
+  Glv.set_unit util_one;
   for i=0 to (Array.length darr)-1 do
     let d = darr.(i)
     and p = parr.(i)

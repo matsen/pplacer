@@ -86,7 +86,7 @@ struct
     in
     let stree = Gtree.get_stree tree in
     let top_prox = glv_from_stree proximal_glv_arr stree in
-    Glv.set_exp_and_all_entries top_prox 0 1.;
+    Glv.set_unit top_prox;
     calc stree
 
   (* this is our "main". the utils are just data structures of the same size as

@@ -19,10 +19,10 @@ let of_map (type a) (type b) m (u1: b) (u2: b) (model: a) t ~(darr: b array) ~(p
   let bounded_max_index vec =
     let idx = Gsl_vector.max_index vec in
     if vec.{idx} /. (Linear_utils.l1_norm vec) < cutoff then -1 else idx
-  and code = Model.code model in
+  and code = Model.seq_type model |> Glvm.code in
   IntMap.mapi
     (fun id _ ->
-      Model.to_sym_str
+      Glvm.to_sym_str
         code
         (Seq_post.get_summary
            Seq_post.Proximal

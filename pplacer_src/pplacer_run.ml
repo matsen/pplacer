@@ -369,7 +369,7 @@ let run_file prefs query_fname =
     and util_p = Glv.mimic parr.(0)
     and util_one = Glv.mimic darr.(0)
     in
-    Glv.set_all util_one 0 1.;
+    Glv.set_unit util_one;
     Printf.printf "node\ttree_likelihood\tsupernode_likelihood\n";
     for i=0 to (Array.length darr)-1 do
       let d = darr.(i)
@@ -411,7 +411,8 @@ let run_file prefs query_fname =
         (float_of_int (Gtree.n_edges ref_tree)))
   in
   let partial = Core.pplacer_core
-    (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t) prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
+    (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
+    prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
   let n_done = ref 0 in
   let queries = List.length query_list in

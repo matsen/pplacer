@@ -132,9 +132,8 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
     in
     (* the query glv, which has been masked *)
     let query_glv =
-      Model.lv_arr_to_constant_rate_glv
+      Model.lv_arr_to_glv
         model
-        (Model.n_rates model)
         (lv_arr_of_char_arr masked_query_arr)
     in
     (* the full one, which will be used for the first stage only *)
