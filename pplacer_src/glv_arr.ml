@@ -1,8 +1,20 @@
 (* just routines for arrays of Glv's.
 *)
 
-module Make (Model: Glvm.Model) =
-struct
+module Make (Model: Glvm.Model):
+sig
+  type t = Model.glv_t array
+  val make: Model.t -> n_glvs:int -> n_sites:int -> t
+  val copy: t -> t
+  val mimic: t -> t
+  val arr_get: t -> int -> Model.glv_t
+  val iter: (Model.glv_t -> unit) -> t -> unit
+  val get: t -> int -> Model.glv_t
+  val get_one: t -> Model.glv_t
+  val evolve_into: Model.t -> src:t -> dst:t -> (int -> float) -> unit
+  val prep_supernodes: Model.t -> dst:t -> t -> t -> (int -> float) -> unit
+
+end = struct
   module Glv = Model.Glv
 
   type t = Glv.t array

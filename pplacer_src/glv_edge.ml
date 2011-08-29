@@ -4,8 +4,16 @@
  * Scary side-effect land! But by keeping with the interface, we should be safe.
  *)
 
-module Make (Model: Glvm.Model) =
-struct
+module Make (Model: Glvm.Model):
+sig
+  type t
+  val make: Model.t -> Model.glv_t -> float -> t
+  val get_bl: t -> float
+  val get_orig: t -> Model.glv_t
+  val get_evolv: t -> Model.glv_t
+  val set_bl: Model.t -> t -> float -> unit
+
+end = struct
   module Glv = Model.Glv
   type t = {
     orig   : Glv.t;
