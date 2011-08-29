@@ -15,15 +15,15 @@ let get_some except = function
 
 type placement =
   {
-    location        : int;
-    ml_ratio        : float;
-    post_prob       : float option;
-    log_like        : float;
-    marginal_prob   : float option;
-    distal_bl       : float;
-    pendant_bl      : float;
-    classif         : Tax_id.tax_id option;
-    map_identity    : (float * int) option;
+    location: int;
+    ml_ratio: float;
+    post_prob: float option;
+    log_like: float;
+    marginal_prob: float option;
+    distal_bl: float;
+    pendant_bl: float;
+    classif: Tax_id.tax_id option;
+    map_identity: (float * int) option;
   }
 
 let location            p = p.location

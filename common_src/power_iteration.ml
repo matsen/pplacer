@@ -58,10 +58,7 @@ let top_eig m tol max_iter =
   in
   aux 0;
   mat_vec_mul ~a:m ~x:v ~y:scratch;
-  {
-    l = big_entry_ratio scratch v;
-    v = v;
-  }
+  {v; l = big_entry_ratio scratch v}
 
 (* Calculates the outer product (scalar v v^T) and puts it in m. *)
 let outer_product ?(scalar=1.) m v =

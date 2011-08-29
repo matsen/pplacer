@@ -77,15 +77,14 @@ let is_placed pq =
 
 let make criterion ~namel ~seq pl =
   {
-    namel = namel;
-    seq = seq;
+    namel; seq;
     place_list = sort_placement_list criterion pl
   }
 
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
-let set_namel pq namel = { pq with namel = namel }
+let set_namel pq namel = { pq with namel }
 
 let apply_to_place_list f pq =
   { pq with place_list = f (pq.place_list) }

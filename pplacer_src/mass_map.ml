@@ -127,8 +127,8 @@ module Indiv = struct
   type v = {distal_bl: float; mass: float}
   type t = v list IntMap.t
 
-  let of_pair (bl, mass) = {distal_bl = bl; mass = mass}
-  let to_pair {distal_bl = bl; mass = mass} = bl, mass
+  let of_pair (distal_bl, mass) = {distal_bl; mass}
+  let to_pair {distal_bl; mass} = distal_bl, mass
 
   (* factor is a multiplicative factor to multiply the mass by.
    * transform is an int -> float function which given a multiplicity spits out
@@ -162,7 +162,7 @@ module Indiv = struct
   let total_mass m =
     IntMap.fold
       (fun _ mass_l accu ->
-        List.fold_right (fun {mass = mass} -> ( +. ) mass) mass_l accu)
+        List.fold_right (fun {mass} -> ( +. ) mass) mass_l accu)
       m
       0.
 
@@ -174,8 +174,8 @@ module Indiv = struct
     IntMap.ppr_gen
       (fun ff l ->
         List.iter
-          (fun {distal_bl = distal; mass = mass} ->
-            Format.fprintf ff "@[{d = %g; m = %g}@]" distal mass)
+          (fun {distal_bl; mass} ->
+            Format.fprintf ff "@[{d = %g; m = %g}@]" distal_bl mass)
           l)
 
 end

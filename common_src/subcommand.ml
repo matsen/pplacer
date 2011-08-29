@@ -149,11 +149,7 @@ type 'a flag = {
   described: 'a described;
 }
 
-let flag opt described = {
-  value = ref None;
-  opt = opt;
-  described = described;
-}
+let flag opt described = {value = ref None; opt; described}
 
 (* fv is short for flag value. It fetches the value. *)
 let fv f = match !(f.value) with

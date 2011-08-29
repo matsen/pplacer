@@ -27,10 +27,9 @@ type 'a gtree =
   {stree : Stree.stree;
   bark_map : 'a IntMap.t}
 
-let gtree stree bark_map =
-  {stree = stree; bark_map = bark_map}
+let gtree stree bark_map = {stree; bark_map}
 
-let of_stree stree = {stree = stree; bark_map = IntMap.empty}
+let of_stree stree = {stree; bark_map = IntMap.empty}
 
 let get_stree t = t.stree
 let get_bark_map t = t.bark_map
@@ -50,8 +49,8 @@ let get_boot t id =
   try (get_bark t id)#get_boot with
   | Not_found -> raise (Lacking_bootstrap id)
 
-let set_stree t stree = {t with stree = stree}
-let set_bark_map t bark_map = {t with bark_map = bark_map}
+let set_stree t stree = {t with stree}
+let set_bark_map t bark_map = {t with bark_map}
 let add_bark t id bark =
   set_bark_map t (IntMap.add id bark (get_bark_map t))
 

@@ -39,10 +39,8 @@ let make ~x ~l ~xit =
   assert((n,n) = Gsl_matrix.dims x);
   assert((n,n) = Gsl_matrix.dims xit);
   {
-    x = x;
-    l = l;
-    xit = xit;
-    util = Gsl_vector.create n
+    x; l; xit;
+    util = Gsl_vector.create n;
   }
 
 

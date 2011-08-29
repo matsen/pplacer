@@ -52,18 +52,6 @@ let qs_pop ({queue = q; set = s} as qs) =
 let qs l =
   qs_push {queue = Queue.create (); set = IntSet.empty} l
 
-let list_min ?(key = compare) l =
-  match begin
-    List.fold_left
-      (fun prev cur -> match prev, cur with
-        | Some a, b when key a b < 0 -> Some a
-        | _, b -> Some b)
-      None
-      l
-  end with
-    | Some x -> x
-    | None -> invalid_arg "list_min"
-
 let adjacent_bls t =
   let bl = Gtree.get_bl t in
   let rec aux accum = function
@@ -111,9 +99,9 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
               with
                 | Not_found -> None
             end with
-              | Some {leaf = leaf} when not (IntSet.mem leaf all_leaves) ->
+              | Some {leaf} when not (IntSet.mem leaf all_leaves) ->
                 stl
-              | Some {leaf = best_leaf; distance = distance} ->
+              | Some {leaf = best_leaf; distance} ->
                 (sbl +. distance, best_leaf) :: stl
               | None -> stl)
           []
@@ -122,8 +110,8 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
         let ldistm', updated_leaves, rest = match adj with
           | [] -> IntMap.remove n ldistm', updated_leaves, concat_adj n rest
           | adj ->
-            let distance, best_leaf = list_min adj in
-            let new_ldist = {leaf = best_leaf; distance = distance} in
+            let distance, best_leaf = List.min adj in
+            let new_ldist = {leaf = best_leaf; distance} in
             let updated_leaves, rest = match begin
               try
                 Some (IntMap.find n ldistm')
@@ -149,11 +137,11 @@ let update_ldistm ldistm all_leaves initial_leaves gt =
     (ldistm, IntSet.empty)
     (qs initial_leaves)
 
-let of_gtree t =
-  let leaves = Gtree.leaf_ids t in
+let of_gtree tree =
+  let leaves = Gtree.leaf_ids tree in
   let all_leaves = IntSet.of_list leaves in
-  let ldistm, _ = update_ldistm IntMap.empty all_leaves leaves t in
-  {tree = t; ldistm = ldistm; all_leaves = all_leaves}
+  let ldistm, _ = update_ldistm IntMap.empty all_leaves leaves tree in
+  {tree; ldistm; all_leaves}
 
 let uncolor_leaves v ls =
   let all_leaves' = IntSet.diff v.all_leaves ls in
@@ -171,8 +159,8 @@ let uncolor_leaves v ls =
 let uncolor_leaf v l =
   uncolor_leaves v (IntSet.singleton l)
 
-let fold f initial {tree = t; ldistm = ldistm} =
-  let bl = Gtree.get_bl t in
+let fold f initial {tree; ldistm} =
+  let bl = Gtree.get_bl tree in
   let rec aux cur = function
     | [] -> cur
     | Leaf _ :: rest -> aux cur rest
@@ -207,7 +195,7 @@ let fold f initial {tree = t; ldistm = ldistm} =
       in
       aux cur (List.rev_append subtrees rest)
   in
-  aux initial [t.Gtree.stree]
+  aux initial [tree.Gtree.stree]
 
 let get_edge_snipl v l =
   fold (fun accum snip -> if snip.assoc_leaf = l then snip :: accum else accum) [] v
@@ -221,7 +209,7 @@ let get_snipdist v =
 
 let matching_snip snips pos =
   List.find
-    (fun {start = st; finish = en} -> st >= pos && pos >= en)
+    (fun {start; finish} -> start >= pos && pos >= finish)
     snips
 
 module I = Mass_map.Indiv

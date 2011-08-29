@@ -16,9 +16,9 @@ sig
 end = struct
   module Glv = Model.Glv
   type t = {
-    orig   : Glv.t;
-    evolv  : Glv.t;
-    bl     : float ref;
+    orig: Glv.t;
+    evolv: Glv.t;
+    bl: float ref;
   }
 
   let get_bl e = !(e.bl)
@@ -35,9 +35,9 @@ end = struct
 
   let make model orig init_bl =
     let glve =
-      { orig  = orig;
+      { orig;
         evolv = Glv.copy orig;
-        bl    = ref init_bl } in
+        bl = ref init_bl } in
     recalculate model glve;
     glve
 

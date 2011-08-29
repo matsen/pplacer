@@ -25,14 +25,7 @@ struct
   let get_prox_bl tt = Glv_edge.get_bl tt.prox
   let get_cut_bl tt = (get_dist_bl tt) +. (get_prox_bl tt)
 
-  let make model util_v ~prox ~dist ~pend =
-    {
-      model  = model;
-      util_v = util_v;
-      prox   = prox;
-      dist   = dist;
-      pend  = pend;
-    }
+  let make model util_v ~prox ~dist ~pend = {model; util_v; prox; dist; pend}
 
   let log_like tt =
     Model.log_like3

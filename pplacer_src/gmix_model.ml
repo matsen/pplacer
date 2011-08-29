@@ -83,10 +83,8 @@ struct
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
       {
-        statd = statd;
+        statd; seq_type; rates;
         diagdq = Diagd.normed_of_exchangeable_pair trans statd;
-        seq_type = seq_type;
-        rates = rates;
         tensor = Tensor.create (Array.length rates) n_states n_states;
       }
 

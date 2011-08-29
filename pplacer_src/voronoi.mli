@@ -38,10 +38,6 @@ type snip = {
   finish: float;
 }
 
-val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
-(** Find the minimum value in a list, optionally using the provided comparator
-    function. *)
-
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
 (** Generate a map from each id in a Newick_gtree.t to a list of (neighbor_id,
     distance) pairs for every neighboring node for the given node, where the

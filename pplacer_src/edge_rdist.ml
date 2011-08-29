@@ -132,7 +132,7 @@ let build_ca_info t =
   match stree with
     | Stree.Node(_, tL) ->
         parallel_set (List.map (aux 0.) tL) 0.;
-        { u = u; v = v; }
+        { u; v; }
     | _ -> assert(false)
 
 (* find the distance to the common ancestor given info from two placements *)
