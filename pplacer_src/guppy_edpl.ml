@@ -22,7 +22,7 @@ object (self)
     ]
 
     method private placefile_action prl =
-      let _, _, criterion = self#mass_opts in
+      let _, criterion = self#mass_opts in
       let select_fn =
         if fv first_only then fun x -> [List.hd x]
         else fun x -> x

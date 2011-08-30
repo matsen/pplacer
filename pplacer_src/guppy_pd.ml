@@ -24,7 +24,6 @@ let total_along_mass gt mass cb =
 let pd_of_placerun criterion normalized pr =
   let gt = Placerun.get_ref_tree pr
   and mass = I.of_placerun
-    Mass_map.no_transform
     Mass_map.Unweighted
     criterion
     pr
@@ -60,7 +59,7 @@ object (self)
   method usage = "usage: pd [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, _, criterion = self#mass_opts in
+    let _, criterion = self#mass_opts in
     let pd = pd_of_placerun criterion (fv normalized) in
     prl
       |> List.map

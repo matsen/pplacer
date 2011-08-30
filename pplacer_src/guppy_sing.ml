@@ -63,7 +63,7 @@ object (self)
   method usage = "usage: sing [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, weighting, criterion = self#mass_opts in
+    let weighting, criterion = self#mass_opts in
     let mass_width = self#multiplier_of_abs_tot 1. in
     let trees = List.map
       (fun pr ->

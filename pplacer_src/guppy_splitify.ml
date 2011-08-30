@@ -31,7 +31,7 @@ let below_mass_map edgem t =
 (* Take a placerun and turn it into a vector which is indexed by the edges of
  * the tree.
  * Later we may cut the edge mass in half; right now we don't do anything with it. *)
-let splitify_placerun transform weighting criterion pr =
+let splitify_placerun weighting criterion pr =
   let preim = Mass_map.Pre.of_placerun weighting criterion pr
   and t = Placerun.get_ref_tree pr
   in
@@ -39,7 +39,7 @@ let splitify_placerun transform weighting criterion pr =
     (1+(Gtree.top_id t))
     (IntMap.map
       splitify
-      (below_mass_map (Mass_map.By_edge.of_pre transform preim) t))
+      (below_mass_map (Mass_map.By_edge.of_pre preim) t))
 
 let fal_to_strll fal =
   List.map
@@ -67,8 +67,8 @@ object (self)
   method usage = "usage: splitify [options] placefile(s)"
 
   method private placefile_action prl =
-    let transform, weighting, criterion = self#mass_opts in
-    let data = List.map (splitify_placerun transform weighting criterion) prl
+    let weighting, criterion = self#mass_opts in
+    let data = List.map (splitify_placerun weighting criterion) prl
     and names = (List.map Placerun.get_name prl)
     in
     save_out_named_fal

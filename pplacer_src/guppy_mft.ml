@@ -10,15 +10,24 @@ object (self)
 
   val unitize = flag "--unitize"
     (Plain (false, "Make total unit mass per placerun by multiplying with a scalar."))
+  val transform = flag "--transform"
+    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
+    Options are 'log' and 'unit'. Default is no transform."))
 
-  method specl = super_output#specl @ [toggle_flag unitize]
+  method specl = super_output#specl
+  @ [
+    toggle_flag unitize;
+    string_flag transform;
+  ]
 
   method desc = "filter and transform placefiles"
   method usage = "usage: mft [options] placefile[s]"
 
   method private placefile_action prl =
-    let prl =
-      if not (fv unitize) then prl else
+    let transform = fv transform |> Mass_map.transform_of_str in
+    let prl = prl
+    |> List.map (Placerun.transform transform)
+    |> if not (fv unitize) then identity else
         List.map
           (fun pr ->
             let tot_mass = Placerun.get_pqueries pr
@@ -29,7 +38,6 @@ object (self)
                   (fun pq ->
                     Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
               |> Placerun.set_pqueries pr)
-          prl
     in
     match self#out_file_or_dir () with
       | Directory (dir, prefix) ->

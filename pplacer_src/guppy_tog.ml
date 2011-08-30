@@ -78,7 +78,7 @@ object (self)
   method usage = "usage: tog [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, _, criterion = self#mass_opts in
+    let _, criterion = self#mass_opts in
     let trees = List.map
       (fun pr ->
         let _, placed_map =

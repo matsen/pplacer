@@ -25,7 +25,7 @@ let pres_of_dir weighting criterion which =
   let tbl = Hashtbl.create 10 in
   List.iter
     (fun pr ->
-      let pre = Pre.normalize_mass no_transform (Pre.of_placerun weighting criterion pr) in
+      let pre = Pre.normalize_mass (Pre.of_placerun weighting criterion pr) in
       Hashtbl.add tbl pr.Placerun.name (pr, pre))
     (placeruns_of_dir which);
   tbl

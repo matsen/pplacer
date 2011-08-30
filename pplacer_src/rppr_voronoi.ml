@@ -54,7 +54,7 @@ object (self)
 
   method private placefile_action = function
     | [pr] ->
-      let transform, weighting, criterion = self#mass_opts
+      let weighting, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr
       and leaf_mass_fract = fv leaf_mass
       and verbose = fv verbose in
@@ -70,7 +70,7 @@ object (self)
         else
           Mass_map.Indiv.scale_mass
             (1. -. leaf_mass_fract)
-            (Mass_map.Indiv.of_placerun transform weighting criterion pr)
+            (Mass_map.Indiv.of_placerun weighting criterion pr)
       and diagram = Voronoi.of_gtree gt in
       let n_leaves = IntSet.cardinal diagram.Voronoi.all_leaves in
       let criteria =

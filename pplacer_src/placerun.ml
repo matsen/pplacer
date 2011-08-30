@@ -144,3 +144,8 @@ let redup sequence_tbl pr =
            | Not_found -> pq)
     |> set_pqueries pr
 
+let transform func pr =
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
+    |> set_pqueries pr

@@ -225,17 +225,12 @@ object
     (Plain (false, "Use posterior probability for the weight."))
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
-  val transform = flag "--transform"
-    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."))
   method specl = [
     toggle_flag use_pp;
     toggle_flag weighted;
-    string_flag transform;
   ]
 
   method private mass_opts = (
-    Mass_map.transform_of_str (fv transform),
     (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
     (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
   )

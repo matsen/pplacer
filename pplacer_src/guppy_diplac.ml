@@ -25,7 +25,7 @@ object (self)
 
   method private placefile_action = function
     | [pr] ->
-      let _, _, criterion = self#mass_opts
+      let _, criterion = self#mass_opts
       and gt = Placerun.get_ref_tree pr in
       let graph = Voronoi.of_gtree gt in
       let snipdist = Voronoi.get_snipdist graph in
