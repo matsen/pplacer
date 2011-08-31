@@ -1,38 +1,5 @@
 open Ppatteries
-
-module BA = Bigarray
-module BA1 = BA.Array1
-module BA2 = BA.Array2
-module BA3 = BA.Array3
-
-let log_of_2 = log 2.
-
-(* integer big arrays *)
-let iba1_create = BA1.create BA.int BA.c_layout
-let iba1_mimic a = iba1_create (BA1.dim a)
-let iba1_copy a = let b = iba1_mimic a in BA1.blit a b; b
-let iba1_to_array a =
-  let arr = Array.make (BA1.dim a) 0 in
-  for i=0 to (BA1.dim a)-1 do arr.(i) <- a.{i} done;
-  arr
-let iba1_ppr ff a = Ppr.ppr_int_array ff (iba1_to_array a)
-let iba1_pairwise_sum dest x y =
-  let n = BA1.dim x in
-  assert(n = BA1.dim y && n = BA1.dim dest);
-  for i=0 to n-1 do
-    BA1.unsafe_set
-      dest i ((BA1.unsafe_get x i) + (BA1.unsafe_get y i))
-  done
-
-(* gets the base two exponent *)
-let get_twoexp x = snd (frexp x)
-
-(* makes a float given a base two exponent. we use 0.5 because:
-   # frexp (ldexp 1. 3);;
-   - : float * int = (0.5, 4)
-   so that's how ocaml interprets 2^i anyway.
-*)
-let of_twoexp i = ldexp 0.5 (i+1)
+open Gstar_support
 
 module Model: Glvm.Model =
 struct
@@ -51,7 +18,6 @@ struct
     (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
     tensor: Tensor.tensor;
   }
-  type model_t = t
 
   let statd model = model.statd
   let diagdq model = model.diagdq
@@ -99,7 +65,6 @@ struct
 
     (* glvs *)
     type t = {
-      model: model_t;
       e: (int, BA.int_elt, BA.c_layout) BA1.t;
       a: Tensor.tensor;
     }
@@ -111,27 +76,26 @@ struct
       n
     let get_n_states g = Tensor.dim3 g.a
 
-    let dims g = (get_n_rates g, get_n_sites g, get_n_states g)
+    let dims g = get_n_rates g, get_n_sites g, get_n_states g
 
     let ppr ff g =
       Format.fprintf ff "@[{ e = %a; @,a = %a }@]"
         iba1_ppr g.e
         Tensor.ppr g.a
 
-    let make model ~n_rates ~n_sites ~n_states = {
-      model;
+    let make ~n_rates ~n_sites ~n_states = {
       e = iba1_create n_sites;
       a = Tensor.create n_rates n_sites n_states;
     }
 
     (* make a glv of the same dimensions *)
-    let mimic x = { x with
+    let mimic x = {
       e = iba1_mimic x.e;
       a = Tensor.mimic x.a;
     }
 
     (* deep copy *)
-    let copy x = { x with
+    let copy x = {
       e = iba1_copy x.e;
       a = Tensor.copy x.a;
     }
@@ -229,22 +193,6 @@ struct
 
     (* *** likelihood calculations *** *)
 
-    (* total all of the stored exponents. we use a float to avoid overflow. *)
-    let total_twoexp g =
-      let tot = ref 0. in
-      for i=0 to (get_n_sites g)-1 do
-        tot := !tot +. float_of_int (BA1.unsafe_get g.e i)
-      done;
-      !tot
-
-    (* total all of the stored exponents in a specified range. *)
-    let bounded_total_twoexp g start last =
-      let tot = ref 0. in
-      for i=start to last do
-        tot := !tot +. float_of_int (BA1.unsafe_get g.e i)
-      done;
-      !tot
-
     (* the log "dot" of the likelihood vectors in the 0-indexed interval
      * [start,last] *)
     let bounded_logdot utilv_nsites x y start last =
@@ -252,23 +200,12 @@ struct
       assert(start >= 0 && start <= last && last < get_n_sites x);
       (Linear.bounded_logdot
          x.a y.a start last utilv_nsites)
-      +. (log_of_2 *. ((bounded_total_twoexp x start last) +.
-                          (bounded_total_twoexp y start last)))
+      +. (log_of_2 *. ((bounded_total_twoexp x.e start last) +.
+                          (bounded_total_twoexp y.e start last)))
 
     (* just take the log "dot" of the likelihood vectors *)
     let logdot utilv_nsites x y =
       bounded_logdot utilv_nsites x y 0 ((get_n_sites x)-1)
-
-    (* multiply by a tensor *)
-    let tensor_mul tensor ~dst ~src =
-      (* iter over rates *)
-      for i=0 to (Tensor.dim1 src.a)-1 do
-        let src_mat = BA3.slice_left_2 src.a i
-        and evo_mat = BA3.slice_left_2 tensor i
-        and dst_mat = BA3.slice_left_2 dst.a i
-        in
-        Linear.gemmish dst_mat evo_mat src_mat
-      done
 
     (* take the pairwise product of glvs g1 and g2, then store in dest. *)
     let pairwise_prod ~dst g1 g2 =
@@ -320,7 +257,6 @@ struct
 
   let make_glv model =
     Glv.make
-      model
       ~n_states:(n_states model)
       ~n_rates:(n_rates model)
 
@@ -330,7 +266,6 @@ struct
   let lv_arr_to_glv model lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
-      model
       ~n_rates:(n_rates model)
       ~n_sites:(Array.length lv_arr)
       ~n_states:(Gsl_vector.length lv_arr.(0)) in
@@ -348,17 +283,17 @@ struct
        z.Glv.a
        utilv_nsites)
     +. (log_of_2 *.
-          ((Glv.total_twoexp x) +. (Glv.total_twoexp y) +. (Glv.total_twoexp z)))
+          ((total_twoexp x.Glv.e) +. (total_twoexp y.Glv.e) +. (total_twoexp z.Glv.e)))
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
   let evolve_into model ~dst ~src bl =
     (* copy over the exponents *)
     BA1.blit src.Glv.e dst.Glv.e;
-      (* prepare the matrices in our matrix cache *)
+    (* prepare the matrices in our matrix cache *)
     prep_tensor_for_bl model bl;
-      (* iter over rates *)
-    Glv.tensor_mul (tensor model) ~dst ~src
+    (* iter over rates *)
+    tensor_mul (tensor model) ~dst:dst.Glv.a ~src:src.Glv.a
 
   (* take the pairwise product of glvs g1 and g2, incorporating the
    * stationary distribution, then store in dest. *)

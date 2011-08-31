@@ -1,10 +1,5 @@
 open Ppatteries
 
-module BA = Bigarray
-module BA1 = BA.Array1
-module BA2 = BA.Array2
-module BA3 = BA.Array3
-
 type init_params =
   | Invalid
   (* Gmix_model (model_name, emperical_freqs, opt_transitions, rates) *)
