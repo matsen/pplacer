@@ -219,20 +219,25 @@ end
 
 (* *** mass and kr-related objects *** *)
 
-class mass_cmd () =
-object
+class mass_cmd ?(weighting_allowed = true) () =
+object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for the weight."))
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
   method specl = [
     toggle_flag use_pp;
-    toggle_flag weighted;
   ]
+    |> if weighting_allowed then
+        toggle_flag weighted |> List.cons
+      else identity
+
+  method private criterion =
+    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
 
   method private mass_opts = (
     (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
-    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
+    self#criterion
   )
 end
 

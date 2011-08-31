@@ -43,7 +43,7 @@ let pd_of_placerun criterion normalized pr =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd () as super_mass
+  inherit mass_cmd ~weighting_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 
@@ -59,7 +59,7 @@ object (self)
   method usage = "usage: pd [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, criterion = self#mass_opts in
+    let criterion = self#criterion in
     let pd = pd_of_placerun criterion (fv normalized) in
     prl
       |> List.map
