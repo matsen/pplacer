@@ -25,6 +25,7 @@ let command_list_of_subcommand_program (prefix, command_list) =
       [|[|"Command"; "Description"|]|]
       (Array.of_list
          (List.sort
+            compare
             (List.map
                (fun (name, cmd) ->
                  [|Printf.sprintf ":ref:`%s <%s_%s>`" name prefix name;

@@ -39,7 +39,7 @@ let rounded_pquery_of_pquery cutoff multiplier pq =
   List.map
     (rounded_placement_of_placement multiplier)
     (List.sort
-      ~cmp:compare_by_ml_ratio
+      compare_by_ml_ratio
       (List.filter
         (fun p -> p.Placement.ml_ratio >= cutoff)
         pq.Pquery.place_list))
