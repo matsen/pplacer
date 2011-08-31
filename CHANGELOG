@@ -5,6 +5,8 @@
    placement was on the edge just proximal to an MRCA.
  * Fixed a bug wherein the Newick parser would add a '.' to the end of leaf
    names if the name was an integer.
+ * In fixing a bug, made `guppy diplac` only emit the first name in a pquery in
+   its results.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
@@ -30,7 +32,7 @@
  * Closed GH-91: Added more documentation to .mli files.
  * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
  * Closed GH-96: Now using colors from colorbrewer2.org for heat.
- * Closed GH-98: Adding a --map-identity flag to pplacer.
+ * Closed GH-98: Added a --map-identity flag to pplacer.
  * Closed GH-99: Added more examples for guppy batchfiles.
  * Closed GH-101: Added virtual placefiles to guppy batchfiles.
  * Closed GH-103: Added batteries as a dependency.
