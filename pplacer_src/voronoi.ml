@@ -236,7 +236,7 @@ let distribute_mass v mass =
       IntMap.fold
         (fun _ units accum ->
           List.fold_left
-            (fun accum {I.mass = mass} -> mass :: accum)
+            (fun accum {I.mass} -> mass :: accum)
             accum
             units)
         indiv

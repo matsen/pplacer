@@ -116,7 +116,7 @@ let make_kr_map m1 m2 =
   let process_map f =
     IntMap.map
       (List.map
-         (fun {I.distal_bl = dist_bl; I.mass = mass} -> (dist_bl, f mass)))
+         (fun {I.distal_bl; I.mass} -> distal_bl, f mass))
   in
   IntMap.map
     List.sort
