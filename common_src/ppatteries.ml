@@ -72,6 +72,7 @@ let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
 
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
+let (|--) g f = fun a b -> f (g a b)
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
 
