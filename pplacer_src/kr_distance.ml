@@ -153,15 +153,15 @@ let dist ?(normalization=1.) ref_tree p m1 m2 =
 
 (* x1 and x2 are factors which get multiplied by the mass before calculation.
  * By pulling them out like so, we don't have to make new Pres. *)
-let dist_of_pres ?x1 ?x2 ?(normalization=1.) transform p t ~pre1 ~pre2 =
+let dist_of_pres ?x1 ?x2 ?(normalization=1.) p t ~pre1 ~pre2 =
   dist ~normalization
     t
     p
-    (Mass_map.Indiv.of_pre transform ?factor:x1 pre1)
-    (Mass_map.Indiv.of_pre transform ?factor:x2 pre2)
+    (Mass_map.Indiv.of_pre ?factor:x1 pre1)
+    (Mass_map.Indiv.of_pre ?factor:x2 pre2)
 
-let scaled_dist_of_pres ?(normalization=1.) transform p t pre1 pre2 =
-  dist_of_pres ~normalization transform p t
-    ~x1:(1. /. Mass_map.Pre.total_mass transform pre1)
-    ~x2:(1. /. Mass_map.Pre.total_mass transform pre2)
+let scaled_dist_of_pres ?(normalization=1.) p t pre1 pre2 =
+  dist_of_pres ~normalization p t
+    ~x1:(1. /. Mass_map.Pre.total_mass pre1)
+    ~x2:(1. /. Mass_map.Pre.total_mass pre2)
     ~pre1 ~pre2

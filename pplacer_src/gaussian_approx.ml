@@ -54,7 +54,7 @@ let intermediate_sum i1 i2 =
 let intermediate_list_sum = List.reduce intermediate_sum
 
 (* Note: upre1 and upre2 must have unit mass per placement. *)
-let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
+let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
   let np1 = List.length upre1
   and np2 = List.length upre2
   and int_inv x = 1. /. (float_of_int x)
@@ -69,9 +69,8 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
   List.iter
     (List.iter
     (* recall multimul = mass unit list with multiplicity *)
-      (fun multimul ->
-        let trans_multi = transform multimul.Pre.multi in
-        if trans_multi <> 1. then
+      (fun {Pre.multi; Pre.mul} ->
+        if multi <> 1. then
           failwith
             "Nontrivial transformed multiplicity for Gaussian significance not \
             supported at the moment.";
@@ -80,9 +79,9 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
             labeled_mass_arr.(mu.Pre.loc) <-
               (mu.Pre.distal_bl,
               { pquery_num = !pquery_counter;
-              mass = trans_multi *. mu.Pre.mass })
+              mass = multi *. mu.Pre.mass })
                 :: (labeled_mass_arr.(mu.Pre.loc)))
-          multimul.Pre.mul;
+          mul;
         incr pquery_counter))
     [upre1; upre2];
   (* Sort by position along the edge. *)

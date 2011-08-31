@@ -70,9 +70,7 @@ let warn_about_duplicate_names placerun =
         StringSet.add name accu)
       StringSet.empty
       (List.flatten
-        (List.map
-          (fun pq -> pq.Pquery.namel)
-          (get_pqueries placerun)))
+        (List.map Pquery.namel (get_pqueries placerun)))
   in
   ()
 
@@ -146,3 +144,8 @@ let redup sequence_tbl pr =
            | Not_found -> pq)
     |> set_pqueries pr
 
+let transform func pr =
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
+    |> set_pqueries pr

@@ -5,7 +5,7 @@ open Guppy_cmdobjs
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd () as super_mass
+  inherit mass_cmd ~weighting_allowed:false () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd ~default_to_csv:true () as super_tabular
@@ -25,7 +25,7 @@ object (self)
 
   method private placefile_action = function
     | [pr] ->
-      let _, _, criterion = self#mass_opts
+      let criterion = self#criterion
       and gt = Placerun.get_ref_tree pr in
       let graph = Voronoi.of_gtree gt in
       let snipdist = Voronoi.get_snipdist graph in

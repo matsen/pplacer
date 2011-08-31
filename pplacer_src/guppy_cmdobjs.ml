@@ -200,8 +200,10 @@ class virtual placefile_cmd () =
 object (self)
   method virtual private placefile_action: 'a Placerun.placerun list -> unit
   method action fnamel =
-    let prl = List.map placerun_by_name fnamel in
-    self#placefile_action prl
+    fnamel
+      |> List.map (Placerun_io.maybe_of_split_file ~getfunc:placerun_by_name)
+      |> List.flatten
+      |> self#placefile_action
 
   method private write_placefile invocation fname pr =
     if fname.[0] = '@' then
@@ -217,25 +219,25 @@ end
 
 (* *** mass and kr-related objects *** *)
 
-class mass_cmd () =
-object
+class mass_cmd ?(weighting_allowed = true) () =
+object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for the weight."))
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
-  val transform = flag "--transform"
-    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."))
   method specl = [
     toggle_flag use_pp;
-    toggle_flag weighted;
-    string_flag transform;
   ]
+    |> if weighting_allowed then
+        toggle_flag weighted |> List.cons
+      else identity
+
+  method private criterion =
+    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
 
   method private mass_opts = (
-    Mass_map.transform_of_str (fv transform),
     (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
-    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
+    self#criterion
   )
 end
 
@@ -360,7 +362,7 @@ object(self)
     ]
 
   method private color_of_heat heat =
-    if heat >= 0. then Decor.red else Decor.blue
+    if heat >= 0. then Decor.brew_orange else Decor.brew_green
 
   method private gray_black_of_heat heat =
     if heat >= 0. then Decor.gray 180 else Decor.black

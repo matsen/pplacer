@@ -23,11 +23,7 @@ object (self)
           pr.name;
           string_of_int (Gtree.n_taxa pr.ref_tree);
           string_of_int (n_pqueries pr);
-          string_of_int
-            (List.fold_left
-               (fun accum pq -> accum + (List.length (Pquery.namel pq)))
-               0
-               pr.pqueries);
+          Pquery.total_multiplicity pr.pqueries |> Printf.sprintf "%g";
         |])
       prl;
 

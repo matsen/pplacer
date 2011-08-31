@@ -23,7 +23,6 @@ let count_along_mass gt mass cb =
 let of_placerun criterion ?k_max pr =
   let gt = Placerun.get_ref_tree pr
   and mass = I.of_placerun
-    Mass_map.no_transform
     Mass_map.Unweighted
     criterion
     pr

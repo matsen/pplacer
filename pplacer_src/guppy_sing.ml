@@ -3,7 +3,7 @@ open Guppy_cmdobjs
 open Ppatteries
 
 let sing_tree weighting criterion mass_width ref_tree pquery =
-  let pqname = String.concat "_" pquery.Pquery.namel in
+  let pqname = Pquery.namel pquery |> String.concat "_" in
   match weighting with
   | Mass_map.Weighted ->
     Gtree.add_subtrees_by_map
@@ -63,7 +63,7 @@ object (self)
   method usage = "usage: sing [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, weighting, criterion = self#mass_opts in
+    let weighting, criterion = self#mass_opts in
     let mass_width = self#multiplier_of_abs_tot 1. in
     let trees = List.map
       (fun pr ->

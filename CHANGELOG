@@ -29,6 +29,7 @@
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
  * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
+ * Closed GH-96: Now using colors from colorbrewer2.org for heat.
  * Closed GH-98: Adding a --map-identity flag to pplacer.
  * Closed GH-99: Added more examples for guppy batchfiles.
  * Closed GH-101: Added virtual placefiles to guppy batchfiles.
@@ -56,6 +57,8 @@
  * Closed GH-131: Changed pplacer to set some defaults with the -p flag.
  * Closed GH-133: Added edge painting classification by default to pplacer and
    a corresponding --painted flag to `rppr ref_tree`.
+ * Closed GH-138: Removed the --transform flag from everything except `guppy
+   mft`; removed the --unweighted flag from commands which don't respect it.
 
 
 1.1.alpha08

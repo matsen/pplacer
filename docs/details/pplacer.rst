@@ -174,6 +174,7 @@ Key   Value
 ===== =====
 ``n`` A string or array of strings corresponding to the name or names of the sequences placed here.
 ``p`` An array of arrays containing placement data in the same order as ``fields``.
+``m`` (optional) A float that represents the mass of this placement. If this key is specified, ``n`` must only be or contain a single string.
 ===== =====
 
 An example JSON document follows, with the first placement showing uncertainty

@@ -132,7 +132,6 @@ let suite = [
       |> List.find (Placerun.get_name |- (=) "test1")
     in
     let indiv = I.of_placerun
-      Mass_map.unit_transform
       Mass_map.Weighted
       Placement.ml_ratio
       pr

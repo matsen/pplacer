@@ -6,7 +6,6 @@ let wpd_of_placerun criterion pr =
   Guppy_pd.total_along_mass
     (Placerun.get_ref_tree pr)
     (Mass_map.Indiv.of_placerun
-       Mass_map.no_transform
        Mass_map.Unweighted
        criterion
        pr)
@@ -15,7 +14,7 @@ let wpd_of_placerun criterion pr =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd () as super_mass
+  inherit mass_cmd ~weighting_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 
@@ -28,7 +27,7 @@ object (self)
   method usage = "usage: wpd [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, _, criterion = self#mass_opts in
+    let criterion = self#criterion in
     let wpd = wpd_of_placerun criterion in
     prl
       |> List.map
