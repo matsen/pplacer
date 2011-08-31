@@ -70,6 +70,10 @@ let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
     (List.iter
     (* recall multimul = mass unit list with multiplicity *)
       (fun {Pre.multi; Pre.mul} ->
+        if multi <> 1. then
+          failwith
+            "Nontrivial transformed multiplicity for Gaussian significance not \
+            supported at the moment.";
         List.iter
           (fun mu ->
             labeled_mass_arr.(mu.Pre.loc) <-
