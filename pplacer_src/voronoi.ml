@@ -369,11 +369,19 @@ let mark_map gt =
         |> List.sort_unique compare
       and bl = get_bl i in
       leaves_below,
-      List.filter_map
-        (function
-          | d, p when abs_float (d -. p) >= bl -> None
-          | d, p -> Some ((bl -. d +. p) /. 2.))
-        (List.cartesian_product below above)
-      |> flip (IntMap.add i) markm
+      if abs_float (List.last below -. List.first above) >= bl
+        && abs_float (List.first below -. List.last above) >= bl
+      then
+        IntMap.add i [] markm
+      else
+        List.enum below
+          |> Enum.map
+              (fun d ->
+                List.enum above
+                |> Enum.take_while (fun p -> abs_float (d -. p) < bl)
+                |> Enum.map (fun p -> (bl -. d +. p) /. 2.))
+          |> Enum.flatten
+          |> List.of_enum
+          |> flip (IntMap.add i) markm
   in
   Gtree.get_stree gt |> aux |> snd
