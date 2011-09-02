@@ -198,7 +198,7 @@ struct
     let bounded_logdot utilv_nsites x y start last =
       assert(dims x = dims y);
       assert(start >= 0 && start <= last && last < get_n_sites x);
-      (Linear.bounded_logdot
+      (Linear.ten_bounded_logdot
          x.a y.a start last utilv_nsites)
       +. (log_of_2 *. ((bounded_total_twoexp x.e start last) +.
                           (bounded_total_twoexp y.e start last)))
@@ -211,7 +211,7 @@ struct
     let pairwise_prod ~dst g1 g2 =
       assert(dims g1 = dims g2);
       iba1_pairwise_sum dst.e g1.e g2.e;
-      Linear.pairwise_prod dst.a g1.a g2.a
+      Linear.ten_pairwise_prod dst.a g1.a g2.a
 
     (* take the product of all of the GLV's in the list, then store in dst.
      * could probably be implemented more quickly, but typically we are only
@@ -277,7 +277,7 @@ struct
    * distribution. *)
   let log_like3 model utilv_nsites x y z =
     assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
-    (Linear.log_like3 (statd model)
+    (Linear.ten_log_like3 (statd model)
        x.Glv.a
        y.Glv.a
        z.Glv.a
@@ -300,7 +300,7 @@ struct
   let statd_pairwise_prod model ~dst g1 g2 =
     assert(Glv.dims g1 = Glv.dims g2);
     iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
-    Linear.statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
+    Linear.ten_statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
 
   let slow_log_like3 model x y z =
     let f_n_rates = float_of_int (n_rates model)
