@@ -13,6 +13,7 @@
 open Ppatteries
 
 type leaf = int
+type mark = float
 
 type ldist = {
   leaf: leaf;
@@ -89,3 +90,6 @@ val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement
 (** Find the distance from the specified placement to the closest leaf on a
     voronoi diagram. If a snipdist isn't provided, it will be calculated from
     the specified diagram. *)
+
+val all_dist_map: IntSet.t -> Newick_gtree.t -> float IntMap.t IntMap.t
+val mark_map: Newick_gtree.t -> mark list IntMap.t

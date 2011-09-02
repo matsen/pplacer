@@ -293,3 +293,87 @@ let placement_distance v ?snipdist p =
   match res with
     | Some d -> d
     | None -> invalid_arg "dist"
+
+
+(* voronoi' *)
+type mark = float
+
+let all_dist_map all_leaves gt =
+  let adjacency_map = adjacent_bls gt
+  and n_leaves = IntSet.cardinal all_leaves in
+  let concat_adj n qs =
+    qs_push qs (List.map fst (IntMap.find n adjacency_map))
+  in
+  let rec aux distm rest =
+    match qs_pop rest with
+      | None, _ -> distm
+      | Some n, rest
+        when IntMap.get n IntMap.empty distm |> IntMap.cardinal = n_leaves ->
+        aux distm rest
+      | Some n, rest ->
+        let updated = ref false in
+        let distm' = List.fold_left
+          (fun m (sn, sbl) ->
+            if not (IntMap.mem sn distm) then
+              updated := true;
+            IntMap.merge
+              (fun _ v1 v2 -> match v1, v2 with
+                | (Some _) as x, _ -> x
+                | None, Some d -> updated := true; Some (d +. sbl)
+                | None, None -> None)
+              m
+              (IntMap.get sn IntMap.empty distm))
+          (IntMap.get n IntMap.empty distm)
+          (IntMap.find n adjacency_map)
+        |> flip (IntMap.add n) distm
+        in
+        aux
+          distm'
+          (if !updated then concat_adj n rest else rest)
+  in
+  aux
+    (IntSet.enum all_leaves
+      |> Enum.map (identity &&& flip IntMap.singleton 0.0)
+      |> IntMap.of_enum)
+    (IntSet.elements all_leaves |> qs)
+
+let mark_map gt =
+  let distm = all_dist_map (Gtree.leaf_ids gt |> IntSet.of_list) gt
+  and parents = Gtree.get_stree gt |> parent_map
+  and top = Gtree.top_id gt
+  and get_bl = Gtree.get_bl gt in
+  let rec aux tree =
+    let i, (leaves_below, markm) = match tree with
+      | Leaf i -> i, (IntSet.singleton i, IntMap.empty)
+      | Node (i, subtrees) ->
+        i,
+        List.map aux subtrees
+          |> List.split
+          |> (List.reduce IntSet.union *** List.reduce IntMap.union)
+    in
+    if i = top then
+      leaves_below, markm
+    else
+      let below = IntMap.find i distm
+        |> IntMap.enum
+        |> Enum.filter_map
+            (fun (k, v) -> if IntSet.mem k leaves_below then Some v else None)
+        |> List.of_enum
+        |> List.sort_unique compare
+      and above = IntMap.find i parents
+        |> flip IntMap.find distm
+        |> IntMap.enum
+        |> Enum.filter_map
+            (fun (k, v) -> if IntSet.mem k leaves_below then None else Some v)
+        |> List.of_enum
+        |> List.sort_unique compare
+      and bl = get_bl i in
+      leaves_below,
+      List.filter_map
+        (function
+          | d, p when abs_float (d -. p) >= bl -> None
+          | d, p -> Some ((bl -. d +. p) /. 2.))
+        (List.cartesian_product below above)
+      |> flip (IntMap.add i) markm
+  in
+  Gtree.get_stree gt |> aux |> snd
