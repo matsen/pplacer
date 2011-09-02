@@ -312,8 +312,6 @@ CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_va
 }
 
 
-
-
 /* *** Tensors, that are used for gmix. *** */
 
 CAMLprim value ten_print_c(value x_value)
@@ -328,8 +326,8 @@ CAMLprim value ten_print_c(value x_value)
   for(rate=0; rate < n_rates; rate++) {
     for(site=0; site < n_sites; site++) {
       for(state=0; state < n_states; state++) {
-	printf("%g\t",*loc);
-	loc++;
+        printf("%g\t",*loc);
+        loc++;
       }
       printf("\n");
     }
@@ -360,12 +358,12 @@ CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, 
     // so that loops can get unrolled
     if(n_states == 4) {
       for(site=0; site < n_sites; site++) {
-	for(state=0; state < 4; state++) {
-	  *util_v += statd[state] * x[state] * y[state] * z[state];
+        for(state=0; state < 4; state++) {
+          *util_v += statd[state] * x[state] * y[state] * z[state];
         }
-	x += 4;
-	y += 4;
-	z += 4;
+        x += 4;
+        y += 4;
+        z += 4;
         util_v++;
       }
     }
@@ -374,9 +372,9 @@ CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, 
         for(state=0; state < 20; state++) {
           *util_v += statd[state] * x[state] * y[state] * z[state];
         }
-	x += 20;
-	y += 20;
-	z += 20;
+        x += 20;
+        y += 20;
+        z += 20;
         util_v++;
       }
     }
@@ -430,12 +428,12 @@ CAMLprim value ten_statd_pairwise_prod_c(value statd_value, value dst_value, val
   int n_states = Bigarray_val(a_value)->dim[2];
   int rate, site, state;
   for(rate=0; rate < n_rates; rate++) {
-      for(site=0; site < n_sites; site++) {
-        for(state=0; state < n_states; state++) {
-          *dst = statd[state] * (*a) * (*b);
-          dst++; a++; b++;
-	}
-      }
+    for(site=0; site < n_sites; site++) {
+      for(state=0; state < n_states; state++) {
+        *dst = statd[state] * (*a) * (*b);
+        dst++; a++; b++;
+        }
+     }
   }
   CAMLreturn(Val_unit);
 }
