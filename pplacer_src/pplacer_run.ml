@@ -94,38 +94,12 @@ let run_file prefs query_fname =
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
-  let rp = Refpkg.of_strmap
-    ~ignore_version:(Prefs.refpkg_path prefs = "")
-    prefs
-    rp_strmap
+  if not (StringMap.mem "tree" rp_strmap) then
+    failwith "please specify a reference tree with -t or -c";
+
+  let ref_tree = StringMap.find "tree" rp_strmap
+    |> Newick_gtree.of_file
   in
-
-  let ref_tree =
-    try
-      Refpkg.get_ref_tree rp
-    with Refpkg.Missing_element "tree" ->
-      failwith "please specify a reference tree with -t or -c"
-  and _ =
-    try
-      Refpkg.get_aln_fasta rp
-    with Refpkg.Missing_element "aln_fasta" ->
-      failwith
-        "Please specify a reference alignment with -r or -c, or include all \
-        reference sequences in the primary alignment."
-  and _ =
-    try
-      Refpkg.get_model rp
-    with Refpkg.Missing_element "tree_stats" ->
-      failwith "please specify a tree model with -s or -c"
-  in
-
-  if Newick_gtree.has_zero_bls ref_tree then
-    Printf.printf
-      "WARNING: your tree has zero pendant branch lengths. \
-      This can lead to zero likelihood values which will keep you from being \
-      able to place sequences. You can remove identical sequences with \
-      seqmagick.\n";
-
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_list = Newick_gtree.get_name_list ref_tree in
   let ref_name_set = StringSet.of_list ref_name_list in
@@ -143,7 +117,7 @@ let run_file prefs query_fname =
         print_endline
           "Didn't find any reference sequences in given alignment file. \
           Using supplied reference alignment.";
-      Refpkg.get_aln_fasta rp
+      None
     end
     else begin
       if (Prefs.verb_level prefs) >= 1 then
@@ -162,8 +136,23 @@ let run_file prefs query_fname =
         StringSet.empty
         ref_list
       in ();
-      Alignment.uppercase (Array.of_list ref_list)
+      Some (Array.of_list ref_list |> Alignment.uppercase)
     end
+  in
+  let rp = Refpkg.of_strmap
+    ?ref_align
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
+
+  let ref_align =
+    try
+      Refpkg.get_aln_fasta rp
+    with Refpkg.Missing_element "aln_fasta" ->
+      failwith
+        "Please specify a reference alignment with -r or -c, or include all \
+        reference sequences in the primary alignment."
   in
   if (Prefs.verb_level prefs) >= 2 then begin
     print_endline "found in reference alignment: ";
@@ -171,6 +160,20 @@ let run_file prefs query_fname =
       (fun (name,_) -> print_endline ("\t'"^name^"'"))
       ref_align
   end;
+
+  let _ =
+    try
+      Refpkg.get_model rp
+    with Refpkg.Missing_element "tree_stats" ->
+      failwith "please specify a tree model with -s or -c"
+  in
+  if Newick_gtree.has_zero_bls ref_tree then
+    Printf.printf
+      "WARNING: your tree has zero pendant branch lengths. \
+      This can lead to zero likelihood values which will keep you from being \
+      able to place sequences. You can remove identical sequences with \
+      seqmagick.\n";
+
   let n_sites = Alignment.length ref_align in
   begin match begin
     try

@@ -62,6 +62,7 @@
    a corresponding --painted flag to `rppr ref_tree`.
  * Closed GH-138: Removed the --transform flag from everything except `guppy
    mft`; removed the --unweighted flag from commands which don't respect it.
+ * Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.
 
 
 1.1.alpha08
