@@ -17,8 +17,8 @@ struct
     rates: float array;
     (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
     tensor: Tensor.tensor;
-    rate_categories: int array;
-    occupied_rates: bool array;
+    site_categories: int array;
+    (* occupied_rates: bool array; *)
   }
   type model_t = t
 
@@ -31,11 +31,11 @@ struct
   let n_rates model = Array.length (rates model)
 
   let build ref_align = function
-    | Glvm.Gmix_model (model_name, emperical_freqs, opt_transitions, rates) ->
+    | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
       let seq_type, (trans, statd) =
         if model_name = "GTR" then
           (Alignment.Nucleotide_seq,
-           match opt_transitions with
+           match transitions with
              | Some transitions ->
                (Nuc_models.b_of_trans_vector transitions,
                 Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
@@ -52,7 +52,7 @@ struct
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
       {
-        statd; seq_type; rates;
+        statd; seq_type; rates; site_categories;
         diagdq = Diagd.normed_of_exchangeable_pair trans statd;
         tensor = Tensor.create (Array.length rates) n_states n_states;
       }
@@ -73,10 +73,10 @@ struct
     }
 
     let get_n_sites g =
-      let n = Matrix.n_rows g.a in
+      let n = Matrix.dim1 g.a in
       assert(n = BA1.dim g.e);
       n
-    let get_n_states g = Tensor.dim3 g.a
+    let get_n_states g = Matrix.dim2 g.a
 
     let dims g = get_n_sites g, get_n_states g
 
@@ -87,32 +87,32 @@ struct
 
     let make ~n_sites ~n_states = {
       e = iba1_create n_sites;
-      a = Tensor.create n_rates n_sites n_states;
+      a = Matrix.create n_sites n_states;
     }
 
     (* make a glv of the same dimensions *)
     let mimic x = {
       e = iba1_mimic x.e;
-      a = Tensor.mimic x.a;
+      a = Matrix.mimic x.a;
     }
 
     (* deep copy *)
     let copy x = {
       e = iba1_copy x.e;
-      a = Tensor.copy x.a;
+      a = Matrix.copy x.a;
     }
 
     let memcpy ~dst ~src =
       BA1.blit src.e dst.e;
-      BA3.blit src.a dst.a
+      Matrix.blit src.a dst.a
 
     let set_unit g =
       BA1.fill g.e 0;
-      BA3.fill g.a 1.
+      Matrix.fill g.a 1.
 
     (* Find the "worst" fpclass of the floats in g. *)
     let fp_classify g =
-      Tensor.fp_classify g.a
+      Matrix.fp_classify g.a
 
     (* set g according to function fe for exponenent and fa for entries *)
     let seti g fe fa =
@@ -128,10 +128,8 @@ struct
     (* copy the site information from src to dst. _i is which site to copy. *)
     let copy_site ~src_i ~src ~dst_i ~dst =
       (dst.e).{dst_i} <- (src.e).{src_i};
-      for rate=0 to (get_n_rates src)-1 do
-        BA1.blit (BA3.slice_left_1 src.a rate src_i)
-          (BA3.slice_left_1 dst.a rate dst_i)
-      done
+      BA1.blit (Matrix.slice_left src.a src_i)
+        (Matrix.slice_left dst.a dst_i)
 
     (* copy the sites marked with true in site_mask_arr from src to dst. the number
      * of trues in site_mask_arr should be equal to the number of sites in dst. *)
@@ -156,8 +154,7 @@ struct
       assert(get_n_states g = Gsl_vector.length lv_arr.(0));
       seti g
         (fun _ -> 0)
-        (fun ~rate:_ ~site ~state ->
-          lv_arr.(site).{state})
+        (fun ~site ~state -> lv_arr.(site).{state})
 
     (* *** pulling exponent *** *)
 
@@ -165,27 +162,22 @@ struct
      * process is a bit complicated by the fact that we are partitioned by rate, as
      * can be seen below. *)
     let perhaps_pull_exponent min_allowed_twoexp g =
-      and n_sites = get_n_sites g in
+      let n_sites = get_n_sites g in
       let max_twoexp = ref (-max_int) in
       (* cycle through sites *)
       for site=0 to n_sites-1 do
-        max_twoexp := (-max_int);
-        (* first find the max twoexp *)
-        for rate=0 to n_rates-1 do
-          let s = BA3.slice_left_1 g.a rate site in
-          let (_, twoexp) = frexp (Gsl_vector.max s) in
-          if twoexp > !max_twoexp then max_twoexp := twoexp
-        done;
+        let _, twoexp = Matrix.slice_left g.a site
+          |> Gsl_vector.max
+          |> frexp
+        in
         (* now scale if it's needed *)
-        if !max_twoexp < min_allowed_twoexp then begin
-          for rate=0 to n_rates-1 do
-            (* take the negative so that we "divide" by 2^our_twoexp *)
-            Gsl_vector.scale
-              (BA3.slice_left_1 g.a rate site)
-              (of_twoexp (-(!max_twoexp)));
-          done;
+        if twoexp < min_allowed_twoexp then begin
+          (* take the negative so that we "divide" by 2^our_twoexp *)
+          Gsl_vector.scale
+            (Matrix.slice_left g.a site)
+            (of_twoexp (-twoexp));
           (* bring the exponent out *)
-          g.e.{site} <- g.e.{site} + !max_twoexp;
+          g.e.{site} <- g.e.{site} + twoexp;
         end
       done
 
@@ -196,10 +188,10 @@ struct
     let bounded_logdot utilv_nsites x y start last =
       assert(dims x = dims y);
       assert(start >= 0 && start <= last && last < get_n_sites x);
-      (Linear.bounded_logdot
+      (Linear.mat_bounded_logdot
          x.a y.a start last utilv_nsites)
-      +. (log_of_2 *. ((bounded_total_twoexp x start last) +.
-                          (bounded_total_twoexp y start last)))
+      +. (log_of_2 *. ((bounded_total_twoexp x.e start last) +.
+                          (bounded_total_twoexp y.e start last)))
 
     (* just take the log "dot" of the likelihood vectors *)
     let logdot utilv_nsites x y =
@@ -209,7 +201,7 @@ struct
     let pairwise_prod ~dst g1 g2 =
       assert(dims g1 = dims g2);
       iba1_pairwise_sum dst.e g1.e g2.e;
-      Linear.pairwise_prod dst.a g1.a g2.a
+      Linear.mat_pairwise_prod dst.a g1.a g2.a
 
     (* take the product of all of the GLV's in the list, then store in dst.
      * could probably be implemented more quickly, but typically we are only
@@ -229,12 +221,12 @@ struct
 
     (* For verification purposes. *)
 
-    let get_a g ~rate ~site ~state = BA3.get g.a rate site state
+    let get_a g ~site ~state = Matrix.get g.a site state
 
     (* pick the ML state by taking the sum across rates for each state and site *)
     let summarize_post summarize_f initial g =
       let n_sites = get_n_sites g
-      and n_states = get_n_states g
+      and n_states = get_n_states g in
       let summary = Array.make n_sites initial
       and u = Gsl_vector.create ~init:0. n_states in
       for site=0 to n_sites-1 do
@@ -270,7 +262,7 @@ struct
    * distribution. *)
   let log_like3 model utilv_nsites x y z =
     assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
-    (Linear.log_like3 (statd model)
+    (Linear.mat_log_like3 (statd model)
        x.Glv.a
        y.Glv.a
        z.Glv.a
@@ -280,20 +272,14 @@ struct
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
-  let evolve_into model ~dst ~src bl =
-    (* copy over the exponents *)
-    BA1.blit src.Glv.e dst.Glv.e;
-    (* prepare the matrices in our matrix cache *)
-    prep_tensor_for_bl model bl;
-    (* iter over rates *)
-    Glv.tensor_mul (tensor model) ~dst ~src
+  let evolve_into model ~dst ~src bl = ()
 
   (* take the pairwise product of glvs g1 and g2, incorporating the
    * stationary distribution, then store in dest. *)
   let statd_pairwise_prod model ~dst g1 g2 =
     assert(Glv.dims g1 = Glv.dims g2);
     iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
-    Linear.statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
+    Linear.mat_statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
 
   let slow_log_like3 model x y z =
     let ll_tot = ref 0.
@@ -348,48 +334,3 @@ let init_of_json json_fname ref_align =
   in
   Glvm.Gcat_model
     (model_name, empirical_freqs, opt_transitions, rates, site_categories)
-
-open Ppatteries
-
-module Model =
-struct
-
-  type t = {
-    statd: Gsl_vector.vector;
-    diagdq: Diagd.t;
-    seq_type: Alignment.seq_type;
-    site_categories: int array;
-    rates: float array;
-  }
-  type model_t = t
-
-  let seq_type model = model.seq_type
-
-  let build ref_align = function
-    | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
-      let seq_type, (trans, statd) =
-        if model_name = "GTR" then
-          (Alignment.Nucleotide_seq,
-           match transitions with
-             | Some transitions ->
-               (Nuc_models.b_of_trans_vector transitions,
-                Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
-             | None -> failwith "GTR specified but no substitution rates given.")
-        else
-          (Alignment.Protein_seq,
-           let model_trans, model_statd =
-             Prot_models.trans_and_statd_of_model_name model_name in
-           (model_trans,
-            if emperical_freqs then
-              Alignment.emper_freq 20 Prot_models.prot_map ref_align
-            else
-              model_statd))
-      in
-      {
-        statd; seq_type; rates; site_categories;
-        diagdq = Diagd.normed_of_exchangeable_pair trans statd;
-      }
-
-    | _ -> invalid_arg "build"
-
-end
