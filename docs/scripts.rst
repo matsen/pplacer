@@ -141,6 +141,9 @@ Options
 mask
 ----
 
+*Warning:* masking is experimental and we may change our mind about how it gets
+implemented.
+
 Alignment masks may be specified through an entry named "mask" in the
 ``CONTENTS.json`` file of a reference package pointing to a file with a
 comma-delimited set of 0-based indices in an alignment to **keep** after
