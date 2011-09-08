@@ -297,6 +297,15 @@ let placement_distance v ?snipdist p =
 
 (* voronoi' *)
 type mark = float
+type solution = {
+  leaf_set: IntSet.t;
+  mv_dist: float;
+  cl_dist: float;
+  prox_mass: float;
+  wk_subtot: float;
+}
+let soln_of_tuple (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot) =
+  {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot}
 
 let all_dist_map all_leaves gt =
   let adjacency_map = adjacent_bls gt
@@ -372,7 +381,7 @@ let mark_map gt =
       if abs_float (List.last below -. List.first above) >= bl
         && abs_float (List.first below -. List.last above) >= bl
       then
-        IntMap.add i [] markm
+        markm
       else
         List.enum below
           |> Enum.map
@@ -381,7 +390,141 @@ let mark_map gt =
                 |> Enum.take_while (fun p -> abs_float (d -. p) < bl)
                 |> Enum.map (fun p -> (bl -. d +. p) /. 2.))
           |> Enum.flatten
+          |> Enum.filter (not -| approx_equal bl)
           |> List.of_enum
           |> flip (IntMap.add i) markm
   in
   Gtree.get_stree gt |> aux |> snd
+
+let does_dominate sup inf =
+  IntSet.cardinal sup.leaf_set = IntSet.cardinal inf.leaf_set
+  && sup.mv_dist >= inf.mv_dist
+  && sup.cl_dist <= inf.cl_dist
+  && sup.wk_subtot <= inf.wk_subtot
+  && (Printf.printf "dominated %d: %g >= %g; %g <= %g; %g <= %g\n"
+        (IntSet.cardinal sup.leaf_set) sup.mv_dist inf.mv_dist sup.cl_dist inf.cl_dist
+        sup.wk_subtot inf.wk_subtot;
+      true)
+
+let cull sols =
+  List.fold_left
+    (fun sols -> function
+      | sol when List.exists (fun sup -> does_dominate sup sol) sols -> sols
+      | sol -> sol :: (List.filter (fun inf -> not (does_dominate sol inf)) sols))
+    []
+    sols
+
+let arrow_up sol1 sol2 = {
+  leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
+  mv_dist = min sol1.mv_dist sol2.mv_dist;
+  cl_dist = min sol1.cl_dist sol2.cl_dist;
+  prox_mass = sol1.prox_mass +. sol2.prox_mass;
+  wk_subtot = sol1.wk_subtot +. sol2.wk_subtot;
+}
+
+let arrow_down sol1 sol2 = {
+  leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
+  mv_dist = infinity;
+  cl_dist = min sol1.cl_dist sol2.cl_dist;
+  prox_mass = 0.;
+  wk_subtot =
+    sol1.wk_subtot +. sol2.wk_subtot +. sol2.prox_mass *. sol1.cl_dist;
+}
+
+let solve gt mass n_leaves =
+  let bubbles = mark_map gt
+  and get_bl = Gtree.get_bl gt
+  and top_id = Gtree.top_id gt in
+  let bubbles_of i =
+    IntMap.get i [] bubbles
+      |> List.sort
+      |> List.enum
+      |> flip Enum.append (get_bl i |> Enum.singleton)
+  in
+  let rec aux tree =
+    let i, solutions = match tree with
+      | Leaf i -> i,
+        [IntSet.empty, 0., infinity, 0., 0.;
+         IntSet.singleton i, infinity, 0., 0., 0.]
+        |> List.map soln_of_tuple
+      | Node (i, [t1; t2]) ->
+        i,
+        List.cartesian_product
+          (aux t1)
+          (aux t2)
+        |> List.fold_left
+            (fun sols (sol1, sol2) ->
+              let leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set in
+              if IntSet.cardinal leaf_set > n_leaves then sols else (* ... *)
+                let sol1, sol2 = if sol1.mv_dist > sol2.mv_dist then sol1, sol2 else sol2, sol1 in
+                sols
+                  |> List.cons (arrow_up sol1 sol2)
+                  |> maybe_cons
+                      (if sol1.mv_dist = infinity && sol1.cl_dist <> infinity && sol2.mv_dist <> infinity
+                       then Some (arrow_down sol1 sol2)
+                       else (Printf.printf "?? %d %d %g %g %g\n" i (IntSet.cardinal sol1.leaf_set) sol1.mv_dist sol1.cl_dist sol1.prox_mass; None)
+                      ))
+            []
+      | _ -> failwith "bifurcation only currently"
+    in
+    if i = top_id then solutions else (* ... *)
+    let marks = bubbles_of i
+    and masses = IntMap.get i [] mass |> List.enum in
+    Enum.fold
+      (fun (last_mark, solutions) mark ->
+        let masses =
+          Enum.take_while (fun {I.distal_bl} -> distal_bl < mark) masses
+          |> List.of_enum
+        and bub_len = mark -. last_mark in
+        let bub_mass = I.v_mass masses
+        and wk_distal = I.work_moving_to masses last_mark
+        and wk_prox = I.work_moving_to masses mark in
+        Printf.printf "%d: %g (%g) -> %g %g %g %g\n" i mark last_mark bub_len bub_mass wk_distal wk_prox;
+        mark,
+        List.fold_left
+          (fun accum sol ->
+            let accum = accum
+              |> maybe_cons
+                  (if bub_mass > 0.
+                      && wk_prox < wk_distal +. bub_mass *. sol.cl_dist
+                      && sol.cl_dist <> infinity
+                   then
+                      (let x = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass) in
+                        Printf.printf "!! something was generated? %g %g\n" x sol.cl_dist;
+                      Some {sol with
+                        mv_dist = x;
+                        cl_dist = sol.cl_dist +. bub_len;
+                        prox_mass = bub_mass;
+                        wk_subtot = sol.wk_subtot +. wk_prox;
+                      })
+                   else None)
+            in
+            match sol with
+              | sol when sol.mv_dist = 0. ->
+                {sol with
+                  prox_mass = sol.prox_mass +. bub_mass;
+                  wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len}
+                :: accum
+              | sol when sol.mv_dist < bub_len ->
+                Printf.printf "pruned at %g < %g\n" sol.mv_dist bub_len;
+                accum
+              | sol when sol.mv_dist = infinity ->
+                {sol with
+                  cl_dist = sol.cl_dist +. bub_len;
+                  wk_subtot = sol.wk_subtot +. wk_distal}
+                :: accum
+              | sol ->
+                {sol with
+                  mv_dist = sol.mv_dist -. bub_len;
+                  cl_dist = sol.cl_dist +. bub_len;
+                  prox_mass = sol.prox_mass +. bub_mass;
+                  wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len}
+                :: accum)
+          []
+          solutions
+        |> cull)
+      (0., solutions)
+      marks
+    |> snd
+  in
+  Gtree.get_stree gt |> aux
