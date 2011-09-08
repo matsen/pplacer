@@ -63,6 +63,9 @@
  * Closed GH-138: Removed the --transform flag from everything except `guppy
    mft`; removed the --unweighted flag from commands which don't respect it.
  * Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.
+ * Closed GH-143: Changed the --leaves argument to `rppr voronoi` to specify
+   the number of leaves to keep in the tree instead of the number of leaves to
+   prune.
 
 
 1.1.alpha08

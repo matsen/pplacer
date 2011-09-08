@@ -32,7 +32,7 @@ object (self)
   val dist_cutoff = flag "--distance"
     (Needs_argument ("", "If set to x, stop when the minimum KR distance from a voronoi region to ."))
   val leaf_cutoff = flag "--leaves"
-    (Needs_argument ("", "If provided, the maximum number of leaves to cut from the tree."))
+    (Needs_argument ("", "If provided, the maximum number of leaves to keep in the tree."))
   val leaf_mass = flag "--leaf-mass"
     (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
 
@@ -80,7 +80,7 @@ object (self)
         @ (match fvo leaf_cutoff with
           | Some count ->
             [fun (_, v) ->
-              (n_leaves - (IntSet.cardinal v.Voronoi.all_leaves)) >= count]
+              IntSet.cardinal v.Voronoi.all_leaves <= count]
           | None -> [])
       in
       if List.length criteria = 0 then
