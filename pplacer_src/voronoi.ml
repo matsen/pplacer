@@ -304,8 +304,24 @@ type solution = {
   prox_mass: float;
   wk_subtot: float;
 }
+
+let mv_dist {mv_dist} = mv_dist
+let leaf_card {leaf_set} = IntSet.cardinal leaf_set
+
 let soln_of_tuple (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot) =
   {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot}
+let soln_to_tuple {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot} =
+ (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot)
+
+let print_sol f =
+  soln_to_tuple
+  |- Tuple5.printn
+      (IntSet.print ~first:"{" ~sep:", " ~last:"}" Int.print)
+      Float.print
+      Float.print
+      Float.print
+      Float.print
+      f
 
 let all_dist_map all_leaves gt =
   let adjacency_map = adjacent_bls gt
@@ -392,27 +408,46 @@ let mark_map gt =
           |> Enum.flatten
           |> Enum.filter (not -| approx_equal bl)
           |> List.of_enum
+          |> List.sort
           |> flip (IntMap.add i) markm
   in
   Gtree.get_stree gt |> aux |> snd
 
 let does_dominate sup inf =
-  IntSet.cardinal sup.leaf_set = IntSet.cardinal inf.leaf_set
-  && sup.mv_dist >= inf.mv_dist
+  sup.mv_dist >= inf.mv_dist
   && sup.cl_dist <= inf.cl_dist
   && sup.wk_subtot <= inf.wk_subtot
-  && (Printf.printf "dominated %d: %g >= %g; %g <= %g; %g <= %g\n"
-        (IntSet.cardinal sup.leaf_set) sup.mv_dist inf.mv_dist sup.cl_dist inf.cl_dist
-        sup.wk_subtot inf.wk_subtot;
-      true)
 
 let cull sols =
+  Printf.printf "culling %d solutions" (List.length sols); flush_all ();
   List.fold_left
-    (fun sols -> function
-      | sol when List.exists (fun sup -> does_dominate sup sol) sols -> sols
-      | sol -> sol :: (List.filter (fun inf -> not (does_dominate sol inf)) sols))
-    []
+    (fun solm sol ->
+      let c = IntSet.cardinal sol.leaf_set in
+      if IntMap.mem c solm then
+        let sols = IntMap.find c solm in
+        if List.exists (fun sup -> does_dominate sup sol) sols then
+          solm
+        else
+          sol :: (List.filter (fun inf -> not (does_dominate sol inf)) sols)
+          |> flip (IntMap.add c) solm
+      else
+        IntMap.add c [sol] solm)
+    IntMap.empty
     sols
+  |> IntMap.values
+  |> Enum.map List.enum
+  |> Enum.flatten
+  |> List.of_enum
+  |> tap (fun sols' ->
+    let l1 = List.length sols and l2 = List.length sols' in
+    if l1 <> l2 then
+      Printf.printf " -> culled %d solutions to %d (%g%%; max card %d)\n"
+        (l1 - l2)
+        l2
+        ((float_of_int l1 -. float_of_int l2) /. float_of_int l1 *. 100.)
+        (List.enum sols' |> Enum.arg_max leaf_card |> leaf_card)
+    else
+      print_endline " -> culled nothing")
 
 let arrow_up sol1 sol2 = {
   leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
@@ -431,13 +466,58 @@ let arrow_down sol1 sol2 = {
     sol1.wk_subtot +. sol2.wk_subtot +. sol2.prox_mass *. sol1.cl_dist;
 }
 
+let collapse_marks gt mass markm =
+  let get_bl = Gtree.get_bl gt in
+  let bubbles_from i =
+    List.enum |- flip Enum.append (get_bl i |> Enum.singleton)
+  in
+  IntMap.mapi
+    (fun i marks ->
+      let mass_enum = IntMap.get i [] mass |> List.enum in
+      Enum.fold
+        (fun (delete_prev, accum) mark ->
+          if Enum.take_while (fun {I.distal_bl} -> distal_bl < mark) mass_enum
+            |> List.of_enum
+            |> List.is_empty
+          then
+            true, mark :: (if delete_prev then List.tl accum else accum)
+          else
+            false, mark :: accum)
+        (false, [])
+        (bubbles_from i marks)
+      |> snd |> List.tl |> List.rev)
+    markm
+
+let combine_solutions max_leaves solsl =
+  print_string "combining across ";
+  List.print ~first:"" ~last:"" ~sep:", " Int.print stdout (List.map List.length solsl);
+  flush_all ();
+  List.n_cartesian_product solsl
+  |> List.map
+      (List.partition (mv_dist |- (=) infinity)
+       |- (function
+           | i, j when List.is_empty i -> [List.reduce arrow_up j]
+           | i, j when List.is_empty j -> [List.reduce arrow_up i]
+           | i, j ->
+             let i' = List.reduce arrow_up i in
+             List.fold_left
+               (fun (prev_down, sols) cur ->
+                 let cur' = arrow_down prev_down cur in
+                 cur',
+                 cur' :: List.map (arrow_up cur) sols)
+               (i', [i'])
+               (List.sort ~cmp:(comparing mv_dist |> flip) j)
+             |> uncurry List.cons)
+       |- List.filter (leaf_card |- (>=) max_leaves))
+  |> List.flatten
+  |> tap (fun l -> Printf.printf " -> combined to %d" (List.length l); print_newline ())
+
 let solve gt mass n_leaves =
-  let bubbles = mark_map gt
+  let bubbles = mark_map gt |> collapse_marks gt mass
   and get_bl = Gtree.get_bl gt
   and top_id = Gtree.top_id gt in
   let bubbles_of i =
     IntMap.get i [] bubbles
-      |> List.sort
       |> List.enum
       |> flip Enum.append (get_bl i |> Enum.singleton)
   in
@@ -447,25 +527,8 @@ let solve gt mass n_leaves =
         [IntSet.empty, 0., infinity, 0., 0.;
          IntSet.singleton i, infinity, 0., 0., 0.]
         |> List.map soln_of_tuple
-      | Node (i, [t1; t2]) ->
-        i,
-        List.cartesian_product
-          (aux t1)
-          (aux t2)
-        |> List.fold_left
-            (fun sols (sol1, sol2) ->
-              let leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set in
-              if IntSet.cardinal leaf_set > n_leaves then sols else (* ... *)
-                let sol1, sol2 = if sol1.mv_dist > sol2.mv_dist then sol1, sol2 else sol2, sol1 in
-                sols
-                  |> List.cons (arrow_up sol1 sol2)
-                  |> maybe_cons
-                      (if sol1.mv_dist = infinity && sol1.cl_dist <> infinity && sol2.mv_dist <> infinity
-                       then Some (arrow_down sol1 sol2)
-                       else (Printf.printf "?? %d %d %g %g %g\n" i (IntSet.cardinal sol1.leaf_set) sol1.mv_dist sol1.cl_dist sol1.prox_mass; None)
-                      ))
-            []
-      | _ -> failwith "bifurcation only currently"
+      | Node (i, subtrees) ->
+        i, List.map aux subtrees |> combine_solutions n_leaves |> cull
     in
     if i = top_id then solutions else (* ... *)
     let marks = bubbles_of i
@@ -479,7 +542,8 @@ let solve gt mass n_leaves =
         let bub_mass = I.v_mass masses
         and wk_distal = I.work_moving_to masses last_mark
         and wk_prox = I.work_moving_to masses mark in
-        Printf.printf "%d: %g (%g) -> %g %g %g %g\n" i mark last_mark bub_len bub_mass wk_distal wk_prox;
+        Printf.printf "%d: %g (%g) -> %g %g %g %g" i mark last_mark bub_len bub_mass wk_distal wk_prox;
+        flush_all ();
         mark,
         List.fold_left
           (fun accum sol ->
@@ -488,15 +552,12 @@ let solve gt mass n_leaves =
                   (if bub_mass > 0.
                       && wk_prox < wk_distal +. bub_mass *. sol.cl_dist
                       && sol.cl_dist <> infinity
-                   then
-                      (let x = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass) in
-                        Printf.printf "!! something was generated? %g %g\n" x sol.cl_dist;
-                      Some {sol with
-                        mv_dist = x;
-                        cl_dist = sol.cl_dist +. bub_len;
-                        prox_mass = bub_mass;
-                        wk_subtot = sol.wk_subtot +. wk_prox;
-                      })
+                   then Some {sol with
+                     mv_dist = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass);
+                     cl_dist = sol.cl_dist +. bub_len;
+                     prox_mass = bub_mass;
+                     wk_subtot = sol.wk_subtot +. wk_prox;
+                   }
                    else None)
             in
             match sol with
@@ -506,7 +567,6 @@ let solve gt mass n_leaves =
                   wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len}
                 :: accum
               | sol when sol.mv_dist < bub_len ->
-                Printf.printf "pruned at %g < %g\n" sol.mv_dist bub_len;
                 accum
               | sol when sol.mv_dist = infinity ->
                 {sol with
@@ -522,7 +582,8 @@ let solve gt mass n_leaves =
                 :: accum)
           []
           solutions
-        |> cull)
+        |> tap (fun _ -> print_endline " -> finished")
+        |> if bub_mass > 0. then cull else identity)
       (0., solutions)
       marks
     |> snd
