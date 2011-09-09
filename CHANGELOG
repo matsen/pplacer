@@ -7,6 +7,7 @@
    names if the name was an integer.
  * In fixing a bug, made `guppy diplac` only emit the first name in a pquery in
    its results.
+ * Added a `multiclass` view and associated parameters to `rppr prep_db`.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
@@ -61,6 +62,10 @@
    a corresponding --painted flag to `rppr ref_tree`.
  * Closed GH-138: Removed the --transform flag from everything except `guppy
    mft`; removed the --unweighted flag from commands which don't respect it.
+ * Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.
+ * Closed GH-143: Changed the --leaves argument to `rppr voronoi` to specify
+   the number of leaves to keep in the tree instead of the number of leaves to
+   prune.
 
 
 1.1.alpha08

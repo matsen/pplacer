@@ -1,3 +1,4 @@
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
@@ -8,7 +9,11 @@ object (self)
   inherit sqlite_cmd () as super_sqlite
 
   val default_cutoff = flag "--default-cutoff"
-    (Formatted (0.9, "The default value for the likelihood_cutoff table. Default: %0.2f"))
+    (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
+  val default_count = flag "--default-multiclass-count"
+    (Formatted (3, "The default value for the multiclass_count param. Default: %d"))
+  val default_likelihood = flag "--default-multiclass-likelihood"
+    (Formatted (0.05, "The default value for the multiclass_likelihood param. Default: %0.3f"))
 
   method specl =
     super_refpkg#specl
@@ -25,10 +30,12 @@ object (self)
     let db = self#get_db in
     let tax = Refpkg.get_taxonomy refpkg in
     Sql.check_exec db "BEGIN TRANSACTION";
-    let st = Sqlite3.prepare db
-      "CREATE TABLE likelihood_cutoff AS SELECT ? AS val;" in
-    Sql.bind_step_reset db st [| Sql.D.FLOAT (fv default_cutoff) |];
     Sql.check_exec db "
+      CREATE TABLE params (
+        name TEXT,
+        val REAL
+      );
+
       CREATE TABLE IF NOT EXISTS ranks (
         rank TEXT PRIMARY KEY NOT NULL,
         rank_order INTEGER
@@ -85,13 +92,52 @@ object (self)
                        JOIN placement_classifications USING (placement_id)
                        JOIN ranks USING (rank)
                 WHERE  rank = desired_rank
-                       AND likelihood > (SELECT val FROM likelihood_cutoff)
+                       AND likelihood > (SELECT val FROM params WHERE name = 'likelihood_cutoff')
                 ORDER  BY placement_id,
                           rank_order ASC,
                           likelihood ASC)
         GROUP  BY placement_id;
 
+      CREATE VIEW multiclass AS
+      SELECT pc.placement_id,
+             pc.tax_id,
+             COALESCE(below_rank, bc.rank) AS rank,
+             pc.likelihood
+      FROM   best_classifications bc
+             LEFT JOIN (SELECT *
+                        FROM   (SELECT placement_id,
+                                       bc.rank,
+                                       pc.rank AS below_rank
+                                FROM   best_classifications bc
+                                       JOIN placement_classifications pc USING (
+                                       placement_id)
+                                       JOIN ranks bcr
+                                         ON bc.rank = bcr.rank
+                                       JOIN ranks pcr
+                                         ON pc.rank = pcr.rank
+                                WHERE  pcr.rank_order > bcr.rank_order
+                                       AND pc.likelihood > (select val from params where name = 'multiclass_likelihood')
+                                GROUP  BY placement_id,
+                                          desired_rank
+                                HAVING COUNT(*) <= (select val from params where name = 'multiclass_count')
+                                ORDER  BY pcr.rank_order)
+                        GROUP  BY placement_id
+                        ) sq USING (placement_id, rank)
+             JOIN placement_classifications pc
+               ON pc.placement_id = bc.placement_id
+                  AND pc.desired_rank = pc.rank
+                  AND pc.rank = COALESCE(below_rank, bc.rank)
+             WHERE pc.likelihood > (select val from params where name = 'multiclass_likelihood');
+
     ";
+    let st = Sqlite3.prepare db "INSERT INTO params VALUES (?, ?)" in
+    List.iter
+      (Sql.bind_step_reset db st)
+      [
+        [| Sql.D.TEXT "likelihood_cutoff"; Sql.D.FLOAT (fv default_cutoff) |];
+        [| Sql.D.TEXT "multiclass_count"; Sql.D.INT (fv default_count |> Int64.of_int) |];
+        [| Sql.D.TEXT "multiclass_likelihood"; Sql.D.FLOAT (fv default_likelihood) |];
+      ];
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
       (fun idx name ->
