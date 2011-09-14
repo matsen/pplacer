@@ -56,8 +56,8 @@ let mrcam_of_full_map t full_map =
         (id, our_tax_id))
       (fun id -> (id, IntMap.find id full_map))
       t
-  in
-  !m
+  and top_id = Gtree.top_id t in
+  IntMap.add top_id (IntMap.find top_id full_map) !m
 
 let mrcam_of_data sim td t =
   mrcam_of_full_map t (fill_out td t (tips_map sim t))

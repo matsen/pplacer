@@ -334,9 +334,6 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
         end
         else results, sorted_ml_placements
       in
-      List.iter
-        (fun p -> print_endline (Placement.to_str p))
-        placements;
       Pquery (Pquery.make_ml_sorted
         ~namel:[query_name]
         ~seq:query_seq
