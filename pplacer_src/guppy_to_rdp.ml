@@ -27,38 +27,24 @@ object (self)
 
   val included_ranks = flag "-r"
     (Plain ([], "Ranks to include in the annotated fasta file. Can be comma-separated."))
-  val list_ranks = flag "-l"
-    (Plain (false, "List all of the ranks, by number."))
 
   method specl =
     super_output#specl
   @ super_refpkg#specl
-  @ [
-    string_list_flag included_ranks;
-    toggle_flag list_ranks;
-  ]
+  @ [string_list_flag included_ranks;]
 
   method desc = "convert a reference package to a format RDP wants"
   method usage = "usage: to_rdp -c my.refpkg -o prefix"
 
-  method action _ =
-    if fv list_ranks then
-      let rp = self#get_rp in
-      let tax = Refpkg.get_taxonomy rp in
-      Array.iteri
-        (Printf.printf "%d: %s\n")
-        tax.Tax_taxonomy.rank_names
-    else
-      self#real_action
-
-  method private real_action =
+  method private action _ =
     let rp = self#get_rp in
     let tax = Refpkg.get_taxonomy rp in
     let included = fv included_ranks
       |> List.map (flip String.nsplit ",")
       |> List.flatten
+      |> List.map (fun rk -> Array.findi ((=) rk) tax.Tax_taxonomy.rank_names)
+      |> List.sort
     in
-    let included = List.sort (List.map int_of_string included) in
     let prefix = self#single_prefix ~requires_user_prefix:true () in
 
     let new_taxonomy = begin
