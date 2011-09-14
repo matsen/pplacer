@@ -86,6 +86,13 @@ object (self)
             (Tax_taxonomy.get_lineage tax tax_id)
             included
           in
+          if List.length tax_pairs <> List.length included then begin
+            Printf.printf
+              "warning: %s was excluded because it can't be classified \
+               at all the specified ranks\n"
+              name;
+            tax_map
+          end else begin (* ... *)
           Printf.fprintf out_ch ">%s " name;
           List.iter
             (fun (tax_id, _) ->
@@ -109,7 +116,8 @@ object (self)
           in
           Tax_id.TaxIdMap.union
             tax_map
-            (aux Tax_id.TaxIdMap.empty tax_pairs))
+            (aux Tax_id.TaxIdMap.empty tax_pairs)
+          end)
         Tax_id.TaxIdMap.empty
         aln
       in
