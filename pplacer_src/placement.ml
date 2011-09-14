@@ -60,11 +60,8 @@ let add_pp p ~marginal_prob ~post_prob =
 let add_classif p c = {p with classif = Some c}
 let add_map_identity p i = {p with map_identity = Some i}
 
-let compare_placements criterion rp1 rp2 =
-  compare (criterion rp1) (criterion rp2)
-
 let sort_placecoll criterion pc =
-  List.sort ~cmp:(compare_placements criterion |> flip) pc
+  List.sort ~cmp:(comparing criterion |> flip) pc
 
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc

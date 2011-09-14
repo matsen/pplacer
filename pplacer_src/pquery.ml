@@ -6,9 +6,7 @@ open Ppatteries
 exception Unplaced_pquery of string list
 
 let sort_placement_list criterion pl =
-  List.sort
-    ~cmp:(Placement.compare_placements criterion |> flip)
-    pl
+  List.sort ~cmp:(comparing criterion |> flip) pl
 
 let rec is_decreasing criterion = function
   | x::y::l ->
