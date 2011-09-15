@@ -67,7 +67,6 @@ object (self)
     prl
       |> List.map
           (fun pr -> [Placerun.get_name pr; pd pr |> Printf.sprintf "%g"])
-      |> List.cons ["name"; "pd"]
       |> self#write_ll_tab
 
 end
