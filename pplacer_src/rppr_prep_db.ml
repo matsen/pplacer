@@ -83,51 +83,61 @@ object (self)
 
       CREATE VIEW best_classifications
       AS
-        SELECT placement_id,
-               tax_id,
-               rank,
-               likelihood
-        FROM   (SELECT *
-                FROM   placements
-                       JOIN placement_classifications USING (placement_id)
-                       JOIN ranks USING (rank)
-                WHERE  rank = desired_rank
-                       AND likelihood > (SELECT val FROM params WHERE name = 'likelihood_cutoff')
-                ORDER  BY placement_id,
-                          rank_order ASC,
-                          likelihood ASC)
-        GROUP  BY placement_id;
+        SELECT *
+        FROM   placements
+               LEFT JOIN (SELECT placement_id,
+                                 tax_id,
+                                 rank,
+                                 likelihood
+                          FROM   (SELECT *
+                                  FROM   placements
+                                         JOIN placement_classifications USING (placement_id)
+                                         JOIN ranks USING (rank)
+                                  WHERE  rank = desired_rank
+                                         AND likelihood > (SELECT val
+                                                           FROM   params
+                                                           WHERE  name = 'likelihood_cutoff')
+                                  ORDER  BY placement_id,
+                                            rank_order ASC,
+                                            likelihood ASC)
+                          GROUP  BY placement_id) USING (placement_id);
 
-      CREATE VIEW multiclass AS
-      SELECT pc.placement_id,
-             pc.tax_id,
-             COALESCE(below_rank, bc.rank) AS rank,
-             pc.likelihood
-      FROM   best_classifications bc
-             LEFT JOIN (SELECT *
-                        FROM   (SELECT placement_id,
-                                       bc.rank,
-                                       pc.rank AS below_rank
-                                FROM   best_classifications bc
-                                       JOIN placement_classifications pc USING (
-                                       placement_id)
-                                       JOIN ranks bcr
-                                         ON bc.rank = bcr.rank
-                                       JOIN ranks pcr
-                                         ON pc.rank = pcr.rank
-                                WHERE  pcr.rank_order > bcr.rank_order
-                                       AND pc.likelihood > (select val from params where name = 'multiclass_likelihood')
-                                GROUP  BY placement_id,
-                                          desired_rank
-                                HAVING COUNT(*) <= (select val from params where name = 'multiclass_count')
-                                ORDER  BY pcr.rank_order)
-                        GROUP  BY placement_id
-                        ) sq USING (placement_id, rank)
-             JOIN placement_classifications pc
-               ON pc.placement_id = bc.placement_id
-                  AND pc.desired_rank = pc.rank
-                  AND pc.rank = COALESCE(below_rank, bc.rank)
-             WHERE pc.likelihood > (select val from params where name = 'multiclass_likelihood');
+      CREATE VIEW multiclass
+      AS
+        SELECT bc.placement_id,
+               pc.tax_id,
+               COALESCE(below_rank, bc.rank) AS rank,
+               pc.likelihood
+        FROM   best_classifications bc
+               LEFT JOIN (SELECT *
+                          FROM   (SELECT placement_id,
+                                         bc.rank,
+                                         pc.rank AS below_rank
+                                  FROM   best_classifications bc
+                                         JOIN placement_classifications pc USING (placement_id)
+                                         JOIN ranks bcr
+                                           ON bc.rank = bcr.rank
+                                         JOIN ranks pcr
+                                           ON pc.rank = pcr.rank
+                                  WHERE  pcr.rank_order > bcr.rank_order
+                                         AND pc.likelihood >
+                                             (SELECT val
+                                              FROM   params
+                                              WHERE  name = 'multiclass_likelihood')
+                                  GROUP  BY placement_id,
+                                            desired_rank
+                                  HAVING COUNT(*) <= (SELECT val
+                                                      FROM   params
+                                                      WHERE  name = 'multiclass_count')
+                                  ORDER  BY pcr.rank_order)
+                          GROUP  BY placement_id) USING (placement_id, rank)
+               LEFT JOIN placement_classifications pc
+                 ON pc.placement_id = bc.placement_id
+                    AND pc.desired_rank = pc.rank
+                    AND pc.rank = COALESCE(below_rank, bc.rank)
+        WHERE  COALESCE(pc.likelihood > (SELECT val
+                                         FROM   params
+                                         WHERE  name = 'multiclass_likelihood'), 1);
 
     ";
     let st = Sqlite3.prepare db "INSERT INTO params VALUES (?, ?)" in
