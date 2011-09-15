@@ -2,20 +2,27 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
+let reflect x =
+  if approx_equal ~epsilon:Guppy_pd.epsilon x 1. then 0.
+  else begin
+    let y = 1. -. x in
+    if y < 0. then failwith "reflect out of range!"
+    else y
+  end
+
 let wpd_of_placerun exponent criterion pr =
   let mass_map = Mass_map.Indiv.of_placerun Mass_map.Unweighted criterion pr in
   let f =
     if exponent < 0. || exponent > 1. then
       failwith("exponent must be between 0 and 1, inclusive")
     else if exponent = 1. then (fun x -> 2. *. x)
-    else if exponent = 0. then
-      Guppy_pd.bump_function (Mass_map.Indiv.total_mass mass_map)
+    else if exponent = 0. then Guppy_pd.bump_function
     else (fun x -> (2. *. x) ** exponent)
   in
   Guppy_pd.total_along_mass
     (Placerun.get_ref_tree pr)
     mass_map
-    (fun r -> min (f !r) (f (1. -. !r)))
+    (fun r -> min (f !r) (f (reflect !r)))
 
 class cmd () =
 object (self)
