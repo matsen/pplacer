@@ -2,6 +2,8 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
+let epsilon = 1e-10
+
 let merge a x = a := x +. !a
 let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
 
@@ -25,8 +27,8 @@ let total_along_mass gt mass cb =
  * (0, total_mass), and the branch length coefficient should be 1. Otherwise,
  * we're either before or after the induced tree and the multiplier should
  * be 0. *)
-let bump_function total_mass r =
-  if r = 0. || approx_equal ~epsilon:1e-30 r total_mass then 0. else 1.
+let bump_function r =
+  if r = 0. || approx_equal ~epsilon r 1. then 0. else 1.
 
 let pd_of_placerun criterion normalized pr =
   let gt = Placerun.get_ref_tree pr
@@ -35,11 +37,10 @@ let pd_of_placerun criterion normalized pr =
     criterion
     pr
   in
-  let total_mass = I.total_mass mass in
   total_along_mass
     gt
     mass
-    (fun r -> bump_function total_mass !r)
+    (fun r -> bump_function !r)
   |> (if not normalized then identity
     else fun pd -> pd /. (Gtree.tree_length gt))
 
