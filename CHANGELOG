@@ -10,6 +10,8 @@
  * Added a `multiclass` view and associated parameters to `rppr prep_db`.
  * Fixed a bug where sometimes placements that fell too close to the root would
    vanish with the --map-identity flag on.
+ * Fixed identity to give 0% sequence identity in the case of no overlap
+   between sequences.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
