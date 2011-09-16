@@ -4,17 +4,10 @@ open Guppy_cmdobjs
 
 module I = Mass_map.Indiv
 
-let update_score ~gt ~p_exp indiv_map leaf map =
-  let score =
-    if not (IntMap.mem leaf indiv_map) then 0.0 else
-      let indiv = IntMap.find leaf indiv_map in
-      let squashed_indiv = IntMap.singleton
-        leaf
-        [{I.distal_bl = 0.0; I.mass = I.total_mass indiv}]
-      in
-      Kr_distance.dist gt p_exp indiv squashed_indiv
-  in
-  IntMap.add leaf score map
+let update_score ~p_exp v indiv leaf map =
+  let v', _ = Voronoi.uncolor_leaf v leaf in
+  Voronoi.ecld ~p_exp v' (Voronoi.partition_indiv_on_leaves v' indiv)
+  |> flip (IntMap.add leaf) map
 
 class cmd () =
 object (self)
@@ -61,7 +54,7 @@ object (self)
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp
         | None -> Decor_gtree.of_newick_gtree gt
-      and update_score = update_score ~gt ~p_exp:(fv p_exp) in
+      and update_score = update_score ~p_exp:(fv p_exp) in
       if 0. > leaf_mass_fract || leaf_mass_fract > 1. then
         failwith ("Leaf mass fraction not between 0 and 1.");
       (* First get the mass that is not at the leaves. *)
@@ -102,9 +95,8 @@ object (self)
        * map of the scores for each leaf in the Voronoi region, updated at each
        * iteration with only the leaves which were touched in the last pass. *)
       let rec aux diagram cut score_map updated_leaves =
-        let indiv_map = Voronoi.partition_indiv_on_leaves diagram mass in
         let score_map' = IntSet.fold
-          (update_score indiv_map)
+          (update_score diagram mass)
           updated_leaves
           score_map
         in
@@ -115,15 +107,23 @@ object (self)
           diagram, cut
         else begin
           if verbose then begin
-            Printf.fprintf stderr "uncoloring %d (dist %1.6f)" leaf dist;
+            Printf.fprintf stderr "uncoloring %d (score %1.6f)" leaf dist;
             prerr_newline ();
           end;
           let diagram', updated_leaves' = Voronoi.uncolor_leaf diagram leaf in
-          aux
-            diagram'
-            ([Gtree.get_name taxtree leaf; Printf.sprintf "%1.6f" dist] :: cut)
-            (IntMap.remove leaf score_map')
-            (IntSet.remove leaf updated_leaves')
+          let cut' =
+            [Voronoi.partition_indiv_on_leaves diagram' mass
+             |> Voronoi.ecld diagram'
+             |> Printf.sprintf "%1.10f"] :: cut
+          in
+          if List.exists ((|>) (dist, diagram')) criteria then
+            diagram', cut'
+          else
+            aux
+              diagram'
+              cut'
+              (IntMap.remove leaf score_map')
+              (IntSet.remove leaf updated_leaves')
         end
       in
       let diagram', cut = aux
@@ -132,6 +132,9 @@ object (self)
         IntMap.empty
         diagram.Voronoi.all_leaves
       in
+      if verbose then
+        Voronoi.ecld diagram' (Voronoi.partition_indiv_on_leaves diagram' mass)
+          |> Printf.fprintf stderr "ECLD: %0.14g\n";
       self#write_ll_tab cut;
       let trimmed =
         IntSet.diff

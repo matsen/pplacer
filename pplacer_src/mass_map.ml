@@ -57,7 +57,7 @@ module Pre = struct
   type t = multimul list
 
   (* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
-  let multimul_of_pquery weighting criterion mass_per_read pq =
+  let multimul_of_pquery weighting criterion _ pq =
     let pc = place_list_of_pquery weighting criterion pq in
     {
       multi = Pquery.multiplicity pq;
@@ -67,7 +67,7 @@ module Pre = struct
             {
               loc = Placement.location place;
               distal_bl = Placement.distal_bl place;
-              mass = mass_per_read *. weight
+              mass = weight
             })
           pc
           (normalized_prob (List.map criterion pc));

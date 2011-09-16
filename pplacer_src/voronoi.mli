@@ -56,6 +56,10 @@ val update_ldistm: ldistm -> IntSet.t -> int list -> Newick_gtree.t -> ldistm * 
 val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
 
+val of_gtree_and_leaves: Newick_gtree.t -> IntSet.t -> v
+(** Compute the Voronoi diagram where points of interest are only the leaves
+    specified. *)
+
 val uncolor_leaves: v -> IntSet.t -> v * IntSet.t
 (** This function returns the updated Voronoi after removing all of the leaves
     in the given set, as well as the set of leaves which were affected by this
@@ -90,6 +94,9 @@ val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement
     voronoi diagram. If a snipdist isn't provided, it will be calculated from
     the specified diagram. *)
 
+val leaf_work: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> leaf -> float
+val ecld: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> float
+
 type mark = float
 type solution = {
   leaf_set: IntSet.t;
@@ -99,7 +106,8 @@ type solution = {
   wk_subtot: float;
 }
 val all_dist_map: IntSet.t -> Newick_gtree.t -> float IntMap.t IntMap.t
-val mark_map: Newick_gtree.t -> mark list IntMap.t
+val mark_map: Newick_gtree.t -> mark list IntMap.t * float IntMap.t
 val solve: Newick_gtree.t -> Mass_map.Indiv.t -> int -> solution list
 val collapse_marks: Newick_gtree.t -> Mass_map.Indiv.t -> mark list IntMap.t -> mark list IntMap.t
 val print_sol: 'a BatIO.output -> solution -> unit
+val ignore_leaves: IntSet.t ref
