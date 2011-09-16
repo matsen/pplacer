@@ -262,7 +262,6 @@ CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_va
   int first = Int_val(first_value);
   int last = Int_val(last_value);
   double *util = Data_bigarray_val(util_value);
-  int n_sites = Bigarray_val(x_value)->dim[0];
   int n_states = Bigarray_val(x_value)->dim[1];
   int site, state;
   int n_used = 1 + last - first;
