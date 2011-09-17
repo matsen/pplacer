@@ -35,3 +35,20 @@ let suite = List.map
     "(A[2],B[1])[0];", false;
     "([2],[1])[0];", false;
   ]
+
+let suite = suite @ [
+  "test_bracket_bootstrap" >:: begin fun () ->
+    assert_raises
+      (Sparse.Parse_error
+         ("leaves are not permitted to have bootstrap values", (1, 2), (1, 5)))
+      (fun () ->
+        Newick_gtree.of_string ~brackets_as_confidence:true "(A[1],B[2])[3];");
+
+    let gt = Newick_gtree.of_string
+      ~brackets_as_confidence:true
+      "(A,B)[10];"
+    in
+    "bootstrap didn't match" @? (Gtree.get_boot gt 2 = 10.)
+
+  end;
+]

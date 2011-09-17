@@ -93,21 +93,23 @@ let check_string s =
     Printf.printf "warning: %d open parens and %d closed parens\n" n_open n_closed;
   ()
 
-let of_lexbuf lexbuf =
+let of_lexbuf ?(brackets_as_confidence = false) lexbuf =
+  Newick_parse_state.node_num := (-1);
+  Newick_parse_state.brackets_as_confidence := brackets_as_confidence;
   try
     Newick_parser.tree Newick_lexer.token lexbuf
   with
   | Parsing.Parse_error -> failwith "couldn't parse tree!"
 
-let of_string s =
+let of_string ?brackets_as_confidence s =
   check_string s;
   try
-    of_lexbuf
+    of_lexbuf ?brackets_as_confidence
     (Lexing.from_string (Str.replace_first (Str.regexp ");") "):0.;" s))
   with
   | Failure s -> failwith("problem parsing tree: "^s)
 
-let of_file fname =
+let of_file ?brackets_as_confidence fname =
   match
     List.filter
       (fun line ->
@@ -115,7 +117,7 @@ let of_file fname =
       (File_parsing.string_list_of_file fname)
   with
     | [] -> failwith ("empty file in "^fname)
-    | [s] -> of_string s
+    | [s] -> of_string ?brackets_as_confidence s
     | _ -> failwith ("expected a single tree on a single line in "^fname)
 
 let list_of_file fname =
