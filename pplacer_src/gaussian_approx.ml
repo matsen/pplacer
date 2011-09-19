@@ -25,8 +25,7 @@ the integral, but leave it inside the outer exponentiation to avoid having to
 deal with the \frac{1}{p} \wedge 1 thing again.
 *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 open Mass_map
 
 (* this exception shows up if the average mass isn't one *)
@@ -52,10 +51,10 @@ let intermediate_sum i1 i2 =
 (* This looks a bit nuts, and it kind of is, but we are actually only doing this
  * operation O(#edges of the tree) times. For bifurcating trees these are lists
  * of two, and the above is actually the most efficient way to go. *)
-let intermediate_list_sum = ListFuns.complete_fold_left intermediate_sum
+let intermediate_list_sum = List.reduce intermediate_sum
 
 (* Note: upre1 and upre2 must have unit mass per placement. *)
-let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
+let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
   let np1 = List.length upre1
   and np2 = List.length upre2
   and int_inv x = 1. /. (float_of_int x)
@@ -70,9 +69,8 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
   List.iter
     (List.iter
     (* recall multimul = mass unit list with multiplicity *)
-      (fun multimul ->
-        let trans_multi = transform multimul.Pre.multi in
-        if trans_multi <> 1. then
+      (fun {Pre.multi; Pre.mul} ->
+        if multi <> 1. then
           failwith
             "Nontrivial transformed multiplicity for Gaussian significance not \
             supported at the moment.";
@@ -81,16 +79,16 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
             labeled_mass_arr.(mu.Pre.loc) <-
               (mu.Pre.distal_bl,
               { pquery_num = !pquery_counter;
-              mass = trans_multi *. mu.Pre.mass })
+              mass = multi *. mu.Pre.mass })
                 :: (labeled_mass_arr.(mu.Pre.loc)))
-          multimul.Pre.mul;
+          mul;
         incr pquery_counter))
     [upre1; upre2];
   (* Sort by position along the edge. *)
   for i=0 to (Array.length labeled_mass_arr) - 1 do
     labeled_mass_arr.(i) <-
       List.sort
-        (fun (a1,_) (a2,_) -> compare a1 a2)
+        ~cmp:(comparing fst)
         labeled_mass_arr.(i)
   done;
   (* The sampling routine. *)
@@ -105,7 +103,7 @@ let pair_approx ?(normalization=1.) transform rng n_samples p t upre1 upre2 =
     data.sigma := (get_sigma data) +. lm.mass;
   in
   (* Take the samples and do the calculation. *)
-  ListFuns.init
+  List.init
     n_samples
     (fun _ ->
       sample_gaussians ();

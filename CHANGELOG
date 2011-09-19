@@ -1,9 +1,75 @@
 1.1.alpha09
 ===========
 
+ * Fixed a bug that was making classifications appear too specific when the
+   placement was on the edge just proximal to an MRCA.
+ * Fixed a bug wherein the Newick parser would add a '.' to the end of leaf
+   names if the name was an integer.
+ * In fixing a bug, made `guppy diplac` only emit the first name in a pquery in
+   its results.
+ * Added a `multiclass` view and associated parameters to `rppr prep_db`.
+ * Fixed a bug where sometimes placements that fell too close to the root would
+   vanish with the --map-identity flag on.
+ * Fixed identity to give 0% sequence identity in the case of no overlap
+   between sequences.
+ * Closed GH-27: Reorganized functions that operate on alignments.
+ * Closed GH-67: Added `guppy wpd`.
+ * Closed GH-72: Added new features to `rppr convexify` and fixed the
+   implementation of the convexify algorithm, as it cut too many leaves in some
+   corner cases.
  * Closed GH-75: Changed mass maps to use records types instead of tuples.
+ * Closed GH-76: Added a check in `guppy classify` to ensure that the sqlite
+   database has been properly initialized.
  * Closed GH-78: Added an --average flag to `guppy fat`.
+ * Closed GH-81: Removed old code that was deprecated by batteries; changed
+   most code to be using batteries.
  * Closed GH-82: Merged the `pick` branch into dev.
+ * Closed GH-84: Renamed .json to .jplace for new-format placefiles.
+ * Closed GH-85: Added better error messages for potential premasking failures.
+ * Closed GH-86: Dropped support for older versions of the reference package
+   format.
+ * Closed GH-88: Improved handling very small alphas in pplacer, working around
+   a problem with the GSL that wasn't allowing us to invert the CDF for the
+   gamma distribution.
+ * Closed GH-89: Fixed some bugs in the convexify algorithm.
+ * Closed GH-90: Added an error message for if pplacer is invoked with no
+   arguments.
+ * Closed GH-91: Added more documentation to .mli files.
+ * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
+ * Closed GH-96: Now using colors from colorbrewer2.org for heat.
+ * Closed GH-98: Added a --map-identity flag to pplacer.
+ * Closed GH-99: Added more examples for guppy batchfiles.
+ * Closed GH-101: Added virtual placefiles to guppy batchfiles.
+ * Closed GH-103: Added batteries as a dependency.
+ * Closed GH-104: Added a naive reference implementation of convexify,
+   accessible with a --naive flag.
+ * Closed GH-105: Added parameter substitution to guppy batchfiles.
+ * Closed GH-108: Added more data from jplace files into the taxtable schema;
+   added a way to change the cutoff for best_classifications.
+ * Closed GH-109: Added a `rppr info` subcommand.
+ * Closed GH-110: Added a --no-early flag to `rppr convexify`.
+ * Closed GH-111: Added a script to update reference packages to version 1.1.
+ * Closed GH-112: Improved some of pplacer's error messages.
+ * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
+ * Closed GH-117: Added the output of `git describe` to --version output.
+ * Closed GH-119: Added a `rppr reroot` subcommand.
+ * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
+ * Closed GH-122: Renamed `rppr taxtable` to `rppr prep_db`.
+ * Closed GH-124: Rewrote the Newick parser.
+ * Closed GH-125: Added a --rooted flag to `rppr convexify`.
+ * Closed GH-128: Added informative priors to pplacer integration.
+ * Closed GH-129: Added the ability for `rppr convexify` to convexify a tree
+   not in a reference package.
+ * Closed GH-130: Added `guppy pd`.
+ * Closed GH-131: Changed pplacer to set some defaults with the -p flag.
+ * Closed GH-133: Added edge painting classification by default to pplacer and
+   a corresponding --painted flag to `rppr ref_tree`.
+ * Closed GH-138: Removed the --transform flag from everything except `guppy
+   mft`; removed the --unweighted flag from commands which don't respect it.
+ * Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.
+ * Closed GH-143: Changed the --leaves argument to `rppr voronoi` to specify
+   the number of leaves to keep in the tree instead of the number of leaves to
+   prune.
 
 
 1.1.alpha08

@@ -1,4 +1,4 @@
-open MapsSets
+open Ppatteries
 open Tax_id
 
 exception Tax_id_not_in_tree of tax_id
@@ -13,10 +13,9 @@ let reverse_ti_imap start =
 let pre root_id tax_id_of_place weighting criterion ti_imap pr =
   let revm = reverse_ti_imap ti_imap in
   Mass_map.Pre.normalize_mass
-    Mass_map.no_transform
     (List.map
       (fun pq ->
-        {Mass_map.Pre.multi = 1;
+        {Mass_map.Pre.multi = 1.;
          mul = List.map
           (fun p ->
             let ti = tax_id_of_place p in

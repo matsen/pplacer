@@ -1,3 +1,4 @@
+open Ppatteries
 open Rst
 
 let docs_dir = "docs/"
@@ -22,27 +23,30 @@ let () =
 
   List.iter check_directory [docs_dir; details_dir; generated_dir;];
 
-  let guppy_commands = Base.map_and_flatten snd (Guppy.command_list ()) in
+  let guppy_commands = Guppy_commands.command_list ()
+    |> List.map snd
+    |> List.flatten
+  in
   let command_matrix =
     Array.append
       [|[|"Command"; "Description"|]|]
       (Array.of_list
          (List.sort
-            compare
             (List.map
                (fun (name, cmd) ->
                  [|Printf.sprintf ":ref:`%s <guppy_%s>`" name name;
                    (cmd ())#desc|])
                guppy_commands)))
   in
-  let guppy_out = open_out (generated_dir ^ "guppy.rst") in
-  List.iter
-    (fun line ->
-      if line = ".. guppy-command-table" then
-        Rst.write_table guppy_out command_matrix
-      else
-        Printf.fprintf guppy_out "%s\n" line)
-    (File_parsing.string_list_of_file (details_dir ^ "guppy.rst"));
+  let guppy_out = generated_dir ^ "guppy.rst" |> open_out in
+  details_dir ^ "guppy.rst"
+    |> File.lines_of
+    |> Enum.iter
+        (fun line ->
+          if line = ".. guppy-command-table" then
+            Rst.write_table guppy_out command_matrix
+          else
+            Printf.fprintf guppy_out "%s\n" line);
   close_out guppy_out;
 
   List.iter

@@ -10,7 +10,7 @@
  *
  *)
 
-open MapsSets
+open Ppatteries
 
 type leaf = int
 
@@ -39,26 +39,53 @@ type snip = {
 }
 
 val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
+(** Find the minimum value in a list, optionally using the provided comparator
+    function. *)
+
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
+(** Generate a map from each id in a Newick_gtree.t to a list of (neighbor_id,
+    distance) pairs for every neighboring node for the given node, where the
+    distance is the edge length between the two nodes. The parent of a node
+    counts as a neighbor. *)
+
 val update_ldistm: ldistm -> IntSet.t -> int list -> Newick_gtree.t -> ldistm * IntSet.t
+(** Given an ldistm, a set of currently valid leaves, the leaves at which to
+    start updating, and a tree on which the leaves are placed, update the
+    ldistm to reflect only the valid leaves. *)
 
 val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
 
 val uncolor_leaves: v -> IntSet.t -> v * IntSet.t
+(** This function returns the updated Voronoi after removing all of the leaves
+    in the given set, as well as the set of leaves which were affected by this
+    removal. *)
 val uncolor_leaf: v -> leaf -> v * IntSet.t
-(** This function returns the updated Voronoi after removing the given leaf, as
- * well as returning the leaves that were affected by this removal. *)
+(** uncolor_leaf v l <=> uncolor_leaves v (IntSet.singleton l) *)
 
 val fold: ('a -> snip -> 'a) -> 'a -> v -> 'a
 (** Effectively fold over the edge_snipl defined below, but we don't have to
- * construct it in memory.
- *)
+    construct it in memory. *)
 
 val get_edge_snipl: v -> leaf -> snip list
 (** Get a list of the edge_snips that are of the given leaf in v. *)
 
 val matching_snip: snip list -> float -> snip
+(** Find the snip in the list which covers the specified position. *)
+
 val get_snipdist: v -> snip list IntMap.t
+(** Find all of the snips on the tree of a voronoi diagram. *)
+
+val partition_indiv_on_leaves: v -> Mass_map.Indiv.t -> Mass_map.Indiv.t IntMap.t
+(** Given a voronoi diagram and mass map, generate a map from leaves to mass
+    maps containing only the mass on that leaf. *)
+
 val distribute_mass: v -> Mass_map.Indiv.t -> float list IntMap.t
+(** Given a voronoi diagram and mass map, distribute the mass onto all of the
+    leaves in the diagram. The result maps leaf numbers to a lists of all mass
+    placed onto that leaf. *)
+
 val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement -> float
+(** Find the distance from the specified placement to the closest leaf on a
+    voronoi diagram. If a snipdist isn't provided, it will be calculated from
+    the specified diagram. *)

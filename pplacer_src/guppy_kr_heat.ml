@@ -1,21 +1,20 @@
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 (* Make a map with the amount of transport along each edge. *)
-let transport_map transform t pre1 pre2 =
+let transport_map t pre1 pre2 =
   let kr_map =
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd)
       (Kr_distance.make_kr_map
-        (Mass_map.Indiv.of_pre transform pre1)
-        (Mass_map.Indiv.of_pre transform pre2)) in
+        (Mass_map.Indiv.of_pre pre1)
+        (Mass_map.Indiv.of_pre pre2)) in
   let sum_over_krs_of_id id =
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
-      (Base.get_from_list_intmap id kr_map)
+      (IntMap.get id [] kr_map)
   in
   let heat_list =
     Stree.recur_listly
@@ -69,7 +68,7 @@ object (self)
         ~default:(File ((Mokaphy_common.cat_names prl) ^ ".heat.xml"))
         ()
       in
-      let transform, weighting, criterion = self#mass_opts
+      let weighting, criterion = self#mass_opts
       and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in
       let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
@@ -78,7 +77,7 @@ object (self)
           (Decor_gtree.add_decor_by_map
             decor_t
             (self#decor_map_of_float_map
-              (transport_map transform decor_t pre1 pre2)))
+              (transport_map decor_t pre1 pre2)))
       in
       Phyloxml.named_gtrees_to_file
         fname

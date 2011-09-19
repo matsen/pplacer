@@ -1,9 +1,9 @@
 (* Strsplits are string splits... the strings being names. *)
 
-open MapsSets
+open Ppatteries
 open Splits
 
-module StrSet = MapsSets.StringSet
+module StrSet = StringSet
 
 module OrderedStrSet = struct
   type t = StrSet.t

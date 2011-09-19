@@ -1,7 +1,7 @@
 (* routines for "fantasy baseball"
 *)
 
-open Fam_batteries
+open Ppatteries
 
 type info = { n_hits : int; n_trials : int; like_diff : float }
 

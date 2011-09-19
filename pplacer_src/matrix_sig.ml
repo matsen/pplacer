@@ -10,7 +10,7 @@
 
 
 open Bigarray
-open Fam_batteries
+open Ppatteries
 open Linear_utils
 
 let rooted_qform m v = sqrt(qform m v)
@@ -142,7 +142,7 @@ let write_matrix_normal_dist rng name1 name2 m w n_samples =
   let n = Array2.dim1 m in
   let v = Gsl_vector.create n in
   let normal_ws =
-    ListFuns.init
+    List.init
       n_samples
       (fun _ ->
         for i=0 to n-1 do

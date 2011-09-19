@@ -1,14 +1,7 @@
 {
+  open Ppatteries
   open Jsonparse
-  open Jsontype
   open Lexing
-
-  let incr_lineno lexbuf =
-    let pos = lexbuf.lex_curr_p in
-    lexbuf.lex_curr_p <- { pos with
-      pos_lnum = pos.pos_lnum + 1;
-      pos_bol = pos.pos_cnum;
-    }
 }
 
 let nonzero = ['1'-'9']
@@ -22,7 +15,7 @@ rule token = parse
   | [' ' '\t' '\r']
       { token lexbuf }
   | '\n'
-      { incr_lineno lexbuf; token lexbuf }
+      { Sparse.incr_lineno lexbuf; token lexbuf }
 
   | '{'
       { OBRACE }
@@ -56,5 +49,5 @@ rule token = parse
       { EOF }
   | _
       {
-        raise (parse_error_of_positions "syntax error lexing" lexbuf.lex_start_p lexbuf.lex_curr_p)
+        raise (Sparse.parse_error_of_positions "syntax error lexing" lexbuf.lex_start_p lexbuf.lex_curr_p)
       }

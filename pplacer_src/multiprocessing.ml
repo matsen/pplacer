@@ -90,6 +90,10 @@ type marshal_recv_phase =
   | Needs_header of buffer
   | Needs_data of string * buffer
 
+let rec range = function
+  | 0 -> []
+  | x -> (x - 1) :: range (x - 1)
+
 (* Most of the important implementation bits for multiprocessing live in the
  * process class. It's responsible for doing the actual fork as well as handling
  * the IO. *)
@@ -110,7 +114,7 @@ class virtual ['a] process child_func =
         let ignored = List.map fd_of_file_descr child_only in
         List.iter
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
-          (Base.range 256)
+          (range 256)
       end;
       (* Make writing to stdout or stderr instead write to the progress
        * channel. *)
@@ -262,7 +266,7 @@ let map ?(children = 4) ?progress_handler f l =
   let children =
     List.map
       (fun _ -> new map_process ?progress_handler f q)
-      (Base.range children) in
+      (range children) in
   event_loop children;
   List.flatten (List.map (fun c -> c#ret) children)
 
@@ -271,7 +275,7 @@ let iter ?(children = 4) ?progress_handler f l =
   let children =
     List.map
       (fun _ -> new map_process ?progress_handler f q)
-      (Base.range children) in
+      (range children) in
   event_loop children
 
 class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
@@ -337,7 +341,7 @@ let fold ?(children = 4) ?progress_handler f l initial =
   let children =
     List.map
       (fun _ -> new fold_process ?progress_handler f q initial)
-      (Base.range children)
+      (range children)
   in
   event_loop children;
   List.map (fun c -> c#ret) children

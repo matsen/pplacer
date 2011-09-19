@@ -7,7 +7,7 @@
 *)
 
 open Tax_id
-open Fam_batteries
+open Ppatteries
 
 exception NoAncestor of tax_id
 exception NoMRCA of tax_id * tax_id
@@ -49,7 +49,7 @@ let get_tax_name td ti =
 
 let get_lineage td ti =
   let rec aux accu ti' =
-    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else accu
+    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else ti' :: accu
   in
   aux [] ti
 
@@ -71,7 +71,7 @@ let add_lineage_to_tree_and_map (t,m) l =
   in
   (* filter out the NoTax after adding rank numbers *)
   aux (t,m) (List.filter (fun (_,x) -> x <> NoTax)
-            (ListFuns.mapi (fun i x -> (i,x)) l))
+            (List.mapi (fun i x -> (i,x)) l))
 
 (* *** reading *** *)
 

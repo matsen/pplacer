@@ -1,12 +1,11 @@
 open Subcommand
 open Guppy_cmdobjs
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit output_cmd () as super_output
+  inherit tabular_cmd () as super_tabular
 
   val cutoff = flag "--cutoff"
     (Needs_argument ("cutoff", "Specify the maximum branch length to be trimmed."))
@@ -21,7 +20,7 @@ object (self)
   val never_prune_regex_from = flag "--never-prune-regex-from"
     (Plain ("", "Provide a file containing regular expressions; taxa matching one of these will not be pruned."))
 
-  method specl = super_output#specl @ [
+  method specl = super_tabular#specl @ [
     float_flag cutoff;
     int_flag leaf_count;
     toggle_flag names_only;
@@ -35,15 +34,12 @@ object (self)
 
   method action = function
     | [fname] ->
-      let never_prune_names =
-        match fv never_prune_from with
-          | "" -> StringSet.empty
-          | fname ->
-            StringSet.of_list (File_parsing.string_list_of_file fname)
-      and never_prune_regexl =
-        match fv never_prune_regex_from with
-          | "" -> []
-          | fname -> List.map Str.regexp (File_parsing.string_list_of_file fname)
+      let never_prune_names = match fv never_prune_from with
+        | "" -> StringSet.empty
+        | fname -> File.lines_of fname |> StringSet.of_enum
+      and never_prune_regexl = match fv never_prune_regex_from with
+        | "" -> []
+        | fname -> File.lines_of fname |> Enum.map Str.regexp |> List.of_enum
       and names_only = fv names_only
       and safe = fv safe
       and criterion = match fvo cutoff, fvo leaf_count with
@@ -90,10 +86,10 @@ object (self)
         if names_only then (fun (id,_,_) -> [get_name id])
         else (fun (id,bl,_) -> [get_name id; string_of_float bl])
       in
-      Csv.save_out self#out_channel
-        (List.map
-           line_of_result
-           (Pd.until_stopping safe never_prune_ids criterion pt))
+      List.map
+        line_of_result
+        (Pd.until_stopping safe never_prune_ids criterion pt)
+      |> self#write_ll_tab
 
     | _ -> failwith "prunetre takes exactly one tree"
 

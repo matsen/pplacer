@@ -1,14 +1,12 @@
 (* pquery stands for placed query.
  *)
 
-open MapsSets
+open Ppatteries
 
 exception Unplaced_pquery of string list
 
 let sort_placement_list criterion pl =
-  List.sort
-    (fun x y -> - Placement.compare_placements criterion x y)
-    pl
+  List.sort ~cmp:(comparing criterion |> flip) pl
 
 let rec is_decreasing criterion = function
   | x::y::l ->
@@ -16,20 +14,53 @@ let rec is_decreasing criterion = function
       else false
   | _ -> true
 
-type pquery =
-  {
-    namel      : string list;
-    seq        : string;
-    place_list : Placement.placement list;
-  }
+exception Name_list_needed
 
-let namel p      = p.namel
-let seq p        = p.seq
+(* namlom is short for Name List Or Mass *)
+type namlom =
+  | Name_list of string list
+  | Named_float of string * float
+
+type pquery = {
+  namlom: namlom;
+  seq: string;
+  place_list: Placement.placement list;
+}
+type t = pquery
+
+let seq p = p.seq
 let place_list p = p.place_list
+let namlom p = p.namlom
+let name p =
+  match p.namlom with
+    | Name_list (n :: _)
+    | Named_float (n, _) -> n
+    | _ -> failwith "no name"
+let namel p =
+  match p.namlom with
+    | Name_list l -> l
+    | _ -> raise Name_list_needed
+let force_namel p =
+  match p.namlom with
+    | Name_list l -> l
+    | Named_float (n, _) -> [n]
+let has_single_mult p =
+  match p.namlom with
+    | Named_float _ -> true
+    | Name_list _ -> false
 
-let multiplicity p = List.length p.namel
+let multiplicity p =
+  match p.namlom with
+    | Name_list l -> List.length l |> float_of_int
+    | Named_float (_, f) -> f
+
+let naml_multiplicity p =
+  match p.namlom with
+    | Name_list l -> List.length l
+    | _ -> raise Name_list_needed
+
 let total_multiplicity =
-  List.fold_left (fun acc x -> acc + (multiplicity x)) 0
+  List.fold_left (multiplicity |- (+.) |> flip) 0.
 
 let opt_best_something thing criterion pq =
   match place_list pq with
@@ -77,15 +108,17 @@ let is_placed pq =
 
 let make criterion ~namel ~seq pl =
   {
-    namel = namel;
+    namlom = Name_list namel;
     seq = seq;
-    place_list = sort_placement_list criterion pl
+    place_list = sort_placement_list criterion pl;
   }
 
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
-let set_namel pq namel = { pq with namel = namel }
+let set_namel pq namel = { pq with namlom = Name_list namel }
+let set_mass pq m = { pq with namlom = Named_float (name pq, m) }
+let set_namlom pq nm = { pq with namlom = nm }
 
 let apply_to_place_list f pq =
   { pq with place_list = f (pq.place_list) }

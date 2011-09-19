@@ -1,3 +1,4 @@
+open Ppatteries
 open OUnit
 open Test_util
 
@@ -13,11 +14,11 @@ end
 
 let expected = [
   [];
-  [Decor.red; Decor.Width 90.];
+  [Decor.brew_orange; Decor.Width 90.];
   [];
   [];
-  [Decor.blue; Decor.Width 180.];
-  [Decor.red; Decor.Width 30.];
+  [Decor.brew_green; Decor.Width 180.];
+  [Decor.brew_orange; Decor.Width 30.];
 ]
 
 let simple () =
@@ -29,17 +30,17 @@ let simple () =
   in
   let gt = snd (List.hd trees) in
   let decor =
-    List.map
+    Enum.map
       (fun x -> x#get_decor)
-      (MapsSets.IntMap.values (gt.Gtree.bark_map))
+      (IntMap.values (gt.Gtree.bark_map))
   in
-  let _ = List.fold_left2
-    (fun n got expected ->
+  let _ = Enum.fold2
+    (fun got expected n ->
       (Printf.sprintf "#%d" n) @? (got = expected);
       n + 1)
     0
     decor
-    expected
+    (List.enum expected)
   in ()
 
 let suite = [

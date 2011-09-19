@@ -1,5 +1,4 @@
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Stree
 
 type leaf = int
@@ -65,11 +64,6 @@ let list_min ?(key = compare) l =
     | Some x -> x
     | None -> invalid_arg "list_min"
 
-(* adjacent_bls produces a map from each id in a Newick_gtree.t to a list of
- * (neighbor_id, distance) pairs for every neighboring node for the given node,
- * where the distance is the edge length between the two nodes. The parent of a
- * node counts as a neighbor.
- *)
 let adjacent_bls t =
   let bl = Gtree.get_bl t in
   let rec aux accum = function
@@ -163,6 +157,8 @@ let of_gtree t =
 
 let uncolor_leaves v ls =
   let all_leaves' = IntSet.diff v.all_leaves ls in
+  if IntSet.is_empty all_leaves' then
+    failwith "can't remove all leaves from a voronoi graph";
   let ldistm', updated =
     update_ldistm
       v.ldistm
@@ -229,19 +225,35 @@ let matching_snip snips pos =
     snips
 
 module I = Mass_map.Indiv
-let distribute_mass v mass =
+let partition_indiv_on_leaves v mass =
   let snipdist = get_snipdist v in
   IntMap.fold
     (fun n massl accum ->
       let snips = IntMap.find n snipdist in
       List.fold_left
-        (fun accum {I.distal_bl = pos; I.mass = mass} ->
+        (fun accum ({I.distal_bl = pos} as unit) ->
           let {assoc_leaf = leaf} = matching_snip snips pos in
-          IntMap.add_listly leaf mass accum)
+          IntMap.add
+            leaf
+            (IntMap.add_listly n unit (IntMap.get leaf IntMap.empty accum))
+            accum)
         accum
         massl)
     mass
     IntMap.empty
+
+let distribute_mass v mass =
+  IntMap.map
+    (fun indiv ->
+      IntMap.fold
+        (fun _ units accum ->
+          List.fold_left
+            (fun accum {I.mass = mass} -> mass :: accum)
+            accum
+            units)
+        indiv
+        [])
+    (partition_indiv_on_leaves v mass)
 
 let placement_distance v ?snipdist p =
   let snipdist = match snipdist with
@@ -281,6 +293,3 @@ let placement_distance v ?snipdist p =
   match res with
     | Some d -> d
     | None -> invalid_arg "dist"
-
-module XXX = Placerun_io
-module XXY = Convex

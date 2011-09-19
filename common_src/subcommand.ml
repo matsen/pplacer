@@ -3,7 +3,7 @@
  * with those options.
 *)
 
-open MapsSets
+open Ppatteries
 
 let option_rex = Str.regexp "-.*"
 
@@ -27,7 +27,7 @@ let print_avail_cmds prg_name (display_map, longest) =
 let process_cmd prg_name display_map cmd_map argl =
   let print_need_cmd_error () =
     Printf.printf
-      "please specify a %s command, e.g. %s COMMAND [...]"
+      "please specify a %s command, e.g. %s COMMAND [...]\n"
       prg_name prg_name;
     print_avail_cmds prg_name display_map;
     exit 1
@@ -100,25 +100,40 @@ let cmd_map_of_list l =
 
 (* intended to be the inner loop of a function *)
 let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
-  let process = process_cmd prg_name display_map cmd_map in
+  let process = process_cmd prg_name display_map cmd_map
+  and args = ref []
+  and batchfile = ref None in
   Arg.parse
     [
       "--version", Arg.Unit (fun () -> print_endline version; exit 0),
       "Print version and exit";
-      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map),
+      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map; exit 0),
       "Print a list of the available commands.";
       "--batch", Arg.String (fun fname ->
-        let argll = Batchfile.of_file fname in
-        List.iter process argll),
+        batchfile := Some (Batchfile.of_file fname)),
       "Run the provided batch file of guppy commands";
     ]
-    (fun _ -> (* anonymous args. tl to remove command name. *)
-      process (List.tl (Array.to_list Sys.argv));
-      exit 0) (* need to exit to avoid processing the other anon args as cmds *)
+    (* Sys.argv and Arg.current are used here so that /this/ invocation of
+       Arg.parse won't try to parse the flags that are destined for the
+       subcommand. *)
+    (fun _ ->
+      let nargs = Array.length (Sys.argv) in
+      for i = !Arg.current to (nargs - 1) do
+        args := Sys.argv.(i) :: !args
+      done;
+      Arg.current := nargs)
     (Printf.sprintf
-      "Type %s --cmds to see the list of available commands."
-      prg_name)
-
+       "Type %s --cmds to see the list of available commands."
+       prg_name);
+  match !batchfile with
+    | None -> process (List.rev !args)
+    | Some argll ->
+      let substitutions = Batchfile.split_arguments !args in
+      let argll' = List.map
+        (List.map (Batchfile.substitute_placeholders substitutions))
+        argll
+      in
+      List.iter process argll'
 
 (* the new stuff *)
 exception No_default of string * string

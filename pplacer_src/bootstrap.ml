@@ -1,4 +1,4 @@
-open Fam_batteries
+open Ppatteries
 
 (* bootstrap a list, with an option to modify the elements of the list through f
  * # boot_list (fun i x -> i+100*x) [1;2;3;4;5;6];;
@@ -62,12 +62,14 @@ let rubber_list l desired_len =
 
 let boot_placerun rng pr =
   let pqa = Array.of_list (Placerun.get_pqueries pr) in
-  let multa = multiplicity_boot rng (Array.map Pquery.multiplicity pqa)
+  let multa = multiplicity_boot rng (Array.map Pquery.naml_multiplicity pqa)
   and pql = ref []
   in
   let rubber_pquery pq desired_multi =
     assert(desired_multi > 0);
-    {pq with Pquery.namel = rubber_list pq.Pquery.namel desired_multi}
+    Pquery.namel pq
+      |> flip rubber_list desired_multi
+      |> Pquery.set_namel pq
   in
   for i=(Array.length pqa)-1 downto 0 do
     if multa.(i) > 0 then

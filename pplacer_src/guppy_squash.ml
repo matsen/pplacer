@@ -4,9 +4,9 @@
  * pairs of a number list and a pre. This means that identical pres
  * don't get lost when we use them as keys. *)
 
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
 open Squashfunc
 
 module NPreBlob =
@@ -43,22 +43,22 @@ let mkdir path =
 - : (int list * int) list = [([0], 5); ([1], 4); ([2], 3)]
 *)
 let numberize l =
-  List.combine (List.map (fun i -> [i]) (Base.range (List.length l))) l
+  (flip List.cons [] |- curry identity |> List.mapi) l
 
 (* Note that denom_f is a function that gives us a denominator to normalize by
  * when calculating branch lengths, i.e. the setting of the --normalize flag.
  * Called denom here to avoid confusion with the normalization of the mass. *)
-let make_cluster p denom_f transform weighting criterion refpkgo mode_str prl =
+let make_cluster p denom_f weighting criterion refpkgo mode_str prl =
   let namel = List.map Placerun.get_name prl
   and distf denom rt ~x1 ~x2 (_,b1) (_,b2) =
-    (Kr_distance.dist_of_pres transform p rt ~x1 ~x2 ~pre1:b1 ~pre2:b2) /. denom
-  and normf (_,a) = 1. /. (Mass_map.Pre.total_mass transform a)
+    (Kr_distance.dist_of_pres p rt ~x1 ~x2 ~pre1:b1 ~pre2:b2) /. denom
+  and normf (_,a) = 1. /. (Mass_map.Pre.total_mass a)
   in
   let (rt, prel) = t_prel_of_prl weighting criterion prl
   and prep prel =
     List.combine
       namel
-      (numberize (List.map (Mass_map.Pre.normalize_mass transform) prel))
+      (numberize (List.map Mass_map.Pre.normalize_mass prel))
   in
   let (drt, (cluster_t, numbered_blobim)) =
     if mode_str = "" then begin
@@ -118,18 +118,18 @@ object (self)
 "performs squash clustering"
   method usage = "usage: squash [options] placefiles"
 
-  method private write_pre_tree transform prefix infix drt pre =
-    let tot = Mass_map.Pre.total_mass transform pre in
+  method private write_pre_tree prefix infix drt pre =
+    let tot = Mass_map.Pre.total_mass pre in
     assert(tot > 0.);
     let tree_name = prefix^"."^infix in
-    let massm = (Mass_map.By_edge.of_pre transform ~factor:(1. /. tot) pre) in
+    let massm = (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre) in
     Phyloxml.named_gtree_to_file
       (tree_name ^ ".fat.xml")
       (tree_name ^ ".fat")
       (self#fat_tree_of_massm drt massm)
 
   method private placefile_action prl =
-    let transform, weighting, criterion = self#mass_opts
+    let weighting, criterion = self#mass_opts
     and refpkgo = self#get_rpo
     and mode_str = fv tax_cluster_mode
     and zero_pad_int width i =
@@ -138,7 +138,7 @@ object (self)
     and denom_f = self#get_normalization
     in
     let our_make_cluster =
-      make_cluster p denom_f transform weighting criterion in
+      make_cluster p denom_f weighting criterion in
     let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
     self#check_placerunl prl;
@@ -147,28 +147,28 @@ object (self)
       let (drt, cluster_t, blobim) = our_make_cluster refpkgo mode_str prl in
       Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
       let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
-      let pad_width = Base.find_zero_pad_width (IntMap.nkeys blobim) in
+      let pad_width = find_zero_pad_width (IntMap.cardinal blobim) in
       let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)
-      let wpt transform infix t i =
-        self#write_pre_tree transform (prefix_of_int i) infix t
+      let wpt infix t i =
+        self#write_pre_tree (prefix_of_int i) infix t
       in
       match refpkgo with
-        | None -> IntMap.iter (wpt transform "phy" drt) blobim
+        | None -> IntMap.iter (wpt "phy" drt) blobim
         | Some rp ->
         (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
           let tdrt = Refpkg.get_tax_ref_tree rp in
-          IntMap.iter (wpt transform "phy" tdrt) blobim;
+          IntMap.iter (wpt "phy" tdrt) blobim;
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in
           let tax_blobim =
             IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
           in
-          IntMap.iter (wpt Mass_map.no_transform "tax" taxt) tax_blobim
+          IntMap.iter (wpt "tax" taxt) tax_blobim
     end
     else begin
-      let pad_width = Base.find_zero_pad_width nboot in
+      let pad_width = find_zero_pad_width nboot in
       let rng = self#rng in
       for i=1 to nboot do
         Printf.printf "running bootstrap %d of %d\n" i nboot;

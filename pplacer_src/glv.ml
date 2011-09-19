@@ -23,8 +23,7 @@
  * index, and the third is the state index.
  *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 module BA = Bigarray
 module BA1 = BA.Array1

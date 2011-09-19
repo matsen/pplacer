@@ -1,5 +1,4 @@
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Splits
 
 let size_transform x = x ** 10.
@@ -36,7 +35,7 @@ let lsetset_to_array lss =
  * *)
 let uniform_nonempty_partition rng n_bins lss =
   let a = lsetset_to_array lss in
-  Base.shuffle rng a;
+  shuffle rng a;
   let pos = ref 0 in
   List.map
     (fun n_samples ->
@@ -149,7 +148,7 @@ let gtree_of_stree_numbers bark_fn stree =
 
 (* Independent samples. *)
 let subselect rng n_select n_bins lss =
-  ListFuns.init
+  List.init
     n_bins
     (fun _ ->
       Lsetset.plain_sample
@@ -157,7 +156,7 @@ let subselect rng n_select n_bins lss =
         lss
         n_select)
 
-let fill n x = ListFuns.init n (fun _ -> x)
+let fill n x = List.init n (fun _ -> x)
 
 (* With probability p_same, select identical sets for each, and if not, then
   * independent. *)
@@ -174,7 +173,7 @@ let some_matching rng n_select p_same n_bins lss =
   List.map2
     Lsetset.union
       (fill n_bins (sample n_same))
-      (ListFuns.init n_bins (fun _ -> sample (n_select - n_same)))
+      (List.init n_bins (fun _ -> sample (n_select - n_same)))
 
 let distribute_lsetset_on_tree rng n_select n_splits_mean splits leafss gt =
   let bl = Gtree.get_bl gt in
@@ -288,11 +287,9 @@ let main
 
 let random_colored_tree rng size n_colors =
   let st = generate_yule rng size in
-  let colors =
-    StringSet.of_list
-      (List.map
-         (fun i -> String.make 1 (char_of_int (i + 65)))
-         (Base.range n_colors))
+  let colors = 0 --^ n_colors
+    |> Enum.map (fun i -> String.make 1 (char_of_int (i + 65)))
+    |> StringSet.of_enum
   in
   let choose_color =
     StringSet.plain_sample (sample ~replacement:false rng) colors

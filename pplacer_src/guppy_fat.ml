@@ -1,5 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
+open Ppatteries
 
 class cmd () =
 object (self)
@@ -31,7 +32,7 @@ object (self)
       | x -> x *. (float_of_int total_multiplicity)
 
   method private to_pre_pair tax_info pr =
-    let _, weighting, criterion = self#mass_opts in
+    let weighting, criterion = self#mass_opts in
     Mass_map.Pre.of_placerun weighting criterion pr,
     try
       match tax_info with
@@ -52,8 +53,7 @@ object (self)
       | Placement.No_classif -> None
 
   method private to_fat_tree final_rt name (phylo_pre, tax_pre) =
-    let transform, _, _ = self#mass_opts in
-    let phylo_mass = Mass_map.By_edge.of_pre transform phylo_pre in
+    let phylo_mass = Mass_map.By_edge.of_pre phylo_pre in
     [
       Some (name^".ref.fat"),
       self#fat_tree_of_massm final_rt phylo_mass
@@ -62,7 +62,7 @@ object (self)
       (match tax_pre with
         | None -> []
         | Some (taxt, tax_pre) -> begin
-          let tax_mass = Mass_map.By_edge.of_pre transform tax_pre in
+          let tax_mass = Mass_map.By_edge.of_pre tax_pre in
           let multiplier_override =
             200. /. (Mass_map.By_edge.total_mass tax_mass)
           in
@@ -82,10 +82,9 @@ object (self)
     let pre_pairs = List.map (self#to_pre_pair tax_info) prl in
 
     if fv average then begin
-      let transform, _, _ = self#mass_opts in
       let pair = List.fold_left
         (fun (phylo_accum, tax_accum) (phylo_pre, tax_pre) ->
-          let phylo_pre' = Mass_map.Pre.normalize_mass transform phylo_pre in
+          let phylo_pre' = Mass_map.Pre.normalize_mass phylo_pre in
           List.rev_append phylo_pre' phylo_accum,
           match tax_accum, tax_pre with
             | None, None -> None
@@ -99,7 +98,7 @@ object (self)
       let fname = self#single_file () in
       let trees = self#to_fat_tree
         (snd (self#get_rpo_and_tree (List.hd prl)))
-        (Base.safe_chop_suffix fname ".xml")
+        (safe_chop_suffix fname ".xml")
         pair
       in
       Phyloxml.named_gtrees_to_file
@@ -126,7 +125,7 @@ object (self)
         | File fname ->
           Phyloxml.named_gtrees_to_file
             fname
-            (Base.map_and_flatten snd trees)
+            (List.map snd trees |> List.flatten)
         | Unspecified -> ()
     end
 end

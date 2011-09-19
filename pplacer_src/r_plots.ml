@@ -1,14 +1,13 @@
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 (* open Multiset *)
 
 (* the percent extra to stretch the x limits *)
 let relax_factor = 0.05
 
 let int_div x y = (float_of_int x) /. (float_of_int y)
-let min_list l = ListFuns.complete_fold_left min l
-let max_list l = ListFuns.complete_fold_left max l
+let min_list l = List.reduce min l
+let max_list l = List.reduce max l
 let min_x all_dists = (1. -. relax_factor) *. (min_list all_dists)
 let max_x all_dists = (1. +. relax_factor) *. (max_list all_dists)
 
