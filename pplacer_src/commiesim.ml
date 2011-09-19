@@ -129,7 +129,6 @@ let generate_yule rng count =
   in
   aux (count + 1) (repeat Stree.leaf count)
 
-
 let newick_bark_of_prefixed_int prefix n =
   Newick_bark.map_set_name n (Printf.sprintf "%s%d" prefix n) IntMap.empty
 
@@ -145,6 +144,16 @@ let rec bark_of_stree_numbers bark_fn = function
 let gtree_of_stree_numbers bark_fn stree =
   let bark = bark_of_stree_numbers bark_fn stree in
   Gtree.gtree stree bark
+
+let generate_lengthy_tree rng ~a ~b count =
+  let st = generate_yule rng count in
+  let bark = Enum.from (fun () -> Gsl_randist.gamma rng ~a ~b)
+    |> Enum.map (new Newick_bark.newick_bark `Empty)#set_bl
+    |> Enum.take (Stree.top_id st)
+    |> Enum.mapi (curry identity)
+    |> IntMap.of_enum
+  in
+  Gtree.gtree st bark
 
 (* Independent samples. *)
 let subselect rng n_select n_bins lss =
@@ -202,7 +211,7 @@ let distribute_lsetset_on_tree rng n_select n_splits_mean splits leafss gt =
   in
   aux splits leafss gt.Gtree.stree
 
-let pquery_of_leaf_and_seq leaf seq =
+let pquery_of_leaf_and_seq leaf ?(dist_bl = 0.0) seq =
   Pquery.make_ml_sorted
     [Printf.sprintf "%d_%d" leaf seq]
     ""
@@ -210,10 +219,28 @@ let pquery_of_leaf_and_seq leaf seq =
       Placement.make_ml
         leaf
         ~ml_ratio:1.0
-        ~dist_bl:0.0
+        ~dist_bl
         ~pend_bl:1.0
         ~log_like:0.0
     ]
+
+(* Write a placerun with pqueries distributed across the branch length on the tree. *)
+let write_random_lengthy_pr rng tree name n_pqueries =
+  0 --^ Gtree.top_id tree
+  |> Enum.map (Gtree.get_bl tree)
+  |> Array.of_enum
+  |> (fun p -> Gsl_randist.multinomial rng ~n:n_pqueries ~p)
+  |> Array.enum
+  |> Enum.mapi
+      (fun n count ->
+        let bl = Gtree.get_bl tree n in
+        Enum.init
+          count
+          (fun x -> pquery_of_leaf_and_seq n ~dist_bl:(Gsl_rng.uniform rng *. bl) x))
+  |> Enum.flatten
+  |> List.of_enum
+  |> Placerun.make tree name
+  |> Placerun_io.to_json_file "" (name ^ ".json")
 
 (* Write a placerun with pqueries uniformly distributed among the leaves in leafl. *)
 let write_random_pr rng tree leafl name n_pqueries =
