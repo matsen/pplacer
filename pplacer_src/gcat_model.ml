@@ -76,6 +76,7 @@ struct
       let n = Matrix.dim1 g.a in
       assert(n = BA1.dim g.e);
       n
+
     let get_n_states g = Matrix.dim2 g.a
 
     let dims g = get_n_sites g, get_n_states g
@@ -270,9 +271,24 @@ struct
     +. (log_of_2 *.
           ((total_twoexp x.Glv.e) +. (total_twoexp y.Glv.e) +. (total_twoexp z.Glv.e)))
 
+
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
-  let evolve_into model ~dst ~src bl = ()
+  let evolve_into model ~dst ~src bl =
+    (* copy over the exponents *)
+    BA1.blit src.Glv.e dst.Glv.e;
+    (* prepare the matrices in our matrix cache *)
+    prep_tensor_for_bl model bl;
+    (* apply transform specified by model on the a component *)
+    let mat_by_cat cat = BA3.slice_left_2 model.tensor cat in
+    for i=0 to (get_n_sites src) - 1 do
+      let src_mat = BA2.slice_left src i
+      and dst_mat = BA2.slice_left dst i
+      and evo_mat = mat_by_cat model.site_categories.(i)
+      in
+      Linear.gemmish dst_mat evo_mat src_mat
+    done
+
 
   (* take the pairwise product of glvs g1 and g2, incorporating the
    * stationary distribution, then store in dest. *)
