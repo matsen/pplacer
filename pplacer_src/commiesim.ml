@@ -240,7 +240,7 @@ let write_random_lengthy_pr rng tree name n_pqueries =
   |> Enum.flatten
   |> List.of_enum
   |> Placerun.make tree name
-  |> Placerun_io.to_json_file "" (name ^ ".json")
+  |> Placerun_io.to_json_file "" (name ^ ".jplace")
 
 (* Write a placerun with pqueries uniformly distributed among the leaves in leafl. *)
 let write_random_pr rng tree leafl name n_pqueries =
@@ -254,7 +254,7 @@ let write_random_pr rng tree leafl name n_pqueries =
   in
   Placerun_io.to_json_file
     ""
-    (name^".json")
+    (name^".jplace")
     (Placerun.make tree name (List.flatten pqueries))
 
 (* Uniformly select n_locations from leafl and pass off to write_random_pr. *)
