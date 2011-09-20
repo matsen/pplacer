@@ -146,12 +146,14 @@ let gtree_of_stree_numbers bark_fn stree =
   Gtree.gtree stree bark
 
 let generate_lengthy_tree rng ~a ~b count =
-  let st = generate_yule rng count in
+  let empty = new Newick_bark.newick_bark `Empty
+  and st = generate_yule rng count in
   let bark = Enum.from (fun () -> Gsl_randist.gamma rng ~a ~b)
-    |> Enum.map (new Newick_bark.newick_bark `Empty)#set_bl
+    |> Enum.map empty#set_bl
     |> Enum.take (Stree.top_id st)
     |> Enum.mapi (curry identity)
     |> IntMap.of_enum
+    |> IntMap.add (Stree.top_id st) (empty#set_bl 0.)
   in
   Gtree.gtree st bark
 
