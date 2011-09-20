@@ -149,10 +149,15 @@ let gtree_of_stree_numbers bark_fn stree =
 let generate_lengthy_tree rng ~a ~b count =
   let empty = new Newick_bark.newick_bark `Empty
   and st = generate_yule rng count in
+  let leaves = Stree.leaf_ids st |> IntSet.of_list in
   let bark = Enum.from (fun () -> Gsl_randist.gamma rng ~a ~b)
     |> Enum.map empty#set_bl
     |> Enum.take (Stree.top_id st)
-    |> Enum.mapi (curry identity)
+    |> Enum.mapi
+        (fun i b -> i,
+          if IntSet.mem i leaves then
+            Printf.sprintf "n%d" i |> b#set_name
+          else b)
     |> IntMap.of_enum
     |> IntMap.add (Stree.top_id st) (empty#set_bl 0.)
   in
