@@ -128,6 +128,7 @@ let generate_yule rng count =
           (Stree.node next_id nodes' :: trees')
   in
   aux (count + 1) (repeat Stree.leaf count)
+    |> Stree.boost (-1)
 
 let newick_bark_of_prefixed_int prefix n =
   Newick_bark.map_set_name n (Printf.sprintf "%s%d" prefix n) IntMap.empty
