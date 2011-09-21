@@ -434,22 +434,18 @@ let mark_map gt =
         |> List.sort_unique compare
       and bl = get_bl i in
       leaves_below,
-      if abs_float (List.last below -. List.first above) >= bl
-        && abs_float (List.first below -. List.last above) >= bl
-      then
-        markm
-      else
-        List.enum below
-          |> Enum.map
-              (fun d ->
-                List.enum above
-                |> Enum.take_while (fun p -> abs_float (d -. p) < bl)
-                |> Enum.map (fun p -> (bl -. d +. p) /. 2.))
-          |> Enum.flatten
-          |> Enum.filter (not -| approx_equal bl)
-          |> List.of_enum
-          |> List.sort
-          |> flip (IntMap.add i) markm
+      (* XXX revisit how to use take_while instead of filter *)
+      List.enum above
+        |> Enum.map
+            (fun p ->
+              List.enum below
+              |> Enum.filter (fun d -> abs_float (d -. p) < bl)
+              |> Enum.map (fun d -> (bl -. d +. p) /. 2.))
+        |> Enum.flatten
+        |> Enum.filter (not -| approx_equal bl)
+        |> List.of_enum
+        |> List.sort_unique compare
+        |> flip (IntMap.add i) markm
   in
   Gtree.get_stree gt |> aux |> snd,
   IntMap.mapi
@@ -468,26 +464,27 @@ let does_dominate sup inf =
   && sup.prox_mass <= inf.prox_mass
   && sup.wk_subtot <= inf.wk_subtot
 
+let empty_pairmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
 let cull sols =
   print_string "culling solutions";
   flush_all ();
   let count = ref 0 in
-  Enum.fold
+  List.fold_left
     (fun solm sol ->
       incr count;
-      let c = IntSet.cardinal sol.leaf_set in
-      if IntMap.mem c solm then
-        let sols = IntMap.find c solm in
+      let key = IntSet.cardinal sol.leaf_set, sol.mv_dist = infinity in
+      if Map.mem key solm then
+        let sols = Map.find key solm in
         if List.exists (fun sup -> does_dominate sup sol) sols then
           solm
         else
           sol :: (List.filter (fun inf -> not (does_dominate sol inf)) sols)
-          |> flip (IntMap.add c) solm
+          |> flip (Map.add key) solm
       else
-        IntMap.add c [sol] solm)
-    IntMap.empty
+        Map.add key [sol] solm)
+    empty_pairmap
     sols
-  |> IntMap.values
+  |> Map.values
   |> Enum.map List.enum
   |> Enum.flatten
   |> List.of_enum
@@ -543,15 +540,18 @@ let collapse_marks gt mass markm =
     markm
 
 let ignore_leaves = ref IntSet.empty
+let quiet_product l =
+  try
+    List.n_cartesian_product l
+  with Stack_overflow -> failwith "product too big"
 
 let combine_solutions max_leaves _ solsl =
   print_string "combining across ";
   List.print ~first:"" ~last:"; " ~sep:", " Int.print stdout (List.map List.length solsl);
   flush_all ();
   solsl
-  |> List.n_cartesian_product
-  |> List.enum
-  |> Enum.map
+  |> quiet_product
+  |> List.map
       (List.partition (mv_dist |- (=) infinity)
        |- (function
            | [i], [j] -> [arrow_up i j; arrow_down i j]
@@ -571,9 +571,14 @@ let combine_solutions max_leaves _ solsl =
              |> uncurry List.cons)
        |- List.filter (leaf_card |- (>=) max_leaves)
        |- List.filter (fun {leaf_set} -> IntSet.is_disjoint !ignore_leaves leaf_set))
-  |> Enum.map List.enum
-  |> Enum.flatten
-  |> Enum.suffix_action (fun () -> print_string " (finished combining)"; flush_all ())
+  |> List.flatten
+  |> tap (List.length |- Printf.printf "combined to %d\n")
+
+let stringify conv =
+  IntSet.elements
+  |- List.map conv
+  |- String.join ", "
+let some x = Some x
 
 let show_ecld gt mass tree = flip List.fold_left None
   (fun prev -> function
@@ -586,12 +591,18 @@ let show_ecld gt mass tree = flip List.fold_left None
         (IntSet.cardinal leaf_set)
         cl_dist
         (match prev with
-          | None -> ""
+          | None -> stringify string_of_int leaf_set
           | Some {leaf_set = prev_leaves} ->
-            IntSet.sdiff leaf_set prev_leaves
-            |> IntSet.elements
-            |> List.map string_of_int
-            |> String.join ", ")
+            []
+              |> maybe_cons
+                  (match IntSet.diff leaf_set prev_leaves with
+                    | s when IntSet.is_empty s -> None
+                    | s -> stringify (Printf.sprintf "+%d") s |> some)
+              |> maybe_cons
+                  (match IntSet.diff prev_leaves leaf_set with
+                    | s when IntSet.is_empty s -> None
+                    | s -> stringify (Printf.sprintf "-%d") s |> some)
+              |> String.join ", ")
         wk_subtot
         expected_work
         (wk_subtot -. expected_work |> abs_float)
@@ -602,7 +613,8 @@ let show_ecld gt mass tree = flip List.fold_left None
   |- ignore
 
 let solve gt mass n_leaves =
-  let markm, cleafm = mark_map gt in
+  let markm, cleafm = mark_map gt
+  and mass = I.sort mass in
   let bubbles = collapse_marks gt mass markm
   and get_bl = Gtree.get_bl gt
   and top_id = Gtree.top_id gt in
@@ -623,9 +635,9 @@ let solve gt mass n_leaves =
         List.map aux subtrees
           |> combine_solutions n_leaves closest_leaf
           |> cull
-          |> tap (List.iter (csvrow i))
 
     in
+    List.iter (csvrow i) solutions;
     if i = top_id then solutions else (* ... *)
     let marks = bubbles_of i
     and masses = IntMap.get i [] mass |> List.enum in
@@ -681,7 +693,7 @@ let solve gt mass n_leaves =
           []
           solutions
         |> tap (fun _ -> print_endline " -> finished")
-        |> if bub_mass > 0. then List.enum |- cull else identity)
+        |> if bub_mass > 0. then cull else identity)
       (0., solutions)
       marks
     |> snd

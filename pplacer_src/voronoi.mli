@@ -111,3 +111,5 @@ val solve: Newick_gtree.t -> Mass_map.Indiv.t -> int -> solution list
 val collapse_marks: Newick_gtree.t -> Mass_map.Indiv.t -> mark list IntMap.t -> mark list IntMap.t
 val print_sol: 'a BatIO.output -> solution -> unit
 val ignore_leaves: IntSet.t ref
+val does_dominate: solution -> solution -> bool
+val leaf_card: solution -> int
