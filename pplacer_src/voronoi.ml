@@ -469,7 +469,7 @@ let cull sols =
   print_string "culling solutions";
   flush_all ();
   let count = ref 0 in
-  List.fold_left
+  Enum.fold
     (fun solm sol ->
       incr count;
       let key = IntSet.cardinal sol.leaf_set, sol.mv_dist = infinity in
@@ -551,7 +551,8 @@ let combine_solutions max_leaves _ solsl =
   flush_all ();
   solsl
   |> quiet_product
-  |> List.map
+  |> List.enum
+  |> Enum.map
       (List.partition (mv_dist |- (=) infinity)
        |- (function
            | [i], [j] -> [arrow_up i j; arrow_down i j]
@@ -571,8 +572,9 @@ let combine_solutions max_leaves _ solsl =
              |> uncurry List.cons)
        |- List.filter (leaf_card |- (>=) max_leaves)
        |- List.filter (fun {leaf_set} -> IntSet.is_disjoint !ignore_leaves leaf_set))
-  |> List.flatten
-  |> tap (List.length |- Printf.printf "combined to %d\n")
+  |> Enum.map List.enum
+  |> Enum.flatten
+  |> Enum.suffix_action (fun () -> print_string " (finished combining)"; flush_all ())
 
 let stringify conv =
   IntSet.elements
@@ -693,7 +695,7 @@ let solve gt mass n_leaves =
           []
           solutions
         |> tap (fun _ -> print_endline " -> finished")
-        |> if bub_mass > 0. then cull else identity)
+        |> if bub_mass > 0. then List.enum |- cull else identity)
       (0., solutions)
       marks
     |> snd
