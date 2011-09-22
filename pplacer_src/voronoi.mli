@@ -103,6 +103,8 @@ type solution = {
   work: float;
 }
 type solutions = solution IntMap.t
+val sleaves: solution -> IntSet.t
+val swork: solution -> float
 
 module type Alg = sig
   val solve:

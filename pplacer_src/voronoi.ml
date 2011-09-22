@@ -335,6 +335,8 @@ type solutions = solution IntMap.t
 
 let mv_dist {mv_dist} = mv_dist
 let leaf_card {leaf_set} = IntSet.cardinal leaf_set
+let sleaves {leaves} = leaves
+let swork {work} = work
 
 let soln_of_tuple (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot) =
   {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot}
@@ -726,7 +728,8 @@ module Greedy = struct
       let accum' =
         IntMap.add
           (IntSet.cardinal diagram'.all_leaves)
-          {work; leaves = diagram'.all_leaves}
+          {work = partition_indiv_on_leaves diagram' mass |> ecld diagram';
+           leaves = diagram'.all_leaves}
           accum
       in
       aux
@@ -736,6 +739,13 @@ module Greedy = struct
         (IntSet.remove leaf updated_leaves')
     in
     let v = of_gtree gt in
-    aux v IntMap.empty IntMap.empty v.all_leaves
+    aux
+      v
+      (IntMap.singleton
+         (IntSet.cardinal v.all_leaves)
+         {leaves = v.all_leaves;
+          work = partition_indiv_on_leaves v mass |> ecld v})
+      IntMap.empty
+      v.all_leaves
 
 end
