@@ -8,7 +8,6 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit mass_cmd () as super_mass
-  inherit kr_cmd () as super_kr
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd ~default_to_csv:true () as super_tabular
@@ -29,7 +28,6 @@ object (self)
 
   method specl =
     super_mass#specl
-    @ super_kr#specl
     @ super_refpkg#specl
     @ super_tabular#specl
     @ [
