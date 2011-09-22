@@ -10,7 +10,7 @@ let suite = [
       |> List.sort
       |> List.enum
       |> check_map_approx_equal
-          "unequal (%s and %s)"
+          "unequal (%s(%g) and %s(%g))"
           (List.enum [
             "test1", 8.;
             "test2", 4.;

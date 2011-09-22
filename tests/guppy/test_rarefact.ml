@@ -7,7 +7,7 @@ let suite = [
     placerun_of_dir "simple" "test1"
       |> Rarefaction.of_placerun Placement.ml_ratio
       |> check_map_approx_equal
-          "unequal (%d and %d)"
+          "unequal (%d(%g) and %d(%g))"
           (List.enum [
             2, 8.;
           ])
@@ -17,7 +17,7 @@ let suite = [
     placerun_of_dir "multi" "test1and3"
       |> Rarefaction.of_placerun Placement.ml_ratio
       |> check_map_approx_equal
-          "unequal (%d and %d)"
+          "unequal (%d(%g) and %d(%g))"
           (List.enum [
             2, 6.66667;
             3, 10.;
