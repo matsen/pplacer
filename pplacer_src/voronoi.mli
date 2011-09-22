@@ -94,22 +94,20 @@ val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement
     voronoi diagram. If a snipdist isn't provided, it will be calculated from
     the specified diagram. *)
 
+val update_score: Mass_map.Indiv.t -> v -> leaf -> float IntMap.t -> float IntMap.t
 val leaf_work: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> leaf -> float
 val ecld: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> float
 
-type mark = float
 type solution = {
-  leaf_set: IntSet.t;
-  mv_dist: float;
-  cl_dist: float;
-  prox_mass: float;
-  wk_subtot: float;
+  leaves: IntSet.t;
+  work: float;
 }
-val all_dist_map: IntSet.t -> Newick_gtree.t -> float IntMap.t IntMap.t
-val mark_map: Newick_gtree.t -> mark list IntMap.t * float IntMap.t
-val solve: Newick_gtree.t -> Mass_map.Indiv.t -> int -> solution list
-val collapse_marks: Newick_gtree.t -> Mass_map.Indiv.t -> mark list IntMap.t -> mark list IntMap.t
-val print_sol: 'a BatIO.output -> solution -> unit
-val ignore_leaves: IntSet.t ref
-val does_dominate: solution -> solution -> bool
-val leaf_card: solution -> int
+type solutions = solution IntMap.t
+
+module type Alg = sig
+  val solve:
+    Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
+end
+module Greedy: Alg
+module Full: Alg
+module Forced: Alg
