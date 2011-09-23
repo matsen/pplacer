@@ -656,7 +656,7 @@ let solve ?(verbose = false) gt mass n_leaves =
   in
   Gtree.get_stree gt |> aux
 
-let force gt mass ?(strict = true) ?verbose:_ n_leaves =
+let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
   let leaves_ecld leaves =
     let v = of_gtree_and_leaves gt leaves in
     partition_indiv_on_leaves v mass |> ecld v
@@ -673,6 +673,9 @@ let force gt mass ?(strict = true) ?verbose:_ n_leaves =
     |> Enum.map
         (Enum.map (identity &&& leaves_ecld)
          |- Enum.arg_min snd
+         |- (if verbose then
+               tap (fun (leaves, _) -> IntSet.cardinal leaves |> Printf.eprintf "solved %d\n"; flush_all ())
+             else identity)
          |- (fun (leaves, work) -> IntSet.cardinal leaves, {leaves; work}))
     |> IntMap.of_enum
 
