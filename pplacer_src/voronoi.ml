@@ -656,29 +656,24 @@ let solve ?(verbose = false) gt mass n_leaves =
   in
   Gtree.get_stree gt |> aux
 
-let rec powerset = function
-  | [] -> [[]]
-  | hd :: tl ->
-    List.fold_left (fun accum x -> (hd :: x) :: x :: accum) [] (powerset tl)
-
 let force gt mass ?(strict = true) ?verbose:_ n_leaves =
   let leaves_ecld leaves =
     let v = of_gtree_and_leaves gt leaves in
     partition_indiv_on_leaves v mass |> ecld v
   in
   Gtree.leaf_ids gt
-    |> powerset
-    |> List.filter_map
+    |> EnumFuns.powerset
+    |> Enum.filter_map
         (function
           | [] -> None
           | l when strict && List.length l <> n_leaves -> None
           | l when List.length l <= n_leaves -> Some (IntSet.of_list l)
           | _ -> None)
-    |> List.group (comparing IntSet.cardinal)
-    |> List.map
-        (List.enum |- Enum.map (identity &&& leaves_ecld) |- Enum.arg_min snd)
-    |> List.enum
-    |> Enum.map (fun (leaves, work) -> IntSet.cardinal leaves, {leaves; work})
+    |> Enum.group IntSet.cardinal
+    |> Enum.map
+        (Enum.map (identity &&& leaves_ecld)
+         |- Enum.arg_min snd
+         |- (fun (leaves, work) -> IntSet.cardinal leaves, {leaves; work}))
     |> IntMap.of_enum
 
 module type Alg = sig

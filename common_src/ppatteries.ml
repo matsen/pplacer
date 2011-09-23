@@ -479,6 +479,39 @@ module StringFuns = struct
 
 end
 
+module EnumFuns = struct
+
+  let combinations l r =
+    if r < 0 then
+      invalid_arg "r must be non-negative";
+    let pool = Array.of_list l
+    and indices = Array.init r identity in
+    let n = Array.length pool in
+    let rec next_i = function
+      | i when indices.(i) <> i + n - r -> i
+      | 0 -> raise Enum.No_more_elements
+      | i -> next_i (i - 1)
+    in
+    let is_first = ref true in
+    let next () =
+      if !is_first then
+        is_first := false
+      else begin
+        let i = next_i (r - 1) in
+        indices.(i) <- indices.(i) + 1;
+        for j = i + 1 to r - 1 do indices.(j) <- indices.(j - 1) + 1 done
+      end;
+      Array.to_list indices |> List.map (Array.get pool)
+    in
+    Enum.from next
+
+  let powerset l =
+    1 -- List.length l
+      |> Enum.map (combinations l)
+      |> Enum.flatten
+
+end
+
 include MapsSets
 include Batteries
 
