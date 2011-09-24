@@ -483,7 +483,7 @@ let cull ?(verbose = false) sols =
             ((float_of_int l1 -. float_of_int l2) /. float_of_int l1 *. 100.)
             (List.enum sols' |> Enum.arg_max leaf_card |> leaf_card)
         else
-          Printf.eprintf " -> culled nothing")
+          Printf.eprintf " -> culled nothing\n")
     else identity
 
 let arrow_up sol1 sol2 = {
@@ -525,12 +525,7 @@ let collapse_marks gt mass markm =
       |> snd |> List.tl |> List.rev)
     markm
 
-let quiet_product l =
-  try
-    List.n_cartesian_product l
-  with Stack_overflow -> failwith "product too big"
-
-let combine_solutions ?(verbose = false) max_leaves _ solsl =
+let combine_solutions ?(verbose = false) max_leaves solsl =
   if verbose then begin
     Printf.eprintf "combining across ";
     List.print ~first:"" ~last:"; " ~sep:", "
@@ -538,8 +533,7 @@ let combine_solutions ?(verbose = false) max_leaves _ solsl =
     flush_all ()
   end;
   solsl
-  |> quiet_product
-  |> List.enum
+  |> EnumFuns.n_cartesian_product
   |> Enum.map
       (List.partition (mv_dist |- (=) infinity)
        |- (function
@@ -583,16 +577,16 @@ let solve ?(verbose = false) gt mass n_leaves =
          IntSet.singleton i, infinity, 0., 0., 0.]
         |> List.map soln_of_tuple
       | Node (i, subtrees) ->
-        let closest_leaf = IntMap.find i cleafm in
         i,
         List.map aux subtrees
-          |> combine_solutions ~verbose n_leaves closest_leaf
+          |> combine_solutions ~verbose n_leaves
           |> cull ~verbose
 
     in
     if i = top_id then solutions else (* ... *)
     let marks = bubbles_of i
-    and masses = IntMap.get i [] mass |> List.enum in
+    and masses = IntMap.get i [] mass |> List.enum
+    and closest_leaf = IntMap.find i cleafm in
     Enum.fold
       (fun (last_mark, solutions) mark ->
         let masses =
@@ -616,12 +610,15 @@ let solve ?(verbose = false) gt mass n_leaves =
                       && sol.cl_dist <> infinity
                       && sol.mv_dist = infinity
                       && wk_prox < wk_distal +. bub_mass *. sol.cl_dist
-                   then Some {sol with
-                     mv_dist = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass);
-                     cl_dist = sol.cl_dist +. bub_len;
-                     prox_mass = bub_mass;
-                     wk_subtot = sol.wk_subtot +. wk_prox;
-                   }
+                   then
+                      let mv_dist = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass) in
+                      if mv_dist > closest_leaf then None else
+                        Some {sol with
+                          mv_dist;
+                          cl_dist = sol.cl_dist +. bub_len;
+                          prox_mass = bub_mass;
+                          wk_subtot = sol.wk_subtot +. wk_prox;
+                        }
                    else None)
             in
             match sol with

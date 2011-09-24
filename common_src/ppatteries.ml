@@ -481,6 +481,27 @@ end
 
 module EnumFuns = struct
 
+  let n_cartesian_product ll =
+    let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
+    let n = Array.length pool in
+    let indices = Array.make n 0
+    and lengths = Array.map (Array.length |- (+) (-1)) pool in
+    let rec update_indices = function
+      | i when indices.(i) <> lengths.(i) ->
+        indices.(i) <- indices.(i) + 1
+      | 0 -> raise Enum.No_more_elements
+      | i ->
+        indices.(i) <- 0; update_indices (i - 1)
+    in
+    let is_first = ref true in
+    let next () =
+      if !is_first then
+        is_first := false
+      else update_indices (n - 1);
+      Array.map2 Array.get pool indices |> Array.to_list
+    in
+    Enum.from next
+
   let combinations l r =
     if r < 0 then
       invalid_arg "r must be non-negative";
