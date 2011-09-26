@@ -21,7 +21,7 @@ object (self)
   val leaf_mass = flag "--leaf-mass"
     (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
   val algorithm = flag "--algorithm"
-    (Formatted ("greedy",
+    (Formatted ("full",
                 "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
   val all_eclds_file = flag "--all-eclds-file"
     (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
