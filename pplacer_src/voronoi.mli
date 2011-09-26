@@ -111,5 +111,8 @@ module type Alg = sig
     Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
 end
 module Greedy: Alg
-module Full: Alg
+module Full: sig
+  include Alg
+  val csv_log: Csv.out_channel option ref
+end
 module Forced: Alg

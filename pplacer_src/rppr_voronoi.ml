@@ -25,6 +25,9 @@ object (self)
                 "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
   val all_eclds_file = flag "--all-eclds-file"
     (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
+  val soln_log = flag "--log"
+    (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
+                          every internal node."))
 
   method specl =
     super_mass#specl
@@ -37,6 +40,7 @@ object (self)
       float_flag leaf_mass;
       string_flag algorithm;
       string_flag all_eclds_file;
+      string_flag soln_log;
     ]
 
   method desc = "apply voronoi"
@@ -54,6 +58,9 @@ object (self)
       and leaf_mass_fract = fv leaf_mass
       and verbose = fv verbose
       and leaf_cutoff = fv leaf_cutoff in
+      Voronoi.Full.csv_log :=
+        fvo soln_log
+          |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
       let module Alg = (val alg: Voronoi.Alg) in
       let taxtree = match self#get_rpo with
         | Some rp -> Refpkg.get_tax_ref_tree rp

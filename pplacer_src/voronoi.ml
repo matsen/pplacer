@@ -559,6 +559,21 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
       Enum.suffix_action (fun () -> Printf.eprintf " (finished combining)"; flush_all ())
     else identity
 
+let soln_to_info {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot} =
+  let fmt = Printf.sprintf "%g" in
+  [IntSet.cardinal leaf_set |> string_of_int;
+   fmt mv_dist;
+   fmt cl_dist;
+   fmt prox_mass;
+   fmt wk_subtot]
+
+let soln_csv_opt = ref None
+let csvrow i sol = match !soln_csv_opt with
+  | None -> ()
+  | Some ch ->
+    string_of_int i :: soln_to_info sol
+      |> Csv.output_record ch
+
 let solve ?(verbose = false) gt mass n_leaves =
   let markm, cleafm = mark_map gt
   and mass = I.sort mass in
@@ -583,6 +598,7 @@ let solve ?(verbose = false) gt mass n_leaves =
           |> cull ~verbose
 
     in
+    List.iter (csvrow i) solutions;
     if i = top_id then solutions else (* ... *)
     let marks = bubbles_of i
     and masses = IntMap.get i [] mass |> List.enum
@@ -682,6 +698,7 @@ module type Alg = sig
 end
 
 module Full = struct
+  let csv_log = soln_csv_opt
   let solve gt mass ?strict:_ ?verbose n_leaves =
     solve ?verbose gt mass n_leaves
       |> List.enum
@@ -693,6 +710,7 @@ module Full = struct
             IntSet.cardinal leaf_set,
             {leaves = leaf_set; work = wk_subtot})
       |> IntMap.of_enum
+      |> tap (fun _ -> csv_log := None)
 
 end
 
