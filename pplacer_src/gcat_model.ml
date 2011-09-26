@@ -281,12 +281,12 @@ struct
     prep_tensor_for_bl model bl;
     (* apply transform specified by model on the a component *)
     let mat_by_cat cat = BA3.slice_left_2 model.tensor cat in
-    for i=0 to (get_n_sites src) - 1 do
-      let src_mat = BA2.slice_left src i
-      and dst_mat = BA2.slice_left dst i
+    for i=0 to (Glv.get_n_sites src) - 1 do
+      let src_mat = BA2.slice_left src.Glv.a i
+      and dst_mat = BA2.slice_left dst.Glv.a i
       and evo_mat = mat_by_cat model.site_categories.(i)
       in
-      Linear.gemmish dst_mat evo_mat src_mat
+      Linear_utils.mat_vec_mul dst_mat evo_mat src_mat
     done
 
 
