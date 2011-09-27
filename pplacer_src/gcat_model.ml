@@ -164,7 +164,6 @@ struct
      * can be seen below. *)
     let perhaps_pull_exponent min_allowed_twoexp g =
       let n_sites = get_n_sites g in
-      let max_twoexp = ref (-max_int) in
       (* cycle through sites *)
       for site=0 to n_sites-1 do
         let _, twoexp = Matrix.slice_left g.a site
@@ -250,7 +249,7 @@ struct
   (* this is used when we want to make a glv out of a list of likelihood
    * vectors. differs from below because we want to make a new one. used to be
    * called `lv_arr_to_constant_rate_glv`. *)
-  let lv_arr_to_glv model lv_arr =
+  let lv_arr_to_glv _ lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
       ~n_sites:(Array.length lv_arr)
