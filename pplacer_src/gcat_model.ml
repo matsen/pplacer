@@ -324,8 +324,7 @@ end
 module Glv_edge = Glv_edge.Make(Model)
 module Glv_arr = Glv_arr.Make(Model)
 
-let init_of_json json_fname ref_align =
-  let o = Json.of_file json_fname |> Jsontype.obj in
+let init_of_json o ref_align =
   let model_name = Hashtbl.find o "subs_model" |> Jsontype.string in
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";

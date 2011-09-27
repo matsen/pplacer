@@ -89,19 +89,26 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
       (match ref_tree with
         | Some t -> t
         | None -> Newick_gtree.of_file (get "tree"))
-  and lmodel =
-      lazy
-        ((module Gmix_model.Model: Glvm.Model),
-         let aln = Lazy.force lfasta_aln in
-         if StringMap.mem "phylo_model" m then
-           Gmix_model.init_of_json (StringMap.find "phylo_model" m) aln
-         else begin
-           print_endline
-             "Warning: using a statistics file directly is now deprecated. \
+  and lmodel = lazy
+    (let aln = Lazy.force lfasta_aln in
+     if StringMap.mem "phylo_model" m then
+       let j = StringMap.find "phylo_model" m |> Json.of_file |> Jsontype.obj in
+       match Hashtbl.find j "ras_model" |> Jsontype.string with
+         | "gamma" ->
+           (module Gmix_model.Model: Glvm.Model),
+           Gmix_model.init_of_json j aln
+         | "Price-CAT" ->
+           (module Gcat_model.Model: Glvm.Model),
+           Gcat_model.init_of_json j aln
+         | x -> failwith ("invalid ras_model: " ^ x)
+     else begin
+       print_endline
+         "Warning: using a statistics file directly is now deprecated. \
             We suggest using a reference package. If you already are, then \
             please use the latest version of taxtastic.";
-           Gmix_model.init_of_stats_fname prefs (get "tree_stats") aln
-         end)
+       (module Gmix_model.Model: Glvm.Model),
+       Gmix_model.init_of_stats_fname prefs (get "tree_stats") aln
+     end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in

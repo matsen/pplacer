@@ -355,17 +355,16 @@ let init_of_stats_fname prefs stats_fname ref_align =
   prefs.Prefs.stats_fname := stats_fname;
   init_of_prefs "" prefs ref_align
 
-let init_of_json json_fname ref_align =
-  let o = Simple_json.of_file json_fname in
-  let model_name = (Simple_json.find_string o "subs_model") in
+let init_of_json o ref_align =
+  let model_name = Hashtbl.find o "subs_model" |> Jsontype.string in
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
-  if "gamma" <> Simple_json.find_string o "ras_model" then
+  if Hashtbl.find o "ras_model" |> Jsontype.string <> "gamma" then
     failwith "For the time being, we only support gamma rates-across-sites model.";
-  let gamma_o = Simple_json.find o "gamma" in
+  let gamma_o = Hashtbl.find o "gamma" in
   let opt_transitions =
-    if Simple_json.mem o "subs_rates" then begin
-      let subs_rates_o = Simple_json.find o "subs_rates" in
+    if Hashtbl.mem o "subs_rates" then begin
+      let subs_rates_o = Hashtbl.find o "subs_rates" in
       Some [|
         Simple_json.find_float subs_rates_o "ac";
         Simple_json.find_float subs_rates_o "ag";
@@ -379,7 +378,7 @@ let init_of_json json_fname ref_align =
   in
   Glvm.Gmix_model
     (model_name,
-     (Simple_json.find_bool o "empirical_frequencies"),
+     (Hashtbl.find o "empirical_frequencies" |> Jsontype.bool),
      opt_transitions,
      (Gamma.discrete_gamma
         (Simple_json.find_int gamma_o "n_cats")
