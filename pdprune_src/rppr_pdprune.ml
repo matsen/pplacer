@@ -29,8 +29,8 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prunes the tree"
-  method usage = "usage: prunetre [options] tree"
+  method desc = "prune the tree while maximizing PD"
+  method usage = "usage: pdprune [options] tree"
 
   method action = function
     | [fname] ->
@@ -91,7 +91,7 @@ object (self)
         (Pd.until_stopping safe never_prune_ids criterion pt)
       |> self#write_ll_tab
 
-    | _ -> failwith "prunetre takes exactly one tree"
+    | _ -> failwith "pdprune takes exactly one tree"
 
 end
 

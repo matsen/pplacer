@@ -49,7 +49,7 @@ object (self)
       float_flag leaf_mass;
     ]
 
-  method desc = "apply voronoi"
+  method desc = "find a good collection of sequences to remove from the tree"
   method usage = "usage: voronoi [options] placefile"
 
   method private placefile_action = function

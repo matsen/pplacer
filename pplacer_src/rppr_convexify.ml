@@ -77,7 +77,7 @@ object (self)
     string_flag input_colors;
   ] @ super_refpkg#specl
 
-  method desc = "make the phylogeny in a reference package convex"
+  method desc = "identify minimal leaf set to cut for taxonomic concordance"
   method usage = "usage: convexify [-c my.refpkg | --tree my.tre --colors my.csv]"
 
   method private discordance_tree fname =
