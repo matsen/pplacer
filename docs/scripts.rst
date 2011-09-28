@@ -154,3 +154,46 @@ For example, a mask specification of:
     ``0,1,2,3,4,5,6,28,29``
 
 Would discard all columns in an alignment except for 0-7, 28, and 29.
+
+``sort_placefile.py``
+=====================
+
+``sort_placefile.py`` takes a placefile and sorts and formats its contents for
+then performing a visual diff of placefiles. Output defaults to being emitted
+to stdout.
+
+::
+
+    usage: sort_placefile.py [-h] [-o FILE] infile
+
+..
+
+``update_refpkg.py``
+====================
+
+``update_refpkg.py`` updates a reference package from the 1.0 format to the 1.1
+format. It takes the ``CONTENTS.json`` file in the reference package as its
+parameter and updates it in place, after making a backup copy.
+
+::
+
+    usage: update_refpkg.py [-h] CONTENTS.json
+
+..
+
+``check_placements.py``
+=======================
+
+``check_placements.py`` checks a placefile for potential issues, including:
+
+ * Any ``like_weight_ratio`` being equal to 0.
+ * The sum of the ``like_weight_ratios`` not being equal to 1.
+ * Any ``post_prob`` being equal to 0.
+ * The sum of the ``post_probs`` being equal to 0.
+ * The sum of the ``post_probs`` not being equal to 1.
+
+::
+
+    usage: check_placements.py example.jplace
+
+..
