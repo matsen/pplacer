@@ -257,12 +257,12 @@ let run_file prefs query_fname =
       else if masklen <= 10 then
         Printf.printf
           "WARNING: you have %d sites after pre-masking. \
-          That means there is very little information in these sequences for placement."
+          That means there is very little information in these sequences for placement.\n"
           masklen
       else if masklen <= 100 then
         Printf.printf
           "Note: you have %d sites after pre-masking. \
-          That means there is rather little information in these sequences for placement."
+          That means there is rather little information in these sequences for placement.\n"
           masklen;
       let query_list' = List.map cut_from_mask query_list
       and ref_align' = Array.map cut_from_mask ref_align in
@@ -571,6 +571,13 @@ let run_file prefs query_fname =
         identity
     and queries = ref [] in
     let rec gotfunc = function
+      | Core.Pquery pq :: rest when not (Pquery.is_placed pq) ->
+        if Prefs.verb_level prefs >= 1 then
+          Printf.printf "warning: %d identical sequences (including %s) were \
+                         unplaced and omitted\n"
+            (Pquery.namel pq |> List.length)
+            (Pquery.name pq);
+        gotfunc rest
       | Core.Pquery pq :: rest ->
         let pq = pquery_gotfunc pq in
         queries := pq :: (!queries);

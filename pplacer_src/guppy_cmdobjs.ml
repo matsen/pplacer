@@ -190,7 +190,7 @@ let placerun_by_name fname =
   if SM.mem fname !placerun_map then
     SM.find fname !placerun_map
   else begin
-    let pr = Placerun_io.filtered_of_file fname in
+    let pr = Placerun_io.of_any_file fname in
     if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
     placerun_map := SM.add fname pr !placerun_map;
     pr

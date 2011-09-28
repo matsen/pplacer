@@ -79,6 +79,9 @@
  * Closed GH-143: Changed the --leaves argument to `rppr voronoi` to specify
    the number of leaves to keep in the tree instead of the number of leaves to
    prune.
+ * Closed GH-144: Changed pplacer to explicitly disallow unplaced sequences
+   from being written out; changed `best_classifications and `multiclass` views
+   to yield NULL for rows where no placements match all the criteria.
 
 
 1.1.alpha08
