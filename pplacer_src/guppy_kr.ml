@@ -1,5 +1,4 @@
-open Fam_batteries
-open MapsSets
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
@@ -45,7 +44,7 @@ let map_shuffled_pres f rng n_shuffles pre1 pre2 =
   and n2 = List.length pre2
   in
   let pquery_sub start len = Array.to_list (Array.sub pre_arr start len) in
-  ListFuns.init
+  List.init
     n_shuffles
     (fun _ ->
       shuffle rng pre_arr;
@@ -84,22 +83,6 @@ let write_uptril list_output namea fun_namel ul ch =
       fun_namel ul
   end
 
-(* normalizations. We can divide by these to get a given perspective on KR. *)
-let no_normalization _ = 1.
-let tree_length = Gtree.tree_length
-
-let normalization_map =
-  List.fold_right
-    (fun (k,v) -> StringMap.add k v)
-    [
-      "", no_normalization;
-      "tree-length", tree_length;
-    ]
-    StringMap.empty
-
-let normalization_of_str s =
-  try StringMap.find s normalization_map with
-  | Not_found -> failwith ("Normalization "^s^" not known.")
 
 (* core
  * run pair_core for each unique pair
@@ -111,6 +94,7 @@ object (self)
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit output_cmd () as super_output
   inherit kr_cmd () as super_kr
+  inherit normalization_cmd () as super_normalization
   inherit rng_cmd () as super_rng
   inherit placefile_cmd () as super_placefile
 
@@ -131,6 +115,7 @@ object (self)
     @ super_refpkg#specl
     @ super_output#specl
     @ super_kr#specl
+    @ super_normalization#specl
     @ super_rng#specl
     @ [
       toggle_flag list_output;
@@ -145,12 +130,12 @@ object (self)
 
 
   (* Note that we don't call self#rng to avoid re-seeding the rng. *)
-  method private pair_core rng transform n_samples t name1 pre1 name2 pre2 =
+  method private pair_core rng n_samples t name1 pre1 name2 pre2 =
   let p = fv p_exp
-  and normalization = (normalization_of_str (fv normalize)) t
+  and normalization = self#get_normalization t
   in
   let calc_dist =
-    Kr_distance.scaled_dist_of_pres ~normalization transform p t in
+    Kr_distance.scaled_dist_of_pres ~normalization p t in
   let original_dist = calc_dist pre1 pre2 in
   let type_str = if fv gaussian then "gaussian" else "density"
   in
@@ -160,13 +145,13 @@ object (self)
       if 0 < n_samples then begin
         (* We must have unitized masses so shuffling works properly. Otherwise
          * the amount of mass per read will depend on its origin. *)
-        let upre1 = Mass_map.Pre.unitize_mass transform pre1
-        and upre2 = Mass_map.Pre.unitize_mass transform pre2
+        let upre1 = Mass_map.Pre.unitize_mass pre1
+        and upre2 = Mass_map.Pre.unitize_mass pre2
         in
         let null_dists =
           if fv gaussian then
             Gaussian_approx.pair_approx
-              ~normalization transform rng n_samples p t upre1 upre2
+              ~normalization rng n_samples p t upre1 upre2
           else
             map_shuffled_pres calc_dist rng n_samples upre1 upre2
         in
@@ -181,7 +166,7 @@ object (self)
     let n_samples = fv n_samples
     and pra = Array.of_list prl
     and p = fv p_exp
-    and transform, weighting, criterion = self#mass_opts
+    and weighting, criterion = self#mass_opts
     and tax_refpkgo = match self#get_rpo with
       | None -> None
       | Some rp ->
@@ -201,7 +186,7 @@ object (self)
         (fun i j ->
           let context = Printf.sprintf "comparing %s with %s" namea.(i) namea.(j) in
           try
-            self#pair_core rng transform n_samples t namea.(i) prea.(i) namea.(j) prea.(j)
+            self#pair_core rng n_samples t namea.(i) prea.(i) namea.(j) prea.(j)
           with
           | Kr_distance.Invalid_place_loc a ->
               invalid_arg

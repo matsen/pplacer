@@ -1,8 +1,7 @@
 (* Calculating the barycenter of a mass distribution on a tree.
 *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 open Mass_map
 
 (* masses *)
@@ -193,13 +192,12 @@ let find ref_tree mass_m =
       (id, find_pos id)
 
 (* pre means Mass_map.Pre *)
-let of_pre transform t pmm = find t (Indiv.of_pre transform pmm)
+let of_pre t pmm = find t (Indiv.of_pre pmm)
 
-let of_placerun transform weighting criterion pr =
+let of_placerun weighting criterion pr =
   find
     (Placerun.get_ref_tree pr)
     (Indiv.of_placerun
-      transform
       weighting
       criterion
       pr)

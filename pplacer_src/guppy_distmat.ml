@@ -1,6 +1,8 @@
 open Guppy_cmdobjs
 open Subcommand
 
+open Ppatteries
+
 let write_dist_mat ff pr =
   Uptri.ppr_lowtri ff Edge_rdist.ppr_rdist
     (Edge_rdist.build_pairwise_dist (Placerun.get_ref_tree pr))

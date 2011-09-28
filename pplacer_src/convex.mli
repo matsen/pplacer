@@ -1,11 +1,26 @@
-open MapsSets
+(* Notes:
+
+ In the manuscript, there is no notion of optional color.
+ However, that notion is useful here.
+ In the aparts, an between color of None is any color that is not in B(\pi), and
+ is not forced upon us by the above color.
+ In this situation, the between color b can be any color from one of the pis;
+ all such colors are equivalent so we just use None to decrease the complexity
+ slightly.
+*)
+
+open Ppatteries
 open Stree
-type color = string
+type color = Tax_id.t
 
 module ColorSet: MapsSets.S with type elt = color
 module ColorMap: MapsSets.M with type key = color
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
+val ppr_csetim: Format.formatter -> cset IntMap.t -> unit
+module ColorSetMap: MapsSets.M with type key = cset
+type coloropt = color option
+module ColorOptMap: MapsSets.M with type key = coloropt
 
 type question = color option * cset (* a pair (c, X) *)
 module QuestionMap: MapsSets.M with type key = question
@@ -20,7 +35,7 @@ type local_phi = (apart * int) qmap
 type phi = local_phi IntMap.t
 (* Here the int list is the list of top_id's that are in parallel with the
  * top_id's of the subtree below. *)
-type nu_f = phi -> apart -> int list -> int
+type nu_f = cset -> sizem list -> apart -> int
 
 (* QuestionMap should be a map from questions *)
 
@@ -45,7 +60,7 @@ val build_sizemim_and_cutsetim: cdtree -> sizem IntMap.t * cset IntMap.t
 
 (* Building up aparts. *)
 
-val build_apartl: csetl -> cset -> question -> apart list
+val build_apartl: ?strict:bool -> csetl -> cset -> question -> apart list
 (** Given an [X1,...,Xk] and a (c, X) return a list of (b, pi)'s.
  * If c is in X or if B = B([X1,...,Xk]) is empty, then b = c.
  * Otherwise, b can be anything in B.
@@ -58,18 +73,15 @@ val build_apartl: csetl -> cset -> question -> apart list
 
 (* For the recursion. *)
 
-(* val single_naive_upper: chosen:cset -> cutset:cset -> sizem -> int *)
-(* (\** naive_upper chosent cutset sizem gives an naive (i.e. ignoring convexity) *)
-(*  * upper bound for the number of leaves below that could be allowed if we select *)
-(*  * the chosen subset of the cutset. *\) *)
-
-val apart_nu: cset -> sizem list -> apart -> int
-(** convenience function for running list_nu on the csetl of an apart. *)
+val apart_nu: nu_f
+(** Calculate the nu of an apart, given a sizem list for the nodes below it,
+    and the color set of the kappa above it. *)
 
 
 (* The recursion, as it were. *)
 
-val phi_recurse: cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question -> phi -> phi * int
+val phi_recurse: ?strict:bool -> ?nu_f:nu_f ->
+  cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question -> phi -> phi * int
 (** phi_recurse id q phi returns a phi map which includes the answer
  * to the posed question.
  *)
@@ -104,9 +116,31 @@ val phi_recurse: cset IntMap.t -> sizem list IntMap.t -> Stree.stree -> question
 
 *)
 
-val solve: cdtree -> phi * int
+val solve: ?strict:bool -> ?nu_f:nu_f -> cdtree -> phi * int
+(** Solve a tree, returning the solved phi and the omega of the best
+    solution. *)
 
 val badness: cset IntMap.t -> int * int
+(** Calculate (respectively) the maximum and total badness of a cutsetim. *)
+
 val nodeset_of_phi_and_tree: phi -> stree -> IntSet.t
+(** From a solved phi, find the set of leaves on the provided tree which were
+    not cut. *)
+
 val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
-val rank_color_map_of_refpkg: Refpkg.t -> color IntMap.t IntMap.t
+(** From a tree and a map from node numbers to 'a, build a map from internal
+    node numbers to a list of the values of the map at each of the subtrees of
+    that internal node. *)
+
+val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
+(** Build a map from leaves to tax_ids for each rank of the taxonomy in a
+    reference package. *)
+
+val alternate_colors: cdtree -> cset IntMap.t
+(** From a partially-uncolored tree, determine the potential colors of
+    uncolored leaves. *)
+
+module Naive: sig
+  val solve: cdtree -> IntSet.t
+end
+

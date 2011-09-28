@@ -16,7 +16,7 @@ let test_edpl correct fname =
 
 let suite = [
   "edpl" >::: [
-    "test4" >:: (fun _ -> test_edpl 2.3 (tests_dir ^ "data/misc/test4.json"));
+    "test4" >:: (fun _ -> test_edpl 2.3 (tests_dir ^ "data/misc/test4.jplace"));
   ]
 ]
 

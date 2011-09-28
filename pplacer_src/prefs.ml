@@ -16,6 +16,8 @@ type prefs =
     initial_tolerance : float ref;
     calc_pp : bool ref;
     uniform_prior : bool ref;
+    informative_prior : bool ref;
+    prior_lower : float ref;
     pp_rel_err : float ref;
     (* playing ball *)
     max_strikes : int ref;
@@ -43,6 +45,10 @@ type prefs =
     map_fasta : string ref;
     map_cutoff : float ref;
     map_info : bool ref;
+    map_identity : bool ref;
+    keep_at_most : int ref;
+    keep_factor : float ref;
+    mrca_class : bool ref;
   }
 
 
@@ -62,6 +68,8 @@ let defaults () =
     initial_tolerance = ref 0.01;
     calc_pp = ref false;
     uniform_prior = ref false;
+    informative_prior = ref false;
+    prior_lower = ref 0.;
     pp_rel_err = ref 0.01;
     (* playing ball *)
     max_strikes = ref 6;
@@ -89,6 +97,10 @@ let defaults () =
     map_fasta = ref "";
     map_cutoff = ref 0.8;
     map_info = ref false;
+    map_identity = ref false;
+    keep_at_most = ref 7;
+    keep_factor = ref 0.01;
+    mrca_class = ref false;
   }
 
 
@@ -109,6 +121,8 @@ let max_pend          p = !(p.max_pend)
 let initial_tolerance p = !(p.initial_tolerance)
 let calc_pp           p = !(p.calc_pp)
 let uniform_prior     p = !(p.uniform_prior)
+let informative_prior p = !(p.informative_prior)
+let prior_lower       p = !(p.prior_lower)
 let pp_rel_err        p = !(p.pp_rel_err)
 let max_strikes       p = !(p.max_strikes)
 let strike_box        p = !(p.strike_box)
@@ -134,6 +148,10 @@ let pre_masked_file   p = !(p.pre_masked_file)
 let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
 let map_info          p = !(p.map_info)
+let map_identity      p = !(p.map_identity)
+let keep_at_most      p = !(p.keep_at_most)
+let keep_factor       p = !(p.keep_factor)
+let mrca_class        p = !(p.mrca_class)
 
 
 (* arguments and preferences *)
@@ -154,7 +172,11 @@ let specl prefs =
 "Supply a phyml stats.txt or a RAxML info file giving the model parameters.";
 "-d", Arg.Set_string prefs.ref_dir,
 "Specify the directory containing the reference information.";
-"-p", Arg.Set prefs.calc_pp,
+"-p", Arg.Unit (fun () ->
+  prefs.calc_pp := true;
+  prefs.keep_at_most := 20;
+  prefs.keep_factor := 0.001;
+  prefs.max_strikes := 20),
 "Calculate posterior probabilities.";
 "-m", Arg.Set_string prefs.model_name,
 "Substitution model. Protein: are LG, WAG, or JTT. Nucleotides: GTR.";
@@ -172,6 +194,10 @@ spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
 "Relative error for the posterior probability calculation. Default is %g.";
 "--unif-prior", Arg.Set prefs.uniform_prior,
 "Use a uniform prior rather than exponential.";
+"--inform-prior", Arg.Set prefs.informative_prior,
+"Use an informative exponential prior based on rooted distance to leaves.";
+spec_with_default "--prior-lower" (fun o -> Arg.Set_float o) prefs.prior_lower
+"Lower bound for the informative prior mean. Default is %g.";
 spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
 "Starting pendant branch length. Default is %g.";
 spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
@@ -212,30 +238,16 @@ spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
 "Specify cutoff for inclusion in MAP sequence file. Default is %g.";
 "--map-info", Arg.Set prefs.map_info,
 "Write file describing the 'diagnostic' mutations for various clades.";
+"--map-identity", Arg.Set prefs.map_identity,
+"Add the percent identity of the query sequence to the nearest MAP sequence to each placement.";
+spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
+"The maximum number of placements we keep. Default is %d.";
+spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
+"Throw away anything that has ml_ratio below keep_factor times (best ml_ratio). Default is %g.";
+"--mrca-class", Arg.Set prefs.mrca_class,
+"Classify with MRCAs instead of a painted tree.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
-  ]
-
-(* include a pref here if it should go in the place file *)
-let titled_typed_prefs p =
-  [
-    MutString p.tree_fname,       "reference tree file"         ;
-    MutString p.ref_align_fname,  "reference alignment file"    ;
-    MutString p.stats_fname,      "statistics file"             ;
-    MutString p.ref_dir,          "reference data directory"    ;
-    MutString p.model_name,       "substitution model"          ;
-    MutBool p.emperical_freqs,    "use emperical frequencies"   ;
-    MutInt p.gamma_n_cat,         "number of gamma categories"  ;
-    MutFloat p.gamma_alpha,       "gamma alpha"                 ;
-    MutInt p.max_strikes,         "max number of strikes"       ;
-    MutFloat p.strike_box,        "strike box"                  ;
-    MutInt p.max_pitches,         "max number of pitches"       ;
-    MutBool p.calc_pp,            "calculate PP"                ;
-    MutBool p.uniform_prior,      "uniform prior"               ;
-    MutFloat p.start_pend,        "starting pendant length"     ;
-    MutFloat p.max_pend,          "maximal pendant length"      ;
-    MutFloat p.initial_tolerance, "ML tolerance"                ;
-    MutFloat p.pp_rel_err,        "relative error for PP"       ;
   ]
 
 (* do a sanity check on the preferences *)

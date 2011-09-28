@@ -1,5 +1,6 @@
 open Mass_map
-open Fam_batteries
+open Ppatteries
+open OUnit
 
 (* Assume the test runner is running in the project root. We can't do much
    better than this. *)
@@ -10,17 +11,21 @@ let tests_dir = "./tests/"
 
 let placeruns_of_dir which =
   let files = Common_base.get_dir_contents
-    ~pred:(fun name -> Filename.check_suffix name "json")
+    ~pred:(fun name -> Filename.check_suffix name "jplace")
     (tests_dir ^ "data/" ^ which) in
   List.map
     Placerun_io.of_any_file
     files
 
+let placerun_of_dir dir which =
+  placeruns_of_dir dir
+    |> List.find (Placerun.get_name |- (=) which)
+
 let pres_of_dir weighting criterion which =
   let tbl = Hashtbl.create 10 in
   List.iter
     (fun pr ->
-      let pre = Pre.normalize_mass no_transform (Pre.of_placerun weighting criterion pr) in
+      let pre = Pre.normalize_mass (Pre.of_placerun weighting criterion pr) in
       Hashtbl.add tbl pr.Placerun.name (pr, pre))
     (placeruns_of_dir which);
   tbl
@@ -42,7 +47,7 @@ let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
 (* *** equalities *** *)
 let gtree_equal g1 g2 =
   g1.Gtree.stree = g2.Gtree.stree
-  && MapsSets.IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
+  && IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
 
 let placerun_equal pr1 pr2 =
   gtree_equal pr1.Placerun.ref_tree pr2.Placerun.ref_tree
@@ -50,8 +55,6 @@ let placerun_equal pr1 pr2 =
 
 
 (* *** approximate equalities *** *)
-
-let approx_equal = Fam_batteries.approx_equal
 
 let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
   let dim = Gsl_vector.length v1 in
@@ -125,6 +128,10 @@ let ( =|| ) = mat_approx_equal
 let ( =@ ) = farr_approx_equal
 let ( =@@ ) = farrarr_approx_equal
 
+let check_map_approx_equal message = Enum.iter2
+  (fun (k1, v1) (k2, v2) ->
+    (Printf.sprintf message k1 k2)
+    @? (k1 = k2 && approx_equal v1 v2))
 
 (* *** random stuff *** *)
 
@@ -143,3 +150,9 @@ let make_rng seed =
   Gsl_rng.set rng (Nativeint.of_int seed);
   rng
 
+let colorset_of_strings = List.map Tax_id.of_string |- Convex.ColorSet.of_list
+
+let simple_refpkg tree_string =
+  Refpkg.of_path
+    ~ref_tree:(Newick_gtree.of_string tree_string)
+    (tests_dir ^ "data/simple.refpkg")

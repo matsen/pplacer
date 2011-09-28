@@ -3,7 +3,7 @@
  *)
 
 open Subcommand
-open MapsSets
+open Ppatteries
 
 
 (* *** general objects *** *)
@@ -71,6 +71,53 @@ object (self)
     match self#out_file_or_dir ?default () with
       | File fname -> fname
       | _ -> failwith "-o option is required"
+
+end
+
+class tabular_cmd ?(default_to_csv = false) () =
+object (self)
+  inherit output_cmd () as super_output
+
+  val as_csv =
+    if default_to_csv then
+      flag "--no-csv"
+        (Plain (true, "Output the results as a padded matrix instead of csv."))
+    else
+      flag "--csv"
+        (Plain (false, "Output the results as csv instead of a padded matrix."))
+
+  method specl =
+    super_output#specl
+  @ [toggle_flag as_csv]
+
+  method private channel_opt ch =
+    match ch with
+      | Some x -> x
+      | None -> self#out_channel
+
+  method private write_csv ?ch data =
+    self#channel_opt ch
+      |> csv_out_channel
+      |> Csv.to_out_obj
+      |> flip Csv.output_all data
+
+  method private write_matrix ?ch data =
+    self#channel_opt ch
+      |> flip String_matrix.write_padded data
+
+  method private write_ll_tab ?ch data =
+    if fv as_csv then self#write_csv ?ch data
+    else
+      List.map Array.of_list data
+        |> Array.of_list
+        |> self#write_matrix ?ch
+
+  method private write_aa_tab ?ch data =
+    if not (fv as_csv) then self#write_matrix ?ch data
+    else
+      Array.map Array.to_list data
+        |> Array.to_list
+        |> self#write_csv ?ch
 
 end
 
@@ -153,42 +200,82 @@ class virtual placefile_cmd () =
 object (self)
   method virtual private placefile_action: 'a Placerun.placerun list -> unit
   method action fnamel =
-    let prl = List.map placerun_by_name fnamel in
-    self#placefile_action prl
+    fnamel
+      |> List.map (Placerun_io.maybe_of_split_file ~getfunc:placerun_by_name)
+      |> List.flatten
+      |> self#placefile_action
+
+  method private write_placefile invocation fname pr =
+    if fname.[0] = '@' then
+      let name = Filename.chop_extension
+        (String.sub fname 1 ((String.length fname) - 1))
+      in
+      placerun_map := SM.add fname (Placerun.set_name pr name) !placerun_map
+    else
+      Placerun_io.to_json_file invocation fname pr
+
 end
 
 
-(* *** mass-related objects *** *)
+(* *** mass and kr-related objects *** *)
 
-class mass_cmd () =
-object
+class mass_cmd ?(weighting_allowed = true) () =
+object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for the weight."))
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
-  val transform = flag "--transform"
-    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."))
   method specl = [
     toggle_flag use_pp;
-    toggle_flag weighted;
-    string_flag transform;
   ]
+    |> if weighting_allowed then
+        toggle_flag weighted |> List.cons
+      else identity
+
+  method private criterion =
+    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
 
   method private mass_opts = (
-    Mass_map.transform_of_str (fv transform),
     (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
-    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
+    self#criterion
   )
 end
 
-class kr_cmd () =
+(* For normalizing by various things related to the tree. *)
+class normalization_cmd () =
+  let no_normalization _ = 1.
+  and tree_length t = Gtree.tree_length t
+  in
+  let normalization_map =
+    StringMap.of_pairlist
+      [
+        "", no_normalization;
+        "tree-length", tree_length;
+      ]
+  in
+
 object
-  val p_exp = flag "-p"
-    (Formatted (1., "Exponent for KR integration, i.e. value of p in Z_p. Default %g."))
   val normalize = flag "--normalize"
     (Plain ("", "Divide KR by a given value. Legal arguments are \"tree-length\"."))
-  method specl = [ float_flag p_exp; string_flag normalize; ]
+  method specl = [ string_flag normalize; ]
+
+  method private get_normalization: <get_bl: float; ..> Gtree.gtree -> float = fun t ->
+    let s = fv normalize in
+    let f =
+      try
+        StringMap.find s normalization_map
+      with
+        | Not_found -> failwith ("Normalization "^s^" not known.")
+    in
+    f t
+end
+
+class kr_cmd () =
+  object
+  (* normalizations. We can divide by these to get a given perspective on KR. *)
+    val p_exp = flag "-p"
+      (Formatted (1., "Exponent for KR integration, i.e. value of p in Z_p. Default %g."))
+    method specl = [ float_flag p_exp; ]
 end
 
 
@@ -275,7 +362,7 @@ object(self)
     ]
 
   method private color_of_heat heat =
-    if heat >= 0. then Decor.red else Decor.blue
+    if heat >= 0. then Decor.brew_orange else Decor.brew_green
 
   method private gray_black_of_heat heat =
     if heat >= 0. then Decor.gray 180 else Decor.black
@@ -346,7 +433,7 @@ object (self)
       Visualization.trees_to_file
         self#fmt
         fname
-        (Base.map_and_flatten snd named_trees)
+        (List.map snd named_trees |> List.flatten)
     | Unspecified -> ()
 
 end

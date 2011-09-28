@@ -1,7 +1,6 @@
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open MapsSets
-open Fam_batteries
 
 let named_arr_list_of_csv fname =
   List.map

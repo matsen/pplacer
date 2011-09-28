@@ -9,10 +9,10 @@
 *)
 
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
-(* A map of taxonomic annotations just from the bark map. *)
+(* Make a map of leaf taxonomic annotations from the leaf names on the tree and
+ * a seqinfo map (sim). *)
 let tips_map sim t =
   IntMap.fold
     (fun k newick_bark m ->
@@ -22,7 +22,8 @@ let tips_map sim t =
     (Gtree.get_bark_map t)
     IntMap.empty
 
-(* Propogate the taxonomic information up the tree according to common ancestry.
+(* Propogate the taxonomic information up the tree according to common ancestry,
+ * starting with a map that only has taxonomic information at the tips.
  * *)
 let fill_out td t tips_map =
   let m = ref tips_map in
@@ -55,8 +56,8 @@ let mrcam_of_full_map t full_map =
         (id, our_tax_id))
       (fun id -> (id, IntMap.find id full_map))
       t
-  in
-  !m
+  and top_id = Gtree.top_id t in
+  IntMap.add top_id (IntMap.find top_id full_map) !m
 
 let mrcam_of_data sim td t =
   mrcam_of_full_map t (fill_out td t (tips_map sim t))

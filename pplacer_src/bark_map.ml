@@ -1,7 +1,7 @@
 (* assumes that the bark is at least a newick bark
 *)
 
-open MapsSets
+open Ppatteries
 
 let union = IntMap.union
 

@@ -2,8 +2,7 @@
  * a placerun is a data structure representing a single pplacer run.
 *)
 
-open Fam_batteries
-open MapsSets
+open Ppatteries
 
 type 'a placerun =
   {
@@ -71,9 +70,7 @@ let warn_about_duplicate_names placerun =
         StringSet.add name accu)
       StringSet.empty
       (List.flatten
-        (List.map
-          (fun pq -> pq.Pquery.namel)
-          (get_pqueries placerun)))
+        (List.map Pquery.namel (get_pqueries placerun)))
   in
   ()
 
@@ -135,17 +132,20 @@ let multifilter_by_regex named_regex_list placerun =
     *)
 
 let redup sequence_tbl pr =
-  set_pqueries
-    pr
-    (List.map
-       (fun pq ->
-         try
-           Pquery.set_namel
-             pq
-             (Base.map_and_flatten
-                (Hashtbl.find sequence_tbl)
-                (Pquery.namel pq))
+  get_pqueries pr
+    |> List.map
+        (fun pq ->
+          try
+            Pquery.namel pq
+              |> List.map (Hashtbl.find sequence_tbl)
+              |> List.flatten
+              |> Pquery.set_namel pq
          with
            | Not_found -> pq)
-       (get_pqueries pr))
+    |> set_pqueries pr
 
+let transform func pr =
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
+    |> set_pqueries pr

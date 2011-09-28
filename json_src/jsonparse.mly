@@ -1,8 +1,6 @@
 %{
+  open Ppatteries
   open Jsontype
-
-  let syntax_error tok msg =
-    raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
 
   let utf8_encode x =
     let x' = Int32.of_int x
@@ -103,4 +101,4 @@ parse:
     value EOF
       { $1 }
   | error EOF
-      { syntax_error 1 "syntax error parsing" }
+      { Sparse.syntax_error 1 "syntax error parsing" }

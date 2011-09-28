@@ -26,9 +26,7 @@ let _get_real = function
   | Float x -> x
   | _ -> raise (Type_mismatch_wanted "real")
 
-let slurp fname = String.concat "\n" (File_parsing.string_list_of_file fname)
-
-let of_file fname = Json.of_string (slurp fname)
+let of_file = Json.of_file
 
 (* "getting" something simply means that we convert to a proper ocaml type. *)
 let get_gen f x =

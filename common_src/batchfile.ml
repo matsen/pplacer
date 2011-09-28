@@ -1,3 +1,5 @@
+open Ppatteries
+
 let batchfile_regexp = Str.regexp begin
   String.concat "\\|" [
     (* whitespace (ignored) *)
@@ -19,20 +21,20 @@ type token =
   | EOF
 
 let token_of_match s =
-  match Base.first_match [1; 2; 3] s with
+  match Sparse.first_match [1; 2; 3] s with
     | 1, _ -> Newline
     | 2, s
     | 3, s -> String s
     | _, _ -> invalid_arg "token_of_match"
 
-let tokenize_batchfile = Base.tokenize_string
+let tokenize_batchfile = Sparse.tokenize_string
   batchfile_regexp
   token_of_match
   ~eof_token:EOF
 
 let quote_regexp = Str.regexp "\"\""
 let parse tokens =
-  let _, sll = List.fold_left
+  let _, sll = Enum.fold
     (fun (sl, sll) -> function
       | String s ->
         let s = Str.global_replace quote_regexp "\"" s
@@ -47,10 +49,43 @@ let parse tokens =
     tokens
   in List.rev sll
 
-let of_string s =
-  parse (tokenize_batchfile s)
+let of_string, of_file = Sparse.gen_parsers tokenize_batchfile parse
 
-let of_file fname =
-  let lines = File_parsing.string_list_of_file fname in
-  let tokens = Base.map_and_flatten tokenize_batchfile lines in
-  parse tokens
+let placeholder_regexp = Str.regexp begin
+  String.concat "\\|" [
+    (* an escaped brace (group 1) *)
+    "\\({{\\|}}\\)";
+    (* an identifier to substitute (group 2) *)
+    "{\\([a-zA-Z0-9_-]+\\)}";
+  ]
+end
+let substitute_placeholders m s =
+  let substitute s =
+    match Sparse.first_match [1; 2] s with
+    | 1, "{{" -> "{"
+    | 1, "}}" -> "}"
+    | 2, identifier -> begin
+      try
+        StringMap.find identifier m
+      with Not_found ->
+        failwith ("unspecified batchfile substitution: " ^ identifier)
+    end
+    | _, _ -> invalid_arg "substitute"
+  in
+  Str.global_substitute
+    placeholder_regexp
+    substitute
+    s
+
+let argument_regexp = Str.regexp "^\\([a-zA-Z0-9_-]+\\)=\\(.*\\)$"
+let split_arguments l =
+  List.fold_left
+    (fun accum s ->
+      if not (Str.string_match argument_regexp s 0) then
+        failwith ("malformed batchfile argument: " ^ s);
+      StringMap.add
+        (Str.matched_group 1 s)
+        (Str.matched_group 2 s)
+        accum)
+    StringMap.empty
+    l

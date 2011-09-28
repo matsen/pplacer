@@ -1,3 +1,4 @@
+open Ppatteries
 open Rst
 
 let docs_dir = "docs/"
@@ -18,27 +19,27 @@ let cat_file_to_channel fname out_ch =
   with End_of_file -> close_in in_ch
 
 let command_list_of_subcommand_program (prefix, command_list) =
-  let commands = Base.map_and_flatten snd command_list in
+  let commands = command_list |> List.map snd |> List.flatten in
   let command_matrix =
     Array.append
       [|[|"Command"; "Description"|]|]
       (Array.of_list
          (List.sort
-            compare
             (List.map
                (fun (name, cmd) ->
                  [|Printf.sprintf ":ref:`%s <%s_%s>`" name prefix name;
                    (cmd ())#desc|])
                commands)))
   in
-  let index_out = open_out (Printf.sprintf "%s%s.rst" generated_dir prefix) in
-  List.iter
-    (fun line ->
-      if line = ".. command-table" then
-        Rst.write_table index_out command_matrix
-      else
-        Printf.fprintf index_out "%s\n" line)
-    (File_parsing.string_list_of_file (Printf.sprintf "%s%s.rst" details_dir prefix));
+  let index_out = Printf.sprintf "%s%s.rst" generated_dir prefix |> open_out in
+  Printf.sprintf "%s%s.rst" details_dir prefix
+    |> File.lines_of
+    |> Enum.iter
+        (fun line ->
+          if line =  ".. command-table" then
+            Rst.write_table index_out command_matrix
+          else
+            Printf.fprintf index_out "%s\n" line);
   close_out index_out;
   List.map
     (fun (name, pre_o) -> name, Some prefix, pre_o)
@@ -91,7 +92,9 @@ let () =
 
     )
     (("pplacer", None, (fun () -> new Prefs.pplacer_cmd ()))
-     :: (Base.map_and_flatten command_list_of_subcommand_program
-           ["guppy", Guppy.command_list ();
-            "rppr", Rppr.command_list ()]))
+     :: (List.map
+           command_list_of_subcommand_program
+           ["guppy", Guppy_commands.command_list ();
+            "rppr", Rppr_commands.command_list ()]
+         |> List.flatten))
 

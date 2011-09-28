@@ -5,7 +5,7 @@ exception Missing_edge of int * string
 exception Pend_mismatch of int list (*desired*) * int list (*found*)
 exception Inte_mismatch of int list (*desired*) * int list (*foundl*) * int list (*foundr*)
 
-open MapsSets
+open Ppatteries
 
 type edge =
   (*        id    bl      connections *)
@@ -18,7 +18,7 @@ type ptree = (int, edge) Hashtbl.t
 
 (* *** EDGE UTILS *** *)
 
-let sorted_list_eq l1 l2 = List.sort compare l1 = List.sort compare l2
+let sorted_list_eq l1 l2 = List.sort l1 = List.sort l2
 
 (* assert that one_side is a (potentially resorted version of) l or r, and
  * return the one that it is not *)
@@ -135,7 +135,7 @@ let of_stree bl_getter st =
         add_edge id above_ids (Some (ids_of_tl tL));
         List.iter
           (fun (below, rest) -> aux (id::(ids_of_tl rest)) below)
-          (Base.pull_each_out tL)
+          (ListFuns.pull_each_out tL)
     | Stree.Leaf id -> add_edge id above_ids None
   in
   (* the basic tree builder, which doesn't take tricky rooting into account *)
@@ -148,7 +148,7 @@ let of_stree bl_getter st =
     | Stree.Node(_, [t1; t2]) -> begin
       (* tree with degree two rootings require some special care *)
       (* first build the basic tree *)
-      List.iter root_build (Base.pull_each_out [t1; t2]);
+      List.iter root_build (ListFuns.pull_each_out [t1; t2]);
       let (id1, id2) = (Stree.top_id t1, Stree.top_id t2) in
       match (find pt id1, find pt id2) with
       | (Inte(bl1,l1,r1), Inte(bl2,l2,r2)) ->
@@ -163,7 +163,7 @@ let of_stree bl_getter st =
           List.iter (tree_update ~src:id2 ~dst:id1 pt) (join1 @ join2);
       | _ -> raise (Not_implemented "rooted on pendant edge")
       end
-    | Stree.Node(_, tL) -> List.iter root_build (Base.pull_each_out tL);
+    | Stree.Node(_, tL) -> List.iter root_build (ListFuns.pull_each_out tL);
   in
   pt
 

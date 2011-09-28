@@ -1,6 +1,6 @@
 (* This is where we compute the EDPL distance. *)
 
-open MapsSets
+open Ppatteries
 
 let of_pquery criterion rdist_uptri pq =
   let d p1 p2 =

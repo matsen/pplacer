@@ -5,8 +5,8 @@ let check ?(allowed = [Rc.OK]) db retcode =
   if not (List.mem retcode allowed) then
     raise (Error (errmsg db))
 
-let check_exec db ?allowed s =
-  check ?allowed db (exec db s)
+let check_exec db ?cb ?allowed s =
+  check ?allowed db (exec ?cb db s)
 
 let bind_arr ?allowed db st arr =
   Array.iteri

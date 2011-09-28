@@ -9,10 +9,20 @@
  * and beta is the rate parameter, which is one over the scale parameter.
  *)
 
-open Fam_batteries
+open Ppatteries
 
-let inverse_gamma_cdf ~alpha ~beta x =
-  Gsl_cdf.gamma_Pinv ~p:x ~a:alpha ~b:(1. /. beta)
+let inverse_gamma_cdf ~alpha ~beta ?(epsilon = 1e-7) y =
+  let beta = 1. /. beta in
+  (* Check if the provided `y` is below the gamma of some epsilon, so Gsl won't
+   * raise an exception saying the inverse fails to converge in the case of that
+   * gamma_inv(y) is too small.
+   *
+   * y < C(epsilon) <=> Cinv(y) < epsilon *)
+
+  if y < Gsl_cdf.gamma_P ~a:alpha ~b:beta ~x:epsilon then
+    0.
+  else
+    Gsl_cdf.gamma_Pinv ~a:alpha ~b:beta ~p:y
 
 let make_mean_one v =
   let tot = Array.fold_left (+.) 0. v

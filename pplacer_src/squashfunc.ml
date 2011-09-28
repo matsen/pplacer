@@ -13,8 +13,7 @@
 *  - blobim: records the blobs and their indices, for export
 *)
 
-open MapsSets
-open Fam_batteries
+open Ppatteries
 
 module type BLOB =
 sig
@@ -180,7 +179,7 @@ module Squash (B: BLOB) =
     let mimic t blobl =
       let blobim = ref IntMap.empty in
       let set_blob i b = blobim := IntMap.check_add i b (!blobim) in
-      ListFuns.iteri set_blob blobl;
+      List.iteri set_blob blobl;
       let _ =
         Gtree.recur
           (fun i -> function
