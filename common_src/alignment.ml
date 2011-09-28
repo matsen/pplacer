@@ -219,3 +219,5 @@ let identity s1 s2 =
   in
   (if denom = 0 then 0. else (float_of_int num) /. (float_of_int denom)),
   denom
+
+let informative = function '?' | '-' -> false | _ -> true
