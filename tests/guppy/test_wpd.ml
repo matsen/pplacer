@@ -10,7 +10,7 @@ let test exponent results () =
     |> List.sort
     |> List.enum
     |> check_map_approx_equal
-        "unequal (%s and %s)"
+        "unequal (%s(%g) and %s(%g))"
         (List.enum results)
 
 let suite = [

@@ -70,10 +70,18 @@ let to_csv_out ch =
   (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
 let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
 
+let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
+let (|--) f g a b = g (f a b)
+let (|~) = (-|)
+let (||-) f g a = f a || g a
+let (||--) f g a b = f a b || g a b
+let (&&-) f g a = f a && g a
+let (&&--) f g a b = f a b && g a b
 
-let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
+let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
+let (=~) = approx_equal
 
 (* parsing *)
 module Sparse = struct
@@ -468,6 +476,60 @@ module StringFuns = struct
     let new_s = String.make (len+pad_width) c in
     String.blit s 0 new_s pad_width len;
     new_s
+
+end
+
+module EnumFuns = struct
+
+  let n_cartesian_product ll =
+    let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
+    let n = Array.length pool in
+    let indices = Array.make n 0
+    and lengths = Array.map (Array.length |- (+) (-1)) pool in
+    let rec update_indices = function
+      | i when indices.(i) <> lengths.(i) ->
+        indices.(i) <- indices.(i) + 1
+      | 0 -> raise Enum.No_more_elements
+      | i ->
+        indices.(i) <- 0; update_indices (i - 1)
+    in
+    let is_first = ref true in
+    let next () =
+      if !is_first then
+        is_first := false
+      else update_indices (n - 1);
+      Array.map2 Array.get pool indices |> Array.to_list
+    in
+    Enum.from next
+
+  let combinations l r =
+    if r < 0 then
+      invalid_arg "r must be non-negative";
+    let pool = Array.of_list l
+    and indices = Array.init r identity in
+    let n = Array.length pool in
+    let rec next_i = function
+      | i when indices.(i) <> i + n - r -> i
+      | 0 -> raise Enum.No_more_elements
+      | i -> next_i (i - 1)
+    in
+    let is_first = ref true in
+    let next () =
+      if !is_first then
+        is_first := false
+      else begin
+        let i = next_i (r - 1) in
+        indices.(i) <- indices.(i) + 1;
+        for j = i + 1 to r - 1 do indices.(j) <- indices.(j - 1) + 1 done
+      end;
+      Array.to_list indices |> List.map (Array.get pool)
+    in
+    Enum.from next
+
+  let powerset l =
+    1 -- List.length l
+      |> Enum.map (combinations l)
+      |> Enum.flatten
 
 end
 

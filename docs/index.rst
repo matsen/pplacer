@@ -12,6 +12,7 @@ Guppy can do many different things via its subcommand interface, from compressin
    generated_rst/pplacer
    generated_rst/guppy
    generated_rst/rppr
+   scripts
 
 
 .. raw:: html

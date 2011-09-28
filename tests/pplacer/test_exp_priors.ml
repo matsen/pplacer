@@ -15,7 +15,7 @@ let suite = [
       |> Core.prior_mean_map (fun x -> x /. 2.)
     in
     check_map_approx_equal
-      "unequal (%d and %d)"
+      "unequal (%d(%g) and %d(%g))"
       (IntMap.enum prior_map)
       (List.enum [
         0, 1.;

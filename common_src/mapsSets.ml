@@ -180,6 +180,7 @@ sig
   include Set.S
   val of_list: elt list -> t
   val is_disjoint: t -> t -> bool
+  val sdiff: t -> t -> t
   val ppr: Format.formatter -> t -> unit
 end
 
@@ -193,6 +194,9 @@ module BetterSet (OS: Set.S) (PBLE: PPRABLE with type t = OS.elt) : (S with type
       for_all
         (fun e -> not (mem e s2))
         s1
+
+    let sdiff s1 s2 =
+      union (diff s1 s2) (diff s2 s1)
 
     let ppr ff s =
       Format.fprintf ff "@[{";

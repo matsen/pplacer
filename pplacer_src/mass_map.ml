@@ -167,6 +167,15 @@ module Indiv = struct
     IntMap.map
       (List.map (fun v -> {v with mass = v.mass *. scalar}))
 
+  let work_moving_to vl pos =
+    List.fold_left
+      (fun tot {distal_bl; mass} ->
+        abs_float (distal_bl -. pos) *. mass +. tot)
+      0.
+      vl
+
+  let v_mass = List.fold_left (fun tot {mass} -> tot +. mass) 0.
+
   let ppr =
     IntMap.ppr_gen
       (fun ff l ->

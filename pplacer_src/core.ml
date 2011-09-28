@@ -105,14 +105,12 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
     (* the mask array shows true if it's included *)
-    let informative c = c <> '?' && c <> '-' in
-    let mask_arr = Array.map informative query_arr in
-    let masked_query_arr =
-      Array.filteri (fun _ c -> informative c) query_arr in
+    let mask_arr = Array.map Alignment.informative query_arr in
+    let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = ArrayFuns.first informative query_arr
-    and last_informative = ArrayFuns.last informative query_arr in
+    let first_informative = ArrayFuns.first Alignment.informative query_arr
+    and last_informative = ArrayFuns.last Alignment.informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a

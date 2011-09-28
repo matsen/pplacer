@@ -191,10 +191,6 @@ let subtreelist_map f tree =
 let maplist_of_map_and_tree map =
   subtreelist_map (fun i -> IntMap.find i map)
 
-let rec powerset = function
-  | [] -> [[]]
-  | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
-
 (* Cartesian product of a list list. *)
 let product lists =
   let rec aux accum base = function

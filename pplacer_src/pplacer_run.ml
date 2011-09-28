@@ -208,16 +208,26 @@ let run_file prefs query_fname =
         Enum.fold
           (snd
            |- String.enum
-           |- Enum.map (function '-' | '?' -> false | _ -> true)
+           |- Enum.map Alignment.informative
            |- Array.of_enum
            |- Array.map2 (||)
            |> flip)
           initial_mask
           enum
       in
+      let ref_mask = Array.enum ref_align |> mask_of_enum in
+      let overlaps_mask s = String.enum s
+        |> Enum.map Alignment.informative
+        |> curry Enum.combine (Array.enum ref_mask)
+        |> Enum.exists (uncurry (&&))
+      in
+      (try
+         let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
+         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequence." seq)
+       with Not_found -> ());
       let mask = Array.map2
         (&&)
-        (Array.enum ref_align |> mask_of_enum)
+        ref_mask
         (List.enum query_list |> mask_of_enum)
       in
       let masklen = Array.fold_left
