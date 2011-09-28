@@ -205,7 +205,7 @@ let to_json json_state place =
       | _ -> []
     end
     @ begin match place.map_identity with
-      | Some (f, d) -> [Jsontype.Array [Jsontype.Float f; Jsontype.Int d]]
+      | Some (f, d) -> [Jsontype.Float f; Jsontype.Int d]
       | _ -> []
     end)
 
@@ -235,7 +235,13 @@ let of_json fields a =
     post_prob = maybe_get Jsontype.float "post_prob";
     marginal_prob = maybe_get Jsontype.float "marginal_prob";
     classif = maybe_get Tax_id.of_json "classification";
-    map_identity = maybe_get map_identity "map_identity";
+    map_identity =
+      match maybe_get identity "map_ratio",
+        maybe_get identity "map_overlap"
+      with
+        | Some Jsontype.Float x, Some Jsontype.Int y -> Some (x, y)
+        | None, None -> maybe_get map_identity "map_identity"
+        | _, _ -> failwith "malformed map_identity in json";
   }
 
 (* CSV *)

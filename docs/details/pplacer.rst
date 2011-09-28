@@ -162,6 +162,8 @@ Field                 Description
 ``distal_length``     ML distance from the distal side of the edge as a float.
 ``pendant_length``    ML pendant branch length as a float.
 ``classification``    The ``tax_id`` from a reference package as a string.
+``map_ratio``         The percent identity between this sequence and the corresponding MAP sequence.
+``map_overlap``       The number of overlapping sites between this sequence and the corresponding MAP sequence.
 ===================== ===========
 
 For ``guppy`` to be able to load a JSON file, it must have ``edge_num``, ``likelihood``, ``like_weight_ratio``,

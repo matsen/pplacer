@@ -35,6 +35,7 @@
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
+ * Closed GH-92: Added searching and alignment scripts.
  * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
  * Closed GH-96: Now using colors from colorbrewer2.org for heat.
  * Closed GH-98: Added a --map-identity flag to pplacer.
@@ -50,6 +51,10 @@
  * Closed GH-110: Added a --no-early flag to `rppr convexify`.
  * Closed GH-111: Added a script to update reference packages to version 1.1.
  * Closed GH-112: Improved some of pplacer's error messages.
+ * Closed GH-114: Changed MAP identity in placefiles to be stored flat instead
+   of nested.
+ * Closed GH-115: Updated the documentation to reflect changes to the SQL
+   schema in `rppr prep_db`.
  * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
  * Closed GH-117: Added the output of `git describe` to --version output.
  * Closed GH-119: Added a `rppr reroot` subcommand.
@@ -66,7 +71,11 @@
    a corresponding --painted flag to `rppr ref_tree`.
  * Closed GH-138: Removed the --transform flag from everything except `guppy
    mft`; removed the --unweighted flag from commands which don't respect it.
+ * Closed GH-139: Added a check to pplacer to ensure all query sequences have
+   at least some overlap with some reference sequence.
  * Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.
+ * Closed GH-141: Removed `compare_placements.py`; added `check_placements.py`;
+   documented the rest of the python scripts.
  * Closed GH-143: Changed the --leaves argument to `rppr voronoi` to specify
    the number of leaves to keep in the tree instead of the number of leaves to
    prune.
