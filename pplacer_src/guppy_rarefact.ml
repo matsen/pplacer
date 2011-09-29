@@ -13,7 +13,7 @@ object (self)
     super_mass#specl
   @ super_tabular#specl
 
-  method desc = "calculate phylogenetic rarefaction"
+  method desc = "calculates phylogenetic rarefaction curves"
   method usage = "usage: rarefact [options] placefile"
 
   method private placefile_action = function

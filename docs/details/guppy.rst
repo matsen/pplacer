@@ -6,7 +6,7 @@ guppy
 :Title: guppy
 :Version: 1.1
 :License: GPL v3
-:Date: March 2011
+:Date: September 2011
 
 |guppy| is a tool for working with, visualizing, and comparing collections of phylogenetic placements, such as those made by pplacer_ or RAxML's EPA.
 "GUPPY" is an acronym: Grand Unified Phylogenetic Placement Yanalyzer.
@@ -124,12 +124,29 @@ Braces can also be quoted by doubling (e.g. ``{{foo}}`` will become ``{foo}``).
 About multiplicities
 --------------------
 
-The new versions of pplacer and guppy support "multiplicities," i.e. multiple reads being treated as one.
+pplacer and guppy support "multiplicities," i.e. multiple reads being treated as one.
 For example, if some reads are identical, they can be treated as a group.
 Doing so makes guppy operations *much* faster.
 
 By default, they are used "as is" for guppy calculations-- a single placement with multiplicity four is the same as four reads placed individually.
-However, if one would like to decrease the impact of multiplicities on downstream analysis (e.g. if PCR artifacts are suspected) one can use the ``--transform`` option to choose a transform for the multiplicies before use.
+However, if one would like to decrease the impact of multiplicities on downstream analysis (e.g. if PCR artifacts are suspected) one can use the ``--transform`` option of ``mft`` to choose a transform for the multiplicies before use.
+Doing so will convert your placements into labeled masses.
+
+
+'Split' placefiles
+------------------
+
+It's often convenient to split up place files in all sorts of ways, but it's nice not to have to duplicate the information in the placefiles multiple times.
+For that reason, we have introduced "split" placefiles.
+The syntax for these is ``my.jplace:my.csv``, where the CSV file maps from query sequence names to the split placefile name.
+For example, say ``my.csv`` was like::
+
+  "read1","a"
+  "read2","b"
+
+and ``my.jplace`` has placements for read1 and read2.
+Then ``my.jplace:my.csv`` would act like a list of two placefiles named a and b, with read1 and read2, respectively.
+Not every placement name in the place file needs to appear in the CSV file, so you can use this for subsetting.
 
 
 phyloXML viewing notes

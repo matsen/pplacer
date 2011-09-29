@@ -43,7 +43,7 @@ object (self)
       string_flag soln_log;
     ]
 
-  method desc = "find a good collection of sequences to remove from the tree"
+  method desc = "finds a good collection of sequences to cut from ref tree"
   method usage = "usage: voronoi [options] placefile"
 
   method private placefile_action = function

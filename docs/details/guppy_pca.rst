@@ -1,4 +1,4 @@
-Perform edge principal components analysis ("edge PCA").
+Perform `edge principal components`_ analysis ("edge PCA").
 Edge PCA takes the special structure of phylogenetic placement data into account.
 Consequently, it is possible to visualize_ the principal component eigenvectors, and it can find consistent differences between samples which may not be so far apart in the tree.
 
@@ -14,3 +14,4 @@ out.xml
   The eigenvectors visualized as fattened and colored trees.
 
 .. _visualize: http://matsen.fhcrc.org/pplacer/demo/pca.html
+.. _edge principal components: http://arxiv.org/abs/1107.5095
