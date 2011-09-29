@@ -60,24 +60,26 @@ object (self)
   val input_tree = flag "--tree"
     (Needs_argument ("input tree", "A tree file in newick format to work on in place of a reference package."))
   val input_colors = flag "--colors"
-    (Needs_argument ("input colors", "A csv file of the colors on the tree corresponding to --tree."))
+    (Needs_argument ("input colors", "A CSV file of the colors on the tree supplied with --tree."))
 
-  method specl = [
+  method specl =
+  super_refpkg#specl
+  @ [
+    string_flag input_tree;
+    string_flag input_colors;
     string_flag discord_file;
     string_flag cut_seqs_file;
     string_flag alternates_file;
     toggle_flag check_all_ranks;
     int_flag badness_cutoff;
-    toggle_flag use_naive;
-    string_flag timing;
-    toggle_flag no_early;
     string_list_flag limit_ranks;
+    string_flag timing;
     toggle_flag strict;
-    string_flag input_tree;
-    string_flag input_colors;
-  ] @ super_refpkg#specl
+    toggle_flag use_naive;
+    toggle_flag no_early;
+  ]
 
-  method desc = "make the phylogeny in a reference package convex"
+  method desc = "identifies minimal leaf set to cut for taxonomic concordance"
   method usage = "usage: convexify [-c my.refpkg | --tree my.tre --colors my.csv]"
 
   method private discordance_tree fname =

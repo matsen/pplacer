@@ -51,4 +51,4 @@ Sqlite
 ``guppy classify`` can also write its output into a sqlite3 database. The
 argument to the ``--sqlite`` flag is the sqlite3 database into which the
 results should be put. This database must have first been intialized using
-``guppy taxtable``.
+``rppr taxtable``.

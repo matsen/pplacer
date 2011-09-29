@@ -19,7 +19,7 @@ In addition to the tables above, some views are also created:
   all three columns will be NULL.
 * ``multiclass`` -- for each placement, one or more of the best
 
-See the `microbiome demo`_ for some examples of using ``guppy taxtable`` and
+See the `microbiome demo`_ for some examples of using ``rppr taxtable`` and
 ``guppy classify`` together.
 
 Example tables
