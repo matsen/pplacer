@@ -81,7 +81,7 @@ let make_ml_ratio_filter cutoff placement =
 let make_post_prob_filter cutoff placement =
   match placement.post_prob with
   | Some x -> x > cutoff
-  | None -> assert(false)
+  | None -> invalid_arg "make_post_prob_filter"
 
 
 (* *** READING *** *)

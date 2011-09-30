@@ -25,6 +25,9 @@ object (self)
         |> List.cons ["k"; "r"]
         |> self#write_ll_tab
 
-    | _ -> failwith "rarefact takes exactly one placefile"
+    | l ->
+      List.length l
+      |> Printf.sprintf "rarefact takes exactly one placefile (%d given)"
+      |> failwith
 
 end

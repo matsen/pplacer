@@ -40,7 +40,6 @@ object (self)
   method usage = "usage: ref_tree -o my.xml my1.refpkg [my2.refpkg ...]"
 
   method action = function
-    | [] -> ()
     | pathl ->
       let trees = trees_of_refpkg (fv painted) in
       Phyloxml.pxdata_to_channel self#out_channel

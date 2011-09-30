@@ -83,6 +83,15 @@ let (&&--) f g a b = f a b && g a b
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
 
+let get_dir_contents ?pred dir_name =
+  let dirh = Unix.opendir dir_name in
+  Enum.from
+    (fun () ->
+      try Unix.readdir dirh with End_of_file -> raise Enum.No_more_elements)
+  |> Enum.suffix_action (fun () -> Unix.closedir dirh)
+  |> Option.map_default Enum.filter identity pred
+  |> Enum.map (Printf.sprintf "%s/%s" dir_name)
+
 (* parsing *)
 module Sparse = struct
   open Lexing

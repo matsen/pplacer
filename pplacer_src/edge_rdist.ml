@@ -73,7 +73,7 @@ let build_pairwise_dist t =
     | Stree.Node(_, tL) ->
         parallel_set (List.map aux tL);
         u
-    | _ -> assert(false)
+    | Stree.Leaf _ -> failwith "unexpected leaf at root of tree"
 
 (* Find the distance between two locations on the tree. *)
 let find_pairwise_dist rdist_uptri edge1 distal1 edge2 distal2 =
@@ -133,7 +133,7 @@ let build_ca_info t =
     | Stree.Node(_, tL) ->
         parallel_set (List.map (aux 0.) tL) 0.;
         { u = u; v = v; }
-    | _ -> assert(false)
+    | Stree.Leaf _ -> failwith "unexpected leaf at root of tree"
 
 (* find the distance to the common ancestor given info from two placements *)
 let find_ca_dist ca_info (edge1, distal1) (edge2, distal2) =

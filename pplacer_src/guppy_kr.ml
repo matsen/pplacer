@@ -239,8 +239,10 @@ object (self)
 
   method private placefile_action prl =
     match List.length prl with
-    | 0 -> () (* e.g. guppy kr --help *)
-    | 1 -> invalid_arg "can't do KR with only one place file";
-    | _ -> self#nontrivial_placefile_action prl
+      | (0 | 1) as n ->
+        Printf.sprintf "kr requires two or more placefiles (%d given)" n
+        |> failwith
+
+      | _ -> self#nontrivial_placefile_action prl
 
 end

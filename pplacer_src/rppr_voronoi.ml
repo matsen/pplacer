@@ -126,6 +126,9 @@ object (self)
         |> List.of_enum
         |> self#write_ll_tab;
 
-    | _ -> failwith "voronoi takes exactly one placefile"
+    | l ->
+      List.length l
+      |> Printf.sprintf "voronoi takes exactly one placefile (%d given)"
+      |> failwith
 
 end

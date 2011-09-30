@@ -1,5 +1,6 @@
 open Subcommand
 open Guppy_cmdobjs
+open Ppatteries
 
 class cmd () =
 object
@@ -30,6 +31,10 @@ object
           (fv cutoff)
           (fv boot_fname)
           ct_fname)
-    | [] -> () (* e.g. -help *)
-    | _ -> failwith "Please specify exactly one cluster tree for bootviz."
+
+    | l ->
+      List.length l
+      |> Printf.sprintf "bootviz takes exactly one cluster tree (%d given)"
+      |> failwith
+
 end

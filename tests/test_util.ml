@@ -10,12 +10,11 @@ let tests_dir = "./tests/"
 (* *** convenience funs for getting things *** *)
 
 let placeruns_of_dir which =
-  let files = Common_base.get_dir_contents
-    ~pred:(fun name -> Filename.check_suffix name "jplace")
-    (tests_dir ^ "data/" ^ which) in
-  List.map
-    Placerun_io.of_any_file
-    files
+  get_dir_contents
+    ~pred:(flip Filename.check_suffix "jplace")
+    (tests_dir ^ "data/" ^ which)
+  |> Enum.map Placerun_io.of_any_file
+  |> List.of_enum
 
 let placerun_of_dir dir which =
   placeruns_of_dir dir

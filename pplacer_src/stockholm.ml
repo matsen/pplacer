@@ -53,19 +53,22 @@ let parse tokens =
 
         | Needs_footer m, Alignment (name, seq) ->
           let seq = Str.global_replace gap_regexp "-" seq in
-          let l =
-            try
-              SM.find name m
-            with
-              | Not_found -> []
-          in
-          let m = SM.add name (seq :: l) m in
-          Needs_footer m
+          Needs_footer (SM.add_listly name seq m)
         | Needs_footer m, Footer ->
           let l =
             SM.fold
               (fun name seql l ->
-                (name, String.concat "" (List.rev seql)) :: l)
+                let seq = List.rev seql |> String.concat "" in
+                if not (List.is_empty l) then begin
+                  let _, prev_seq = List.hd l in
+                  if String.length seq <> String.length prev_seq then
+                    Printf.sprintf "%s (length %d) doesn't match the previous sequence lengths (%d)"
+                      name
+                      (String.length seq)
+                      (String.length prev_seq)
+                    |> failwith
+                end;
+                (name, seq) :: l)
               m
               []
           in Found_footer l

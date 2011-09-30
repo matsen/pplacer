@@ -95,7 +95,10 @@ let run_file prefs query_fname =
         | path -> Refpkg_parse.strmap_of_path path)
   in
   if not (StringMap.mem "tree" rp_strmap) then
-    failwith "please specify a reference tree with -t or -c";
+    if Prefs.refpkg_path prefs = "" then
+      failwith "please specify a reference tree with -t or -c"
+    else
+      failwith "the reference package provided does not contain a tree";
 
   let ref_tree = StringMap.find "tree" rp_strmap
     |> Newick_gtree.of_file

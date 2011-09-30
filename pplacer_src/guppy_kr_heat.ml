@@ -99,6 +99,10 @@ object (self)
               (my_make_tax_pre pr1)
               (my_make_tax_pre pr2)]
         end)
-  | [] -> () (* e.g. heat -help *)
-  | _ -> failwith "Please specify exactly two place files to make a heat tree."
+
+    | l ->
+      List.length l
+      |> Printf.sprintf "kr_heat takes exactly two placefiles (%d given)"
+      |> failwith
+
 end

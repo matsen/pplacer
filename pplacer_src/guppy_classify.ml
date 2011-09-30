@@ -8,11 +8,10 @@ module TIAMR = AlgMap.AlgMapR (Tax_id.TaxIdMap)
  * the first time that the tax rank is less than or equal to rank *)
 let classify_at_rank td rank ti =
   let rec aux curr_ti =
-    if rank >= Tax_taxonomy.get_tax_rank td curr_ti then curr_ti
+    if rank >= Tax_taxonomy.get_tax_rank td curr_ti then
+      curr_ti
     else
-      aux
-        (try Tax_taxonomy.get_ancestor td curr_ti with
-        | Tax_taxonomy.NoAncestor _ -> assert(false))
+      Tax_taxonomy.get_ancestor td curr_ti |> aux
   in
   aux ti
 
