@@ -58,11 +58,10 @@ end
 let run_file prefs query_fname =
   let timings = ref StringMap.empty in
 
-  if (Prefs.verb_level prefs) >= 1 then
-    Printf.printf
-      "Running pplacer %s analysis on %s...\n"
-      Version.version
-      query_fname;
+  dprintf
+    "Running pplacer %s analysis on %s...\n"
+    Version.version
+    query_fname;
   let ref_dir_complete =
     match Prefs.ref_dir prefs with
       | "" -> ""
@@ -113,17 +112,15 @@ let run_file prefs query_fname =
   in
   let ref_align =
     if ref_list = [] then begin
-      if (Prefs.verb_level prefs) >= 1 then
-        print_endline
-          "Didn't find any reference sequences in given alignment file. \
-          Using supplied reference alignment.";
+      dprint
+        "Didn't find any reference sequences in given alignment file. \
+         Using supplied reference alignment.\n";
       None
     end
     else begin
-      if (Prefs.verb_level prefs) >= 1 then
-        print_endline
-          "Found reference sequences in given alignment file. \
-          Using those for reference alignment.";
+      dprint
+        "Found reference sequences in given alignment file. \
+         Using those for reference alignment.\n";
       let _ = List.fold_left
         (fun seen (seq, _) ->
           if StringSet.mem seq seen then
@@ -154,7 +151,7 @@ let run_file prefs query_fname =
         "Please specify a reference alignment with -r or -c, or include all \
         reference sequences in the primary alignment."
   in
-  if (Prefs.verb_level prefs) >= 2 then begin
+  if !verbosity >= 2 then begin
     print_endline "found in reference alignment: ";
     Array.iter
       (fun (name,_) -> print_endline ("\t'"^name^"'"))
@@ -168,7 +165,7 @@ let run_file prefs query_fname =
       failwith "please specify a tree model with -s or -c"
   in
   if Newick_gtree.has_zero_bls ref_tree then
-    Printf.printf
+    dprint
       "WARNING: your tree has zero pendant branch lengths. \
       This can lead to zero likelihood values which will keep you from being \
       able to place sequences. You can remove identical sequences with \
@@ -199,10 +196,7 @@ let run_file prefs query_fname =
     if Prefs.no_pre_mask prefs then
       query_list, ref_align, n_sites
     else begin
-      if (Prefs.verb_level prefs) >= 1 then begin
-        print_string "Pre-masking sequences... ";
-        flush_all ();
-      end;
+      dprint "Pre-masking sequences... ";
       let initial_mask = Array.make n_sites false in
       let mask_of_enum enum =
         Enum.fold
@@ -246,21 +240,18 @@ let run_file prefs query_fname =
           mask;
         name, seq'
       in
-      if (Prefs.verb_level prefs) >= 1 then begin
-        Printf.printf "sequence length cut from %d to %d." n_sites masklen;
-        print_newline ()
-      end;
+      dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
       if masklen = 0 then
         (print_endline
            "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
          exit 1)
       else if masklen <= 10 then
-        Printf.printf
+        dprintf
           "WARNING: you have %d sites after pre-masking. \
           That means there is very little information in these sequences for placement.\n"
           masklen
       else if masklen <= 100 then
-        Printf.printf
+        dprintf
           "Note: you have %d sites after pre-masking. \
           That means there is rather little information in these sequences for placement.\n"
           masklen;
@@ -304,7 +295,7 @@ let run_file prefs query_fname =
   in
 
   let model = Refpkg.get_model rp in
-  if (Prefs.verb_level prefs) > 0 &&
+  if !verbosity >= 1 &&
     not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
        print_endline Placerun_io.bifurcation_warning;
 
@@ -317,7 +308,7 @@ let run_file prefs query_fname =
   (* pretending *)
   if Prefs.pretend prefs then begin
     Check.pretend model ref_align [query_fname];
-    print_endline "everything looks OK.";
+    dprint "everything looks OK.\n";
     exit 0;
   end;
   (* find all the tree locations *)
@@ -328,10 +319,7 @@ let run_file prefs query_fname =
   if locs = [] then failwith("problem with reference tree: no placement locations.");
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
-  if (Prefs.verb_level prefs) >= 1 then begin
-    print_string "Caching likelihood information on reference tree... ";
-    flush_all ()
-  end;
+  dprint "Caching likelihood information on reference tree... ";
   (* allocate our memory *)
   let darr = Like_stree.glv_arr_for model ref_tree n_sites in
   let parr = Glv_arr.mimic darr
@@ -341,29 +329,22 @@ let run_file prefs query_fname =
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
     util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
     ~util_glv_arr:snodes;
-  if (Prefs.verb_level prefs) >= 1 then
-    print_endline "done.";
+  dprint "done.\n";
   timings := StringMap.add_listly
     "tree likelihood"
     ((Sys.time ()) -. curr_time)
     (!timings);
   (* pull exponents *)
-  if (Prefs.verb_level prefs) >= 1 then begin
-    print_string "Pulling exponents... ";
-    flush_all ();
-  end;
+  dprint "Pulling exponents... ";
   List.iter
     (Glv_arr.iter (Glv.perhaps_pull_exponent (-10)))
     [darr; parr;];
-  print_endline "done.";
+  dprint "done.\n";
   (* baseball calculation *)
   let half_bl_fun loc = (Gtree.get_bl ref_tree loc) /. 2. in
-  if (Prefs.verb_level prefs) >= 1 then begin
-    print_string "Preparing the edges for baseball... ";
-    flush_all ();
-  end;
+  dprint "Preparing the edges for baseball... ";
   Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
-  if (Prefs.verb_level prefs) >= 1 then print_endline "done.";
+  dprint "done.\n";
 
   (* *** check tree likelihood *** *)
   if Prefs.check_like prefs then begin
@@ -425,7 +406,7 @@ let run_file prefs query_fname =
   let queries = List.length query_list in
   let show_query query_name =
     incr n_done;
-    Printf.printf "working on %s (%d/%d)...\n" query_name (!n_done) queries;
+    dprintf "working on %s (%d/%d)...\n" query_name (!n_done) queries;
     flush_all ()
   in
   let progressfunc msg =
@@ -433,7 +414,7 @@ let run_file prefs query_fname =
       let query_name = String.sub msg 1 ((String.length msg) - 1) in
       show_query query_name
     end else
-      Printf.printf "%s\n" msg
+      dprintf "%s\n" msg
   in
   let q = Queue.create () in
   List.iter
@@ -572,11 +553,10 @@ let run_file prefs query_fname =
     and queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq :: rest when not (Pquery.is_placed pq) ->
-        if Prefs.verb_level prefs >= 1 then
-          Printf.printf "warning: %d identical sequences (including %s) were \
-                         unplaced and omitted\n"
-            (Pquery.namel pq |> List.length)
-            (Pquery.name pq);
+        dprintf "warning: %d identical sequences (including %s) were \
+                 unplaced and omitted\n"
+          (Pquery.namel pq |> List.length)
+          (Pquery.name pq);
         gotfunc rest
       | Core.Pquery pq :: rest ->
         let pq = pquery_gotfunc pq in

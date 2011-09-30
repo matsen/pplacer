@@ -48,14 +48,6 @@ let raise_if_different cmp x1 x2 =
   let c = cmp x1 x2 in
   if c <> 0 then raise (Different c)
 
-let time_fun f =
-  let prev = Sys.time () in
-  f ();
-  ((Sys.time ()) -. prev)
-
-let print_time_fun name f =
-  Printf.printf "%s took %g seconds\n" name (time_fun f)
-
 let rec find_zero_pad_width n =
   assert(n>=0);
   if n <= 9 then 1
@@ -82,6 +74,18 @@ let (&&--) f g a b = f a b && g a b
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
+
+let verbosity = ref 1
+let dprintf ?(l = 1) ?(flush = true) fmt =
+  if !verbosity >= l then begin
+    finally (if flush then flush_all else identity) (Printf.printf fmt)
+  end else
+    Printf.fprintf IO.stdnull fmt
+let dprint ?(l = 1) ?(flush = true) s =
+  if !verbosity >= l then begin
+    print_string s;
+    if flush then flush_all ();
+  end
 
 (* parsing *)
 module Sparse = struct

@@ -195,5 +195,7 @@ object (self)
     try
       self#action argl
     with
-      | No_default (name, opt) -> Printf.printf "no option provided for %s flag (%s)\n" name opt
+      | No_default (name, opt) ->
+        Printf.printf "no option provided for %s flag (%s)\n" name opt;
+        exit 1
 end

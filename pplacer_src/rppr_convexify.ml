@@ -194,28 +194,26 @@ object (self)
          |> IntSet.of_enum)
     and cutoff = fv badness_cutoff in
     let leaves = leafset st in
-    Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
+    dprintf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let rank_tax_map = rank_tax_map_of_refpkg rp in
     let nu_f = if fv no_early then None else Some apart_nu in
     let _, results = Enum.fold
       (fun ((rank_cutseqs, data_list) as accum) (rank, taxmap) ->
         let rankname = Tax_taxonomy.get_rank_name td rank in
-        Printf.printf "solving %s" rankname;
-        print_newline ();
+        dprintf "solving %s\n" rankname;
         let _, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
         let cutsetim = IntMap.add (top_id st) ColorSet.empty cutsetim in
         let max_bad, tot_bad = badness cutsetim in
         if max_bad = 0 then begin
-          Printf.printf "  skipping: already convex\n";
+          dprint "  skipping: already convex\n";
           accum
         end else if max_bad > cutoff then begin
-          Printf.printf
+          dprintf
             "  skipping: badness of %d above cutoff threshold\n"
             max_bad;
           accum
         end else begin
-          Printf.printf "  badness: %d max; %d tot" max_bad tot_bad;
-          print_newline ();
+          dprintf "  badness: %d max; %d tot\n" max_bad tot_bad;
           let not_cut, omega, time_delta =
             if fv use_naive then
               let start = Sys.time () in
@@ -232,7 +230,7 @@ object (self)
               let delta = (Sys.time ()) -. start in
               nodeset_of_phi_and_tree phi st, omega, delta
           in
-          Printf.printf "  solved omega: %d\n" omega;
+          dprintf "  solved omega: %d\n" omega;
           let cut_leaves = IntSet.diff leaves not_cut in
           let rank_cutseqs' = IntMap.add
             rank
@@ -293,10 +291,9 @@ object (self)
     if max_bad = 0 then
       print_endline "skipped: already convex"
     else if max_bad > fv badness_cutoff then
-      Printf.printf "skipped: badness of %d above cutoff threshold" max_bad
+      dprintf "skipped: badness of %d above cutoff threshold\n" max_bad
     else begin
-      Printf.printf "badness: %d max; %d tot" max_bad tot_bad;
-      print_newline ();
+      dprintf "badness: %d max; %d tot\n" max_bad tot_bad;
       let not_cut, omega =
         if fv use_naive then
           let not_cut = Naive.solve (colormap, st) in
@@ -305,7 +302,7 @@ object (self)
           let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st) in
           nodeset_of_phi_and_tree phi st, omega
       in
-      Printf.printf "solved omega: %d\n" omega;
+      dprintf "solved omega: %d\n" omega;
       let cut_leaves = IntSet.diff leaves not_cut in
       begin match fvo cut_seqs_file with
         | Some fname ->

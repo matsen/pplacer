@@ -268,5 +268,5 @@ let maybe_of_split_file ?(getfunc = of_any_file) fname =
   else
     [getfunc fname]
 
-let filtered_of_file ?verbose:(verbose=true) fname =
-  Placerun.filter_unplaced ~verbose (of_any_file fname)
+let filtered_of_file fname =
+  Placerun.filter_unplaced (of_any_file fname)

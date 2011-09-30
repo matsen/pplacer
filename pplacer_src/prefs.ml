@@ -31,7 +31,6 @@ type prefs =
     gamma_n_cat : int ref;
     gamma_alpha : float ref;
     (* reading and writing *)
-    verb_level : int ref;
     write_masked : bool ref;
     only_write_best : bool ref;
     (* other *)
@@ -83,7 +82,6 @@ let defaults () =
     gamma_n_cat = ref 1;
     gamma_alpha = ref 1.;
     (* reading and writing *)
-    verb_level = ref 1;
     write_masked = ref false;
     only_write_best = ref false;
     (* other *)
@@ -133,7 +131,6 @@ let emperical_freqs   p = !(p.emperical_freqs)
 let model_name        p = !(p.model_name)
 let gamma_n_cat       p = !(p.gamma_n_cat)
 let gamma_alpha       p = !(p.gamma_alpha)
-let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
 let ref_dir           p = !(p.ref_dir)
@@ -216,7 +213,7 @@ spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
 (* other *)
 "--write-masked", Arg.Set prefs.write_masked,
 "Write alignment masked to the region without gaps in the query.";
-spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
+spec_with_default "--verbosity" (fun o -> Arg.Set_int o) Ppatteries.verbosity
 "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
 "--out-dir", Arg.Set_string prefs.out_dir,
 "Specify the directory to write place files to.";

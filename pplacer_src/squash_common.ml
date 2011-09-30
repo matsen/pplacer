@@ -57,7 +57,7 @@ let number_tree t =
 let ensure_numbered t =
   try let _ = ssim_of_tree t in t with
   | Newick_bark.No_boot ->
-      print_endline "Warning: inserting numbers into internal edges.";
+      dprint "Warning: inserting numbers into internal edges.";
       number_tree t
 
 (* In a rooted tree, each internal node gives a taxon set, which is the set of
