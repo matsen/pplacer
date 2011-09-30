@@ -180,10 +180,6 @@ let check_refpkg_classification rp =
   in
   ()
 
-let check rp name what =
-  print_endline ("Checking "^name^"...");
-  let _ = what rp in ()
-
 let check_tree_and_aln_names tree aln =
   let tns = StringSet.of_list (Newick_gtree.get_name_list tree)
   and ans = StringSet.of_list (Array.to_list (Alignment.get_name_arr aln))
@@ -199,6 +195,10 @@ let check_tree_and_aln_names tree aln =
   test (tns, "tree") (ans, "alignment");
   test (ans, "alignment") (tns, "tree");
   ()
+
+let check rp name what =
+  print_endline ("Checking "^name^"...");
+  let _ = what rp in ()
 
 let check_refpkg rp =
   print_endline ("Checking refpkg "^(get_name rp)^"...");

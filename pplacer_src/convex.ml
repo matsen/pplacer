@@ -529,13 +529,14 @@ let rank_tax_map_of_refpkg rp =
       with
         | Not_found -> None
     end with
-      | Some node ->
+      | Some node -> begin
         let rank = Tax_taxonomy.get_tax_rank td ti in
         let seqmap = IntMap.get rank IntMap.empty rankmap in
         IntMap.add
           rank
           (IntMap.add node ti seqmap)
           rankmap
+      end
       | None -> rankmap
   in
   StringMap.fold
