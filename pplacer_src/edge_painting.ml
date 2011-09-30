@@ -15,13 +15,18 @@ let of_refpkg rp =
     |> Enum.map
         (fun i ->
           let rec aux rank =
-            let cset = IntMap.find rank rankmap |> IntMap.find i in
-            if ColorSet.cardinal cset = 1 then
-              i, ColorSet.choose cset
-            else if rank = 0 then
-              failwith (Printf.sprintf "couldn't evaluate %d" i)
-            else
-              aux (rank - 1)
+            (* XXX this needs checking by Aaron.
+             * We skip things that don't appear in the rank map. *)
+            if IntMap.mem rank rankmap then begin
+              let cset = IntMap.find rank rankmap |> IntMap.find i in
+              if ColorSet.cardinal cset = 1 then
+                i, ColorSet.choose cset
+              else if rank = 0 then
+                failwith (Printf.sprintf "couldn't evaluate %d" i)
+              else
+                aux (rank - 1)
+            end
+            else aux (rank - 1)
           in
           aux highest_rank)
     |> IntMap.of_enum
