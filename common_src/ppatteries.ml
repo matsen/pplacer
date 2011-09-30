@@ -107,6 +107,12 @@ module Sparse = struct
       Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
     | _ -> raise (Invalid_argument "format_error")
 
+  let error_wrap f =
+    try
+      f ()
+    with (Parse_error (_, _, _)) as e ->
+      failwith (format_error e)
+
   let incr_lineno lexbuf =
     let pos = lexbuf.lex_curr_p in
     lexbuf.lex_curr_p <- { pos with

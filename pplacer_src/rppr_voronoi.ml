@@ -17,7 +17,7 @@ object (self)
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
   val leaf_cutoff = flag "--leaves"
-    (Needs_argument ("", "The maximum number of leaves to keep in the tree."))
+    (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
   val leaf_mass = flag "--leaf-mass"
     (Formatted (0.0, "Fraction of mass to be distributed uniformly across leaves. Default %g."))
   val algorithm = flag "--algorithm"
