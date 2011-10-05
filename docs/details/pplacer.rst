@@ -363,7 +363,7 @@ Using these different settings the program reports
 The fantasy mode is invoked by telling pplacer what average likelihood difference you would like via the ``--fantasy`` option.
 You can also tell it to run an evenly-spaced fraction of the query sequences in fantasy mode using the ``--fantasy-frac`` option, which gives you an idea of the optimal run parameters for the rest of the sequences. For example::
 
-  pplacer --maxStrikes 10 --strikeBox 10 --fantasy 0.05 --fantasyFrac 0.02 -r example.fasta...
+  pplacer --max-strikes 10 --strike-box 10 --fantasy 0.05 --fantasy-frac 0.02 -r example.fasta...
 
 says to run pplacer trying all of the combinations of max strikes and strike box up to 10, looking for the optimal combination which will give an average log likelihood difference of 0.05, and running on 2% of the query sequences.
 If, for any reason, you wish to disable baseball playing, simply add ``--max-strikes`` to zero (this also disables the ``--max-pitches`` option).
@@ -374,6 +374,13 @@ You can use R to plot these matrices in a heat-map like fashion like so::
   image(x=c(0:nrow(ba)-1),xlab= "strike box", ylab= "number of strikes", \
      y=c(1:ncol(ba)-1),z=as.matrix(ba), main="batting average")
 
+Note that we have set things up so that turning on posterior probability with ``-p`` now changes the default search parameters to make a deeper search as follows::
+
+  --keep-at-most 20
+  --keep-factor 0.001
+  --max-strikes 20
+
+You can set these to anything you like by using these flags *after* the ``-p``.
 
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
