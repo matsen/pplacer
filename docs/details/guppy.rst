@@ -60,6 +60,8 @@ For example::
 
 These programs are listed with more detail below, and can always be found using ``guppy --cmds`` .
 
+|guppy| can also be invoked as ``guppy --quiet COMMAND [...]``,  which prevents
+the specified command from writing to stdout unless explicitly requested.
 
 Batch mode
 ----------

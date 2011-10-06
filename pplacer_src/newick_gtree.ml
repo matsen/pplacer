@@ -90,7 +90,7 @@ let check_string s =
   let n_open = count_n_occurrences '(' s
   and n_closed = count_n_occurrences ')' s in
   if n_open <> n_closed then
-    Printf.printf "warning: %d open parens and %d closed parens\n" n_open n_closed;
+    dprintf "warning: %d open parens and %d closed parens\n" n_open n_closed;
   ()
 
 let of_lexbuf lexbuf =

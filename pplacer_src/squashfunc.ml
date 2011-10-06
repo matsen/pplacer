@@ -114,7 +114,7 @@ module Squash (B: BLOB) =
         given_distf ~x1:(BMap.find b normm) ~x2:(BMap.find b' normm) b b'
       in
       (* Build up our set of clusterables. *)
-      Printf.printf "Preparing the objects to be clustered...";
+      dprint "Preparing the objects to be clustered...";
       flush_all ();
       let rec init_aux accu = function
         | b::l ->
@@ -128,11 +128,11 @@ module Squash (B: BLOB) =
         | [] -> accu
       in
       let start_cset = init_aux CSet.empty (List.map snd named_blobl) in
-      print_endline "done.";
+      dprint "done.\n";
       (* now actually perform the clustering *)
       (* * Main recursion ** *)
       let rec merge_aux bmap cset free_index normm blobim barkm =
-        Printf.printf "step %d of %d\n" (free_index - n_blobs + 1) n_blobs;
+        dprintf "step %d of %d\n" (free_index - n_blobs + 1) n_blobs;
         flush_all ();
         if CSet.cardinal cset = 0 then begin
           let (_, stree) = get_only_binding bmap in

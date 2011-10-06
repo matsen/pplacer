@@ -57,6 +57,7 @@
    schema in `rppr prep_db`.
  * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
  * Closed GH-117: Added the output of `git describe` to --version output.
+ * Closed Gh-118: Added a --quiet flag to guppy and rppr.
  * Closed GH-119: Added a `rppr reroot` subcommand.
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
  * Closed GH-122: Renamed `rppr taxtable` to `rppr prep_db`.
@@ -69,6 +70,8 @@
  * Closed GH-131: Changed pplacer to set some defaults with the -p flag.
  * Closed GH-133: Added edge painting classification by default to pplacer and
    a corresponding --painted flag to `rppr ref_tree`.
+ * Re-closed GH-133: Added checks for the case when not all ranks are
+   represented by some sequence in the reference package.
  * Closed GH-138: Removed the --transform flag from everything except `guppy
    mft`; removed the --unweighted flag from commands which don't respect it.
  * Closed GH-139: Added a check to pplacer to ensure all query sequences have
@@ -82,6 +85,8 @@
  * Closed GH-144: Changed pplacer to explicitly disallow unplaced sequences
    from being written out; changed `best_classifications and `multiclass` views
    to yield NULL for rows where no placements match all the criteria.
+ * Closed GH-153: Changed `guppy mft` to not squash name lists to mass by
+   default.
 
 
 1.1.alpha08

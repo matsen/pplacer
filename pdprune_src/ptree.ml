@@ -99,7 +99,7 @@ let check pt =
       (fun below ->
         let e = try find pt below with
         | Missing_edge (missing,_) as x ->
-            Printf.printf "%d missing (requested by %d)\n" missing above;
+            dprintf "%d missing (requested by %d)\n" missing above;
             raise x
         in
         check_node our_node below e;

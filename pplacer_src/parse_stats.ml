@@ -23,7 +23,7 @@ let safe_float_of_string s =
 
 let check_version program version known_versions =
   if not (List.mem version known_versions) then
-    Printf.printf
+    dprintf
       "WARNING: your stats file is from %s %s; %s has been tested with the following versions: %s\n"
       program
       version
@@ -208,13 +208,13 @@ let parse_raxml_info version lines prefs =
   | "7.2.7" -> begin
       match find_version_line invocation_line_rex lines with
         | Some _ -> begin
-            print_endline ("parsing a re-estimated RAxML info file.");
+            dprint ("parsing a re-estimated RAxML info file.");
             parse_raxml_re_estimated_info lines prefs
         end
         | None -> parse_raxml_7_2_3_info lines prefs
       end
   | _ ->
-      print_endline "I'm going to try parsing as if this was version 7.2.3";
+      dprint "I'm going to try parsing as if this was version 7.2.3";
       parse_raxml_7_2_3_info lines prefs
 
 
