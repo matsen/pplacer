@@ -176,7 +176,7 @@ let rec mrca td ti1 ti2 =
 
 let list_mrca td = function
   | hd::tl -> List.fold_left (mrca td) hd tl
-  | [] -> assert(false)
+  | [] -> invalid_arg "list_mrca"
 
 (* unused and untested *)
 let count_entries_by_rank td =

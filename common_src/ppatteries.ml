@@ -87,6 +87,15 @@ let dprint ?(l = 1) ?(flush = true) s =
     if flush then flush_all ();
   end
 
+let get_dir_contents ?pred dir_name =
+  let dirh = Unix.opendir dir_name in
+  Enum.from
+    (fun () ->
+      try Unix.readdir dirh with End_of_file -> raise Enum.No_more_elements)
+  |> Enum.suffix_action (fun () -> Unix.closedir dirh)
+  |> Option.map_default Enum.filter identity pred
+  |> Enum.map (Printf.sprintf "%s/%s" dir_name)
+
 (* parsing *)
 module Sparse = struct
   open Lexing
@@ -101,6 +110,12 @@ module Sparse = struct
     | Parse_error (msg, (l1, c1), (l2, c2)) ->
       Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
     | _ -> raise (Invalid_argument "format_error")
+
+  let error_wrap f =
+    try
+      f ()
+    with (Parse_error (_, _, _)) as e ->
+      failwith (format_error e)
 
   let incr_lineno lexbuf =
     let pos = lexbuf.lex_curr_p in

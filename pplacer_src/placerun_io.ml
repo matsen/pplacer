@@ -199,7 +199,7 @@ let ppr_placerun ff pr =
 let split_file_regexp = Str.regexp "^\\(.+\\):\\(.+?\\)$"
 let split_file s =
   if not (Str.string_match split_file_regexp s 0) then
-    invalid_arg "split_file";
+    failwith "csv file provided with no jplace to split";
   Str.matched_group 1 s, Str.matched_group 2 s
 
 let of_any_file fname =

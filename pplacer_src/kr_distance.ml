@@ -39,7 +39,7 @@ let v_list_sum = function
     let v = Array.copy hd in
     List.iter (v_addto v) tl;
     v
-  | [] -> assert(false)
+  | [] -> invalid_arg "v_list_sum"
 
 (* Total up the info from the previous step.
  * note that data_sofar will be modified in place.

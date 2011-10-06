@@ -72,6 +72,8 @@
    a corresponding --painted flag to `rppr ref_tree`.
  * Re-closed GH-133: Added checks for the case when not all ranks are
    represented by some sequence in the reference package.
+ * Closed GH-135: Generally improved error messages in pplacer, guppy, and
+   rppr.
  * Closed GH-138: Removed the --transform flag from everything except `guppy
    mft`; removed the --unweighted flag from commands which don't respect it.
  * Closed GH-139: Added a check to pplacer to ensure all query sequences have

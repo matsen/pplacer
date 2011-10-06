@@ -91,7 +91,10 @@ object (self)
         (Pd.until_stopping safe never_prune_ids criterion pt)
       |> self#write_ll_tab
 
-    | _ -> failwith "pdprune takes exactly one tree"
+    | l ->
+      List.length l
+      |> Printf.sprintf "pdprune takes exactly one tree (%d given)"
+      |> failwith
 
 end
 

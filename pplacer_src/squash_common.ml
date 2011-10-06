@@ -79,7 +79,7 @@ let numnamel_of_csv fname =
         List.assoc "name" l)
       (match (Csv.load fname) with
       | h :: d -> Csv.associate h d
-      | [] -> assert false)
+      | [] -> invalid_arg "numnamel_of_csv: empty csv file")
   with
   | Not_found ->
       failwith ("Couldn't find 'name' and 'number' column headers in "^fname)

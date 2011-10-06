@@ -1,4 +1,4 @@
-(* 
+(*
  * Say we bootstrap a clustering method.
  * If there are samples that don't fit into a tree-like structure, then they
  * will wander about and make all of the bootstrap values low.
@@ -58,7 +58,7 @@ module Make
       | [] -> x
     in
     match startl with
-    | [] -> assert false
+    | [] -> invalid_arg "find_fsmallest"
     | h::t -> aux h (f h) t
 
   (* given a StringSetSet, find the StringSet with the smallest symmetric

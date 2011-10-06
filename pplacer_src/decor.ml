@@ -50,10 +50,10 @@ let triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2) =
 
 (* weight is the weight of a *)
 let color_avg weight c1 c2 =
-  match (c1,c2) with
-  | (Color (r1,g1,b1), Color (r2,g2,b2)) ->
+  match c1, c2 with
+    | Color (r1,g1,b1), Color (r2,g2,b2) ->
       color (triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2))
-  | _ -> assert(false)
+    | _ -> invalid_arg "color_avg"
 
 (*
 (* gray_level is the amount of gray to put in *)

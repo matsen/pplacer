@@ -184,7 +184,7 @@ module Squash (B: BLOB) =
         Gtree.recur
           (fun i -> function
             | [b1; b2] -> let m = B.merge b1 b2 in set_blob i m; m
-            | _ -> assert false)
+            | _ -> invalid_arg "mimic: tree isn't strictly bifurcating")
           (fun i -> IntMap.find i (!blobim))
           t
       in

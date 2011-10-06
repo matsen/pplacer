@@ -28,7 +28,7 @@ let assert_clade x = assert("clade" = Xml.tag x)
 let pcdata_inners_of_xml x =
   match Xml.children x with
   | [pcd] -> Xml.pcdata pcd
-  | _ -> assert false
+  | _ -> invalid_arg "pcdata_inners_of_xml"
 
 let pxtree_of_xml x =
   assert_phylogeny x;
