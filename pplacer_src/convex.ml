@@ -529,14 +529,13 @@ let rank_tax_map_of_refpkg rp =
       with
         | Not_found -> None
     end with
-      | Some node -> begin
+      | Some node ->
         let rank = Tax_taxonomy.get_tax_rank td ti in
         let seqmap = IntMap.get rank IntMap.empty rankmap in
         IntMap.add
           rank
           (IntMap.add node ti seqmap)
           rankmap
-      end
       | None -> rankmap
   in
   StringMap.fold
@@ -547,6 +546,15 @@ let rank_tax_map_of_refpkg rp =
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
     IntMap.empty
+  |> tap (fun m ->
+    Array.iteri
+      (fun rank rankname ->
+        if not (IntMap.mem rank m) then
+          dprintf "warning: rank %s not represented in the lineage of any \
+                   sequence in reference package %s.\n"
+            rankname
+            (Refpkg.get_name rp))
+      td.Tax_taxonomy.rank_names)
 
 let add_color_setly k v m =
   IntMap.add k (CS.add v (IntMap.get k CS.empty m)) m
