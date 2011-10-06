@@ -89,6 +89,8 @@
    to yield NULL for rows where no placements match all the criteria.
  * Closed GH-153: Changed `guppy mft` to not squash name lists to mass by
    default.
+ * Closed GH-155: Changed pplacer to always check for invalid bases when
+   pre-masking sequences.
 
 
 1.1.alpha08
