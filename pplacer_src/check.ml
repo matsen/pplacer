@@ -9,14 +9,14 @@ let pretend (m, i) ref_align query_fnames =
   let module Model = (val m: Glvm.Model) in
   let model = Model.build ref_align i in
   let len = Alignment.length ref_align in
-  Printf.printf "found %d reference sequences of length %d.\n"
+  dprintf "found %d reference sequences of length %d.\n"
     (Alignment.n_seqs ref_align) len;
   let base_map =
     match Model.seq_type model with
     | Alignment.Nucleotide_seq ->
-        print_endline "nucleotide sequences"; Nuc_models.nuc_map
+        dprint "nucleotide sequences\n"; Nuc_models.nuc_map
     | Alignment.Protein_seq ->
-        print_endline "amino acid sequences"; Prot_models.prot_map
+        dprint "amino acid sequences\n"; Prot_models.prot_map
   in
   List.iter
     (fun fname ->
@@ -42,7 +42,7 @@ let pretend (m, i) ref_align query_fnames =
           (0,StringSet.empty)
           (Fasta.of_file fname)
       in
-      Printf.printf "%s: %d sequences.\n" fname size)
+      dprintf "%s: %d sequences.\n" fname size)
     query_fnames
 
 (* check that dir_name is actually a directory *)

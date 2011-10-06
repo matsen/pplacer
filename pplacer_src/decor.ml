@@ -32,6 +32,11 @@ let blue = color (0, 0, 255)
 (* interesting colors *)
 let sand = color (255, 90, 90)
 
+(* Set2 from colorbrewer.org *)
+let brew_orange = color (252, 141, 98)
+let brew_green = color (102, 194, 165)
+let brew_blue = color (141, 160, 203)
+
 (* white is 255, black is 0 *)
 let gray intensity = color (intensity, intensity, intensity)
 
@@ -45,10 +50,10 @@ let triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2) =
 
 (* weight is the weight of a *)
 let color_avg weight c1 c2 =
-  match (c1,c2) with
-  | (Color (r1,g1,b1), Color (r2,g2,b2)) ->
+  match c1, c2 with
+    | Color (r1,g1,b1), Color (r2,g2,b2) ->
       color (triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2))
-  | _ -> assert(false)
+    | _ -> invalid_arg "color_avg"
 
 (*
 (* gray_level is the amount of gray to put in *)

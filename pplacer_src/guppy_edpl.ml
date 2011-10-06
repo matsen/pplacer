@@ -5,7 +5,7 @@ open Guppy_cmdobjs
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd () as super_mass
+  inherit mass_cmd ~weighting_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
 
   val first_only = flag "--first-only"
@@ -22,7 +22,7 @@ object (self)
     ]
 
     method private placefile_action prl =
-      let _, _, criterion = self#mass_opts in
+      let criterion = self#criterion in
       let select_fn =
         if fv first_only then fun x -> [List.hd x]
         else fun x -> x
@@ -36,7 +36,7 @@ object (self)
             (fun pq ->
               List.iter
                 (fun name -> Printf.fprintf ch "%s\t%g\n" name (edpl pq))
-                (select_fn pq.Pquery.namel))
+                (Pquery.namel pq |> select_fn))
             pr.Placerun.pqueries;
           close_out ch;
         )

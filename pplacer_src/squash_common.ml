@@ -57,7 +57,7 @@ let number_tree t =
 let ensure_numbered t =
   try let _ = ssim_of_tree t in t with
   | Newick_bark.No_boot ->
-      print_endline "Warning: inserting numbers into internal edges.";
+      dprint "Warning: inserting numbers into internal edges.";
       number_tree t
 
 (* In a rooted tree, each internal node gives a taxon set, which is the set of
@@ -79,7 +79,7 @@ let numnamel_of_csv fname =
         List.assoc "name" l)
       (match (Csv.load fname) with
       | h :: d -> Csv.associate h d
-      | [] -> assert false)
+      | [] -> invalid_arg "numnamel_of_csv: empty csv file")
   with
   | Not_found ->
       failwith ("Couldn't find 'name' and 'number' column headers in "^fname)

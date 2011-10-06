@@ -5,7 +5,6 @@ open Voronoi
 open Ppatteries
 
 module I = Mass_map.Indiv
-module XXX = Rppr_voronoi
 
 let test_suite_of_gtree_and_expected (gt_string, distr) =
   let gt = Newick_gtree.of_string gt_string in
@@ -127,51 +126,7 @@ let suite = [
       ]
   end;
 
-  "test_kr_voronoi" >:: begin fun () ->
-    let pr = Test_util.placeruns_of_dir "simple"
-      |> List.find (Placerun.get_name |- (=) "test1")
-    in
-    let indiv = I.of_placerun
-      Mass_map.unit_transform
-      Mass_map.Weighted
-      Placement.ml_ratio
-      pr
-    and gt = Placerun.get_ref_tree pr in
-    let v = of_gtree gt in
-    let check_maps = Enum.iter2
-      (fun (k1, v1) (k2, v2) ->
-        (Printf.sprintf "unequal (%d and %d)" k1 k2)
-        @? (k1 = k2 && approx_equal v1 v2))
-    and update_score = Rppr_voronoi.update_score ~gt ~p_exp:1.
-    and indiv_map = partition_indiv_on_leaves v indiv in
-    let score_map = IntSet.enum v.all_leaves
-      |> (update_score indiv_map |> flip |> flip Enum.fold IntMap.empty)
-    in
-    check_maps
-      (IntMap.enum score_map)
-      (List.enum [
-        0, 0.5;
-        1, 1.;
-        3, 0.;
-        4, 0.;
-      ]);
-    let v', updated = uncolor_leaf v 1 in
-    let indiv_map' = partition_indiv_on_leaves v' indiv in
-    let score_map' = IntSet.remove 1 updated
-      |> IntSet.enum
-      |> (update_score indiv_map'
-          |> flip
-          |> flip Enum.fold (IntMap.remove 1 score_map))
-    in
-    check_maps
-      (IntMap.enum score_map')
-      (List.enum [
-        0, 5.;
-        3, 0.;
-        4, 0.;
-      ]);
-
-  end
+  (* XXX add tests for voronoi-based pruning *)
 
 ]
 

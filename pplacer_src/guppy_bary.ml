@@ -5,12 +5,12 @@ open Ppatteries
 let prel_of_prl weighting criterion prl =
   List.map (Mass_map.Pre.of_placerun weighting criterion) prl
 
-let make_bary_tree transform t prel =
+let make_bary_tree t prel =
   let bary_map =
     IntMap.of_pairlist_listly
       (List.mapi
         (fun i pre ->
-          let (loc, pos) = Barycenter.of_pre transform t pre in
+          let (loc, pos) = Barycenter.of_pre t pre in
           (loc,
             (pos,
             Gtree.Internal_node,
@@ -37,7 +37,7 @@ object (self)
 
   method private placefile_action prl =
     let t = Mokaphy_common.list_get_same_tree prl
-    and transform, weighting, criterion = self#mass_opts
+    and weighting, criterion = self#mass_opts
     in
     let prel = prel_of_prl weighting criterion prl
     in
@@ -49,6 +49,6 @@ object (self)
       Phyloxml.named_gtree_to_file
         fname
         (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
-        (make_bary_tree transform t prel)
+        (make_bary_tree t prel)
     end
 end

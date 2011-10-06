@@ -191,10 +191,6 @@ let subtreelist_map f tree =
 let maplist_of_map_and_tree map =
   subtreelist_map (fun i -> IntMap.find i map)
 
-let rec powerset = function
-  | [] -> [[]]
-  | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
-
 (* Cartesian product of a list list. *)
 let product lists =
   let rec aux accum base = function
@@ -550,6 +546,15 @@ let rank_tax_map_of_refpkg rp =
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
     IntMap.empty
+  |> tap (fun m ->
+    Array.iteri
+      (fun rank rankname ->
+        if not (IntMap.mem rank m) then
+          dprintf "warning: rank %s not represented in the lineage of any \
+                   sequence in reference package %s.\n"
+            rankname
+            (Refpkg.get_name rp))
+      td.Tax_taxonomy.rank_names)
 
 let add_color_setly k v m =
   IntMap.add k (CS.add v (IntMap.get k CS.empty m)) m

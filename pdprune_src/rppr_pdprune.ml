@@ -29,7 +29,7 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prunes the tree"
+  method desc = "prune the tree while maximizing PD"
   method usage = "usage: prunetre [options] tree"
 
   method action = function
@@ -91,7 +91,10 @@ object (self)
         (Pd.until_stopping safe never_prune_ids criterion pt)
       |> self#write_ll_tab
 
-    | _ -> failwith "prunetre takes exactly one tree"
+    | l ->
+      List.length l
+      |> Printf.sprintf "pdprune takes exactly one tree (%d given)"
+      |> failwith
 
 end
 

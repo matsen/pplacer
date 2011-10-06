@@ -61,72 +61,22 @@ let warn_about_duplicate_names placerun =
     List.fold_left
       (fun accu name ->
         if StringSet.mem name accu then
-          Printf.printf "Warning: query name %s appears multiple times.\n" name;
+          dprintf "Warning: query name %s appears multiple times.\n" name;
         StringSet.add name accu)
       StringSet.empty
       (List.flatten
-        (List.map
-          (fun pq -> pq.Pquery.namel)
-          (get_pqueries placerun)))
+        (List.map Pquery.namel (get_pqueries placerun)))
   in
   ()
 
-let filter_unplaced ?verbose:(verbose=true) pr =
+let filter_unplaced pr =
   let (placed_l, unplaced_l) =
     List.partition Pquery.is_placed (get_pqueries pr) in
-  if verbose && unplaced_l <> [] then
-    Printf.printf "Warning: Ignoring %d unplaced sequences from %s...\n"
+  if unplaced_l <> [] then
+    dprintf "Warning: Ignoring %d unplaced sequences from %s...\n"
       (List.length unplaced_l)
       (get_name pr);
   { pr with pqueries = placed_l }
-
-(* for each entry of a (name, f) list, make a placerun with the given name and
- * the pqueries that satisfy f *)
-let multifilter named_f_list placerun =
-  let ref_tree = get_ref_tree placerun in
-  List.map2
-    (make ref_tree)
-    (List.map fst named_f_list)
-    (ListFuns.multifilter
-      (List.map snd named_f_list)
-      (get_pqueries placerun))
-
-
-let cutoff_str x = Printf.sprintf "%1.2g" x
-(* let cutoff_str x = Printf.sprintf "%02d" (Base.round (100. *. x)) *)
-
-let cutoff_filter make_name cutoff_fun =
-  multifilter
-    [ (make_name "lt"), (fun pq -> not (cutoff_fun pq));
-      (make_name "ge"), cutoff_fun ]
-
-let re_matches rex s = Str.string_match rex s 0
-
-exception Unimplemented of string
-
-let warn_about_multiple_matches rex_list placerun =
-  let (_,_) = (rex_list, placerun) in
-  raise (Unimplemented "warn_about_multiple_matches")
-  (*
-  List.iter
-    (fun s ->
-      Printf.printf "Warning: multiple match on %s\n" s)
-    (Base.find_multiple_matches
-      (List.map re_matches rex_list)
-      (List.map Pquery.name (get_pqueries placerun)))
-*)
-
-let multifilter_by_regex named_regex_list placerun =
-  let _ = (placerun,named_regex_list) in
-  raise (Unimplemented "multifilter_by_regex")
-  (*
-  multifilter
-    (List.map
-      (fun (name, rex) ->
-        (name, fun pq -> re_matches rex (Pquery.name pq)))
-      named_regex_list)
-    placerun
-    *)
 
 let redup sequence_tbl pr =
   get_pqueries pr
@@ -141,3 +91,8 @@ let redup sequence_tbl pr =
            | Not_found -> pq)
     |> set_pqueries pr
 
+let transform func pr =
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
+    |> set_pqueries pr

@@ -117,14 +117,12 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
     (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
     (* the mask array shows true if it's included *)
-    let informative c = c <> '?' && c <> '-' in
-    let mask_arr = Array.map informative query_arr in
-    let masked_query_arr =
-      Array.filteri (fun _ c -> informative c) query_arr in
+    let mask_arr = Array.map Alignment.informative query_arr in
+    let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = ArrayFuns.first informative query_arr
-    and last_informative = ArrayFuns.last informative query_arr in
+    let first_informative = ArrayFuns.first Alignment.informative query_arr
+    and last_informative = ArrayFuns.last Alignment.informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -222,11 +220,10 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
           let n_like_calls =
             Three_tax.optimize mlo_tolerance (max_pend prefs) max_iter tt
           in
-          if 2 < verb_level prefs then
-            Printf.printf "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
+          dprintf ~l:2 "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
         with
           | Minimization.ExceededMaxIter ->
-            Printf.printf
+            dprintf
               "optimization for %s at %d exceeded maximum number of iterations.\n"
               query_name
               loc;
@@ -267,7 +264,11 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
         with
           (* we need to handle the exception here so that we continue the baseball recursion *)
           | Gsl_error.Gsl_exn(_,warn_str) ->
-            Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" loc query_name warn_str;
+            dprintf
+              "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
+              loc
+              query_name
+              warn_str;
             play_ball like_record n_strikes results rest
       end
       | [] -> results
@@ -307,7 +308,10 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
               (loc, safe_ml_optimize_location final_tolerance loc)
             with
               | Gsl_error.Gsl_exn(_,warn_str) ->
-                Printf.printf "Warning: GSL problem with final branch length optimization for location %d. %s\n" loc warn_str;
+                dprintf
+                  "Warning: GSL problem with final branch length optimization for location %d. %s\n"
+                  loc
+                  warn_str;
                 initial)
           keep_results
       in

@@ -70,7 +70,7 @@ let to_json_file invocation out_fname placerun =
       | Some (has_post_prob, has_classif, has_map_identity) ->
         begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
         @ begin if has_classif then ["classification"] else [] end
-        @ begin if has_map_identity then ["map_identity"] else [] end
+        @ begin if has_map_identity then ["map_ratio"; "map_overlap"] else [] end
     end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
@@ -196,6 +196,12 @@ let to_csv_file out_fname pr =
 let ppr_placerun ff pr =
   Format.fprintf ff "Placerun %s" pr.Placerun.name
 
+let split_file_regexp = Str.regexp "^\\(.+\\):\\(.+?\\)$"
+let split_file s =
+  if not (Str.string_match split_file_regexp s 0) then
+    failwith "csv file provided with no jplace to split";
+  Str.matched_group 1 s, Str.matched_group 2 s
+
 let of_any_file fname =
   if Filename.check_suffix fname ".place" then
     of_file fname
@@ -205,5 +211,62 @@ let of_any_file fname =
   else
     failwith ("unfamiliar suffix on " ^ fname)
 
-let filtered_of_file ?verbose:(verbose=true) fname =
-  Placerun.filter_unplaced ~verbose (of_any_file fname)
+let of_split_file ?(getfunc = of_any_file) fname =
+  let to_split, to_split_with = split_file fname in
+  let to_split' = getfunc to_split
+  and split_data = Csv.load to_split_with in
+  let split_map = List.fold_left
+    (fun accum -> function
+      | [seq_name; group_name] -> StringMap.add seq_name group_name accum
+      | _ -> failwith "malformed row in csv file")
+    StringMap.empty
+    split_data
+  in
+  let split_pqueries = List.fold_left
+    (fun accum pq ->
+      if Pquery.has_single_mult pq then
+        match begin
+          try
+            Some (StringMap.find (Pquery.name pq) split_map)
+          with Not_found -> None
+        end with
+          | Some group -> StringMap.add_listly group pq accum
+          | None -> accum
+      else
+        let groups = List.fold_left
+          (fun accum name ->
+            match begin
+              try
+                Some (StringMap.find name split_map)
+              with Not_found -> None
+            end with
+              | Some group -> StringMap.add_listly group name accum
+              | None -> accum)
+          StringMap.empty
+          (Pquery.namel pq)
+        in
+        StringMap.fold
+          (Pquery.set_namel pq |- flip StringMap.add_listly |> flip)
+          groups
+          accum)
+    StringMap.empty
+    (Placerun.get_pqueries to_split')
+  in
+  StringMap.fold
+    (fun name pqueries accum ->
+      Placerun.make
+        (Placerun.get_ref_tree to_split')
+        name
+        pqueries
+      :: accum)
+    split_pqueries
+    []
+
+let maybe_of_split_file ?(getfunc = of_any_file) fname =
+  if Filename.check_suffix fname ".csv" then
+    of_split_file ~getfunc fname
+  else
+    [getfunc fname]
+
+let filtered_of_file fname =
+  Placerun.filter_unplaced (of_any_file fname)

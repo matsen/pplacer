@@ -11,8 +11,8 @@ object (self)
 
   method specl = super_refpkg#specl @ super_tabular#specl
 
-  method desc = "check a reference package"
-  method usage = "usage: check_refpkg -c my.refpkg"
+  method desc = "gives information about a reference package"
+  method usage = "usage: info -c my.refpkg"
 
   method action _ =
     let rp = self#get_rp in

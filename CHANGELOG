@@ -5,6 +5,13 @@
    placement was on the edge just proximal to an MRCA.
  * Fixed a bug wherein the Newick parser would add a '.' to the end of leaf
    names if the name was an integer.
+ * In fixing a bug, made `guppy diplac` only emit the first name in a pquery in
+   its results.
+ * Added a `multiclass` view and associated parameters to `rppr prep_db`.
+ * Fixed a bug where sometimes placements that fell too close to the root would
+   vanish with the --map-identity flag on.
+ * Fixed identity to give 0% sequence identity in the case of no overlap
+   between sequences.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
@@ -28,8 +35,10 @@
  * Closed GH-90: Added an error message for if pplacer is invoked with no
    arguments.
  * Closed GH-91: Added more documentation to .mli files.
+ * Closed GH-92: Added searching and alignment scripts.
  * Closed GH-94: Improved the leaf selection criteria in `rppr voronoi`.
- * Closed GH-98: Adding a --map-identity flag to pplacer.
+ * Closed GH-96: Now using colors from colorbrewer2.org for heat.
+ * Closed GH-98: Added a --map-identity flag to pplacer.
  * Closed GH-99: Added more examples for guppy batchfiles.
  * Closed GH-101: Added virtual placefiles to guppy batchfiles.
  * Closed GH-103: Added batteries as a dependency.
@@ -42,8 +51,13 @@
  * Closed GH-110: Added a --no-early flag to `rppr convexify`.
  * Closed GH-111: Added a script to update reference packages to version 1.1.
  * Closed GH-112: Improved some of pplacer's error messages.
+ * Closed GH-114: Changed MAP identity in placefiles to be stored flat instead
+   of nested.
+ * Closed GH-115: Updated the documentation to reflect changes to the SQL
+   schema in `rppr prep_db`.
  * Closed GH-116: Added --keep-at-most and --keep-factor flags to pplacer.
  * Closed GH-117: Added the output of `git describe` to --version output.
+ * Closed Gh-118: Added a --quiet flag to guppy and rppr.
  * Closed GH-119: Added a `rppr reroot` subcommand.
  * Closed GH-120: Added a --rank-limit flag to `rppr convexify`.
  * Closed GH-122: Renamed `rppr taxtable` to `rppr prep_db`.
@@ -56,6 +70,25 @@
  * Closed GH-131: Changed pplacer to set some defaults with the -p flag.
  * Closed GH-133: Added edge painting classification by default to pplacer and
    a corresponding --painted flag to `rppr ref_tree`.
+ * Re-closed GH-133: Added checks for the case when not all ranks are
+   represented by some sequence in the reference package.
+ * Closed GH-135: Generally improved error messages in pplacer, guppy, and
+   rppr.
+ * Closed GH-138: Removed the --transform flag from everything except `guppy
+   mft`; removed the --unweighted flag from commands which don't respect it.
+ * Closed GH-139: Added a check to pplacer to ensure all query sequences have
+   at least some overlap with some reference sequence.
+ * Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.
+ * Closed GH-141: Removed `compare_placements.py`; added `check_placements.py`;
+   documented the rest of the python scripts.
+ * Closed GH-143: Changed the --leaves argument to `rppr voronoi` to specify
+   the number of leaves to keep in the tree instead of the number of leaves to
+   prune.
+ * Closed GH-144: Changed pplacer to explicitly disallow unplaced sequences
+   from being written out; changed `best_classifications and `multiclass` views
+   to yield NULL for rows where no placements match all the criteria.
+ * Closed GH-153: Changed `guppy mft` to not squash name lists to mass by
+   default.
 
 
 1.1.alpha08

@@ -60,11 +60,8 @@ let add_pp p ~marginal_prob ~post_prob =
 let add_classif p c = {p with classif = Some c}
 let add_map_identity p i = {p with map_identity = Some i}
 
-let compare_placements criterion rp1 rp2 =
-  compare (criterion rp1) (criterion rp2)
-
 let sort_placecoll criterion pc =
-  List.sort ~cmp:(compare_placements criterion |> flip) pc
+  List.sort ~cmp:(comparing criterion |> flip) pc
 
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc
@@ -84,7 +81,7 @@ let make_ml_ratio_filter cutoff placement =
 let make_post_prob_filter cutoff placement =
   match placement.post_prob with
   | Some x -> x > cutoff
-  | None -> assert(false)
+  | None -> invalid_arg "make_post_prob_filter"
 
 
 (* *** READING *** *)
@@ -208,7 +205,7 @@ let to_json json_state place =
       | _ -> []
     end
     @ begin match place.map_identity with
-      | Some (f, d) -> [Jsontype.Array [Jsontype.Float f; Jsontype.Int d]]
+      | Some (f, d) -> [Jsontype.Float f; Jsontype.Int d]
       | _ -> []
     end)
 
@@ -238,7 +235,13 @@ let of_json fields a =
     post_prob = maybe_get Jsontype.float "post_prob";
     marginal_prob = maybe_get Jsontype.float "marginal_prob";
     classif = maybe_get Tax_id.of_json "classification";
-    map_identity = maybe_get map_identity "map_identity";
+    map_identity =
+      match maybe_get identity "map_ratio",
+        maybe_get identity "map_overlap"
+      with
+        | Some Jsontype.Float x, Some Jsontype.Int y -> Some (x, y)
+        | None, None -> maybe_get map_identity "map_identity"
+        | _, _ -> failwith "malformed map_identity in json";
   }
 
 (* CSV *)

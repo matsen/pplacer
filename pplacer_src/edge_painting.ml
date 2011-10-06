@@ -15,6 +15,7 @@ let of_refpkg rp =
     |> Enum.map
         (fun i ->
           let rec aux rank =
+            if not (IntMap.mem rank rankmap) then aux (rank - 1) else (* ... *)
             let cset = IntMap.find rank rankmap |> IntMap.find i in
             if ColorSet.cardinal cset = 1 then
               i, ColorSet.choose cset

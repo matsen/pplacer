@@ -2,6 +2,8 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
+let epsilon = 1e-10
+
 let merge a x = a := x +. !a
 let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
 
@@ -21,30 +23,31 @@ let total_along_mass gt mass cb =
     (fun () -> ref 0.)
     gt
 
+(* When we're passing along the induced tree, the mass will be on the range
+ * (0, total_mass), and the branch length coefficient should be 1. Otherwise,
+ * we're either before or after the induced tree and the multiplier should
+ * be 0. *)
+let bump_function r =
+  if r = 0. || approx_equal ~epsilon r 1. then 0. else 1.
+
 let pd_of_placerun criterion normalized pr =
   let gt = Placerun.get_ref_tree pr
   and mass = I.of_placerun
-    Mass_map.no_transform
     Mass_map.Unweighted
     criterion
     pr
   in
-  let total_mass = I.total_mass mass in
   total_along_mass
     gt
     mass
-    (* When we're passing along the induced tree, the mass will be on the range
-     * (0, total_mass), and the branch length multiplier should be 1. Otherwise,
-     * we're either before or after the induced tree and the multiplier should
-     * be 0. *)
-    (fun r -> if !r = 0. || approx_equal !r total_mass then 0. else 1.)
+    (fun r -> bump_function !r)
   |> (if not normalized then identity
     else fun pd -> pd /. (Gtree.tree_length gt))
 
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd () as super_mass
+  inherit mass_cmd ~weighting_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 
@@ -60,12 +63,11 @@ object (self)
   method usage = "usage: pd [options] placefile[s]"
 
   method private placefile_action prl =
-    let _, _, criterion = self#mass_opts in
+    let criterion = self#criterion in
     let pd = pd_of_placerun criterion (fv normalized) in
     prl
       |> List.map
           (fun pr -> [Placerun.get_name pr; pd pr |> Printf.sprintf "%g"])
-      |> List.cons ["name"; "pd"]
       |> self#write_ll_tab
 
 end

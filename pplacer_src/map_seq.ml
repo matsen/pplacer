@@ -41,14 +41,12 @@ let mrca_map_seq_map locmap mrcam tree =
     | [] -> accum
     | (top_mrca, tree) :: rest ->
       let i = Stree.top_id tree in
-      let accum' = match top_mrca with
-        | Some top_mrca ->
-          List.fold_left
-            (flip (IntMap.add_listly top_mrca))
-            accum
-            (IntMap.get i [] locmap)
-        | None -> accum
-      and top_mrca' = if IntMap.mem i mrcam then Some i else top_mrca in
+      let accum' =
+        List.fold_left
+          (flip (IntMap.add_listly top_mrca))
+          accum
+          (IntMap.get i [] locmap)
+      and top_mrca' = if IntMap.mem i mrcam then i else top_mrca in
       let rest' = match tree with
         | Stree.Node (_, subtrees) ->
           List.fold_left
@@ -59,4 +57,4 @@ let mrca_map_seq_map locmap mrcam tree =
       in
       aux accum' rest'
   in
-  aux IntMap.empty [None, tree]
+  aux IntMap.empty [Stree.top_id tree, tree]

@@ -10,7 +10,7 @@ let get_common f = function
       let fx = f x in
       List.iter (fun y -> assert(fx = f y)) l;
       fx
-  | [] -> assert(false)
+  | [] -> invalid_arg "get_common"
 
 let get_common_mdims l = get_common mdims l
 let get_common_tdims l = get_common Tensor.dims l

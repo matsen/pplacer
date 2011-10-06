@@ -10,12 +10,11 @@ let tests_dir = "./tests/"
 (* *** convenience funs for getting things *** *)
 
 let placeruns_of_dir which =
-  let files = Common_base.get_dir_contents
-    ~pred:(fun name -> Filename.check_suffix name "jplace")
-    (tests_dir ^ "data/" ^ which) in
-  List.map
-    Placerun_io.of_any_file
-    files
+  get_dir_contents
+    ~pred:(flip Filename.check_suffix "jplace")
+    (tests_dir ^ "data/" ^ which)
+  |> Enum.map Placerun_io.of_any_file
+  |> List.of_enum
 
 let placerun_of_dir dir which =
   placeruns_of_dir dir
@@ -25,7 +24,7 @@ let pres_of_dir weighting criterion which =
   let tbl = Hashtbl.create 10 in
   List.iter
     (fun pr ->
-      let pre = Pre.normalize_mass no_transform (Pre.of_placerun weighting criterion pr) in
+      let pre = Pre.normalize_mass (Pre.of_placerun weighting criterion pr) in
       Hashtbl.add tbl pr.Placerun.name (pr, pre))
     (placeruns_of_dir which);
   tbl
@@ -130,7 +129,7 @@ let ( =@@ ) = farrarr_approx_equal
 
 let check_map_approx_equal message = Enum.iter2
   (fun (k1, v1) (k2, v2) ->
-    (Printf.sprintf message k1 k2)
+    (Printf.sprintf message k1 v1 k2 v2)
     @? (k1 = k2 && approx_equal v1 v2))
 
 (* *** random stuff *** *)

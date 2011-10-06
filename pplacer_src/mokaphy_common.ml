@@ -13,7 +13,7 @@ let chop_suffix_if_present s suff =
 
 (* make sure all the trees in the placerun list are the same *)
 let list_get_same_tree = function
-  | [] -> assert(false)
+  | [] -> invalid_arg "list_get_same_tree"
   | [x] -> Placerun.get_ref_tree x
   | hd::tl -> List.hd (List.map (Placerun.get_same_tree hd) tl)
 

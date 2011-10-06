@@ -17,7 +17,6 @@ object (self)
   method usage = "usage: distmat -o my.tab placefile[s]"
 
   method action = function
-    | [] -> ()
     | pathl ->
        let ff = Format.formatter_of_out_channel self#out_channel in
        List.iter (write_dist_mat ff) (List.map Placerun_io.of_any_file pathl)
