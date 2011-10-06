@@ -20,7 +20,7 @@ object (self)
     string_flag transform;
   ]
 
-  method desc = "filter and transform placefiles"
+  method desc = "Multi-Filter and Transform placefiles"
   method usage = "usage: mft [options] placefile[s]"
 
   method private placefile_action prl =
