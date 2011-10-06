@@ -9,25 +9,14 @@ let of_refpkg rp =
     |> IntMap.map (flip (curry build_sizemim_and_cutsetim) st |- snd)
   in
   let highest_rank, _ = IntMap.max_binding rankmap in
-  let taxonomy = Refpkg.get_taxonomy rp in
   node_ids st
     |> List.enum
     |> Enum.filter ((<>) (top_id st))
     |> Enum.map
         (fun i ->
           let rec aux rank =
-            let taxmap = try IntMap.find rank rankmap with
-             | Not_found ->
-                 failwith(
-                   Printf.sprintf "edge_painting: rank %d = %s missing"
-                     rank
-                     taxonomy.Tax_taxonomy.rank_names.(rank))
-            in
-            let cset =
-             try IntMap.find i taxmap with
-             | Not_found ->
-                 failwith(Printf.sprintf "edge_painting: id %d missing" i)
-            in
+            if not (IntMap.mem rank rankmap) then aux (rank - 1) else (* ... *)
+            let cset = IntMap.find rank rankmap |> IntMap.find i in
             if ColorSet.cardinal cset = 1 then
               i, ColorSet.choose cset
             else if rank = 0 then
