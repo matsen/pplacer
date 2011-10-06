@@ -9,14 +9,18 @@ let of_pql pql =
         |> IntSet.of_enum
       in
       List.fold_left
-        (fun (did_match, accum') (edges, pqs) ->
+        (fun (matches, accum') (edges, pqs) ->
           if IntSet.is_disjoint pq_edges edges then
-            did_match, (edges, pqs) :: accum'
+            matches, (edges, pqs) :: accum'
           else
-            true, (IntSet.union pq_edges edges, pq :: pqs) :: accum')
-        (false, [])
+            Some (match matches with
+              | None -> IntSet.union pq_edges edges, pq :: pqs
+              | Some (prev_edges, prev_pqs) ->
+                IntSet.union prev_edges edges, List.append prev_pqs pqs),
+            accum')
+        (None, [])
         accum
-      |> first (fun b -> if b then None else Some (pq_edges, [pq]))
-      |> uncurry maybe_cons)
+      |> first (Option.default (pq_edges, [pq]))
+      |> uncurry List.cons)
     []
     pql

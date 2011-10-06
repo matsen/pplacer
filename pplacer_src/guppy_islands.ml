@@ -18,8 +18,7 @@ object (self)
       |> List.flatten
       |> Mass_islands.of_pql
       |> List.iteri
-          (fun e (edges, pql) ->
-            IntSet.print ~first:"{" ~sep:", " ~last:"}\n" Int.print stdout edges;
+          (fun e (_, pql) ->
             Placerun.make gt (string_of_int e) pql
               |> self#write_placefile
                   "guppy islands"
