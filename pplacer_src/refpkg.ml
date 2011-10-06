@@ -164,21 +164,25 @@ let mrca_classify rp pr =
     pr
 
 let print_OK start rp =
-  print_endline (start^(get_name rp)^" checks OK!")
+  dprintf "%s%s checks OK!\n" start (get_name rp)
 
 (* make sure all of the tax maps etc are set up *)
 let check_refpkg_classification rp =
-  print_endline "Checking MRCA map...";
+  dprint "Checking MRCA map...\n";
   let mrcam = get_mrcam rp in
-  print_endline "Checking uptree map...";
+  dprint "Checking uptree map...\n";
   let utm = get_uptree_map rp in
-  print_endline "Trying classifications...";
+  dprint "Trying classifications...\n";
   let _ =
     List.map
       (Tax_classify.mrca_classify_loc mrcam utm)
       (Gtree.nonroot_node_ids (get_ref_tree rp))
   in
   ()
+
+let check rp name what =
+  dprintf "Checking %s..." name;
+  let _ = what rp in ()
 
 let check_tree_and_aln_names tree aln =
   let tns = StringSet.of_list (Newick_gtree.get_name_list tree)
@@ -196,12 +200,8 @@ let check_tree_and_aln_names tree aln =
   test (ans, "alignment") (tns, "tree");
   ()
 
-let check rp name what =
-  print_endline ("Checking "^name^"...");
-  let _ = what rp in ()
-
 let check_refpkg rp =
-  print_endline ("Checking refpkg "^(get_name rp)^"...");
+  dprintf "Checking refpkg %s...\n" (get_name rp);
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
   check rp "alignment" get_aln_fasta;

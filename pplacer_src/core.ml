@@ -208,11 +208,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
           let n_like_calls =
             Three_tax.optimize mlo_tolerance (max_pend prefs) max_iter tt
           in
-          if 2 < verb_level prefs then
-            Printf.printf "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
+          dprintf ~l:2 "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
         with
           | Minimization.ExceededMaxIter ->
-            Printf.printf
+            dprintf
               "optimization for %s at %d exceeded maximum number of iterations.\n"
               query_name
               loc;
@@ -253,7 +252,11 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
         with
           (* we need to handle the exception here so that we continue the baseball recursion *)
           | Gsl_error.Gsl_exn(_,warn_str) ->
-            Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" loc query_name warn_str;
+            dprintf
+              "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
+              loc
+              query_name
+              warn_str;
             play_ball like_record n_strikes results rest
       end
       | [] -> results
@@ -293,7 +296,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
               (loc, safe_ml_optimize_location final_tolerance loc)
             with
               | Gsl_error.Gsl_exn(_,warn_str) ->
-                Printf.printf "Warning: GSL problem with final branch length optimization for location %d. %s\n" loc warn_str;
+                dprintf
+                  "Warning: GSL problem with final branch length optimization for location %d. %s\n"
+                  loc
+                  warn_str;
                 initial)
           keep_results
       in

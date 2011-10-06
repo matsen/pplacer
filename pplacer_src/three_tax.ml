@@ -167,7 +167,7 @@ let calc_marg_prob prior rel_err max_pend tt =
   in
   let rec perform upper_limit =
     if !n_exceptions >= max_n_exceptions then begin
-      Printf.printf
+      dprintf
         "Warning: integration did not converge after changing bounds %d times\n"
         max_n_exceptions;
       base_ll (* return the base LL *)

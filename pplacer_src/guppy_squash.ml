@@ -171,7 +171,7 @@ object (self)
       let pad_width = find_zero_pad_width nboot in
       let rng = self#rng in
       for i=1 to nboot do
-        Printf.printf "running bootstrap %d of %d\n" i nboot;
+        dprintf "running bootstrap %d of %d\n" i nboot;
         let boot_prl = List.map (Bootstrap.boot_placerun rng) prl in
         let (_, cluster_t, _) = our_make_cluster refpkgo mode_str boot_prl in
         Newick_gtree.to_file
