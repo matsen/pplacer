@@ -230,3 +230,12 @@ let multi_dist ?(normalization=1.) ref_tree p ml =
     (fun () -> Array.copy starter_kr_v)
     (Gtree.get_stree ref_tree)
   |> Uptri.map (fun v -> (v /. normalization) ** (outer_exponent p))
+
+let scaled_multi_dist_of_pres ?(normalization=1.) p t prel =
+  multi_dist ~normalization t p
+    (List.map
+       (fun pre ->
+         Mass_map.Indiv.of_pre
+           ~factor:(1. /. Mass_map.Pre.total_mass pre)
+           pre)
+       prel)
