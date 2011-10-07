@@ -21,7 +21,7 @@ let total_along_mass gt mass cb =
     (const ())
     lmerge
     (fun () -> ref 0.)
-    gt
+    (Gtree.get_stree gt)
 
 (* When we're passing along the induced tree, the mass will be on the range
  * (0, total_mass), and the branch length coefficient should be 1. Otherwise,
@@ -40,7 +40,7 @@ let pd_of_placerun criterion normalized pr =
   total_along_mass
     gt
     mass
-    (fun r -> bump_function !r)
+    (fun r bl -> bump_function !r *. bl)
   |> (if not normalized then identity
     else fun pd -> pd /. (Gtree.tree_length gt))
 

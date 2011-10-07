@@ -113,8 +113,8 @@ let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
       (* xi is
        * \sum_i G_i(u) \eta_i - \frac{1}{m+n} (\sum_i G_i(u)) (\sum_i \eta_i)
        * \omega(u) - \sigma(u) \frac{1}{m+n} (\sum_i \eta_i) *)
-      let to_xi_p p data =
-        (abs_float ((get_omega data) -. (get_sigma data) *. sample_avg)) ** p in
+      let to_xi_p p data bl =
+        ((abs_float ((get_omega data) -. (get_sigma data) *. sample_avg)) ** p) *. bl in
       (* The total for a single edge. *)
       let edge_total id =
         Kr_distance.total_along_edge
@@ -136,6 +136,6 @@ let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
           check_final_data
           intermediate_list_sum
           (fun () -> { omega = ref 0.; sigma = ref 0.; })
-          t)
+          (Gtree.get_stree t))
         /. normalization)
         ** (Kr_distance.outer_exponent p))

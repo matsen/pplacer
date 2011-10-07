@@ -22,7 +22,7 @@ let wpd_of_placerun exponent criterion pr =
   Guppy_pd.total_along_mass
     (Placerun.get_ref_tree pr)
     mass_map
-    (fun r -> min (f !r) (f (reflect !r)))
+    (fun r bl -> min (f !r) (f (reflect !r)) *. bl)
 
 class cmd () =
 object (self)

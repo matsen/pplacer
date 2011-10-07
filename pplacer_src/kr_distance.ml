@@ -25,7 +25,7 @@ let outer_exponent p =
   else 1. /. p
 
 (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
-let exp_kr_diff p kr_v = (abs_float (kr_v.(0) -. kr_v.(1))) ** p
+let exp_kr_diff p kr_v bl = ((abs_float (kr_v.(0) -. kr_v.(1))) ** p) *. bl
 
 (* add v2 to v1 (which is modified in place) *)
 let v_addto v1 v2 =
@@ -53,14 +53,17 @@ let v_list_sum = function
  * is what ocaml infers, but update_data is actually 'a -> 'b -> unit, as
  * update_data modifies in place.
  * *)
-let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_data =
+let general_total_along_edge:
+    ('a -> float -> 'b) -> merge_r:('b -> 'b -> 'b) -> float -> (float * 'c) list ->
+    ('a -> 'c -> unit) -> 'b -> 'a -> 'b * 'a
+= fun data_to_r ~merge_r bl data_info_list update_data prev_subtot start_data ->
   let rec aux ~subtotal ~prev_a data_sofar data_info_list =
     (* next_subtotal actually adds on the segment length times data_to_r of the
      * kr vector *)
     let next_subtotal a =
       let seg_len = a -. prev_a in
       assert(seg_len >= 0.);
-      subtotal+.seg_len*.(data_to_r data_sofar)
+      data_to_r data_sofar seg_len |> merge_r subtotal
     in
     match data_info_list with
     (* a is the location of the location of the data along the edge *)
@@ -87,27 +90,46 @@ let total_along_edge data_to_r bl data_info_list update_data prev_subtot start_d
  * functional approach is that then the number of allocations is linear in only
  * the size of the tree, rather than depending on the number of placements.
  * *)
-let total_over_tree curried_edge_total
-                    check_final_data
-                    data_list_sum
-                    starter_data_factory
-                    ref_tree =
+let general_total_over_tree:
+    (int -> 'b -> 'a -> 'b * 'a) -> ('a -> unit) ->
+    r_list_sum:('b list -> 'b) -> ('a list -> 'a) ->
+    starter_r_factory:(unit -> 'b) -> (unit -> 'a) ->
+    Stree.t -> 'b
+= fun curried_edge_total
+      check_final_data
+      ~r_list_sum
+      data_list_sum
+      ~starter_r_factory
+      starter_data_factory
+      ref_tree
+->
   let (grand_total, final_data) =
     Stree.recur
       (fun id below_list -> (* the node recurrence *)
         curried_edge_total
           id
-          (List.fold_right ( +. ) (List.map fst below_list) 0.) (* prev subtot *)
+          (r_list_sum (List.map fst below_list)) (* prev subtot *)
           (data_list_sum (List.map snd below_list))) (* total of below kr_infos *)
       (fun id -> (* the leaf recurrence *)
         curried_edge_total
           id
-          0.
+          (starter_r_factory ())
           (starter_data_factory ()))
-      (Gtree.get_stree ref_tree)
+      ref_tree
   in
   check_final_data final_data;
   grand_total
+
+(* woooo eta expansion *)
+let total_along_edge a b c d e f =
+  general_total_along_edge
+    ~merge_r:(+.)
+    a b c d e f
+let total_over_tree a b c d e =
+  general_total_over_tree
+    ~r_list_sum:(List.fold_left (+.) 0.)
+    ~starter_r_factory:(const 0.)
+    a b c d e
 
 (* combine two float list IntMaps into a single float 2-array list IntMap.
  * The latter is the input for the KR distance function. *)
@@ -147,7 +169,7 @@ let dist ?(normalization=1.) ref_tree p m1 m2 =
       check_final_kr
       v_list_sum
       (fun () -> Array.copy starter_kr_v)
-      ref_tree)
+      (Gtree.get_stree ref_tree))
     /. normalization)
   ** (outer_exponent p)
 
