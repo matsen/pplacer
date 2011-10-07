@@ -137,4 +137,15 @@ let make_map_by_best_loc criterion pquery_list =
       ~val_f:(fun x -> x)
       placed_l)
 
-
+let merge_into pq pql =
+  match pq.namlom with
+    | Name_list my_namel ->
+      List.map namel pql
+      |> List.cons my_namel
+      |> List.flatten
+      |> set_namel pq
+    | Named_float (_, m) ->
+      List.map multiplicity pql
+      |> List.cons m
+      |> List.fsum
+      |> set_mass pq
