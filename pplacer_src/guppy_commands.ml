@@ -37,5 +37,6 @@ let command_list () =
       "diplac", (fun () -> new Guppy_diplac.cmd ());
       "mft", (fun () -> new Guppy_mft.cmd ());
       "islands", (fun () -> new Guppy_islands.cmd ());
+      "compress", (fun () -> new Guppy_compress.cmd ());
     ];
   ]

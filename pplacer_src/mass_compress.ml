@@ -41,3 +41,4 @@ let of_placerun ?(p = 1.) ~c weighting criterion pr =
       aux accum' nodem'
     in
     IntMap.map IntSet.of_list !nodem |> aux [])
+  |> List.flatten
