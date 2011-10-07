@@ -134,24 +134,33 @@ let total_over_tree a b c d e =
 (* combine two float list IntMaps into a single float 2-array list IntMap.
  * The latter is the input for the KR distance function. *)
 module I = Mass_map.Indiv
-let make_kr_map m1 m2 =
-  let process_map f =
-    IntMap.map
-      (List.map
-         (fun {I.distal_bl = dist_bl; I.mass = mass} -> (dist_bl, f mass)))
-  in
-  IntMap.map
-    List.sort
-    (combine_list_intmaps
-    [
-      process_map (fun mass -> [|mass; 0.|]) m1;
-      process_map (fun mass -> [|0.; mass|]) m2;
-    ])
+
+let some x = Some x
+let make_n_kr_map ml =
+  let ll = List.length ml in
+  let arr e v = let a = Array.make ll 0. in a.(e) <- v; a in
+  List.fold_left
+    (fun (e, accum) cur ->
+      succ e,
+      IntMap.merge
+        (fun _ ao bo ->
+          Option.map_default
+            (List.map
+               (fun {I.distal_bl; I.mass} -> distal_bl, arr e mass))
+            []
+            bo
+          |> List.merge (comparing fst) (Option.default [] ao)
+          |> some)
+        accum
+        (I.sort cur))
+    (0, IntMap.empty)
+    ml
+  |> snd
 
 (* Z_p distance between two Indiv mass maps *)
 let dist ?(normalization=1.) ref_tree p m1 m2 =
   let starter_kr_v = [|0.; 0.|]
-  and kr_map = make_kr_map m1 m2 in
+  and kr_map = make_n_kr_map [m1; m2] in
   let kr_edge_total id =
     total_along_edge
       (exp_kr_diff p)
@@ -187,3 +196,37 @@ let scaled_dist_of_pres ?(normalization=1.) p t pre1 pre2 =
     ~x1:(1. /. Mass_map.Pre.total_mass pre1)
     ~x2:(1. /. Mass_map.Pre.total_mass pre2)
     ~pre1 ~pre2
+
+
+let uptri_exp_kr_diff p kr_v bl =
+  Uptri.init
+    (Array.length kr_v)
+    (fun i j -> ((abs_float (kr_v.(i) -. kr_v.(j))) ** p) *. bl)
+
+(* Z_p distance between two Indiv mass maps *)
+let multi_dist ?(normalization=1.) ref_tree p ml =
+  let starter_kr_v = Array.make (List.length ml) 0. in
+  let starter_kr_uptri = Uptri.create (Array.length starter_kr_v) 0.
+  and kr_map = make_n_kr_map ml in
+  let kr_edge_total id =
+    general_total_along_edge
+      ~merge_r:(Uptri.apply_pairwise (+.))
+      (uptri_exp_kr_diff p)
+      (Gtree.get_bl ref_tree id)
+      (IntMap.get id [] kr_map)
+      v_addto
+  (* make sure that the kr_v totals to zero *)
+  and check_final_kr final_kr_v =
+    let final_kr_diff = final_kr_v.(0) -. final_kr_v.(1) in
+    if abs_float final_kr_diff > tol then
+      raise (Total_kr_not_zero final_kr_diff)
+  in
+  general_total_over_tree
+    kr_edge_total
+    check_final_kr
+    ~r_list_sum:(List.fold_left (Uptri.apply_pairwise (+.)) starter_kr_uptri)
+    v_list_sum
+    ~starter_r_factory:(fun () -> Uptri.copy starter_kr_uptri)
+    (fun () -> Array.copy starter_kr_v)
+    (Gtree.get_stree ref_tree)
+  |> Uptri.map (fun v -> (v /. normalization) ** (outer_exponent p))
