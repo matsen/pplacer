@@ -68,6 +68,7 @@ let row u i = Array.init (u.dim-i-1) (fun j -> get u i (j+1+i))
 let fold_left f s u = Array.fold_left f s u.data
 let map f u = {u with data = Array.map f u.data}
 let iter f u = Array.iter f u.data
+let copy u = {u with data = Array.copy u.data}
 
 let iterij f u =
   Array.iteri

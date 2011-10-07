@@ -69,6 +69,13 @@ let simple_expected = [
   ]);
 ]
 
+(* uptri versions of the previous data *)
+let multi_dist_expected = [
+  0.5, [|0.686887; 0.319036; 0.367851|];
+  1.0, [|0.583333; 0.25; 0.333333|];
+  2.0, [|0.677003; 0.408248; 0.540062|];
+]
+
 let psbA_expected = [
   (0.5, [
     ("DCM", "coastal", 0.085899);
@@ -194,4 +201,22 @@ let matrix_suite =
 let suite =
   predefined_suite
   @ matrix_suite
-
+  @ [
+    "multi_dist_test" >:: begin fun () ->
+      let prl = placeruns_of_dir "simple" in
+      let gt = Mokaphy_common.list_get_same_tree prl in
+      let prel = List.map
+        (Mass_map.Pre.of_placerun Mass_map.Weighted Placement.ml_ratio)
+        prl
+      and normalization = Gtree.tree_length gt in
+      List.iter
+        (fun (p, expected) ->
+          (Printf.sprintf "exponent %g doesn't match" p)
+          @? (Array.for_all2
+                approx_equal
+                (Kr_distance.scaled_multi_dist_of_pres ~normalization p gt prel
+                 |> Uptri.to_array)
+                expected))
+        multi_dist_expected
+    end;
+  ]
