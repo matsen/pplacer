@@ -24,6 +24,7 @@ let of_placerun ?(p = 1.) ~c weighting criterion pr =
       done;
     done;
     let rec aux accum nodem =
+      if IntMap.is_empty nodem then accum else (* ... *)
       let w, xs = IntMap.enum nodem |> Enum.arg_max (snd |- IntSet.cardinal) in
       if IntSet.is_empty xs then accum else (* ... *)
       let all_touching = IntSet.add w xs in
