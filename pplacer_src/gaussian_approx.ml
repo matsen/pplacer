@@ -113,12 +113,12 @@ let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
       (* xi is
        * \sum_i G_i(u) \eta_i - \frac{1}{m+n} (\sum_i G_i(u)) (\sum_i \eta_i)
        * \omega(u) - \sigma(u) \frac{1}{m+n} (\sum_i \eta_i) *)
-      let to_xi_p p data bl =
+      let to_xi_p_times_bl p data bl =
         ((abs_float ((get_omega data) -. (get_sigma data) *. sample_avg)) ** p) *. bl in
       (* The total for a single edge. *)
       let edge_total id =
         Kr_distance.total_along_edge
-          (to_xi_p p)
+          (to_xi_p_times_bl p)
           (Gtree.get_bl t id)
           labeled_mass_arr.(id)
           update_data

@@ -25,7 +25,7 @@ let outer_exponent p =
   else 1. /. p
 
 (* exp_kr_diff is the difference of the two prob dists to the pth pow *)
-let exp_kr_diff p kr_v bl = ((abs_float (kr_v.(0) -. kr_v.(1))) ** p) *. bl
+let exp_kr_diff_times_bl p kr_v bl = ((abs_float (kr_v.(0) -. kr_v.(1))) ** p) *. bl
 
 (* add v2 to v1 (which is modified in place) *)
 let v_addto v1 v2 =
@@ -43,16 +43,10 @@ let v_list_sum = function
 
 (* Total up the info from the previous step.
  * note that data_sofar will be modified in place.
- * data_to_r: takes the kr info vector and turns it into a real number
+ * data_to_r: takes the kr info vector and turns it into a result
+ * merge_r: combine two results
  * data_info_list: list of (distal_bl, data)
- *
- * Signature is
-('a -> float) -> float -> (float * 'b) list -> ('a -> 'b -> 'c) -> float ->     'a          -> float * 'a
- data_to_r       bl       data_info_list        update_data        prev_subtot  start_data
- *
- * is what ocaml infers, but update_data is actually 'a -> 'b -> unit, as
- * update_data modifies in place.
- * *)
+ *)
 let general_total_along_edge:
     ('a -> float -> 'b) -> merge_r:('b -> 'b -> 'b) -> float -> (float * 'c) list ->
     ('a -> 'c -> unit) -> 'b -> 'a -> 'b * 'a
@@ -85,7 +79,9 @@ let general_total_along_edge:
 
 (* total some data over the tree, which can be combined from subtrees using
  * data_list_sum, and can be totaled across edges using curried_edge_total, and
- * starts at leaves with starter_data_factory.
+ * starts at leaves with starter_data_factory. the result starts at
+ * starter_r_factory and is passed to curried_edge_total and totalled across
+ * nodes using r_list_sum.
  * the reason why we use starter_data_factory rather than doing a fully
  * functional approach is that then the number of allocations is linear in only
  * the size of the tree, rather than depending on the number of placements.
@@ -131,11 +127,11 @@ let total_over_tree a b c d e =
     ~starter_r_factory:(const 0.)
     a b c d e
 
-(* combine two float list IntMaps into a single float 2-array list IntMap.
- * The latter is the input for the KR distance function. *)
 module I = Mass_map.Indiv
 
 let some x = Some x
+(* N Indiv.v list IntMaps -> (float * float N-array) list IntMap.
+ * The latter is the input for the KR distance function. *)
 let make_n_kr_map ml =
   let ll = List.length ml in
   let arr e v = let a = Array.make ll 0. in a.(e) <- v; a in
@@ -163,7 +159,7 @@ let dist ?(normalization=1.) ref_tree p m1 m2 =
   and kr_map = make_n_kr_map [m1; m2] in
   let kr_edge_total id =
     total_along_edge
-      (exp_kr_diff p)
+      (exp_kr_diff_times_bl p)
       (Gtree.get_bl ref_tree id)
       (IntMap.get id [] kr_map)
       v_addto
@@ -198,7 +194,7 @@ let scaled_dist_of_pres ?(normalization=1.) p t pre1 pre2 =
     ~pre1 ~pre2
 
 
-let uptri_exp_kr_diff p kr_v bl =
+let uptri_exp_kr_diff_times_bl p kr_v bl =
   Uptri.init
     (Array.length kr_v)
     (fun i j -> ((abs_float (kr_v.(i) -. kr_v.(j))) ** p) *. bl)
@@ -211,15 +207,17 @@ let multi_dist ?(normalization=1.) ref_tree p ml =
   let kr_edge_total id =
     general_total_along_edge
       ~merge_r:(Uptri.apply_pairwise (+.))
-      (uptri_exp_kr_diff p)
+      (uptri_exp_kr_diff_times_bl p)
       (Gtree.get_bl ref_tree id)
       (IntMap.get id [] kr_map)
       v_addto
-  (* make sure that the kr_v totals to zero *)
+  (* make sure that every pair of kr_v totals are equal *)
   and check_final_kr final_kr_v =
-    let final_kr_diff = final_kr_v.(0) -. final_kr_v.(1) in
-    if abs_float final_kr_diff > tol then
-      raise (Total_kr_not_zero final_kr_diff)
+    Array.to_list final_kr_v
+      |> ListFuns.list_iter_over_pairs_of_single
+          (fun x y ->
+            if not (approx_equal x y) then
+              raise (Total_kr_not_zero (x -. y)))
   in
   general_total_over_tree
     kr_edge_total
