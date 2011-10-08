@@ -188,8 +188,7 @@ struct
     let bounded_logdot utilv_nsites x y start last =
       assert(dims x = dims y);
       assert(start >= 0 && start <= last && last < get_n_sites x);
-      (Linear.mat_bounded_logdot
-         x.a y.a start last utilv_nsites)
+      (Linear.mat_bounded_logdot x.a y.a start last utilv_nsites)
       +. (log_of_2 *. ((bounded_total_twoexp x.e start last) +.
                           (bounded_total_twoexp y.e start last)))
 

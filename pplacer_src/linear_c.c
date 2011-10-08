@@ -253,58 +253,45 @@ CAMLprim value mat_statd_pairwise_prod_c(value statd_value, value dst_value, val
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value, value util_value)
+CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value)
 {
-  CAMLparam5(x_value, y_value, first_value, last_value, util_value);
+  CAMLparam4(x_value, y_value, first_value, last_value);
   CAMLlocal1(ml_ll_tot);
   double *x = Data_bigarray_val(x_value);
   double *y = Data_bigarray_val(y_value);
   int first = Int_val(first_value);
   int last = Int_val(last_value);
-  double *util = Data_bigarray_val(util_value);
+  int n_used = 1 + last - first;
   int n_states = Bigarray_val(x_value)->dim[1];
   int site, state;
-  int n_used = 1 + last - first;
-  /* we make pointers to x, y, and util so that we can do pointer arithmetic
-   * and then return to where we started. */
-  double *x_p, *y_p;
-  // now we clear it out to n_used
-  for(site=0; site < n_used; site++) { util[site] = 0.0; }
-  // gets us "first" entries down
-  int boost = first * n_states;
-  x_p = x + boost;
-  y_p = y + boost;
+  double util, ll_tot=0;
+  // start at the beginning
+  x += first * n_states;
+  y += first * n_states;
+  // calculate
   if(n_states == 4) {
     for(site=0; site < n_used; site++) {
-      for(state=0; state < 4; state++) {
-        *util += x_p[state] * y_p[state];
-      }
-      x_p += 4; y_p += 4;
-      util++;
+      util=0;
+      for(state=0; state < 4; state++) { util += x[state] * y[state]; }
+      x += n_states; y += n_states;
+      ll_tot += log(util);
     }
   }
   else if(n_states == 20) {
     for(site=0; site < n_used; site++) {
-      for(state=0; state < 20; state++) {
-        *util += x_p[state] * y_p[state];
-      }
-      x_p += 20; y_p += 20;
-      util++;
+      util=0;
+      for(state=0; state < 20; state++) { util += x[state] * y[state]; }
+      x += n_states; y += n_states;
+      ll_tot += log(util);
     }
   }
   else {
     for(site=0; site < n_used; site++) {
-      for(state=0; state < n_states; state++) {
-        *util += x_p[state] * y_p[state];
-      }
-      x_p += n_states; y_p += n_states;
-      util++;
+      util=0;
+      for(state=0; state < n_states; state++) { util += x[state] * y[state]; }
+      x += n_states; y += n_states;
+      ll_tot += log(util);
     }
-  }
-  // now total up the likes from the util vector
-  double ll_tot=0;
-  for(site=0; site < n_used; site++) {
-    ll_tot += log(util[site]);
   }
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
