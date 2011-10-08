@@ -24,7 +24,7 @@ external dediagonalize : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_vector.ve
 external mat_print : Gsl_matrix.matrix -> unit = "mat_print_c"
 
 (* statd x y z util *)
-external mat_log_like3 : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_vector.vector -> float = "mat_log_like3_c"
+external mat_log_like3 : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> float = "mat_log_like3_c"
 
 (* dst x y *)
 external mat_pairwise_prod : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> unit = "mat_pairwise_prod_c"

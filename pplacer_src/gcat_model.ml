@@ -260,14 +260,14 @@ struct
 
 
   (* take the log like of the product of three things then dot with the stationary
-   * distribution. *)
-  let log_like3 model utilv_nsites x y z =
+   * distribution. Here we ignore utilv_nsites, as we don't need it for
+   * mat_log_like3. *)
+  let log_like3 model _ x y z =
     assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
     (Linear.mat_log_like3 (statd model)
        x.Glv.a
        y.Glv.a
-       z.Glv.a
-       utilv_nsites)
+       z.Glv.a)
     +. (log_of_2 *.
           ((total_twoexp x.Glv.e) +. (total_twoexp y.Glv.e) +. (total_twoexp z.Glv.e)))
 

@@ -48,7 +48,7 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
         *dst = 0;
         // going across a
         for(j=0; j < 4; j++) { *dst += a[j] * b[j]; }
-	a += 4;
+        a += 4;
         dst++;
       }
       b += n_states;
@@ -63,7 +63,7 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
         *dst = 0;
         // going across a
         for(j=0; j < 20; j++) { *dst += a[j] * b[j]; }
-	a += 20;
+        a += 20;
         dst++;
       }
       b += n_states;
@@ -165,56 +165,49 @@ CAMLprim value mat_print_c(value x_value)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value mat_log_like3_c(value statd_value, value x_value, value y_value, value z_value, value util_value)
+CAMLprim value mat_log_like3_c(value statd_value, value x_value, value y_value, value z_value)
 {
-  CAMLparam5(statd_value, x_value, y_value, z_value, util_value);
+  CAMLparam4(statd_value, x_value, y_value, z_value);
   CAMLlocal1(ml_ll_tot);
   double *statd = Data_bigarray_val(statd_value);
   double *x = Data_bigarray_val(x_value);
   double *y = Data_bigarray_val(y_value);
   double *z = Data_bigarray_val(z_value);
-  double *util = Data_bigarray_val(util_value);
   int n_sites = Bigarray_val(x_value)->dim[0];
   int n_states = Bigarray_val(x_value)->dim[1];
   int site, state;
-  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
+  double util, ll_tot=0;
   // here we hard code in the limits for some popular choices
   // so that loops can get unrolled
   if(n_states == 4) {
     for(site=0; site < n_sites; site++) {
+      util=0;
       for(state=0; state < 4; state++) {
-        *util += statd[state] * x[state] * y[state] * z[state];
+        util += statd[state] * x[state] * y[state] * z[state];
       }
-      x += 4;
-      y += 4;
-      z += 4;
-      util++;
+      ll_tot += log(util);
+      x += 4; y += 4; z += 4;
     }
   }
-  else if(n_states == 20) {
+  if(n_states == 20) {
     for(site=0; site < n_sites; site++) {
+      util=0;
       for(state=0; state < 20; state++) {
-        *util += statd[state] * x[state] * y[state] * z[state];
+        util += statd[state] * x[state] * y[state] * z[state];
       }
-      x += 20;
-      y += 20;
-      z += 20;
-      util++;
+      ll_tot += log(util);
+      x += 20; y += 20; z += 20;
     }
   }
   else {
     for(site=0; site < n_sites; site++) {
+      util=0;
       for(state=0; state < n_states; state++) {
-        *util += statd[state] * (*x) * (*y) * (*z);
+        util += statd[state] * (*x) * (*y) * (*z);
         x++; y++; z++;
       }
-      util++;
+      ll_tot += log(util);
     }
-  }
-  // now total up the likes from the util vector
-  double ll_tot=0;
-  for(site=0; site < n_sites; site++) {
-    ll_tot += log(util[site]);
   }
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
@@ -347,9 +340,7 @@ CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, 
         for(state=0; state < 4; state++) {
           *util_v += statd[state] * x[state] * y[state] * z[state];
         }
-        x += 4;
-        y += 4;
-        z += 4;
+        x += 4; y += 4; z += 4;
         util_v++;
       }
     }
@@ -358,9 +349,7 @@ CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, 
         for(state=0; state < 20; state++) {
           *util_v += statd[state] * x[state] * y[state] * z[state];
         }
-        x += 20;
-        y += 20;
-        z += 20;
+        x += 20; y += 20; z += 20;
         util_v++;
       }
     }

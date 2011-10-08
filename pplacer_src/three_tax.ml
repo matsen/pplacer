@@ -28,9 +28,9 @@ struct
   let make model util_v ~prox ~dist ~pend = {model; util_v; prox; dist; pend}
 
   let log_like tt =
-    Model.slow_log_like3
+    Model.log_like3
       tt.model
-      (* tt.util_v *)
+      tt.util_v
       (Glv_edge.get_evolv tt.prox)
       (Glv_edge.get_evolv tt.dist)
       (Glv_edge.get_evolv tt.pend)
