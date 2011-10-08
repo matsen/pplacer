@@ -458,7 +458,10 @@ let run_file prefs query_fname =
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
     let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
+    (* XXX AG explain how these two functions are used. Clearly some sort of
+     * finalization. Perhaps a section at the beginning? *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
+      (* start: build the Maximum A Posteriori sequences *)
       let ref_tree = Refpkg.get_ref_tree rp
       and mrcam = Refpkg.get_mrcam rp
       and td = Refpkg.get_taxonomy rp
@@ -537,7 +540,7 @@ let run_file prefs query_fname =
           map_fasta_file
       in
       gotfunc, donefunc
-
+    (* end: build the Maximum A Posteriori sequences *)
     end else (identity, identity)
     in
 

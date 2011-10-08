@@ -32,11 +32,11 @@ external mat_pairwise_prod : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matri
 (* statd dst a b *)
 external mat_statd_pairwise_prod : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> unit = "mat_statd_pairwise_prod_c"
 
-(* x y first last util
+(* x y first last
  * take the logarithm of the dot product of x and y restricted to the interval
  * [start, last]. start and last are 0-indexed, of course.
  * *)
-external mat_bounded_logdot : Gsl_matrix.matrix -> Gsl_matrix.matrix -> int -> int -> Gsl_vector.vector -> float = "mat_bounded_logdot_c"
+external mat_bounded_logdot : Gsl_matrix.matrix -> Gsl_matrix.matrix -> int -> int -> float = "mat_bounded_logdot_c"
 
 
 (* *** Tensors, that are used for gmix. *** *)

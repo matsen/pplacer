@@ -184,11 +184,13 @@ struct
     (* *** likelihood calculations *** *)
 
     (* the log "dot" of the likelihood vectors in the 0-indexed interval
-     * [start,last] *)
-    let bounded_logdot utilv_nsites x y start last =
+     * [start,last]. Note that we don't have to use the utilv_nsites , so we
+     * ignore it here with a _.
+     * *)
+    let bounded_logdot _ x y start last =
       assert(dims x = dims y);
       assert(start >= 0 && start <= last && last < get_n_sites x);
-      (Linear.mat_bounded_logdot x.a y.a start last utilv_nsites)
+      (Linear.mat_bounded_logdot x.a y.a start last)
       +. (log_of_2 *. ((bounded_total_twoexp x.e start last) +.
                           (bounded_total_twoexp y.e start last)))
 
