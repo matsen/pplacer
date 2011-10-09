@@ -304,8 +304,8 @@ struct
     iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
     Linear.mat_statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
 
-  let slow_log_like3 model x y z =
-    let ll_tot = ref 0.
+  let site_log_like_arr3 model x y z =
+    let log_site_likes = Array.make (Glv.get_n_sites x) 0.
     and statd = statd model
     in
     for site=0 to (Glv.get_n_sites x)-1 do
@@ -319,12 +319,15 @@ struct
       done;
       if 0. >= !site_like then
         failwith (Printf.sprintf "Site %d has zero likelihood." site);
-      ll_tot := !ll_tot
-      +. log(!site_like)
-      +. log_of_2 *.
-        (float_of_int (x.Glv.e.{site} + y.Glv.e.{site} + z.Glv.e.{site}))
+      log_site_likes.(site) <-
+        log(!site_like)
+        +. log_of_2 *.
+          (float_of_int (x.Glv.e.{site} + y.Glv.e.{site} + z.Glv.e.{site}))
     done;
-    !ll_tot
+    log_site_likes
+
+  let slow_log_like3 model x y z =
+    Array.fold_left ( +. ) 0. (site_log_like_arr3 model x y z)
 
 end
 
