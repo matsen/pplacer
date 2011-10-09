@@ -340,22 +340,51 @@ let run_file prefs query_fname =
   dprint "done.\n";
 
   (* play around with different values for site categories *)
+
+  let n_categories = 20 in
+  let records = Array.make n_sites (-. infinity)
+  and record_cats = Array.make n_sites (-1)
+  in
+  let find_records attempt cat =
+    Array.iteri
+      (fun i x ->
+        if x > records.(i) then begin
+          Printf.printf "xx %g\t%g\n" x records.(i);
+          records.(i) <- x;
+          record_cats.(i) <- cat
+        end)
+      attempt
+  in
+
   let util = snodes.(0)
   and util_one = snodes.(1)
   in
-  let print_like () =
-    Glv.set_unit util_one;
-    Model.evolve_into model ~src:parr.(0) ~dst:util (Gtree.get_bl ref_tree 0);
-    Printf.printf "xxx %g\n" (Model.slow_log_like3 model util darr.(0) util_one);
-  in
-  print_like ();
-  for i=0 to 19 do
-    Model.set_XXX model i;
+  let get_site_lla () =
     Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
       util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
       ~util_glv_arr:snodes;
-    print_like ();
+    Glv.set_unit util_one;
+    Model.evolve_into model ~src:parr.(0) ~dst:util (Gtree.get_bl ref_tree 0);
+    Model.site_log_like_arr3 model util darr.(0) util_one
+  in
+
+  for cat=0 to n_categories-1 do
+    (* Model.set_XXX model (Array.make n_sites cat); *)
+    let site_lla = get_site_lla () in
+    Printf.printf "xx SITE LLA %d\n" (Array.length site_lla);
+    Printf.printf "xx nsites %d\n" n_sites;
+    find_records site_lla cat;
   done;
+  Format.fprintf
+    Format.std_formatter
+    "xx %a\n"
+    Ppr.ppr_int_array
+    record_cats;
+
+  Model.set_XXX model record_cats;
+  let site_lla = get_site_lla () in
+  Printf.printf "xx %g\n" (Array.fold_left ( +. ) 0. site_lla);
+
 
 
   timings := StringMap.add_listly

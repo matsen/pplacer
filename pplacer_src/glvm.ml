@@ -14,7 +14,7 @@ sig
   type glv_t
   val build: Alignment.t -> init_params -> t
   val seq_type: t -> Alignment.seq_type
-  val set_XXX: t -> int -> unit
+  val set_XXX: t -> int array -> unit
 
   module Glv:
   sig
@@ -37,6 +37,7 @@ sig
   val make_glv: t -> n_sites:int -> Glv.t
   val lv_arr_to_glv: t -> Gsl_vector.vector array -> Glv.t
   val log_like3: t -> Gsl_vector.vector -> Glv.t -> Glv.t -> Glv.t -> float
+  val site_log_like_arr3: t -> Glv.t -> Glv.t -> Glv.t -> float array
   val slow_log_like3: t -> Glv.t -> Glv.t -> Glv.t -> float
   val evolve_into: t -> dst:Glv.t -> src:Glv.t -> float -> unit
   val statd_pairwise_prod: t -> dst:Glv.t -> Glv.t -> Glv.t -> unit

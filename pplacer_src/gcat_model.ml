@@ -51,6 +51,7 @@ struct
               model_statd))
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
+      let site_categories = Array.make (Alignment.length ref_align) 0 in
       {
         statd; seq_type; rates; site_categories;
         diagdq = Diagd.normed_of_exchangeable_pair trans statd;
@@ -63,9 +64,14 @@ struct
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp model.tensor model.diagdq model.rates bl
 
-  let set_XXX model x =
+  let set_XXX model a =
+    Printf.printf
+      "sitecat %d, a %d\n"
+      (Array.length model.site_categories)
+      (Array.length a);
+    assert(Array.length model.site_categories = Array.length a);
     Array.iteri
-      (fun i _ -> model.site_categories.(i) <- x)
+      (fun i _ -> model.site_categories.(i) <- a.(i))
       model.site_categories
 
 
