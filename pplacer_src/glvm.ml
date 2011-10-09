@@ -1,3 +1,5 @@
+(* XXX AG what is a glvm? *)
+
 open Ppatteries
 
 type init_params =
@@ -12,6 +14,7 @@ sig
   type glv_t
   val build: Alignment.t -> init_params -> t
   val seq_type: t -> Alignment.seq_type
+  val set_XXX: t -> int -> unit
 
   module Glv:
   sig

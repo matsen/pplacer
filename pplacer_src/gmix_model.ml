@@ -56,6 +56,8 @@ struct
 
     | _ -> invalid_arg "build"
 
+  let set_XXX _ _ = ()
+
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp model.tensor model.diagdq model.rates bl

@@ -63,6 +63,13 @@ struct
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp model.tensor model.diagdq model.rates bl
 
+  let set_XXX model x =
+    Array.iteri
+      (fun i _ -> model.site_categories.(i) <- x)
+      model.site_categories
+
+
+
   module Glv =
   struct
 

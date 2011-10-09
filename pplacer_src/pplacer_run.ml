@@ -338,6 +338,26 @@ let run_file prefs query_fname =
     util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
     ~util_glv_arr:snodes;
   dprint "done.\n";
+
+  (* play around with different values for site categories *)
+  let util = snodes.(0)
+  and util_one = snodes.(1)
+  in
+  let print_like () =
+    Glv.set_unit util_one;
+    Model.evolve_into model ~src:parr.(0) ~dst:util (Gtree.get_bl ref_tree 0);
+    Printf.printf "xxx %g\n" (Model.slow_log_like3 model util darr.(0) util_one);
+  in
+  print_like ();
+  for i=0 to 19 do
+    Model.set_XXX model i;
+    Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
+      util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
+      ~util_glv_arr:snodes;
+    print_like ();
+  done;
+
+
   timings := StringMap.add_listly
     "tree likelihood"
     ((Sys.time ()) -. curr_time)
