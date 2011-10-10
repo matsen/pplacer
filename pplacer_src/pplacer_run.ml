@@ -327,48 +327,40 @@ let run_file prefs query_fname =
   if locs = [] then failwith("problem with reference tree: no placement locations.");
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
-  dprint "Caching likelihood information on reference tree... ";
+  dprint "Allocating memory for internal nodes... ";
   (* allocate our memory *)
   let darr = Like_stree.glv_arr_for model ref_tree n_sites in
   let parr = Glv_arr.mimic darr
   and snodes = Glv_arr.mimic darr
   in
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
-  Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
-    util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
-    ~util_glv_arr:snodes;
   dprint "done.\n";
 
-
   (* Optimize site categories *)
+  (*
+   * From FastTree source:
 
-
-(*
- * From FastTree source:
-
-  /* Select best rate for each site, correcting for the prior
-     For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
-     Prior(rate) ~ rate**2 * exp(-3*rate)
-     log Prior(rate) = C + 2 * log(rate) - 3 * rate
-  */
-    for (iRate = 0; iRate < nRateCategories; iRate++) {
-      double site_loglk_with_prior = site_loglk[NJ->nPos*iRate + iPos]
-        + 2.0 * log(rates[iRate]) - 3.0 * rates[iRate];
-      if (site_loglk_with_prior > dBest) {
-        iBest = iRate;
-        dBest = site_loglk_with_prior;
+    /* Select best rate for each site, correcting for the prior
+       For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
+       Prior(rate) ~ rate**2 * exp(-3*rate)
+       log Prior(rate) = C + 2 * log(rate) - 3 * rate
+    */
+      for (iRate = 0; iRate < nRateCategories; iRate++) {
+        double site_loglk_with_prior = site_loglk[NJ->nPos*iRate + iPos]
+          + 2.0 * log(rates[iRate]) - 3.0 * rates[iRate];
+        if (site_loglk_with_prior > dBest) {
+          iBest = iRate;
+          dBest = site_loglk_with_prior;
+        }
       }
-    }
-*)
-
+  *)
   dprint "Optimizing site categories... ";
   let n_categories = 20 in
   let best_log_lks = Array.make n_sites (-. infinity)
   and best_log_lk_cats = Array.make n_sites (-1)
   and rates = Model.rates model
   in
-  Ppr.print_float_array rates;
-  print_endline "";
+  (* Ppr.print_float_array rates; print_endline ""; *)
   let log_rates = Array.map log rates
   in
   (* For every category, we make an "attempt". Here we record those attempts
@@ -414,8 +406,14 @@ let run_file prefs query_fname =
     *)
 
   Model.set_site_categories_XXX model best_log_lk_cats;
+  Ppr.print_int_array best_log_lk_cats;
   dprint "done.\n";
 
+  dprint "Caching likelihood information on reference tree... ";
+  Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
+    util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
+    ~util_glv_arr:snodes;
+  dprint "done.\n";
 
   timings := StringMap.add_listly
     "tree likelihood"
