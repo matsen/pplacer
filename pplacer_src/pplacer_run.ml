@@ -455,9 +455,10 @@ let run_file prefs query_fname =
       fp_check sn (Printf.sprintf "supernode %d" i);
       Model.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
       Model.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
-      Printf.printf "%d\t%g\t%g\n"
+      Printf.printf "%d\t%g\t%g\t%g\n"
         i
         (Model.log_like3 model utilv_nsites util_d util_p util_one)
+        (Model.slow_log_like3 model util_d util_p util_one)
         (Glv.logdot utilv_nsites sn util_one);
     done
   end;
