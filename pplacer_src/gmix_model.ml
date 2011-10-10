@@ -274,7 +274,6 @@ struct
     Glv.prep_constant_rate_glv_from_lv_arr g lv_arr;
     g
 
-
   (* take the log like of the product of three things then dot with the stationary
    * distribution. *)
   let log_like3 model utilv_nsites x y z =

@@ -189,7 +189,7 @@ CAMLprim value mat_log_like3_c(value statd_value, value x_value, value y_value, 
       x += 4; y += 4; z += 4;
     }
   }
-  if(n_states == 20) {
+  else if(n_states == 20) {
     for(site=0; site < n_sites; site++) {
       util=0;
       for(state=0; state < 20; state++) {
