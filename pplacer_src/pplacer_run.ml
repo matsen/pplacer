@@ -339,19 +339,43 @@ let run_file prefs query_fname =
     ~util_glv_arr:snodes;
   dprint "done.\n";
 
-  (* play around with different values for site categories *)
+
+  (* Optimize site categories *)
+
+
+(*
+ * From FastTree source:
+
+  /* Select best rate for each site, correcting for the prior
+     For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
+     Prior(rate) ~ rate**2 * exp(-3*rate)
+     log Prior(rate) = C + 2 * log(rate) - 3 * rate
+  */
+    for (iRate = 0; iRate < nRateCategories; iRate++) {
+      double site_loglk_with_prior = site_loglk[NJ->nPos*iRate + iPos]
+        + 2.0 * log(rates[iRate]) - 3.0 * rates[iRate];
+      if (site_loglk_with_prior > dBest) {
+        iBest = iRate;
+        dBest = site_loglk_with_prior;
+      }
+    }
+*)
 
   let n_categories = 20 in
-  let records = Array.make n_sites (-. infinity)
-  and record_cats = Array.make n_sites (-1)
+  let best_log_lks = Array.make n_sites (-. infinity)
+  and best_log_lk_cats = Array.make n_sites (-1)
+  and rates = Model.rates model
   in
-  let find_records attempt cat =
+  let log_rates = Array.map log rates
+  in
+  let find_best_log_lks attempt cat =
     Array.iteri
-      (fun i x ->
-        if x > records.(i) then begin
-          Printf.printf "xx %g\t%g\n" x records.(i);
-          records.(i) <- x;
-          record_cats.(i) <- cat
+      (fun site log_lk ->
+        let x = log_lk +. 2. *. log_rates.(cat) -. 3. *. rates.(cat) in
+        if x > best_log_lks.(site) then begin
+          Printf.printf "xx %g\t%g\n" x best_log_lks.(site);
+          best_log_lks.(site) <- x;
+          best_log_lk_cats.(site) <- cat
         end)
       attempt
   in
@@ -359,7 +383,7 @@ let run_file prefs query_fname =
   let util = snodes.(0)
   and util_one = snodes.(1)
   in
-  let get_site_lla () =
+  let get_site_log_like_arr () =
     Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
       util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
       ~util_glv_arr:snodes;
@@ -368,22 +392,24 @@ let run_file prefs query_fname =
     Model.site_log_like_arr3 model util darr.(0) util_one
   in
 
+  let cat_array = Array.make n_sites (-1) in
   for cat=0 to n_categories-1 do
-    (* Model.set_XXX model (Array.make n_sites cat); *)
-    let site_lla = get_site_lla () in
-    Printf.printf "xx SITE LLA %d\n" (Array.length site_lla);
-    Printf.printf "xx nsites %d\n" n_sites;
-    find_records site_lla cat;
+    Array.fill cat_array 0 n_sites cat;
+    Model.set_site_categories_XXX model cat_array;
+    let site_log_like_arr = get_site_log_like_arr () in
+    find_best_log_lks site_log_like_arr cat;
   done;
+  (* Array.iteri (fun i _ -> best_log_lk_cats.(i) <- best_log_lk_cats.(i) + 1)
+   * best_log_lk_cats; *)
   Format.fprintf
     Format.std_formatter
     "xx %a\n"
     Ppr.ppr_int_array
-    record_cats;
+    best_log_lk_cats;
 
-  Model.set_XXX model record_cats;
-  let site_lla = get_site_lla () in
-  Printf.printf "xx %g\n" (Array.fold_left ( +. ) 0. site_lla);
+  Model.set_site_categories_XXX model best_log_lk_cats;
+  let site_log_like_arr = get_site_log_like_arr () in
+  Printf.printf "xx %g\n" (Array.fold_left ( +. ) 0. site_log_like_arr);
 
 
 

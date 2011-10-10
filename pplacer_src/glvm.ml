@@ -14,7 +14,8 @@ sig
   type glv_t
   val build: Alignment.t -> init_params -> t
   val seq_type: t -> Alignment.seq_type
-  val set_XXX: t -> int array -> unit
+  val rates: t -> float array
+  val set_site_categories_XXX: t -> int array -> unit
 
   module Glv:
   sig

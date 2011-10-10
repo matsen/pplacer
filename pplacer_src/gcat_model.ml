@@ -64,11 +64,7 @@ struct
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp model.tensor model.diagdq model.rates bl
 
-  let set_XXX model a =
-    Printf.printf
-      "sitecat %d, a %d\n"
-      (Array.length model.site_categories)
-      (Array.length a);
+  let set_site_categories_XXX model a =
     assert(Array.length model.site_categories = Array.length a);
     Array.iteri
       (fun i _ -> model.site_categories.(i) <- a.(i))
