@@ -361,14 +361,19 @@ let run_file prefs query_fname =
     }
 *)
 
+  dprint "Optimizing site categories... ";
   let n_categories = 20 in
   let best_log_lks = Array.make n_sites (-. infinity)
   and best_log_lk_cats = Array.make n_sites (-1)
   and rates = Model.rates model
   in
+  Ppr.print_float_array rates;
+  print_endline "";
   let log_rates = Array.map log rates
   in
-  let find_best_log_lks attempt cat =
+  (* For every category, we make an "attempt". Here we record those attempts
+   * that are actually best. *)
+  let record_best_log_lks attempt cat =
     Array.iteri
       (fun site log_lk ->
         let x = log_lk +. 2. *. log_rates.(cat) -. 3. *. rates.(cat) in
@@ -379,7 +384,6 @@ let run_file prefs query_fname =
         end)
       attempt
   in
-
   let util = snodes.(0)
   and util_one = snodes.(1)
   in
@@ -391,13 +395,13 @@ let run_file prefs query_fname =
     Model.evolve_into model ~src:parr.(0) ~dst:util (Gtree.get_bl ref_tree 0);
     Model.site_log_like_arr3 model util darr.(0) util_one
   in
-
   let cat_array = Array.make n_sites (-1) in
+  (* Try all of the categories. *)
   for cat=0 to n_categories-1 do
     Array.fill cat_array 0 n_sites cat;
     Model.set_site_categories_XXX model cat_array;
     let site_log_like_arr = get_site_log_like_arr () in
-    find_best_log_lks site_log_like_arr cat;
+    record_best_log_lks site_log_like_arr cat;
   done;
   (* Array.iteri (fun i _ -> best_log_lk_cats.(i) <- best_log_lk_cats.(i) + 1)
    * best_log_lk_cats; *)
@@ -410,6 +414,7 @@ let run_file prefs query_fname =
     *)
 
   Model.set_site_categories_XXX model best_log_lk_cats;
+  dprint "done.\n";
 
 
   timings := StringMap.add_listly
