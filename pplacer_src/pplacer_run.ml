@@ -373,7 +373,7 @@ let run_file prefs query_fname =
       (fun site log_lk ->
         let x = log_lk +. 2. *. log_rates.(cat) -. 3. *. rates.(cat) in
         if x > best_log_lks.(site) then begin
-          Printf.printf "xx %g\t%g\n" x best_log_lks.(site);
+          (* Printf.printf "xx %g\t%g\n" x best_log_lks.(site); *)
           best_log_lks.(site) <- x;
           best_log_lk_cats.(site) <- cat
         end)
@@ -401,16 +401,15 @@ let run_file prefs query_fname =
   done;
   (* Array.iteri (fun i _ -> best_log_lk_cats.(i) <- best_log_lk_cats.(i) + 1)
    * best_log_lk_cats; *)
+  (*
   Format.fprintf
     Format.std_formatter
     "xx %a\n"
     Ppr.ppr_int_array
     best_log_lk_cats;
+    *)
 
   Model.set_site_categories_XXX model best_log_lk_cats;
-  let site_log_like_arr = get_site_log_like_arr () in
-  Printf.printf "xx %g\n" (Array.fold_left ( +. ) 0. site_log_like_arr);
-
 
 
   timings := StringMap.add_listly
