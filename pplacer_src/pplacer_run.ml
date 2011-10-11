@@ -373,23 +373,14 @@ let run_file prefs query_fname =
         end)
       attempt
   in
-  let util = snodes.(0)
-  and util_one = snodes.(1)
-  in
-  let get_site_log_like_arr () =
-    Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
-      util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
-      ~util_glv_arr:snodes;
-    Glv.set_unit util_one;
-    Model.evolve_into model ~src:parr.(0) ~dst:util (Gtree.get_bl ref_tree 0);
-    Model.site_log_like_arr3 model util darr.(0) util_one
-  in
   let cat_array = Array.make n_sites (-1) in
   (* Try all of the categories. *)
   for cat=0 to n_categories-1 do
     Array.fill cat_array 0 n_sites cat;
     Model.set_site_categories_XXX model cat_array;
-    let site_log_like_arr = get_site_log_like_arr () in
+    let site_log_like_arr =
+      Like_stree.site_log_like_arr model ref_tree like_aln_map darr parr
+    in
     record_best_log_lks site_log_like_arr cat;
   done;
   Model.set_site_categories_XXX model best_log_lk_cats;

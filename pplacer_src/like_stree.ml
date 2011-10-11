@@ -57,7 +57,6 @@ struct
     in
     let _ = calc (Gtree.get_stree tree) in ()
 
-
   (* pull out the glv corresponding to the id of the given tree *)
   let glv_from_stree glv_arr t = Glv_arr.get glv_arr (Stree.top_id t)
 
@@ -89,8 +88,8 @@ struct
     Glv.set_unit top_prox;
     calc stree
 
-  (* this is our "main". the utils are just data structures of the same size as
-   * the rest we can use for storing things *)
+  (* Get all of the internal partial likelihood vectors. The utils are just data
+   * structures of the same size as the rest we can use for storing things. *)
   let calc_distal_and_proximal model tree like_aln_map util_glv
       ~distal_glv_arr ~proximal_glv_arr ~util_glv_arr =
     calc_distal_and_evolv_dist model tree like_aln_map
@@ -99,5 +98,18 @@ struct
       ~evolv_dist_glv_arr:util_glv_arr ~proximal_glv_arr;
     ()
 
+  (* Calculate the likelihood of the tree given the model and the data. *)
+  let site_log_like_arr model tree like_aln_map util_glv_arr_1 util_glv_arr_2 =
+    let almost_top_node_ids = function
+      | Stree.Node(_,tL) -> List.map Stree.top_id tL
+      | _ -> failwith "can't calculatate likelihood of a leaf!"
+    in
+    calc_distal_and_evolv_dist model tree like_aln_map
+      ~distal_glv_arr:util_glv_arr_1 ~evolv_dist_glv_arr:util_glv_arr_2;
+    let ed = util_glv_arr_2 in
+    match almost_top_node_ids (Gtree.get_stree tree) with
+    | [i; j; k] ->
+        Model.site_log_like_arr3 model ed.(i) ed.(j) ed.(k)
+    | _ -> failwith "currently assuming trifurcation"
 end
 
