@@ -8,6 +8,7 @@
 
 %{
 open Ppatteries
+open Newick_parse_state
 
 (* parse state *)
 type ps = {
@@ -29,7 +30,6 @@ let lps_append lp lps =
     stree_l = lp.stree :: lps.stree_l;
     bark_l = combine lp.bark lp.my_bark |> combine lps.bark_l}
 
-let node_num = ref (-1)
 let add_bark add_fun x s =
   {s with my_bark = add_fun (Stree.top_id s.stree) x s.my_bark}
 let add_bl = float_of_string |- add_bark Newick_bark.map_set_bl
@@ -62,9 +62,6 @@ let add_internal ls =
     my_bark = IntMap.empty;
   }
 
-let reset () =
-  node_num := (-1)
-
 %}
 
 named_leaf:
@@ -84,7 +81,11 @@ leaf:
   | EDGE_LABEL
       { add_leaf () |> add_id $1 }
   | lengthy_leaf EDGE_LABEL
-      { add_id $2 $1 }
+      { if !brackets_as_confidence then
+          Sparse.syntax_error 2
+            "leaves are not permitted to have bootstrap values"
+        else
+          add_id $2 $1 }
   | lengthy_leaf { $1 }
 
 subtree_list:
@@ -109,7 +110,10 @@ lengthy_subtree_group:
 
 subtree_group:
   | lengthy_subtree_group EDGE_LABEL
-      { add_id $2 $1 }
+      { if !brackets_as_confidence then
+          add_boot (string_of_int $2) $1
+        else
+          add_id $2 $1 }
   | lengthy_subtree_group { $1 }
 
 subtree: /* empty */ { add_leaf () }
@@ -123,6 +127,6 @@ bare_tree:
 
 tree:
   | bare_tree EOF
-      { reset (); Gtree.gtree $1.stree (combine $1.bark $1.my_bark) }
+      { Gtree.gtree $1.stree (combine $1.bark $1.my_bark) }
   | error EOF
-      { reset (); Sparse.syntax_error 1 "syntax error parsing" }
+      { Sparse.syntax_error 1 "syntax error parsing" }
