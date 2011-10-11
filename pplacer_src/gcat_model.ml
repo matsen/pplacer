@@ -18,7 +18,7 @@ struct
     (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
     tensor: Tensor.tensor;
     site_categories: int array;
-    (* occupied_rates: bool array; *)
+    occupied_rates: bool array;
   }
   type model_t = t
 
@@ -55,8 +55,9 @@ struct
        * remake them to be the right length. *)
       let _ = site_categories in
       let site_categories = Array.make (Alignment.length ref_align) 0 in
+      let occupied_rates = Array.make (Array.length rates) true in
       {
-        statd; seq_type; rates; site_categories;
+        statd; seq_type; rates; site_categories; occupied_rates;
         diagdq = Diagd.normed_of_exchangeable_pair trans statd;
         tensor = Tensor.create (Array.length rates) n_states n_states;
       }
@@ -65,12 +66,15 @@ struct
 
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
-    Diagd.multi_exp model.tensor model.diagdq model.rates bl
+    Diagd.multi_exp ~mask:model.occupied_rates ~dst:model.tensor model.diagdq model.rates bl
 
   let set_site_categories_XXX model a =
     assert(Array.length model.site_categories = Array.length a);
+    Array.fill model.occupied_rates 0 (Array.length model.occupied_rates) false;
     Array.iteri
-      (fun i _ -> model.site_categories.(i) <- a.(i))
+      (fun i _ ->
+        model.site_categories.(i) <- a.(i);
+        model.occupied_rates.(a.(i)) <- true)
       model.site_categories
 
 

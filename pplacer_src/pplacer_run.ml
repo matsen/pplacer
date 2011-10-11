@@ -337,9 +337,7 @@ let run_file prefs query_fname =
   dprint "done.\n";
 
   (* Optimize site categories *)
-  (*
-   * From FastTree source:
-
+  (* From FastTree source:
     /* Select best rate for each site, correcting for the prior
        For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
        Prior(rate) ~ rate**2 * exp(-3*rate)
@@ -360,7 +358,6 @@ let run_file prefs query_fname =
   and best_log_lk_cats = Array.make n_sites (-1)
   and rates = Model.rates model
   in
-  (* Ppr.print_float_array rates; print_endline ""; *)
   let log_rates = Array.map log rates
   in
   (* For every category, we make an "attempt". Here we record those attempts
@@ -395,16 +392,6 @@ let run_file prefs query_fname =
     let site_log_like_arr = get_site_log_like_arr () in
     record_best_log_lks site_log_like_arr cat;
   done;
-  (* Array.iteri (fun i _ -> best_log_lk_cats.(i) <- best_log_lk_cats.(i) + 1)
-   * best_log_lk_cats; *)
-  (*
-  Format.fprintf
-    Format.std_formatter
-    "xx %a\n"
-    Ppr.ppr_int_array
-    best_log_lk_cats;
-    *)
-
   Model.set_site_categories_XXX model best_log_lk_cats;
   Ppr.print_int_array best_log_lk_cats;
   dprint "done.\n";

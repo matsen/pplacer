@@ -69,17 +69,26 @@ let to_exp dd bl =
 (* here we exponentiate our diagonalized matrix across all the rates.
  * if D is the diagonal matrix, we get a #rates matrices of the form
  * X exp(D rate bl) X^{-1}.
- * util should be a vector of the same length as lambda *)
-let multi_exp ~dst dd rates bl =
+ * util should be a vector of the same length as lambda.
+ * mask is an optional argument that, if specified, only does the multi_exp for
+ * those rates that are marked true in the mask. *)
+let multi_exp ?mask ~dst dd rates bl =
+  let compute =
+    match mask with
+    | None -> fun _ -> true (* no mask, do everything *)
+    | Some m -> fun r -> m.(r) = true (* compute if specified *)
+  in
   let n = Gsl_vector.length dd.l in
   try
     Tensor.set_all dst 0.;
     for r=0 to (Array.length rates)-1 do
-      for i=0 to n-1 do
-        set1 dd.util i (exp (rates.(r) *. bl *. (get1 dd.l i)))
-      done;
-      let dst_mat = Tensor.BA3.slice_left_2 dst r in
-      Linear.dediagonalize dst_mat dd.x dd.util dd.xit;
+      if compute r then begin
+        for i=0 to n-1 do
+          set1 dd.util i (exp (rates.(r) *. bl *. (get1 dd.l i)))
+        done;
+        let dst_mat = Tensor.BA3.slice_left_2 dst r in
+        Linear.dediagonalize dst_mat dd.x dd.util dd.xit;
+      end
     done;
   with
     | Invalid_argument s -> invalid_arg ("multi_exp: "^s)
