@@ -106,10 +106,17 @@ struct
     in
     calc_distal_and_evolv_dist model tree like_aln_map
       ~distal_glv_arr:util_glv_arr_1 ~evolv_dist_glv_arr:util_glv_arr_2;
-    let ed = util_glv_arr_2 in
+    let ed = util_glv_arr_2
+    and util_glv = util_glv_arr_1.(0)
+    in
     match almost_top_node_ids (Gtree.get_stree tree) with
-    | [i; j; k] ->
-        Model.site_log_like_arr3 model ed.(i) ed.(j) ed.(k)
-    | _ -> failwith "currently assuming trifurcation"
+    | [i; j] ->
+        Glv.set_unit util_glv;
+        Model.site_log_like_arr3 model ed.(i) ed.(j) util_glv
+    | [i; j; k] -> Model.site_log_like_arr3 model ed.(i) ed.(j) ed.(k)
+    | i::j::l ->
+        Glv.listwise_prod util_glv (List.map (fun k -> ed.(k)) l);
+        Model.site_log_like_arr3 model ed.(i) ed.(j) util_glv
+    | _ -> failwith "site_log_like_arr: degree two node"
 end
 
