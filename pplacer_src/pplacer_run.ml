@@ -101,6 +101,7 @@ let run_file prefs query_fname =
 
   let ref_tree = StringMap.find "tree" rp_strmap
     |> Newick_gtree.of_file
+    |> Like_stree.add_zero_root_bl
   in
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_list = Newick_gtree.get_node_label_list ref_tree in
