@@ -103,7 +103,7 @@ module Squash (B: BLOB) =
             (counter+1,
               BMap.add b (Stree.leaf counter) bmap,
               IntMap.add counter b blobim,
-              Newick_bark.map_set_name counter name barkm))
+              Newick_bark.map_set_node_label counter name barkm))
           (0, BMap.empty, IntMap.empty, IntMap.empty)
           named_blobl
       in
@@ -164,7 +164,7 @@ module Squash (B: BLOB) =
             (free_index+1)
             new_normm
             (IntMap.add free_index merged blobim)
-            (Newick_bark.map_set_name
+            (Newick_bark.map_set_node_label
               free_index
               (string_of_int free_index)
               (add_bl next.small (add_bl next.big barkm)))

@@ -103,7 +103,7 @@ let run_file prefs query_fname =
     |> Newick_gtree.of_file
   in
   (* *** split the sequences into a ref_aln and a query_list *** *)
-  let ref_name_list = Newick_gtree.get_name_list ref_tree in
+  let ref_name_list = Newick_gtree.get_node_label_list ref_tree in
   let ref_name_set = StringSet.of_list ref_name_list in
   if List.length ref_name_list <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");

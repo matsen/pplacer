@@ -11,12 +11,12 @@ object
   val out_fname = flag "-o"
     (Formatted ("cluster_boot.xml", "Specify an out file. Default: %s"))
   val cutoff = flag "--cutoff"
-    (Formatted (0., "Specify the cutoff for writing out the bootstrap value. Default: %g."))
+    (Formatted (0, "Specify the cutoff for writing out the bootstrap value. Default: %d."))
 
   method specl = [
     string_flag boot_fname;
     string_flag out_fname;
-    float_flag cutoff;
+    int_flag cutoff;
   ]
 
   method desc =

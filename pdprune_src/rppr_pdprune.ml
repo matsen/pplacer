@@ -56,7 +56,7 @@ object (self)
           | Not_found -> false
       in
       let gt = Newick_gtree.of_file fname in
-      let get_name id = (IntMap.find id gt.Gtree.bark_map)#get_name in
+      let get_name id = (IntMap.find id gt.Gtree.bark_map)#get_node_label in
       let namel =
         Gtree.recur
           (fun _ below -> List.flatten below)
@@ -74,7 +74,7 @@ object (self)
       and never_prune_ids =
         IntMap.fold
           (fun i b s ->
-            match b#get_name_opt with
+            match b#get_node_label_opt with
               | Some name ->
                 if StringSet.mem name never_prunes then IntSet.add i s
                 else s

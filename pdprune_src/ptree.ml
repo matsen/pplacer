@@ -191,7 +191,7 @@ let to_gtree pt =
   let add_bark i bl nameo =
     m :=
       IntMap.add i
-        (new Newick_bark.newick_bark (`Of_bl_name_boot(Some bl, nameo, None)))
+        (new Newick_bark.newick_bark (`Of_bl_node_edge_label (Some bl, nameo, None)))
         !m
   in
   (* above is a neighboring edge index in the "up" direction in the resulting

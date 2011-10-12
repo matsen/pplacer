@@ -37,10 +37,10 @@ let ssim_of_tree t =
   let rec aux = function
     | Stree.Node(id, tL) ->
         let below = list_disj_union (List.map aux tL) in
-        my_add (int_of_float (Gtree.get_boot t id)) below;
+        my_add (int_of_string (Gtree.get_edge_label t id)) below;
         below
     | Stree.Leaf(id) ->
-        StringSet.singleton (Gtree.get_name t id)
+        StringSet.singleton (Gtree.get_node_label t id)
   in
   let _ = aux (Gtree.get_stree t) in
   !m
@@ -49,14 +49,14 @@ let ssim_of_tree t =
 let number_tree t =
   Gtree.set_bark_map t
     (IntMap.mapi
-    (fun i b -> b#set_boot (float_of_int i))
+    (fun i b -> b#set_edge_label (string_of_int i))
     (Gtree.get_bark_map t))
 
 (* make sure that there are boot numberings everywhere. if not, then adopt
  * them a la number_tree. *)
 let ensure_numbered t =
   try let _ = ssim_of_tree t in t with
-  | Newick_bark.No_boot ->
+  | Newick_bark.No_edge_label ->
       dprint "Warning: inserting numbers into internal edges.";
       number_tree t
 

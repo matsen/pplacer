@@ -1,7 +1,7 @@
 (* our tree data stucture with information.
  *
  * Gtree stands for general tree, meaning that we have a tree with any kind of
- * bark that has get/set methods for bl, name, and boot.
+ * bark that has get/set methods for bl, node_label, and edge_label.
  *
  * We number all of the nodes and then have maps which tell us about the edges.
  * Note that the edge information is for the node directly above the node with
@@ -13,8 +13,8 @@ open Ppatteries
 (* these are raised when we are asked for something that isn't in a bark map *)
 exception Lacking_bark of int
 exception Lacking_branchlength of int
-exception Lacking_name of int
-exception Lacking_bootstrap of int
+exception Lacking_node_label of int
+exception Lacking_edge_label of int
 
 exception Attachment_distal_bl_out_of_range of int * float
 
@@ -43,12 +43,12 @@ let get_bark_opt t id =
 let get_bl t id =
   try (get_bark t id)#get_bl with
   | Not_found -> raise (Lacking_branchlength id)
-let get_name t id =
-  try (get_bark t id)#get_name with
-  | Not_found -> raise (Lacking_name id)
-let get_boot t id =
-  try (get_bark t id)#get_boot with
-  | Not_found -> raise (Lacking_bootstrap id)
+let get_node_label t id =
+  try (get_bark t id)#get_node_label with
+  | Not_found -> raise (Lacking_node_label id)
+let get_edge_label t id =
+  try (get_bark t id)#get_edge_label with
+  | Not_found -> raise (Lacking_edge_label id)
 
 let set_stree t stree = {t with stree = stree}
 let set_bark_map t bark_map = {t with bark_map = bark_map}

@@ -4,33 +4,43 @@
 open Ppatteries
 
 exception No_bl
-exception No_name
-exception No_boot
+exception No_node_label
+exception No_edge_label
 
-let opt_val_to_string val_to_string = function
-  | Some x -> val_to_string x
-  | None -> ""
-
-let ppr_opt_named name ppr_val ff = function
-  | Some x -> Format.fprintf ff " %s = %a;@," name ppr_val x
+let ppr_opt_node_labeld node_label ppr_val ff = function
+  | Some x -> Format.fprintf ff " %s = %a;@," node_label ppr_val x
   | None -> ()
 
 let write_something_opt write_it ch = function
   | Some x -> write_it ch x
   | None -> ()
 
+let needs_quotes = Str.regexp "\\(\\([ \t\n(){}:;,]\\|\\[\\|]\\)\\|\\(['\\\\]\\)\\)"
+let quote_label s =
+  let replaced = ref false in
+  let s' = Str.global_substitute
+    needs_quotes
+    (fun s ->
+      replaced := true;
+      match Sparse.first_match [2; 3] s with
+        | 2, s -> s
+        | 3, s -> "\\" ^ s
+        | _, _ -> invalid_arg "quote_label")
+    s
+  in if !replaced then Printf.sprintf "'%s'" s' else s'
+
 class newick_bark arg =
 
-  let (bl, name, boot) =
+  let (bl, node_label, edge_label) =
     match arg with
     | `Empty -> (None, None, None)
-    | `Of_bl_name_boot (bl, name, boot) -> (bl, name, boot)
+    | `Of_bl_node_edge_label (bl, node_label, edge_label) -> (bl, node_label, edge_label)
   in
 
   object (self)
     val bl = bl
-    val name = name
-    val boot = boot
+    val node_label = node_label
+    val edge_label = edge_label
 
     method get_bl_opt = bl
     method get_bl =
@@ -38,27 +48,29 @@ class newick_bark arg =
     method set_bl_opt xo = {< bl = xo >}
     method set_bl (x:float) = {< bl = Some x >}
 
-    method get_name_opt = name
-    method get_name =
-      match name with | Some s -> s | None -> raise No_name
-    method set_name_opt so = {< name = so >}
-    method set_name s = {< name = Some s >}
+    method get_node_label_opt = node_label
+    method get_node_label =
+      match node_label with | Some s -> s | None -> raise No_node_label
+    method set_node_label_opt so = {< node_label = so >}
+    method set_node_label s = {< node_label = Some s >}
 
-    method get_boot_opt = boot
-    method get_boot =
-      match boot with | Some x -> x | None -> raise No_boot
-    method set_boot_opt xo = {< boot = xo >}
-    method set_boot x = {< boot = Some x >}
+    method get_edge_label_opt = edge_label
+    method get_edge_label =
+      match edge_label with | Some x -> x | None -> raise No_edge_label
+    method set_edge_label_opt xo = {< edge_label = xo >}
+    method set_edge_label x = {< edge_label = Some x >}
 
-    method to_newick_string =
-      (opt_val_to_string (Printf.sprintf "%g") boot) ^
-      (opt_val_to_string (fun s -> s) name) ^
-      (opt_val_to_string (fun x -> ":"^(Printf.sprintf "%g" x)) bl)
+    method to_newick_string node_number =
+      Printf.sprintf "%s%s%s%s"
+        (Option.map_default quote_label "" node_label)
+        (Option.map_default (Printf.sprintf ":%g") "" bl)
+        (Option.map_default (Printf.sprintf "{%d}") "" node_number)
+        (Option.map_default (quote_label |- Printf.sprintf "[%s]") "" edge_label)
 
     method private ppr_inners ff =
-      ppr_opt_named "bl" Format.pp_print_float ff bl;
-      ppr_opt_named "name" Format.pp_print_string ff name;
-      ppr_opt_named "boot" Format.pp_print_float ff boot
+      ppr_opt_node_labeld "bl" Format.pp_print_float ff bl;
+      ppr_opt_node_labeld "node_label" Format.pp_print_string ff node_label;
+      ppr_opt_node_labeld "edge_label" Format.pp_print_string ff edge_label
 
     method ppr ff =
       Format.fprintf ff "@[{%a}@]" (fun ff () -> self#ppr_inners ff) ()
@@ -67,20 +79,21 @@ class newick_bark arg =
       let maybe_list f = function
         | Some x -> f x
         | None -> []
-      in maybe_list (fun name -> [Myxml.tag "name" name]) name
+      in maybe_list (fun node_label -> [Myxml.tag "name" node_label]) node_label
       @ maybe_list (fun bl -> [Myxml.tag "branch_length" (Printf.sprintf "%g" bl)]) bl
-      @ maybe_list (fun boot ->
-        [Myxml.tag "confidence" ~attributes:[("type", "bootstrap")] (Printf.sprintf "%g" boot)]) boot
+      @ maybe_list (fun edge_label ->
+        [Myxml.tag "confidence" ~attributes:[("type", "bootstrap")] edge_label]) edge_label
     end
 
     method to_numbered id =
-      {< name = Some
-                (match name with
-                | Some s -> Printf.sprintf "@%s" s
-                | None -> "");
-         boot = Some (float_of_int id); >}
+      {<
+        node_label = Some (Option.map_default (Printf.sprintf "@%s") "" node_label);
+        edge_label = Some (string_of_int id);
+      >}
 
   end
+
+let empty = new newick_bark `Empty
 
 let float_approx_compare epsilon x y =
   let diff = x -. y in
@@ -93,12 +106,13 @@ let floato_approx_compare epsilon a b =
   | (Some x, Some y) -> float_approx_compare epsilon x y
   | (a, b) -> Pervasives.compare a b
 
-let compare ?epsilon:(epsilon=0.) ?cmp_boot:(cmp_boot=true) b1 b2 =
+let compare ?epsilon:(epsilon=0.) ?cmp_edge_label:(cmp_edge_label=true) b1 b2 =
   let fc = floato_approx_compare epsilon in
   try
     raise_if_different fc b1#get_bl_opt b2#get_bl_opt;
-    raise_if_different compare b1#get_name_opt b2#get_name_opt;
-    if cmp_boot then raise_if_different fc b1#get_boot_opt b2#get_boot_opt;
+    raise_if_different compare b1#get_node_label_opt b2#get_node_label_opt;
+    if cmp_edge_label then
+      raise_if_different compare b1#get_edge_label_opt b2#get_edge_label_opt;
     0
   with
   | Different c -> c
@@ -110,8 +124,8 @@ let map_find_loose id m =
 let map_set_bl id bl m =
   IntMap.add id ((map_find_loose id m)#set_bl bl) m
 
-let map_set_name id name m =
-  IntMap.add id ((map_find_loose id m)#set_name name) m
+let map_set_node_label id node_label m =
+  IntMap.add id ((map_find_loose id m)#set_node_label node_label) m
 
-let map_set_boot id boot m =
-  IntMap.add id ((map_find_loose id m)#set_boot boot) m
+let map_set_edge_label id edge_label m =
+  IntMap.add id ((map_find_loose id m)#set_edge_label edge_label) m

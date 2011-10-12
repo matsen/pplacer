@@ -15,7 +15,7 @@ let like_aln_map_of_data seq_type align tree =
   IntMap.map
     (Array.get like_aln)
     (Alignment.make_aln_index_map
-      (Bark_map.to_name_map (Gtree.get_bark_map tree))
+      (Bark_map.to_node_label_map (Gtree.get_bark_map tree))
       (Array.map fst align))
 
 let glv_arr_for model tree n_sites =
@@ -27,13 +27,14 @@ let glv_arr_for model tree n_sites =
 
 let calc_distal_and_evolv_dist model tree like_aln_map
                           ~distal_glv_arr ~evolv_dist_glv_arr =
+  let top = Gtree.top_id tree in
   (* calc returns the evolv_dist for each subtree in a list *)
   let rec calc t =
     let id = Stree.top_id t in
     let distal = Glv_arr.get distal_glv_arr id
     and evolv_dist = Glv_arr.get evolv_dist_glv_arr id
     in
-  (* first calculate distal *)
+    (* first calculate distal *)
     let () = match t with
     | Stree.Node(_, tL) -> begin
         (* take the product of the below *)
@@ -41,15 +42,19 @@ let calc_distal_and_evolv_dist model tree like_aln_map
         Glv.perhaps_pull_exponent min_allowed_twoexp distal
       end
     | Stree.Leaf _ ->
-  (* for a leaf, distal is just the LV from the aln for each rate *)
+        (* for a leaf, distal is just the LV from the aln for each rate *)
         Glv.prep_constant_rate_glv_from_lv_arr
           distal
           (IntMap.find id like_aln_map)
     in
-  (* now calculate evolv_dist *)
-    Glv.evolve_into
-      model ~dst:evolv_dist ~src:distal (Gtree.get_bl tree id);
-    evolv_dist
+    if top_id t = top then
+      distal
+    else begin
+      (* now calculate evolv_dist *)
+      Glv.evolve_into
+        model ~dst:evolv_dist ~src:distal (Gtree.get_bl tree id);
+      evolv_dist
+    end
   in
   let _ = calc (Gtree.get_stree tree) in ()
 
@@ -59,12 +64,13 @@ let glv_from_stree glv_arr t = Glv_arr.get glv_arr (Stree.top_id t)
 
 let calc_proximal model tree
                   evolved_prox ~evolv_dist_glv_arr ~proximal_glv_arr =
-(* calc calculates the proximal vectors. in contrast to the previous calc, the
- * recursion step is actually calculating the proximal vectors for the edges
- * below the given edge.
- *)
+  let top = Gtree.top_id tree in
+  (* calc calculates the proximal vectors. in contrast to the previous calc, the
+   * recursion step is actually calculating the proximal vectors for the edges
+   * below the given edge.
+   *)
   let rec calc = function
-    | Stree.Node(id, tL) ->
+    | Stree.Node(id, tL) when id <> top ->
         let proximal = Glv_arr.get proximal_glv_arr id in
         Glv.evolve_into
           model ~dst:evolved_prox ~src:proximal (Gtree.get_bl tree id);
@@ -78,7 +84,7 @@ let calc_proximal model tree
             Glv.perhaps_pull_exponent min_allowed_twoexp prox_below)
           (ListFuns.pull_each_out tL);
         List.iter calc tL
-    | Stree.Leaf _ -> ()
+    | _ -> ()
   in
   let stree = Gtree.get_stree tree in
   let top_prox = glv_from_stree proximal_glv_arr stree in

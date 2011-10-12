@@ -19,8 +19,8 @@ let find_root rp gt =
     |> List.filter_map
         (fun leaf ->
           try
-            Gtree.get_name gt leaf
-            |> Tax_seqinfo.tax_id_by_name seqinfom
+            Gtree.get_node_label gt leaf
+            |> Tax_seqinfo.tax_id_by_node_label seqinfom
             |> some
           with Gtree.Lacking_bark _ -> None)
     |> Tax_taxonomy.list_mrca td

@@ -185,7 +185,7 @@ let check rp name what =
   let _ = what rp in ()
 
 let check_tree_and_aln_names tree aln =
-  let tns = StringSet.of_list (Newick_gtree.get_name_list tree)
+  let tns = StringSet.of_list (Newick_gtree.get_node_label_list tree)
   and ans = StringSet.of_list (Array.to_list (Alignment.get_name_arr aln))
   in
   let test (s1, n1) (s2, n2) =
@@ -218,7 +218,7 @@ let check_refpkg rp =
 (* check that a given tree t is the same as the ref tree in the refpkg rp.
  * Note that we don't check bootstraps. *)
 let check_tree_identical ?epsilon:(epsilon=0.) rp title t =
-  if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then
+  if 0 <> Newick_gtree.compare ~epsilon ~cmp_edge_label:false t (get_ref_tree rp) then
     failwith (title^" and the tree from "^(get_name rp)^" are not the same.")
 
 let check_tree_approx = check_tree_identical ~epsilon:1e-5

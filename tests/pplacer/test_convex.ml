@@ -10,10 +10,7 @@ let convex_suite = List.map
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
     let colors = IntMap.filter_map
-      (fun _ value ->
-        try
-          Some (value#get_name |> Tax_id.of_string)
-        with Newick_bark.No_name -> None)
+      (fun _ value -> value#get_node_label_opt |> Option.map Tax_id.of_string)
       bm
     in
     let naive_nodes = Naive.solve (colors, st) in
@@ -44,14 +41,9 @@ let strict_suite = List.map
     let gt = Newick_gtree.of_string s in
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
-    let colors = IntMap.fold
-      (fun key value map ->
-        try
-          let name = value#get_name in
-          IntMap.add key (Tax_id.of_string name) map
-        with Newick_bark.No_name -> map)
+    let colors = IntMap.filter_map
+      (fun _ value -> value#get_node_label_opt |> Option.map Tax_id.of_string)
       bm
-      IntMap.empty
     in
     let _, early_omega = solve ~strict:true ~nu_f:apart_nu (colors, st)
     and _, not_early_omega = solve ~strict:true ?nu_f:None (colors, st) in
@@ -74,8 +66,10 @@ let suite = [
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
     let colors = IntMap.filter_map
-      (fun _ v ->
-        match v#get_name with "X" -> None | x -> Some (Tax_id.of_string x))
+      (fun _ value ->
+        value#get_node_label_opt
+          |> Option.bind
+              (function "X" -> None | x -> Some (Tax_id.of_string x)))
       bm
     in
     let alt_colors = alternate_colors (colors, st) in
@@ -93,7 +87,10 @@ let suite = [
     let gt = Newick_gtree.of_string "(A,(A,(B,(C,C))))" in
     let st = gt.Gtree.stree
     and bm = gt.Gtree.bark_map in
-    let colors = IntMap.map (fun v -> v#get_name |> Tax_id.of_string) bm in
+    let colors = IntMap.filter_map
+      (fun _ value -> value#get_node_label_opt |> Option.map Tax_id.of_string)
+      bm
+    in
     let _, cutset = build_sizemim_and_cutsetim (colors, st) in
     let expected = IntMap.map
       colorset_of_strings
