@@ -141,15 +141,23 @@ The new JSON format is very simple. Each document is a JSON object with a minimu
 ===================  =====
 Key                  Value
 ===================  =====
-``version``          The version of the JSON format as an integer. Currently only ``1`` is allowed.
+``version``          The version of the JSON format as an integer.
 ``tree``             The reference tree as a string, in "edge-numbered Newick" format.
 ``placements``       An array of placements.
 ``fields``           An array of strings corresponding to the data given in the placements array.
 ``metadata``         An object containing metadata about the generation of this collection of placements.
 ===================  =====
 
-An "edge-numbered Newick" tree is simply a Newick format tree with edge labels in square brackets which provide a well-defined numbering of edges.
-These edge numbers are used to specify the edges on which the placements lie.
+An "edge-numbered Newick" tree is simply a Newick format tree with integers in
+curly braces which provide a well-defined numbering of edges. These edge
+numbers are used to specify the edges on which the placements lie.
+
+Currently there are two versions of the placefile format accepted by ``guppy``
+and ``rppr``: ``1``, and ``2``, though only version 2 will be generated. The
+sole difference is that version 1 used a slightly different version of
+edge-numbered Newick trees for the ``tree`` field, where edge numbers were
+specified in square brackets instead of curly braces. Both this kind of Newick
+tree and version 1 of the JSON format are now deprecated.
 
 The pplacer suite currently uses the following field names:
 
