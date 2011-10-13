@@ -49,7 +49,10 @@ let rec to_formatter ff o =
       ) true o in ();
       Format.fprintf ff "@]@,]"
     | Null -> Format.fprintf ff "null"
-  in aux o; Format.fprintf ff "\n@?"
+  in
+  Format.fprintf ff "@[";
+  aux o;
+  Format.fprintf ff "@]@."
 
 let to_string o =
   let buf = Buffer.create 256 in
