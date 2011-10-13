@@ -373,23 +373,27 @@ let run_file prefs query_fname =
     and util_one = Glv.mimic darr.(0)
     in
     Glv.set_unit util_one;
-    Printf.printf "node\ttree_likelihood\tsupernode_likelihood\n";
-    for i=0 to (Array.length darr)-1 do
-      let d = darr.(i)
-      and p = parr.(i)
-      and sn = snodes.(i)
-      in
-      fp_check d (Printf.sprintf "distal %d" i);
-      fp_check p (Printf.sprintf "proximal %d" i);
-      fp_check sn (Printf.sprintf "supernode %d" i);
-      Model.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
-      Model.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
-      Printf.printf "%d\t%g\t%g\t%g\n"
-        i
-        (Model.log_like3 model utilv_nsites util_d util_p util_one)
-        (Model.slow_log_like3 model util_d util_p util_one)
-        (Glv.logdot utilv_nsites sn util_one);
-    done
+    Array.mapi
+      (fun i d ->
+        let p = parr.(i)
+        and sn = snodes.(i) in
+        fp_check d (Printf.sprintf "distal %d" i);
+        fp_check p (Printf.sprintf "proximal %d" i);
+        fp_check sn (Printf.sprintf "supernode %d" i);
+        Model.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
+        Model.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
+        Array.map (Printf.sprintf "%g")
+          [| float_of_int i;
+             Model.log_like3 model utilv_nsites util_d util_p util_one;
+             Model.slow_log_like3 model util_d util_p util_one;
+             Glv.logdot utilv_nsites sn util_one;
+          |])
+      darr
+    |> Array.append
+        [|[|"node"; "tree_likelihood"; "supernode_likelihood"; "???"|]|]
+    |> String_matrix.pad
+    |> Array.iter (Array.iter (dprintf "%s  ") |- tap (fun () -> dprint "\n"))
+
   end;
 
   (* *** analyze query sequences *** *)
