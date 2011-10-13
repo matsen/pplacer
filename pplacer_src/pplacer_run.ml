@@ -376,6 +376,7 @@ let run_file prefs query_fname =
   let cat_array = Array.make n_sites (-1) in
   (* Try all of the categories. *)
   for cat=0 to n_categories-1 do
+    Printf.printf "%d " (cat+1); flush_all ();
     Array.fill cat_array 0 n_sites cat;
     Model.set_site_categories_XXX model cat_array;
     let site_log_like_arr =
@@ -384,7 +385,6 @@ let run_file prefs query_fname =
     record_best_log_lks site_log_like_arr cat;
   done;
   Model.set_site_categories_XXX model best_log_lk_cats;
-  Ppr.print_int_array best_log_lk_cats;
   dprint "done.\n";
 
   dprint "Caching likelihood information on reference tree... ";
