@@ -60,7 +60,7 @@ let maybe_cons o l = maybe_map_cons identity o l
 
 let to_csv_out ch =
   (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
-let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
+let csv_out_channel ch = new IO.out_channel ch |> to_csv_out
 
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
@@ -80,7 +80,7 @@ let dprintf ?(l = 1) ?(flush = true) fmt =
   if !verbosity >= l then begin
     finally (if flush then flush_all else identity) (Printf.printf fmt)
   end else
-    Printf.fprintf IO.stdnull fmt
+    Printf.ifprintf IO.stdnull fmt
 let dprint ?(l = 1) ?(flush = true) s =
   if !verbosity >= l then begin
     print_string s;
