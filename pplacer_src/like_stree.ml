@@ -20,7 +20,7 @@ let like_aln_map_of_data seq_type align tree =
   IntMap.map
     (Array.get like_aln)
     (Alignment.make_aln_index_map
-      (Bark_map.to_node_label_map (Gtree.get_bark_map tree))
+      (Newick_gtree.leaf_label_map tree)
       (Array.map fst align))
 
 let glv_arr_for model tree n_sites =

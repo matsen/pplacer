@@ -185,7 +185,9 @@ let check rp name what =
   let _ = what rp in ()
 
 let check_tree_and_aln_names tree aln =
-  let tns = StringSet.of_list (Newick_gtree.get_node_label_list tree)
+  let tns = Newick_gtree.leaf_label_map tree
+    |> IntMap.values
+    |> StringSet.of_enum
   and ans = StringSet.of_list (Array.to_list (Alignment.get_name_arr aln))
   in
   let test (s1, n1) (s2, n2) =

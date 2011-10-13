@@ -16,18 +16,19 @@ let to_numbered t =
 let make_edge_label_id t =
   Gtree.mapi_bark_map (fun i x -> x#set_edge_label (string_of_int i)) t
 
+let node_labels_of_ids t =
+  List.enum
+  |- Enum.filter_map
+      (Result.catch (identity &&& Gtree.get_node_label t)
+       |- Result.to_option)
+  |- IntMap.of_enum
+
 (* Make a list of the names on the tree, including the internal nodes. *)
-let get_node_label_list t =
-  let rec aux = function
-    | id::l ->
-        begin
-          match (Gtree.get_bark t id)#get_node_label_opt with
-          | Some s -> s::(aux l)
-          | None -> aux l
-        end
-    | [] -> []
-  in
-  aux (Gtree.node_ids t)
+let node_label_map t =
+  Gtree.node_ids t |> node_labels_of_ids t
+(* The same, but only the leaves on the tree. *)
+let leaf_label_map t =
+  Gtree.leaf_ids t |> node_labels_of_ids t
 
 let has_zero_bls t =
   List.fold_left
