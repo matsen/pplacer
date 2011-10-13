@@ -5,13 +5,13 @@
 open Ppatteries
 open Stree
 
+(* below 2^-50 = 1e-15 we pull out the exponent into the int *)
+let min_allowed_twoexp = -50
+
 module Make (Model: Glvm.Model) =
 struct
   module Glv = Model.Glv
   module Glv_arr = Glv_arr.Make(Model)
-
-  (* below 2^-50 = 1e-15 we pull out the exponent into the int *)
-  let min_allowed_twoexp = -50
 
   (* make a map which goes from node number to the associated likelihood vector
    * for each named node (generally these are assumed to be the leaves) *)

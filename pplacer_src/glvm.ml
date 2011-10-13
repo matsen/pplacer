@@ -15,7 +15,8 @@ sig
   val build: Alignment.t -> init_params -> t
   val seq_type: t -> Alignment.seq_type
   val rates: t -> float array
-  val set_site_categories_XXX: t -> int array -> unit
+  val refine: t -> int -> Newick_gtree.t ->
+    Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> unit
 
   module Glv:
   sig

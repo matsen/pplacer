@@ -1,7 +1,9 @@
 open Ppatteries
 open Gstar_support
 
-module Model: Glvm.Model =
+module LSM = Like_stree.Make
+
+module rec Model: Glvm.Model =
 struct
 
   (* this simply contains the information about the Markov process corresponding
@@ -67,16 +69,6 @@ struct
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp ~mask:model.occupied_rates ~dst:model.tensor model.diagdq model.rates bl
-
-  let set_site_categories_XXX model a =
-    assert(Array.length model.site_categories = Array.length a);
-    Array.fill model.occupied_rates 0 (Array.length model.occupied_rates) false;
-    Array.iteri
-      (fun i _ ->
-        model.site_categories.(i) <- a.(i);
-        model.occupied_rates.(a.(i)) <- true)
-      model.site_categories
-
 
 
   module Glv =
@@ -338,7 +330,75 @@ struct
   let slow_log_like3 model x y z =
     Array.fold_left ( +. ) 0. (site_log_like_arr3 model x y z)
 
+  let set_site_categories model a =
+    assert(Array.length model.site_categories = Array.length a);
+    Array.fill model.occupied_rates 0 (Array.length model.occupied_rates) false;
+    Array.iteri
+      (fun i _ ->
+        model.site_categories.(i) <- a.(i);
+        model.occupied_rates.(a.(i)) <- true)
+      model.site_categories
+
+  let refine model n_sites ref_tree like_aln_map darr parr =
+  (* Optimize site categories *)
+  (* From FastTree source:
+    /* Select best rate for each site, correcting for the prior
+       For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
+       Prior(rate) ~ rate**2 * exp(-3*rate)
+       log Prior(rate) = C + 2 * log(rate) - 3 * rate
+    */
+      for (iRate = 0; iRate < nRateCategories; iRate++) {
+        double site_loglk_with_prior = site_loglk[NJ->nPos*iRate + iPos]
+          + 2.0 * log(rates[iRate]) - 3.0 * rates[iRate];
+        if (site_loglk_with_prior > dBest) {
+          iBest = iRate;
+          dBest = site_loglk_with_prior;
+        }
+      }
+  *)
+    dprint "Optimizing site categories... ";
+    let n_categories = 20 in
+    let best_log_lks = Array.make n_sites (-. infinity)
+    and best_log_lk_cats = Array.make n_sites (-1)
+    and rates = rates model
+    in
+    let log_rates = Array.map log rates
+    in
+    (* For every category, we make an "attempt". Here we record those attempts
+     * that are actually best. *)
+    let record_best_log_lks attempt cat =
+      Array.iteri
+        (fun site log_lk ->
+          let x = log_lk +. 2. *. log_rates.(cat) -. 3. *. rates.(cat) in
+          if x > best_log_lks.(site) then begin
+            (* Printf.printf "xx %g\t%g\n" x best_log_lks.(site); *)
+            best_log_lks.(site) <- x;
+            best_log_lk_cats.(site) <- cat
+          end)
+        attempt
+    in
+    let cat_array = Array.make n_sites (-1) in
+    (* Try all of the categories. *)
+    for cat=0 to n_categories-1 do
+      dprintf "%d " (cat+1);
+      Array.fill cat_array 0 n_sites cat;
+      set_site_categories model cat_array;
+      let site_log_like_arr =
+        Like_stree.site_log_like_arr model ref_tree like_aln_map darr parr
+      in
+      record_best_log_lks site_log_like_arr cat;
+    done;
+    set_site_categories model best_log_lk_cats;
+    dprint "done.\n";
+
 end
+and Like_stree: sig
+  val site_log_like_arr:
+    Model.t ->
+    Newick_gtree.t ->
+    Gsl_vector.vector array IntMap.t ->
+    Model.Glv.t array -> Model.Glv.t array -> float array
+end = LSM(Model)
 
 module Glv_edge = Glv_edge.Make(Model)
 module Glv_arr = Glv_arr.Make(Model)

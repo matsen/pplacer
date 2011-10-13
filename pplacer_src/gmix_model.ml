@@ -56,7 +56,7 @@ struct
 
     | _ -> invalid_arg "build"
 
-  let set_site_categories_XXX _ _ = ()
+  let refine _ _ _ _ _ _ = ()
 
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
