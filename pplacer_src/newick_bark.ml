@@ -29,6 +29,8 @@ let quote_label s =
     s
   in if !replaced then Printf.sprintf "'%s'" s' else s'
 
+let maybe_float = Option.bind (Result.catch float_of_string |- Result.to_option)
+
 class newick_bark arg =
 
   let (bl, node_label, edge_label) =
@@ -60,6 +62,11 @@ class newick_bark arg =
     method set_edge_label_opt xo = {< edge_label = xo >}
     method set_edge_label x = {< edge_label = Some x >}
 
+    method get_confidence_opt =
+      match maybe_float node_label with
+        | None -> maybe_float edge_label
+        | x -> x
+
     method to_newick_string node_number =
       Printf.sprintf "%s%s%s%s"
         (Option.map_default quote_label "" node_label)
@@ -79,10 +86,9 @@ class newick_bark arg =
       let maybe_list f = function
         | Some x -> f x
         | None -> []
-      in maybe_list (fun node_label -> [Myxml.tag "name" node_label]) node_label
+      in maybe_list (fun nl -> [Myxml.tag "name" nl]) node_label
       @ maybe_list (fun bl -> [Myxml.tag "branch_length" (Printf.sprintf "%g" bl)]) bl
-      @ maybe_list (fun edge_label ->
-        [Myxml.tag "confidence" ~attributes:[("type", "bootstrap")] edge_label]) edge_label
+      @ maybe_list (fun c -> [Myxml.tag "confidence" c]) self#get_confidence_opt
     end
 
     method to_numbered id =
