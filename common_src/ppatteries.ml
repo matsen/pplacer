@@ -65,6 +65,7 @@ let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
+let junction pred f g a = if pred a then f a else g a
 let (|--) f g a b = g (f a b)
 let (|~) = (-|)
 let (||-) f g a = f a || g a

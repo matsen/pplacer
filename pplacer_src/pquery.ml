@@ -149,3 +149,7 @@ let merge_into pq pql =
       |> List.cons m
       |> List.fsum
       |> set_mass pq
+
+let merge = function
+  | h :: t -> merge_into h t
+  | [] -> invalid_arg "merge"
