@@ -339,7 +339,7 @@ struct
         model.occupied_rates.(a.(i)) <- true)
       model.site_categories
 
-  let refine model n_sites ref_tree like_aln_map darr parr =
+  let refine model n_sites ref_tree like_aln_map util_glv_arr_1 util_glv_arr_2 =
   (* Optimize site categories *)
   (* From FastTree source:
     /* Select best rate for each site, correcting for the prior
@@ -371,7 +371,6 @@ struct
         (fun site log_lk ->
           let x = log_lk +. 2. *. log_rates.(cat) -. 3. *. rates.(cat) in
           if x > best_log_lks.(site) then begin
-            (* Printf.printf "xx %g\t%g\n" x best_log_lks.(site); *)
             best_log_lks.(site) <- x;
             best_log_lk_cats.(site) <- cat
           end)
@@ -383,10 +382,10 @@ struct
       dprintf "%d " (cat+1);
       Array.fill cat_array 0 n_sites cat;
       set_site_categories model cat_array;
-      let site_log_like_arr =
-        Like_stree.site_log_like_arr model ref_tree like_aln_map darr parr
-      in
-      record_best_log_lks site_log_like_arr cat;
+      record_best_log_lks
+        (Like_stree.site_log_like_arr
+          model ref_tree like_aln_map util_glv_arr_1 util_glv_arr_2)
+        cat;
     done;
     set_site_categories model best_log_lk_cats;
     dprint "done.\n";
