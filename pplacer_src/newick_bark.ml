@@ -88,7 +88,8 @@ class newick_bark arg =
         | None -> []
       in maybe_list (fun nl -> [Myxml.tag "name" nl]) node_label
       @ maybe_list (fun bl -> [Myxml.tag "branch_length" (Printf.sprintf "%g" bl)]) bl
-      @ maybe_list (fun c -> [Myxml.tag "confidence" c]) self#get_confidence_opt
+      @ maybe_list (fun c -> [Myxml.tag "confidence" (Printf.sprintf "%g" c)])
+                   self#get_confidence_opt
     end
 
     method to_numbered id =
