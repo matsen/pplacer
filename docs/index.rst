@@ -25,6 +25,16 @@ The general guideline is: if we have published about a method, then we have veri
 If not, then we suggest that you wait to do any analysis that you intend to publish.
 
 
+.. raw:: html
+
+   <h2> <font color="red">Warning</font> </h2>
+
+The pplacer suite is currently in an "alpha" stage of development.
+We do our best to keep everything correct, but some functionality is not completely verified and thus may contain bugs or produce unexpected results.
+The general guideline is: if we have published about a method, then we have verified it and you are good to go.
+If not, then we suggest that you wait to do any analysis that you intend to publish.
+
+
 Getting help
 ------------
 

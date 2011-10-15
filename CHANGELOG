@@ -7,6 +7,8 @@
    names if the name was an integer.
  * In fixing a bug, made `guppy diplac` only emit the first name in a pquery in
    its results.
+ * Fixed a bug that caused the trailing } in a JSON file to be omitted when the
+   file was large enough.
  * Added a `multiclass` view and associated parameters to `rppr prep_db`.
  * Fixed a bug where sometimes placements that fell too close to the root would
    vanish with the --map-identity flag on.
