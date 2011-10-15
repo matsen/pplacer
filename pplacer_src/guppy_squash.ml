@@ -9,6 +9,9 @@ open Subcommand
 open Guppy_cmdobjs
 open Squashfunc
 
+let round_sig_figs = 3
+let round_cutoff = 0.01
+
 module NPreBlob =
   struct
     type t = int list * Mass_map.Pre.t
@@ -100,6 +103,11 @@ object (self)
   val tax_cluster_mode = flag "--tax-cluster"
     (Plain ("", "Perform taxonomic clustering rather than phylogenetic.\
     Specify \"unit\" or \"inv\" for the two different modes."))
+  val round = flag "--pre-round"
+    (Plain (false, Printf.sprintf
+                     "Apply rounding with %d sig figs and cutoff %g to each
+                     placerun before clustering"
+                     round_sig_figs round_cutoff))
 
   method specl =
     super_mass#specl
@@ -111,7 +119,8 @@ object (self)
     @ super_normalization#specl
     @ [
       int_flag nboot;
-      string_flag tax_cluster_mode
+      string_flag tax_cluster_mode;
+      toggle_flag round
     ]
 
   method desc =
@@ -137,8 +146,16 @@ object (self)
     and p = fv p_exp
     and denom_f = self#get_normalization
     in
-    let our_make_cluster =
-      make_cluster p denom_f weighting criterion in
+    let our_make_cluster refpkgo mode_str prl =
+      let maybe_round pr =
+        if fv round then
+          Guppy_round.round_placerun round_cutoff round_sig_figs
+            pr.Placerun.name pr
+        else pr
+      in
+      make_cluster p denom_f weighting criterion refpkgo mode_str
+                   (List.map maybe_round prl)
+    in
     let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
     self#check_placerunl prl;
