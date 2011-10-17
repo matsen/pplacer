@@ -194,16 +194,33 @@ let run_file prefs query_fname =
     | None -> ()
   end;
 
+  let m, i = Refpkg.get_model rp in
+  let module Model = (val m: Glvm.Model) in
+  let module Glv = Model.Glv in
+  let module Glv_arr = Glv_arr.Make(Model) in
+  let module Like_stree = Like_stree.Make(Model) in
+  let model = Model.build ref_align i in
   (* *** pre masking *** *)
   let query_list, ref_align, n_sites =
     if Prefs.no_pre_mask prefs then
       query_list, ref_align, n_sites
     else begin
       dprint "Pre-masking sequences... ";
-      let initial_mask = Array.make n_sites false in
+      let base_map = match Model.seq_type model with
+        | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
+        | Alignment.Protein_seq -> Prot_models.prot_map
+      and initial_mask = Array.make n_sites false in
+      let check_seq (name, seq) =
+        String.iter
+          (fun c ->
+            if not (CharMap.mem c base_map) then
+              failwith (Printf.sprintf "%c is not a known base in %s" c name))
+          seq
+      in
       let mask_of_enum enum =
         Enum.fold
-          (snd
+          (tap check_seq
+           |- snd
            |- String.enum
            |- Enum.map Alignment.informative
            |- Array.of_enum
@@ -297,12 +314,6 @@ let run_file prefs query_fname =
     []
   in
 
-  let m, i = Refpkg.get_model rp in
-  let module Model = (val m: Glvm.Model) in
-  let module Glv = Model.Glv in
-  let module Glv_arr = Glv_arr.Make(Model) in
-  let module Like_stree = Like_stree.Make(Model) in
-  let model = Model.build ref_align i in
   if !verbosity >= 1 &&
     not (Stree.multifurcating_at_root ref_tree.Gtree.stree) then
        print_endline Placerun_io.bifurcation_warning;
@@ -315,7 +326,6 @@ let run_file prefs query_fname =
   in
   (* pretending *)
   if Prefs.pretend prefs then begin
-    Check.pretend (m, i) ref_align [query_fname];
     dprint "everything looks OK.\n";
     exit 0;
   end;
@@ -605,6 +615,7 @@ let run_file prefs query_fname =
     if cachefunc x then nextfunc ()
     else x
   in
+  flush_all ();
   1 -- Prefs.children prefs
     |> Enum.map
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)

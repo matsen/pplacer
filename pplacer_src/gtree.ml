@@ -213,9 +213,7 @@ let add_subtrees_above avail_id tree where_subtree_list =
     0.
     tree
     avail_id
-    (List.sort
-      ~cmp:(comparing get_where)
-      where_subtree_list)
+    (List.sort (comparing get_where) where_subtree_list)
 
 (* where_subtree_map is a map from a location to a triple (pos, tree,
  * bark_of_bl), where pos is the position along the edge in terms of distal

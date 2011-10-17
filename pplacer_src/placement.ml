@@ -61,7 +61,7 @@ let add_classif p c = {p with classif = Some c}
 let add_map_identity p i = {p with map_identity = Some i}
 
 let sort_placecoll criterion pc =
-  List.sort ~cmp:(comparing criterion |> flip) pc
+  List.sort (comparing criterion |> flip) pc
 
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc

@@ -115,11 +115,10 @@ module I = Mass_map.Indiv
 let make_kr_map m1 m2 =
   let process_map f =
     IntMap.map
-      (List.map
-         (fun {I.distal_bl; I.mass} -> distal_bl, f mass))
+      (List.map (fun {I.distal_bl; I.mass} -> distal_bl, f mass))
   in
   IntMap.map
-    List.sort
+    (List.sort compare)
     (combine_list_intmaps
     [
       process_map (fun mass -> [|mass; 0.|]) m1;

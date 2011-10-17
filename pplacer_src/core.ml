@@ -162,7 +162,7 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
     let curr_time = Sys.time () in
     let h_r =
       List.sort
-        ~cmp:(comparing snd |> flip)
+        (comparing snd |> flip)
         (List.map
            (fun loc ->
              (loc,
@@ -288,7 +288,7 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
        * to make a special type for ml results. *)
       let get_like (_, (like, _, _)) = like in
       let sorted_ml_results =
-        List.sort ~cmp:(comparing get_like |> flip) ml_results in
+        List.sort (comparing get_like |> flip) ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =

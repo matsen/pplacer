@@ -538,7 +538,7 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
                  cur',
                  cur' :: List.map (arrow_up cur) sols)
                (i', [i'])
-               (List.sort ~cmp:(comparing mv_dist |> flip) j)
+               (List.sort (comparing mv_dist |> flip) j)
              |> uncurry List.cons)
        |- List.filter (leaf_card |- (>=) max_leaves))
   |> Enum.map List.enum

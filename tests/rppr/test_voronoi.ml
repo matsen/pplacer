@@ -98,7 +98,7 @@ let suite = [
     in
     List.iter
       (fun (leaf, expected_snips) ->
-        let got_snips = List.sort (get_edge_snipl test_v leaf) in
+        let got_snips = List.sort compare (get_edge_snipl test_v leaf) in
         (Printf.sprintf "unexpected snipl for leaf %d" leaf)
         @? (snipl_equal got_snips expected_snips))
       expected
@@ -117,7 +117,7 @@ let suite = [
           (List.for_all2
              approx_equal
              masslist
-             (List.sort (IntMap.find leaf got_massdist))))
+             (List.sort compare (IntMap.find leaf got_massdist))))
       [
         0, [7.];
         1, [4.; 5.; 6.; 8.; 9.; 12.];
