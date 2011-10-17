@@ -603,6 +603,7 @@ let run_file prefs query_fname =
     if cachefunc x then nextfunc ()
     else x
   in
+  flush_all ();
   1 -- Prefs.children prefs
     |> Enum.map
       (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
