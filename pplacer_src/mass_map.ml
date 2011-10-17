@@ -153,7 +153,7 @@ module Indiv = struct
  * the edge in an increasing manner. *)
   let sort m =
     IntMap.map
-      (List.sort ~cmp:(fun {distal_bl = a1} {distal_bl = a2} -> compare a1 a2))
+      (List.sort (comparing (fun {distal_bl} -> distal_bl)))
       m
 
   let total_mass m =

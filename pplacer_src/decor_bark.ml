@@ -28,7 +28,7 @@ class decor_bark arg =
 
     method to_xml =
       super#to_xml
-      @ List.flatten (List.map Decor.to_xml (List.sort decor))
+      @ List.flatten (List.map Decor.to_xml (List.sort compare decor))
 
     method append_decor decor_list =
       {< decor = decor @ decor_list >}

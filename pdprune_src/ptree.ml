@@ -18,7 +18,7 @@ type ptree = (int, edge) Hashtbl.t
 
 (* *** EDGE UTILS *** *)
 
-let sorted_list_eq l1 l2 = List.sort l1 = List.sort l2
+let sorted_list_eq l1 l2 = List.sort compare l1 = List.sort compare l2
 
 (* assert that one_side is a (potentially resorted version of) l or r, and
  * return the one that it is not *)
