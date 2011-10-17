@@ -31,7 +31,7 @@ let find_root rp gt =
       let subrks = List.map (node_mrca &&& some) subtrees
         |> maybe_map_cons (None |> (curry identity |> flip)) top_mrca
         |> List.map (Tax_taxonomy.get_tax_rank td |> first)
-        |> List.sort
+        |> List.sort compare
       in
       let at = List.at subrks |- fst in
       if List.length subrks < 2 || at 0 = at 1 then

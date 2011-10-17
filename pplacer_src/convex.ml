@@ -431,7 +431,7 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
             (fun apart -> apart_nu' apart, apart)
             apartl
           in
-          List.rev_map (fun (a, b) -> Some a, b) (List.sort nu_apartl)
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
       in
       let rec aux phi current_best = function
         | (nu_opt, apart) :: rest -> (
