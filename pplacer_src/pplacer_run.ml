@@ -144,7 +144,7 @@ let run_file prefs query_fname =
     ~ignore_version:(Prefs.refpkg_path prefs = "")
     prefs
     rp_strmap
-  in
+  and from_input_alignment = Option.is_some ref_align in
 
   let ref_align =
     try
@@ -346,7 +346,8 @@ let run_file prefs query_fname =
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   dprint "done.\n";
 
-  Model.refine model n_sites ref_tree like_aln_map darr parr;
+  if from_input_alignment then
+    Model.refine model n_sites ref_tree like_aln_map darr parr;
 
   dprint "Caching likelihood information on reference tree... ";
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
