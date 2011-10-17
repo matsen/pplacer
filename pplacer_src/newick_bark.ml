@@ -62,10 +62,10 @@ class newick_bark arg =
     method set_edge_label_opt xo = {< edge_label = xo >}
     method set_edge_label x = {< edge_label = Some x >}
 
-    method get_confidence_opt =
+    method get_confidence_name_opt =
       match maybe_float node_label with
-        | None -> maybe_float edge_label
-        | x -> x
+        | None -> maybe_float edge_label, node_label
+        | c -> c, None
 
     method to_newick_string node_number =
       Printf.sprintf "%s%s%s%s"
@@ -83,13 +83,11 @@ class newick_bark arg =
       Format.fprintf ff "@[{%a}@]" (fun ff () -> self#ppr_inners ff) ()
 
     method to_xml = begin
-      let maybe_list f = function
-        | Some x -> f x
-        | None -> []
-      in maybe_list (fun nl -> [Myxml.tag "name" nl]) node_label
-      @ maybe_list (fun bl -> [Myxml.tag "branch_length" (Printf.sprintf "%g" bl)]) bl
-      @ maybe_list (fun c -> [Myxml.tag "confidence" (Printf.sprintf "%g" c)])
-                   self#get_confidence_opt
+      let confidence, name = self#get_confidence_name_opt in
+      []
+      |> maybe_map_cons (Myxml.tag "name") name
+      |> maybe_map_cons (Printf.sprintf "%g" |- Myxml.tag "branch_length") bl
+      |> maybe_map_cons (Printf.sprintf "%g" |- Myxml.tag "confidence") confidence
     end
 
     method to_numbered id =
