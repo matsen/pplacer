@@ -9,14 +9,14 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
 
-  val c = flag "-c"
-    (Needs_argument ("c", "The c parameter for mass compression"))
+  val cutoff = flag "--cutoff"
+    (Needs_argument ("cutoff", "The cutoff parameter for mass compression"))
 
   method specl =
     super_mass#specl
   @ super_output#specl
   @ [
-    float_flag c;
+    float_flag cutoff;
   ]
 
   method desc = "compress a placefile's pqueries"
@@ -25,7 +25,7 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let weighting, criterion = self#mass_opts in
-      Mass_compress.of_placerun ~c:(fv c) weighting criterion pr
+      Mass_compress.of_placerun ~c:(fv cutoff) weighting criterion pr
       |> Placerun.set_pqueries pr
       |> self#write_placefile "guppy compress" (self#single_file ())
 
