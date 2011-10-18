@@ -68,7 +68,7 @@ let to_json_file invocation out_fname placerun =
       | None
       | Some (false, false, false) -> []
       | Some (has_post_prob, has_classif, has_map_identity) ->
-        begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
+        begin if has_post_prob then ["post_prob"; "marginal_like"] else [] end
         @ begin if has_classif then ["classification"] else [] end
         @ begin if has_map_identity then ["map_ratio"; "map_overlap"] else [] end
     end
@@ -166,7 +166,12 @@ let of_json_file fname =
   let ref_tree = Hashtbl.find json "tree"
     |> Jsontype.string
     |> Newick_gtree.of_string ~legacy_format:(version = 1)
-  and fields = List.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
+  and fields = Hashtbl.find json "fields"
+    |> Jsontype.array
+    |> List.map
+        (Jsontype.string
+         |- (function "marginal_prob" when version = 1 -> "marginal_like" | x -> x))
+  in
   let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   Placerun.make
     ref_tree

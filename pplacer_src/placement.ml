@@ -233,7 +233,7 @@ let of_json fields a =
     distal_bl = Jsontype.float (get "distal_length");
     pendant_bl = Jsontype.float (get "pendant_length");
     post_prob = maybe_get Jsontype.float "post_prob";
-    marginal_prob = maybe_get Jsontype.float "marginal_prob";
+    marginal_prob = maybe_get Jsontype.float "marginal_like";
     classif = maybe_get Tax_id.of_json "classification";
     map_identity =
       match maybe_get identity "map_ratio",

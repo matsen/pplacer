@@ -153,11 +153,15 @@ curly braces which provide a well-defined numbering of edges. These edge
 numbers are used to specify the edges on which the placements lie.
 
 Currently there are two versions of the placefile format accepted by ``guppy``
-and ``rppr``: ``1``, and ``2``, though only version 2 will be generated. The
-sole difference is that version 1 used a slightly different version of
-edge-numbered Newick trees for the ``tree`` field, where edge numbers were
-specified in square brackets instead of curly braces. Both this kind of Newick
-tree and version 1 of the JSON format are now deprecated.
+and ``rppr``: ``1``, and ``2``, though only version 2 will be generated. There
+are only two differences between versions 1 and 2: the format of the Newick
+tree in the ``tree`` field has changed, and ``marginal_prob`` was renamed to
+``marginal_like`` in version 2.
+
+Version 1 used a slightly different version of edge-numbered Newick trees for
+the ``tree`` field, where edge numbers were specified in square brackets
+instead of curly braces. Both this kind of Newick tree and version 1 of the
+JSON format are now deprecated.
 
 The pplacer suite currently uses the following field names:
 
@@ -169,13 +173,17 @@ Field                 Description
 ``like_weight_ratio`` ML likelihood weight ratio as a float.
 ``distal_length``     ML distance from the distal side of the edge as a float.
 ``pendant_length``    ML pendant branch length as a float.
+``post_prob``         The posterior probability of a placement on the edge.
+``marginal_like``     The marginal likelihood of a placement on the edge.
 ``classification``    The ``tax_id`` from a reference package as a string.
 ``map_ratio``         The percent identity between this sequence and the corresponding MAP sequence.
 ``map_overlap``       The number of overlapping sites between this sequence and the corresponding MAP sequence.
 ===================== ===========
 
-For ``guppy`` to be able to load a JSON file, it must have ``edge_num``, ``likelihood``, ``like_weight_ratio``,
-``distal_length``, and ``pendant_length`` fields.
+For ``guppy`` to be able to load a JSON file, it must have ``edge_num``,
+``likelihood``, ``like_weight_ratio``, ``distal_length``, and
+``pendant_length`` fields. All other fields are optional, but if one of
+``post_prob`` and ``marginal_like`` are specified, both must be specified.
 
 Each entry in the ``placements`` array is an object with the following keys:
 
