@@ -82,7 +82,7 @@ let decor_gtree_of_topdown_tree bl_of_rank td root tt =
   let (stree, ti_imap) = stree_and_map_of_topdown_tree root tt in
   let bark_of_taxid ti =
         new Decor_bark.decor_bark
-          (`Of_bl_name_boot_decor
+          (`Of_bl_node_edge_label_decor
             (Some (bl_of_taxid ti), None, None,
             [Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)]))
   in
@@ -116,7 +116,7 @@ let of_refpkg_gen bl_of_rank rp =
     bl_of_rank
     td
     (List.map
-      (fun id -> Tax_seqinfo.tax_id_by_name sim (Gtree.get_name t id))
+      (Gtree.get_node_label t |- Tax_seqinfo.tax_id_by_node_label sim)
       (Gtree.leaf_ids t))
 
 let of_refpkg_unit = of_refpkg_gen unit_bl

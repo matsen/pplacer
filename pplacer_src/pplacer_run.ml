@@ -101,11 +101,12 @@ let run_file prefs query_fname =
 
   let ref_tree = StringMap.find "tree" rp_strmap
     |> Newick_gtree.of_file
+    |> Like_stree.add_zero_root_bl
   in
   (* *** split the sequences into a ref_aln and a query_list *** *)
-  let ref_name_list = Newick_gtree.get_name_list ref_tree in
-  let ref_name_set = StringSet.of_list ref_name_list in
-  if List.length ref_name_list <> StringSet.cardinal ref_name_set then
+  let ref_name_map = Newick_gtree.leaf_label_map ref_tree in
+  let ref_name_set = IntMap.values ref_name_map |> StringSet.of_enum in
+  if IntMap.cardinal ref_name_map <> StringSet.cardinal ref_name_set then
     failwith("Repeated names in reference tree!");
   let seq_list = Alignment.upper_list_of_any_file query_fname in
   let ref_list, query_list =

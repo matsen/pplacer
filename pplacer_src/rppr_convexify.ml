@@ -107,7 +107,7 @@ object (self)
       in
       IntSet.fold
         (fun i accum ->
-          let seqname = Gtree.get_name gt i in
+          let seqname = Gtree.get_node_label gt i in
           let ti = IntMap.find i data.taxmap in
           [data.rankname;
            seqname;
@@ -134,7 +134,7 @@ object (self)
       let rank_alternates = alternate_colors (taxmap', data.stree) in
       IntSet.fold
         (fun i accum ->
-          let seqname = Gtree.get_name gt i in
+          let seqname = Gtree.get_node_label gt i in
           ColorSet.fold
             (fun c_ti accum ->
               let lineage = Tax_taxonomy.get_lineage td c_ti in
@@ -269,8 +269,7 @@ object (self)
   method private csv_action =
     let gt = fv input_tree |> Newick_gtree.of_file in
     let namemap = gt.Gtree.bark_map
-      |> IntMap.filter_map
-          (fun _ b -> try Some b#get_name with Newick_bark.No_name -> None)
+      |> IntMap.filter_map (fun _ b -> b#get_node_label_opt)
       |> IntMap.enum
       |> Enum.map swap
       |> StringMap.of_enum
@@ -310,7 +309,7 @@ object (self)
         | Some fname ->
           cut_leaves
             |> IntSet.enum
-            |> Enum.map (Gtree.get_name gt |- flip List.cons [])
+            |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
             |> List.of_enum
             |> Csv.save fname
         | None -> ()

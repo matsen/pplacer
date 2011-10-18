@@ -9,7 +9,7 @@ let decorate_tree cutoff boot_fname ct_fname =
   and boot_tl = Newick_gtree.list_of_file boot_fname
   in
   let boot_sssl = List.map Squash_common.sss_of_tree boot_tl
-  and taxon_list t = List.map (Gtree.get_name t) (Gtree.leaf_ids t)
+  and taxon_list t = List.map (Gtree.get_node_label t) (Gtree.leaf_ids t)
   in
   let taxon_set t = List.fold_right StringSet.add (taxon_list t) StringSet.empty
   in
@@ -35,14 +35,13 @@ let decorate_tree cutoff boot_fname ct_fname =
     ct
     (IntMap.map
       (fun b ->
-        match b#get_name_opt with
+        match b#get_node_label_opt with
         | Some _ -> b
         | None ->
-            (let cnode_num = int_of_float b#get_boot in
-              (b#set_name (string_of_int cnode_num))
-                #set_boot_opt
-                  (let boot_val =
-                    float_of_int (IntMap.find cnode_num bootval_im) in
-                  if boot_val >= cutoff then Some boot_val
-                  else None)))
+            (let cnode_num = int_of_string b#get_edge_label in
+              (b#set_node_label (string_of_int cnode_num))
+                #set_edge_label_opt
+                  (let boot_val = IntMap.find cnode_num bootval_im in
+                   if boot_val >= cutoff then Some (string_of_int boot_val)
+                   else None)))
       (Gtree.get_bark_map ct))
