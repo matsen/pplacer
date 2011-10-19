@@ -46,7 +46,7 @@ module Squash (B: BLOB) =
      * fun as below *)
     let cble_of_blobs distf b b' =
       let (small, big) = if compare b b' < 0 then (b, b') else (b', b) in
-      { dist = distf b b'; small = small; big = big; }
+      { dist = distf b b'; small; big; }
 
     let blob_in_cble b c = b = c.small || b = c.big
 
@@ -77,22 +77,11 @@ module Squash (B: BLOB) =
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
 
-    (* BEGIN crazy work around until ocaml 3.12 *)
-    exception First of B.t
-
-    let first_key m =
-      try
-        BMap.iter (fun k _ -> raise (First k)) m;
-        invalid_arg "empty map given to first_key"
-      with
-      | First k -> k
-
     let get_only_binding m =
-      let k = first_key m in
-      match BMap.remove k m with
-      | m' when m' = BMap.empty -> (k, BMap.find k m)
-      | _ -> invalid_arg "get_only_binding: more than one binding"
-    (* END crazy work around until 3.12 *)
+      if BMap.cardinal m <> 1 then
+        invalid_arg "get_only_binding: more than one binding"
+      else
+        BMap.choose m
 
     (* Note that the blobls can be non normalized as we call normf on them from
      * the beginning and pass those on to distf. *)

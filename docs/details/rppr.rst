@@ -10,6 +10,7 @@ rppr
 
 |rppr| is a binary to help prepare reference packages and select sequences.
 It's pronounced "ripper" and is short for Reference Package PReparer.
+"Evaluator" might be a more appropriate descriptor than "preparer", but acronym aesthetics won out over precision here.
 
 
 Usage

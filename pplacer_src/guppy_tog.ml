@@ -61,12 +61,6 @@ let tog_tree criterion ref_tree placed_map =
     ref_tree
     placed_map
 
-let write_tog_file tree_fmt criterion fname_base ref_tree placed_map =
-  trees_to_file
-    tree_fmt
-    (fname_base^".tog")
-    [tog_tree criterion ref_tree placed_map]
-
 class cmd () =
 object (self)
   inherit subcommand () as super

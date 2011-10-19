@@ -60,9 +60,24 @@ let ll_normalized_prob ll_list =
             ll_list)))
     ll_list
 
+  (* Prefs.prefs -> *)
+  (* Ppatteries.IntMap.key list -> *)
+  (* prior -> *)
+  (* Model.t -> *)
+  (* (string * string) Ppatteries.Array.mappable -> *)
+  (* < get_bl : float; .. > Gtree.gtree -> *)
+  (* darr:Glv.glv array -> *)
+  (* parr:Glv.glv array -> *)
+  (* snodes:Glv.glv array -> string * string -> result list *)
+
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
-let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
+let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree ~(darr: b array) ~(parr: b array) ~(snodes: b array) =
+  let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
+  let module Glv = Model.Glv in
+  let module Glv_arr = Glv_arr.Make(Model) in
+  let module Glv_edge = Glv_edge.Make(Model) in
+  let module Three_tax = Three_tax.Make(Model) in
   let keep_at_most = Prefs.keep_at_most prefs
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
@@ -90,10 +105,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
   in
   (* making glvs which are appropriate for query side of the first placement
    * stage. in contrast to the second stage query glv, this guy is full length. *)
-  let full_query_orig =
-    Glv.make ~n_rates:(Model.n_rates model)
-      ~n_sites:ref_length
-      ~n_states:(Model.n_states model)
+  let full_query_orig = Model.make_glv model ~n_sites:ref_length
   in
   let full_query_evolv = Glv.mimic full_query_orig in
   (* *** the main query loop *** *)
@@ -118,15 +130,15 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     in
     (* the query glv, which has been masked *)
     let query_glv =
-      Glv.lv_arr_to_constant_rate_glv
-        (Model.n_rates model)
+      Model.lv_arr_to_glv
+        model
         (lv_arr_of_char_arr masked_query_arr)
     in
     (* the full one, which will be used for the first stage only *)
     Glv.prep_constant_rate_glv_from_lv_arr
       full_query_orig
       (lv_arr_of_char_arr query_arr);
-    Glv.evolve_into
+    Model.evolve_into
       model
       ~dst:full_query_evolv
       ~src:full_query_orig

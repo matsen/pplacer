@@ -173,11 +173,11 @@ object (self)
         self#write_pre_tree (prefix_of_int i) infix t
       in
       match refpkgo with
-        | None -> IntMap.iter (wpt "phy" drt) blobim
+        | None -> IntMap.iter (wpt "phy" (self#maybe_numbered drt)) blobim
         | Some rp ->
         (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
           let tdrt = Refpkg.get_tax_ref_tree rp in
-          IntMap.iter (wpt "phy" tdrt) blobim;
+          IntMap.iter (wpt "phy" (self#maybe_numbered tdrt)) blobim;
           let (taxt, tax_prel) =
             tax_t_prel_of_prl
               Tax_gtree.of_refpkg_unit weighting criterion rp prl in

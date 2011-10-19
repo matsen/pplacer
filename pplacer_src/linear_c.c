@@ -1,7 +1,10 @@
-/* 
- * to understand the pointer arithmetic below, it's important to understand
+/*
+ * Roll up your bell-bottoms, boys and girls, it's time for some retro pointer
+ * arithmetic!
+ *
+ * To understand the pointer arithmetic below, it's important to understand
  * the layout of the Glv's. they are row-major and indexed in terms of rate,
- * then site, then state. thus the rate-blocks are n_sites*n_states in size.
+ * then site, then state. Thus the rate-blocks are n_sites*n_states in size.
  *
  * Also, the c_layout used by bigarray means that by incrementing a pointer,
  * we first go across the array in the farthest right index, then increment
@@ -18,108 +21,7 @@
 #include <caml/custom.h>
 
 
-
-CAMLprim value log_like3_c(value statd_value, value x_value, value y_value, value z_value, value util_value)
-{
-  CAMLparam5(statd_value, x_value, y_value, z_value, util_value);
-  CAMLlocal1(ml_ll_tot);
-  double *statd = Data_bigarray_val(statd_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  double *z = Data_bigarray_val(z_value);
-  double *util = Data_bigarray_val(util_value);
-  int n_rates = Bigarray_val(x_value)->dim[0];
-  int n_sites = Bigarray_val(x_value)->dim[1];
-  int n_states = Bigarray_val(x_value)->dim[2];
-  int rate, site, state;
-  double *util_v;
-  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
-  for(rate=0; rate < n_rates; rate++) {
-    // for each rate, start at the top of the util vector
-    util_v = util;
-    // here we hard code in the limits for some popular choices
-    // so that loops can get unrolled
-    if(n_states == 4) {
-      for(site=0; site < n_sites; site++) {
-	for(state=0; state < 4; state++) {
-	  *util_v += statd[state] * x[state] * y[state] * z[state];
-        }
-	x += 4;
-	y += 4;
-	z += 4;
-        util_v++;
-      }
-    }
-    else if(n_states == 20) {
-      for(site=0; site < n_sites; site++) {
-        for(state=0; state < 20; state++) {
-          *util_v += statd[state] * x[state] * y[state] * z[state];
-        }
-	x += 20;
-	y += 20;
-	z += 20;
-        util_v++;
-      }
-    }
-    else {
-      for(site=0; site < n_sites; site++) {
-        for(state=0; state < n_states; state++) {
-          *util_v += statd[state] * (*x) * (*y) * (*z);
-          x++; y++; z++;
-        }
-        util_v++;
-      }
-    }
-  }
-  // now total up the likes from the util vector
-  double ll_tot=0;
-  for(site=0; site < n_sites; site++) {
-    ll_tot += log(util[site]);
-  }
-  // subtract once rather than perform division by n_rates n_sites times
-  ll_tot -= ((float) n_sites) * log ((float) n_rates);
-  ml_ll_tot = caml_copy_double(ll_tot);
-  CAMLreturn(ml_ll_tot);
-}
-
-CAMLprim value pairwise_prod_c(value dst_value, value x_value, value y_value)
-{
-  CAMLparam3(dst_value, x_value, y_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  int size =
-    (Bigarray_val(x_value)->dim[0])
-    * (Bigarray_val(x_value)->dim[1])
-    * (Bigarray_val(x_value)->dim[2]);
-  int i;
-  for(i=0; i < size; i++) {
-    dst[i] = x[i] * y[i];
-  }
-  CAMLreturn(Val_unit);
-}
-
-CAMLprim value glv_print_c(value x_value)
-{
-  CAMLparam1(x_value);
-  double *x = Data_bigarray_val(x_value);
-  int n_rates = (Bigarray_val(x_value)->dim[0]);
-  int n_sites = (Bigarray_val(x_value)->dim[1]);
-  int n_states = (Bigarray_val(x_value)->dim[2]);
-  double *loc = x;
-  int rate, site, state;
-  for(rate=0; rate < n_rates; rate++) {
-    for(site=0; site < n_sites; site++) {
-      for(state=0; state < n_states; state++) {
-	printf("%g\t",*loc);
-	loc++;
-      }
-      printf("\n");
-    }
-    printf("--\n");
-  }
-  CAMLreturn(Val_unit);
-}
+/* *** Matrices, used for transformation. *** */
 
 /* stores a times b^T in dst */
 CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
@@ -146,7 +48,7 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
         *dst = 0;
         // going across a
         for(j=0; j < 4; j++) { *dst += a[j] * b[j]; }
-	a += 4;
+        a += 4;
         dst++;
       }
       b += n_states;
@@ -161,7 +63,7 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
         *dst = 0;
         // going across a
         for(j=0; j < 20; j++) { *dst += a[j] * b[j]; }
-	a += 20;
+        a += 20;
         dst++;
       }
       b += n_states;
@@ -185,7 +87,311 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value statd_pairwise_prod_c(value statd_value, value dst_value, value a_value, value b_value)
+CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value, value uit_value)
+{
+  CAMLparam4(dst_value, u_value, lambda_value, uit_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *u = Data_bigarray_val(u_value);
+  double *lambda = Data_bigarray_val(lambda_value);
+  double *uit = Data_bigarray_val(uit_value);
+  double *uit_p;
+  int n = Bigarray_val(lambda_value)->dim[0];
+  int i, j, k;
+  /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
+  if(n == 4) {
+    for(i=0; i < 4; i++) {
+      uit_p = uit;
+      for(j=0; j < 4; j++) {
+        *dst = 0;
+        for(k=0; k < 4; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += 4; // uit.{j,k}
+      }
+      u += 4; // u.{i,k}
+    }
+  }
+  else if(n == 20) {
+    for(i=0; i < 20; i++) {
+      uit_p = uit;
+      for(j=0; j < 20; j++) {
+        *dst = 0;
+        for(k=0; k < 20; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += 20; // uit.{j,k}
+      }
+      u += 20; // u.{i,k}
+    }
+  }
+  else {
+    for(i=0; i < n; i++) {
+      uit_p = uit;
+      for(j=0; j < n; j++) {
+        *dst = 0;
+        for(k=0; k < n; k++) {
+          *dst += lambda[k] * u[k] * uit_p[k];
+        }
+        dst++; // dst.{i,j}
+        uit_p += n; // uit.{j,k}
+      }
+      u += n; // u.{i,k}
+    }
+  }
+  CAMLreturn(Val_unit);
+}
+
+
+
+/* *** Matrices, that are used for gcat. *** */
+
+CAMLprim value mat_print_c(value x_value)
+{
+  CAMLparam1(x_value);
+  double *x = Data_bigarray_val(x_value);
+  int n_sites = (Bigarray_val(x_value)->dim[0]);
+  int n_states = (Bigarray_val(x_value)->dim[1]);
+  double *loc = x;
+  int site, state;
+  for(site=0; site < n_sites; site++) {
+    for(state=0; state < n_states; state++) {
+      printf("%g\t",*loc);
+      loc++;
+    }
+    printf("\n");
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value mat_log_like3_c(value statd_value, value x_value, value y_value, value z_value)
+{
+  CAMLparam4(statd_value, x_value, y_value, z_value);
+  CAMLlocal1(ml_ll_tot);
+  double *statd = Data_bigarray_val(statd_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  double *z = Data_bigarray_val(z_value);
+  int n_sites = Bigarray_val(x_value)->dim[0];
+  int n_states = Bigarray_val(x_value)->dim[1];
+  int site, state;
+  double util, ll_tot=0;
+  // here we hard code in the limits for some popular choices
+  // so that loops can get unrolled
+  if(n_states == 4) {
+    for(site=0; site < n_sites; site++) {
+      util=0;
+      for(state=0; state < 4; state++) {
+        util += statd[state] * x[state] * y[state] * z[state];
+      }
+      ll_tot += log(util);
+      x += 4; y += 4; z += 4;
+    }
+  }
+  else if(n_states == 20) {
+    for(site=0; site < n_sites; site++) {
+      util=0;
+      for(state=0; state < 20; state++) {
+        util += statd[state] * x[state] * y[state] * z[state];
+      }
+      ll_tot += log(util);
+      x += 20; y += 20; z += 20;
+    }
+  }
+  else {
+    for(site=0; site < n_sites; site++) {
+      util=0;
+      for(state=0; state < n_states; state++) {
+        util += statd[state] * (*x) * (*y) * (*z);
+        x++; y++; z++;
+      }
+      ll_tot += log(util);
+    }
+  }
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}
+
+CAMLprim value mat_pairwise_prod_c(value dst_value, value x_value, value y_value)
+{
+  CAMLparam3(dst_value, x_value, y_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  int size = (Bigarray_val(x_value)->dim[0]) * (Bigarray_val(x_value)->dim[1]);
+  int i;
+  for(i=0; i < size; i++) {
+    dst[i] = x[i] * y[i];
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value mat_statd_pairwise_prod_c(value statd_value, value dst_value, value a_value, value b_value)
+{
+  CAMLparam4(statd_value, dst_value, a_value, b_value);
+  double *statd = Data_bigarray_val(statd_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *a = Data_bigarray_val(a_value);
+  double *b = Data_bigarray_val(b_value);
+  int n_sites = Bigarray_val(a_value)->dim[0];
+  int n_states = Bigarray_val(a_value)->dim[1];
+  int site, state;
+  for(site=0; site < n_sites; site++) {
+    for(state=0; state < n_states; state++) {
+      *dst = statd[state] * (*a) * (*b);
+      dst++; a++; b++;
+    }
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value)
+{
+  CAMLparam4(x_value, y_value, first_value, last_value);
+  CAMLlocal1(ml_ll_tot);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  int first = Int_val(first_value);
+  int last = Int_val(last_value);
+  int n_used = 1 + last - first;
+  int n_states = Bigarray_val(x_value)->dim[1];
+  int site, state;
+  double util, ll_tot=0;
+  // start at the beginning
+  x += first * n_states;
+  y += first * n_states;
+  // calculate
+  if(n_states == 4) {
+    for(site=0; site < n_used; site++) {
+      util=0;
+      for(state=0; state < 4; state++) { util += x[state] * y[state]; }
+      x += n_states; y += n_states;
+      ll_tot += log(util);
+    }
+  }
+  else if(n_states == 20) {
+    for(site=0; site < n_used; site++) {
+      util=0;
+      for(state=0; state < 20; state++) { util += x[state] * y[state]; }
+      x += n_states; y += n_states;
+      ll_tot += log(util);
+    }
+  }
+  else {
+    for(site=0; site < n_used; site++) {
+      util=0;
+      for(state=0; state < n_states; state++) { util += x[state] * y[state]; }
+      x += n_states; y += n_states;
+      ll_tot += log(util);
+    }
+  }
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}
+
+
+/* *** Tensors, that are used for gmix. *** */
+
+CAMLprim value ten_print_c(value x_value)
+{
+  CAMLparam1(x_value);
+  double *x = Data_bigarray_val(x_value);
+  int n_rates = (Bigarray_val(x_value)->dim[0]);
+  int n_sites = (Bigarray_val(x_value)->dim[1]);
+  int n_states = (Bigarray_val(x_value)->dim[2]);
+  double *loc = x;
+  int rate, site, state;
+  for(rate=0; rate < n_rates; rate++) {
+    for(site=0; site < n_sites; site++) {
+      for(state=0; state < n_states; state++) {
+        printf("%g\t",*loc);
+        loc++;
+      }
+      printf("\n");
+    }
+    printf("--\n");
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, value z_value, value util_value)
+{
+  CAMLparam5(statd_value, x_value, y_value, z_value, util_value);
+  CAMLlocal1(ml_ll_tot);
+  double *statd = Data_bigarray_val(statd_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  double *z = Data_bigarray_val(z_value);
+  double *util = Data_bigarray_val(util_value);
+  int n_rates = Bigarray_val(x_value)->dim[0];
+  int n_sites = Bigarray_val(x_value)->dim[1];
+  int n_states = Bigarray_val(x_value)->dim[2];
+  int rate, site, state;
+  double *util_v;
+  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
+  for(rate=0; rate < n_rates; rate++) {
+    // for each rate, start at the top of the util vector
+    util_v = util;
+    // here we hard code in the limits for some popular choices
+    // so that loops can get unrolled
+    if(n_states == 4) {
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < 4; state++) {
+          *util_v += statd[state] * x[state] * y[state] * z[state];
+        }
+        x += 4; y += 4; z += 4;
+        util_v++;
+      }
+    }
+    else if(n_states == 20) {
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < 20; state++) {
+          *util_v += statd[state] * x[state] * y[state] * z[state];
+        }
+        x += 20; y += 20; z += 20;
+        util_v++;
+      }
+    }
+    else {
+      for(site=0; site < n_sites; site++) {
+        for(state=0; state < n_states; state++) {
+          *util_v += statd[state] * (*x) * (*y) * (*z);
+          x++; y++; z++;
+        }
+        util_v++;
+      }
+    }
+  }
+  // now total up the likes from the util vector
+  double ll_tot=0;
+  for(site=0; site < n_sites; site++) {
+    ll_tot += log(util[site]);
+  }
+  // subtract once rather than perform division by n_rates n_sites times
+  ll_tot -= ((float) n_sites) * log ((float) n_rates);
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}
+
+CAMLprim value ten_pairwise_prod_c(value dst_value, value x_value, value y_value)
+{
+  CAMLparam3(dst_value, x_value, y_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  int size =
+    (Bigarray_val(x_value)->dim[0])
+    * (Bigarray_val(x_value)->dim[1])
+    * (Bigarray_val(x_value)->dim[2]);
+  int i;
+  for(i=0; i < size; i++) {
+    dst[i] = x[i] * y[i];
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value ten_statd_pairwise_prod_c(value statd_value, value dst_value, value a_value, value b_value)
 {
   CAMLparam4(statd_value, dst_value, a_value, b_value);
   double *statd = Data_bigarray_val(statd_value);
@@ -197,17 +403,17 @@ CAMLprim value statd_pairwise_prod_c(value statd_value, value dst_value, value a
   int n_states = Bigarray_val(a_value)->dim[2];
   int rate, site, state;
   for(rate=0; rate < n_rates; rate++) {
-      for(site=0; site < n_sites; site++) {
-        for(state=0; state < n_states; state++) {
-          *dst = statd[state] * (*a) * (*b);
-          dst++; a++; b++;
-	}
-      }
+    for(site=0; site < n_sites; site++) {
+      for(state=0; state < n_states; state++) {
+        *dst = statd[state] * (*a) * (*b);
+        dst++; a++; b++;
+        }
+     }
   }
   CAMLreturn(Val_unit);
 }
 
-CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value, value last_value, value util_value)
+CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value, value util_value)
 {
   CAMLparam5(x_value, y_value, first_value, last_value, util_value);
   CAMLlocal1(ml_ll_tot);
@@ -271,61 +477,5 @@ CAMLprim value bounded_logdot_c(value x_value, value y_value, value first_value,
   ll_tot -= ((float) n_used) * log ((float) n_rates);
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
-}
-
-CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value, value uit_value)
-{
-  CAMLparam4(dst_value, u_value, lambda_value, uit_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *u = Data_bigarray_val(u_value);
-  double *lambda = Data_bigarray_val(lambda_value);
-  double *uit = Data_bigarray_val(uit_value);
-  double *uit_p;
-  int n = Bigarray_val(lambda_value)->dim[0];
-  int i, j, k;
-  /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
-  if(n == 4) {
-    for(i=0; i < 4; i++) {
-      uit_p = uit;
-      for(j=0; j < 4; j++) {
-        *dst = 0;
-        for(k=0; k < 4; k++) {
-          *dst += lambda[k] * u[k] * uit_p[k];
-        }
-        dst++; // dst.{i,j}
-        uit_p += 4; // uit.{j,k}
-      }
-      u += 4; // u.{i,k}
-    }
-  }
-  else if(n == 20) {
-    for(i=0; i < 20; i++) {
-      uit_p = uit;
-      for(j=0; j < 20; j++) {
-        *dst = 0;
-        for(k=0; k < 20; k++) {
-          *dst += lambda[k] * u[k] * uit_p[k];
-        }
-        dst++; // dst.{i,j}
-        uit_p += 20; // uit.{j,k}
-      }
-      u += 20; // u.{i,k}
-    }
-  }
-  else {
-    for(i=0; i < n; i++) {
-      uit_p = uit;
-      for(j=0; j < n; j++) {
-        *dst = 0;
-        for(k=0; k < n; k++) {
-          *dst += lambda[k] * u[k] * uit_p[k];
-        }
-        dst++; // dst.{i,j}
-        uit_p += n; // uit.{j,k}
-      }
-      u += n; // u.{i,k}
-    }
-  }
-  CAMLreturn(Val_unit);
 }
 

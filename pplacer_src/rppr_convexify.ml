@@ -36,6 +36,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
+  inherit numbered_tree_cmd () as super_numbered_tree
 
   val discord_file = flag "-t"
     (Needs_argument ("", "If specified, the path to write the discordance tree to."))
@@ -63,7 +64,8 @@ object (self)
     (Needs_argument ("input colors", "A CSV file of the colors on the tree supplied with --tree."))
 
   method specl =
-  super_refpkg#specl
+    super_refpkg#specl
+  @ super_numbered_tree#specl
   @ [
     string_flag input_tree;
     string_flag input_colors;
@@ -86,7 +88,9 @@ object (self)
     let rp = self#get_rp in
     let taxtree = Refpkg.get_tax_ref_tree rp in
     let foldf discord data =
-      let gt' = Decor_gtree.color_clades_above data.cut_leaves taxtree in
+      let gt' = Decor_gtree.color_clades_above data.cut_leaves taxtree
+        |> self#maybe_numbered
+      in
       (Some data.rankname, gt') :: discord
     and finalize = Phyloxml.named_gtrees_to_file fname in
     [], foldf, finalize
@@ -240,10 +244,9 @@ object (self)
             rank_cutseqs
           in
           let data = {
-            stree = st; rank = rank; rankname = rankname; taxmap = taxmap;
-            cut_leaves = cut_leaves; not_cut = not_cut;
-            rank_cutseqs = rank_cutseqs'; rank_tax_map = rank_tax_map;
-            time_delta = time_delta; max_badness = max_bad;
+            stree = st; max_badness = max_bad; rank_cutseqs = rank_cutseqs';
+            rank; rankname; taxmap; cut_leaves; not_cut;
+            rank_tax_map; time_delta;
           }
           in
           rank_cutseqs', data :: data_list
@@ -318,6 +321,7 @@ object (self)
         | Some fname ->
           Decor_gtree.of_newick_gtree gt
             |> Decor_gtree.color_clades_above cut_leaves
+            |> self#maybe_numbered
             |> Phyloxml.gtree_to_file fname
         | None -> ()
       end;

@@ -108,8 +108,8 @@ let is_placed pq =
 
 let make criterion ~namel ~seq pl =
   {
+    seq;
     namlom = Name_list namel;
-    seq = seq;
     place_list = sort_placement_list criterion pl;
   }
 

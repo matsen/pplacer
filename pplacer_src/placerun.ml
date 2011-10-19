@@ -11,20 +11,15 @@ type 'a placerun =
     pqueries  :  Pquery.pquery list;
   }
 
-let make ref_tree name pqueries =
-  {
-    ref_tree  =  ref_tree;
-    name      =  name;
-    pqueries  =  pqueries;
-  }
+let make ref_tree name pqueries = {ref_tree; name; pqueries}
 
 let get_ref_tree p = p.ref_tree
 let get_name p = p.name
 let get_pqueries p = p.pqueries
 
-let set_ref_tree p ref_tree = {p with ref_tree = ref_tree}
-let set_name p name = {p with name = name}
-let set_pqueries p pqueries = {p with pqueries = pqueries}
+let set_ref_tree p ref_tree = {p with ref_tree}
+let set_name p name = {p with name}
+let set_pqueries p pqueries = {p with pqueries}
 
 let n_pqueries p = List.length p.pqueries
 let total_multiplicity p = Pquery.total_multiplicity p.pqueries

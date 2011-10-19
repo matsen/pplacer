@@ -57,7 +57,7 @@ object (self)
     let phylo_mass = Mass_map.By_edge.of_pre phylo_pre in
     [
       Some (name^".ref.fat"),
-      self#fat_tree_of_massm final_rt phylo_mass
+      self#fat_tree_of_massm final_rt phylo_mass |> self#maybe_numbered
     ]
     @
       (match tax_pre with

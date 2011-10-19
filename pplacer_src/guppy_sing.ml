@@ -52,7 +52,7 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit fat_cmd () as super_fat
-  inherit classic_viz_cmd () as super_classic_viz
+  inherit! classic_viz_cmd () as super_classic_viz
 
   method specl =
     super_mass#specl

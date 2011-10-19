@@ -11,6 +11,7 @@ object (self)
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd ~default_to_csv:true () as super_tabular
+  inherit numbered_tree_cmd () as super_numbered_tree
 
   val verbose = flag "-v"
     (Plain (false, "If specified, write progress output to stderr."))
@@ -33,6 +34,7 @@ object (self)
     super_mass#specl
     @ super_refpkg#specl
     @ super_tabular#specl
+    @ super_numbered_tree#specl
     @ [
       toggle_flag verbose;
       string_flag trimmed_tree_file;
@@ -105,6 +107,7 @@ object (self)
       begin match fvo trimmed_tree_file with
         | Some fname ->
           Decor_gtree.color_clades_above cut_leaves taxtree
+            |> self#maybe_numbered
             |> Phyloxml.gtree_to_file fname
         | None -> ()
       end;

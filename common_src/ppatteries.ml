@@ -2,8 +2,8 @@
     Opening it includes Batteries, MapsSets, and some generally useful
     functions. *)
 
-open Batteries
-open MapsSets
+include MapsSets
+include Batteries
 
 let round x = int_of_float (floor (x +. 0.5))
 
@@ -60,7 +60,7 @@ let maybe_cons o l = maybe_map_cons identity o l
 
 let to_csv_out ch =
   (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
-let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
+let csv_out_channel ch = new IO.out_channel ch |> to_csv_out
 
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
@@ -81,7 +81,7 @@ let dprintf ?(l = 1) ?(flush = true) fmt =
   if !verbosity >= l then begin
     finally (if flush then flush_all else identity) (Printf.printf fmt)
   end else
-    Printf.fprintf IO.stdnull fmt
+    Printf.ifprintf IO.stdnull fmt
 let dprint ?(l = 1) ?(flush = true) s =
   if !verbosity >= l then begin
     print_string s;
@@ -96,6 +96,17 @@ let get_dir_contents ?pred dir_name =
   |> Enum.suffix_action (fun () -> Unix.closedir dirh)
   |> Option.map_default Enum.filter identity pred
   |> Enum.map (Printf.sprintf "%s/%s" dir_name)
+
+(*
+ * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
+ * combine all the maps into a single one, with k bound to the concatenated set
+ * of bindings for k in map_list.
+ *)
+let combine_list_intmaps l =
+  (IntMap.fold
+     (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
+   |> flip List.fold_left IntMap.empty)
+    l
 
 (* parsing *)
 module Sparse = struct
@@ -558,17 +569,3 @@ module EnumFuns = struct
       |> Enum.flatten
 
 end
-
-include MapsSets
-include Batteries
-
-(*
- * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
- * combine all the maps into a single one, with k bound to the concatenated set
- * of bindings for k in map_list.
- *)
-let combine_list_intmaps l =
-  (IntMap.fold
-     (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
-   |> flip List.fold_left IntMap.empty)
-    l
