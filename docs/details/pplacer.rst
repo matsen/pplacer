@@ -33,7 +33,6 @@ The ``statistics_file`` is a file describing the evolutionary model used to make
 Running pplacer in this way will disable the taxonomic annotation features of pplacer v1.1.
 
 
-
 Migrating from pplacer v1.0
 ---------------------------
 There are a couple of differences between the present version and the previous version of pplacer which are worth knowing about.
@@ -41,86 +40,9 @@ There are a couple of differences between the present version and the previous v
 * Rather than having a plain text ".place" output file, we now have a JSON_-format file which contains the placements
 * Reference packages encapsulate reference information, making it easy to do placement and taxonomic annotation
 * Alignments can now be supplied as a single file, rather than being split into reference and query alignments
-* Better alignment parsers, including a Stockholm parser
+* Much better: faster, taxonomic integration, etc
 * ``placeviz``, ``placeutil`` and ``mokaphy`` have been replaced by a single binary called ``guppy``
-
-
-Compiling pplacer
------------------
-
-Here are directions on how to install an ocaml development environment and
-compile pplacer. If you already have GSL and wget installed, you should be able
-to download `this installation script`_ and just type
-``source install_pplacer.sh``.
-
-Installing GSL
-``````````````
-
-It may well already be installed (you can check by running
-``gsl-config --prefix``) or you can install it with your OS's package manager.
-Or compile it from source::
-
-    wget ftp://mirrors.kernel.org/gnu/gsl/gsl-1.13.tar.gz && \
-    tar -xzf gsl-1.13.tar.gz && \
-    cd gsl-1.13 && \
-    ./configure && \
-    make && make install
-
-Installing ocaml with GODI
-``````````````````````````
-
-Ocaml can be installed "by hand", which requires less compilation time and
-memory, but the easiest is to use Gerd Stolpmann's ocaml pacakge manager called
-GODI. (Thanks to Ashish Agarwal for suggesting it.) The one funny thing about
-it is that it likes its own space, and so you can't set the prefix to be
-``/usr/local/``. Setting the prefix to some path in your home directory works
-great. Note that gawk is required for ocamlgsl.
-
-::
-
-    PREFIX=`pwd`/godi
-    PATH=$PREFIX/bin:$PREFIX/sbin:$PATH
-
-    #install ocaml via GODI
-    wget http://download.camlcity.org/download/godi-rocketboost-20091222.tar.gz
-    tar xzf godi-rocketboost-20091222.tar.gz
-    cd godi-rocketboost-20091222
-    ./bootstrap --prefix=$PREFIX
-    echo "GODI_BASEPKG_PCRE=yes" >> $PREFIX/etc/godi.conf
-    ./bootstrap_stage2
-
-    #build godi packages
-    godi_perform -build godi-ocamlgsl
-    godi_perform -build godi-xml-light
-    godi_perform -build godi-ocaml-csv
-    godi_perform -build godi-ounit
-    godi_perform -build godi-sqlite3
-    cd ..
-
-Compiling pplacer
-`````````````````
-
-First make sure that ocaml et al are in your path.
-
-::
-
-    which ocaml
-
-The best way to stay up to date with the source is via git::
-
-    git clone git://github.com/matsen/pplacer.git
-    cd pplacer/
-    make
-
-but if you don't like that then here's a little script::
-
-    wget http://github.com/matsen/pplacer/tarball/master
-    tar -xzf matsen-pplacer*.tar.gz
-    cd matsen-pplacer-*/
-    make
-
-Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
-path and you are ready to go!
+* ``rppr`` binary for preparing reference packages
 
 
 Pre-masking
@@ -408,4 +330,3 @@ You can set these to anything you like by using these flags *after* the ``-p``.
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
-.. _this installation script: ../_static/install_pplacer.sh
