@@ -143,7 +143,7 @@ let run_file prefs query_fname =
     ~ignore_version:(Prefs.refpkg_path prefs = "")
     prefs
     rp_strmap
-  in
+  and from_input_alignment = Option.is_some ref_align in
 
   let ref_align =
     try
@@ -193,7 +193,12 @@ let run_file prefs query_fname =
     | None -> ()
   end;
 
-  let model = Refpkg.get_model rp in
+  let m, i = Refpkg.get_model rp in
+  let module Model = (val m: Glvm.Model) in
+  let module Glv = Model.Glv in
+  let module Glv_arr = Glv_arr.Make(Model) in
+  let module Like_stree = Like_stree.Make(Model) in
+  let model = Model.build ref_align i in
   (* *** pre masking *** *)
   let query_list, ref_align, n_sites =
     if Prefs.no_pre_mask prefs then
@@ -331,17 +336,24 @@ let run_file prefs query_fname =
   if locs = [] then failwith("problem with reference tree: no placement locations.");
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
-  dprint "Caching likelihood information on reference tree... ";
+  dprint "Allocating memory for internal nodes... ";
   (* allocate our memory *)
   let darr = Like_stree.glv_arr_for model ref_tree n_sites in
   let parr = Glv_arr.mimic darr
   and snodes = Glv_arr.mimic darr
   in
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
+  dprint "done.\n";
+
+  if from_input_alignment then
+    Model.refine model n_sites ref_tree like_aln_map darr parr;
+
+  dprint "Caching likelihood information on reference tree... ";
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
     util_glv ~distal_glv_arr:darr ~proximal_glv_arr:parr
     ~util_glv_arr:snodes;
   dprint "done.\n";
+
   timings := StringMap.add_listly
     "tree likelihood"
     ((Sys.time ()) -. curr_time)
@@ -370,31 +382,28 @@ let run_file prefs query_fname =
     and util_p = Glv.mimic parr.(0)
     and util_one = Glv.mimic darr.(0)
     in
-    Glv.set_all util_one 0 1.;
-    Printf.printf "node\ttree_likelihood\tsupernode_likelihood\n";
-    for i=0 to (Array.length darr)-1 do
-      let d = darr.(i)
-      and p = parr.(i)
-      and sn = snodes.(i)
-      in
-      fp_check d (Printf.sprintf "distal %d" i);
-      fp_check p (Printf.sprintf "proximal %d" i);
-      fp_check sn (Printf.sprintf "supernode %d" i);
-      Glv.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
-      Glv.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
-      Printf.printf "%d\t%g\t%g\n"
-        i
-        (Glv.slow_log_like3 model util_d util_p util_one)
-        (Glv.logdot utilv_nsites sn util_one);
-    done
-  end;
+    Glv.set_unit util_one;
+    Array.mapi
+      (fun i d ->
+        let p = parr.(i)
+        and sn = snodes.(i) in
+        fp_check d (Printf.sprintf "distal %d" i);
+        fp_check p (Printf.sprintf "proximal %d" i);
+        fp_check sn (Printf.sprintf "supernode %d" i);
+        Model.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
+        Model.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
+        Array.map (Printf.sprintf "%g")
+          [| float_of_int i;
+             Model.log_like3 model utilv_nsites util_d util_p util_one;
+             Model.slow_log_like3 model util_d util_p util_one;
+             Glv.logdot utilv_nsites sn util_one;
+          |])
+      darr
+    |> Array.append
+        [|[|"node"; "tree_likelihood"; "supernode_likelihood"; "???"|]|]
+    |> String_matrix.pad
+    |> Array.iter (Array.iter (dprintf "%s  ") |- tap (fun () -> dprint "\n"))
 
-  (* *** write out posterior probability info at internal nodes *** *)
-  if Prefs.map_info prefs then begin
-    if not (Refpkg.tax_equipped rp) then begin
-      failwith ("--map-info requires taxonomic information in ref pkg");
-    end;
-    Post_info.write_map_info ~darr ~parr rp
   end;
 
   (* *** analyze query sequences *** *)
@@ -412,6 +421,7 @@ let run_file prefs query_fname =
         (float_of_int (Gtree.n_edges ref_tree)))
   in
   let partial = Core.pplacer_core
+    (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
     prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
   let n_done = ref 0 in
@@ -469,20 +479,23 @@ let run_file prefs query_fname =
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
     let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
+    (* XXX AG explain how these two functions are used. Clearly some sort of
+     * finalization. Perhaps a section at the beginning? *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
+      (* start: build the Maximum A Posteriori sequences *)
       let ref_tree = Refpkg.get_ref_tree rp
       and mrcam = Refpkg.get_mrcam rp
       and td = Refpkg.get_taxonomy rp
       and glvs = Glv_arr.make
+        model
         ~n_glvs:2
         ~n_sites
-        ~n_rates:(Model.n_rates model)
-        ~n_states:(Model.n_states model)
       in
       let map_map = Map_seq.of_map
+        (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
         glvs.(0)
         glvs.(1)
-        (Refpkg.get_model rp)
+        model
         ref_tree
         ~darr
         ~parr
@@ -548,7 +561,7 @@ let run_file prefs query_fname =
           map_fasta_file
       in
       gotfunc, donefunc
-
+    (* end: build the Maximum A Posteriori sequences *)
     end else (identity, identity)
     in
 

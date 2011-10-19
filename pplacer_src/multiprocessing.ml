@@ -149,8 +149,8 @@ object (self)
   method pid = pid
 
   method handlers = [
-    {ch = rd; pid = pid; handler = self#marshal_recv};
-    {ch = progress; pid = pid; handler = self#progress_recv};
+    {pid; ch = rd; handler = self#marshal_recv};
+    {pid; ch = progress; handler = self#progress_recv};
   ]
 
   method close =

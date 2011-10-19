@@ -240,10 +240,9 @@ object (self)
             rank_cutseqs
           in
           let data = {
-            stree = st; rank = rank; rankname = rankname; taxmap = taxmap;
-            cut_leaves = cut_leaves; not_cut = not_cut;
-            rank_cutseqs = rank_cutseqs'; rank_tax_map = rank_tax_map;
-            time_delta = time_delta; max_badness = max_bad;
+            stree = st; max_badness = max_bad; rank_cutseqs = rank_cutseqs';
+            rank; rankname; taxmap; cut_leaves; not_cut;
+            rank_tax_map; time_delta;
           }
           in
           rank_cutseqs', data :: data_list

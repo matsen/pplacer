@@ -1,7 +1,9 @@
 open Ppatteries
 open OUnit
 open Test_util
-
+open Gmix_model
+module Glv = Model.Glv
+module Like_stree = Like_stree.Make(Model)
 
 type like_test_info = {
   dir_name: string;
@@ -17,7 +19,11 @@ let like_test info () =
     |> Newick_gtree.of_file
     |> Like_stree.add_zero_root_bl
   in
-  let model = Model.of_json (d "phylo_model.jplace") aln
+  let model = d "phylo_model.jplace"
+    |> Json.of_file
+    |> Jsontype.obj
+    |> flip init_of_json aln
+    |> Model.build aln
   and n_sites = Alignment.length aln
   in
   let check our_like =
@@ -46,15 +52,15 @@ let like_test info () =
   and util_p = Glv.mimic parr.(0)
   and util_one = Glv.mimic darr.(0)
   in
-  Glv.set_all util_one 0 1.;
+  Glv.set_unit util_one;
   for i=0 to (Array.length darr)-1 do
     let d = darr.(i)
     and p = parr.(i)
     and sn = snodes.(i)
     in
-    Glv.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
-    Glv.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
-    check (Glv.slow_log_like3 model util_d util_p util_one);
+    Model.evolve_into model ~src:d ~dst:util_d (half_bl_fun i);
+    Model.evolve_into model ~src:p ~dst:util_p (half_bl_fun i);
+    check (Model.slow_log_like3 model util_d util_p util_one);
     check (Glv.logdot utilv_nsites sn util_one);
   done
 

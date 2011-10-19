@@ -212,12 +212,3 @@ let ppr_gsl_vector ff y =
   Ppr.ppr_list_inners Format.pp_print_float ff (
     Array.to_list (Gsl_vector.to_array y));
   Format.fprintf ff "}@]"
-
-let ppr_gsl_matrix ff m =
-  let nrows, _ = Gsl_matrix.dims m in
-  Format.fprintf ff "@[{";
-  for i=0 to nrows-1 do
-    ppr_gsl_vector ff (Gsl_matrix.row m i);
-    if i < nrows-1 then Format.fprintf ff ";@ "
-  done;
-  Format.fprintf ff "}@]"

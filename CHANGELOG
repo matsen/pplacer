@@ -1,3 +1,10 @@
+1.1.alpha10
+===========
+
+ * Closed GH-126: Split Glv/Model into Gmix_model and Gcat_model with the
+   option of adding more models to pplacer later.
+
+
 1.1.alpha09
 ===========
 
