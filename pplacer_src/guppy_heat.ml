@@ -41,7 +41,7 @@ object (self)
 
   method action = function
     | pathl ->
-        let t = self#get_decor_ref_tree in
+        let t = self#maybe_numbered self#get_decor_ref_tree in
         List.iter
           (fun fname ->
             Phyloxml.pxdata_to_channel self#out_channel

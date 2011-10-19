@@ -68,7 +68,7 @@ object (self)
       (List.map
         (fun (eval, evect) ->
           (Some (string_of_float eval),
-          super_heat#heat_tree_of_float_arr t evect))
+          super_heat#heat_tree_of_float_arr t evect |> self#maybe_numbered))
         combol);
     save_named_fal
       (prefix^".rot")

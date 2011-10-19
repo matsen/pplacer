@@ -83,9 +83,10 @@ object (self)
         fname
         ([Some tree_name,
           make_heat_tree
-            (match refpkgo with
-            | None -> Decor_gtree.of_newick_gtree ref_tree
-            | Some rp -> Refpkg.get_tax_ref_tree rp)
+            (self#maybe_numbered
+               (match refpkgo with
+                 | None -> Decor_gtree.of_newick_gtree ref_tree
+                 | Some rp -> Refpkg.get_tax_ref_tree rp))
             (my_pre_of_pr pr1)
             (my_pre_of_pr pr2)]
         @ match refpkgo with
