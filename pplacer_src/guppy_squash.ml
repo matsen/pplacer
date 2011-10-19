@@ -11,6 +11,8 @@ open Squashfunc
 
 let round_sig_figs = 3
 let round_cutoff = 0.01
+let cluster_tree_name = "cluster.tre"
+let mass_trees_dirname = "mass_trees"
 
 module NPreBlob =
   struct
@@ -162,8 +164,8 @@ object (self)
     if 0 = nboot then begin
       (* bootstrap turned off *)
       let (drt, cluster_t, blobim) = our_make_cluster refpkgo mode_str prl in
-      Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
-      let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
+      Newick_gtree.to_file cluster_t (path cluster_tree_name);
+      let outdir = path mass_trees_dirname in mkdir outdir;
       let pad_width = find_zero_pad_width (IntMap.cardinal blobim) in
       let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)
