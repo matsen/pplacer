@@ -1,0 +1,25 @@
+/*
+
+distance <=2.25
+
+    G     F     E     D     C     B
+H   1     1   4.5   3.5     3  2.25
+G         1   4.5   3.5     3  2.75
+F             3.5   2.5     2  1.75
+E                     3   2.5  2.25
+D                         0.5  2.25
+C                              1.75
+
+blue nodes were chosen as mass centers; bold edges show compression.
+
+*/
+
+graph G {
+  { node [fillcolor="#9999ff" style=filled]
+    B D F H A
+  }
+  B -- C [style=bold]; B -- D; B -- E [style=bold]; B -- F; B -- H;
+  C -- D; C -- F;
+  F -- G [style=bold]; F -- H;
+  G -- H;
+}
