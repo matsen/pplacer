@@ -10,7 +10,7 @@ let of_pql pql =
       in
       List.fold_left
         (fun (matches, accum') (edges, pqs) ->
-          if IntSet.is_disjoint pq_edges edges then
+          if IntSet.disjoint pq_edges edges then
             matches, (edges, pqs) :: accum'
           else
             Some (match matches with

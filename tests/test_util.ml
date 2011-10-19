@@ -14,7 +14,7 @@ let placeruns_of_dir which =
     ~pred:(flip Filename.check_suffix "jplace")
     (tests_dir ^ "data/" ^ which)
   |> List.of_enum
-  |> List.sort
+  |> List.sort compare
   |> List.map Placerun_io.of_any_file
 
 let placerun_of_dir dir which =

@@ -7,7 +7,7 @@ let suite = [
     placerun_of_dir "misc" "test_islands"
       |> Placerun.get_pqueries
       |> Mass_islands.of_pql
-      |> List.sort ~cmp:(on fst IntSet.compare)
+      |> List.sort (on fst IntSet.compare)
       |> List.map
           (second (List.map Pquery.namel |- List.flatten |- StringSet.of_list))
       |> List.iter2
