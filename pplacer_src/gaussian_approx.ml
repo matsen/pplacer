@@ -85,12 +85,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
         incr pquery_counter))
     [upre1; upre2];
   (* Sort by position along the edge. *)
-  for i=0 to (Array.length labeled_mass_arr) - 1 do
-    labeled_mass_arr.(i) <-
-      List.sort
-        ~cmp:(comparing fst)
-        labeled_mass_arr.(i)
-  done;
+  Array.modify (List.sort (comparing fst)) labeled_mass_arr;
   (* The sampling routine. *)
   let sample_gaussians () =
    Array.iteri

@@ -9,6 +9,11 @@ open Subcommand
 open Guppy_cmdobjs
 open Squashfunc
 
+let round_sig_figs = 3
+let round_cutoff = 0.01
+let cluster_tree_name = "cluster.tre"
+let mass_trees_dirname = "mass_trees"
+
 module NPreBlob =
   struct
     type t = int list * Mass_map.Pre.t
@@ -100,6 +105,11 @@ object (self)
   val tax_cluster_mode = flag "--tax-cluster"
     (Plain ("", "Perform taxonomic clustering rather than phylogenetic.\
     Specify \"unit\" or \"inv\" for the two different modes."))
+  val round = flag "--pre-round"
+    (Plain (false, Printf.sprintf
+                     "Apply rounding with %d sig figs and cutoff %g to each
+                     placerun before clustering"
+                     round_sig_figs round_cutoff))
 
   method specl =
     super_mass#specl
@@ -111,7 +121,8 @@ object (self)
     @ super_normalization#specl
     @ [
       int_flag nboot;
-      string_flag tax_cluster_mode
+      string_flag tax_cluster_mode;
+      toggle_flag round
     ]
 
   method desc =
@@ -137,16 +148,24 @@ object (self)
     and p = fv p_exp
     and denom_f = self#get_normalization
     in
-    let our_make_cluster =
-      make_cluster p denom_f weighting criterion in
+    let our_make_cluster refpkgo mode_str prl =
+      let maybe_round pr =
+        if fv round then
+          Guppy_round.round_placerun round_cutoff round_sig_figs
+            pr.Placerun.name pr
+        else pr
+      in
+      make_cluster p denom_f weighting criterion refpkgo mode_str
+                   (List.map maybe_round prl)
+    in
     let path = (^) (self#single_prefix ()) in
     let nboot = fv nboot in
     self#check_placerunl prl;
     if 0 = nboot then begin
       (* bootstrap turned off *)
       let (drt, cluster_t, blobim) = our_make_cluster refpkgo mode_str prl in
-      Newick_gtree.to_file cluster_t (path Squash_common.cluster_tree_name);
-      let outdir = path Squash_common.mass_trees_dirname in mkdir outdir;
+      Newick_gtree.to_file cluster_t (path cluster_tree_name);
+      let outdir = path mass_trees_dirname in mkdir outdir;
       let pad_width = find_zero_pad_width (IntMap.cardinal blobim) in
       let prefix_of_int i = Filename.concat outdir (zero_pad_int pad_width i) in
       (* make a tax tree here then run mimic on it *)

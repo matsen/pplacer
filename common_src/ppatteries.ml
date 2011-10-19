@@ -128,6 +128,12 @@ module Sparse = struct
   let syntax_error tok msg =
     raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
 
+  let try_map f x tok msg =
+    try
+      f x
+    with _ ->
+      syntax_error tok msg
+
   exception Syntax_error of int * int
 
   let rec first_match groups s =

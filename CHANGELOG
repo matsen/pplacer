@@ -7,11 +7,18 @@
    names if the name was an integer.
  * In fixing a bug, made `guppy diplac` only emit the first name in a pquery in
    its results.
+ * Fixed a bug that caused the trailing } in a JSON file to be omitted when the
+   file was large enough.
  * Added a `multiclass` view and associated parameters to `rppr prep_db`.
  * Fixed a bug where sometimes placements that fell too close to the root would
    vanish with the --map-identity flag on.
  * Fixed identity to give 0% sequence identity in the case of no overlap
    between sequences.
+ * Fixed a bug by flushing all output buffers before forking, so that the same
+   data isn't written multiple times.
+ * Fixed a bug in pplacer in which it wouldn't write the original reference
+   tree when creating a placefile.
+ * Fixed some issues with phyloxml generation.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
@@ -87,11 +94,14 @@
  * Closed GH-144: Changed pplacer to explicitly disallow unplaced sequences
    from being written out; changed `best_classifications and `multiclass` views
    to yield NULL for rows where no placements match all the criteria.
+ * Closed GH-149: Updated the jplace version to 2; changed the Newick parser
+   and emitter to allow for the new format of trees with edge numbers specified
+   in braces instead of brackets.
  * Closed GH-153: Changed `guppy mft` to not squash name lists to mass by
    default.
  * Closed GH-155: Changed pplacer to always check for invalid bases when
    pre-masking sequences.
-
+ * Closed GH-159: Updated to use the v2 batteries API.
 
 1.1.alpha08
 ===========

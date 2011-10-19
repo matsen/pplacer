@@ -431,7 +431,7 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
             (fun apart -> apart_nu' apart, apart)
             apartl
           in
-          List.rev_map (fun (a, b) -> Some a, b) (List.sort nu_apartl)
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
       in
       let rec aux phi current_best = function
         | (nu_opt, apart) :: rest -> (
@@ -507,19 +507,19 @@ let nodeset_of_phi_and_tree phi tree =
   aux IntSet.empty [tree, (None, CS.empty)]
 
 (* Make map from names to their respective indices. *)
-let name_map_of_bark_map bark_map =
+let node_label_map_of_bark_map bark_map =
   IntMap.fold
     (fun i bark accum ->
       try
-        StringMap.add bark#get_name i accum
+        StringMap.add bark#get_node_label i accum
       with
-        | Newick_bark.No_name -> accum)
+        | Newick_bark.No_node_label -> accum)
     bark_map
     StringMap.empty
 
 let rank_tax_map_of_refpkg rp =
   let gt = Refpkg.get_ref_tree rp in
-  let node_map = name_map_of_bark_map gt.Gtree.bark_map in
+  let node_map = node_label_map_of_bark_map gt.Gtree.bark_map in
   let td = Refpkg.get_taxonomy rp
   and seqinfo = Refpkg.get_seqinfom rp in
   let add_to_rankmap seq rankmap ti =

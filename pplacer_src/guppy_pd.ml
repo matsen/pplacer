@@ -13,7 +13,7 @@ let total_along_mass gt mass cb =
   let partial_total id = Kr_distance.total_along_edge
     cb
     (Gtree.get_bl gt id)
-    (IntMap.get id [] mass |> List.map I.to_pair |> List.sort)
+    (IntMap.get id [] mass |> List.map I.to_pair |> List.sort compare)
     merge
   in
   Kr_distance.total_over_tree

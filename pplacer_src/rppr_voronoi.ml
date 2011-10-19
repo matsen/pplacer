@@ -122,7 +122,7 @@ object (self)
 
       cut_leaves
         |> IntSet.enum
-        |> Enum.map (Gtree.get_name gt |- flip List.cons [])
+        |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
         |> List.of_enum
         |> self#write_ll_tab;
 

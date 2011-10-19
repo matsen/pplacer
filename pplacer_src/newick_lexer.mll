@@ -7,46 +7,35 @@
   open Newick_parser
   open Lexing
 
-  let dequote s =
-    let len = String.length s in
-    assert(s.[0] = '\'' && s.[len-1] = '\'');
-    String.sub s 1 (len-2)
-
-  let untag s =
-    let start = if s.[1] = 'I' then 2 else 1 in
-    int_of_string (String.sub s start ((String.length s) - start - 1))
+  let escapes = Str.regexp "\\\\\\(['\\\\]\\)"
+  let unquote s =
+    let s = String.sub s 1 ((String.length s) - 2) in
+    Str.global_replace escapes "\\1" s
 
 }
 
-let colon = ':'
-let semicolon = ';'
-let comma = ','
-let openp = '('
-let closep = ')'
-let digit = ['0'-'9']
-let exponent = ['e' 'E'] ['+' '-']? digit+
-let floating = (digit+ '.' digit* | digit* '.' digit+ | digit+) exponent?
 (* Unquoted labels may not contain blanks, parentheses, square brackets,
- * single_quotes, colons, semicolons, or commas. *)
-let unquotedchar = [^ ' ' '\t' '\n' '(' ')' '[' ']' '\'' ':' ';' ',']
+ * braces, single quotes, colons, semicolons, or commas. *)
+let unquotedchar = [^ ' ' '\t' '\n' '(' ')' '[' ']' '{' '}' '\'' ':' ';' ',']
 let unquotedlabel = unquotedchar+
-let quotedchar = [^ ' ' '\'']
-let quotedlabel = '\'' quotedchar+ '\''
-let edgelabel = '[' 'I'? digit+ ']'
+let escape = '\\' ['\'' '\\']
+let nonescape = [^ ' ' '\'']
+let quotedlabel = '\'' (escape | nonescape)* '\''
 
 rule token = parse
   | [' ' '\t']      { token lexbuf }
   | '\n'            { Sparse.incr_lineno lexbuf; token lexbuf }
-  (* because taxnames can be floats, we have to have float first *)
-  | floating        { REAL(Lexing.lexeme lexbuf) }
-  | unquotedlabel   { LABEL(Lexing.lexeme lexbuf) }
-  | quotedlabel     { LABEL(dequote(Lexing.lexeme lexbuf)) }
-  | edgelabel       { EDGE_LABEL(untag(Lexing.lexeme lexbuf)) }
-  | colon           { COLON }
-  | semicolon       { SEMICOLON }
-  | comma           { COMMA }
-  | openp           { OPENP }
-  | closep          { CLOSEP }
+  | unquotedlabel   { LABEL (Lexing.lexeme lexbuf) }
+  | quotedlabel     { LABEL (unquote (Lexing.lexeme lexbuf)) }
+  | ':'             { COLON }
+  | ';'             { SEMICOLON }
+  | ','             { COMMA }
+  | '('             { LPAREN }
+  | ')'             { RPAREN }
+  | '['             { LBRACK }
+  | ']'             { RBRACK }
+  | '{'             { LBRACE }
+  | '}'             { RBRACE }
   | eof             { EOF }
   | _
       { raise (Sparse.parse_error_of_positions "syntax error lexing" lexbuf.lex_start_p lexbuf.lex_curr_p) }

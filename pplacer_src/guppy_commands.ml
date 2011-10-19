@@ -9,7 +9,6 @@ let command_list () =
 
     "statistical comparison", [
       "bary", (fun () -> new Guppy_bary.cmd ());
-      "bootviz", (fun () -> new Guppy_bootviz.cmd ());
       "squash", (fun () -> new Guppy_squash.cmd ());
       "kr_heat", (fun () -> new Guppy_kr_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());

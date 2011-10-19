@@ -1,3 +1,4 @@
+open Ppatteries
 open OUnit
 open Test_util
 
@@ -12,7 +13,9 @@ type like_test_info = {
 let like_test info () =
   let d str = (info.dir_name^str) in
   let aln = Alignment.upper_aln_of_any_file (d info.fasta_fname)
-  and tree = Newick_gtree.of_file (d info.tree_fname)
+  and tree = d info.tree_fname
+    |> Newick_gtree.of_file
+    |> Like_stree.add_zero_root_bl
   in
   let model = Model.of_json (d "phylo_model.jplace") aln
   and n_sites = Alignment.length aln

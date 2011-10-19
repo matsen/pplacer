@@ -1,6 +1,5 @@
-%token EOF COLON SEMICOLON COMMA OPENP CLOSEP
-%token <int> EDGE_LABEL
-%token <string> LABEL REAL
+%token EOF COLON SEMICOLON COMMA LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE
+%token <string> LABEL
 
 %start tree
 %type <Newick_bark.newick_bark Gtree.gtree> tree
@@ -8,6 +7,7 @@
 
 %{
 open Ppatteries
+open Newick_parse_state
 
 (* parse state *)
 type ps = {
@@ -29,12 +29,11 @@ let lps_append lp lps =
     stree_l = lp.stree :: lps.stree_l;
     bark_l = combine lp.bark lp.my_bark |> combine lps.bark_l}
 
-let node_num = ref (-1)
 let add_bark add_fun x s =
   {s with my_bark = add_fun (Stree.top_id s.stree) x s.my_bark}
-let add_bl = float_of_string |- add_bark Newick_bark.map_set_bl
-let add_name = add_bark Newick_bark.map_set_name
-let add_boot = float_of_string |- add_bark Newick_bark.map_set_boot
+let add_bl = add_bark Newick_bark.map_set_bl
+let add_node_label = add_bark Newick_bark.map_set_node_label
+let add_edge_label = add_bark Newick_bark.map_set_edge_label
 let add_id id lp =
   {lp with
     stree = Stree.of_id id lp.stree;
@@ -62,30 +61,45 @@ let add_internal ls =
     my_bark = IntMap.empty;
   }
 
-let reset () =
-  node_num := (-1)
+let bl x tok =
+  Sparse.try_map float_of_string x tok "branch lengths must be floats"
+let node_number x tok =
+  Sparse.try_map int_of_string x tok "node numbers must be integers"
+let check_legacy tok =
+  if !legacy_format then
+    Sparse.syntax_error tok "braced node numbers not allowed in legacy format"
+let add_id_or_edge_label x tok =
+  if !legacy_format then
+    add_id (node_number x tok)
+  else
+    add_edge_label x
 
 %}
 
-named_leaf:
+node_labeled_leaf:
   | LABEL
-      { add_leaf () |> add_name $1 }
-  | REAL
-      { add_leaf () |> add_name $1 }
+      { add_leaf () |> add_node_label $1 }
 
 lengthy_leaf:
-  | COLON REAL
-      { add_leaf () |> add_bl $2 }
-  | named_leaf COLON REAL
-      { add_bl $3 $1 }
-  | named_leaf { $1 }
+  | COLON LABEL
+      { add_leaf () |> add_bl (bl $2 2) }
+  | node_labeled_leaf COLON LABEL
+      { add_bl (bl $3 3) $1 }
+  | node_labeled_leaf { $1 }
+
+node_numbered_leaf:
+  | LBRACE LABEL RBRACE
+      { check_legacy 1; add_leaf () |> add_id (node_number $2 2) }
+  | lengthy_leaf LBRACE LABEL RBRACE
+      { check_legacy 2; add_id (node_number $3 3) $1 }
+  | lengthy_leaf { $1 }
 
 leaf:
-  | EDGE_LABEL
-      { add_leaf () |> add_id $1 }
-  | lengthy_leaf EDGE_LABEL
-      { add_id $2 $1 }
-  | lengthy_leaf { $1 }
+  | LBRACK LABEL RBRACK
+      { add_leaf () |> add_id_or_edge_label $2 2 }
+  | node_numbered_leaf LBRACK LABEL RBRACK
+      { add_id_or_edge_label $3 3 $1 }
+  | node_numbered_leaf { $1 }
 
 subtree_list:
   | subtree COMMA subtree_list
@@ -94,23 +108,28 @@ subtree_list:
       { lps_append $1 empty_lps }
 
 bare_subtree_group:
-  | OPENP subtree_list CLOSEP
+  | LPAREN subtree_list RPAREN
       { add_internal $2 }
 
-bootstrapped_subtree_group:
-  | bare_subtree_group REAL
-      { add_boot $2 $1 }
+node_labeled_subtree_group:
+  | bare_subtree_group LABEL
+      { add_node_label $2 $1 }
   | bare_subtree_group { $1 }
 
 lengthy_subtree_group:
-  | bootstrapped_subtree_group COLON REAL
-      { add_bl $3 $1 }
-  | bootstrapped_subtree_group { $1 }
+  | node_labeled_subtree_group COLON LABEL
+      { add_bl (bl $3 3) $1 }
+  | node_labeled_subtree_group { $1 }
+
+node_numbered_subtree_group:
+  | lengthy_subtree_group LBRACE LABEL RBRACE
+      { check_legacy 2; add_id (node_number $3 3) $1 }
+  | lengthy_subtree_group { $1 }
 
 subtree_group:
-  | lengthy_subtree_group EDGE_LABEL
-      { add_id $2 $1 }
-  | lengthy_subtree_group { $1 }
+  | node_numbered_subtree_group LBRACK LABEL RBRACK
+      { add_id_or_edge_label $3 3 $1 }
+  | node_numbered_subtree_group { $1 }
 
 subtree: /* empty */ { add_leaf () }
   | subtree_group { $1 }
@@ -123,6 +142,6 @@ bare_tree:
 
 tree:
   | bare_tree EOF
-      { reset (); Gtree.gtree $1.stree (combine $1.bark $1.my_bark) }
+      { Gtree.gtree $1.stree (combine $1.bark $1.my_bark) }
   | error EOF
-      { reset (); Sparse.syntax_error 1 "syntax error parsing" }
+      { Sparse.syntax_error 1 "syntax error parsing" }

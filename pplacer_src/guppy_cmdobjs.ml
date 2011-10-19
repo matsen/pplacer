@@ -416,7 +416,7 @@ object (self)
       (if not (fv show_node_numbers) then
           ref_tree
        else
-          (Newick_gtree.make_boot_id ref_tree))
+          (Newick_gtree.make_edge_label_id ref_tree))
 
   method private write_trees suffix named_trees = function
     | Directory (dir, prefix) ->

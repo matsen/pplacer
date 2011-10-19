@@ -5,6 +5,11 @@
 open Ppatteries
 open Stree
 
+let add_zero_root_bl gt =
+  Gtree.get_bark_map gt
+    |> Newick_bark.map_set_bl (Gtree.top_id gt) 0.
+    |> Gtree.set_bark_map gt
+
 (* below 2^-50 = 1e-15 we pull out the exponent into the int *)
 let min_allowed_twoexp = -50
 
@@ -15,7 +20,7 @@ let like_aln_map_of_data seq_type align tree =
   IntMap.map
     (Array.get like_aln)
     (Alignment.make_aln_index_map
-      (Bark_map.to_name_map (Gtree.get_bark_map tree))
+      (Newick_gtree.leaf_label_map tree)
       (Array.map fst align))
 
 let glv_arr_for model tree n_sites =
@@ -26,27 +31,27 @@ let glv_arr_for model tree n_sites =
     ~n_states:(Model.n_states model)
 
 let calc_distal_and_evolv_dist model tree like_aln_map
-                          ~distal_glv_arr ~evolv_dist_glv_arr =
+    ~distal_glv_arr ~evolv_dist_glv_arr =
   (* calc returns the evolv_dist for each subtree in a list *)
   let rec calc t =
     let id = Stree.top_id t in
     let distal = Glv_arr.get distal_glv_arr id
     and evolv_dist = Glv_arr.get evolv_dist_glv_arr id
     in
-  (* first calculate distal *)
+    (* first calculate distal *)
     let () = match t with
-    | Stree.Node(_, tL) -> begin
+      | Stree.Node(_, tL) -> begin
         (* take the product of the below *)
         Glv.listwise_prod distal (List.map calc tL);
         Glv.perhaps_pull_exponent min_allowed_twoexp distal
       end
-    | Stree.Leaf _ ->
-  (* for a leaf, distal is just the LV from the aln for each rate *)
+      | Stree.Leaf _ ->
+        (* for a leaf, distal is just the LV from the aln for each rate *)
         Glv.prep_constant_rate_glv_from_lv_arr
           distal
           (IntMap.find id like_aln_map)
     in
-  (* now calculate evolv_dist *)
+    (* now calculate evolv_dist *)
     Glv.evolve_into
       model ~dst:evolv_dist ~src:distal (Gtree.get_bl tree id);
     evolv_dist
