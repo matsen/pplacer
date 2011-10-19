@@ -2,6 +2,7 @@ open Ppatteries
 open OUnit
 open Test_util
 open Gmix_model
+let add_zero_root_bl = Like_stree.add_zero_root_bl
 module Glv = Model.Glv
 module Like_stree = Like_stree.Make(Model)
 
@@ -17,7 +18,7 @@ let like_test info () =
   let aln = Alignment.upper_aln_of_any_file (d info.fasta_fname)
   and tree = d info.tree_fname
     |> Newick_gtree.of_file
-    |> Like_stree.add_zero_root_bl
+    |> add_zero_root_bl
   in
   let model = d "phylo_model.jplace"
     |> Json.of_file
