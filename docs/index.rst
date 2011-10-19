@@ -2,8 +2,8 @@
 Pplacer documentation home
 ==========================
 
-The pplacer suite consists of three separate binaries: ``pplacer``, ``guppy``, and ``rppr``.
-The pplacer binary actually does phylogenetic placement and produces place files, guppy does all of the downstream analysis of placements, and ``rppr`` does useful things having to do with reference packages.
+The pplacer suite consists of three separate binaries: pplacer, guppy, and rppr.
+The pplacer binary actually does phylogenetic placement and produces place files, guppy does all of the downstream analysis of placements, and rppr does useful things having to do with reference packages.
 
 .. toctree::
    :maxdepth: 2
@@ -69,7 +69,7 @@ Or compile it from source::
     ./configure && \
     make && make install
 
-If you already have GSL installed, you should be able
+Once GSL is installed, you should be able
 to download `this installation script`_ and just type
 ``source install_pplacer.sh``.
 
