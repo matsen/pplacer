@@ -16,6 +16,9 @@
    between sequences.
  * Fixed a bug by flushing all output buffers before forking, so that the same
    data isn't written multiple times.
+ * Fixed a bug in pplacer in which it wouldn't write the original reference
+   tree when creating a placefile.
+ * Fixed some issues with phyloxml generation.
  * Closed GH-27: Reorganized functions that operate on alignments.
  * Closed GH-67: Added `guppy wpd`.
  * Closed GH-72: Added new features to `rppr convexify` and fixed the
