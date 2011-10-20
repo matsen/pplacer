@@ -3,6 +3,13 @@
 
  * Closed GH-126: Split Glv/Model into Gmix_model and Gcat_model with the
    option of adding more models to pplacer later.
+ * Closed GH-154: Added `guppy islands`.
+ * Closed GH-156: Added functionality for calculating multiple KR distances
+   with only one tree traversal.
+ * Closed GH-157: Added `guppy compress`.
+ * Closed GH-163: Added a --node-numbers flag to every command that emits a
+   phyloxml tree which adds the tree's node numbers to the phyloxml output as
+   bootstrap values.
 
 
 1.1.alpha09
