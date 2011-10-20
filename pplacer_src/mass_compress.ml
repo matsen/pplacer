@@ -22,31 +22,18 @@ let of_placerun ?(p = 1.) ~c weighting criterion pr =
     let rec singletons =
       Array.filteri (fun i _ -> not (IntMap.mem i !nodem)) pqa
         |> Array.to_list
-    and aux pairs centers nodem =
-      if IntMap.is_empty nodem then pairs, centers else (* ... *)
+    and aux accum nodem =
+      if IntMap.is_empty nodem then accum else (* ... *)
       let w, xs = IntMap.enum nodem |> Enum.arg_max (snd |- IntSet.cardinal) in
-      if IntSet.is_empty xs then pairs, centers else (* ... *)
-      let pairs' = (Array.get pqa w, xs) :: pairs
-      and centers' = IntSet.add w centers
-      and nodem' = IntMap.add w IntSet.empty nodem
-        |> IntSet.fold
-            (flip IntMap.modify (IntSet.remove w))
-            xs
+      let all_touched = IntSet.add w xs in
+      let accum' = IntSet.elements xs
+        |> List.map (Array.get pqa)
+        |> Pquery.merge_into pqa.(w)
+        |> flip List.cons accum
+      and nodem' = IntSet.fold IntMap.remove all_touched nodem
+        |> IntMap.map (flip IntSet.diff all_touched)
       in
-      aux pairs' centers' nodem'
+      aux accum' nodem'
     in
-    let pairs, centers = IntMap.map IntSet.of_list !nodem
-      |> aux [] IntSet.empty
-    in
-    List.fold_left
-      (fun (accum, used) (w, xs) ->
-        IntSet.diff (IntSet.diff xs used) centers
-          |> IntSet.elements
-          |> List.map (Array.get pqa)
-          |> Pquery.merge_into w
-          |> flip List.cons accum,
-        IntSet.union used xs)
-      (singletons, IntSet.empty)
-      (List.rev pairs)
-    |> fst)
+    IntMap.map IntSet.of_list !nodem |> aux singletons)
   |> List.flatten
