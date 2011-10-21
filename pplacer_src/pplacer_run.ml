@@ -328,8 +328,9 @@ let run_file prefs query_fname =
     dprint "everything looks OK.\n";
     exit 0;
   end;
-  (* find all the tree locations *)
+  dprint "Determining figs... ";
   let figs = Fig.figs_of_gtree 0.1 ref_tree in
+  dprintf "%d figs\n" (List.length figs);
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
   dprint "Allocating memory for internal nodes... ";

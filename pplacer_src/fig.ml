@@ -49,13 +49,15 @@ let figs_of_gtree cutoff gt =
       let {bls; all_edges = edges; rep_opt; maybe_figs; tot_accum} =
         List.map (top_id &&& aux) subtrees |> fold_figs
       in
-      let rep_edge = Option.get rep_opt |> fst
-      and accum = add_edge_to_figs i tot_accum in
+      let accum = if i = top then tot_accum else add_edge_to_figs i tot_accum
+      and rep_edge = Option.get rep_opt |> fst in
       match List.sort (flip compare) bls with
         | [] -> {max_bl = None; edges; rep_edge; accum}
-        | [bl] when i <> top ->
+        | _ when i = top ->
+          {max_bl = None; edges; rep_edge; accum = List.append accum maybe_figs}
+        | [bl] ->
           {max_bl = Some (bl +. get_bl i); edges; rep_edge; accum}
-        | bl1 :: bl2 :: _ when bl1 +. bl2 <= cutoff && i <> top ->
+        | bl1 :: bl2 :: _ when bl1 +. bl2 <= cutoff ->
           {max_bl = Some (bl1 +. get_bl i); edges; rep_edge; accum}
         | _ ->
           {max_bl = None; edges = IntSet.empty; rep_edge;
