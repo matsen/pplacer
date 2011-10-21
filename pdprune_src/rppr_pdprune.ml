@@ -72,14 +72,14 @@ object (self)
       StringSet.iter (Printf.printf "not pruning %s\n") never_prunes;
       let pt = Ptree.of_gtree gt
       and never_prune_ids =
-        IntMap.fold
+        Gtree.fold_over_leaves
           (fun i b s ->
             match b#get_node_label_opt with
               | Some name ->
                 if StringSet.mem name never_prunes then IntSet.add i s
                 else s
               | None -> s)
-          gt.Gtree.bark_map
+          gt
           IntSet.empty
       in
       let line_of_result =

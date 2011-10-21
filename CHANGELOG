@@ -116,6 +116,8 @@
  * Closed GH-155: Changed pplacer to always check for invalid bases when
    pre-masking sequences.
  * Closed GH-159: Updated to use the v2 batteries API.
+ * Closed GH-164: Fixed some bugs related to various APIs not knowing how to
+   deal with node labels on non-leaves.
 
 1.1.alpha08
 ===========
