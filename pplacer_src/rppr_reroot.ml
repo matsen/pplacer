@@ -83,8 +83,7 @@ object (self)
         |> Gtree.set_bark_map gt
         |> find_root rp
         |> top_id
-        |> reroot st
-        |> Gtree.set_stree gt
+        |> Gtree.reroot gt
         |> flip Newick_gtree.to_file (self#single_file ())
 
     | _ -> failwith "reroot doesn't take any positional arguments"

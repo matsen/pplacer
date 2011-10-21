@@ -139,6 +139,9 @@ let swap_bark a b ({bark_map = m} as t) =
   let bv, m'' = IntMap.opt_extract b m' in
   {t with bark_map = IntMap.opt_add b av m'' |> IntMap.opt_add a bv}
 
+let reroot t i =
+  swap_bark i (top_id t) {t with stree = Stree.reroot t.stree i}
+
 (* join a list of info_trees *)
 let join new_id tL =
   gtree
