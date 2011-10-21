@@ -129,12 +129,9 @@ let addition_n_edges = function
 
 (* copy the info from src at id over to dest *)
 let copy_bark ~dest ~src id =
-  gtree
-    (get_stree dest)
-    (IntMap.add
-      id
-      (IntMap.find id (get_bark_map src))
-      (get_bark_map dest))
+  match IntMap.Exceptionless.find id (get_bark_map src) with
+    | Some bark -> add_bark id bark dest
+    | None -> dest
 
 (* join a list of info_trees *)
 let join new_id tL =
