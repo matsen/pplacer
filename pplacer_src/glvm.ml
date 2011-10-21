@@ -17,7 +17,7 @@ sig
   val rates: t -> float array
   val refine: t -> int -> Newick_gtree.t ->
     Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> t
-  val write: out_channel -> t -> unit
+  val write: unit IO.output -> t -> unit
 
   module Glv:
   sig
