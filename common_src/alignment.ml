@@ -12,6 +12,8 @@ type t = (string * string) array
 
 type seq_type = Nucleotide_seq | Protein_seq
 let nstates_of_seq_type = function | Nucleotide_seq -> 4 | Protein_seq -> 20
+let seq_type_to_str = function
+    | Nucleotide_seq -> "nucleotide" | Protein_seq -> "protein"
 
 (* ***** utils ***** *)
   (* string_break: break str in to chunks of length chunk_len *)

@@ -66,6 +66,16 @@ struct
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp ~mask:model.occupied_rates ~dst:model.tensor model.diagdq model.rates bl
 
+  let write ch model =
+    Format.fprintf
+      (Format.formatter_of_out_channel ch)
+      "%s model\nstat distn:%a\nsite rates:%a\nsite categories: %a\
+      \noccupied rates %a\n"
+      (Alignment.seq_type_to_str model.seq_type)
+      Linear_utils.ppr_gsl_vector model.statd
+      Ppr.ppr_float_array model.rates
+      Ppr.ppr_int_array model.site_categories
+      Ppr.ppr_bool_array model.occupied_rates
 
   module Glv =
   struct
