@@ -74,6 +74,19 @@ let add_bark id b t =
 let map_bark_map f t = {t with bark_map = IntMap.map f (get_bark_map t)}
 let mapi_bark_map f t = {t with bark_map = IntMap.mapi f (get_bark_map t)}
 
+let fold_over_leaves f t v =
+  let open Stree in
+  let rec aux v = function
+    | (Leaf i) :: rest when IntMap.mem i t.bark_map ->
+      aux (f i (IntMap.find i t.bark_map) v) rest
+    | Leaf _ :: rest -> aux v rest
+    | Node (_, subtrees) :: rest -> aux v (List.append subtrees rest)
+    | [] -> v
+  in
+  aux v [t.stree]
+
+let leaf_bark_map t = fold_over_leaves IntMap.add t IntMap.empty
+
 (* general *)
 
 let compare bark_compare t1 t2 =
