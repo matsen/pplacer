@@ -59,7 +59,7 @@ struct
   let write ch model =
     Format.fprintf
       (Format.formatter_of_out_channel ch)
-      "\n%s model\nstat distn:\n%a\nsite rates:\n%a\n"
+      "\n%s model\n\nstat distn:\n%a\n\nsite rates:\n%a\n"
       (Alignment.seq_type_to_str model.seq_type)
       Linear_utils.ppr_gsl_vector model.statd
       Ppr.ppr_float_array model.rates
