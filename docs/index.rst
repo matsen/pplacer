@@ -18,18 +18,18 @@ The pplacer binary actually does phylogenetic placement and produces place files
 
    <h2> <font color="red">Warning</font> </h2>
 
-Pplacer is under heavy development, and not all parts are at the same level of maturity.
-The general guideline is: if we have published about a method, then we have verified it and you are good to go.
+pplacer is under heavy development, and not all parts are at the same level of maturity.
+The general guideline is: if we have released a paper about a method, then we have verified and tested it.
 Thus, the following functionality is stable:
 
-* placement and visualization ability as described in the BMC bioinformatics paper
+* placement and visualization ability as described in the BMC Bioinformatics paper
 * Kantorovich-Rubenstein distances
 * edge principal components and squash clustering
 * taxonomic/phylogenetic discordance analysis
 
+We suggest that you wait to do any serious analysis using features not described on this list.
 In particular, the taxonomic classification functionality is not stable and is still being validated.
 
-If not, then we suggest that you wait to do any serious analysis using those features.
 
 Getting help
 ------------
