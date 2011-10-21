@@ -53,10 +53,6 @@ struct
               model_statd))
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
-      (* XXX note that here we are not using the site categories. We have to
-       * remake them to be the right length. *)
-      let _ = site_categories in
-      let site_categories = Array.make (Alignment.length ref_align) 0 in
       let occupied_rates = Array.make (Array.length rates) true in
       {
         statd; seq_type; rates; site_categories; occupied_rates;
@@ -357,6 +353,9 @@ struct
       }
   *)
     dprint "Optimizing site categories... ";
+    let model =
+      { model with site_categories = Array.make n_sites 0 }
+    in
     let n_categories = 20 in
     let best_log_lks = Array.make n_sites (-. infinity)
     and best_log_lk_cats = Array.make n_sites (-1)
@@ -389,6 +388,7 @@ struct
     done;
     set_site_categories model best_log_lk_cats;
     dprint "done.\n";
+    model
 
 end
 and Like_stree: sig

@@ -56,7 +56,7 @@ struct
 
     | _ -> invalid_arg "build"
 
-  let refine _ _ _ _ _ _ = ()
+  let refine model _ _ _ _ _ = model
 
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =

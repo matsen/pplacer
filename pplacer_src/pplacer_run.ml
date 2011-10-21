@@ -345,8 +345,13 @@ let run_file prefs query_fname =
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   dprint "done.\n";
 
-  if from_input_alignment then
-    Model.refine model n_sites ref_tree like_aln_map darr parr;
+  (* Refine the model if it's not coming directly from the reference package. *)
+  let model =
+    if from_input_alignment then
+      Model.refine model n_sites ref_tree like_aln_map darr parr
+    else
+      model
+  in
 
   dprint "Caching likelihood information on reference tree... ";
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map

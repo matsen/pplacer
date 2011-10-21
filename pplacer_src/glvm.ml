@@ -16,7 +16,7 @@ sig
   val seq_type: t -> Alignment.seq_type
   val rates: t -> float array
   val refine: t -> int -> Newick_gtree.t ->
-    Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> unit
+    Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> t
 
   module Glv:
   sig
