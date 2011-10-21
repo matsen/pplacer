@@ -68,7 +68,7 @@ let figs_of_gtree cutoff gt =
 let enum_by_score figl score =
   let yielded = ref IntSet.empty in
   List.map (first score) figl
-    |> List.sort (comparing fst)
+    |> List.sort (comparing fst |> flip)
     |> List.enum
     |> Enum.map
         (fun (_, edges) ->
@@ -76,7 +76,7 @@ let enum_by_score figl score =
             |> tap (fun _ -> yielded := IntSet.union edges !yielded)
             |> IntSet.elements
             |> List.map (score &&& identity)
-            |> List.sort (comparing fst)
+            |> List.sort (comparing fst |> flip)
             |> List.enum
             |> Enum.map snd)
     |> Enum.flatten
