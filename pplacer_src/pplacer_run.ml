@@ -329,11 +329,7 @@ let run_file prefs query_fname =
     exit 0;
   end;
   (* find all the tree locations *)
-  let all_locs = IntMap.keylist (Gtree.get_bark_map ref_tree) in
-  assert(all_locs <> []);
-  (* the last element in the list is the root, and we don't want to place there *)
-  let locs = ListFuns.remove_last all_locs in
-  if locs = [] then failwith("problem with reference tree: no placement locations.");
+  let figs = Fig.figs_of_gtree 0.1 ref_tree in
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
   dprint "Allocating memory for internal nodes... ";
@@ -422,7 +418,7 @@ let run_file prefs query_fname =
   in
   let partial = Core.pplacer_core
     (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
-    prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
+    prefs figs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
   let n_done = ref 0 in
   let queries = List.length query_list in
