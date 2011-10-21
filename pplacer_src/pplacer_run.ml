@@ -329,7 +329,7 @@ let run_file prefs query_fname =
     exit 0;
   end;
   dprint "Determining figs... ";
-  let figs = Fig.figs_of_gtree 0.1 ref_tree in
+  let figs = Fig.figs_of_gtree (Prefs.fig_cutoff prefs) ref_tree in
   dprintf "%d figs\n" (List.length figs);
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
