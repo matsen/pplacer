@@ -168,7 +168,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         first_informative
         last_informative
     in
-    let h_ranking = Fig.enum_by_score figs score in
+    let h_ranking = Fig.enum_by_score score figs in
     let results = [Timing ("ranking", (Sys.time ()) -. curr_time)] in
     (* first get the results from ML *)
     let curr_time = Sys.time () in

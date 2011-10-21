@@ -1,21 +1,25 @@
 open Ppatteries
 open Stree
 
-type t = int * IntSet.t
+type fig = int * IntSet.t
+
+type t =
+  | Dummy of int list
+  | Figs of fig list
 
 type fig_state = {
   max_bl: float option;
   edges: IntSet.t;
   rep_edge: int;
-  accum: t list;
+  accum: fig list;
 }
 
 type fold_state = {
   bls: float list;
   all_edges: IntSet.t;
   rep_opt: (int * int) option;
-  maybe_figs: t list;
-  tot_accum: t list;
+  maybe_figs: fig list;
+  tot_accum: fig list;
 }
 
 let add_edge_to_figs i fl =
@@ -36,7 +40,7 @@ let fold_figs fl =
      rep_opt = None; tot_accum = []}
     fl
 
-let figs_of_gtree cutoff gt =
+let _figs_of_gtree cutoff gt =
   let get_bl = Gtree.get_bl gt
   and top = Gtree.top_id gt in
   let rec aux = function
@@ -65,7 +69,13 @@ let figs_of_gtree cutoff gt =
   in
   (Gtree.get_stree gt |> aux).accum
 
-let enum_by_score figl score =
+let figs_of_gtree cutoff gt =
+  if cutoff = 0. then
+    Dummy (Gtree.nonroot_node_ids gt)
+  else
+    Figs (_figs_of_gtree cutoff gt)
+
+let _enum_by_score figl score =
   let yielded = ref IntSet.empty in
   List.map (first score) figl
     |> List.sort (comparing fst |> flip)
@@ -81,5 +91,14 @@ let enum_by_score figl score =
             |> Enum.map snd)
     |> Enum.flatten
 
-module XXX = Decor_gtree
-module XXY = Visualization
+let enum_by_score score = function
+  | Dummy l ->
+    List.map (score &&& identity) l
+      |> List.sort (comparing fst |> flip)
+      |> List.enum
+      |> Enum.map snd
+  | Figs fl -> _enum_by_score fl score
+
+let length = function
+  | Dummy _ -> 0
+  | Figs fl -> List.length fl

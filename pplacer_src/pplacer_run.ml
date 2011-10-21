@@ -330,7 +330,10 @@ let run_file prefs query_fname =
   end;
   dprint "Determining figs... ";
   let figs = Fig.figs_of_gtree (Prefs.fig_cutoff prefs) ref_tree in
-  dprintf "%d figs\n" (List.length figs);
+  begin match Prefs.fig_cutoff prefs with
+    | 0. -> dprint "figs disabled.\n"
+    | _ -> dprintf "%d figs.\n" (Fig.length figs)
+  end;
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
   dprint "Allocating memory for internal nodes... ";
