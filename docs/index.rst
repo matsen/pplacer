@@ -1,5 +1,5 @@
 
-Pplacer documentation home
+pplacer documentation home
 ==========================
 
 The pplacer suite consists of three separate binaries: pplacer, guppy, and rppr.
@@ -18,11 +18,18 @@ The pplacer binary actually does phylogenetic placement and produces place files
 
    <h2> <font color="red">Warning</font> </h2>
 
-The pplacer suite is currently in an "alpha" stage of development.
-We do our best to keep everything correct, but some functionality is not completely verified and thus may contain bugs or produce unexpected results.
+Pplacer is under heavy development, and not all parts are at the same level of maturity.
 The general guideline is: if we have published about a method, then we have verified it and you are good to go.
-If not, then we suggest that you wait to do any analysis that you intend to publish.
+Thus, the following functionality is stable:
 
+* placement and visualization ability as described in the BMC bioinformatics paper
+* Kantorovich-Rubenstein distances
+* edge principal components and squash clustering
+* taxonomic/phylogenetic discordance analysis
+
+In particular, the taxonomic classification functionality is not stable and is still being validated.
+
+If not, then we suggest that you wait to do any serious analysis using those features.
 
 Getting help
 ------------
