@@ -155,9 +155,7 @@ let run_file prefs query_fname =
   in
   if !verbosity >= 2 then begin
     print_endline "found in reference alignment: ";
-    Array.iter
-      (fun (name,_) -> print_endline ("\t'"^name^"'"))
-      ref_align
+    Ppr.print_string_array (Alignment.get_name_arr ref_align)
   end;
 
   let _ =

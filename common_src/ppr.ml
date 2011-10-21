@@ -59,3 +59,4 @@ let print_float_list l = print_of_ppr ppr_float_list l
 let print_float_array a = print_of_ppr ppr_float_array a
 let print_float_array_array a = print_of_ppr ppr_float_array_array a
 let print_string_list l = print_of_ppr ppr_string_list l
+let print_string_array a = print_of_ppr ppr_string_array a
