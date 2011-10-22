@@ -434,6 +434,7 @@ let init_of_json o ref_align =
     |> Jsontype.array
     |> List.map Jsontype.int
     |> Array.of_list
+    |> Array.map (fun x -> x-1) (* FastTree writes out 1-indexed arrays. *)
   in
   Glvm.Gcat_model
     (model_name, empirical_freqs, opt_transitions, rates, site_categories)
