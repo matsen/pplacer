@@ -404,7 +404,7 @@ let run_file prefs query_fname =
           |])
       darr
     |> Array.append
-        [|[|"node"; "tree_likelihood"; "supernode_likelihood"; "???"|]|]
+        [|[|"node"; "tree_likelihood"; "slow_tree_like"; "supernode_like"|]|]
     |> String_matrix.pad
     |> Array.iter (Array.iter (dprintf "%s  ") |- tap (fun () -> dprint "\n"))
 
