@@ -29,8 +29,8 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prune the tree while maximizing PD"
-  method usage = "usage: prunetre [options] tree"
+  method desc = "prune the tree to maximize PD"
+  method usage = "usage: pdprune [options] tree"
 
   method action = function
     | [fname] ->
