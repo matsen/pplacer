@@ -133,6 +133,12 @@ let copy_bark ~dest ~src id =
     | Some bark -> add_bark id bark dest
     | None -> dest
 
+(* swap the bark for the two given ids *)
+let swap_bark a b ({bark_map = m} as t) =
+  let av, m' = IntMap.opt_extract a m in
+  let bv, m'' = IntMap.opt_extract b m' in
+  {t with bark_map = IntMap.opt_add b av m'' |> IntMap.opt_add a bv}
+
 (* join a list of info_trees *)
 let join new_id tL =
   gtree
