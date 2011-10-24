@@ -44,6 +44,7 @@ type result =
   | Fantasy of (int * (float * float * float)) list
   | Pquery of Pquery.pquery
   | Timing of string * float
+  | Evaluated_best of string * int * bool
 
 (* ll_normalized_prob :
  * ll_list is a list of log likelihoods. this function gives the normalized
@@ -160,7 +161,9 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
+    let logdots = ref 0 in
     let score loc =
+      incr logdots;
       Glv.bounded_logdot
         utilv_nsites
         full_query_evolv
@@ -279,7 +282,14 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     if ml_results = [] then
       failwith
         (Printf.sprintf "empty results for %s!\n" query_name);
-    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results in
+    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results
+      |> maybe_cons
+          (if evaluate_all prefs then
+             let logdots = !logdots in
+             let best_loc = Fig.enum_all figs |> Enum.arg_max score in
+             Some (Evaluated_best (query_name, logdots, List.exists (fst |- (=) best_loc) ml_results))
+           else None)
+    in
     if fantasy prefs <> 0. then
       Fantasy ml_results :: results
     else begin

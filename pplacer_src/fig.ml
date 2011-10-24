@@ -75,15 +75,20 @@ let figs_of_gtree cutoff gt =
   else
     Figs (_figs_of_gtree cutoff gt)
 
-let _enum_by_score figl score =
+let uniquifier () =
   let yielded = ref IntSet.empty in
+  fun s ->
+    IntSet.diff s !yielded
+    |> tap (fun _ -> yielded := IntSet.union s !yielded)
+
+let _enum_by_score figl score =
+  let uniquify = uniquifier () in
   List.map (first score) figl
     |> List.sort (comparing fst |> flip)
     |> List.enum
     |> Enum.map
         (fun (_, edges) ->
-          IntSet.diff edges !yielded
-            |> tap (fun _ -> yielded := IntSet.union edges !yielded)
+          uniquify edges
             |> IntSet.elements
             |> List.map (score &&& identity)
             |> List.sort (comparing fst |> flip)
@@ -98,6 +103,14 @@ let enum_by_score score = function
       |> List.enum
       |> Enum.map snd
   | Figs fl -> _enum_by_score fl score
+
+let enum_all = function
+  | Dummy l -> List.enum l
+  | Figs fl ->
+    let uniquify = uniquifier () in
+    List.enum fl
+      |> Enum.map (snd |- uniquify |- IntSet.enum)
+      |> Enum.flatten
 
 let length = function
   | Dummy _ -> 0

@@ -48,7 +48,7 @@ object (self)
 
   method obj_received = function
     | Ready -> self#push
-    | Data x -> gotfunc x; self#push
+    | Data x -> List.iter gotfunc x; self#push
     | Exception exn
     | Fatal_exception exn -> raise (Child_error exn)
 
@@ -453,14 +453,9 @@ let run_file prefs query_fname =
     and n_fantasies = ref 0
     in
     let rec gotfunc = function
-      | Core.Fantasy f :: rest ->
+      | Core.Fantasy f ->
         Fantasy.add_to_fantasy_matrix f fantasy_mat;
         incr n_fantasies;
-        gotfunc rest
-      | Core.Timing (name, value) :: rest ->
-        timings := StringMap.add_listly name value (!timings);
-        gotfunc rest
-      | [] -> ()
       | _ -> failwith "expected fantasy result"
     and cachefunc _ =
       (* if cachefunc returns true, the current thing is skipped; modulo
@@ -577,20 +572,14 @@ let run_file prefs query_fname =
         identity
     and queries = ref [] in
     let rec gotfunc = function
-      | Core.Pquery pq :: rest when not (Pquery.is_placed pq) ->
+      | Core.Pquery pq when not (Pquery.is_placed pq) ->
         dprintf "warning: %d identical sequences (including %s) were \
                  unplaced and omitted\n"
           (Pquery.namel pq |> List.length)
-          (Pquery.name pq);
-        gotfunc rest
-      | Core.Pquery pq :: rest ->
+          (Pquery.name pq)
+      | Core.Pquery pq ->
         let pq = pquery_gotfunc pq in
-        queries := pq :: (!queries);
-        gotfunc rest
-      | Core.Timing (name, value) :: rest ->
-        timings := StringMap.add_listly name value (!timings);
-        gotfunc rest
-      | [] -> ()
+        queries := pq :: (!queries)
       | _ -> failwith "expected pquery result"
     and cachefunc _ = false
     and donefunc () =
@@ -605,6 +594,39 @@ let run_file prefs query_fname =
     gotfunc, cachefunc, donefunc
 
   end in
+  let gotfunc = function
+    | Core.Timing (name, value) ->
+      timings := StringMap.add_listly name value (!timings);
+    | x -> gotfunc x
+  in
+
+  let gotfunc, donefunc =
+    if Prefs.evaluate_all prefs then
+      let evaluations = RefList.empty ()
+      and total_logdots = ref 0 in
+      (function
+        | Core.Evaluated_best (seq, logdots, was_best) ->
+          RefList.push evaluations (seq, was_best);
+          total_logdots := logdots + !total_logdots
+        | x -> gotfunc x),
+      (fun () ->
+        dprint ~l:2 "Sequences without their best location chosen:\n";
+        dprintf "Evaluation: %g%% from %d logdots.\n"
+          (if RefList.is_empty evaluations then 0.
+           else
+              RefList.fold_left
+                (fun (count, total) (seq, was_best) ->
+                  if not was_best then dprintf ~l:2 " - %s\n" seq;
+                  (if was_best then 1. +. count else count), total +. 0.01)
+                (0., 0.)
+                evaluations
+              |> uncurry (/.))
+          !total_logdots;
+        donefunc ())
+    else
+      gotfunc, donefunc
+  in
+
   let rec nextfunc () =
     let x =
       try

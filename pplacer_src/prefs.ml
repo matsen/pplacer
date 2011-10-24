@@ -21,6 +21,7 @@ type prefs =
     pp_rel_err : float ref;
     (* playing ball *)
     fig_cutoff : float ref;
+    evaluate_all : bool ref;
     max_strikes : int ref;
     strike_box : float ref;
     max_pitches : int ref;
@@ -72,6 +73,7 @@ let defaults () =
     pp_rel_err = ref 0.01;
     (* playing ball *)
     fig_cutoff = ref 0.;
+    evaluate_all = ref false;
     max_strikes = ref 6;
     strike_box = ref 3.;
     max_pitches = ref 40;
@@ -123,6 +125,7 @@ let informative_prior p = !(p.informative_prior)
 let prior_lower       p = !(p.prior_lower)
 let pp_rel_err        p = !(p.pp_rel_err)
 let fig_cutoff        p = !(p.fig_cutoff)
+let evaluate_all      p = !(p.evaluate_all)
 let max_strikes       p = !(p.max_strikes)
 let strike_box        p = !(p.strike_box)
 let max_pitches       p = !(p.max_pitches)
@@ -202,6 +205,8 @@ spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
 (* baseball *)
 spec_with_default "--fig-cutoff" (fun o -> Arg.Set_float o) prefs.fig_cutoff
 "The cutoff for determining figs. Default is %g; specify 0 to disable.";
+"--evaluate-all", Arg.Set prefs.evaluate_all,
+"Evaluate all likelihoods to ensure that the best location was selected.";
 spec_with_default "--max-strikes" (fun o -> Arg.Set_int o) prefs.max_strikes
 "Maximum number of strikes for baseball. 0 -> no ball playing. Default is %d.";
 spec_with_default "--strike-box" (fun o -> Arg.Set_float o) prefs.strike_box
