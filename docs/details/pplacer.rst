@@ -226,6 +226,19 @@ Now we can run pplacer::
 Making reference trees
 ----------------------
 
+FastTree
+========
+
+FastTree should be used in the following way when making nucleotide reference trees for use with pplacer::
+
+  FastTree -nt -gtr -log vaginal.log vaginal.fasta > vaginal.tre
+
+In particular, do not use the ``--gamma`` option, but do use the ``--gtr`` option.
+
+
+phyml and RAxML
+===============
+
 PHYML_ and RAxML_ are two nice packages for making ML trees that are supported for use with pplacer.
 Pplacer only knows about the GTR, WAG, LG, and JTT models, so use those to build your trees.
 If you are fond of another model and can convince me that I should implement it, I will.
