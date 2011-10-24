@@ -229,12 +229,23 @@ Making reference trees
 FastTree
 ========
 
+Nucleotide alignments
+---------------------
+
 FastTree should be used in the following way when making nucleotide reference trees for use with pplacer::
 
   FastTree -nt -gtr -log vaginal.log vaginal.fasta > vaginal.tre
 
-In particular, do not use the ``--gamma`` option, but do use the ``--gtr`` option.
+In particular, do not use the ``-gamma`` option, but do use the ``-gtr`` option.
 
+Amino Acid alignments
+---------------------
+
+FastTree should be used in the following way when making amino acid reference trees for use with pplacer::
+
+  FastTree -log TIGR00001.log TIGR00001.fasta > TIGR00001.tre
+
+Again, ``-gamma`` should not be used.
 
 phyml and RAxML
 ===============
