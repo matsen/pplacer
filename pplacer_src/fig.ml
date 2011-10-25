@@ -92,8 +92,7 @@ let _enum_by_score figl score =
             |> IntSet.elements
             |> List.map (score &&& identity)
             |> List.sort (comparing fst |> flip)
-            |> List.enum
-            |> Enum.map snd)
+            |> List.enum)
     |> Enum.flatten
 
 let enum_by_score score = function
@@ -101,7 +100,6 @@ let enum_by_score score = function
     List.map (score &&& identity) l
       |> List.sort (comparing fst |> flip)
       |> List.enum
-      |> Enum.map snd
   | Figs fl -> _enum_by_score fl score
 
 let enum_all = function
@@ -115,3 +113,17 @@ let enum_all = function
 let length = function
   | Dummy _ -> 0
   | Figs fl -> List.length fl
+
+let onto_decor_gtree dt = function
+  | Dummy _ -> dt
+  | Figs fl ->
+    List.fold_left
+      (fun dt (_, edges) ->
+        let color = Decor.random_color () in
+        Decor_gtree.color_clades_above ~color edges dt)
+      dt
+      fl
+    |> Gtree.get_bark_map
+    |> IntMap.filter (fun b -> b#get_decor |> List.length < 2)
+    |> Gtree.set_bark_map dt
+

@@ -332,7 +332,11 @@ let run_file prefs query_fname =
   let figs = Fig.figs_of_gtree (Prefs.fig_cutoff prefs) ref_tree in
   begin match Prefs.fig_cutoff prefs with
     | 0. -> dprint "figs disabled.\n"
-    | _ -> dprintf "%d figs.\n" (Fig.length figs)
+    | _ -> dprintf "%d figs.\n" (Fig.length figs);
+      if Prefs.fig_tree prefs <> "" then
+        Decor_gtree.of_newick_gtree orig_ref_tree
+        |> flip Fig.onto_decor_gtree figs
+        |> Phyloxml.gtree_to_file (Prefs.fig_tree prefs)
   end;
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
@@ -603,10 +607,11 @@ let run_file prefs query_fname =
   let gotfunc, donefunc =
     if Prefs.evaluate_all prefs then
       let evaluations = RefList.empty ()
-      and total_logdots = ref 0 in
+      and total_logdots = ref 0
+      and dt = Fig.onto_decor_gtree (Decor_gtree.of_newick_gtree orig_ref_tree) figs in
       (function
-        | Core.Evaluated_best (seq, logdots, was_best) ->
-          RefList.push evaluations (seq, was_best);
+        | Core.Evaluated_best (seq, logdots, blc, bls) ->
+          RefList.push evaluations (seq, blc, bls);
           total_logdots := logdots + !total_logdots
         | x -> gotfunc x),
       (fun () ->
@@ -615,13 +620,28 @@ let run_file prefs query_fname =
           (if RefList.is_empty evaluations then 0.
            else
               RefList.fold_left
-                (fun (count, total) (seq, was_best) ->
-                  if not was_best then dprintf ~l:2 " - %s\n" seq;
-                  (if was_best then 1. +. count else count), total +. 0.01)
+                (fun (count, total) (seq, blc, bls) ->
+                  if blc <> bls then dprintf ~l:2 " - %s (%d vs. %d)\n" seq blc bls;
+                  (if blc = bls then 1. +. count else count), total +. 0.01)
                 (0., 0.)
                 evaluations
               |> uncurry (/.))
           !total_logdots;
+        if Prefs.evaluation_discrepancy prefs <> "" then begin
+          RefList.to_list evaluations
+          |> List.filter_map
+              (function
+                | _, blc, bls when blc = bls -> None
+                | seq, blc, bls ->
+                  Gtree.get_bark_map dt
+                  |> Decor_gtree.map_add_decor_listly blc
+                      [Decor.Taxinfo (Tax_id.of_string "complete", "complete")]
+                  |> Decor_gtree.map_add_decor_listly bls
+                      [Decor.Taxinfo (Tax_id.of_string "seen", "seen")]
+                  |> Gtree.set_bark_map dt
+                  |> (fun t -> Some (Some seq, t)))
+          |> Phyloxml.named_gtrees_to_file (Prefs.evaluation_discrepancy prefs)
+        end;
         donefunc ())
     else
       gotfunc, donefunc

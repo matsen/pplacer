@@ -22,6 +22,8 @@ type prefs =
     (* playing ball *)
     fig_cutoff : float ref;
     evaluate_all : bool ref;
+    evaluation_discrepancy: string ref;
+    fig_tree : string ref;
     max_strikes : int ref;
     strike_box : float ref;
     max_pitches : int ref;
@@ -74,6 +76,8 @@ let defaults () =
     (* playing ball *)
     fig_cutoff = ref 0.;
     evaluate_all = ref false;
+    evaluation_discrepancy = ref "";
+    fig_tree = ref "";
     max_strikes = ref 6;
     strike_box = ref 3.;
     max_pitches = ref 40;
@@ -126,6 +130,8 @@ let prior_lower       p = !(p.prior_lower)
 let pp_rel_err        p = !(p.pp_rel_err)
 let fig_cutoff        p = !(p.fig_cutoff)
 let evaluate_all      p = !(p.evaluate_all)
+let evaluation_discrepancy p = !(p.evaluation_discrepancy)
+let fig_tree          p = !(p.fig_tree)
 let max_strikes       p = !(p.max_strikes)
 let strike_box        p = !(p.strike_box)
 let max_pitches       p = !(p.max_pitches)
@@ -207,6 +213,10 @@ spec_with_default "--fig-cutoff" (fun o -> Arg.Set_float o) prefs.fig_cutoff
 "The cutoff for determining figs. Default is %g; specify 0 to disable.";
 "--evaluate-all", Arg.Set prefs.evaluate_all,
 "Evaluate all likelihoods to ensure that the best location was selected.";
+"--evaluation-discrepancy-tree", Arg.Set_string prefs.evaluation_discrepancy,
+"Write out a tree showing the discrepancies between the best complete and observed locations.";
+"--fig-tree", Arg.Set_string prefs.fig_tree,
+"Write out a tree showing the figs on the tree.";
 spec_with_default "--max-strikes" (fun o -> Arg.Set_int o) prefs.max_strikes
 "Maximum number of strikes for baseball. 0 -> no ball playing. Default is %d.";
 spec_with_default "--strike-box" (fun o -> Arg.Set_float o) prefs.strike_box

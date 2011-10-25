@@ -20,6 +20,10 @@ let assert_unit_interval x = assert(0. <= x && x <= 1.)
 (* colors! 255 is the most saturated. *)
 let color (r, g, b) = assert_ubytes [r; g; b]; Color(r, g, b)
 
+let random_color () =
+  let cv () = Random.int 192 + 64 in
+  color (cv (), cv (), cv ())
+
 (* basic colors *)
 let white = color (255,255,255)
 let black = color (0,0,0)
