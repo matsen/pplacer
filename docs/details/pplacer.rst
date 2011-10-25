@@ -320,6 +320,19 @@ Note that we have set things up so that turning on posterior probability with ``
 
 You can set these to anything you like by using these flags *after* the ``-p``.
 
+
+Fig ranking
+-----------
+"Fig ranking" is a way to reduce the number of initial comparisons done by using the structure of the reference tree.
+This initial phase is not the bottleneck for trees on a thousand or so taxa, but it is for trees on tens of thousands of taxa or more.
+It works as follows:
+
+define fig
+``--fig-cutoff``
+ranking
+merging of figs using the strike-box
+the colored fig tree
+
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
