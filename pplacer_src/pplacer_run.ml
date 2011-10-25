@@ -470,8 +470,7 @@ let run_file prefs query_fname =
     let map_fasta_file = Prefs.map_fasta prefs in
     let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
-      let ref_tree = Refpkg.get_ref_tree rp
-      and mrcam = Refpkg.get_mrcam rp
+      let mrcam = Refpkg.get_mrcam rp
       and td = Refpkg.get_taxonomy rp
       and glvs = Glv_arr.make
         ~n_glvs:2
