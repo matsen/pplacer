@@ -131,7 +131,7 @@ let generate_yule rng count =
     |> Stree.boost (-1)
 
 let newick_bark_of_prefixed_int prefix n =
-  Newick_bark.map_set_name n (Printf.sprintf "%s%d" prefix n) IntMap.empty
+  Newick_bark.map_set_node_label n (Printf.sprintf "%s%d" prefix n) IntMap.empty
 
 let rec bark_of_stree_numbers bark_fn = function
   | Stree.Leaf n -> bark_fn n
@@ -156,10 +156,26 @@ let generate_lengthy_tree rng ~a ~b count =
     |> Enum.mapi
         (fun i b -> i,
           if IntSet.mem i leaves then
-            Printf.sprintf "n%d" i |> b#set_name
+            Printf.sprintf "n%d" i |> b#set_node_label
           else b)
     |> IntMap.of_enum
     |> IntMap.add (Stree.top_id st) (empty#set_bl 0.)
+  in
+  Gtree.gtree st bark
+
+let generate_caterpillar_tree rng ~mu count =
+  let rec aux accum = function
+    | 1 -> accum
+    | n ->
+      let top = Stree.top_id accum in
+      aux
+        (Stree.node (top + 2) [Stree.Leaf (top + 1); accum])
+        (pred n)
+  in
+  let st = aux (Stree.Leaf 0) count in
+  let bark = 0 --^ (Stree.top_id st)
+    |> Enum.map (identity &&& (fun _ -> Gsl_randist.exponential rng ~mu |> Newick_bark.empty#set_bl))
+    |> IntMap.of_enum
   in
   Gtree.gtree st bark
 
@@ -194,7 +210,7 @@ let some_matching rng n_select p_same n_bins lss =
 
 let distribute_lsetset_on_tree rng n_select n_splits_mean splits leafss gt =
   let bl = Gtree.get_bl gt in
-  let name = Gtree.get_name gt in
+  let name = Gtree.get_node_label gt in
   let rec aux splits leafss = function
     | Stree.Leaf n ->
       StringMap.add (name n) leafss StringMap.empty
@@ -332,7 +348,7 @@ let random_colored_tree rng size n_colors =
   let rec aux accum = function
     | Stree.Leaf i :: rest ->
       let accum' =
-        Newick_bark.map_set_name
+        Newick_bark.map_set_node_label
           i
           (StringSet.choose (choose_color 1)) accum
       in
