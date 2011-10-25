@@ -30,5 +30,9 @@ object (self)
         (self#single_file ())
         (Placerun.redup sequence_tbl pr)
 
-    | _ -> failwith "guppy redup takes exactly one placefile"
+    | l ->
+      List.length l
+      |> Printf.sprintf "redup takes exactly one placefile (%d given)"
+      |> failwith
+
 end

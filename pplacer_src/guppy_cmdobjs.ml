@@ -190,7 +190,7 @@ let placerun_by_name fname =
   if SM.mem fname !placerun_map then
     SM.find fname !placerun_map
   else begin
-    let pr = Placerun_io.filtered_of_file fname in
+    let pr = Placerun_io.of_any_file fname in
     if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
     placerun_map := SM.add fname pr !placerun_map;
     pr
@@ -281,8 +281,27 @@ end
 
 (* *** visualization-related objects *** *)
 
+class numbered_tree_cmd () =
+object
+  val numbered = flag "--node-numbers"
+    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
+
+  method specl = [
+    toggle_flag numbered;
+  ]
+
+  method private maybe_numbered: (<to_numbered: int -> 'a; ..> as 'a) Gtree.gtree -> 'a Gtree.gtree =
+    if fv numbered then
+      Gtree.mapi_bark_map (fun i x -> x#to_numbered i)
+    else
+      identity
+
+end
+
 class fat_cmd () =
 object(self)
+  inherit numbered_tree_cmd () as super_numbered_tree
+
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
   val total_width = flag "--total-width"
@@ -293,7 +312,7 @@ object(self)
     float_flag min_fat_bl;
     float_flag total_width;
     float_flag width_multiplier;
-  ]
+  ] @ super_numbered_tree#specl
 
   (* Given an absolute total quantity, come up with a scaling which will make
    * that total. *)
@@ -396,27 +415,22 @@ end
 
 class classic_viz_cmd () =
 object (self)
+  inherit numbered_tree_cmd () as super_numbered_tree
   val xml = flag "--xml"
     (Plain (false, "Write phyloXML (with colors) for all visualizations."))
-  val show_node_numbers = flag "--node-numbers"
-    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
 
   method specl = [
     toggle_flag xml;
-    toggle_flag show_node_numbers;
-  ]
+  ] @ super_numbered_tree#specl
 
   method private fmt =
     if fv xml then Visualization.Phyloxml
     else Visualization.Newick
 
   method private decor_ref_tree pr =
-    let ref_tree = Placerun.get_ref_tree pr in
-    Decor_gtree.of_newick_gtree
-      (if not (fv show_node_numbers) then
-          ref_tree
-       else
-          (Newick_gtree.make_boot_id ref_tree))
+    Placerun.get_ref_tree pr
+      |> self#maybe_numbered
+      |> Decor_gtree.of_newick_gtree
 
   method private write_trees suffix named_trees = function
     | Directory (dir, prefix) ->

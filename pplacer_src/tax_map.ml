@@ -14,12 +14,12 @@ open Ppatteries
 (* Make a map of leaf taxonomic annotations from the leaf names on the tree and
  * a seqinfo map (sim). *)
 let tips_map sim t =
-  IntMap.fold
+  Gtree.fold_over_leaves
     (fun k newick_bark m ->
-      match newick_bark#get_name_opt with
-      | Some name -> IntMap.add k (Tax_seqinfo.tax_id_by_name sim name) m
-      | None -> m)
-    (Gtree.get_bark_map t)
+      match newick_bark#get_node_label_opt with
+        | Some node_label -> IntMap.add k (Tax_seqinfo.tax_id_by_node_label sim node_label) m
+        | None -> m)
+    t
     IntMap.empty
 
 (* Propogate the taxonomic information up the tree according to common ancestry,

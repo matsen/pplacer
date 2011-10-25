@@ -6,7 +6,7 @@ open Ppatteries
 exception Unplaced_pquery of string list
 
 let sort_placement_list criterion pl =
-  List.sort ~cmp:(comparing criterion |> flip) pl
+  List.sort (comparing criterion |> flip) pl
 
 let rec is_decreasing criterion = function
   | x::y::l ->
@@ -108,8 +108,8 @@ let is_placed pq =
 
 let make criterion ~namel ~seq pl =
   {
+    seq;
     namlom = Name_list namel;
-    seq = seq;
     place_list = sort_placement_list criterion pl;
   }
 
@@ -137,4 +137,19 @@ let make_map_by_best_loc criterion pquery_list =
       ~val_f:(fun x -> x)
       placed_l)
 
+let merge_into pq pql =
+  match pq.namlom with
+    | Name_list my_namel ->
+      List.map namel pql
+      |> List.cons my_namel
+      |> List.flatten
+      |> set_namel pq
+    | Named_float (_, m) ->
+      List.map multiplicity pql
+      |> List.cons m
+      |> List.fsum
+      |> set_mass pq
 
+let merge = function
+  | h :: t -> merge_into h t
+  | [] -> invalid_arg "merge"

@@ -13,7 +13,7 @@ object (self)
     super_mass#specl
   @ super_tabular#specl
 
-  method desc = "calculate phylogenetic rarefaction"
+  method desc = "calculates phylogenetic rarefaction curves"
   method usage = "usage: rarefact [options] placefile"
 
   method private placefile_action = function
@@ -25,6 +25,9 @@ object (self)
         |> List.cons ["k"; "r"]
         |> self#write_ll_tab
 
-    | _ -> failwith "rarefact takes exactly one placefile"
+    | l ->
+      List.length l
+      |> Printf.sprintf "rarefact takes exactly one placefile (%d given)"
+      |> failwith
 
 end

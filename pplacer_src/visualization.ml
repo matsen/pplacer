@@ -16,20 +16,20 @@ let trees_to_file tree_fmt prefix trees =
     let pd = Phyloxml.pxdata_of_gtrees trees in
     Phyloxml.pxdata_to_file (prefix^".xml") pd
 
-let make_zero_leaf decor_list bl name =
+let make_zero_leaf decor_list bl node_label =
   Gtree.Subtree
     (Gtree.gtree
       (Stree.leaf 0)
       (IntMap.add
         0
         (new Decor_bark.decor_bark
-          (`Of_bl_name_boot_decor
-            (Some bl, Some name, None, decor_list)))
+          (`Of_bl_node_edge_label_decor
+            (Some bl, Some node_label, None, decor_list)))
         IntMap.empty))
 
 let decor_bark_of_bl bl =
   new Decor_bark.decor_bark
-    (`Of_bl_name_boot_decor (Some bl, None, None, []))
+    (`Of_bl_node_edge_label_decor (Some bl, None, None, []))
 
 (* given a function that takes a location and a list of somethings and returns a
  * (where, tree) list for that location, make a tree containing those extra

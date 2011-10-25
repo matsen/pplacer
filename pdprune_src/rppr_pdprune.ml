@@ -29,7 +29,7 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prunes the tree"
+  method desc = "prune the tree while maximizing PD"
   method usage = "usage: prunetre [options] tree"
 
   method action = function
@@ -56,7 +56,7 @@ object (self)
           | Not_found -> false
       in
       let gt = Newick_gtree.of_file fname in
-      let get_name id = (IntMap.find id gt.Gtree.bark_map)#get_name in
+      let get_name id = (IntMap.find id gt.Gtree.bark_map)#get_node_label in
       let namel =
         Gtree.recur
           (fun _ below -> List.flatten below)
@@ -72,14 +72,14 @@ object (self)
       StringSet.iter (Printf.printf "not pruning %s\n") never_prunes;
       let pt = Ptree.of_gtree gt
       and never_prune_ids =
-        IntMap.fold
+        Gtree.fold_over_leaves
           (fun i b s ->
-            match b#get_name_opt with
+            match b#get_node_label_opt with
               | Some name ->
                 if StringSet.mem name never_prunes then IntSet.add i s
                 else s
               | None -> s)
-          gt.Gtree.bark_map
+          gt
           IntSet.empty
       in
       let line_of_result =
@@ -91,7 +91,10 @@ object (self)
         (Pd.until_stopping safe never_prune_ids criterion pt)
       |> self#write_ll_tab
 
-    | _ -> failwith "prunetre takes exactly one tree"
+    | l ->
+      List.length l
+      |> Printf.sprintf "pdprune takes exactly one tree (%d given)"
+      |> failwith
 
 end
 

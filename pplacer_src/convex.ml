@@ -191,10 +191,6 @@ let subtreelist_map f tree =
 let maplist_of_map_and_tree map =
   subtreelist_map (fun i -> IntMap.find i map)
 
-let rec powerset = function
-  | [] -> [[]]
-  | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
-
 (* Cartesian product of a list list. *)
 let product lists =
   let rec aux accum base = function
@@ -435,7 +431,7 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
             (fun apart -> apart_nu' apart, apart)
             apartl
           in
-          List.rev_map (fun (a, b) -> Some a, b) (List.sort nu_apartl)
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
       in
       let rec aux phi current_best = function
         | (nu_opt, apart) :: rest -> (
@@ -511,19 +507,18 @@ let nodeset_of_phi_and_tree phi tree =
   aux IntSet.empty [tree, (None, CS.empty)]
 
 (* Make map from names to their respective indices. *)
-let name_map_of_bark_map bark_map =
-  IntMap.fold
+let node_label_map_of_tree t =
+  Gtree.fold_over_leaves
     (fun i bark accum ->
       try
-        StringMap.add bark#get_name i accum
-      with
-        | Newick_bark.No_name -> accum)
-    bark_map
+        StringMap.add bark#get_node_label i accum
+      with Newick_bark.No_node_label -> accum)
+    t
     StringMap.empty
 
 let rank_tax_map_of_refpkg rp =
   let gt = Refpkg.get_ref_tree rp in
-  let node_map = name_map_of_bark_map gt.Gtree.bark_map in
+  let node_map = node_label_map_of_tree gt in
   let td = Refpkg.get_taxonomy rp
   and seqinfo = Refpkg.get_seqinfom rp in
   let add_to_rankmap seq rankmap ti =
@@ -550,6 +545,15 @@ let rank_tax_map_of_refpkg rp =
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
     IntMap.empty
+  |> tap (fun m ->
+    Array.iteri
+      (fun rank rankname ->
+        if not (IntMap.mem rank m) then
+          dprintf "warning: rank %s not represented in the lineage of any \
+                   sequence in reference package %s.\n"
+            rankname
+            (Refpkg.get_name rp))
+      td.Tax_taxonomy.rank_names)
 
 let add_color_setly k v m =
   IntMap.add k (CS.add v (IntMap.get k CS.empty m)) m

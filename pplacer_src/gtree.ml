@@ -1,7 +1,7 @@
 (* our tree data stucture with information.
  *
  * Gtree stands for general tree, meaning that we have a tree with any kind of
- * bark that has get/set methods for bl, name, and boot.
+ * bark that has get/set methods for bl, node_label, and edge_label.
  *
  * We number all of the nodes and then have maps which tell us about the edges.
  * Note that the edge information is for the node directly above the node with
@@ -13,8 +13,8 @@ open Ppatteries
 (* these are raised when we are asked for something that isn't in a bark map *)
 exception Lacking_bark of int
 exception Lacking_branchlength of int
-exception Lacking_name of int
-exception Lacking_bootstrap of int
+exception Lacking_node_label of int
+exception Lacking_edge_label of int
 
 exception Attachment_distal_bl_out_of_range of int * float
 
@@ -27,10 +27,9 @@ type 'a gtree =
   {stree : Stree.stree;
   bark_map : 'a IntMap.t}
 
-let gtree stree bark_map =
-  {stree = stree; bark_map = bark_map}
+let gtree stree bark_map = {stree; bark_map}
 
-let of_stree stree = {stree = stree; bark_map = IntMap.empty}
+let of_stree stree = {stree; bark_map = IntMap.empty}
 
 let get_stree t = t.stree
 let get_bark_map t = t.bark_map
@@ -43,15 +42,15 @@ let get_bark_opt t id =
 let get_bl t id =
   try (get_bark t id)#get_bl with
   | Not_found -> raise (Lacking_branchlength id)
-let get_name t id =
-  try (get_bark t id)#get_name with
-  | Not_found -> raise (Lacking_name id)
-let get_boot t id =
-  try (get_bark t id)#get_boot with
-  | Not_found -> raise (Lacking_bootstrap id)
+let get_node_label t id =
+  try (get_bark t id)#get_node_label with
+  | Not_found -> raise (Lacking_node_label id)
+let get_edge_label t id =
+  try (get_bark t id)#get_edge_label with
+  | Not_found -> raise (Lacking_edge_label id)
 
-let set_stree t stree = {t with stree = stree}
-let set_bark_map t bark_map = {t with bark_map = bark_map}
+let set_stree t stree = {t with stree}
+let set_bark_map t bark_map = {t with bark_map}
 let add_bark t id bark =
   set_bark_map t (IntMap.add id bark (get_bark_map t))
 
@@ -73,6 +72,19 @@ let add_bark id b t =
   { t with bark_map = (IntMap.add id b (get_bark_map t)) }
 let map_bark_map f t = {t with bark_map = IntMap.map f (get_bark_map t)}
 let mapi_bark_map f t = {t with bark_map = IntMap.mapi f (get_bark_map t)}
+
+let fold_over_leaves f t v =
+  let open Stree in
+  let rec aux v = function
+    | (Leaf i) :: rest when IntMap.mem i t.bark_map ->
+      aux (f i (IntMap.find i t.bark_map) v) rest
+    | Leaf _ :: rest -> aux v rest
+    | Node (_, subtrees) :: rest -> aux v (List.append subtrees rest)
+    | [] -> v
+  in
+  aux v [t.stree]
+
+let leaf_bark_map t = fold_over_leaves IntMap.add t IntMap.empty
 
 (* general *)
 
@@ -116,12 +128,18 @@ let addition_n_edges = function
 
 (* copy the info from src at id over to dest *)
 let copy_bark ~dest ~src id =
-  gtree
-    (get_stree dest)
-    (IntMap.add
-      id
-      (IntMap.find id (get_bark_map src))
-      (get_bark_map dest))
+  match IntMap.Exceptionless.find id (get_bark_map src) with
+    | Some bark -> add_bark id bark dest
+    | None -> dest
+
+(* swap the bark for the two given ids *)
+let swap_bark a b ({bark_map = m} as t) =
+  let av, m' = IntMap.opt_extract a m in
+  let bv, m'' = IntMap.opt_extract b m' in
+  {t with bark_map = IntMap.opt_add b av m'' |> IntMap.opt_add a bv}
+
+let reroot t i =
+  swap_bark i (top_id t) {t with stree = Stree.reroot t.stree i}
 
 (* join a list of info_trees *)
 let join new_id tL =
@@ -214,9 +232,7 @@ let add_subtrees_above avail_id tree where_subtree_list =
     0.
     tree
     avail_id
-    (List.sort
-      ~cmp:(comparing get_where)
-      where_subtree_list)
+    (List.sort (comparing get_where) where_subtree_list)
 
 (* where_subtree_map is a map from a location to a triple (pos, tree,
  * bark_of_bl), where pos is the position along the edge in terms of distal

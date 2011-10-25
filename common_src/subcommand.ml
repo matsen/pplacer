@@ -112,6 +112,8 @@ let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
       "--batch", Arg.String (fun fname ->
         batchfile := Some (Batchfile.of_file fname)),
       "Run the provided batch file of guppy commands";
+      "--quiet", Arg.Unit (fun () -> verbosity := 0),
+      "Don't write messages to stdout (unless explicitly requested).";
     ]
     (* Sys.argv and Arg.current are used here so that /this/ invocation of
        Arg.parse won't try to parse the flags that are destined for the
@@ -149,11 +151,7 @@ type 'a flag = {
   described: 'a described;
 }
 
-let flag opt described = {
-  value = ref None;
-  opt = opt;
-  described = described;
-}
+let flag opt described = {value = ref None; opt; described}
 
 (* fv is short for flag value. It fetches the value. *)
 let fv f = match !(f.value) with
@@ -195,5 +193,7 @@ object (self)
     try
       self#action argl
     with
-      | No_default (name, opt) -> Printf.printf "no option provided for %s flag (%s)\n" name opt
+      | No_default (name, opt) ->
+        Printf.printf "no option provided for %s flag (%s)\n" name opt;
+        exit 1
 end

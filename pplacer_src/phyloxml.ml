@@ -28,7 +28,7 @@ let assert_clade x = assert("clade" = Xml.tag x)
 let pcdata_inners_of_xml x =
   match Xml.children x with
   | [pcd] -> Xml.pcdata pcd
-  | _ -> assert false
+  | _ -> invalid_arg "pcdata_inners_of_xml"
 
 let pxtree_of_xml x =
   assert_phylogeny x;
@@ -36,12 +36,12 @@ let pxtree_of_xml x =
   | [namex; clade] ->
       assert("name" = Xml.tag namex);
       assert_clade(clade);
-      { name = Some (pcdata_inners_of_xml namex);
-        clade = clade;
+      { clade;
+        name = Some (pcdata_inners_of_xml namex);
         attribs = Xml.attribs x; }
   | [clade] ->
       assert_clade(clade);
-      { name = None; clade = clade; attribs = Xml.attribs x; }
+      { clade; name = None; attribs = Xml.attribs x; }
   | _ -> raise Multiple_root_clades
 
 let xml_of_pxtree t =
@@ -86,7 +86,7 @@ let rec clade_of_stree bark tree =
 
 let pxtree_of_gtree ?name gtree =
   {
-    name = name;
+    name;
     clade = clade_of_stree (Gtree.get_bark_map gtree) (Gtree.get_stree gtree);
     attribs = [("rooted", "true")];
   }

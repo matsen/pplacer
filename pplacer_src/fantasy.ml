@@ -30,7 +30,7 @@ let find_best ml_results =
   in
   match ml_results with
   | r::rest -> aux (get_loc r) (get_like r) rest
-  | [] -> assert(false)
+  | [] -> invalid_arg "find_best"
 
 
 (* returns (hit, n_trials). hit is whether we would have gotten a hit (i.e. if

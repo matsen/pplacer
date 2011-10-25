@@ -60,9 +60,24 @@ let ll_normalized_prob ll_list =
             ll_list)))
     ll_list
 
+  (* Prefs.prefs -> *)
+  (* Ppatteries.IntMap.key list -> *)
+  (* prior -> *)
+  (* Model.t -> *)
+  (* (string * string) Ppatteries.Array.mappable -> *)
+  (* < get_bl : float; .. > Gtree.gtree -> *)
+  (* darr:Glv.glv array -> *)
+  (* parr:Glv.glv array -> *)
+  (* snodes:Glv.glv array -> string * string -> result list *)
+
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
-let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
+let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree ~(darr: b array) ~(parr: b array) ~(snodes: b array) =
+  let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
+  let module Glv = Model.Glv in
+  let module Glv_arr = Glv_arr.Make(Model) in
+  let module Glv_edge = Glv_edge.Make(Model) in
+  let module Three_tax = Three_tax.Make(Model) in
   let keep_at_most = Prefs.keep_at_most prefs
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
@@ -90,10 +105,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
   in
   (* making glvs which are appropriate for query side of the first placement
    * stage. in contrast to the second stage query glv, this guy is full length. *)
-  let full_query_orig =
-    Glv.make ~n_rates:(Model.n_rates model)
-      ~n_sites:ref_length
-      ~n_states:(Model.n_states model)
+  let full_query_orig = Model.make_glv model ~n_sites:ref_length
   in
   let full_query_evolv = Glv.mimic full_query_orig in
   (* *** the main query loop *** *)
@@ -105,14 +117,12 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
     (* the mask array shows true if it's included *)
-    let informative c = c <> '?' && c <> '-' in
-    let mask_arr = Array.map informative query_arr in
-    let masked_query_arr =
-      Array.filteri (fun _ c -> informative c) query_arr in
+    let mask_arr = Array.map Alignment.informative query_arr in
+    let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = ArrayFuns.first informative query_arr
-    and last_informative = ArrayFuns.last informative query_arr in
+    let first_informative = ArrayFuns.first Alignment.informative query_arr
+    and last_informative = ArrayFuns.last Alignment.informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -120,15 +130,15 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     in
     (* the query glv, which has been masked *)
     let query_glv =
-      Glv.lv_arr_to_constant_rate_glv
-        (Model.n_rates model)
+      Model.lv_arr_to_glv
+        model
         (lv_arr_of_char_arr masked_query_arr)
     in
     (* the full one, which will be used for the first stage only *)
     Glv.prep_constant_rate_glv_from_lv_arr
       full_query_orig
       (lv_arr_of_char_arr query_arr);
-    Glv.evolve_into
+    Model.evolve_into
       model
       ~dst:full_query_evolv
       ~src:full_query_orig
@@ -152,7 +162,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     let curr_time = Sys.time () in
     let h_r =
       List.sort
-        ~cmp:(comparing snd |> flip)
+        (comparing snd |> flip)
         (List.map
            (fun loc ->
              (loc,
@@ -210,11 +220,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
           let n_like_calls =
             Three_tax.optimize mlo_tolerance (max_pend prefs) max_iter tt
           in
-          if 2 < verb_level prefs then
-            Printf.printf "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
+          dprintf ~l:2 "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
         with
           | Minimization.ExceededMaxIter ->
-            Printf.printf
+            dprintf
               "optimization for %s at %d exceeded maximum number of iterations.\n"
               query_name
               loc;
@@ -255,7 +264,11 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
         with
           (* we need to handle the exception here so that we continue the baseball recursion *)
           | Gsl_error.Gsl_exn(_,warn_str) ->
-            Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" loc query_name warn_str;
+            dprintf
+              "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
+              loc
+              query_name
+              warn_str;
             play_ball like_record n_strikes results rest
       end
       | [] -> results
@@ -275,7 +288,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
        * to make a special type for ml results. *)
       let get_like (_, (like, _, _)) = like in
       let sorted_ml_results =
-        List.sort ~cmp:(comparing get_like |> flip) ml_results in
+        List.sort (comparing get_like |> flip) ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =
@@ -295,7 +308,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
               (loc, safe_ml_optimize_location final_tolerance loc)
             with
               | Gsl_error.Gsl_exn(_,warn_str) ->
-                Printf.printf "Warning: GSL problem with final branch length optimization for location %d. %s\n" loc warn_str;
+                dprintf
+                  "Warning: GSL problem with final branch length optimization for location %d. %s\n"
+                  loc
+                  warn_str;
                 initial)
           keep_results
       in

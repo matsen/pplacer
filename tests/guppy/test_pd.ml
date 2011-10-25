@@ -7,10 +7,10 @@ let suite = [
     placeruns_of_dir "simple"
       |> List.map
           (Placerun.get_name &&& Guppy_pd.pd_of_placerun Placement.ml_ratio false)
-      |> List.sort
+      |> List.sort compare
       |> List.enum
       |> check_map_approx_equal
-          "unequal (%s and %s)"
+          "unequal (%s(%g) and %s(%g))"
           (List.enum [
             "test1", 8.;
             "test2", 4.;

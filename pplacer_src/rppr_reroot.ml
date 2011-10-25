@@ -19,8 +19,8 @@ let find_root rp gt =
     |> List.filter_map
         (fun leaf ->
           try
-            Gtree.get_name gt leaf
-            |> Tax_seqinfo.tax_id_by_name seqinfom
+            Gtree.get_node_label gt leaf
+            |> Tax_seqinfo.tax_id_by_node_label seqinfom
             |> some
           with Gtree.Lacking_bark _ -> None)
     |> Tax_taxonomy.list_mrca td
@@ -31,7 +31,7 @@ let find_root rp gt =
       let subrks = List.map (node_mrca &&& some) subtrees
         |> maybe_map_cons (None |> (curry identity |> flip)) top_mrca
         |> List.map (Tax_taxonomy.get_tax_rank td |> first)
-        |> List.sort
+        |> List.sort compare
       in
       let at = List.at subrks |- fst in
       if List.length subrks < 2 || at 0 = at 1 then
@@ -83,8 +83,7 @@ object (self)
         |> Gtree.set_bark_map gt
         |> find_root rp
         |> top_id
-        |> reroot st
-        |> Gtree.set_stree gt
+        |> Gtree.reroot gt
         |> flip Newick_gtree.to_file (self#single_file ())
 
     | _ -> failwith "reroot doesn't take any positional arguments"

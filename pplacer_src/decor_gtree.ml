@@ -10,6 +10,9 @@ let compare t1 t2 = Gtree.compare Decor_bark.compare t1 t2
 let of_newick_gtree t = Gtree.map_bark_map Decor_bark.of_newick_bark t
 let to_newick_gtree t = Gtree.map_bark_map Decor_bark.to_newick_bark t
 
+let to_numbered t =
+  Gtree.mapi_bark_map (fun i x -> x#to_numbered i) t
+
 (* append (id, decorl) to the bark map *)
 let map_add_decor_listly id decorl barkm =
   IntMap.add

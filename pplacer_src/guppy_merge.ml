@@ -44,7 +44,7 @@ object (self)
          (fv mult))
       prl
     in match prl with
-    | [] -> ()
+    | [] -> failwith "merge takes at least one placefile (zero given)"
     | prl ->
       let fname = self#single_file
         ~default:(File ((Mokaphy_common.cat_names prl) ^ ".jplace"))

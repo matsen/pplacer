@@ -3,7 +3,11 @@ open Guppy_cmdobjs
 open Ppatteries
 
 let sing_tree weighting criterion mass_width ref_tree pquery =
-  let pqname = Pquery.namel pquery |> String.concat "_" in
+  let pqname =
+    match pquery.Pquery.namlom with
+    | Pquery.Name_list l -> String.concat "_" l
+    | Pquery.Named_float (s, _) -> s
+  in
   match weighting with
   | Mass_map.Weighted ->
     Gtree.add_subtrees_by_map
@@ -52,7 +56,7 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit fat_cmd () as super_fat
-  inherit classic_viz_cmd () as super_classic_viz
+  inherit! classic_viz_cmd () as super_classic_viz
 
   method specl =
     super_mass#specl

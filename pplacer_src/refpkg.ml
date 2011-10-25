@@ -22,7 +22,7 @@ type t =
   {
     (* specified *)
     ref_tree    : Newick_bark.newick_bark Gtree.gtree Lazy.t;
-    model       : Model.t Lazy.t;
+    model       : Glvm.t Lazy.t;
     aln_fasta   : Alignment.t Lazy.t;
     aln_sto     : unit;
     aln_profile : unit;
@@ -52,11 +52,6 @@ let show_supported_versions () =
   Printf.printf
     "Supported versions: %s.\n"
     (String.concat ", " refpkg_versions)
-
-(* deprecated now *)
-let model_of_stats_fname prefs stats_fname ref_align =
-  prefs.Prefs.stats_fname := stats_fname;
-  Model.of_prefs "" prefs ref_align
 
 (* This is the primary builder. We have the option of specifying an actual
  * alignment and a tree if we have them already. *)
@@ -96,18 +91,26 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
       (match ref_tree with
         | Some t -> t
         | None -> Newick_gtree.of_file (get "tree"))
-  and lmodel =
-      lazy
-        (let aln = Lazy.force lfasta_aln in
-        if StringMap.mem "phylo_model" m then
-          Model.of_json (StringMap.find "phylo_model" m) aln
-        else begin
-          print_endline
-            "Warning: using a statistics file directly is now deprecated. \
+  and lmodel = lazy
+    (let aln = Lazy.force lfasta_aln in
+     if StringMap.mem "phylo_model" m then
+       let j = StringMap.find "phylo_model" m |> Json.of_file |> Jsontype.obj in
+       match Hashtbl.find j "ras_model" |> Jsontype.string with
+         | "gamma" ->
+           (module Gmix_model.Model: Glvm.Model),
+           Gmix_model.init_of_json j aln
+         | "Price-CAT" ->
+           (module Gcat_model.Model: Glvm.Model),
+           Gcat_model.init_of_json j aln
+         | x -> failwith ("invalid ras_model: " ^ x)
+     else begin
+       print_endline
+         "Warning: using a statistics file directly is now deprecated. \
             We suggest using a reference package. If you already are, then \
             please use the latest version of taxtastic.";
-          model_of_stats_fname prefs (get "tree_stats") aln
-        end)
+       (module Gmix_model.Model: Glvm.Model),
+       Gmix_model.init_of_stats_fname prefs (get "tree_stats") aln
+     end)
   and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
   and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
   in
@@ -164,15 +167,15 @@ let mrca_classify rp pr =
     pr
 
 let print_OK start rp =
-  print_endline (start^(get_name rp)^" checks OK!")
+  dprintf "%s%s checks OK!\n" start (get_name rp)
 
 (* make sure all of the tax maps etc are set up *)
 let check_refpkg_classification rp =
-  print_endline "Checking MRCA map...";
+  dprint "Checking MRCA map...\n";
   let mrcam = get_mrcam rp in
-  print_endline "Checking uptree map...";
+  dprint "Checking uptree map...\n";
   let utm = get_uptree_map rp in
-  print_endline "Trying classifications...";
+  dprint "Trying classifications...\n";
   let _ =
     List.map
       (Tax_classify.mrca_classify_loc mrcam utm)
@@ -181,11 +184,13 @@ let check_refpkg_classification rp =
   ()
 
 let check rp name what =
-  print_endline ("Checking "^name^"...");
+  dprintf "Checking %s...\n" name;
   let _ = what rp in ()
 
 let check_tree_and_aln_names tree aln =
-  let tns = StringSet.of_list (Newick_gtree.get_name_list tree)
+  let tns = Newick_gtree.leaf_label_map tree
+    |> IntMap.values
+    |> StringSet.of_enum
   and ans = StringSet.of_list (Array.to_list (Alignment.get_name_arr aln))
   in
   let test (s1, n1) (s2, n2) =
@@ -201,7 +206,7 @@ let check_tree_and_aln_names tree aln =
   ()
 
 let check_refpkg rp =
-  print_endline ("Checking refpkg "^(get_name rp)^"...");
+  dprintf "Checking refpkg %s...\n" (get_name rp);
   check rp "tree" get_ref_tree;
   check rp "model" get_model;
   check rp "alignment" get_aln_fasta;
@@ -218,7 +223,7 @@ let check_refpkg rp =
 (* check that a given tree t is the same as the ref tree in the refpkg rp.
  * Note that we don't check bootstraps. *)
 let check_tree_identical ?epsilon:(epsilon=0.) rp title t =
-  if 0 <> Newick_gtree.compare ~epsilon ~cmp_boot:false t (get_ref_tree rp) then
+  if 0 <> Newick_gtree.compare ~epsilon ~cmp_edge_label:false t (get_ref_tree rp) then
     failwith (title^" and the tree from "^(get_name rp)^" are not the same.")
 
 let check_tree_approx = check_tree_identical ~epsilon:1e-5

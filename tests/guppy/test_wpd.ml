@@ -7,10 +7,10 @@ let test exponent results () =
     |> List.cons (placerun_of_dir "multi" "test1and3")
     |> List.map
         (Placerun.get_name &&& Guppy_wpd.wpd_of_placerun exponent Placement.ml_ratio)
-    |> List.sort
+    |> List.sort compare
     |> List.enum
     |> check_map_approx_equal
-        "unequal (%s and %s)"
+        "unequal (%s(%g) and %s(%g))"
         (List.enum results)
 
 let suite = [

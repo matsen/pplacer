@@ -15,15 +15,15 @@ let get_some except = function
 
 type placement =
   {
-    location        : int;
-    ml_ratio        : float;
-    post_prob       : float option;
-    log_like        : float;
-    marginal_prob   : float option;
-    distal_bl       : float;
-    pendant_bl      : float;
-    classif         : Tax_id.tax_id option;
-    map_identity    : (float * int) option;
+    location: int;
+    ml_ratio: float;
+    post_prob: float option;
+    log_like: float;
+    marginal_prob: float option;
+    distal_bl: float;
+    pendant_bl: float;
+    classif: Tax_id.tax_id option;
+    map_identity: (float * int) option;
   }
 
 let location            p = p.location
@@ -61,7 +61,7 @@ let add_classif p c = {p with classif = Some c}
 let add_map_identity p i = {p with map_identity = Some i}
 
 let sort_placecoll criterion pc =
-  List.sort ~cmp:(comparing criterion |> flip) pc
+  List.sort (comparing criterion |> flip) pc
 
 let filter_place_list criterion cutoff pc =
   List.filter (fun p -> criterion p > cutoff) pc
@@ -81,7 +81,7 @@ let make_ml_ratio_filter cutoff placement =
 let make_post_prob_filter cutoff placement =
   match placement.post_prob with
   | Some x -> x > cutoff
-  | None -> assert(false)
+  | None -> invalid_arg "make_post_prob_filter"
 
 
 (* *** READING *** *)
@@ -205,7 +205,7 @@ let to_json json_state place =
       | _ -> []
     end
     @ begin match place.map_identity with
-      | Some (f, d) -> [Jsontype.Array [Jsontype.Float f; Jsontype.Int d]]
+      | Some (f, d) -> [Jsontype.Float f; Jsontype.Int d]
       | _ -> []
     end)
 
@@ -233,9 +233,15 @@ let of_json fields a =
     distal_bl = Jsontype.float (get "distal_length");
     pendant_bl = Jsontype.float (get "pendant_length");
     post_prob = maybe_get Jsontype.float "post_prob";
-    marginal_prob = maybe_get Jsontype.float "marginal_prob";
+    marginal_prob = maybe_get Jsontype.float "marginal_like";
     classif = maybe_get Tax_id.of_json "classification";
-    map_identity = maybe_get map_identity "map_identity";
+    map_identity =
+      match maybe_get identity "map_ratio",
+        maybe_get identity "map_overlap"
+      with
+        | Some Jsontype.Float x, Some Jsontype.Int y -> Some (x, y)
+        | None, None -> maybe_get map_identity "map_identity"
+        | _, _ -> failwith "malformed map_identity in json";
   }
 
 (* CSV *)

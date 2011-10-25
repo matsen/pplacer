@@ -13,21 +13,23 @@ open Tax_id
  * we make a map from each k in K to the MAP sequence for the Proximal side of
  * that internal node.
  * *)
-let of_map u1 u2 model t ~darr ~parr m cutoff =
+let of_map (type a) (type b) m (u1: b) (u2: b) (model: a) t ~(darr: b array) ~(parr: b array) k_map cutoff =
+  let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
+  let module Seq_post = Seq_post.Make(Model) in
   let bounded_max_index vec =
     let idx = Gsl_vector.max_index vec in
     if vec.{idx} /. (Linear_utils.l1_norm vec) < cutoff then -1 else idx
-  and code = Model.code model in
+  and code = Model.seq_type model |> Glvm.code in
   IntMap.mapi
     (fun id _ ->
-      Model.to_sym_str
+      Glvm.to_sym_str
         code
         (Seq_post.get_summary
            Seq_post.Proximal
            bounded_max_index
            (-1) u1 u2 model t
            ~darr ~parr id))
-    m
+    k_map
 
 (* Given a map of tree locations to a list of something, the MRCA map of the
  * tree, and the tree itself, build map of MRCA locations to the combined list

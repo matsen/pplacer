@@ -10,7 +10,7 @@ let count_along_mass gt mass cb =
     Kr_distance.total_along_edge
       cb
       (Gtree.get_bl gt id)
-      (IntMap.get id [] mass |> List.map I.to_pair |> List.sort)
+      (IntMap.get id [] mass |> List.map I.to_pair |> List.sort compare)
       merge
   in
   Kr_distance.total_over_tree
@@ -18,7 +18,7 @@ let count_along_mass gt mass cb =
     (const ())
     lmerge
     (fun () -> ref 0)
-    gt
+    (Gtree.get_stree gt)
 
 let of_placerun criterion ?k_max pr =
   let gt = Placerun.get_ref_tree pr
@@ -54,10 +54,10 @@ let of_placerun criterion ?k_max pr =
     count_along_mass
       gt
       mass
-      (fun d ->
+      (fun d bl ->
         let d = !d in
         let p = n - d in
-        1. -. (q_k d) -. (q_k p))
+        (1. -. (q_k d) -. (q_k p)) *. bl)
   in
   2 -- k_max
     |> Enum.map (identity &&& count)

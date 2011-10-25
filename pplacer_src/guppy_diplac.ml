@@ -33,7 +33,7 @@ object (self)
       and best_placement = Pquery.best_place criterion in
       Placerun.get_pqueries pr
       |> List.map (best_placement |- dist &&& Pquery.name)
-      |> List.sort ~cmp:(flip compare)
+      |> List.sort (flip compare)
       |> List.enum
       |> (match fvo max_dist with
           | Some max_dist -> Enum.filter (fun (dist, _) -> dist > max_dist)
@@ -45,6 +45,9 @@ object (self)
       |> List.of_enum
       |> self#write_ll_tab
 
-    | _ -> failwith "diplac takes exactly one placefile"
+    | l ->
+      List.length l
+      |> Printf.sprintf "diplac takes exactly one placefile (%d given)"
+      |> failwith
 
 end

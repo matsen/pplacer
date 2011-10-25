@@ -12,7 +12,7 @@ object (self)
     (Plain (false, "Make total unit mass per placerun by multiplying with a scalar."))
   val transform = flag "--transform"
     (Plain ("", "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."))
+    Options are 'log', 'unit', 'asinh', and 'no_trans'. Default is no transform."))
 
   method specl = super_output#specl
   @ [
@@ -20,13 +20,15 @@ object (self)
     string_flag transform;
   ]
 
-  method desc = "filter and transform placefiles"
+  method desc = "Multi-Filter and Transform placefiles"
   method usage = "usage: mft [options] placefile[s]"
 
   method private placefile_action prl =
-    let transform = fv transform |> Mass_map.transform_of_str in
     let prl = prl
-    |> List.map (Placerun.transform transform)
+    |> (match fv transform with
+        | "" -> identity
+        | transform ->
+          List.map (Mass_map.transform_of_str transform |> Placerun.transform))
     |> if not (fv unitize) then identity else
         List.map
           (fun pr ->

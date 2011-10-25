@@ -46,7 +46,7 @@ module Squash (B: BLOB) =
      * fun as below *)
     let cble_of_blobs distf b b' =
       let (small, big) = if compare b b' < 0 then (b, b') else (b', b) in
-      { dist = distf b b'; small = small; big = big; }
+      { dist = distf b b'; small; big; }
 
     let blob_in_cble b c = b = c.small || b = c.big
 
@@ -77,22 +77,11 @@ module Squash (B: BLOB) =
 
     let cset_map f s = CSet.fold (fun x -> CSet.add (f x)) s CSet.empty
 
-    (* BEGIN crazy work around until ocaml 3.12 *)
-    exception First of B.t
-
-    let first_key m =
-      try
-        BMap.iter (fun k _ -> raise (First k)) m;
-        invalid_arg "empty map given to first_key"
-      with
-      | First k -> k
-
     let get_only_binding m =
-      let k = first_key m in
-      match BMap.remove k m with
-      | m' when m' = BMap.empty -> (k, BMap.find k m)
-      | _ -> invalid_arg "get_only_binding: more than one binding"
-    (* END crazy work around until 3.12 *)
+      if BMap.cardinal m <> 1 then
+        invalid_arg "get_only_binding: more than one binding"
+      else
+        BMap.choose m
 
     (* Note that the blobls can be non normalized as we call normf on them from
      * the beginning and pass those on to distf. *)
@@ -103,7 +92,7 @@ module Squash (B: BLOB) =
             (counter+1,
               BMap.add b (Stree.leaf counter) bmap,
               IntMap.add counter b blobim,
-              Newick_bark.map_set_name counter name barkm))
+              Newick_bark.map_set_node_label counter name barkm))
           (0, BMap.empty, IntMap.empty, IntMap.empty)
           named_blobl
       in
@@ -114,7 +103,7 @@ module Squash (B: BLOB) =
         given_distf ~x1:(BMap.find b normm) ~x2:(BMap.find b' normm) b b'
       in
       (* Build up our set of clusterables. *)
-      Printf.printf "Preparing the objects to be clustered...";
+      dprint "Preparing the objects to be clustered...";
       flush_all ();
       let rec init_aux accu = function
         | b::l ->
@@ -128,11 +117,11 @@ module Squash (B: BLOB) =
         | [] -> accu
       in
       let start_cset = init_aux CSet.empty (List.map snd named_blobl) in
-      print_endline "done.";
+      dprint "done.\n";
       (* now actually perform the clustering *)
       (* * Main recursion ** *)
       let rec merge_aux bmap cset free_index normm blobim barkm =
-        Printf.printf "step %d of %d\n" (free_index - n_blobs + 1) n_blobs;
+        dprintf "step %d of %d\n" (free_index - n_blobs + 1) n_blobs;
         flush_all ();
         if CSet.cardinal cset = 0 then begin
           let (_, stree) = get_only_binding bmap in
@@ -164,7 +153,7 @@ module Squash (B: BLOB) =
             (free_index+1)
             new_normm
             (IntMap.add free_index merged blobim)
-            (Newick_bark.map_set_name
+            (Newick_bark.map_set_node_label
               free_index
               (string_of_int free_index)
               (add_bl next.small (add_bl next.big barkm)))
@@ -184,7 +173,7 @@ module Squash (B: BLOB) =
         Gtree.recur
           (fun i -> function
             | [b1; b2] -> let m = B.merge b1 b2 in set_blob i m; m
-            | _ -> assert false)
+            | _ -> invalid_arg "mimic: tree isn't strictly bifurcating")
           (fun i -> IntMap.find i (!blobim))
           t
       in

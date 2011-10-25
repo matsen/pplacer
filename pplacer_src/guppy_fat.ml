@@ -9,6 +9,7 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit fat_cmd () as super_fat
+  inherit placefile_cmd () as super_placefile
 
   val average = flag "--average"
     (Plain (false, "Average all input placefiles together."))
@@ -56,7 +57,7 @@ object (self)
     let phylo_mass = Mass_map.By_edge.of_pre phylo_pre in
     [
       Some (name^".ref.fat"),
-      self#fat_tree_of_massm final_rt phylo_mass
+      self#fat_tree_of_massm final_rt phylo_mass |> self#maybe_numbered
     ]
     @
       (match tax_pre with
@@ -72,8 +73,7 @@ object (self)
           ]
         end)
 
-  method action fnamel =
-    let prl = List.map Placerun_io.filtered_of_file fnamel in
+  method private placefile_action prl =
     self#check_placerunl prl;
     let tax_info = match self#get_rpo with
       | None -> None

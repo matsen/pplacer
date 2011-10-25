@@ -12,16 +12,16 @@ let boost by m =
   IntMap.fold (fun k v -> IntMap.add (k+by) v) m IntMap.empty
 
 let get_bl m id = (IntMap.find id m)#get_bl
-let get_name m id = (IntMap.find id m)#get_name
-let get_boot m id = (IntMap.find id m)#get_boot
+let get_node_label m id = (IntMap.find id m)#get_node_label
+let get_edge_label m id = (IntMap.find id m)#get_edge_label
 
-let to_name_map bm =
+let to_node_label_map bm =
   IntMap.fold
     (fun id bark accu ->
       try
-        IntMap.add id bark#get_name accu
+        IntMap.add id bark#get_node_label accu
       with
-      | Newick_bark.No_name -> accu)
+      | Newick_bark.No_node_label -> accu)
     bm
     IntMap.empty
 

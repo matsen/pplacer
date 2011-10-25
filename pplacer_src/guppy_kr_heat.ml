@@ -8,9 +8,9 @@ let transport_map t pre1 pre2 =
     IntMap.map
     (* we don't care about where we are along the edge *)
       (List.map snd)
-      (Kr_distance.make_kr_map
-        (Mass_map.Indiv.of_pre pre1)
-        (Mass_map.Indiv.of_pre pre2)) in
+      (Kr_distance.make_n_kr_map
+        [Mass_map.Indiv.of_pre pre1;
+         Mass_map.Indiv.of_pre pre2]) in
   let sum_over_krs_of_id id =
     List.fold_right
       (fun kr_v -> ( +. ) (kr_v.(0) -. kr_v.(1)))
@@ -83,9 +83,10 @@ object (self)
         fname
         ([Some tree_name,
           make_heat_tree
-            (match refpkgo with
-            | None -> Decor_gtree.of_newick_gtree ref_tree
-            | Some rp -> Refpkg.get_tax_ref_tree rp)
+            (self#maybe_numbered
+               (match refpkgo with
+                 | None -> Decor_gtree.of_newick_gtree ref_tree
+                 | Some rp -> Refpkg.get_tax_ref_tree rp))
             (my_pre_of_pr pr1)
             (my_pre_of_pr pr2)]
         @ match refpkgo with
@@ -99,6 +100,10 @@ object (self)
               (my_make_tax_pre pr1)
               (my_make_tax_pre pr2)]
         end)
-  | [] -> () (* e.g. heat -help *)
-  | _ -> failwith "Please specify exactly two place files to make a heat tree."
+
+    | l ->
+      List.length l
+      |> Printf.sprintf "kr_heat takes exactly two placefiles (%d given)"
+      |> failwith
+
 end

@@ -38,10 +38,6 @@ type snip = {
   finish: float;
 }
 
-val list_min: ?key:('a -> 'a -> int) -> 'a list -> 'a
-(** Find the minimum value in a list, optionally using the provided comparator
-    function. *)
-
 val adjacent_bls: Newick_gtree.t -> (int * float) list IntMap.t
 (** Generate a map from each id in a Newick_gtree.t to a list of (neighbor_id,
     distance) pairs for every neighboring node for the given node, where the
@@ -55,6 +51,10 @@ val update_ldistm: ldistm -> IntSet.t -> int list -> Newick_gtree.t -> ldistm * 
 
 val of_gtree: Newick_gtree.t -> v
 (** Compute the Voronoi diagram where points of interest are the leaves. *)
+
+val of_gtree_and_leaves: Newick_gtree.t -> IntSet.t -> v
+(** Compute the Voronoi diagram where points of interest are only the leaves
+    specified. *)
 
 val uncolor_leaves: v -> IntSet.t -> v * IntSet.t
 (** This function returns the updated Voronoi after removing all of the leaves
@@ -89,3 +89,26 @@ val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement
 (** Find the distance from the specified placement to the closest leaf on a
     voronoi diagram. If a snipdist isn't provided, it will be calculated from
     the specified diagram. *)
+
+val update_score: Mass_map.Indiv.t -> v -> leaf -> float IntMap.t -> float IntMap.t
+val leaf_work: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> leaf -> float
+val ecld: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> float
+
+type solution = {
+  leaves: IntSet.t;
+  work: float;
+}
+type solutions = solution IntMap.t
+val sleaves: solution -> IntSet.t
+val swork: solution -> float
+
+module type Alg = sig
+  val solve:
+    Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
+end
+module Greedy: Alg
+module Full: sig
+  include Alg
+  val csv_log: Csv.out_channel option ref
+end
+module Forced: Alg

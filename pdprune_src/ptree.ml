@@ -18,7 +18,7 @@ type ptree = (int, edge) Hashtbl.t
 
 (* *** EDGE UTILS *** *)
 
-let sorted_list_eq l1 l2 = List.sort l1 = List.sort l2
+let sorted_list_eq l1 l2 = List.sort compare l1 = List.sort compare l2
 
 (* assert that one_side is a (potentially resorted version of) l or r, and
  * return the one that it is not *)
@@ -99,7 +99,7 @@ let check pt =
       (fun below ->
         let e = try find pt below with
         | Missing_edge (missing,_) as x ->
-            Printf.printf "%d missing (requested by %d)\n" missing above;
+            dprintf "%d missing (requested by %d)\n" missing above;
             raise x
         in
         check_node our_node below e;
@@ -191,7 +191,7 @@ let to_gtree pt =
   let add_bark i bl nameo =
     m :=
       IntMap.add i
-        (new Newick_bark.newick_bark (`Of_bl_name_boot(Some bl, nameo, None)))
+        (new Newick_bark.newick_bark (`Of_bl_node_edge_label (Some bl, nameo, None)))
         !m
   in
   (* above is a neighboring edge index in the "up" direction in the resulting

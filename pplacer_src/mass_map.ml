@@ -126,8 +126,8 @@ module Indiv = struct
   type v = {distal_bl: float; mass: float}
   type t = v list IntMap.t
 
-  let of_pair (bl, mass) = {distal_bl = bl; mass = mass}
-  let to_pair {distal_bl = bl; mass = mass} = bl, mass
+  let of_pair (distal_bl, mass) = {distal_bl; mass}
+  let to_pair {distal_bl; mass} = distal_bl, mass
 
   (* factor is a multiplicative factor to multiply the mass by. *)
   let of_pre ?factor pmm =
@@ -153,13 +153,13 @@ module Indiv = struct
  * the edge in an increasing manner. *)
   let sort m =
     IntMap.map
-      (List.sort ~cmp:(fun {distal_bl = a1} {distal_bl = a2} -> compare a1 a2))
+      (List.sort (comparing (fun {distal_bl} -> distal_bl)))
       m
 
   let total_mass m =
     IntMap.fold
       (fun _ mass_l accu ->
-        List.fold_right (fun {mass = mass} -> ( +. ) mass) mass_l accu)
+        List.fold_right (fun {mass} -> ( +. ) mass) mass_l accu)
       m
       0.
 
@@ -167,12 +167,21 @@ module Indiv = struct
     IntMap.map
       (List.map (fun v -> {v with mass = v.mass *. scalar}))
 
+  let work_moving_to vl pos =
+    List.fold_left
+      (fun tot {distal_bl; mass} ->
+        abs_float (distal_bl -. pos) *. mass +. tot)
+      0.
+      vl
+
+  let v_mass = List.fold_left (fun tot {mass} -> tot +. mass) 0.
+
   let ppr =
     IntMap.ppr_gen
       (fun ff l ->
         List.iter
-          (fun {distal_bl = distal; mass = mass} ->
-            Format.fprintf ff "@[{d = %g; m = %g}@]" distal mass)
+          (fun {distal_bl; mass} ->
+            Format.fprintf ff "@[{d = %g; m = %g}@]" distal_bl mass)
           l)
 
 end

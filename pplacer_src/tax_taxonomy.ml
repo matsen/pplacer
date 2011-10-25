@@ -89,11 +89,7 @@ let tax_line_of_strol = function
       ::(Some rank_name)::(Some taxonomic_name)
       ::lineage ->
         {
-          tax_id_str = tax_id_str;
-          parent_id_str = parent_id_str;
-          rank_name = rank_name;
-          taxonomic_name = taxonomic_name;
-          lineage = lineage;
+          tax_id_str; parent_id_str; rank_name; taxonomic_name; lineage;
         }
     | l -> begin
         Format.fprintf
@@ -135,13 +131,13 @@ let of_ncbi_file fname =
           lineage_data
       in
       {
+        tax_tree;
         rank_names =
           Array.of_list
             (List.map
             (function | Some s -> s
                       | None -> failwith "NA in taxon rank name line!")
             names.lineage);
-        tax_tree = tax_tree;
         tax_rank_map = TaxIdMap.add NoTax 0 tax_rank_map;
         tax_name_map =
           List.fold_right
@@ -176,7 +172,7 @@ let rec mrca td ti1 ti2 =
 
 let list_mrca td = function
   | hd::tl -> List.fold_left (mrca td) hd tl
-  | [] -> assert(false)
+  | [] -> invalid_arg "list_mrca"
 
 (* unused and untested *)
 let count_entries_by_rank td =

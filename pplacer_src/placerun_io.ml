@@ -68,13 +68,13 @@ let to_json_file invocation out_fname placerun =
       | None
       | Some (false, false, false) -> []
       | Some (has_post_prob, has_classif, has_map_identity) ->
-        begin if has_post_prob then ["post_prob"; "marginal_prob"] else [] end
+        begin if has_post_prob then ["post_prob"; "marginal_like"] else [] end
         @ begin if has_classif then ["classification"] else [] end
-        @ begin if has_map_identity then ["map_identity"] else [] end
+        @ begin if has_map_identity then ["map_ratio"; "map_overlap"] else [] end
     end
   )));
-  Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_edge_labels:true ref_tree));
-  Hashtbl.add ret "version" (Jsontype.Int 1);
+  Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_node_numbers:true ref_tree));
+  Hashtbl.add ret "version" (Jsontype.Int 2);
   Json.to_file out_fname (Jsontype.Object ret)
 
 (* ***** READING ***** *)
@@ -154,18 +154,25 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 exception Invalid_placerun of string
 
-let json_versions = [1]
+let json_versions = [1; 2]
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
   if not (Hashtbl.mem json "version") then
     raise (Invalid_placerun "no 'version' field");
-  if not (List.mem (Jsontype.int (Hashtbl.find json "version")) json_versions)
-  then
-    raise (Invalid_placerun "invalid version");
+  let version = Hashtbl.find json "version" |> Jsontype.int in
+  if not (List.mem version json_versions) then
+    raise (Invalid_placerun (Printf.sprintf "invalid version: %d" version));
 
-  let fields = List.map Jsontype.string (Jsontype.array (Hashtbl.find json "fields")) in
+  let ref_tree = Hashtbl.find json "tree"
+    |> Jsontype.string
+    |> Newick_gtree.of_string ~legacy_format:(version = 1)
+  and fields = Hashtbl.find json "fields"
+    |> Jsontype.array
+    |> List.map
+        (Jsontype.string
+         |- (function "marginal_prob" when version = 1 -> "marginal_like" | x -> x))
+  in
   let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
-  let ref_tree = Newick_gtree.of_string (Jsontype.string (Hashtbl.find json "tree")) in
   Placerun.make
     ref_tree
     (Filename.chop_extension (Filename.basename fname))
@@ -199,7 +206,7 @@ let ppr_placerun ff pr =
 let split_file_regexp = Str.regexp "^\\(.+\\):\\(.+?\\)$"
 let split_file s =
   if not (Str.string_match split_file_regexp s 0) then
-    invalid_arg "split_file";
+    failwith "csv file provided with no jplace to split";
   Str.matched_group 1 s, Str.matched_group 2 s
 
 let of_any_file fname =
@@ -268,5 +275,5 @@ let maybe_of_split_file ?(getfunc = of_any_file) fname =
   else
     [getfunc fname]
 
-let filtered_of_file ?verbose:(verbose=true) fname =
-  Placerun.filter_unplaced ~verbose (of_any_file fname)
+let filtered_of_file fname =
+  Placerun.filter_unplaced (of_any_file fname)

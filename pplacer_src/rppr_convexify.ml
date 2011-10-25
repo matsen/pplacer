@@ -36,6 +36,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
+  inherit numbered_tree_cmd () as super_numbered_tree
 
   val discord_file = flag "-t"
     (Needs_argument ("", "If specified, the path to write the discordance tree to."))
@@ -60,31 +61,36 @@ object (self)
   val input_tree = flag "--tree"
     (Needs_argument ("input tree", "A tree file in newick format to work on in place of a reference package."))
   val input_colors = flag "--colors"
-    (Needs_argument ("input colors", "A csv file of the colors on the tree corresponding to --tree."))
+    (Needs_argument ("input colors", "A CSV file of the colors on the tree supplied with --tree."))
 
-  method specl = [
+  method specl =
+    super_refpkg#specl
+  @ super_numbered_tree#specl
+  @ [
+    string_flag input_tree;
+    string_flag input_colors;
     string_flag discord_file;
     string_flag cut_seqs_file;
     string_flag alternates_file;
     toggle_flag check_all_ranks;
     int_flag badness_cutoff;
-    toggle_flag use_naive;
-    string_flag timing;
-    toggle_flag no_early;
     string_list_flag limit_ranks;
+    string_flag timing;
     toggle_flag strict;
-    string_flag input_tree;
-    string_flag input_colors;
-  ] @ super_refpkg#specl
+    toggle_flag use_naive;
+    toggle_flag no_early;
+  ]
 
-  method desc = "make the phylogeny in a reference package convex"
+  method desc = "identifies minimal leaf set to cut for taxonomic concordance"
   method usage = "usage: convexify [-c my.refpkg | --tree my.tre --colors my.csv]"
 
   method private discordance_tree fname =
     let rp = self#get_rp in
     let taxtree = Refpkg.get_tax_ref_tree rp in
     let foldf discord data =
-      let gt' = Decor_gtree.color_clades_above data.cut_leaves taxtree in
+      let gt' = Decor_gtree.color_clades_above data.cut_leaves taxtree
+        |> self#maybe_numbered
+      in
       (Some data.rankname, gt') :: discord
     and finalize = Phyloxml.named_gtrees_to_file fname in
     [], foldf, finalize
@@ -105,7 +111,7 @@ object (self)
       in
       IntSet.fold
         (fun i accum ->
-          let seqname = Gtree.get_name gt i in
+          let seqname = Gtree.get_node_label gt i in
           let ti = IntMap.find i data.taxmap in
           [data.rankname;
            seqname;
@@ -132,7 +138,7 @@ object (self)
       let rank_alternates = alternate_colors (taxmap', data.stree) in
       IntSet.fold
         (fun i accum ->
-          let seqname = Gtree.get_name gt i in
+          let seqname = Gtree.get_node_label gt i in
           ColorSet.fold
             (fun c_ti accum ->
               let lineage = Tax_taxonomy.get_lineage td c_ti in
@@ -194,28 +200,26 @@ object (self)
          |> IntSet.of_enum)
     and cutoff = fv badness_cutoff in
     let leaves = leafset st in
-    Printf.printf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
+    dprintf "refpkg tree has %d leaves\n" (IntSet.cardinal leaves);
     let rank_tax_map = rank_tax_map_of_refpkg rp in
     let nu_f = if fv no_early then None else Some apart_nu in
     let _, results = Enum.fold
       (fun ((rank_cutseqs, data_list) as accum) (rank, taxmap) ->
         let rankname = Tax_taxonomy.get_rank_name td rank in
-        Printf.printf "solving %s" rankname;
-        print_newline ();
+        dprintf "solving %s\n" rankname;
         let _, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
         let cutsetim = IntMap.add (top_id st) ColorSet.empty cutsetim in
         let max_bad, tot_bad = badness cutsetim in
         if max_bad = 0 then begin
-          Printf.printf "  skipping: already convex\n";
+          dprint "  skipping: already convex\n";
           accum
         end else if max_bad > cutoff then begin
-          Printf.printf
+          dprintf
             "  skipping: badness of %d above cutoff threshold\n"
             max_bad;
           accum
         end else begin
-          Printf.printf "  badness: %d max; %d tot" max_bad tot_bad;
-          print_newline ();
+          dprintf "  badness: %d max; %d tot\n" max_bad tot_bad;
           let not_cut, omega, time_delta =
             if fv use_naive then
               let start = Sys.time () in
@@ -232,7 +236,7 @@ object (self)
               let delta = (Sys.time ()) -. start in
               nodeset_of_phi_and_tree phi st, omega, delta
           in
-          Printf.printf "  solved omega: %d\n" omega;
+          dprintf "  solved omega: %d\n" omega;
           let cut_leaves = IntSet.diff leaves not_cut in
           let rank_cutseqs' = IntMap.add
             rank
@@ -240,10 +244,9 @@ object (self)
             rank_cutseqs
           in
           let data = {
-            stree = st; rank = rank; rankname = rankname; taxmap = taxmap;
-            cut_leaves = cut_leaves; not_cut = not_cut;
-            rank_cutseqs = rank_cutseqs'; rank_tax_map = rank_tax_map;
-            time_delta = time_delta; max_badness = max_bad;
+            stree = st; max_badness = max_bad; rank_cutseqs = rank_cutseqs';
+            rank; rankname; taxmap; cut_leaves; not_cut;
+            rank_tax_map; time_delta;
           }
           in
           rank_cutseqs', data :: data_list
@@ -268,9 +271,8 @@ object (self)
 
   method private csv_action =
     let gt = fv input_tree |> Newick_gtree.of_file in
-    let namemap = gt.Gtree.bark_map
-      |> IntMap.filter_map
-          (fun _ b -> try Some b#get_name with Newick_bark.No_name -> None)
+    let namemap = Gtree.leaf_bark_map gt
+      |> Bark_map.to_node_label_map
       |> IntMap.enum
       |> Enum.map swap
       |> StringMap.of_enum
@@ -293,10 +295,9 @@ object (self)
     if max_bad = 0 then
       print_endline "skipped: already convex"
     else if max_bad > fv badness_cutoff then
-      Printf.printf "skipped: badness of %d above cutoff threshold" max_bad
+      dprintf "skipped: badness of %d above cutoff threshold\n" max_bad
     else begin
-      Printf.printf "badness: %d max; %d tot" max_bad tot_bad;
-      print_newline ();
+      dprintf "badness: %d max; %d tot\n" max_bad tot_bad;
       let not_cut, omega =
         if fv use_naive then
           let not_cut = Naive.solve (colormap, st) in
@@ -305,13 +306,13 @@ object (self)
           let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st) in
           nodeset_of_phi_and_tree phi st, omega
       in
-      Printf.printf "solved omega: %d\n" omega;
+      dprintf "solved omega: %d\n" omega;
       let cut_leaves = IntSet.diff leaves not_cut in
       begin match fvo cut_seqs_file with
         | Some fname ->
           cut_leaves
             |> IntSet.enum
-            |> Enum.map (Gtree.get_name gt |- flip List.cons [])
+            |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
             |> List.of_enum
             |> Csv.save fname
         | None -> ()
@@ -320,6 +321,7 @@ object (self)
         | Some fname ->
           Decor_gtree.of_newick_gtree gt
             |> Decor_gtree.color_clades_above cut_leaves
+            |> self#maybe_numbered
             |> Phyloxml.gtree_to_file fname
         | None -> ()
       end;
