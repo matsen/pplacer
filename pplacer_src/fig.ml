@@ -81,26 +81,30 @@ let uniquifier () =
     IntSet.diff s !yielded
     |> tap (fun _ -> yielded := IntSet.union s !yielded)
 
-let _enum_by_score figl score =
+let _enum_by_score figl score_func strike_box =
   let uniquify = uniquifier () in
-  List.map (first score) figl
+  let fig_enum = List.map (first score_func) figl
     |> List.sort (comparing fst |> flip)
     |> List.enum
-    |> Enum.map
-        (fun (_, edges) ->
-          uniquify edges
-            |> IntSet.elements
-            |> List.map (score &&& identity)
-            |> List.sort (comparing fst |> flip)
-            |> List.enum)
-    |> Enum.flatten
+  in
+  Enum.map
+    (fun (score, edges) ->
+      Enum.take_while (fst |- approx_equal ~epsilon:strike_box score) fig_enum
+        |> Enum.fold (snd |- IntSet.union |> flip) edges
+        |> uniquify
+        |> IntSet.elements
+        |> List.map (score_func &&& identity)
+        |> List.sort (comparing fst |> flip)
+        |> List.enum)
+    fig_enum
+  |> Enum.flatten
 
-let enum_by_score score = function
+let enum_by_score score strike_box = function
   | Dummy l ->
     List.map (score &&& identity) l
       |> List.sort (comparing fst |> flip)
       |> List.enum
-  | Figs fl -> _enum_by_score fl score
+  | Figs fl -> _enum_by_score fl score strike_box
 
 let enum_all = function
   | Dummy l -> List.enum l

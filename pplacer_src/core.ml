@@ -171,7 +171,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         first_informative
         last_informative
     in
-    let h_ranking = Fig.enum_by_score score figs
+    let h_ranking = Fig.enum_by_score score (strike_box prefs) figs
     and best_seen = ref None in
     let h_ranking =
       if evaluate_all prefs then
