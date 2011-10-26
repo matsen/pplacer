@@ -329,12 +329,13 @@ using the structure of the reference tree. This initial phase is not the
 bottleneck for trees on a thousand or so taxa, but it is for trees on tens of
 thousands of taxa or more.
 
-If a value is specified as ``--fig-cutoff x``, pplacer will find clusters of
-leaves (called figs) on the reference tree such that no two leaves in the
-cluster have a distance of greater than ``x``. Each leaf will be contained by
-exactly one fig. A representative edge of the fig is chosen: the edge proximal
-to the greatest number of leaves and directly distal to the most proximal node
-contained only in that fig.
+If a value is specified as ``--fig-cutoff x``, pplacer will find subtrees of
+the reference tree (that we call figs) on the reference tree such that no two
+leaves in the cluster have a distance of greater than ``x``. Each leaf is
+contained in exactly one fig. A representative edge of the fig is chosen as
+follows: say *n* is the most proximal node contained in the fig; the
+representative is the edge descending from *n* to the subtree with the greatest
+number of leaves.
 
 With a collection of figs, pplacer will rank each of the representative edges
 by the initial evaluation likelihood given a query sequence. For each fig, in
