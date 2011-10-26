@@ -175,6 +175,8 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     and best_seen = ref None in
     let h_ranking =
       if evaluate_all prefs then
+        (* Keep track of what the best location we've seen is if we're going to
+         * compare this against the actual best location. *)
         Enum.map
           (tap
              (fun (score, loc) -> match !best_seen with

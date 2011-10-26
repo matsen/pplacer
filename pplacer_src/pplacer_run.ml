@@ -607,8 +607,7 @@ let run_file prefs query_fname =
   let gotfunc, donefunc =
     if Prefs.evaluate_all prefs then
       let evaluations = RefList.empty ()
-      and total_logdots = ref 0
-      and dt = Fig.onto_decor_gtree (Decor_gtree.of_newick_gtree orig_ref_tree) figs in
+      and total_logdots = ref 0 in
       (function
         | Core.Evaluated_best (seq, logdots, blc, bls) ->
           RefList.push evaluations (seq, blc, bls);
@@ -617,6 +616,8 @@ let run_file prefs query_fname =
       (fun () ->
         dprint ~l:2 "Sequences without their best location chosen:\n";
         dprintf "Evaluation: %g%% from %d logdots.\n"
+          (* count the percentage of sequences where the best seen location was
+           * also the complete best *)
           (if RefList.is_empty evaluations then 0.
            else
               RefList.fold_left
@@ -628,8 +629,14 @@ let run_file prefs query_fname =
               |> uncurry (/.))
           !total_logdots;
         if Prefs.evaluation_discrepancy prefs <> "" then begin
+          let dt = Fig.onto_decor_gtree
+            (Decor_gtree.of_newick_gtree orig_ref_tree)
+            figs
+          in
           RefList.to_list evaluations
           |> List.filter_map
+              (* also decorate a fig tree with the best seen and complete best
+               * locations if they're not the same *)
               (function
                 | _, blc, bls when blc = bls -> None
                 | seq, blc, bls ->
