@@ -73,6 +73,19 @@ let add_bark id b t =
 let map_bark_map f t = {t with bark_map = IntMap.map f (get_bark_map t)}
 let mapi_bark_map f t = {t with bark_map = IntMap.mapi f (get_bark_map t)}
 
+let fold_over_leaves f t v =
+  let open Stree in
+  let rec aux v = function
+    | (Leaf i) :: rest when IntMap.mem i t.bark_map ->
+      aux (f i (IntMap.find i t.bark_map) v) rest
+    | Leaf _ :: rest -> aux v rest
+    | Node (_, subtrees) :: rest -> aux v (List.append subtrees rest)
+    | [] -> v
+  in
+  aux v [t.stree]
+
+let leaf_bark_map t = fold_over_leaves IntMap.add t IntMap.empty
+
 (* general *)
 
 let compare bark_compare t1 t2 =
@@ -115,12 +128,18 @@ let addition_n_edges = function
 
 (* copy the info from src at id over to dest *)
 let copy_bark ~dest ~src id =
-  gtree
-    (get_stree dest)
-    (IntMap.add
-      id
-      (IntMap.find id (get_bark_map src))
-      (get_bark_map dest))
+  match IntMap.Exceptionless.find id (get_bark_map src) with
+    | Some bark -> add_bark id bark dest
+    | None -> dest
+
+(* swap the bark for the two given ids *)
+let swap_bark a b ({bark_map = m} as t) =
+  let av, m' = IntMap.opt_extract a m in
+  let bv, m'' = IntMap.opt_extract b m' in
+  {t with bark_map = IntMap.opt_add b av m'' |> IntMap.opt_add a bv}
+
+let reroot t i =
+  swap_bark i (top_id t) {t with stree = Stree.reroot t.stree i}
 
 (* join a list of info_trees *)
 let join new_id tL =

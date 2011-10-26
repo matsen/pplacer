@@ -33,9 +33,11 @@ end
 module type M =
 sig
   include Map.S
+
   val get: key -> 'a -> 'a t -> 'a
   val opt_add: key -> 'a option -> 'a t -> 'a t
   val opt_find: key -> 'a t -> 'a option
+  val opt_extract: key -> 'a t -> 'a option * 'a t
   val check_add: key -> 'a -> 'a t -> 'a t
   val union: 'a t -> 'a t -> 'a t
   val of_pairlist: (key * 'a) list -> 'a t
@@ -69,6 +71,11 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
       | None -> map
 
     let opt_find k m = if mem k m then Some (find k m) else None
+
+    let opt_extract k m =
+      try
+        let v, m' = extract k m in Some v, m'
+      with Not_found -> None, m
 
       (* if x is a key of m, make sure that it is bound to y.
        * otherwise, add (x,y) as a kv-pair to m *)

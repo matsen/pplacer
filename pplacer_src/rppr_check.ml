@@ -7,7 +7,7 @@ object (self)
   inherit refpkg_cmd ~required:true as super_refpkg
 
   method desc = "check a reference package"
-  method usage = "usage: check_refpkg -c my.refpkg"
+  method usage = "usage: check -c my.refpkg"
 
   method action _ =
     Refpkg.check_refpkg self#get_rp

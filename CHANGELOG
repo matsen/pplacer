@@ -3,6 +3,13 @@
 
  * Closed GH-126: Split Glv/Model into Gmix_model and Gcat_model with the
    option of adding more models to pplacer later.
+ * Closed GH-154: Added `guppy islands`.
+ * Closed GH-156: Added functionality for calculating multiple KR distances
+   with only one tree traversal.
+ * Closed GH-157: Added `guppy compress`.
+ * Closed GH-163: Added a --node-numbers flag to every command that emits a
+   phyloxml tree which adds the tree's node numbers to the phyloxml output as
+   bootstrap values.
 
 
 1.1.alpha09
@@ -109,6 +116,10 @@
  * Closed GH-155: Changed pplacer to always check for invalid bases when
    pre-masking sequences.
  * Closed GH-159: Updated to use the v2 batteries API.
+ * Closed GH-164: Fixed some bugs related to various APIs not knowing how to
+   deal with node labels on non-leaves.
+ * Closed GH-167: Fixed an issue where `rppr reroot` wasn't updating the bark
+   of trees correctly.
 
 1.1.alpha08
 ===========

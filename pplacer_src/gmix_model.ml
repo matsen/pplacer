@@ -56,7 +56,15 @@ struct
 
     | _ -> invalid_arg "build"
 
-  let refine _ _ _ _ _ _ = ()
+  let write ch model =
+    Format.fprintf
+      (Format.formatter_of_out_channel ch)
+      "\n%s model\n\nstat distn:\n%a\n\nsite rates:\n%a\n"
+      (Alignment.seq_type_to_str model.seq_type)
+      Linear_utils.ppr_gsl_vector model.statd
+      Ppr.ppr_float_array model.rates
+
+  let refine model _ _ _ _ _ = model
 
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =

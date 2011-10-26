@@ -53,10 +53,6 @@ struct
               model_statd))
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
-      (* XXX note that here we are not using the site categories. We have to
-       * remake them to be the right length. *)
-      let _ = site_categories in
-      let site_categories = Array.make (Alignment.length ref_align) 0 in
       let occupied_rates = Array.make (Array.length rates) true in
       {
         statd; seq_type; rates; site_categories; occupied_rates;
@@ -70,6 +66,16 @@ struct
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp ~mask:model.occupied_rates ~dst:model.tensor model.diagdq model.rates bl
 
+  let write ch model =
+    Format.fprintf
+      (Format.formatter_of_out_channel ch)
+      "\n%s model:\n\nstat distn:\n%a\n\nsite rates:\n%a\n\nsite categories \
+      (0-indexed):\n%a\n\noccupied rates\n%a\n"
+      (Alignment.seq_type_to_str model.seq_type)
+      Linear_utils.ppr_gsl_vector model.statd
+      Ppr.ppr_float_array model.rates
+      Ppr.ppr_int_array model.site_categories
+      Ppr.ppr_bool_array model.occupied_rates
 
   module Glv =
   struct
@@ -357,6 +363,9 @@ struct
       }
   *)
     dprint "Optimizing site categories... ";
+    let model =
+      { model with site_categories = Array.make n_sites 0 }
+    in
     let n_categories = 20 in
     let best_log_lks = Array.make n_sites (-. infinity)
     and best_log_lk_cats = Array.make n_sites (-1)
@@ -389,6 +398,7 @@ struct
     done;
     set_site_categories model best_log_lk_cats;
     dprint "done.\n";
+    model
 
 end
 and Like_stree: sig
@@ -424,6 +434,7 @@ let init_of_json o ref_align =
     |> Jsontype.array
     |> List.map Jsontype.int
     |> Array.of_list
+    |> Array.map (fun x -> x-1) (* FastTree writes out 1-indexed arrays. *)
   in
   Glvm.Gcat_model
     (model_name, empirical_freqs, opt_transitions, rates, site_categories)

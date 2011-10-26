@@ -155,9 +155,7 @@ let run_file prefs query_fname =
   in
   if !verbosity >= 2 then begin
     print_endline "found in reference alignment: ";
-    Array.iter
-      (fun (name,_) -> print_endline ("\t'"^name^"'"))
-      ref_align
+    Ppr.print_string_array (Alignment.get_name_arr ref_align)
   end;
 
   let _ =
@@ -349,8 +347,14 @@ let run_file prefs query_fname =
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   dprint "done.\n";
 
-  if from_input_alignment then
-    Model.refine model n_sites ref_tree like_aln_map darr parr;
+  (* Refine the model if it's not coming directly from the reference package. *)
+  let model =
+    if from_input_alignment then
+      Model.refine model n_sites ref_tree like_aln_map darr parr
+    else
+      model
+  in
+  if !verbosity >= 2 then Model.write stdout model;
 
   dprint "Caching likelihood information on reference tree... ";
   Like_stree.calc_distal_and_proximal model ref_tree like_aln_map
@@ -404,7 +408,7 @@ let run_file prefs query_fname =
           |])
       darr
     |> Array.append
-        [|[|"node"; "tree_likelihood"; "supernode_likelihood"; "???"|]|]
+        [|[|"node"; "tree_likelihood"; "slow_tree_like"; "supernode_like"|]|]
     |> String_matrix.pad
     |> Array.iter (Array.iter (dprintf "%s  ") |- tap (fun () -> dprint "\n"))
 
@@ -482,8 +486,7 @@ let run_file prefs query_fname =
      * finalization. Perhaps a section at the beginning? *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
       (* start: build the Maximum A Posteriori sequences *)
-      let ref_tree = Refpkg.get_ref_tree rp
-      and mrcam = Refpkg.get_mrcam rp
+      let mrcam = Refpkg.get_mrcam rp
       and td = Refpkg.get_taxonomy rp
       and glvs = Glv_arr.make
         model

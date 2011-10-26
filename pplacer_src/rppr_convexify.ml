@@ -271,8 +271,8 @@ object (self)
 
   method private csv_action =
     let gt = fv input_tree |> Newick_gtree.of_file in
-    let namemap = gt.Gtree.bark_map
-      |> IntMap.filter_map (fun _ b -> b#get_node_label_opt)
+    let namemap = Gtree.leaf_bark_map gt
+      |> Bark_map.to_node_label_map
       |> IntMap.enum
       |> Enum.map swap
       |> StringMap.of_enum

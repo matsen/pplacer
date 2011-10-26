@@ -184,7 +184,7 @@ let check_refpkg_classification rp =
   ()
 
 let check rp name what =
-  dprintf "Checking %s..." name;
+  dprintf "Checking %s...\n" name;
   let _ = what rp in ()
 
 let check_tree_and_aln_names tree aln =
