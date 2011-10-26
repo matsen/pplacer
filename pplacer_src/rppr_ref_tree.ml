@@ -44,8 +44,8 @@ object (self)
   method action = function
     | pathl ->
       let trees = trees_of_refpkg self#maybe_numbered (fv painted) in
-      Phyloxml.pxdata_to_channel self#out_channel
-        (Phyloxml.pxdata_of_named_gtrees
-           (List.flatten (List.map trees pathl)))
+      Phyloxml.named_gtrees_to_channel
+        self#out_channel
+        (List.flatten (List.map trees pathl))
 
 end

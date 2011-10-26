@@ -97,11 +97,11 @@ let ppr ff = function
 
 let to_xml = function
   | Color (r, g, b) ->
-    [Xml.Element ("color", [], [
+    [Myxml.tag "color" ~children:[
       Myxml.tag "red" (string_of_int r);
       Myxml.tag "green" (string_of_int g);
       Myxml.tag "blue" (string_of_int b);
-    ])]
+    ] ""]
   | Width w ->
     [Myxml.tag "width" (Printf.sprintf "%g" w)]
   | Dot i ->
@@ -109,11 +109,11 @@ let to_xml = function
       | 0 -> "duplications"
       | 1 -> "speciations"
       | _ -> "losses"
-    in [Xml.Element ("events", [], [
+    in [Myxml.tag "events" ~children:[
       Myxml.tag tag_name (string_of_int (i + 1));
-    ])]
+    ] ""]
   | Taxinfo (ti, name) ->
-    [Xml.Element ("taxonomy", [], Tax_id.to_xml ti @ [
-      Myxml.tag "scientific_name" name;
-    ])]
-
+    [Myxml.tag "taxonomy" ~children:(
+      Tax_id.to_xml ti @ [
+        Myxml.tag "scientific_name" name;
+      ]) ""]
