@@ -52,22 +52,8 @@ struct
   let build ref_align = function
     | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
       let seq_type, (trans, statd) =
-        if model_name = "GTR" then
-          (Alignment.Nucleotide_seq,
-           match transitions with
-             | Some transitions ->
-               (Nuc_models.b_of_trans_vector transitions,
-                Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
-             | None -> failwith "GTR specified but no substitution rates given.")
-        else
-          (Alignment.Protein_seq,
-           let model_trans, model_statd =
-             Prot_models.trans_and_statd_of_model_name model_name in
-           (model_trans,
-            if emperical_freqs then
-              Alignment.emper_freq 20 Prot_models.prot_map ref_align
-            else
-              model_statd))
+        Gstar_support.seqtype_and_trans_statd_of_info
+          model_name transitions emperical_freqs ref_align
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
       let occupied_rates = Array.make (Array.length rates) true in
@@ -362,7 +348,7 @@ struct
     let model =
       { model with site_categories = Array.make n_sites 0 }
     in
-    let n_categories = Array.length site_categories in
+    let n_categories = Array.length model.site_categories in
     let best_log_lks = Array.make n_sites (-. infinity)
     and best_log_lk_cats = Array.make n_sites (-1)
     and rates = rates model

@@ -62,3 +62,23 @@ let tensor_mul tensor ~dst ~src =
     in
     Linear.gemmish dst_mat evo_mat src_mat
   done
+
+let seqtype_and_trans_statd_of_info
+      model_name transitions emperical_freqs ref_align =
+  if model_name = "GTR" then
+    (Alignment.Nucleotide_seq,
+     match transitions with
+       | Some transitions ->
+         (Nuc_models.b_of_trans_vector transitions,
+          Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
+       | None -> failwith "GTR specified but no substitution rates given.")
+  else
+    (Alignment.Protein_seq,
+     let model_trans, model_statd =
+       Prot_models.trans_and_statd_of_model_name model_name in
+     (model_trans,
+      if emperical_freqs then
+        Alignment.emper_freq 20 Prot_models.prot_map ref_align
+      else
+        model_statd))
+

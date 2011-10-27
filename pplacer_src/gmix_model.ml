@@ -26,23 +26,8 @@ struct
   let build ref_align = function
     | Glvm.Gmix_model (model_name, emperical_freqs, transitions, rates) ->
       let seq_type, (trans, statd) =
-        if model_name = "GTR" then
-          (Alignment.Nucleotide_seq,
-           match transitions with
-             | Some transitions ->
-               (Nuc_models.b_of_trans_vector transitions,
-                Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
-             | None -> failwith "GTR specified but no substitution rates given.")
-        else
-          (Alignment.Protein_seq,
-           let model_trans, model_statd =
-             Prot_models.trans_and_statd_of_model_name model_name in
-           (model_trans,
-            if emperical_freqs then
-              Alignment.emper_freq 20 Prot_models.prot_map ref_align
-            else
-              model_statd))
-      in
+        Gstar_support.seqtype_and_trans_statd_of_info
+          model_name transitions emperical_freqs ref_align
       let n_states = Alignment.nstates_of_seq_type seq_type in
       {
         statd; seq_type; rates;
@@ -67,7 +52,6 @@ struct
   module Glv =
   struct
 
-    (* glvs *)
     type t = {
       e: (int, BA.int_elt, BA.c_layout) BA1.t;
       a: Tensor.tensor;
@@ -366,7 +350,7 @@ let init_of_json o ref_align =
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
   if Hashtbl.find o "ras_model" |> Jsontype.string <> "gamma" then
-    failwith "Whoops! This is supposed to be a gamma mixture model."
+    failwith "Whoops! This is supposed to be a gamma mixture model.";
   let gamma_o = Hashtbl.find o "gamma" in
   let opt_transitions =
     if Hashtbl.mem o "subs_rates" then begin
