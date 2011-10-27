@@ -1,3 +1,27 @@
+(* Support for the gamma CAT model of sequence heterogeneity as implemented in
+ * FastTree.
+ *
+ * The rates are parsed from the FastTree info file and kept in the refpkg.
+ * If the reference alignment is the same as that in the refpkg, then we use
+ * those rate category assignments. Otherwise we find them ourselves, following
+ * the FastTree source:
+  /* Select best rate for each site, correcting for the prior
+     For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
+     Prior(rate) ~ rate**2 * exp(-3*rate)
+     log Prior(rate) = C + 2 * log(rate) - 3 * rate
+  */
+    for (iRate = 0; iRate < nRateCategories; iRate++) {
+      double site_loglk_with_prior = site_loglk[NJ->nPos*iRate + iPos]
+        + 2.0 * log(rates[iRate]) - 3.0 * rates[iRate];
+      if (site_loglk_with_prior > dBest) {
+        iBest = iRate;
+        dBest = site_loglk_with_prior;
+      }
+    }
+ *
+ *
+ * *)
+
 open Ppatteries
 open Gstar_support
 
@@ -6,21 +30,14 @@ module LSM = Like_stree.Make
 module rec Model: Glvm.Model =
 struct
 
-  (* this simply contains the information about the Markov process corresponding
-   * to the model.
-   *
-   * we also include matrices mats which can be used as scratch to avoid having to
-   * allocate for it. see prep_mats_for_bl below. *)
-
   type t = {
     statd: Gsl_vector.vector;
     diagdq: Diagd.t;
     seq_type: Alignment.seq_type;
     rates: float array;
-    (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
-    tensor: Tensor.tensor;
-    site_categories: int array;
-    occupied_rates: bool array;
+    occupied_rates: bool array; (* which of the rate categories actually used *)
+    tensor: Tensor.tensor; (* multi-rate transition matrix for the model *)
+    site_categories: int array; (* which category does each site use *)
   }
   type model_t = t
 
@@ -80,7 +97,6 @@ struct
   module Glv =
   struct
 
-    (* glvs *)
     type t = {
       e: (int, BA.int_elt, BA.c_layout) BA1.t;
       a: Matrix.matrix;
@@ -209,8 +225,8 @@ struct
                           (bounded_total_twoexp y.e start last)))
 
     (* just take the log "dot" of the likelihood vectors *)
-    let logdot utilv_nsites x y =
-      bounded_logdot utilv_nsites x y 0 ((get_n_sites x)-1)
+    let logdot _ x y =
+      bounded_logdot () x y 0 ((get_n_sites x)-1)
 
     (* take the pairwise product of glvs g1 and g2, then store in dest. *)
     let pairwise_prod ~dst g1 g2 =
@@ -261,9 +277,7 @@ struct
     Glv.make
       ~n_states:(n_states model)
 
-  (* this is used when we want to make a glv out of a list of likelihood
-   * vectors. differs from below because we want to make a new one. used to be
-   * called `lv_arr_to_constant_rate_glv`. *)
+  (* Make a glv out of a list of likelihood vectors. *)
   let lv_arr_to_glv _ lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
@@ -272,19 +286,16 @@ struct
     Glv.prep_constant_rate_glv_from_lv_arr g lv_arr;
     g
 
-
   (* take the log like of the product of three things then dot with the stationary
    * distribution. Here we ignore utilv_nsites, as we don't need it for
    * mat_log_like3. *)
   let log_like3 model _ x y z =
     assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
-    (Linear.mat_log_like3 (statd model)
-       x.Glv.a
-       y.Glv.a
-       z.Glv.a)
+    (Linear.mat_log_like3 (statd model) x.Glv.a y.Glv.a z.Glv.a)
     +. (log_of_2 *.
-          ((total_twoexp x.Glv.e) +. (total_twoexp y.Glv.e) +. (total_twoexp z.Glv.e)))
-
+          ((total_twoexp x.Glv.e)
+          +. (total_twoexp y.Glv.e)
+          +. (total_twoexp z.Glv.e)))
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
@@ -303,7 +314,6 @@ struct
       Linear_utils.mat_vec_mul dst_mat evo_mat src_mat
     done
 
-
   (* take the pairwise product of glvs g1 and g2, incorporating the
    * stationary distribution, then store in dest. *)
   let statd_pairwise_prod model ~dst g1 g2 =
@@ -311,6 +321,7 @@ struct
     iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
     Linear.mat_statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
 
+  (* Make the per-site log likelihood array. *)
   let site_log_like_arr3 model x y z =
     let log_site_likes = Array.make (Glv.get_n_sites x) 0.
     and statd = statd model
@@ -345,28 +356,13 @@ struct
         model.occupied_rates.(a.(i)) <- true)
       model.site_categories
 
+  (* Optimize site categories. See top of this file. *)
   let refine model n_sites ref_tree like_aln_map util_glv_arr_1 util_glv_arr_2 =
-  (* Optimize site categories *)
-  (* From FastTree source:
-    /* Select best rate for each site, correcting for the prior
-       For a prior, use a gamma distribution with shape parameter 3, scale 1/3, so
-       Prior(rate) ~ rate**2 * exp(-3*rate)
-       log Prior(rate) = C + 2 * log(rate) - 3 * rate
-    */
-      for (iRate = 0; iRate < nRateCategories; iRate++) {
-        double site_loglk_with_prior = site_loglk[NJ->nPos*iRate + iPos]
-          + 2.0 * log(rates[iRate]) - 3.0 * rates[iRate];
-        if (site_loglk_with_prior > dBest) {
-          iBest = iRate;
-          dBest = site_loglk_with_prior;
-        }
-      }
-  *)
     dprint "Optimizing site categories... ";
     let model =
       { model with site_categories = Array.make n_sites 0 }
     in
-    let n_categories = 20 in
+    let n_categories = Array.length site_categories in
     let best_log_lks = Array.make n_sites (-. infinity)
     and best_log_lk_cats = Array.make n_sites (-1)
     and rates = rates model
