@@ -1,4 +1,4 @@
-(* 
+(*
 from http://www.gnu.org/software/gsl/manual/gsl-ref.html#Numerical-Integration ...
 
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * to understand the pointer arithmetic below, it's important to understand
  * the layout of the Glv's. they are row-major and indexed in terms of rate,
  * then site, then state. thus the rate-blocks are n_sites*n_states in size.
