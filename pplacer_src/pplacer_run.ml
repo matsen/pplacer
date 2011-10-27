@@ -487,8 +487,7 @@ let run_file prefs query_fname =
      * finalization. Perhaps a section at the beginning? *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
       (* start: build the Maximum A Posteriori sequences *)
-      let ref_tree = Refpkg.get_ref_tree rp
-      and mrcam = Refpkg.get_mrcam rp
+      let mrcam = Refpkg.get_mrcam rp
       and td = Refpkg.get_taxonomy rp
       and glvs = Glv_arr.make
         model
