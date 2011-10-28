@@ -28,6 +28,7 @@ struct
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions emperical_freqs ref_align
+      in
       let n_states = Alignment.nstates_of_seq_type seq_type in
       {
         statd; seq_type; rates;
