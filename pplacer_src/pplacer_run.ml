@@ -48,7 +48,7 @@ object (self)
 
   method obj_received = function
     | Ready -> self#push
-    | Data x -> gotfunc x; self#push
+    | Data x -> List.iter gotfunc x; self#push
     | Exception exn
     | Fatal_exception exn -> raise (Child_error exn)
 
@@ -326,12 +326,16 @@ let run_file prefs query_fname =
     dprint "everything looks OK.\n";
     exit 0;
   end;
-  (* find all the tree locations *)
-  let all_locs = IntMap.keylist (Gtree.get_bark_map ref_tree) in
-  assert(all_locs <> []);
-  (* the last element in the list is the root, and we don't want to place there *)
-  let locs = ListFuns.remove_last all_locs in
-  if locs = [] then failwith("problem with reference tree: no placement locations.");
+  dprint "Determining figs... ";
+  let figs = Fig.figs_of_gtree (Prefs.fig_cutoff prefs) ref_tree in
+  begin match Prefs.fig_cutoff prefs with
+    | 0. -> dprint "figs disabled.\n"
+    | _ -> dprintf "%d figs.\n" (Fig.length figs);
+      if Prefs.fig_tree prefs <> "" then
+        Decor_gtree.of_newick_gtree orig_ref_tree
+        |> flip Fig.onto_decor_gtree figs
+        |> Phyloxml.gtree_to_file (Prefs.fig_tree prefs)
+  end;
   let curr_time = Sys.time () in
   (* calculate like on ref tree *)
   dprint "Allocating memory for internal nodes... ";
@@ -426,7 +430,7 @@ let run_file prefs query_fname =
   in
   let partial = Core.pplacer_core
     (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
-    prefs locs prior model ref_align ref_tree ~darr ~parr ~snodes
+    prefs figs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
   let n_done = ref 0 in
   let queries = List.length query_list in
@@ -457,14 +461,9 @@ let run_file prefs query_fname =
     and n_fantasies = ref 0
     in
     let rec gotfunc = function
-      | Core.Fantasy f :: rest ->
+      | Core.Fantasy f ->
         Fantasy.add_to_fantasy_matrix f fantasy_mat;
         incr n_fantasies;
-        gotfunc rest
-      | Core.Timing (name, value) :: rest ->
-        timings := StringMap.add_listly name value (!timings);
-        gotfunc rest
-      | [] -> ()
       | _ -> failwith "expected fantasy result"
     and cachefunc _ =
       (* if cachefunc returns true, the current thing is skipped; modulo
@@ -580,20 +579,14 @@ let run_file prefs query_fname =
         identity
     and queries = ref [] in
     let rec gotfunc = function
-      | Core.Pquery pq :: rest when not (Pquery.is_placed pq) ->
+      | Core.Pquery pq when not (Pquery.is_placed pq) ->
         dprintf "warning: %d identical sequences (including %s) were \
                  unplaced and omitted\n"
           (Pquery.namel pq |> List.length)
-          (Pquery.name pq);
-        gotfunc rest
-      | Core.Pquery pq :: rest ->
+          (Pquery.name pq)
+      | Core.Pquery pq ->
         let pq = pquery_gotfunc pq in
-        queries := pq :: (!queries);
-        gotfunc rest
-      | Core.Timing (name, value) :: rest ->
-        timings := StringMap.add_listly name value (!timings);
-        gotfunc rest
-      | [] -> ()
+        queries := pq :: (!queries)
       | _ -> failwith "expected pquery result"
     and cachefunc _ = false
     and donefunc () =
@@ -608,6 +601,62 @@ let run_file prefs query_fname =
     gotfunc, cachefunc, donefunc
 
   end in
+  let gotfunc = function
+    | Core.Timing (name, value) ->
+      timings := StringMap.add_listly name value (!timings);
+    | x -> gotfunc x
+  in
+
+  let gotfunc, donefunc =
+    if Prefs.evaluate_all prefs then
+      let evaluations = RefList.empty ()
+      and total_logdots = ref 0 in
+      (function
+        | Core.Evaluated_best (seq, logdots, blc, bls) ->
+          RefList.push evaluations (seq, blc, bls);
+          total_logdots := logdots + !total_logdots
+        | x -> gotfunc x),
+      (fun () ->
+        dprint ~l:2 "Sequences without their best location chosen:\n";
+        dprintf "Evaluation: %g%% from %d logdots.\n"
+          (* count the percentage of sequences where the best seen location was
+           * also the complete best *)
+          (if RefList.is_empty evaluations then 0.
+           else
+              RefList.fold_left
+                (fun (count, total) (seq, blc, bls) ->
+                  if blc <> bls then dprintf ~l:2 " - %s (%d vs. %d)\n" seq blc bls;
+                  (if blc = bls then 1. +. count else count), total +. 0.01)
+                (0., 0.)
+                evaluations
+              |> uncurry (/.))
+          !total_logdots;
+        if Prefs.evaluation_discrepancy prefs <> "" then begin
+          let dt = Fig.onto_decor_gtree
+            (Decor_gtree.of_newick_gtree orig_ref_tree)
+            figs
+          in
+          RefList.to_list evaluations
+          |> List.filter_map
+              (* also decorate a fig tree with the best seen and complete best
+               * locations if they're not the same *)
+              (function
+                | _, blc, bls when blc = bls -> None
+                | seq, blc, bls ->
+                  Gtree.get_bark_map dt
+                  |> Decor_gtree.map_add_decor_listly blc
+                      [Decor.Taxinfo (Tax_id.of_string "complete", "complete")]
+                  |> Decor_gtree.map_add_decor_listly bls
+                      [Decor.Taxinfo (Tax_id.of_string "seen", "seen")]
+                  |> Gtree.set_bark_map dt
+                  |> (fun t -> Some (Some seq, t)))
+          |> Phyloxml.named_gtrees_to_file (Prefs.evaluation_discrepancy prefs)
+        end;
+        donefunc ())
+    else
+      gotfunc, donefunc
+  in
+
   let rec nextfunc () =
     let x =
       try

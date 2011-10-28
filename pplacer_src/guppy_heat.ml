@@ -44,8 +44,8 @@ object (self)
         let t = self#maybe_numbered self#get_decor_ref_tree in
         List.iter
           (fun fname ->
-            Phyloxml.pxdata_to_channel self#out_channel
-              (Phyloxml.pxdata_of_named_gtrees
-                (self#csv_to_named_trees t fname)))
+            Phyloxml.named_gtrees_to_channel
+              self#out_channel
+              (self#csv_to_named_trees t fname))
           pathl
 end

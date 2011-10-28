@@ -1,4 +1,9 @@
+type tag = {
+  name: string;
+  attrs: (string * string) list;
+  contents: string;
+  children: tag list;
+}
 
-let tag name ?(attributes = []) contents =
-  Xml.Element (name, attributes, [Xml.PCData (contents)])
-
+let tag name ?(attrs = []) ?(children = []) contents =
+  {name; attrs; contents; children}

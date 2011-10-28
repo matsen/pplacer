@@ -344,6 +344,51 @@ Note that we have set things up so that turning on posterior probability with ``
 
 You can set these to anything you like by using these flags *after* the ``-p``.
 
+
+Fig ranking
+-----------
+
+"Fig ranking" is a way to reduce the number of initial comparisons done by
+using the structure of the reference tree. This initial phase is not the
+bottleneck for trees on a thousand or so taxa, but it is for trees on tens of
+thousands of taxa or more.
+
+If a value is specified as ``--fig-cutoff x``, pplacer will find subtrees of
+the reference tree (that we call figs) on the reference tree such that no two
+leaves in the cluster have a distance of greater than ``x``. Each leaf is
+contained in exactly one fig. A representative edge of the fig is chosen as
+follows: say *n* is the most proximal node contained in the fig; the
+representative is the edge descending from *n* to the subtree with the greatest
+number of leaves.
+
+With a collection of figs, pplacer will rank each of the representative edges
+by the initial evaluation likelihood given a query sequence. For each fig, in
+this order, pplacer selects all of the edges within the fig as well as all of
+the edges proximal to the fig up to the root of the tree. These edges are
+ranked by the same initial evaluation likelihood before pplacer attempts to
+place the query sequence on each in turn. No edge will be attempted twice; if
+the same edge is proximal to two separate figs, it will only be attempted when
+the first fig is evaluated.
+
+As each fig is evaluated for a query sequence, pplacer will also select any
+figs ordered immediately after the current fig where the difference between
+that fig's representative likelihood and the current fig's representative
+likelihood is less than the value of the ``--strike-box`` parameter. Each of
+these figs' sets of edges are then merged into the current fig's edge set.
+
+To test the accuracy of fig evaluation vs. full evaluation, the
+``--fig-eval-all`` flag can be specified to do both fig and full evaluation,
+then show the percentage of sequences where the best location chosen by full
+evaluation and fig evaluation is the same. ``--fig-eval-all`` must be specified
+to specify the ``--fig-eval-discrepancy-tree`` flag. If this flag is specified,
+a tree will be written out showing the locations chosen by both methods for
+each sequence where the two differ.
+
+The colored trees written out by the ``--fig-tree`` and
+``--fig-eval-discrepancy-tree`` flags shows figs as colored subtrees within the
+reference tree.
+
+
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/

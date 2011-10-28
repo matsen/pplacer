@@ -12,9 +12,7 @@ let intmap_of_arr a =
 let trees_to_file tree_fmt prefix trees =
   match tree_fmt with
   | Newick -> Newick_gtree.tree_list_to_file trees (prefix^".tre")
-  | Phyloxml ->
-    let pd = Phyloxml.pxdata_of_gtrees trees in
-    Phyloxml.pxdata_to_file (prefix^".xml") pd
+  | Phyloxml -> Phyloxml.gtrees_to_file (prefix^".xml") trees
 
 let make_zero_leaf decor_list bl node_label =
   Gtree.Subtree
