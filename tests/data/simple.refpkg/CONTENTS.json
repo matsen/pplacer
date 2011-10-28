@@ -1,15 +1,15 @@
 {
   "files": {
-    "taxonomy": "taxonomy.csv", 
-    "tree": "x.tre", 
+    "taxonomy": "taxonomy.csv",
+    "tree": "x.tre",
     "seq_info": "seqinfo.csv"
-  }, 
+  },
   "metadata": {
     "format_version": "1.1"
-  }, 
+  },
   "md5": {
-    "taxonomy": "5c9feb6f3aa5561c7dd6bb6e1e873dee", 
-    "tree": "ea3d72ce471c9912d4d3e36203f2adee", 
+    "taxonomy": "5c9feb6f3aa5561c7dd6bb6e1e873dee",
+    "tree": "ea3d72ce471c9912d4d3e36203f2adee",
     "seq_info": "a8f9ec422abb9d2598d98b95623a7e0a"
   }
 }
