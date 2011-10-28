@@ -44,6 +44,7 @@ type result =
   | Fantasy of (int * (float * float * float)) list
   | Pquery of Pquery.pquery
   | Timing of string * float
+  | Evaluated_best of string * int * int * int
 
 (* ll_normalized_prob :
  * ll_list is a list of log likelihoods. this function gives the normalized
@@ -72,7 +73,7 @@ let ll_normalized_prob ll_list =
 
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
-let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree ~(darr: b array) ~(parr: b array) ~(snodes: b array) =
+let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree ~(darr: b array) ~(parr: b array) ~(snodes: b array) =
   let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
   let module Glv = Model.Glv in
   let module Glv_arr = Glv_arr.Make(Model) in
@@ -160,18 +161,32 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
     (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
-    let h_r =
-      List.sort
-        (comparing snd |> flip)
-        (List.map
-           (fun loc ->
-             (loc,
-              Glv.bounded_logdot utilv_nsites full_query_evolv
-                (Glv_arr.get snodes loc) first_informative last_informative))
-           locs)
+    let logdots = ref 0 in
+    let score loc =
+      incr logdots;
+      Glv.bounded_logdot
+        utilv_nsites
+        full_query_evolv
+        (Glv_arr.get snodes loc)
+        first_informative
+        last_informative
+    in
+    let h_ranking = Fig.enum_by_score score (strike_box prefs) figs
+    and best_seen = ref None in
+    let h_ranking =
+      if evaluate_all prefs then
+        (* Keep track of what the best location we've seen is if we're going to
+         * compare this against the actual best location. *)
+        Enum.map
+          (tap
+             (fun (score, loc) -> match !best_seen with
+               | Some (prev_score, _) when prev_score >= score -> ()
+               | _ -> best_seen := Some (score, loc)))
+          h_ranking
+      else
+        h_ranking
     in
     let results = [Timing ("ranking", (Sys.time ()) -. curr_time)] in
-    let h_ranking = List.map fst h_r in
     (* first get the results from ML *)
     let curr_time = Sys.time () in
     (* make our three taxon tree. we can't move this higher because the cached
@@ -242,45 +257,54 @@ let pplacer_core (type a) (type b) m prefs locs prior (model: a) ref_align gtree
     (* in play_ball we go down the h_ranking list and wait until we get
      * strike_limit strikes, i.e. placements that are strike_box below the
      * best one so far. *)
-    let rec play_ball like_record n_strikes results = function
-      | loc::rest -> begin
-        try
-          prepare_tt loc;
-          let (like,_,_) as result =
-            safe_ml_optimize_location (initial_tolerance prefs) loc in
-          let new_results = (loc, result)::results in
-          if List.length results >= t_max_pitches then
-            new_results
-          else if like > like_record then
-            (* we have a new best likelihood *)
-            play_ball like n_strikes new_results rest
-          else if like < like_record-.(strike_box prefs) then
-            (* we have a strike *)
-            if n_strikes+1 >= t_max_strikes then new_results
-            else play_ball like_record (n_strikes+1) new_results rest
-          else
-            (* not a strike, just keep on accumulating results *)
-            play_ball like_record n_strikes new_results rest
-        with
-          (* we need to handle the exception here so that we continue the baseball recursion *)
-          | Gsl_error.Gsl_exn(_,warn_str) ->
+    let rec play_ball like_record n_strikes results = match Enum.get h_ranking with
+      | Some (_, loc) ->
+        prepare_tt loc;
+        begin match begin
+          try
+            Some (safe_ml_optimize_location (initial_tolerance prefs) loc)
+          with Gsl_error.Gsl_exn(_,warn_str) ->
             dprintf
               "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
               loc
               query_name
               warn_str;
-            play_ball like_record n_strikes results rest
-      end
-      | [] -> results
+            None
+        end with
+          | None -> play_ball like_record n_strikes results
+          | Some ((like,_,_) as result) -> (* ... *)
+        let new_results = (loc, result)::results in
+        if List.length results >= t_max_pitches then
+          new_results
+        else if like > like_record then
+          (* we have a new best likelihood *)
+          play_ball like n_strikes new_results
+        else if like < like_record-.(strike_box prefs) then
+          (* we have a strike *)
+          if n_strikes+1 >= t_max_strikes then new_results
+          else play_ball like_record (n_strikes+1) new_results
+        else
+          (* not a strike, just keep on accumulating results *)
+          play_ball like_record n_strikes new_results
+        end
+      | None -> results
     in
     let ml_results =
       (* important to reverse for fantasy baseball. also should save time on sorting *)
-      List.rev (play_ball (-. infinity) 0 [] h_ranking)
+      List.rev (play_ball (-. infinity) 0 [])
     in
     if ml_results = [] then
       failwith
         (Printf.sprintf "empty results for %s!\n" query_name);
-    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results in
+    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results
+      |> maybe_cons
+          (if evaluate_all prefs then
+             let logdots = !logdots in
+             let best_loc_complete = Fig.enum_all figs |> Enum.arg_max score
+             and _, best_loc_seen = Option.get !best_seen in
+             Some (Evaluated_best (query_name, logdots, best_loc_complete, best_loc_seen))
+           else None)
+    in
     if fantasy prefs <> 0. then
       Fantasy ml_results :: results
     else begin

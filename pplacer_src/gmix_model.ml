@@ -1,22 +1,18 @@
+(* Support for the gamma mixture model of sequence heterogeneity.
+ * *)
+
 open Ppatteries
 open Gstar_support
 
 module Model: Glvm.Model =
 struct
 
-  (* this simply contains the information about the Markov process corresponding
-   * to the model.
-   *
-   * we also include matrices mats which can be used as scratch to avoid having to
-   * allocate for it. see prep_mats_for_bl below. *)
-
   type t = {
     statd: Gsl_vector.vector;
     diagdq: Diagd.t;
     seq_type: Alignment.seq_type;
     rates: float array;
-    (* tensor is a tensor of the right shape to be a multi-rate transition matrix for the model *)
-    tensor: Tensor.tensor;
+    tensor: Tensor.tensor; (* multi-rate transition matrix for the model *)
   }
 
   let statd model = model.statd
@@ -28,24 +24,10 @@ struct
   let n_rates model = Array.length (rates model)
 
   let build ref_align = function
-    | Glvm.Gmix_model (model_name, emperical_freqs, opt_transitions, rates) ->
+    | Glvm.Gmix_model (model_name, emperical_freqs, transitions, rates) ->
       let seq_type, (trans, statd) =
-        if model_name = "GTR" then
-          (Alignment.Nucleotide_seq,
-           match opt_transitions with
-             | Some transitions ->
-               (Nuc_models.b_of_trans_vector transitions,
-                Alignment.emper_freq 4 Nuc_models.nuc_map ref_align)
-             | None -> failwith "GTR specified but no substitution rates given.")
-        else
-          (Alignment.Protein_seq,
-           let model_trans, model_statd =
-             Prot_models.trans_and_statd_of_model_name model_name in
-           (model_trans,
-            if emperical_freqs then
-              Alignment.emper_freq 20 Prot_models.prot_map ref_align
-            else
-              model_statd))
+        Gstar_support.seqtype_and_trans_statd_of_info
+          model_name transitions emperical_freqs ref_align
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
       {
@@ -64,8 +46,6 @@ struct
       Linear_utils.ppr_gsl_vector model.statd
       Ppr.ppr_float_array model.rates
 
-  let refine model _ _ _ _ _ = model
-
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
     Diagd.multi_exp model.tensor model.diagdq model.rates bl
@@ -73,7 +53,6 @@ struct
   module Glv =
   struct
 
-    (* glvs *)
     type t = {
       e: (int, BA.int_elt, BA.c_layout) BA1.t;
       a: Tensor.tensor;
@@ -270,9 +249,7 @@ struct
       ~n_states:(n_states model)
       ~n_rates:(n_rates model)
 
-  (* this is used when we want to make a glv out of a list of likelihood
-   * vectors. differs from below because we want to make a new one. used to be
-   * called `lv_arr_to_constant_rate_glv`. *)
+  (* Make a glv out of a list of likelihood vectors. *)
   let lv_arr_to_glv model lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
@@ -286,13 +263,11 @@ struct
    * distribution. *)
   let log_like3 model utilv_nsites x y z =
     assert(Glv.dims x = Glv.dims y && Glv.dims y = Glv.dims z);
-    (Linear.ten_log_like3 (statd model)
-       x.Glv.a
-       y.Glv.a
-       z.Glv.a
-       utilv_nsites)
+    (Linear.ten_log_like3 (statd model) x.Glv.a y.Glv.a z.Glv.a utilv_nsites)
     +. (log_of_2 *.
-          ((total_twoexp x.Glv.e) +. (total_twoexp y.Glv.e) +. (total_twoexp z.Glv.e)))
+          ((total_twoexp x.Glv.e)
+          +. (total_twoexp y.Glv.e)
+          +. (total_twoexp z.Glv.e)))
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
@@ -301,7 +276,7 @@ struct
     BA1.blit src.Glv.e dst.Glv.e;
     (* prepare the matrices in our matrix cache *)
     prep_tensor_for_bl model bl;
-    (* iter over rates *)
+    (* The matrices for various rates are juxtaposed in the tensor. *)
     tensor_mul (tensor model) ~dst:dst.Glv.a ~src:src.Glv.a
 
   (* take the pairwise product of glvs g1 and g2, incorporating the
@@ -311,6 +286,7 @@ struct
     iba1_pairwise_sum dst.Glv.e g1.Glv.e g2.Glv.e;
     Linear.ten_statd_pairwise_prod (statd model) dst.Glv.a g1.Glv.a g2.Glv.a
 
+  (* Make the per-site log likelihood array. *)
   let site_log_like_arr3 model x y z =
     let log_site_likes = Array.make (Glv.get_n_sites x) 0.
     and f_n_rates = float_of_int (n_rates model)
@@ -339,6 +315,8 @@ struct
   let slow_log_like3 model x y z =
     Array.fold_left ( +. ) 0. (site_log_like_arr3 model x y z)
 
+  (* We don't do anything for model refinement. *)
+  let refine model _ _ _ _ _ = model
 
 end
 
@@ -373,7 +351,7 @@ let init_of_json o ref_align =
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
     failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
   if Hashtbl.find o "ras_model" |> Jsontype.string <> "gamma" then
-    failwith "For the time being, we only support gamma rates-across-sites model.";
+    failwith "Whoops! This is supposed to be a gamma mixture model.";
   let gamma_o = Hashtbl.find o "gamma" in
   let opt_transitions =
     if Hashtbl.mem o "subs_rates" then begin
@@ -396,4 +374,3 @@ let init_of_json o ref_align =
      (Gamma.discrete_gamma
         (Simple_json.find_int gamma_o "n_cats")
         (Simple_json.find_float gamma_o "alpha")))
-

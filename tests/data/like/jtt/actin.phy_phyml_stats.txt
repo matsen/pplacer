@@ -1,8 +1,8 @@
 
  oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-                                  ---  PhyML v3.0_246M  ---                                             
-                            http://www.atgc-montpellier.fr/phyml                                          
-                         Copyright CNRS - Universite Montpellier II                                 
+                                  ---  PhyML v3.0_246M  ---
+                            http://www.atgc-montpellier.fr/phyml
+                         Copyright CNRS - Universite Montpellier II
  oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
 

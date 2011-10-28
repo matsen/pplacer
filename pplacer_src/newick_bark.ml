@@ -89,7 +89,7 @@ class newick_bark arg =
       |> maybe_map_cons (Printf.sprintf "%g" |- Myxml.tag "branch_length") bl
       |> maybe_map_cons
           (Printf.sprintf "%g"
-           |- Myxml.tag "confidence" ~attributes:["type", "confidence"])
+           |- Myxml.tag "confidence" ~attrs:["type", "confidence"])
           confidence
       |> List.rev
     end

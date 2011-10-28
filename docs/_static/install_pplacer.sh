@@ -29,7 +29,6 @@ echo "GODI_BASEPKG_PCRE=yes" >> $PREFIX/etc/godi.conf
 
 # build godi-available packages.
 godi_perform -build godi-ocamlgsl
-godi_perform -build godi-xml-light
 godi_perform -build godi-ounit
 godi_perform -build godi-sqlite3
 cd ..
@@ -39,7 +38,7 @@ wget $CDN/odb.ml
 ocaml odb.ml \
     --have-perms \
     --configure-flags-global "--datadir $PREFIX/share" \
-    batteries csv
+    batteries csv xmlm
 
 # build pplacer.
 wget --no-check-certificate http://github.com/matsen/pplacer/tarball/master \
