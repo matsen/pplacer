@@ -211,9 +211,9 @@ spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
 (* baseball *)
 spec_with_default "--fig-cutoff" (fun o -> Arg.Set_float o) prefs.fig_cutoff
 "The cutoff for determining figs. Default is %g; specify 0 to disable.";
-"--evaluate-all", Arg.Set prefs.evaluate_all,
+"--fig-eval-all", Arg.Set prefs.evaluate_all,
 "Evaluate all likelihoods to ensure that the best location was selected.";
-"--evaluation-discrepancy-tree", Arg.Set_string prefs.evaluation_discrepancy,
+"--fig-eval-discrepancy-tree", Arg.Set_string prefs.evaluation_discrepancy,
 "Write out a tree showing the discrepancies between the best complete and observed locations.";
 "--fig-tree", Arg.Set_string prefs.fig_tree,
 "Write out a tree showing the figs on the tree.";

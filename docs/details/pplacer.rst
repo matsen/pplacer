@@ -376,9 +376,17 @@ that fig's representative likelihood and the current fig's representative
 likelihood is less than the value of the ``--strike-box`` parameter. Each of
 these figs' sets of edges are then merged into the current fig's edge set.
 
+To test the accuracy of fig evaluation vs. full evaluation, the
+``--fig-eval-all`` flag can be specified to do both fig and full evaluation,
+then show the percentage of sequences where the best location chosen by full
+evaluation and fig evaluation is the same. ``--fig-eval-all`` must be specified
+to specify the ``--fig-eval-discrepancy-tree`` flag. If this flag is specified,
+a tree will be written out showing the locations chosen by both methods for
+each sequence where the two differ.
+
 The colored trees written out by the ``--fig-tree`` and
-``--evaluation-discrepancy-tree`` flags shows figs as colored subtrees within
-the reference tree.
+``--fig-eval-discrepancy-tree`` flags shows figs as colored subtrees within the
+reference tree.
 
 
 .. _Infernal: http://infernal.janelia.org/
