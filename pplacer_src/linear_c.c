@@ -1,3 +1,4 @@
+/*
  * Roll up your bell-bottoms, boys and girls, it's time for some retro pointer
  * arithmetic!
  *
