@@ -3,10 +3,10 @@ open Myxml
 
 let phyloxml_ns = "http://www.phyloxml.org"
 let xsi_ns = "http://www.w3.org/2001/XMLSchema-instance"
-let nsify s = phyloxml_ns, s
+let phyns s = phyloxml_ns, s
 
 let root_tag =
-  nsify "phyloxml",
+  phyns "phyloxml",
   [(Xmlm.ns_xmlns, "xmlns"), phyloxml_ns;
    (Xmlm.ns_xmlns, "xsi"), xsi_ns;
    (xsi_ns, "schemaLocation"), "http://www.phyloxml.org/1.10/phyloxml.xsd"]
@@ -17,13 +17,13 @@ let ns_prefix = function
   | _ -> None
 
 let rec emit_tag out {name; attrs; contents; children} =
-  out (`El_start (nsify name, List.map (first nsify) attrs));
+  out (`El_start (phyns name, List.map (first phyns) attrs));
   if contents <> "" then out (`Data contents);
   List.iter (emit_tag out) children;
   out `El_end
 
 let rec emit_stree out bark_map stree =
-  out (`El_start (nsify "clade", []));
+  out (`El_start (phyns "clade", []));
   let top = Stree.top_id stree in
   IntMap.Exceptionless.find top bark_map
     |> Option.may (fun b -> List.iter (emit_tag out) b#to_xml);
@@ -34,7 +34,7 @@ let rec emit_stree out bark_map stree =
   out `El_end
 
 let emit_gtree out (name, gtree) =
-  out (`El_start (nsify "phylogeny", [nsify "rooted", "true"]));
+  out (`El_start (phyns "phylogeny", [phyns "rooted", "true"]));
   Option.may (tag "name" |- emit_tag out) name;
   emit_stree out (Gtree.get_bark_map gtree) (Gtree.get_stree gtree);
   out `El_end
