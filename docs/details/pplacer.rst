@@ -229,6 +229,8 @@ Making reference trees
 FastTree
 ========
 
+We save the log file so it can get parsed and become part of the reference package.
+
 Nucleotide alignments
 ---------------------
 
@@ -246,6 +248,7 @@ FastTree should be used in the following way when making amino acid reference tr
   FastTree -log TIGR00001.log TIGR00001.fasta > TIGR00001.tre
 
 Again, ``-gamma`` should not be used.
+
 
 phyml and RAxML
 ===============
