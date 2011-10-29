@@ -10,5 +10,8 @@ let () =
         ~dispose:close_in
         (IO.read_i64 |- Int64.to_nativeint |- Gsl_rng.set r);
   let t = Commiesim.generate_caterpillar_tree r ~mu size in
-  Placerun.make t name []
+  [Placement.make_ml 0 ~log_like:(-1309.) ~ml_ratio:1. ~dist_bl:0. ~pend_bl:0.]
+  |> Pquery.make_ml_sorted ~namel:["token"] ~seq:"no seq"
+  |> flip List.cons []
+  |> Placerun.make t name
   |> Placerun_io.to_json_file "" (name ^ ".jplace")
