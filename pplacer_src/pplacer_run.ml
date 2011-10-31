@@ -198,9 +198,9 @@ let run_file prefs query_fname =
   let module Like_stree = Like_stree.Make(Model) in
   let model = Model.build ref_align i in
   (* *** pre masking *** *)
-  let query_list, ref_align, n_sites =
+  let query_list, ref_align, n_sites, mask =
     if Prefs.no_pre_mask prefs then
-      query_list, ref_align, n_sites
+      query_list, ref_align, n_sites, None
     else begin
       dprint "Pre-masking sequences... ";
       let base_map = match Model.seq_type model with
@@ -282,7 +282,7 @@ let run_file prefs query_fname =
         close_out ch;
         exit 0;
       end;
-      query_list', ref_align', masklen
+      query_list', ref_align', masklen, Some mask
     end
   in
 
@@ -347,13 +347,10 @@ let run_file prefs query_fname =
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   dprint "done.\n";
 
+  Option.may (Model.mask_sites model) mask;
   (* Refine the model if it's not coming directly from the reference package. *)
-  let model =
-    if from_input_alignment then
-      Model.refine model n_sites ref_tree like_aln_map darr parr
-    else
-      model
-  in
+  if from_input_alignment then
+    Model.refine model n_sites ref_tree like_aln_map darr parr;
   if !verbosity >= 2 then Model.write stdout model;
 
   dprint "Caching likelihood information on reference tree... ";
