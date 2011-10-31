@@ -56,7 +56,8 @@ struct
           model_name transitions emperical_freqs ref_align
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
-      let occupied_rates = Array.make (Array.length rates) true in
+      let occupied_rates = Array.make (Array.length rates) false in
+      Array.iter (fun v -> occupied_rates.(v) <- true) site_categories;
       {
         statd; seq_type; rates; site_categories; occupied_rates;
         diagdq = Diagd.normed_of_exchangeable_pair trans statd;
@@ -334,13 +335,14 @@ struct
     Array.fold_left ( +. ) 0. (site_log_like_arr3 model x y z)
 
   let set_site_categories model a =
-    assert(Array.length model.site_categories = Array.length a);
-    Array.fill model.occupied_rates 0 (Array.length model.occupied_rates) false;
+    if Array.length model.site_categories <> Array.length a then
+      invalid_arg "set_site_categories";
+    Array.modify (const false) model.occupied_rates;
     Array.iteri
-      (fun i _ ->
-        model.site_categories.(i) <- a.(i);
-        model.occupied_rates.(a.(i)) <- true)
-      model.site_categories
+      (fun i v ->
+        model.site_categories.(i) <- v;
+        model.occupied_rates.(v) <- true)
+      a
 
   (* Optimize site categories. See top of this file. *)
   let refine model n_sites ref_tree like_aln_map util_glv_arr_1 util_glv_arr_2 =
