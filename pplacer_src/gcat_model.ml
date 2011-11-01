@@ -37,7 +37,7 @@ struct
     rates: float array;
     occupied_rates: bool array; (* which of the rate categories actually used *)
     tensor: Tensor.tensor; (* multi-rate transition matrix for the model *)
-    site_categories: int array; (* which category does each site use *)
+    mutable site_categories: int array; (* which category does each site use *)
   }
   type model_t = t
 
@@ -49,20 +49,32 @@ struct
   let n_states model = Alignment.nstates_of_seq_type model.seq_type
   let n_rates model = Array.length (rates model)
 
+  let setup_occupied_rates ?(reset = true) model =
+    if reset then Array.modify (const false) model.occupied_rates;
+    Array.iter (fun v -> model.occupied_rates.(v) <- true) model.site_categories
+
   let build ref_align = function
     | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
+      let n_sites = ref_align.(0) |> snd |> String.length in
+      if n_sites <> Array.length site_categories then
+        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
+          n_sites
+          (Array.length site_categories)
+        |> failwith;
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions emperical_freqs ref_align
       in
-      let n_states = Alignment.nstates_of_seq_type seq_type in
-      let occupied_rates = Array.make (Array.length rates) false in
-      Array.iter (fun v -> occupied_rates.(v) <- true) site_categories;
-      {
+      let occupied_rates = Array.make (Array.length rates) false
+      and n_states = Alignment.nstates_of_seq_type seq_type in
+      let model = {
         statd; seq_type; rates; site_categories; occupied_rates;
         diagdq = Diagd.normed_of_exchangeable_pair trans statd;
         tensor = Tensor.create (Array.length rates) n_states n_states;
       }
+      in
+      setup_occupied_rates ~reset:false model;
+      model
 
     | _ -> invalid_arg "build"
 
@@ -73,11 +85,12 @@ struct
   let write ch model =
     Format.fprintf
       (Format.formatter_of_out_channel ch)
-      "\n%s model:\n\nstat distn:\n%a\n\nsite rates:\n%a\n\nsite categories \
-      (0-indexed):\n%a\n\noccupied rates\n%a\n"
+      "@[@\n%s model:@\n@\nstat distn:@\n%a@\n@\nsite rates:@\n%a@\n@\n\
+       %d site categories (0-indexed):@\n%a@\n@\noccupied rates@\n%a@]@."
       (Alignment.seq_type_to_str model.seq_type)
       Linear_utils.ppr_gsl_vector model.statd
       Ppr.ppr_float_array model.rates
+      (Array.length model.site_categories)
       Ppr.ppr_int_array model.site_categories
       Ppr.ppr_bool_array model.occupied_rates
 
@@ -337,19 +350,13 @@ struct
   let set_site_categories model a =
     if Array.length model.site_categories <> Array.length a then
       invalid_arg "set_site_categories";
-    Array.modify (const false) model.occupied_rates;
-    Array.iteri
-      (fun i v ->
-        model.site_categories.(i) <- v;
-        model.occupied_rates.(v) <- true)
-      a
+    Array.iteri (Array.set model.site_categories) a;
+    setup_occupied_rates model
 
   (* Optimize site categories. See top of this file. *)
   let refine model n_sites ref_tree like_aln_map util_glv_arr_1 util_glv_arr_2 =
     dprint "Optimizing site categories... ";
-    let model =
-      { model with site_categories = Array.make n_sites 0 }
-    in
+    model.site_categories <- Array.make n_sites 0;
     let n_categories = Array.length model.site_categories in
     let best_log_lks = Array.make n_sites (-. infinity)
     and best_log_lk_cats = Array.make n_sites (-1)
@@ -381,8 +388,16 @@ struct
         cat;
     done;
     set_site_categories model best_log_lk_cats;
-    dprint "done.\n";
-    model
+    dprint "done.\n"
+
+  let mask_sites model mask =
+    if Array.length model.site_categories <> Array.length mask then
+      invalid_arg "mask_sites";
+    model.site_categories <-
+      (Enum.combine (Array.enum model.site_categories, Array.enum mask)
+       |> Enum.filter_map (function x, true -> Some x | _, false -> None)
+       |> Array.of_enum);
+    setup_occupied_rates model
 
 end
 and Like_stree: sig

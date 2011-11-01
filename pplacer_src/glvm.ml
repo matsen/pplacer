@@ -1,5 +1,3 @@
-(* XXX AG what is a glvm? *)
-
 open Ppatteries
 
 type init_params =
@@ -16,7 +14,8 @@ sig
   val seq_type: t -> Alignment.seq_type
   val rates: t -> float array
   val refine: t -> int -> Newick_gtree.t ->
-    Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> t
+    Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> unit
+  val mask_sites: t -> bool array -> unit
   val write: unit IO.output -> t -> unit
 
   module Glv:
