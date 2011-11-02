@@ -68,6 +68,14 @@ object (self)
       );
       CREATE INDEX placement_classifications_id ON placement_classifications (placement_id);
 
+      CREATE TABLE IF NOT EXISTS placement_evidence (
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
+        rank TEXT REFERENCES ranks (rank) NOT NULL,
+        evidence REAL NOT NULL,
+        bayes_factor REAL
+      );
+      CREATE INDEX placement_evidence_id ON placement_evidence (placement_id);
+
       CREATE TABLE IF NOT EXISTS placement_positions (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         location INTEGER NOT NULL,
