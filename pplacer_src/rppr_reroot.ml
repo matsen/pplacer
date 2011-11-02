@@ -55,7 +55,7 @@ let find_root rp gt =
   in
   try
     aux st; failwith "no root found?"
-  with Found_root root -> root
+  with Found_root root -> top_id root
 
 
 class cmd () =
@@ -89,7 +89,6 @@ object (self)
         |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
         |> Gtree.set_bark_map gt
         |> find_root rp
-        |> top_id
         |> Gtree.reroot gt
         |> flip Newick_gtree.to_file (self#single_file ())
 
