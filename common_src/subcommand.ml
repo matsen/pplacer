@@ -104,7 +104,7 @@ let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
   and args = ref []
   and batchfile = ref None in
   Arg.parse
-    [
+    (align_with_space [
       "--version", Arg.Unit (fun () -> print_endline version; exit 0),
       "Print version and exit";
       "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map; exit 0),
@@ -114,7 +114,7 @@ let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
       "Run the provided batch file of guppy commands";
       "--quiet", Arg.Unit (fun () -> verbosity := 0),
       "Don't write messages to stdout (unless explicitly requested).";
-    ]
+    ])
     (* Sys.argv and Arg.current are used here so that /this/ invocation of
        Arg.parse won't try to parse the flags that are destined for the
        subcommand. *)
@@ -189,7 +189,7 @@ object (self)
   method virtual action: string list -> unit
 
   method run argl =
-    let argl = wrap_parse_argv argl (self#specl) (self#usage) in
+    let argl = wrap_parse_argv argl (align_with_space self#specl) self#usage in
     try
       self#action argl
     with
