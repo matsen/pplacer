@@ -2,7 +2,7 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
-module TIAMR = AlgMap.AlgMapR (Tax_id.TaxIdMap)
+module TIAMR = AlgMapR (Tax_id.TaxIdMap)
 
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
  * the first time that the tax rank is less than or equal to rank *)
