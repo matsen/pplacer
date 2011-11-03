@@ -1,6 +1,8 @@
 (* preferences data type and functions.
  *)
 
+open Ppatteries
+
 type prefs =
   {
    (* basics *)
@@ -166,7 +168,7 @@ let spec_with_default symbol setfun p help =
   (symbol, setfun p, Printf.sprintf help !p)
 
 let specl prefs =
-  [
+  align_with_space [
     (* short *)
 "-c", Arg.Set_string prefs.refpkg_path,
 "Specify the path to the reference package.";
