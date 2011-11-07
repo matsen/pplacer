@@ -36,7 +36,7 @@ object (self)
   inherit output_cmd () as super_output
 
   val regexp_default_exclude = flag "-Vr"
-    (Plain (false, "Exclude every placement name by default."))
+    (Plain (false, "Exclude every placement name by default (by default everything included)."))
   val regexp_inclusions = flag "-Ir"
     (Plain ([], "Include placements whose name matches the given regexp. May be passed multiple times."))
   val regexp_exclusions = flag "-Er"
@@ -46,7 +46,7 @@ object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria."))
   val tax_default_exclude = flag "-Vx"
-    (Plain (false, "Exclude every tax_id by default."))
+    (Plain (false, "Exclude every tax_id by default (by default everything included)."))
   val tax_inclusions = flag "-Ix"
     (Plain ([], "Include placements which are likely matches for the given tax_id. May be passed multiple times."))
   val tax_exclusions = flag "-Ex"
