@@ -68,7 +68,7 @@ object (self)
   method usage = "usage: filter [options] placefile[s]"
 
   method private placefile_action = function
-    | [] -> ()
+    | [] -> failwith "filter takes at least one placefile (zero given)"
     | prl ->
       let fname = self#single_file
         ~default:(File ((Mokaphy_common.cat_names prl) ^ ".jplace"))
@@ -130,7 +130,7 @@ object (self)
           if namel = [] then
             pqs
           else
-            {pq with Pquery.namel = namel} :: pqs
+            (Pquery.set_namel pq namel) :: pqs
       in
       let filtered = List.map
         (fun pr ->

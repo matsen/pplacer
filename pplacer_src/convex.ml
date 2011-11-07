@@ -1,9 +1,9 @@
 open Ppatteries
 open Stree
 
-type color = string
-module ColorSet = StringSet
-module ColorMap = StringMap
+type color = Tax_id.t
+module ColorSet = Tax_id.TaxIdSet
+module ColorMap = Tax_id.TaxIdMap
 type cset = ColorSet.t
 type 'a cmap = 'a ColorMap.t
 
@@ -21,7 +21,7 @@ end
 
 module ColorSetMap = BetterMap (Map.Make(OrderedColorSet)) (PprColorSet)
 
-type coloropt = string option
+type coloropt = color option
 module OrderedColorOpt = struct
   type t = coloropt
   let compare co1 co2 =
@@ -29,13 +29,13 @@ module OrderedColorOpt = struct
       | None, Some _ -> -1
       | Some _, None -> 1
       | None, None -> 0
-      | Some c1, Some c2 -> String.compare c1 c2
+      | Some c1, Some c2 -> compare c1 c2
 end
 
 module PprColorOpt = struct
   type t = coloropt
   let ppr ff = function
-    | Some c -> Format.fprintf ff "<%s>" c
+    | Some c -> Format.fprintf ff "<%s>" (Tax_id.to_string c)
     | None -> Format.fprintf ff "--"
 end
 
@@ -54,7 +54,7 @@ module PprQuestion = struct
   let ppr ff (co, cs) =
     Format.fprintf ff "@[(%s,@ " begin match co with
       | None -> "-"
-      | Some c -> c
+      | Some c -> Tax_id.to_string c
     end;
     ColorSet.ppr ff cs;
     Format.fprintf ff ")@]"
@@ -66,7 +66,7 @@ module OrderedQuestion = struct
     match co1, co2 with
       | Some c1, Some c2 when c1 = c2 ->
         ColorSet.compare cs1 cs2
-      | Some c1, Some c2 -> String.compare c1 c2
+      | Some c1, Some c2 -> compare c1 c2
       | None, Some _ -> -1
       | Some _, None -> 1
       | None, None -> ColorSet.compare cs1 cs2
@@ -191,10 +191,6 @@ let subtreelist_map f tree =
 let maplist_of_map_and_tree map =
   subtreelist_map (fun i -> IntMap.find i map)
 
-let rec powerset = function
-  | [] -> [[]]
-  | _ :: t as l -> List.fold_left (fun xs t -> l :: t :: xs) [] (powerset t)
-
 (* Cartesian product of a list list. *)
 let product lists =
   let rec aux accum base = function
@@ -305,12 +301,14 @@ let _build_apartl strict cutsetl kappa (c, x) =
         (transposed_fold CS.union startsl)
         (product dist)
       in
-      (* By the construction of the pis, between pi can only be empty or b. Here
-       * we filter out those aparts such that b is not c or None. Recall (see
-       * the intro to convex.mli) that None represents any color that is not
-       * "forced" by convexity considerations. c is None when there is not an
-       * above color that is in x. b is None when c is None and there are no
-       * colors shared between the pi_i.
+      (* By the construction of the pis, between pi can only be empty or b.
+       * In the case of strict convexity, we require all pi to be just the set
+       * {b} if b is not None.
+       * In the usual case, we filter out those aparts such that b is not c or
+       * None. Recall (see the intro to convex.mli) that None represents any
+       * color that is not "forced" by convexity considerations. c is None when
+       * there is not an above color that is in x. b is None when c is None and
+       * there are no colors shared between the pi_i.
        *)
       let is_valid =
         if strict then
@@ -433,7 +431,7 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
             (fun apart -> apart_nu' apart, apart)
             apartl
           in
-          List.rev_map (fun (a, b) -> Some a, b) (List.sort nu_apartl)
+          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
       in
       let rec aux phi current_best = function
         | (nu_opt, apart) :: rest -> (
@@ -509,19 +507,18 @@ let nodeset_of_phi_and_tree phi tree =
   aux IntSet.empty [tree, (None, CS.empty)]
 
 (* Make map from names to their respective indices. *)
-let name_map_of_bark_map bark_map =
-  IntMap.fold
+let node_label_map_of_tree t =
+  Gtree.fold_over_leaves
     (fun i bark accum ->
       try
-        StringMap.add bark#get_name i accum
-      with
-        | Newick_bark.No_name -> accum)
-    bark_map
+        StringMap.add bark#get_node_label i accum
+      with Newick_bark.No_node_label -> accum)
+    t
     StringMap.empty
 
 let rank_tax_map_of_refpkg rp =
   let gt = Refpkg.get_ref_tree rp in
-  let node_map = name_map_of_bark_map gt.Gtree.bark_map in
+  let node_map = node_label_map_of_tree gt in
   let td = Refpkg.get_taxonomy rp
   and seqinfo = Refpkg.get_seqinfom rp in
   let add_to_rankmap seq rankmap ti =
@@ -548,6 +545,15 @@ let rank_tax_map_of_refpkg rp =
         (Tax_taxonomy.get_lineage td ti))
     seqinfo
     IntMap.empty
+  |> tap (fun m ->
+    Array.iteri
+      (fun rank rankname ->
+        if not (IntMap.mem rank m) then
+          dprintf "warning: rank %s not represented in the lineage of any \
+                   sequence in reference package %s.\n"
+            rankname
+            (Refpkg.get_name rp))
+      td.Tax_taxonomy.rank_names)
 
 let add_color_setly k v m =
   IntMap.add k (CS.add v (IntMap.get k CS.empty m)) m

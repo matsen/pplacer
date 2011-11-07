@@ -1,26 +1,34 @@
 
-Pplacer documentation home
+pplacer documentation home
 ==========================
 
-The pplacer suite consists of two separate binaries: pplacer and guppy.
-The pplacer binary actually does phylogenetic placement and produces place files, while guppy does all of the downstream analysis.
-Guppy can do many different things via its subcommand interface, from compressing place files to statistical comparative analysis.
+The pplacer suite consists of three separate binaries: pplacer, guppy, and rppr.
+The pplacer binary actually does phylogenetic placement and produces place files, guppy does all of the downstream analysis of placements, and rppr does useful things having to do with reference packages.
 
 .. toctree::
    :maxdepth: 2
 
    generated_rst/pplacer
    generated_rst/guppy
+   generated_rst/rppr
+   scripts
 
 
 .. raw:: html
 
    <h2> <font color="red">Warning</font> </h2>
 
-The pplacer suite is currently in an "alpha" stage of development.
-We do our best to keep everything correct, but some functionality is not completely verified and thus may contain bugs or produce unexpected results.
-The general guideline is: if we have published about a method, then we have verified it and you are good to go.
-If not, then we suggest that you wait to do any analysis that you intend to publish.
+pplacer is under heavy development, and not all parts are at the same level of maturity.
+The general guideline is: if we have released a paper about a method, then we have verified and tested it.
+Thus, the following functionality is stable:
+
+* placement and visualization ability as described in the BMC Bioinformatics paper
+* Kantorovich-Rubenstein distances
+* edge principal components and squash clustering
+* taxonomic/phylogenetic discordance analysis
+
+We suggest that you wait to do any serious analysis using features not described on this list.
+In particular, the taxonomic classification functionality is not stable and is still being validated.
 
 
 Getting help
@@ -50,4 +58,32 @@ and
 Sujatha Srivnasan
 for their suggestions.
 
+
+Compiling pplacer
+-----------------
+
+We provide binaries and encourage their use.
+However, for those who want to be on the bleeding edge of development, here are instructions and scripts for setting up a compilation environment.
+
+The first step is to install the GNU Scientific Library (GSL).
+It may well already be installed (you can check by running
+``gsl-config --prefix``) or you can install it with your OS's package manager.
+Or compile it from source::
+
+    wget ftp://mirrors.kernel.org/gnu/gsl/gsl-1.13.tar.gz && \
+    tar -xzf gsl-1.13.tar.gz && \
+    cd gsl-1.13 && \
+    ./configure && \
+    make && make install
+
+Once GSL is installed, you should be able
+to download `this installation script`_ and just type
+``source install_pplacer.sh``.
+
+Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
+path and you are ready to go!
+
+
+
 .. _user group: http://groups.google.com/group/pplacer-users
+.. _this installation script: _static/install_pplacer.sh

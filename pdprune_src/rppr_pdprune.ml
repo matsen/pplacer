@@ -5,7 +5,7 @@ open Ppatteries
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit output_cmd () as super_output
+  inherit tabular_cmd () as super_tabular
 
   val cutoff = flag "--cutoff"
     (Needs_argument ("cutoff", "Specify the maximum branch length to be trimmed."))
@@ -20,7 +20,7 @@ object (self)
   val never_prune_regex_from = flag "--never-prune-regex-from"
     (Plain ("", "Provide a file containing regular expressions; taxa matching one of these will not be pruned."))
 
-  method specl = super_output#specl @ [
+  method specl = super_tabular#specl @ [
     float_flag cutoff;
     int_flag leaf_count;
     toggle_flag names_only;
@@ -29,8 +29,8 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prunes the tree"
-  method usage = "usage: prunetre [options] tree"
+  method desc = "prune the tree to maximize PD"
+  method usage = "usage: pdprune [options] tree"
 
   method action = function
     | [fname] ->
@@ -56,7 +56,7 @@ object (self)
           | Not_found -> false
       in
       let gt = Newick_gtree.of_file fname in
-      let get_name id = (IntMap.find id gt.Gtree.bark_map)#get_name in
+      let get_name id = (IntMap.find id gt.Gtree.bark_map)#get_node_label in
       let namel =
         Gtree.recur
           (fun _ below -> List.flatten below)
@@ -72,27 +72,29 @@ object (self)
       StringSet.iter (Printf.printf "not pruning %s\n") never_prunes;
       let pt = Ptree.of_gtree gt
       and never_prune_ids =
-        IntMap.fold
+        Gtree.fold_over_leaves
           (fun i b s ->
-            match b#get_name_opt with
+            match b#get_node_label_opt with
               | Some name ->
                 if StringSet.mem name never_prunes then IntSet.add i s
                 else s
               | None -> s)
-          gt.Gtree.bark_map
+          gt
           IntSet.empty
       in
       let line_of_result =
         if names_only then (fun (id,_,_) -> [get_name id])
         else (fun (id,bl,_) -> [get_name id; string_of_float bl])
       in
-      Csv.output_all
-        (self#out_channel |> csv_out_channel |> Csv.to_out_obj)
-        (List.map
-           line_of_result
-           (Pd.until_stopping safe never_prune_ids criterion pt))
+      List.map
+        line_of_result
+        (Pd.until_stopping safe never_prune_ids criterion pt)
+      |> self#write_ll_tab
 
-    | _ -> failwith "prunetre takes exactly one tree"
+    | l ->
+      List.length l
+      |> Printf.sprintf "pdprune takes exactly one tree (%d given)"
+      |> failwith
 
 end
 

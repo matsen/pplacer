@@ -9,7 +9,6 @@ let command_list () =
 
     "statistical comparison", [
       "bary", (fun () -> new Guppy_bary.cmd ());
-      "bootviz", (fun () -> new Guppy_bootviz.cmd ());
       "squash", (fun () -> new Guppy_squash.cmd ());
       "kr_heat", (fun () -> new Guppy_kr_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());
@@ -18,6 +17,7 @@ let command_list () =
       "edpl", (fun () -> new Guppy_edpl.cmd ());
       "pd", (fun () -> new Guppy_pd.cmd ());
       "wpd", (fun () -> new Guppy_wpd.cmd ());
+      "rarefact", (fun () -> new Guppy_rarefact.cmd ());
     ];
 
     "classification", [
@@ -36,5 +36,8 @@ let command_list () =
       "diplac", (fun () -> new Guppy_diplac.cmd ());
       "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
       "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
+      "mft", (fun () -> new Guppy_mft.cmd ());
+      "islands", (fun () -> new Guppy_islands.cmd ());
+      "compress", (fun () -> new Guppy_compress.cmd ());
     ];
   ]

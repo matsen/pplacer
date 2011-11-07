@@ -23,11 +23,10 @@ open Test_util
 
 let criterion = Placement.ml_ratio
 
-let predefined_tests transform_str which expected =
+let predefined_tests which expected =
   let data = pres_of_dir Mass_map.Weighted criterion which
-  and transform = Mass_map.transform_of_str transform_str
   in
-  ("predefined_"^transform_str^"_"^which) >::: List.map (fun (p, pairs) ->
+  ("predefined_"^which) >::: List.map (fun (p, pairs) ->
     (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
       let (pr1, pre1) = Hashtbl.find data pr_name1
       and (pr2, pre2) = Hashtbl.find data pr_name2
@@ -35,7 +34,7 @@ let predefined_tests transform_str which expected =
       let tree = Placerun.get_same_tree pr1 pr2 in
       let normalization = Gtree.tree_length tree in
       let calculated =
-        Kr_distance.scaled_dist_of_pres ~normalization transform p tree pre1 pre2 in
+        Kr_distance.scaled_dist_of_pres ~normalization p tree pre1 pre2 in
       (Printf.sprintf "%s x %s" pr_name1 pr_name2) >:: fun _ ->
         (Printf.sprintf "%f !~= %f" calculated expected) @? approx_equal expected calculated
     ) pairs;
@@ -68,6 +67,13 @@ let simple_expected = [
     ("test1", "test3", 0.408248);
     ("test2", "test3", 0.540062);
   ]);
+]
+
+(* uptri versions of the previous data *)
+let multi_dist_expected = [
+  0.5, [|0.686887; 0.319036; 0.367851|];
+  1.0, [|0.583333; 0.25; 0.333333|];
+  2.0, [|0.677003; 0.408248; 0.540062|];
 ]
 
 let psbA_expected = [
@@ -127,7 +133,7 @@ unit_trans  0.3190356 0.2500000 0.4082483
 asinh_trans 0.3292013 0.2649481 0.4275588
 *)
 
-let multi_notrans_expected =
+let multi_expected =
   [
     0.5, [ "multi_test1", "test3", 0.3394316; ];
     1.0, [
@@ -137,30 +143,14 @@ let multi_notrans_expected =
     2.0, [ "multi_test1", "test3", 0.4506939; ];
   ]
 
-let multi_unit_expected =
-  [
-    0.5, [ "multi_test1", "test3", 0.3190356; ];
-    1.0, [ "multi_test1", "test3", 0.2500000; ];
-    2.0, [ "multi_test1", "test3", 0.4082483; ];
-  ]
-
-let multi_asinh_expected =
-  [
-    0.5, [ "multi_test1", "test3", 0.3292013; ];
-    1.0, [ "multi_test1", "test3", 0.2649481; ];
-    2.0, [ "multi_test1", "test3", 0.4275588; ];
-  ]
-
 let predefined_suite =
   List.map
-    (fun (trans_str, n, pd) -> predefined_tests trans_str n pd)
+    (fun (n, pd) -> predefined_tests n pd)
     [
-      "no_trans", "simple", simple_expected;
-      "no_trans", "psbA", psbA_expected;
-      "no_trans", "moran", moran_expected;
-      "no_trans", "multi", multi_notrans_expected;
-      "unit", "multi", multi_unit_expected;
-      "asinh", "multi", multi_asinh_expected;
+      "simple", simple_expected;
+      "psbA", psbA_expected;
+      "moran", moran_expected;
+      "multi", multi_expected;
     ]
 
 
@@ -190,7 +180,7 @@ let matrix_tests which =
         let normalization = Gtree.tree_length t in
         let kr =
           Kr_distance.dist_of_pres ~x1:1. ~x2:1.
-            ~normalization Mass_map.no_transform 2. t ~pre1 ~pre2
+            ~normalization 2. t ~pre1 ~pre2
         and matrix = Matrix_sig.matrix_distance weighting criterion pr1 pr2
         in
         (Printf.sprintf "%s x %s" pr_name1 pr_name2) >::
@@ -211,4 +201,22 @@ let matrix_suite =
 let suite =
   predefined_suite
   @ matrix_suite
-
+  @ [
+    "multi_dist_test" >:: begin fun () ->
+      let prl = placeruns_of_dir "simple" in
+      let gt = Mokaphy_common.list_get_same_tree prl in
+      let prel = List.map
+        (Mass_map.Pre.of_placerun Mass_map.Weighted Placement.ml_ratio)
+        prl
+      and normalization = Gtree.tree_length gt in
+      List.iter
+        (fun (p, expected) ->
+          (Printf.sprintf "exponent %g doesn't match" p)
+          @? (Array.for_all2
+                approx_equal
+                (Kr_distance.scaled_multi_dist_of_pres ~normalization p gt prel
+                 |> Uptri.to_array)
+                expected))
+        multi_dist_expected
+    end;
+  ]

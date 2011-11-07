@@ -2,8 +2,8 @@
     Opening it includes Batteries, MapsSets, and some generally useful
     functions. *)
 
-open Batteries
-open MapsSets
+include MapsSets
+include Batteries
 
 let round x = int_of_float (floor (x +. 0.5))
 
@@ -48,14 +48,6 @@ let raise_if_different cmp x1 x2 =
   let c = cmp x1 x2 in
   if c <> 0 then raise (Different c)
 
-let time_fun f =
-  let prev = Sys.time () in
-  f ();
-  ((Sys.time ()) -. prev)
-
-let print_time_fun name f =
-  Printf.printf "%s took %g seconds\n" name (time_fun f)
-
 let rec find_zero_pad_width n =
   assert(n>=0);
   if n <= 9 then 1
@@ -68,15 +60,93 @@ let maybe_cons o l = maybe_map_cons identity o l
 
 let to_csv_out ch =
   (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
-let csv_out_channel ch = new BatIO.out_channel ch |> to_csv_out
+let csv_out_channel ch = new IO.out_channel ch |> to_csv_out
 
+let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
+let junction pred f g a = if pred a then f a else g a
+let (|--) f g a b = g (f a b)
+let (|~) = (-|)
+let (||-) f g a = f a || g a
+let (||--) f g a b = f a b || g a b
+let (&&-) f g a = f a && g a
+let (&&--) f g a b = f a b && g a b
 
-let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon;;
+let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
+let (=~) = approx_equal
+
+let verbosity = ref 1
+let dprintf ?(l = 1) ?(flush = true) fmt =
+  if !verbosity >= l then begin
+    finally (if flush then flush_all else identity) (Printf.printf fmt)
+  end else
+    Printf.ifprintf IO.stdnull fmt
+let dprint ?(l = 1) ?(flush = true) s =
+  if !verbosity >= l then begin
+    print_string s;
+    if flush then flush_all ();
+  end
+
+let align_with_space =
+  List.map (Tuple3.map3 ((^) " ")) |- Arg.align
+
+let get_dir_contents ?pred dir_name =
+  let dirh = Unix.opendir dir_name in
+  Enum.from
+    (fun () ->
+      try Unix.readdir dirh with End_of_file -> raise Enum.No_more_elements)
+  |> Enum.suffix_action (fun () -> Unix.closedir dirh)
+  |> Option.map_default Enum.filter identity pred
+  |> Enum.map (Printf.sprintf "%s/%s" dir_name)
+
+(*
+ * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
+ * combine all the maps into a single one, with k bound to the concatenated set
+ * of bindings for k in map_list.
+ *)
+let combine_list_intmaps l =
+  (IntMap.fold
+     (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
+   |> flip List.fold_left IntMap.empty)
+    l
 
 (* parsing *)
 module Sparse = struct
+  open Lexing
+
+  let location_of_position p = p.pos_lnum, p.pos_cnum - p.pos_bol
+
+  exception Parse_error of string * (int * int) * (int * int)
+  let parse_error_of_positions s p1 p2 =
+    Parse_error (s, location_of_position p1, location_of_position p2)
+
+  let format_error = function
+    | Parse_error (msg, (l1, c1), (l2, c2)) ->
+      Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
+    | _ -> raise (Invalid_argument "format_error")
+
+  let error_wrap f =
+    try
+      f ()
+    with (Parse_error (_, _, _)) as e ->
+      failwith (format_error e)
+
+  let incr_lineno lexbuf =
+    let pos = lexbuf.lex_curr_p in
+    lexbuf.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + 1;
+      pos_bol = pos.pos_cnum;
+    }
+
+  let syntax_error tok msg =
+    raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
+
+  let try_map f x tok msg =
+    try
+      f x
+    with _ ->
+      syntax_error tok msg
 
   exception Syntax_error of int * int
 
@@ -449,16 +519,56 @@ module StringFuns = struct
 
 end
 
-include MapsSets
-include Batteries
+module EnumFuns = struct
 
-(*
- * 'a list MapsSets.IntMap.t list -> 'a list MapsSets.IntMap.t = <fun>
- * combine all the maps into a single one, with k bound to the concatenated set
- * of bindings for k in map_list.
- *)
-let combine_list_intmaps l =
-  (IntMap.fold
-     (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
-   |> flip List.fold_left IntMap.empty)
-    l
+  let n_cartesian_product ll =
+    let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
+    let n = Array.length pool in
+    let indices = Array.make n 0
+    and lengths = Array.map (Array.length |- (+) (-1)) pool in
+    let rec update_indices = function
+      | i when indices.(i) <> lengths.(i) ->
+        indices.(i) <- indices.(i) + 1
+      | 0 -> raise Enum.No_more_elements
+      | i ->
+        indices.(i) <- 0; update_indices (i - 1)
+    in
+    let is_first = ref true in
+    let next () =
+      if !is_first then
+        is_first := false
+      else update_indices (n - 1);
+      Array.map2 Array.get pool indices |> Array.to_list
+    in
+    Enum.from next
+
+  let combinations l r =
+    if r < 0 then
+      invalid_arg "r must be non-negative";
+    let pool = Array.of_list l
+    and indices = Array.init r identity in
+    let n = Array.length pool in
+    let rec next_i = function
+      | i when indices.(i) <> i + n - r -> i
+      | 0 -> raise Enum.No_more_elements
+      | i -> next_i (i - 1)
+    in
+    let is_first = ref true in
+    let next () =
+      if !is_first then
+        is_first := false
+      else begin
+        let i = next_i (r - 1) in
+        indices.(i) <- indices.(i) + 1;
+        for j = i + 1 to r - 1 do indices.(j) <- indices.(j - 1) + 1 done
+      end;
+      Array.to_list indices |> List.map (Array.get pool)
+    in
+    Enum.from next
+
+  let powerset l =
+    1 -- List.length l
+      |> Enum.map (combinations l)
+      |> Enum.flatten
+
+end

@@ -12,12 +12,14 @@ let final_tolerance = 1e-5
 
 let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
 
-(* This function returns a map from the internal nodes i to the average distance
- * from the midpoint of edge i to the leaves below i. *)
-let midpoint_leaf_dist_map t =
+(* This function returns a map from the internal nodes i to the mean of the
+ * prior used for the pendant branch lengths. This is the average of the leaf
+ * distances strictly below the edge corresponding to the internal node i, plus
+ * top_segment_f applied to the edge labeled i. *)
+let prior_mean_map top_segment_f t =
   let bl = Gtree.get_bl t in
   let rec aux = function
-    | Stree.Leaf i -> IntMap.singleton i (bl i /. 2.), [bl i]
+    | Stree.Leaf i -> IntMap.singleton i (top_segment_f (bl i)), [bl i]
     | Stree.Node (i, subtrees) ->
       let map, distances = List.map aux subtrees
         |> List.reduce
@@ -25,7 +27,7 @@ let midpoint_leaf_dist_map t =
       in
       (* Add the average distance for i onto the map. *)
       distances
-        |> List.map ((+.) (bl i /. 2.))
+        |> List.map ((+.) (top_segment_f (bl i)))
         |> avg
         |> flip (IntMap.add i) map,
       (* Increase the collection of distances by the given branch length. *)
@@ -42,6 +44,7 @@ type result =
   | Fantasy of (int * (float * float * float)) list
   | Pquery of Pquery.pquery
   | Timing of string * float
+  | Evaluated_best of string * int * int * int
 
 (* ll_normalized_prob :
  * ll_list is a list of log likelihoods. this function gives the normalized
@@ -58,9 +61,24 @@ let ll_normalized_prob ll_list =
             ll_list)))
     ll_list
 
+  (* Prefs.prefs -> *)
+  (* Ppatteries.IntMap.key list -> *)
+  (* prior -> *)
+  (* Model.t -> *)
+  (* (string * string) Ppatteries.Array.mappable -> *)
+  (* < get_bl : float; .. > Gtree.gtree -> *)
+  (* darr:Glv.glv array -> *)
+  (* parr:Glv.glv array -> *)
+  (* snodes:Glv.glv array -> string * string -> result list *)
+
 (* pplacer_core :
  * actually try the placements, etc. return placement records *)
-let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
+let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree ~(darr: b array) ~(parr: b array) ~(snodes: b array) =
+  let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
+  let module Glv = Model.Glv in
+  let module Glv_arr = Glv_arr.Make(Model) in
+  let module Glv_edge = Glv_edge.Make(Model) in
+  let module Three_tax = Three_tax.Make(Model) in
   let keep_at_most = Prefs.keep_at_most prefs
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
@@ -88,10 +106,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
   in
   (* making glvs which are appropriate for query side of the first placement
    * stage. in contrast to the second stage query glv, this guy is full length. *)
-  let full_query_orig =
-    Glv.make ~n_rates:(Model.n_rates model)
-      ~n_sites:ref_length
-      ~n_states:(Model.n_states model)
+  let full_query_orig = Model.make_glv model ~n_sites:ref_length
   in
   let full_query_evolv = Glv.mimic full_query_orig in
   (* *** the main query loop *** *)
@@ -103,14 +118,12 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     (* prepare the query glv *)
     let query_arr = StringFuns.to_char_array query_seq in
     (* the mask array shows true if it's included *)
-    let informative c = c <> '?' && c <> '-' in
-    let mask_arr = Array.map informative query_arr in
-    let masked_query_arr =
-      Array.filteri (fun _ c -> informative c) query_arr in
+    let mask_arr = Array.map Alignment.informative query_arr in
+    let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = ArrayFuns.first informative query_arr
-    and last_informative = ArrayFuns.last informative query_arr in
+    let first_informative = ArrayFuns.first Alignment.informative query_arr
+    and last_informative = ArrayFuns.last Alignment.informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -118,15 +131,15 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     in
     (* the query glv, which has been masked *)
     let query_glv =
-      Glv.lv_arr_to_constant_rate_glv
-        (Model.n_rates model)
+      Model.lv_arr_to_glv
+        model
         (lv_arr_of_char_arr masked_query_arr)
     in
     (* the full one, which will be used for the first stage only *)
     Glv.prep_constant_rate_glv_from_lv_arr
       full_query_orig
       (lv_arr_of_char_arr query_arr);
-    Glv.evolve_into
+    Model.evolve_into
       model
       ~dst:full_query_evolv
       ~src:full_query_orig
@@ -148,18 +161,32 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     (* the h_r ranks the locations according to the h criterion. we use
      * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
-    let h_r =
-      List.sort
-        ~cmp:(comparing snd |> flip)
-        (List.map
-           (fun loc ->
-             (loc,
-              Glv.bounded_logdot utilv_nsites full_query_evolv
-                (Glv_arr.get snodes loc) first_informative last_informative))
-           locs)
+    let logdots = ref 0 in
+    let score loc =
+      incr logdots;
+      Glv.bounded_logdot
+        utilv_nsites
+        full_query_evolv
+        (Glv_arr.get snodes loc)
+        first_informative
+        last_informative
+    in
+    let h_ranking = Fig.enum_by_score score (strike_box prefs) figs
+    and best_seen = ref None in
+    let h_ranking =
+      if evaluate_all prefs then
+        (* Keep track of what the best location we've seen is if we're going to
+         * compare this against the actual best location. *)
+        Enum.map
+          (tap
+             (fun (score, loc) -> match !best_seen with
+               | Some (prev_score, _) when prev_score >= score -> ()
+               | _ -> best_seen := Some (score, loc)))
+          h_ranking
+      else
+        h_ranking
     in
     let results = [Timing ("ranking", (Sys.time ()) -. curr_time)] in
-    let h_ranking = List.map fst h_r in
     (* first get the results from ML *)
     let curr_time = Sys.time () in
     (* make our three taxon tree. we can't move this higher because the cached
@@ -208,11 +235,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
           let n_like_calls =
             Three_tax.optimize mlo_tolerance (max_pend prefs) max_iter tt
           in
-          if 2 < verb_level prefs then
-            Printf.printf "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
+          dprintf ~l:2 "\tlocation %d: %d likelihood function calls\n" loc n_like_calls;
         with
           | Minimization.ExceededMaxIter ->
-            Printf.printf
+            dprintf
               "optimization for %s at %d exceeded maximum number of iterations.\n"
               query_name
               loc;
@@ -231,41 +257,54 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
     (* in play_ball we go down the h_ranking list and wait until we get
      * strike_limit strikes, i.e. placements that are strike_box below the
      * best one so far. *)
-    let rec play_ball like_record n_strikes results = function
-      | loc::rest -> begin
-        try
-          prepare_tt loc;
-          let (like,_,_) as result =
-            safe_ml_optimize_location (initial_tolerance prefs) loc in
-          let new_results = (loc, result)::results in
-          if List.length results >= t_max_pitches then
-            new_results
-          else if like > like_record then
-            (* we have a new best likelihood *)
-            play_ball like n_strikes new_results rest
-          else if like < like_record-.(strike_box prefs) then
-            (* we have a strike *)
-            if n_strikes+1 >= t_max_strikes then new_results
-            else play_ball like_record (n_strikes+1) new_results rest
-          else
-            (* not a strike, just keep on accumulating results *)
-            play_ball like_record n_strikes new_results rest
-        with
-          (* we need to handle the exception here so that we continue the baseball recursion *)
-          | Gsl_error.Gsl_exn(_,warn_str) ->
-            Printf.printf "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n" loc query_name warn_str;
-            play_ball like_record n_strikes results rest
-      end
-      | [] -> results
+    let rec play_ball like_record n_strikes results = match Enum.get h_ranking with
+      | Some (_, loc) ->
+        prepare_tt loc;
+        begin match begin
+          try
+            Some (safe_ml_optimize_location (initial_tolerance prefs) loc)
+          with Gsl_error.Gsl_exn(_,warn_str) ->
+            dprintf
+              "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
+              loc
+              query_name
+              warn_str;
+            None
+        end with
+          | None -> play_ball like_record n_strikes results
+          | Some ((like,_,_) as result) -> (* ... *)
+        let new_results = (loc, result)::results in
+        if List.length results >= t_max_pitches then
+          new_results
+        else if like > like_record then
+          (* we have a new best likelihood *)
+          play_ball like n_strikes new_results
+        else if like < like_record-.(strike_box prefs) then
+          (* we have a strike *)
+          if n_strikes+1 >= t_max_strikes then new_results
+          else play_ball like_record (n_strikes+1) new_results
+        else
+          (* not a strike, just keep on accumulating results *)
+          play_ball like_record n_strikes new_results
+        end
+      | None -> results
     in
     let ml_results =
       (* important to reverse for fantasy baseball. also should save time on sorting *)
-      List.rev (play_ball (-. infinity) 0 [] h_ranking)
+      List.rev (play_ball (-. infinity) 0 [])
     in
     if ml_results = [] then
       failwith
         (Printf.sprintf "empty results for %s!\n" query_name);
-    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results in
+    let results = Timing ("ML calculation", (Sys.time ()) -. curr_time) :: results
+      |> maybe_cons
+          (if evaluate_all prefs then
+             let logdots = !logdots in
+             let best_loc_complete = Fig.enum_all figs |> Enum.arg_max score
+             and _, best_loc_seen = Option.get !best_seen in
+             Some (Evaluated_best (query_name, logdots, best_loc_complete, best_loc_seen))
+           else None)
+    in
     if fantasy prefs <> 0. then
       Fantasy ml_results :: results
     else begin
@@ -273,7 +312,7 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
        * to make a special type for ml results. *)
       let get_like (_, (like, _, _)) = like in
       let sorted_ml_results =
-        List.sort ~cmp:(comparing get_like |> flip) ml_results in
+        List.sort (comparing get_like |> flip) ml_results in
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =
@@ -293,7 +332,10 @@ let pplacer_core prefs locs prior model ref_align gtree ~darr ~parr ~snodes =
               (loc, safe_ml_optimize_location final_tolerance loc)
             with
               | Gsl_error.Gsl_exn(_,warn_str) ->
-                Printf.printf "Warning: GSL problem with final branch length optimization for location %d. %s\n" loc warn_str;
+                dprintf
+                  "Warning: GSL problem with final branch length optimization for location %d. %s\n"
+                  loc
+                  warn_str;
                 initial)
           keep_results
       in

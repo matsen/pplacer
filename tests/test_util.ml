@@ -10,18 +10,22 @@ let tests_dir = "./tests/"
 (* *** convenience funs for getting things *** *)
 
 let placeruns_of_dir which =
-  let files = Common_base.get_dir_contents
-    ~pred:(fun name -> Filename.check_suffix name "jplace")
-    (tests_dir ^ "data/" ^ which) in
-  List.map
-    Placerun_io.of_any_file
-    files
+  get_dir_contents
+    ~pred:(flip Filename.check_suffix "jplace")
+    (tests_dir ^ "data/" ^ which)
+  |> List.of_enum
+  |> List.sort compare
+  |> List.map Placerun_io.of_any_file
+
+let placerun_of_dir dir which =
+  placeruns_of_dir dir
+    |> List.find (Placerun.get_name |- (=) which)
 
 let pres_of_dir weighting criterion which =
   let tbl = Hashtbl.create 10 in
   List.iter
     (fun pr ->
-      let pre = Pre.normalize_mass no_transform (Pre.of_placerun weighting criterion pr) in
+      let pre = Pre.normalize_mass (Pre.of_placerun weighting criterion pr) in
       Hashtbl.add tbl pr.Placerun.name (pr, pre))
     (placeruns_of_dir which);
   tbl
@@ -126,7 +130,7 @@ let ( =@@ ) = farrarr_approx_equal
 
 let check_map_approx_equal message = Enum.iter2
   (fun (k1, v1) (k2, v2) ->
-    (Printf.sprintf message k1 k2)
+    (Printf.sprintf message k1 v1 k2 v2)
     @? (k1 = k2 && approx_equal v1 v2))
 
 (* *** random stuff *** *)
@@ -146,3 +150,9 @@ let make_rng seed =
   Gsl_rng.set rng (Nativeint.of_int seed);
   rng
 
+let colorset_of_strings = List.map Tax_id.of_string |- Convex.ColorSet.of_list
+
+let simple_refpkg tree_string =
+  Refpkg.of_path
+    ~ref_tree:(Newick_gtree.of_string tree_string)
+    (tests_dir ^ "data/simple.refpkg")

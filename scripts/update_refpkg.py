@@ -10,7 +10,8 @@ replacements = {
 
 def main(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('infile', type=argparse.FileType('rb+'))
+    parser.add_argument('infile', metavar='CONTENTS.json',
+                        type=argparse.FileType('rb+'))
     args = parser.parse_args(args)
 
     shutil.copyfile(args.infile.name, args.infile.name + '.bak')

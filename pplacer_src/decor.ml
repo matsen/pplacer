@@ -20,6 +20,10 @@ let assert_unit_interval x = assert(0. <= x && x <= 1.)
 (* colors! 255 is the most saturated. *)
 let color (r, g, b) = assert_ubytes [r; g; b]; Color(r, g, b)
 
+let random_color () =
+  let cv () = Random.int 192 + 64 in
+  color (cv (), cv (), cv ())
+
 (* basic colors *)
 let white = color (255,255,255)
 let black = color (0,0,0)
@@ -31,6 +35,11 @@ let blue = color (0, 0, 255)
 
 (* interesting colors *)
 let sand = color (255, 90, 90)
+
+(* Set2 from colorbrewer.org *)
+let brew_orange = color (252, 141, 98)
+let brew_green = color (102, 194, 165)
+let brew_blue = color (141, 160, 203)
 
 (* white is 255, black is 0 *)
 let gray intensity = color (intensity, intensity, intensity)
@@ -45,10 +54,10 @@ let triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2) =
 
 (* weight is the weight of a *)
 let color_avg weight c1 c2 =
-  match (c1,c2) with
-  | (Color (r1,g1,b1), Color (r2,g2,b2)) ->
+  match c1, c2 with
+    | Color (r1,g1,b1), Color (r2,g2,b2) ->
       color (triple_weighted_avg weight (r1,g1,b1) (r2,g2,b2))
-  | _ -> assert(false)
+    | _ -> invalid_arg "color_avg"
 
 (*
 (* gray_level is the amount of gray to put in *)
@@ -92,11 +101,11 @@ let ppr ff = function
 
 let to_xml = function
   | Color (r, g, b) ->
-    [Xml.Element ("color", [], [
+    [Myxml.tag "color" ~children:[
       Myxml.tag "red" (string_of_int r);
       Myxml.tag "green" (string_of_int g);
       Myxml.tag "blue" (string_of_int b);
-    ])]
+    ] ""]
   | Width w ->
     [Myxml.tag "width" (Printf.sprintf "%g" w)]
   | Dot i ->
@@ -104,11 +113,11 @@ let to_xml = function
       | 0 -> "duplications"
       | 1 -> "speciations"
       | _ -> "losses"
-    in [Xml.Element ("events", [], [
+    in [Myxml.tag "events" ~children:[
       Myxml.tag tag_name (string_of_int (i + 1));
-    ])]
+    ] ""]
   | Taxinfo (ti, name) ->
-    [Xml.Element ("taxonomy", [], Tax_id.to_xml ti @ [
-      Myxml.tag "scientific_name" name;
-    ])]
-
+    [Myxml.tag "taxonomy" ~children:(
+      Tax_id.to_xml ti @ [
+        Myxml.tag "scientific_name" name;
+      ]) ""]

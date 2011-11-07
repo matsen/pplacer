@@ -8,11 +8,10 @@ module TIAMR = AlgMap.AlgMapR (Tax_id.TaxIdMap)
  * the first time that the tax rank is less than or equal to rank *)
 let classify_at_rank td rank ti =
   let rec aux curr_ti =
-    if rank >= Tax_taxonomy.get_tax_rank td curr_ti then curr_ti
+    if rank >= Tax_taxonomy.get_tax_rank td curr_ti then
+      curr_ti
     else
-      aux
-        (try Tax_taxonomy.get_ancestor td curr_ti with
-        | Tax_taxonomy.NoAncestor _ -> assert(false))
+      Tax_taxonomy.get_ancestor td curr_ti |> aux
   in
   aux ti
 
@@ -23,9 +22,9 @@ let keymap_add_by f m =
     (TIAMR.to_pairs m)
     TIAMR.empty
 
-(* m is a taxid_algmap and this outputs a list of string_arrays, one for each
+(* m is a taxid_algmap and this outputs a list of string lists, one for each
  * placement *)
-let classif_stral td pq rank_map =
+let classif_strll td pq rank_map =
   List.fold_left
     (fun accum name ->
       List.rev_append
@@ -34,13 +33,13 @@ let classif_stral td pq rank_map =
              List.rev_append
                (List.fold_left
                   (fun accum (ti, p) ->
-                    [|
+                    [
                       name;
                       Tax_taxonomy.get_rank_name td desired_rank;
                       Tax_taxonomy.rank_name_of_tax_id td ti;
                       Tax_id.to_string ti;
                       Printf.sprintf "%g" p;
-                    |] :: accum)
+                    ] :: accum)
                   []
                   rankl)
                accum)
@@ -101,11 +100,10 @@ object (self)
   inherit refpkg_cmd ~required:true as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit sqlite_cmd () as super_sqlite
+  inherit tabular_cmd () as super_tabular
 
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria."))
-  val csv_out = flag "--csv"
-    (Plain (false, "Write .class.csv files containing CSV data."))
   val mrca_stats = flag "--mrca-stats"
     (Plain (false, "Print the number of placements just proximal to MRCAs."))
 
@@ -114,7 +112,6 @@ object (self)
   @ super_sqlite#specl
   @ [
     toggle_flag use_pp;
-    toggle_flag csv_out;
     toggle_flag mrca_stats;
   ]
 
@@ -132,19 +129,7 @@ object (self)
       | None -> false
     in
     let out_func pr =
-      if fv csv_out then
-        let prn = Placerun.get_name pr in
-        let ch = prn ^ ".class.csv" |> open_out in
-        let close () = close_out ch
-        and csvch = csv_out_channel ch |> Csv.to_out_obj in
-        output_string ch "name,desired_rank,rank,tax_id,likelihood,origin\n";
-        close, (fun pq rank_map ->
-          classif_stral td pq rank_map
-            |> List.map
-                (fun arr -> (Array.to_list arr) @ [prn])
-            |> Csv.output_all csvch)
-
-      else if sqlite_out then
+      if sqlite_out then
         let prn = Placerun.get_name pr in
         let db = self#get_db in
         let close () =
@@ -206,10 +191,21 @@ object (self)
             (Pquery.place_list pq));
 
       else
-        let ch = open_out ((Placerun.get_name pr)^".class.tab") in
-        let close () = close_out ch in
-        close, (fun pq rank_map ->
-          String_matrix.write_padded ch (Array.of_list (classif_stral td pq rank_map)))
+        let prn = Placerun.get_name pr in
+        let ch =
+          prn ^ ".class" ^ (if fv as_csv then ".csv" else ".tab")
+            |> open_out
+        and rows = ref [] in
+        (fun () ->
+          !rows
+            |> List.cons ["name"; "desired_rank"; "rank";
+                          "tax_id"; "likelihood"; "origin"]
+            |> self#write_ll_tab ~ch),
+        (fun pq rank_map ->
+          classif_strll td pq rank_map
+            |> List.map (flip List.append [prn])
+            |> List.append !rows
+            |> (:=) rows)
 
     in
     let mrcam = Refpkg.get_mrcam rp in

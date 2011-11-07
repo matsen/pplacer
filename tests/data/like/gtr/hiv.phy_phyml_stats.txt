@@ -1,8 +1,8 @@
 
  oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-                                  ---  PhyML v3.0_246M  ---                                             
-                            http://www.atgc-montpellier.fr/phyml                                          
-                         Copyright CNRS - Universite Montpellier II                                 
+                                  ---  PhyML v3.0_246M  ---
+                            http://www.atgc-montpellier.fr/phyml
+                         Copyright CNRS - Universite Montpellier II
  oooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
 
@@ -37,7 +37,7 @@
   - f(G)= 0.18676
   - f(T)= 0.22849
 
-. GTR relative rate parameters : 
+. GTR relative rate parameters :
 
   A <-> C    1.17728
   A <-> G    3.08642
@@ -47,13 +47,13 @@
   G <-> T    1.00000
 
 
-. Instantaneous rate matrix : 
+. Instantaneous rate matrix :
 
   [A---------C---------G---------T------]
-  -0.71991   0.14919   0.46003   0.11069  
-   0.40024  -1.40341   0.13813   0.86505  
-   1.04929   0.11743  -1.34908   0.18236  
-   0.20635   0.60112   0.14905  -0.95652  
+  -0.71991   0.14919   0.46003   0.11069
+   0.40024  -1.40341   0.13813   0.86505
+   1.04929   0.11743  -1.34908   0.18236
+   0.20635   0.60112   0.14905  -0.95652
 
 
 

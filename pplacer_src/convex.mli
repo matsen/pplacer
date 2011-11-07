@@ -11,7 +11,7 @@
 
 open Ppatteries
 open Stree
-type color = string
+type color = Tax_id.t
 
 module ColorSet: MapsSets.S with type elt = color
 module ColorMap: MapsSets.M with type key = color

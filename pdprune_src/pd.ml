@@ -20,7 +20,7 @@ let idblset_of_ptree exclude_ids pt =
     (fun id e s ->
       if IntSet.mem id exclude_ids then s
       else match e with
-      | Pend(id',bl,_) -> assert(id=id'); IdblSet.add {id=id;bl=bl} s
+      | Pend(id',bl,_) -> assert(id=id'); IdblSet.add {id; bl} s
       | Inte(_,_,_) -> s)
     pt
     IdblSet.empty

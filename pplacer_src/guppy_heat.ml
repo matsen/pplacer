@@ -5,7 +5,7 @@ open Guppy_cmdobjs
 let named_arr_list_of_csv fname =
   List.map
     (function
-      | [] -> assert(false)
+      | [] -> failwith ("empty csv row in " ^ fname)
       | name::entries ->
           (name, Array.of_list (List.map float_of_string entries)))
     (Csv.load fname)
@@ -40,13 +40,12 @@ object (self)
       (named_arr_list_of_csv fname)
 
   method action = function
-    | [] -> ()
     | pathl ->
-        let t = self#get_decor_ref_tree in
+        let t = self#maybe_numbered self#get_decor_ref_tree in
         List.iter
           (fun fname ->
-            Phyloxml.pxdata_to_channel self#out_channel
-              (Phyloxml.pxdata_of_named_gtrees
-                (self#csv_to_named_trees t fname)))
+            Phyloxml.named_gtrees_to_channel
+              self#out_channel
+              (self#csv_to_named_trees t fname))
           pathl
 end

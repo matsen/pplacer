@@ -103,16 +103,31 @@ let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
   let process = process_cmd prg_name display_map cmd_map
   and args = ref []
   and batchfile = ref None in
+  let rec help_fun () =
+    print_avail_cmds prg_name display_map;
+    Printf.sprintf "\nAdditional flags for %s:" prg_name
+      |> Arg.usage_string (align_with_space argl)
+      |> print_string;
+    exit 1
+  (* calling align_with_space here is illegal with a `let rec`. *)
+  and argl = [
+    "--version", Arg.Unit (fun () -> print_endline version; exit 0),
+    "Print version and exit";
+    "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map; exit 0),
+    "Print a list of the available commands.";
+    "--batch", Arg.String (fun fname ->
+      batchfile := Some (Batchfile.of_file fname)),
+    "Run the provided batch file of guppy commands";
+    "--quiet", Arg.Unit (fun () -> verbosity := 0),
+    "Don't write messages to stdout (unless explicitly requested).";
+    "--help", Arg.Unit help_fun,
+    "Display this list of options and subcommands";
+    "-help", Arg.Unit help_fun,
+    "Display this list of options and subcommands";
+  ]
+  in
   Arg.parse
-    [
-      "--version", Arg.Unit (fun () -> print_endline version; exit 0),
-      "Print version and exit";
-      "--cmds", Arg.Unit (fun () -> print_avail_cmds prg_name display_map; exit 0),
-      "Print a list of the available commands.";
-      "--batch", Arg.String (fun fname ->
-        batchfile := Some (Batchfile.of_file fname)),
-      "Run the provided batch file of guppy commands";
-    ]
+    (align_with_space argl)
     (* Sys.argv and Arg.current are used here so that /this/ invocation of
        Arg.parse won't try to parse the flags that are destined for the
        subcommand. *)
@@ -149,11 +164,7 @@ type 'a flag = {
   described: 'a described;
 }
 
-let flag opt described = {
-  value = ref None;
-  opt = opt;
-  described = described;
-}
+let flag opt described = {value = ref None; opt; described}
 
 (* fv is short for flag value. It fetches the value. *)
 let fv f = match !(f.value) with
@@ -191,9 +202,11 @@ object (self)
   method virtual action: string list -> unit
 
   method run argl =
-    let argl = wrap_parse_argv argl (self#specl) (self#usage) in
+    let argl = wrap_parse_argv argl (align_with_space self#specl) self#usage in
     try
       self#action argl
     with
-      | No_default (name, opt) -> Printf.printf "no option provided for %s flag (%s)\n" name opt
+      | No_default (name, opt) ->
+        Printf.printf "no option provided for %s flag (%s)\n" name opt;
+        exit 1
 end

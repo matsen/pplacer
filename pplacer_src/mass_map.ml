@@ -38,19 +38,19 @@ module Pre = struct
 
   type multimul = {
     (* multiplicity *)
-    multi: int;
+    multi: float;
     (* mul is Mass Unit List *)
     (* list across mass for a given placement. *)
     mul: mass_unit list;
     }
 
   let mul_total_mass = List.fold_left (fun x mu -> x +. mu.mass) 0.
-  let multimul_total_mass transform mumu =
-    (transform mumu.multi) *. (mul_total_mass mumu.mul)
+  let multimul_total_mass mumu =
+    mumu.multi *. (mul_total_mass mumu.mul)
   let scale_multimul scalar mumu =
     {mumu with mul = List.map (scale_mu scalar) mumu.mul}
-  let unit_mass_scale transform mumu =
-    scale_multimul (1. /. (multimul_total_mass transform mumu)) mumu
+  let unit_mass_scale mumu =
+    scale_multimul (1. /. (multimul_total_mass mumu)) mumu
 
 
   (* list across pqueries *)
@@ -74,7 +74,7 @@ module Pre = struct
     }
 
   let of_pquery_list weighting criterion pql =
-    let mass_per_read = 1. /. (float_of_int (Pquery.total_multiplicity pql)) in
+    let mass_per_read = 1. /. (Pquery.total_multiplicity pql) in
     List.map
       (multimul_of_pquery weighting criterion mass_per_read)
       pql
@@ -91,18 +91,17 @@ module Pre = struct
       invalid_arg ((String.concat " " s)^" unplaced in "^
                      (Placerun.get_name pr))
 
-  let total_mass transform =
-    let f = multimul_total_mass transform in
-    List.fold_left (fun x mm -> x +. f mm) 0.
+  let total_mass =
+    List.fold_left (fun x mm -> x +. multimul_total_mass mm) 0.
 
   let scale_mass scalar pre =
     List.map (scale_multimul scalar) pre
 
-  let normalize_mass transform pre =
-    scale_mass (1. /. (total_mass transform pre)) pre
+  let normalize_mass pre =
+    scale_mass (1. /. (total_mass pre)) pre
 
-  let unitize_mass transform pre =
-    List.map (unit_mass_scale transform) pre
+  let unitize_mass pre =
+    List.map unit_mass_scale pre
 
   (* Pretty printing. *)
   let ppr_mass_unit ff mu =
@@ -112,7 +111,7 @@ module Pre = struct
   let ppr_mul ff mul = Ppr.ppr_list ppr_mass_unit ff mul
 
   let ppr_multimul ff mmul =
-    Format.fprintf ff "@[{multi = %d; mul = %a}@]" mmul.multi ppr_mul mmul.mul
+    Format.fprintf ff "@[{multi = %g; mul = %a}@]" mmul.multi ppr_mul mmul.mul
 
   let ppr ff pre = Ppr.ppr_list ppr_multimul ff pre
 
@@ -127,17 +126,15 @@ module Indiv = struct
   type v = {distal_bl: float; mass: float}
   type t = v list IntMap.t
 
-  let of_pair (bl, mass) = {distal_bl = bl; mass = mass}
-  let to_pair {distal_bl = bl; mass = mass} = bl, mass
+  let of_pair (distal_bl, mass) = {distal_bl; mass}
+  let to_pair {distal_bl; mass} = distal_bl, mass
 
-  (* factor is a multiplicative factor to multiply the mass by.
-   * transform is an int -> float function which given a multiplicity spits out
-   * a float weight as a multiple for the mass. *)
-  let of_pre transform ?factor pmm =
+  (* factor is a multiplicative factor to multiply the mass by. *)
+  let of_pre ?factor pmm =
     let factorf = match factor with | None -> 1. | Some x -> x in
     List.fold_left
       (fun m' multimul ->
-        let scalar = factorf *. (transform multimul.Pre.multi) in
+        let scalar = factorf *. multimul.Pre.multi in
         (List.fold_left
           (fun m mu ->
             IntMap.add_listly
@@ -149,20 +146,20 @@ module Indiv = struct
       IntMap.empty
       pmm
 
-  let of_placerun transform weighting criterion pr =
-    of_pre transform (Pre.of_placerun weighting criterion pr)
+  let of_placerun weighting criterion pr =
+    of_pre (Pre.of_placerun weighting criterion pr)
 
 (* sort the placements along a given edge according to their location on
  * the edge in an increasing manner. *)
   let sort m =
     IntMap.map
-      (List.sort ~cmp:(fun {distal_bl = a1} {distal_bl = a2} -> compare a1 a2))
+      (List.sort (comparing (fun {distal_bl} -> distal_bl)))
       m
 
   let total_mass m =
     IntMap.fold
       (fun _ mass_l accu ->
-        List.fold_right (fun {mass = mass} -> ( +. ) mass) mass_l accu)
+        List.fold_right (fun {mass} -> ( +. ) mass) mass_l accu)
       m
       0.
 
@@ -170,12 +167,21 @@ module Indiv = struct
     IntMap.map
       (List.map (fun v -> {v with mass = v.mass *. scalar}))
 
+  let work_moving_to vl pos =
+    List.fold_left
+      (fun tot {distal_bl; mass} ->
+        abs_float (distal_bl -. pos) *. mass +. tot)
+      0.
+      vl
+
+  let v_mass = List.fold_left (fun tot {mass} -> tot +. mass) 0.
+
   let ppr =
     IntMap.ppr_gen
       (fun ff l ->
         List.iter
-          (fun {distal_bl = distal; mass = mass} ->
-            Format.fprintf ff "@[{d = %g; m = %g}@]" distal mass)
+          (fun {distal_bl; mass} ->
+            Format.fprintf ff "@[{d = %g; m = %g}@]" distal_bl mass)
           l)
 
 end
@@ -205,11 +211,11 @@ module By_edge = struct
       Mass_map.By_edge.normalize_mass (IntMap.map (hashtbl_find_zero h) ti_imap)
    * *)
 
-  let of_pre transform ?factor pre =
-    of_indiv (Indiv.of_pre transform ?factor pre)
+  let of_pre ?factor pre =
+    of_indiv (Indiv.of_pre ?factor pre)
 
-  let of_placerun transform weighting criterion pr =
-    of_indiv (Indiv.of_placerun transform weighting criterion pr)
+  let of_placerun weighting criterion pr =
+    of_indiv (Indiv.of_placerun weighting criterion pr)
 
   (* we add zeroes in where things are empty *)
   let fill_out_zeroes mass_map ref_tree =
@@ -225,9 +231,9 @@ module By_edge = struct
       mass_map
       (Stree.node_ids (Gtree.get_stree ref_tree))
 
-  let of_placerun_with_zeroes transform weighting criterion pr =
+  let of_placerun_with_zeroes weighting criterion pr =
     fill_out_zeroes
-      (of_placerun transform weighting criterion pr)
+      (of_placerun weighting criterion pr)
       (Placerun.get_ref_tree pr)
 
   let total_mass m = IntMap.fold (fun _ v -> ( +. ) v) m 0.
@@ -239,20 +245,19 @@ module By_edge = struct
 end
 
 (* multiplicity transforms for of_pre *)
-let no_transform = float_of_int
+let no_transform = identity
 let unit_transform _ = 1.
-let asinh_transform x = Gsl_math.asinh (float_of_int x)
+let log_transform x = log x
+let asinh_transform x = Gsl_math.asinh x
 
-let transform_map =
-  List.fold_right
-    (fun (k,v) -> StringMap.add k v)
-    [
-      "", no_transform;
-      "no_trans", no_transform;
-      "unit", unit_transform;
-      "asinh", asinh_transform;
-    ]
-    StringMap.empty
+let transform_map = StringMap.of_pairlist
+  [
+    "", no_transform;
+    "no_trans", no_transform;
+    "unit", unit_transform;
+    "log", log_transform;
+    "asinh", asinh_transform;
+  ]
 
 let transform_of_str s =
   try StringMap.find s transform_map with

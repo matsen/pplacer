@@ -50,12 +50,8 @@ let ppr ff ti =
   Format.pp_print_string ff (to_string ti)
 
 let to_xml = function
-  | TaxStr s -> [Myxml.tag "id" ~attributes:[("provider", "ncbi_taxonomy")] s]
+  | TaxStr s -> [Myxml.tag "id" ~attrs:[("provider", "ncbi_taxonomy")] s]
   | NoTax -> []
-
-let write_xml ch = function
-  | TaxStr s -> Printf.fprintf ch "<id provider=\"ncbi_taxonomy\">%s</id>\n" s
-  | NoTax -> ()
 
 
 (* *** Maps and Sets *** *)

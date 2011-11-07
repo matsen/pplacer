@@ -13,7 +13,7 @@ let parse_args () =
 
 
 let () =
-  if not !Sys.interactive then begin
+  if not !Sys.interactive then begin Sparse.error_wrap (fun () ->
     let (files, prefs) = parse_args () in
     if Prefs.version prefs then begin
       print_endline Version.version;
@@ -21,13 +21,12 @@ let () =
     end;
     Prefs.check prefs;
     Gsl_error.init ();
+    Random.self_init ();
     Check.directory (Prefs.out_dir prefs);
     if List.length files = 0 then
       print_endline
         "Warning: pplacer couldn't find any sequences to place. Please supply \
         an alignment with sequences to place as an argument at the end of \
         the command line.";
-    List.iter (Pplacer_run.run_file prefs) files;
+    List.iter (Pplacer_run.run_file prefs) files)
   end
-
-

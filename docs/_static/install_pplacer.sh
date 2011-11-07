@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 PREFIX=`pwd`/godi
 PATH=$PREFIX/bin:$PREFIX/sbin:$PATH
@@ -17,26 +18,29 @@ if [ ${#gsl_config} -gt 10  ]; then
     exit 1
 fi
 
-#install ocaml via GODI
-wget http://download.camlcity.org/download/godi-rocketboost-20091222.tar.gz
-tar xzf godi-rocketboost-20091222.tar.gz
-cd godi-rocketboost-20091222
-./bootstrap --prefix=$PREFIX
+CDN=http://c715892.r92.cf2.rackcdn.com
+
+# install ocaml via GODI.
+wget -O- $CDN/godi-rocketboost-20110811.tar.gz | tar xzf -
+cd godi-rocketboost-20110811
+./bootstrap --prefix=$PREFIX --section 3.12 --batch --no-stage2
 echo "GODI_BASEPKG_PCRE=yes" >> $PREFIX/etc/godi.conf
 ./bootstrap_stage2
 
-#build godi packages
+# build godi-available packages.
 godi_perform -build godi-ocamlgsl
-godi_perform -build godi-xml-light
-godi_perform -build godi-ocaml-csv
-godi_perform -build godi-ounit
 godi_perform -build godi-sqlite3
 cd ..
 
-#build pplacer
-wget -O matsen-pplacer.tar.gz http://github.com/matsen/pplacer/tarball/master
-tar -xzf matsen-pplacer.tar.gz
+# build batteries, camomile, and ocaml-csv.
+wget $CDN/odb.ml
+ocaml odb.ml \
+    --have-perms \
+    --configure-flags-global "--datadir $PREFIX/share" \
+    ounit batteries csv xmlm
+
+# build pplacer.
+wget --no-check-certificate http://github.com/matsen/pplacer/tarball/master \
+    -O- | tar xzf -
 cd matsen-pplacer-*/
 make
-
-

@@ -1,6 +1,8 @@
 (* preferences data type and functions.
  *)
 
+open Ppatteries
+
 type prefs =
   {
    (* basics *)
@@ -17,8 +19,13 @@ type prefs =
     calc_pp : bool ref;
     uniform_prior : bool ref;
     informative_prior : bool ref;
+    prior_lower : float ref;
     pp_rel_err : float ref;
     (* playing ball *)
+    fig_cutoff : float ref;
+    evaluate_all : bool ref;
+    evaluation_discrepancy: string ref;
+    fig_tree : string ref;
     max_strikes : int ref;
     strike_box : float ref;
     max_pitches : int ref;
@@ -30,7 +37,6 @@ type prefs =
     gamma_n_cat : int ref;
     gamma_alpha : float ref;
     (* reading and writing *)
-    verb_level : int ref;
     write_masked : bool ref;
     only_write_best : bool ref;
     (* other *)
@@ -43,10 +49,10 @@ type prefs =
     pre_masked_file : string ref;
     map_fasta : string ref;
     map_cutoff : float ref;
-    map_info : bool ref;
     map_identity : bool ref;
     keep_at_most : int ref;
     keep_factor : float ref;
+    mrca_class : bool ref;
   }
 
 
@@ -67,8 +73,13 @@ let defaults () =
     calc_pp = ref false;
     uniform_prior = ref false;
     informative_prior = ref false;
+    prior_lower = ref 0.;
     pp_rel_err = ref 0.01;
     (* playing ball *)
+    fig_cutoff = ref 0.;
+    evaluate_all = ref false;
+    evaluation_discrepancy = ref "";
+    fig_tree = ref "";
     max_strikes = ref 6;
     strike_box = ref 3.;
     max_pitches = ref 40;
@@ -80,7 +91,6 @@ let defaults () =
     gamma_n_cat = ref 1;
     gamma_alpha = ref 1.;
     (* reading and writing *)
-    verb_level = ref 1;
     write_masked = ref false;
     only_write_best = ref false;
     (* other *)
@@ -93,10 +103,10 @@ let defaults () =
     pre_masked_file = ref "";
     map_fasta = ref "";
     map_cutoff = ref 0.8;
-    map_info = ref false;
     map_identity = ref false;
     keep_at_most = ref 7;
     keep_factor = ref 0.01;
+    mrca_class = ref false;
   }
 
 
@@ -118,7 +128,12 @@ let initial_tolerance p = !(p.initial_tolerance)
 let calc_pp           p = !(p.calc_pp)
 let uniform_prior     p = !(p.uniform_prior)
 let informative_prior p = !(p.informative_prior)
+let prior_lower       p = !(p.prior_lower)
 let pp_rel_err        p = !(p.pp_rel_err)
+let fig_cutoff        p = !(p.fig_cutoff)
+let evaluate_all      p = !(p.evaluate_all)
+let evaluation_discrepancy p = !(p.evaluation_discrepancy)
+let fig_tree          p = !(p.fig_tree)
 let max_strikes       p = !(p.max_strikes)
 let strike_box        p = !(p.strike_box)
 let max_pitches       p = !(p.max_pitches)
@@ -128,7 +143,6 @@ let emperical_freqs   p = !(p.emperical_freqs)
 let model_name        p = !(p.model_name)
 let gamma_n_cat       p = !(p.gamma_n_cat)
 let gamma_alpha       p = !(p.gamma_alpha)
-let verb_level        p = !(p.verb_level)
 let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
 let ref_dir           p = !(p.ref_dir)
@@ -142,10 +156,10 @@ let no_pre_mask       p = !(p.no_pre_mask)
 let pre_masked_file   p = !(p.pre_masked_file)
 let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
-let map_info          p = !(p.map_info)
 let map_identity      p = !(p.map_identity)
 let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
+let mrca_class        p = !(p.mrca_class)
 
 
 (* arguments and preferences *)
@@ -154,7 +168,7 @@ let spec_with_default symbol setfun p help =
   (symbol, setfun p, Printf.sprintf help !p)
 
 let specl prefs =
-  [
+  align_with_space [
     (* short *)
 "-c", Arg.Set_string prefs.refpkg_path,
 "Specify the path to the reference package.";
@@ -190,11 +204,21 @@ spec_with_default "--pp-rel-err" (fun o -> Arg.Set_float o) prefs.pp_rel_err
 "Use a uniform prior rather than exponential.";
 "--inform-prior", Arg.Set prefs.informative_prior,
 "Use an informative exponential prior based on rooted distance to leaves.";
+spec_with_default "--prior-lower" (fun o -> Arg.Set_float o) prefs.prior_lower
+"Lower bound for the informative prior mean. Default is %g.";
 spec_with_default "--start-pend" (fun o -> Arg.Set_float o) prefs.start_pend
 "Starting pendant branch length. Default is %g.";
 spec_with_default "--max-pend" (fun o -> Arg.Set_float o) prefs.max_pend
 "Set the maximum ML pendant branch length. Default is %g.";
 (* baseball *)
+spec_with_default "--fig-cutoff" (fun o -> Arg.Set_float o) prefs.fig_cutoff
+"The cutoff for determining figs. Default is %g; specify 0 to disable.";
+"--fig-eval-all", Arg.Set prefs.evaluate_all,
+"Evaluate all likelihoods to ensure that the best location was selected.";
+"--fig-eval-discrepancy-tree", Arg.Set_string prefs.evaluation_discrepancy,
+"Write out a tree showing the discrepancies between the best complete and observed locations.";
+"--fig-tree", Arg.Set_string prefs.fig_tree,
+"Write out a tree showing the figs on the tree.";
 spec_with_default "--max-strikes" (fun o -> Arg.Set_int o) prefs.max_strikes
 "Maximum number of strikes for baseball. 0 -> no ball playing. Default is %d.";
 spec_with_default "--strike-box" (fun o -> Arg.Set_float o) prefs.strike_box
@@ -208,7 +232,7 @@ spec_with_default "--fantasy-frac" (fun o -> Arg.Set_float o) prefs.fantasy_frac
 (* other *)
 "--write-masked", Arg.Set prefs.write_masked,
 "Write alignment masked to the region without gaps in the query.";
-spec_with_default "--verbosity" (fun o -> Arg.Set_int o) prefs.verb_level
+spec_with_default "--verbosity" (fun o -> Arg.Set_int o) Ppatteries.verbosity
 "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
 "--out-dir", Arg.Set_string prefs.out_dir,
 "Specify the directory to write place files to.";
@@ -228,14 +252,14 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "Specify a file to write out MAP sequences for MRCAs and corresponding placements.";
 spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
 "Specify cutoff for inclusion in MAP sequence file. Default is %g.";
-"--map-info", Arg.Set prefs.map_info,
-"Write file describing the 'diagnostic' mutations for various clades.";
 "--map-identity", Arg.Set prefs.map_identity,
 "Add the percent identity of the query sequence to the nearest MAP sequence to each placement.";
 spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
 "The maximum number of placements we keep. Default is %d.";
 spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Throw away anything that has ml_ratio below keep_factor times (best ml_ratio). Default is %g.";
+"--mrca-class", Arg.Set prefs.mrca_class,
+"Classify with MRCAs instead of a painted tree.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

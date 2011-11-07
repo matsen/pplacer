@@ -18,36 +18,38 @@ let cat_file_to_channel fname out_ch =
     while true; do Printf.fprintf out_ch "%s\n" (input_line in_ch) done
   with End_of_file -> close_in in_ch
 
-
-let () =
-
-  List.iter check_directory [docs_dir; details_dir; generated_dir;];
-
-  let guppy_commands = Guppy_commands.command_list ()
-    |> List.map snd
-    |> List.flatten
-  in
+let command_list_of_subcommand_program (prefix, command_list) =
+  let commands = command_list |> List.map snd |> List.flatten in
   let command_matrix =
     Array.append
       [|[|"Command"; "Description"|]|]
       (Array.of_list
          (List.sort
+            compare
             (List.map
                (fun (name, cmd) ->
-                 [|Printf.sprintf ":ref:`%s <guppy_%s>`" name name;
+                 [|Printf.sprintf ":ref:`%s <%s_%s>`" name prefix name;
                    (cmd ())#desc|])
-               guppy_commands)))
+               commands)))
   in
-  let guppy_out = generated_dir ^ "guppy.rst" |> open_out in
-  details_dir ^ "guppy.rst"
+  let index_out = Printf.sprintf "%s%s.rst" generated_dir prefix |> open_out in
+  Printf.sprintf "%s%s.rst" details_dir prefix
     |> File.lines_of
     |> Enum.iter
         (fun line ->
-          if line = ".. guppy-command-table" then
-            Rst.write_table guppy_out command_matrix
+          if line =  ".. command-table" then
+            Rst.write_table index_out command_matrix
           else
-            Printf.fprintf guppy_out "%s\n" line);
-  close_out guppy_out;
+            Printf.fprintf index_out "%s\n" line);
+  close_out index_out;
+  List.map
+    (fun (name, pre_o) -> name, Some prefix, pre_o)
+    commands
+
+
+let () =
+
+  List.iter check_directory [docs_dir; details_dir; generated_dir;];
 
   List.iter
     (fun (name, prefix, pre_o) ->
@@ -90,7 +92,10 @@ let () =
       print_endline ("Wrote "^generated_dir^rst_name^"...")
 
     )
-    (("pplacer", None, (fun () -> new Prefs.pplacer_cmd ()))::
-        (List.map
-           (fun (name, pre_o) -> name, Some "guppy", pre_o)
-           guppy_commands))
+    (("pplacer", None, (fun () -> new Prefs.pplacer_cmd ()))
+     :: (List.map
+           command_list_of_subcommand_program
+           ["guppy", Guppy_commands.command_list ();
+            "rppr", Rppr_commands.command_list ()]
+         |> List.flatten))
+

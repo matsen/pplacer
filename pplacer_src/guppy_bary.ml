@@ -5,18 +5,18 @@ open Ppatteries
 let prel_of_prl weighting criterion prl =
   List.map (Mass_map.Pre.of_placerun weighting criterion) prl
 
-let make_bary_tree transform t prel =
+let make_bary_tree t prel =
   let bary_map =
     IntMap.of_pairlist_listly
       (List.mapi
         (fun i pre ->
-          let (loc, pos) = Barycenter.of_pre transform t pre in
+          let (loc, pos) = Barycenter.of_pre t pre in
           (loc,
             (pos,
             Gtree.Internal_node,
             (fun bl ->
               new Decor_bark.decor_bark
-                (`Of_bl_name_boot_decor
+                (`Of_bl_node_edge_label_decor
                    (Some bl, None, None, [Decor.dot i]))))))
         prel)
   in
@@ -28,16 +28,20 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
+  inherit numbered_tree_cmd () as super_numbered_tree
 
-  method specl = super_mass#specl @ super_output#specl
+  method specl =
+    super_mass#specl
+  @ super_output#specl
+  @ super_numbered_tree#specl
 
   method desc =
 "draws the barycenter of a placement collection on the reference tree"
   method usage = "usage: bary [options] placefile[s]"
 
   method private placefile_action prl =
-    let t = Mokaphy_common.list_get_same_tree prl
-    and transform, weighting, criterion = self#mass_opts
+    let t = Mokaphy_common.list_get_same_tree prl |> self#maybe_numbered
+    and weighting, criterion = self#mass_opts
     in
     let prel = prel_of_prl weighting criterion prl
     in
@@ -49,6 +53,6 @@ object (self)
       Phyloxml.named_gtree_to_file
         fname
         (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
-        (make_bary_tree transform t prel)
+        (make_bary_tree t prel)
     end
 end

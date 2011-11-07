@@ -12,24 +12,22 @@ let intmap_of_arr a =
 let trees_to_file tree_fmt prefix trees =
   match tree_fmt with
   | Newick -> Newick_gtree.tree_list_to_file trees (prefix^".tre")
-  | Phyloxml ->
-    let pd = Phyloxml.pxdata_of_gtrees trees in
-    Phyloxml.pxdata_to_file (prefix^".xml") pd
+  | Phyloxml -> Phyloxml.gtrees_to_file (prefix^".xml") trees
 
-let make_zero_leaf decor_list bl name =
+let make_zero_leaf decor_list bl node_label =
   Gtree.Subtree
     (Gtree.gtree
       (Stree.leaf 0)
       (IntMap.add
         0
         (new Decor_bark.decor_bark
-          (`Of_bl_name_boot_decor
-            (Some bl, Some name, None, decor_list)))
+          (`Of_bl_node_edge_label_decor
+            (Some bl, Some node_label, None, decor_list)))
         IntMap.empty))
 
 let decor_bark_of_bl bl =
   new Decor_bark.decor_bark
-    (`Of_bl_name_boot_decor (Some bl, None, None, []))
+    (`Of_bl_node_edge_label_decor (Some bl, None, None, []))
 
 (* given a function that takes a location and a list of somethings and returns a
  * (where, tree) list for that location, make a tree containing those extra

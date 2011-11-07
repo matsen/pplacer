@@ -40,7 +40,7 @@ object (self)
 
   method private placefile_action prl =
     self#check_placerunl prl;
-    let transform, weighting, criterion = self#mass_opts
+    let weighting, criterion = self#mass_opts
     and scale = fv scale
     and write_n = fv write_n
     and refpkgo = self#get_rpo
@@ -53,7 +53,7 @@ object (self)
     in
     let data =
       List.map
-        (Guppy_splitify.splitify_placerun transform weighting criterion)
+        (Guppy_splitify.splitify_placerun weighting criterion)
         prl
     in
     let (eval, evect) =
@@ -68,7 +68,7 @@ object (self)
       (List.map
         (fun (eval, evect) ->
           (Some (string_of_float eval),
-          super_heat#heat_tree_of_float_arr t evect))
+          super_heat#heat_tree_of_float_arr t evect |> self#maybe_numbered))
         combol);
     save_named_fal
       (prefix^".rot")

@@ -74,6 +74,53 @@ object (self)
 
 end
 
+class tabular_cmd ?(default_to_csv = false) () =
+object (self)
+  inherit output_cmd () as super_output
+
+  val as_csv =
+    if default_to_csv then
+      flag "--no-csv"
+        (Plain (true, "Output the results as a padded matrix instead of csv."))
+    else
+      flag "--csv"
+        (Plain (false, "Output the results as csv instead of a padded matrix."))
+
+  method specl =
+    super_output#specl
+  @ [toggle_flag as_csv]
+
+  method private channel_opt ch =
+    match ch with
+      | Some x -> x
+      | None -> self#out_channel
+
+  method private write_csv ?ch data =
+    self#channel_opt ch
+      |> csv_out_channel
+      |> Csv.to_out_obj
+      |> flip Csv.output_all data
+
+  method private write_matrix ?ch data =
+    self#channel_opt ch
+      |> flip String_matrix.write_padded data
+
+  method private write_ll_tab ?ch data =
+    if fv as_csv then self#write_csv ?ch data
+    else
+      List.map Array.of_list data
+        |> Array.of_list
+        |> self#write_matrix ?ch
+
+  method private write_aa_tab ?ch data =
+    if not (fv as_csv) then self#write_matrix ?ch data
+    else
+      Array.map Array.to_list data
+        |> Array.to_list
+        |> self#write_csv ?ch
+
+end
+
 class rng_cmd () =
 object
   val seed = flag "--seed"
@@ -143,7 +190,7 @@ let placerun_by_name fname =
   if SM.mem fname !placerun_map then
     SM.find fname !placerun_map
   else begin
-    let pr = Placerun_io.filtered_of_file fname in
+    let pr = Placerun_io.of_any_file fname in
     if 0 = Placerun.n_pqueries pr then failwith (fname^" has no placements!");
     placerun_map := SM.add fname pr !placerun_map;
     pr
@@ -153,8 +200,10 @@ class virtual placefile_cmd () =
 object (self)
   method virtual private placefile_action: 'a Placerun.placerun list -> unit
   method action fnamel =
-    let prl = List.map placerun_by_name fnamel in
-    self#placefile_action prl
+    fnamel
+      |> List.map (Placerun_io.maybe_of_split_file ~getfunc:placerun_by_name)
+      |> List.flatten
+      |> self#placefile_action
 
   method private write_placefile invocation fname pr =
     if fname.[0] = '@' then
@@ -170,25 +219,25 @@ end
 
 (* *** mass and kr-related objects *** *)
 
-class mass_cmd () =
-object
+class mass_cmd ?(weighting_allowed = true) () =
+object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for the weight."))
   val weighted = flag "--unweighted"
     (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
-  val transform = flag "--transform"
-    (Plain ("", "A transform to apply to the read multiplicities before calculating. \
-    Options are 'log' and 'unit'. Default is no transform."))
   method specl = [
     toggle_flag use_pp;
-    toggle_flag weighted;
-    string_flag transform;
   ]
+    |> if weighting_allowed then
+        toggle_flag weighted |> List.cons
+      else identity
+
+  method private criterion =
+    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
 
   method private mass_opts = (
-    Mass_map.transform_of_str (fv transform),
     (if fv weighted then Mass_map.Weighted else Mass_map.Unweighted),
-    (if fv use_pp then Placement.post_prob else Placement.ml_ratio)
+    self#criterion
   )
 end
 
@@ -232,8 +281,27 @@ end
 
 (* *** visualization-related objects *** *)
 
+class numbered_tree_cmd () =
+object
+  val numbered = flag "--node-numbers"
+    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
+
+  method specl = [
+    toggle_flag numbered;
+  ]
+
+  method private maybe_numbered: (<to_numbered: int -> 'a; ..> as 'a) Gtree.gtree -> 'a Gtree.gtree =
+    if fv numbered then
+      Gtree.mapi_bark_map (fun i x -> x#to_numbered i)
+    else
+      identity
+
+end
+
 class fat_cmd () =
 object(self)
+  inherit numbered_tree_cmd () as super_numbered_tree
+
   val min_fat_bl = flag "--min-fat"
     (Formatted (1e-2, "The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: %g"))
   val total_width = flag "--total-width"
@@ -244,7 +312,7 @@ object(self)
     float_flag min_fat_bl;
     float_flag total_width;
     float_flag width_multiplier;
-  ]
+  ] @ super_numbered_tree#specl
 
   (* Given an absolute total quantity, come up with a scaling which will make
    * that total. *)
@@ -313,7 +381,7 @@ object(self)
     ]
 
   method private color_of_heat heat =
-    if heat >= 0. then Decor.red else Decor.blue
+    if heat >= 0. then Decor.brew_orange else Decor.brew_green
 
   method private gray_black_of_heat heat =
     if heat >= 0. then Decor.gray 180 else Decor.black
@@ -347,27 +415,22 @@ end
 
 class classic_viz_cmd () =
 object (self)
+  inherit numbered_tree_cmd () as super_numbered_tree
   val xml = flag "--xml"
     (Plain (false, "Write phyloXML (with colors) for all visualizations."))
-  val show_node_numbers = flag "--node-numbers"
-    (Plain (false, "Put the node numbers in where the bootstraps usually go."))
 
   method specl = [
     toggle_flag xml;
-    toggle_flag show_node_numbers;
-  ]
+  ] @ super_numbered_tree#specl
 
   method private fmt =
     if fv xml then Visualization.Phyloxml
     else Visualization.Newick
 
   method private decor_ref_tree pr =
-    let ref_tree = Placerun.get_ref_tree pr in
-    Decor_gtree.of_newick_gtree
-      (if not (fv show_node_numbers) then
-          ref_tree
-       else
-          (Newick_gtree.make_boot_id ref_tree))
+    Placerun.get_ref_tree pr
+      |> self#maybe_numbered
+      |> Decor_gtree.of_newick_gtree
 
   method private write_trees suffix named_trees = function
     | Directory (dir, prefix) ->

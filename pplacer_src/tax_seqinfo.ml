@@ -12,7 +12,7 @@ type t =
 
 type seqinfo_map = t StringMap.t
 
-let tax_id_by_name sim s =
+let tax_id_by_node_label sim s =
   try (StringMap.find s sim).tax_id with
   | Not_found -> failwith ("tax_id for "^s^" not found!")
 

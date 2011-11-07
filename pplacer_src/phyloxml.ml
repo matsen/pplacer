@@ -1,114 +1,65 @@
 open Ppatteries
+open Myxml
 
-exception Multiple_root_clades
+let phyloxml_ns = "http://www.phyloxml.org"
+let xsi_ns = "http://www.w3.org/2001/XMLSchema-instance"
+let phyns s = phyloxml_ns, s
 
-let phyloxml_attrs =
-  [
-    "xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance";
-    "xsi:schemaLocation", "http://www.phyloxml.org/1.10/phyloxml.xsd";
-    "xmlns", "http://www.phyloxml.org";
-  ]
+let root_tag =
+  phyns "phyloxml",
+  [(Xmlm.ns_xmlns, "xmlns"), phyloxml_ns;
+   (Xmlm.ns_xmlns, "xsi"), xsi_ns;
+   (xsi_ns, "schemaLocation"), "http://www.phyloxml.org/1.10/phyloxml.xsd"]
 
-type pxtree =
-  {
-    name: string option;
-    clade: Xml.xml;
-    attribs: (string * string) list;
-  }
+let ns_prefix = function
+  | x when x = phyloxml_ns -> Some ""
+  | x when x = xsi_ns -> Some "xsi"
+  | _ -> None
 
-type pxdata =
-  {
-    trees: pxtree list;
-    data_attribs: (string * string) list;
-  }
+let rec emit_tag out {name; attrs; contents; children} =
+  out (`El_start (phyns name, List.map (first phyns) attrs));
+  if contents <> "" then out (`Data contents);
+  List.iter (emit_tag out) children;
+  out `El_end
 
-let assert_phylogeny t = assert("phylogeny" = Xml.tag t)
-let assert_clade x = assert("clade" = Xml.tag x)
+let rec emit_stree out bark_map stree =
+  out (`El_start (phyns "clade", []));
+  let top = Stree.top_id stree in
+  IntMap.Exceptionless.find top bark_map
+    |> Option.may (fun b -> List.iter (emit_tag out) b#to_xml);
+  begin match stree with
+    | Stree.Node (_, subtrees) -> List.iter (emit_stree out bark_map) subtrees
+    | _ -> ()
+  end;
+  out `El_end
 
-let pcdata_inners_of_xml x =
-  match Xml.children x with
-  | [pcd] -> Xml.pcdata pcd
-  | _ -> assert false
+let emit_gtree out (name, gtree) =
+  out (`El_start (phyns "phylogeny", [phyns "rooted", "true"]));
+  Option.may (tag "name" |- emit_tag out) name;
+  emit_stree out (Gtree.get_bark_map gtree) (Gtree.get_stree gtree);
+  out `El_end
 
-let pxtree_of_xml x =
-  assert_phylogeny x;
-  match Xml.children x with
-  | [namex; clade] ->
-      assert("name" = Xml.tag namex);
-      assert_clade(clade);
-      { name = Some (pcdata_inners_of_xml namex);
-        clade = clade;
-        attribs = Xml.attribs x; }
-  | [clade] ->
-      assert_clade(clade);
-      { name = None; clade = clade; attribs = Xml.attribs x; }
-  | _ -> raise Multiple_root_clades
+let named_gtrees_to_output l out =
+  out (`Dtd None);
+  out (`El_start root_tag);
+  List.iter (emit_gtree out) l;
+  out `El_end
 
-let xml_of_pxtree t =
-  let children =
-    match t.name with
-    | None -> []
-    | Some n -> [Myxml.tag "name" n]
-  in
-  Xml.Element("phylogeny", t.attribs, children @ [t.clade])
+let output_of_channel ch =
+  Xmlm.make_output ~ns_prefix (`Fun (IO.write_byte ch))
 
-let load fname =
-  let full = Xml.parse_file fname in
-  assert("phyloxml" = Xml.tag full);
-  {
-    trees = List.map pxtree_of_xml (Xml.children full);
-    data_attribs = Xml.attribs full;
-  }
+let named_gtrees_to_channel ch l =
+  output_of_channel ch
+    |> Xmlm.output
+    |> named_gtrees_to_output l
 
-let xml_of_pxdata pxd =
-  Xml.Element("phyloxml", phyloxml_attrs @ pxd.data_attribs, List.map xml_of_pxtree pxd.trees)
-
-let pxdata_to_channel ch pxd =
-  Printf.fprintf ch "%s\n" (Xml.to_string_fmt (xml_of_pxdata (pxd)))
-
-let pxdata_to_file fname pxd =
-  let ch = open_out fname in
-  pxdata_to_channel ch pxd;
-  close_out ch
-
-let echo fname =
-  print_endline (Xml.to_string_fmt (xml_of_pxdata (load fname)))
-
-let rec clade_of_stree bark tree =
-  let tags id =
-    if IntMap.mem id bark
-    then (IntMap.find id bark)#to_xml
-    else [] in
-  let id, children = match tree with
-  | Stree.Node (id, tL) -> id, tL
-  | Stree.Leaf id -> id, [] in
-  Xml.Element ("clade", [], tags id @ List.map (clade_of_stree bark) children)
-
-let pxtree_of_gtree ?name gtree =
-  {
-    name = name;
-    clade = clade_of_stree (Gtree.get_bark_map gtree) (Gtree.get_stree gtree);
-    attribs = [("rooted", "true")];
-  }
-
-let pxdata_of_gtrees gtrees =
-  {
-    trees = List.map pxtree_of_gtree gtrees;
-    data_attribs = [];
-  }
-
-let pxdata_of_named_gtrees gtrees =
-  {
-    trees = List.map (fun (name, tree) -> pxtree_of_gtree ?name tree) gtrees;
-    data_attribs = [];
-  }
-
-let pxdata_of_gtree t = pxdata_of_gtrees [t]
-let pxdata_of_named_gtree name t = pxdata_of_named_gtrees [Some name, t]
-
-let gtree_to_file fname t = pxdata_to_file fname (pxdata_of_gtree t)
-let gtrees_to_file fname l = pxdata_to_file fname (pxdata_of_gtrees l)
-let named_gtree_to_file ~fname ~tree_name t =
-  pxdata_to_file fname (pxdata_of_named_gtree tree_name t)
 let named_gtrees_to_file fname l =
-  pxdata_to_file fname (pxdata_of_named_gtrees l)
+  open_out fname
+    |> with_dispose ~dispose:close_out (flip named_gtrees_to_channel l)
+
+let named_gtree_to_file ~fname ~tree_name t =
+  named_gtrees_to_file fname [Some tree_name, t]
+let gtrees_to_file fname l =
+  named_gtrees_to_file fname (List.map ((const None) &&& identity) l)
+let gtree_to_file fname t =
+  named_gtrees_to_file fname [None, t]

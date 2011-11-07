@@ -43,7 +43,7 @@ object (self)
       |> List.map (flip String.nsplit ",")
       |> List.flatten
       |> List.map (fun rk -> Array.findi ((=) rk) tax.Tax_taxonomy.rank_names)
-      |> List.sort
+      |> List.sort compare
     in
     let prefix = self#single_prefix ~requires_user_prefix:true () in
 
@@ -53,7 +53,7 @@ object (self)
       and out_ch = open_out (prefix ^ "queryseq.fasta") in
       let ret = Array.fold_left
         (fun tax_map (name, seq) ->
-          let tax_id = Tax_seqinfo.tax_id_by_name seqinfo name
+          let tax_id = Tax_seqinfo.tax_id_by_node_label seqinfo name
           and seq = Str.global_replace gap_regexp "" seq
           and get_rank = Tax_taxonomy.get_tax_rank tax in
           let rec aux tax_pairs backlog tax_ids ranks =
@@ -120,7 +120,7 @@ object (self)
         new_taxonomy
         []
       in
-      let taxonomy = List.sort ~cmp:(comparing (fun (_, x, _) -> x)) taxonomy in
+      let taxonomy = List.sort (comparing (fun (_, x, _) -> x)) taxonomy in
       List.iter
         (fun (tax_id, rank, parent) ->
           Printf.fprintf out_ch

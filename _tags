@@ -1,8 +1,8 @@
-<{common,pplacer,json,prunetre}_src>: include
+<{common,pplacer,json,pdprune}_src>: include
 <tests>: include
 <tests/{guppy,pplacer,json,rppr}>: include
 <tests/**/*.{ml,byte,native,top,p.native}>: pkg_oUnit
 <tests.{top,native}>: pkg_oUnit
 <**/*.ml>: warn_Z, annot
 <libs/*.a>: precious
-<**/*.{ml,mli,byte,native,top,p.native,d.byte}>: c_pplacer, pkg_batteries, pkg_threads, pkg_unix, pkg_bigarray, pkg_gsl, pkg_csv, pkg_xml-light, pkg_str, pkg_sqlite3
+<**/*.{ml,mli,byte,native,top,p.native,d.byte}>: c_pplacer, pkg_batteries, pkg_threads, pkg_unix, pkg_bigarray, pkg_gsl, pkg_csv, pkg_xmlm, pkg_str, pkg_sqlite3

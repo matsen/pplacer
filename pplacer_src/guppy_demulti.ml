@@ -6,8 +6,8 @@ let demulti_pquery_list pql =
     (List.map
       (fun pq ->
         List.map
-          (fun name -> {pq with Pquery.namel = [name]})
-          pq.Pquery.namel)
+          (fun name -> Pquery.set_namel pq [name])
+          (Pquery.namel pq))
       pql)
 
 let demulti_placerun out_name pr =
