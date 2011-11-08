@@ -92,7 +92,8 @@ object (self)
           [|
             splut.(idx + 1);
             splut.(idx + 1);
-            (StringMap.find splut.(idx) name_map);
+            (try StringMap.find splut.(idx) name_map with
+              Not_found -> failwith (splut.(idx)^" not found in rdp classify"));
             splut.(idx + 2);
           |] :: accum)
         []
