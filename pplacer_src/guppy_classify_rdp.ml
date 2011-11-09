@@ -92,8 +92,10 @@ object (self)
           [|
             splut.(idx + 1);
             splut.(idx + 1);
-            (try StringMap.find splut.(idx) name_map with
-              Not_found -> failwith (splut.(idx)^" not found in rdp classify"));
+            (try
+               StringMap.find splut.(idx) name_map
+             with Not_found ->
+               failwith (splut.(idx)^" not found in refpkg's taxonomy"));
             splut.(idx + 2);
           |] :: accum)
         []
