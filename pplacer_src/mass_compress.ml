@@ -4,7 +4,7 @@ let of_placerun ?(p = 1.) ~c weighting criterion pr =
   let mass_of_pq pq =
     Mass_map.Pre.of_pquery_list weighting criterion [pq]
       |> Mass_map.Indiv.of_pre
-  and gt = Placerun.get_ref_tree pr in
+  and gt = Placerun.get_ref_tree pr |> Like_stree.add_zero_root_bl in
   Placerun.get_pqueries pr
   |> Mass_islands.of_pql
   |> List.map (fun (_, pql) ->

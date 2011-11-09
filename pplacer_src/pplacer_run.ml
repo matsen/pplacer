@@ -258,16 +258,20 @@ let run_file prefs query_fname =
         name, seq'
       in
       dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
-      if masklen = 0 then
+      let effective_length = match Model.seq_type model with
+        | Alignment.Nucleotide_seq -> masklen
+        | Alignment.Protein_seq -> 3*masklen
+      in
+      if effective_length = 0 then
         (print_endline
            "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
          exit 1)
-      else if masklen <= 10 then
+      else if effective_length <= 10 then
         dprintf
           "WARNING: you have %d sites after pre-masking. \
           That means there is very little information in these sequences for placement.\n"
           masklen
-      else if masklen <= 100 then
+      else if effective_length <= 100 then
         dprintf
           "Note: you have %d sites after pre-masking. \
           That means there is rather little information in these sequences for placement.\n"

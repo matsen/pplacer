@@ -12,6 +12,9 @@
    phyloxml tree which adds the tree's node numbers to the phyloxml output as
    bootstrap values.
  * Closed GH-172: Switched from using xml-light to xmlm.
+ * Closed GH-178: Fixed `guppy compress` to add a zero root branch length.
+ * Closed GH-179: Changed the JSON emitter to be able to represent a wider
+   range of floats.
 
 
 1.1.alpha09
