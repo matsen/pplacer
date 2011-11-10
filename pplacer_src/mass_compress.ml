@@ -2,6 +2,8 @@ open Ppatteries
 
 let of_placerun ?(p = 1.) ~c weighting criterion pr =
   let mass_of_pq pq =
+    (* Recall that of_pquery_list normalizes out the mass, so that we get a
+     * single unit of mass for each pquery. *)
     Mass_map.Pre.of_pquery_list weighting criterion [pq]
       |> Mass_map.Indiv.of_pre
   and gt = Placerun.get_ref_tree pr |> Like_stree.add_zero_root_bl in
