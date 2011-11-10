@@ -225,6 +225,7 @@ let of_json fields a =
       | Not_found -> None
   and map_identity = function
     | Jsontype.Array [Jsontype.Float f; Jsontype.Int d] -> f, d
+    | Jsontype.Array [Jsontype.Int f; Jsontype.Int d] -> float_of_int f, d
     | _ -> failwith "malformed map_identity in json"
   in {
     location = Jsontype.int (get "edge_num");
@@ -240,6 +241,7 @@ let of_json fields a =
         maybe_get identity "map_overlap"
       with
         | Some Jsontype.Float x, Some Jsontype.Int y -> Some (x, y)
+        | Some Jsontype.Int x, Some Jsontype.Int y -> Some (float_of_int x, y)
         | None, None -> maybe_get map_identity "map_identity"
         | _, _ -> failwith "malformed map_identity in json";
   }
