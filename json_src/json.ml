@@ -29,7 +29,7 @@ let rec to_formatter ff o =
   let rec aux = function
     | Bool b -> Format.fprintf ff "%s" (string_of_bool b)
     | Int i -> Format.fprintf ff "%d" i
-    | Float f -> Format.fprintf ff "%f" f
+    | Float f -> Format.fprintf ff "%.12g" f
     | String s -> Format.fprintf ff "\"%s\"" (quote s)
     | Object o ->
       Format.fprintf ff "@[<2>{@,";
