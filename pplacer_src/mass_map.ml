@@ -10,14 +10,14 @@
 
 open Ppatteries
 
-type weighting_choice = Weighted | Unweighted
+type point_spread = Point | Spread
 
 
 (* we just return the top one if unweighted *)
-let place_list_of_pquery weighting criterion pquery =
-  match weighting with
-  | Weighted -> Pquery.place_list pquery
-  | Unweighted -> [ Pquery.best_place criterion pquery ]
+let place_list_of_pquery point_spread criterion pquery =
+  match point_spread with
+  | Spread -> Pquery.place_list pquery
+  | Point -> [ Pquery.best_place criterion pquery ]
 
 (* the L_1 norm of a float list *)
 let normalized_prob fl =
@@ -57,8 +57,8 @@ module Pre = struct
   type t = multimul list
 
   (* will raise Pquery.Unplaced_pquery if finds unplaced pqueries.  *)
-  let multimul_of_pquery weighting criterion mass_per_read pq =
-    let pc = place_list_of_pquery weighting criterion pq in
+  let multimul_of_pquery point_spread criterion mass_per_read pq =
+    let pc = place_list_of_pquery point_spread criterion pq in
     {
       multi = Pquery.multiplicity pq;
       mul =
@@ -73,17 +73,17 @@ module Pre = struct
           (normalized_prob (List.map criterion pc));
     }
 
-  let of_pquery_list weighting criterion pql =
+  let of_pquery_list point_spread criterion pql =
     let mass_per_read = 1. /. (Pquery.total_multiplicity pql) in
     List.map
-      (multimul_of_pquery weighting criterion mass_per_read)
+      (multimul_of_pquery point_spread criterion mass_per_read)
       pql
 
   (* A unit of mass spread across the tree according to pr. *)
-  let of_placerun weighting criterion pr =
+  let of_placerun point_spread criterion pr =
     try
       of_pquery_list
-        weighting
+        point_spread
         criterion
         (Placerun.get_pqueries pr)
     with
@@ -146,8 +146,8 @@ module Indiv = struct
       IntMap.empty
       pmm
 
-  let of_placerun weighting criterion pr =
-    of_pre (Pre.of_placerun weighting criterion pr)
+  let of_placerun point_spread criterion pr =
+    of_pre (Pre.of_placerun point_spread criterion pr)
 
 (* sort the placements along a given edge according to their location on
  * the edge in an increasing manner. *)
@@ -214,8 +214,8 @@ module By_edge = struct
   let of_pre ?factor pre =
     of_indiv (Indiv.of_pre ?factor pre)
 
-  let of_placerun weighting criterion pr =
-    of_indiv (Indiv.of_placerun weighting criterion pr)
+  let of_placerun point_spread criterion pr =
+    of_indiv (Indiv.of_placerun point_spread criterion pr)
 
   (* we add zeroes in where things are empty *)
   let fill_out_zeroes mass_map ref_tree =
@@ -231,9 +231,9 @@ module By_edge = struct
       mass_map
       (Stree.node_ids (Gtree.get_stree ref_tree))
 
-  let of_placerun_with_zeroes weighting criterion pr =
+  let of_placerun_with_zeroes point_spread criterion pr =
     fill_out_zeroes
-      (of_placerun weighting criterion pr)
+      (of_placerun point_spread criterion pr)
       (Placerun.get_ref_tree pr)
 
   let total_mass m = IntMap.fold (fun _ v -> ( +. ) v) m 0.

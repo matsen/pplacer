@@ -19,7 +19,7 @@ let exponentiate_function exponent f =
   else (fun crit cai a b -> (f crit cai a b) ** exponent)
 
 (* take the weighted average over placements of the pquery *)
-let weighted_pquery_dist criterion ca_info pqa pqb =
+let spread_pquery_dist criterion ca_info pqa pqb =
   let total = ref 0. in
   ListFuns.list_iter_over_pairs_of_two
     (fun p1 p2 ->
@@ -33,7 +33,7 @@ let weighted_pquery_dist criterion ca_info pqa pqb =
   !total
 
 (* distance between the best placements *)
-let unweighted_pquery_dist criterion ca_info pqa pqb =
+let point_pquery_dist criterion ca_info pqa pqb =
   let p1 = Pquery.best_place criterion pqa
   and p2 = Pquery.best_place criterion pqb
   in
@@ -41,11 +41,11 @@ let unweighted_pquery_dist criterion ca_info pqa pqb =
     (Placement.location p1, Placement.distal_bl p1)
     (Placement.location p2, Placement.distal_bl p2)
 
-let dist_fun_of_weight = function
-  | Mass_map.Weighted -> weighted_pquery_dist
-  | Mass_map.Unweighted -> unweighted_pquery_dist
+let dist_fun_of_point_spread = function
+  | Mass_map.Spread -> spread_pquery_dist
+  | Mass_map.Point -> point_pquery_dist
 
-let dist_fun_of_expon_weight exponent weighting =
+let dist_fun_of_expon_weight exponent point_spread =
   exponentiate_function
     exponent
-    (dist_fun_of_weight weighting)
+    (dist_fun_of_point_spread point_spread)
