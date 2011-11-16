@@ -164,16 +164,6 @@ struct
 
 end
 
-let setup_static_libraries () =
-  let result =
-    try
-      let _ = Unix.mkdir "libs" 0o755 in true
-    with
-      | Unix.Unix_error (Unix.EEXIST, _, _) -> false
-  in
-  if result then
-    let _ = Unix.system "cp $(gsl-config --prefix)/lib/*.a libs" in ()
-
 let setup_git_version () =
   let version_string = match run_and_read "git describe --long | tr -d '\\n'" with
     | "" -> "None"
@@ -192,25 +182,8 @@ let _ = dispatch begin function
     Batteries.before_options ();
 
     (* use static linking for native binaries *)
-    flag ["link"; "ocaml"; "native"] (
-      if is_osx then
-        (S[
-          A"-cclib"; A"-L../libs";
-          A"-ccopt"; A"-Wl,-search_paths_first";
-        ])
-      else
-        (S[
-          A"-ccopt"; A"-static";
-        ])
-    );
-
-    flag ["link"; "ocaml"; "native"] (
-      if not is_osx then
-        (S[
-          A"-cclib"; A"-lpthread";
-        ])
-      else S[]
-    );
+    if not is_osx then
+      flag ["link"; "ocaml"; "native"] (S[A"-ccopt"; A"-static"]);
 
   | After_rules ->
     OCamlFind.after_rules ();
@@ -226,6 +199,9 @@ let _ = dispatch begin function
         A"-ccopt"; A"-fPIC";
       ]);
 
+    if not is_osx then
+      flag ["link"; "ocaml"; "native"] (S[A"-cclib"; A"-lpthread"]);
+
     (* custom: incorporate libraries into bytecode *)
     flag ["link"; "ocaml"; "byte"] (A"-custom");
 
@@ -236,9 +212,7 @@ let _ = dispatch begin function
     (* make libpplacercside when needed *)
     dep ["c_pplacer"] ["pplacer_src/libpplacercside.a"];
 
-
   | After_options ->
-    if is_osx then setup_static_libraries ();
     setup_git_version ()
 
   | _ -> ()

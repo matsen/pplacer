@@ -14,7 +14,7 @@ $(RELEASE):
 	ocamlbuild $@
 
 clean:
-	rm -rf bin libs
+	rm -rf bin
 	rm -f tests.native
 	ocamlbuild -clean
 	rm -f *.mltop
