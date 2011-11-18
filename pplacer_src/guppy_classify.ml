@@ -91,6 +91,14 @@ let classify how criterion n_ranks td pr f mrca_map =
       invalid_arg
         ((Placerun.get_name pr)^" contains unclassified queries!")
 
+let median l =
+  let rec aux = function
+    | e :: _, ([_] | [_; _]) -> e
+    | _ :: tl1, _ :: _ :: tl2 -> aux (tl1, tl2)
+    | _, _ -> invalid_arg "median"
+  in
+  aux (l, l)
+
 
 (* UI-related *)
 
@@ -106,6 +114,8 @@ object (self)
     (Plain (false, "Use posterior probability for our criteria."))
   val mrca_stats = flag "--mrca-stats"
     (Plain (false, "Print the number of placements just proximal to MRCAs."))
+  val tax_identity = flag "--tax-median-identity-from"
+    (Needs_argument ("", "Calculate the median identity for each sequence per-tax_id from the specified alignment."))
 
   method specl =
     super_refpkg#specl
@@ -113,6 +123,7 @@ object (self)
   @ [
     toggle_flag use_pp;
     toggle_flag mrca_stats;
+    string_flag tax_identity;
   ]
 
   method desc =
@@ -150,7 +161,43 @@ object (self)
         and pp_st = Sqlite3.prepare db
           "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         in
-        close, (fun pq rank_map ->
+
+        let tax_identity_func = match fvo tax_identity with
+          | None -> fun _ _ -> ()
+          | Some aln_file ->
+            let open Tax_id in
+            let aln_map = Alignment.upper_aln_of_any_file aln_file
+              |> Array.enum
+              |> StringMap.of_enum
+            and seqinfom = Refpkg.get_seqinfom rp in
+            let refs_by_tax_id = Refpkg.get_ref_tree rp
+              |> Newick_gtree.leaf_label_map
+              |> IntMap.values
+              |> Enum.map
+                  (Tax_seqinfo.tax_id_by_node_label seqinfom
+                   &&& flip StringMap.find aln_map)
+              |> List.of_enum
+              |> TaxIdMap.of_pairlist_listly
+            and pmi_st = Sqlite3.prepare db
+              "INSERT INTO placement_median_identities VALUES (?, ?, ?)"
+            in
+            fun place_id pq ->
+              let id = StringMap.find (Pquery.name pq) aln_map
+                |> Alignment.identity
+                |- fst
+              in
+              TaxIdMap.iter
+                (fun ti seql ->
+                  Sql.bind_step_reset db pmi_st [|
+                    Sql.D.INT place_id;
+                    Sql.D.TEXT (to_string ti);
+                    Sql.D.FLOAT
+                      (List.map id seql |> List.sort compare |> median);
+                  |])
+                refs_by_tax_id;
+        in
+
+        close, begin fun pq rank_map ->
           Sql.check_exec db "INSERT INTO placements VALUES (NULL)";
           let place_id = Sqlite3.last_insert_rowid db in
           List.iter
@@ -188,7 +235,11 @@ object (self)
                 | None -> Sql.D.NULL
                 | Some (_, denom) -> Sql.D.INT (Int64.of_int denom));
             |])
-            (Pquery.place_list pq));
+            (Pquery.place_list pq);
+
+          tax_identity_func place_id pq;
+
+        end;
 
       else
         let prn = Placerun.get_name pr in
