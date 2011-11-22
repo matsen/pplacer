@@ -13,11 +13,16 @@ object (self)
   val transform = flag "--transform"
     (Plain ("", "A transform to apply to the read multiplicities before calculating. \
     Options are 'log', 'unit', 'asinh', and 'no_trans'. Default is no transform."))
+  val copy_number = flag "--copy-number"
+    (Needs_argument ("", "Rescale placements by the copy number, given a CSV file mapping from the names of the \
+                          leaves on the reference tree to their copy numbers."))
 
-  method specl = super_output#specl
+  method specl =
+    super_output#specl
   @ [
     toggle_flag unitize;
     string_flag transform;
+    string_flag copy_number;
   ]
 
   method desc = "Multi-Filter and Transform placefiles"
@@ -29,6 +34,17 @@ object (self)
         | "" -> identity
         | transform ->
           List.map (Mass_map.transform_of_str transform |> Placerun.transform))
+    |> (match fvo copy_number with
+        | None -> identity
+        | Some infile ->
+          Csv.load infile
+            |> List.map
+                (function
+                  | [a; b] -> a, float_of_string b
+                  | _ -> failwith "malformed copy number csv file")
+            |> StringMap.of_pairlist
+            |> Copy_number.of_criterion_map Placement.ml_ratio
+            |> List.map)
     |> if not (fv unitize) then identity else
         List.map
           (fun pr ->
