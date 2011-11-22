@@ -86,6 +86,14 @@ object (self)
        );
       CREATE INDEX placement_positions_id ON placement_classifications (placement_id);
 
+      CREATE TABLE IF NOT EXISTS placement_median_identities (
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        median_percent_identity REAL NOT NULL,
+        PRIMARY KEY (placement_id, tax_id)
+      );
+      CREATE INDEX placement_median_identities_id ON placement_median_identities (placement_id);
+
       CREATE VIEW best_classifications
       AS
         SELECT *

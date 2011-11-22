@@ -6,6 +6,7 @@
  * Closed GH-178: Fixed `guppy compress` to add a zero root branch length.
  * Closed GH-179: Changed the JSON emitter to be able to represent a wider
    range of floats.
+ * Closed GH-184: Added a placement_median_identites table for guppy classify.
 
 
 1.1.alpha10
