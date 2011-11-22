@@ -2,8 +2,10 @@ open Ppatteries
 
 let copy_maps_of_gt_map gt leaf_copy_map =
   let open Stree in
-  let bl = Gtree.get_bl gt
+  let gt' = ref gt in
+  let bl i = Gtree.get_bl !gt' i
   and st = Gtree.get_stree gt in
+  let top = top_id st in
   let rec aux = function
     | Leaf i ->
       Gtree.get_node_label gt i
@@ -15,6 +17,15 @@ let copy_maps_of_gt_map gt leaf_copy_map =
         IntMap.empty
         subtrees
       in
+      if i <> top then begin
+        let bll = List.map (top_id |- bl) subtrees in
+        (/.)
+          (List.reduce ( *.) bll)
+          (List.fsum bll)
+        |> (+.) (bl i)
+        |> Gtree.set_bl !gt' i
+        |> (:=) gt'
+      end;
       IntMap.add
         i
         ((/.)
