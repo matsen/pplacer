@@ -143,7 +143,7 @@ class InfernalAligner(_Aligner):
     def _query_align(self, infile, outfile):
         cmd = ['cmalign']
         cmd.extend(self.align_options)
-        cmd.extend(['-o', outfile, self.refpkg.resource_path('profile'),
+        cmd.extend(['-o', outfile, self.refpkg.file_abspath('profile'),
             infile])
         log.info(' '.join(cmd))
         subprocess.check_call(cmd)
@@ -152,8 +152,8 @@ class InfernalAligner(_Aligner):
     def _merge(self, infile, outfile):
         cmd = ['cmalign', '--merge']
         cmd.extend(self.align_options)
-        cmd.extend([ '-o', outfile, self.refpkg.resource_path('profile'),
-            self.refpkg.resource_path('aln_sto'), infile])
+        cmd.extend([ '-o', outfile, self.refpkg.file_abspath('profile'),
+            self.refpkg.file_abspath('aln_sto'), infile])
 
         log.info(' '.join(cmd))
         subprocess.check_call(cmd)
@@ -170,7 +170,7 @@ class Hmmer3Aligner(_Aligner):
 
     def _generate_masks(self, stockholm_alignment):
         if self.use_mask and self.has_mask:
-            with self.refpkg.resource('mask') as fp:
+            with open(self.refpkg.file_abspath('mask')) as fp:
                 unmasked_positions = set(int(i.strip())
                                          for i in fp.read().split(','))
 
@@ -207,7 +207,7 @@ class Hmmer3Aligner(_Aligner):
 
         cmd = ['hmmalign', '-o', unmasked]
         cmd.extend(self.align_options)
-        cmd.append(self.refpkg.resource_path('profile'))
+        cmd.append(self.refpkg.file_abspath('profile'))
         cmd.append(query_file)
 
         # Run HMMalign
@@ -234,7 +234,7 @@ class Hmmer3Aligner(_Aligner):
         cmd = ['hmmsearch']
         cmd.extend(search_opts)
         cmd.extend(['-A', outfile,
-               self.refpkg.resource_path('profile'),
+               self.refpkg.file_abspath('profile'),
                query_file])
 
         log.info(' '.join(cmd))
@@ -285,7 +285,7 @@ def extract(arguments):
 
     # If not masking, just copy the sequences, reformatting if appropriate
     if not arguments.use_mask:
-        with refpkg.resource('aln_sto') as input_fp:
+        with open(refpkg.file_abspath('aln_sto')) as input_fp:
             with arguments.output_file as output_fp:
                 result = SeqIO.convert(input_fp, 'stockholm', output_fp,
                         arguments.output_format)
@@ -294,7 +294,7 @@ def extract(arguments):
 
 
     # Mask will be applied if available
-    with refpkg.resource('aln_sto') as fp:
+    with open(refpkg.file_abspath('aln_sto')) as fp:
         alignment_length = len(next(SeqIO.parse(fp, 'stockholm')))
 
         # Rewind
@@ -302,7 +302,7 @@ def extract(arguments):
         sequences = SeqIO.parse(fp, 'stockholm')
 
         try:
-            with refpkg.resource('mask') as fp:
+            with open(refpkg.file_abspath('mask')) as fp:
                 mask = AlignmentMask.from_csv_file(fp, alignment_length)
             logging.info("Applying mask - keeping %d/%d positions",
                     mask.unmasked_count, len(mask))
