@@ -137,7 +137,7 @@ object (self)
                                            ON bc.rank = bcr.rank
                                          JOIN ranks pcr
                                            ON pc.rank = pcr.rank
-                                  WHERE  pcr.rank_order > bcr.rank_order
+                                  WHERE  pcr.rank_order <= bcr.rank_order
                                          AND pc.likelihood > (SELECT val
                                                               FROM   params
                                                               WHERE  name = 'multiclass_likelihood')
