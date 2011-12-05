@@ -10,21 +10,18 @@ object (self)
 
   val default_cutoff = flag "--default-cutoff"
     (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
-  val default_count = flag "--default-multiclass-count"
-    (Formatted (3, "The default value for the multiclass_count param. Default: %d"))
-  val default_likelihood = flag "--default-multiclass-likelihood"
-    (Formatted (0.05, "The default value for the multiclass_likelihood param. Default: %0.3f"))
-  val default_classify_to = flag "--default-classify-to"
-    (Formatted ("species", "The default value for the classify_to param. Default: %s"))
+  val default_multiclass_min = flag "--default-multiclass-min"
+    (Formatted (0.2, "The default value for the multiclass_min param. Default: %0.2f"))
+  val default_multiclass_sum = flag "--default-multiclass-sum"
+    (Formatted (0.8, "The default value for the multiclass_sum param. Default: %0.2f"))
 
   method specl =
     super_refpkg#specl
     @ super_sqlite#specl
     @ [
       float_flag default_cutoff;
-      int_flag default_count;
-      float_flag default_likelihood;
-      string_flag default_classify_to;
+      float_flag default_multiclass_min;
+      float_flag default_multiclass_sum;
     ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
@@ -97,67 +94,58 @@ object (self)
       CREATE VIEW best_classifications
       AS
         SELECT *
-        FROM   placements
-               LEFT JOIN (SELECT placement_id,
-                                 tax_id,
-                                 rank,
-                                 likelihood
-                          FROM   (SELECT *
-                                  FROM   placements
-                                         JOIN placement_classifications USING (placement_id)
-                                         JOIN ranks USING (rank)
-                                  WHERE  rank = desired_rank
-                                         AND likelihood > (SELECT val
-                                                           FROM   params
-                                                           WHERE  name = 'likelihood_cutoff')
-                                         AND rank_order <= (SELECT rank_order
-                                                            FROM   params
-                                                                   JOIN ranks
-                                                                     ON val = rank
-                                                            WHERE  name = 'classify_to')
-                                  ORDER  BY placement_id,
-                                            rank_order ASC,
-                                            likelihood ASC)
-                          GROUP  BY placement_id) USING (placement_id);
+          FROM (SELECT placement_id,
+                       tax_id,
+                       r_want.rank AS want_rank,
+                       r_got.rank  AS rank,
+                       likelihood
+                  FROM placement_classifications pc,
+                       ranks r_got,
+                       ranks r_want
+                 WHERE pc.rank = pc.desired_rank
+                   AND pc.rank = r_got.rank
+                   AND r_got.rank_order <= r_want.rank_order
+                   AND likelihood >= (SELECT val
+                                       FROM params
+                                      WHERE name = 'likelihood_cutoff')
+                 ORDER BY placement_id,
+                          r_want.rank_order,
+                          r_got.rank_order ASC,
+                          likelihood ASC)
+         GROUP BY placement_id,
+                  want_rank;
 
       CREATE VIEW multiclass
       AS
-        SELECT bc.placement_id,
-               pc.tax_id,
-               COALESCE(below_rank, bc.rank) AS rank,
-               pc.likelihood
-        FROM   best_classifications bc
-               LEFT JOIN (SELECT *
-                          FROM   (SELECT placement_id,
-                                         bc.rank,
-                                         pc.rank AS below_rank
-                                  FROM   best_classifications bc
-                                         JOIN placement_classifications pc USING ( placement_id )
-                                         JOIN ranks bcr
-                                           ON bc.rank = bcr.rank
-                                         JOIN ranks pcr
-                                           ON pc.rank = pcr.rank
-                                  WHERE  pcr.rank_order <= bcr.rank_order
-                                         AND pc.likelihood > (SELECT val
-                                                              FROM   params
-                                                              WHERE  name = 'multiclass_likelihood')
-                                  GROUP  BY placement_id,
-                                            desired_rank
-                                  HAVING COUNT(*) <= (SELECT val
-                                                      FROM   params
-                                                      WHERE  name = 'multiclass_count')
-                                         AND SUM(pc.likelihood) > (SELECT val
-                                                                   FROM   params
-                                                                   WHERE  name = 'likelihood_cutoff')
-                                  ORDER  BY pcr.rank_order)
-                          GROUP  BY placement_id) USING (placement_id, rank)
-               LEFT JOIN placement_classifications pc
-                 ON pc.placement_id = bc.placement_id
-                    AND pc.desired_rank = pc.rank
-                    AND pc.rank = COALESCE(below_rank, bc.rank)
-        WHERE  COALESCE(pc.likelihood > (SELECT val
-                                         FROM   params
-                                         WHERE  name = 'multiclass_likelihood'), 1);
+        SELECT placement_id,
+               tax_id,
+               want_rank,
+               rank,
+               likelihood
+          FROM (SELECT *
+                  FROM (SELECT placement_id,
+                               r_got.rank  AS rank,
+                               r_want.rank AS want_rank
+                          FROM placement_classifications pc,
+                               ranks r_got,
+                               ranks r_want
+                         WHERE pc.rank = pc.desired_rank
+                           AND pc.rank = r_got.rank
+                           AND r_got.rank_order <= r_want.rank_order
+                           AND likelihood >= (SELECT val
+                                               FROM params
+                                              WHERE name = 'multiclass_min')
+                         GROUP BY placement_id,
+                                  r_want.rank,
+                                  r_got.rank
+                        HAVING SUM(pc.likelihood) >= (SELECT val
+                                                       FROM params
+                                                      WHERE name = 'likelihood_cutoff')
+                         ORDER BY r_got.rank_order ASC)
+                 GROUP BY placement_id,
+                          want_rank)
+               JOIN placement_classifications pc USING (placement_id, rank)
+         WHERE pc.rank = pc.desired_rank;
 
     ";
     let st = Sqlite3.prepare db "INSERT INTO params VALUES (?, ?)" in
@@ -165,9 +153,8 @@ object (self)
       (Sql.bind_step_reset db st)
       [
         [| Sql.D.TEXT "likelihood_cutoff"; Sql.D.FLOAT (fv default_cutoff) |];
-        [| Sql.D.TEXT "multiclass_count"; Sql.D.INT (fv default_count |> Int64.of_int) |];
-        [| Sql.D.TEXT "multiclass_likelihood"; Sql.D.FLOAT (fv default_likelihood) |];
-        [| Sql.D.TEXT "classify_to"; Sql.D.TEXT (fv default_classify_to) |];
+        [| Sql.D.TEXT "multiclass_min"; Sql.D.FLOAT (fv default_multiclass_min) |];
+        [| Sql.D.TEXT "multiclass_sum"; Sql.D.FLOAT (fv default_multiclass_sum) |];
       ];
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
