@@ -29,10 +29,12 @@ let map_of_placerun criterion pr =
   let dm = Placerun.get_ref_tree pr |> Edge_rdist.build_pairwise_dist in
   List.fold_left
     (fun accum pq ->
-      IntMap.add_listly
-        (Pquery.best_location criterion pq)
-        (of_pquery criterion dm pq)
-        accum)
+      let edpl_val = of_pquery criterion dm pq in
+      List.fold_left
+        (fun accum p ->
+          IntMap.add_listly (Placement.location p) edpl_val accum)
+        accum
+        (Pquery.place_list pq))
     IntMap.empty
     (Placerun.get_pqueries pr)
   |> IntMap.map average
