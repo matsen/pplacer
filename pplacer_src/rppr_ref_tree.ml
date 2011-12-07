@@ -70,10 +70,9 @@ object (self)
 
   method action = function
     | [] ->
-      let trees = trees_of_refpkg self#maybe_numbered (fv painted) (fv colored) in
       Phyloxml.named_gtrees_to_channel
         self#out_channel
-        (trees_of_refpkg self#maybe_numbered (fv painted) self#get_rp)
+        (trees_of_refpkg self#maybe_numbered (fv painted) (fv colored) self#get_rp)
 
     | _ -> failwith "ref_tree takes no positional arguments"
 
