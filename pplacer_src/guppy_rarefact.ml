@@ -5,7 +5,7 @@ open Ppatteries
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd ~weighting_allowed:false () as super_mass
+  inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 

@@ -96,9 +96,12 @@ exception Inequal of Jsontype.jsontype * Jsontype.jsontype
 let rec json_equal ?(epsilon = 1e-5) j1 j2 =
   if begin match j1, j2 with
     | Jsontype.Bool b1, Jsontype.Bool b2 -> b1 = b2
+    | Jsontype.String s1, Jsontype.String s2 -> s1 = s2
     | Jsontype.Int i1, Jsontype.Int i2 -> i1 = i2
     | Jsontype.Float f1, Jsontype.Float f2 -> approx_equal ~epsilon f1 f2
-    | Jsontype.String s1, Jsontype.String s2 -> s1 = s2
+    | Jsontype.Int i, Jsontype.Float f
+    | Jsontype.Float f, Jsontype.Int i ->
+      approx_equal ~epsilon f (float_of_int i)
     | Jsontype.Object o1, Jsontype.Object o2 ->
       (Hashtbl.length o1) = (Hashtbl.length o2) && begin
         Hashtbl.iter

@@ -89,6 +89,9 @@ let dprint ?(l = 1) ?(flush = true) s =
     if flush then flush_all ();
   end
 
+let align_with_space =
+  List.map (Tuple3.map3 ((^) " ")) |- Arg.align
+
 let get_dir_contents ?pred dir_name =
   let dirh = Unix.opendir dir_name in
   Enum.from

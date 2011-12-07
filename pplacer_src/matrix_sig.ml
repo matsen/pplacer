@@ -27,7 +27,7 @@ let matrix_of_pqueries weighting criterion t pqueryl =
   in
   let m = Gsl_matrix.create n n in
   let dist_fun =
-    (Pquery_distances.dist_fun_of_weight weighting) criterion ca_info
+    (Pquery_distances.dist_fun_of_point_spread weighting) criterion ca_info
   in
   for i=0 to n-1 do
     for j=i to n-1 do

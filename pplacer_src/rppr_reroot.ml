@@ -23,12 +23,19 @@ let find_root rp gt =
             |> Tax_seqinfo.tax_id_by_node_label seqinfom
             |> some
           with Gtree.Lacking_bark _ -> None)
-    |> Tax_taxonomy.list_mrca td
+    |> junction
+        List.is_empty
+        (const None)
+        (Tax_taxonomy.list_mrca td |- some)
   in
   let rec aux: ?top_mrca:Tax_id.t -> stree -> unit = fun ?top_mrca -> function
     | Leaf _ as n -> raise (Found_root n)
     | Node (_, subtrees) as n ->
-      let subrks = List.map (node_mrca &&& some) subtrees
+      let subrks = subtrees
+        |> List.filter_map
+            (fun node -> match node_mrca node with
+              | Some mrca -> Some (mrca, Some node)
+              | None -> None)
         |> maybe_map_cons (None |> (curry identity |> flip)) top_mrca
         |> List.map (Tax_taxonomy.get_tax_rank td |> first)
         |> List.sort compare
@@ -39,7 +46,7 @@ let find_root rp gt =
       match List.at subrks 0 with
         | _, Some node ->
           let top_mrca = List.remove subtrees node
-            |> List.map node_mrca
+            |> List.filter_map node_mrca
             |> maybe_cons top_mrca
             |> Tax_taxonomy.list_mrca td
           in
@@ -48,7 +55,7 @@ let find_root rp gt =
   in
   try
     aux st; failwith "no root found?"
-  with Found_root root -> root
+  with Found_root root -> top_id root
 
 
 class cmd () =
@@ -82,7 +89,6 @@ object (self)
         |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
         |> Gtree.set_bark_map gt
         |> find_root rp
-        |> top_id
         |> Gtree.reroot gt
         |> flip Newick_gtree.to_file (self#single_file ())
 

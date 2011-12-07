@@ -36,7 +36,7 @@ object (self)
   inherit output_cmd () as super_output
 
   val regexp_default_exclude = flag "-Vr"
-    (Plain (false, "Exclude every placement name by default."))
+    (Plain (false, "Exclude every placement name by default (by default everything included)."))
   val regexp_inclusions = flag "-Ir"
     (Plain ([], "Include placements whose name matches the given regexp. May be passed multiple times."))
   val regexp_exclusions = flag "-Er"
@@ -46,11 +46,15 @@ object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria."))
   val tax_default_exclude = flag "-Vx"
-    (Plain (false, "Exclude every tax_id by default."))
+    (Plain (false, "Exclude every tax_id by default (by default everything included)."))
   val tax_inclusions = flag "-Ix"
     (Plain ([], "Include placements which are likely matches for the given tax_id. May be passed multiple times."))
   val tax_exclusions = flag "-Ex"
     (Plain ([], "Exclude placements which are likely matches for the given tax_id. May be passed multiple times."))
+  val mass_gt = flag "--mass-gt"
+    (Plain (0., "Include pqueries with a mass greater than the specified value."))
+  val mass_le = flag "--mass-le"
+    (Plain (infinity, "Include pqueries with a mass less than or equal to the specified value."))
 
   method specl = super_output#specl @ [
     toggle_flag regexp_default_exclude;
@@ -62,6 +66,8 @@ object (self)
     toggle_flag tax_default_exclude;
     string_list_flag tax_inclusions;
     string_list_flag tax_exclusions;
+    float_flag mass_gt;
+    float_flag mass_le;
   ]
 
   method desc = "filters one or more placefiles by placement name"
@@ -113,10 +119,15 @@ object (self)
             else
               (not (t_excluded cfied)) || (t_included cfied))
       in
-      let r_included = any_match r_inclusions
+      let mass_gt_val = fv mass_gt
+      and mass_le_val = fv mass_le in
+      let mass_pred pq =
+        let mass = Pquery.multiplicity pq in
+        mass > mass_gt_val && mass <= mass_le_val
+      and r_included = any_match r_inclusions
       and r_excluded = any_match r_exclusions in
       let fold_pq pqs pq =
-        if not (tax_pred pq) then
+        if not (tax_pred pq && mass_pred pq) then
           pqs
         else
           let namel = List.filter

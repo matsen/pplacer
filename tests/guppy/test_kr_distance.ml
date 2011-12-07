@@ -24,7 +24,7 @@ open Test_util
 let criterion = Placement.ml_ratio
 
 let predefined_tests which expected =
-  let data = pres_of_dir Mass_map.Weighted criterion which
+  let data = pres_of_dir Mass_map.Spread criterion which
   in
   ("predefined_"^which) >::: List.map (fun (p, pairs) ->
     (Printf.sprintf "exp %f" p) >::: List.map (fun (pr_name1, pr_name2, expected) ->
@@ -165,10 +165,10 @@ let get_pairs l =
   in
   List.flatten (aux l)
 
-let weighting = Mass_map.Unweighted
+let point_spread = Mass_map.Point
 
 let matrix_tests which =
-  let data = pres_of_dir weighting criterion which in
+  let data = pres_of_dir point_spread criterion which in
   let names = hashtbl_keys data in
   ("matrix_"^which) >:::
     List.map
@@ -181,7 +181,7 @@ let matrix_tests which =
         let kr =
           Kr_distance.dist_of_pres ~x1:1. ~x2:1.
             ~normalization 2. t ~pre1 ~pre2
-        and matrix = Matrix_sig.matrix_distance weighting criterion pr1 pr2
+        and matrix = Matrix_sig.matrix_distance point_spread criterion pr1 pr2
         in
         (Printf.sprintf "%s x %s" pr_name1 pr_name2) >::
           fun _ ->
@@ -206,7 +206,7 @@ let suite =
       let prl = placeruns_of_dir "simple" in
       let gt = Mokaphy_common.list_get_same_tree prl in
       let prel = List.map
-        (Mass_map.Pre.of_placerun Mass_map.Weighted Placement.ml_ratio)
+        (Mass_map.Pre.of_placerun Mass_map.Spread Placement.ml_ratio)
         prl
       and normalization = Gtree.tree_length gt in
       List.iter
