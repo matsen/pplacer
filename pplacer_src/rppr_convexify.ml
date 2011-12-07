@@ -227,14 +227,17 @@ object (self)
               let delta = (Sys.time ()) -. start in
               not_cut, IntSet.cardinal not_cut, delta
             else
+              let extra, st' = prune_tree (taxmap, st) in
               let start = Sys.time () in
               let phi, omega = solve
                 ~strict:(fv strict)
                 ?nu_f
-                (taxmap, st)
+                (taxmap, st')
               in
               let delta = (Sys.time ()) -. start in
-              nodeset_of_phi_and_tree phi st, omega, delta
+              nodeset_of_phi_and_tree phi st' |> IntSet.union extra,
+              omega + IntSet.cardinal extra,
+              delta
           in
           dprintf "  solved omega: %d\n" omega;
           let cut_leaves = IntSet.diff leaves not_cut in
@@ -279,11 +282,12 @@ object (self)
     in
     let colormap = fv input_colors
       |> Csv.load |> List.enum
-      |> Enum.map
+      |> Enum.filter_map
           (function
             | [a; _] when not (StringMap.mem a namemap) ->
               failwith (Printf.sprintf "leaf '%s' not found on tree" a)
-            | [a; b] -> StringMap.find a namemap, Tax_id.of_string b
+            | [_; "-"] -> None
+            | [a; b] -> Some (StringMap.find a namemap, Tax_id.of_string b)
             | _ -> failwith "malformed colors csv file")
       |> IntMap.of_enum
     and st = gt.Gtree.stree
@@ -303,8 +307,10 @@ object (self)
           let not_cut = Naive.solve (colormap, st) in
           not_cut, IntSet.cardinal not_cut
         else
-          let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st) in
-          nodeset_of_phi_and_tree phi st, omega
+          let extra, st' = prune_tree (colormap, st) in
+          let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st') in
+          nodeset_of_phi_and_tree phi st' |> IntSet.union extra,
+          omega + IntSet.cardinal extra
       in
       dprintf "solved omega: %d\n" omega;
       let cut_leaves = IntSet.diff leaves not_cut in

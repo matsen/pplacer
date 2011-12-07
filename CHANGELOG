@@ -2,6 +2,8 @@
 ===========
 
  * Fixed a bug with parsing MAP identity from a jplace file.
+ * Fixed a bug that occurred sometimes when running `rppr convexify` on a tree
+   where not every leaf had a corresponding tax_id at a particular rank.
  * Closed GH-177: Added --mass-gt and --mass-le flags to `guppy filter`.
  * Closed GH-178: Fixed `guppy compress` to add a zero root branch length.
  * Closed GH-179: Changed the JSON emitter to be able to represent a wider

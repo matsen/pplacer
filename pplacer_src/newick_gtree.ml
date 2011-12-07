@@ -54,14 +54,15 @@ let to_string_gen f t =
 let to_string ?with_node_numbers t =
   to_string_gen (string_of_bark ?with_node_numbers) t
 
-let write ch t = Printf.fprintf ch "%s\n" (to_string t)
+let write ?with_node_numbers ch t =
+  Printf.fprintf ch "%s\n" (to_string ?with_node_numbers t)
 
-let tree_list_to_file trees fname =
+let tree_list_to_file ?with_node_numbers trees fname =
   let ch = open_out fname in
-  List.iter (write ch) trees;
+  List.iter (write ?with_node_numbers ch) trees;
   close_out ch
 
-let to_file t fname = tree_list_to_file [t] fname
+let to_file ?with_node_numbers t fname = tree_list_to_file ?with_node_numbers [t] fname
 
 let ppr ff t =
   let ppr_bark ff id =

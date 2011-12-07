@@ -13,10 +13,14 @@ let convex_suite = List.map
       (fun _ value -> value#get_node_label_opt |> Option.map Tax_id.of_string)
       bm
     in
+    let extra, st' = prune_tree (colors, st) in
     let naive_nodes = Naive.solve (colors, st) in
-    let _, early_omega = solve ~nu_f:apart_nu (colors, st)
-    and _, not_early_omega = solve ?nu_f:None (colors, st)
-    and naive_omega = IntSet.cardinal naive_nodes in
+    let _, early_omega = solve ~nu_f:apart_nu (colors, st')
+    and _, not_early_omega = solve ?nu_f:None (colors, st')
+    and naive_omega = IntSet.cardinal naive_nodes
+    and extra_omega = IntSet.cardinal extra in
+    let early_omega = extra_omega + early_omega
+    and not_early_omega = extra_omega + not_early_omega in
     let testfunc () =
       (Printf.sprintf "%d expected; got %d with early termination" omega early_omega) @? (omega = early_omega);
       (Printf.sprintf "%d expected; got %d without early termination" omega not_early_omega) @? (omega = not_early_omega);
@@ -34,6 +38,7 @@ let convex_suite = List.map
     "(A,(B,(A,(B,A))));", 4;
     "(A,(A,(B,(C,(C,(A,C))))));", 6;
     "(A,(A,(B,(C,((A,C),(B,C))))));", 6;
+    "((((((((A,B),B),C),),(,)),(,((D,C),),)),((A,A),)),E);", 15;
   ]
 
 let strict_suite = List.map
