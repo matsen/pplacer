@@ -113,29 +113,6 @@ object (self)
                                             likelihood ASC)
                           GROUP  BY placement_id) USING (placement_id);
 
-      CREATE VIEW best_bayes_classifications
-      AS
-        SELECT placement_id,
-               rank,
-               tax_id,
-               likelihood,
-               evidence
-          FROM (SELECT *
-                  FROM (SELECT placement_id,
-                               rank,
-                               evidence
-                          FROM placement_evidence pe
-                               JOIN ranks USING (rank)
-                         WHERE bayes_factor >= (SELECT val
-                                                  FROM params
-                                                 WHERE name = 'bayes_cutoff')
-                         ORDER BY placement_id,
-                                  rank_order,
-                                  bayes_factor ASC)
-                 GROUP BY placement_id)
-               JOIN placement_classifications pc USING (placement_id, rank)
-         WHERE rank = pc.desired_rank;
-
       CREATE VIEW multiclass
       AS
         SELECT bc.placement_id,
@@ -172,6 +149,46 @@ object (self)
         WHERE  COALESCE(pc.likelihood > (SELECT val
                                          FROM   params
                                          WHERE  name = 'multiclass_likelihood'), 1);
+
+      CREATE VIEW _bayes_base
+      AS
+        SELECT *
+          FROM (SELECT placement_id,
+                       rank,
+                       evidence
+                  FROM placement_evidence pe
+                       JOIN ranks USING (rank)
+                 WHERE bayes_factor >= (SELECT val
+                                          FROM params
+                                         WHERE name = 'bayes_cutoff')
+                 ORDER BY placement_id,
+                          rank_order)
+         GROUP BY placement_id;
+
+      CREATE VIEW bayes_multiclass
+      AS
+        SELECT placement_id,
+               rank,
+               tax_id,
+               likelihood,
+               evidence
+          FROM _bayes_base
+               JOIN placement_classifications pc USING (placement_id, rank)
+         WHERE rank = pc.desired_rank;
+
+      CREATE VIEW bayes_best_classifications
+      AS
+        SELECT placement_id,
+               rank,
+               tax_id,
+               likelihood,
+               evidence
+          FROM (SELECT *
+                  FROM _bayes_base
+                       JOIN placement_classifications USING (placement_id, rank)
+                 ORDER BY placement_id,
+                          likelihood ASC)
+         GROUP BY placement_id
 
     ";
     let st = Sqlite3.prepare db "INSERT INTO params VALUES (?, ?)" in
