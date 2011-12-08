@@ -14,12 +14,15 @@ object (self)
     (Formatted (3, "The default value for the multiclass_count param. Default: %d"))
   val default_likelihood = flag "--default-multiclass-likelihood"
     (Formatted (0.05, "The default value for the multiclass_likelihood param. Default: %0.3f"))
+  val default_bayes_cutoff = flag "--default-bayes-cutoff"
+    (Formatted (1., "The default value for the bayes_cutoff param. Default: %0.2f"))
 
   method specl =
     super_refpkg#specl
     @ super_sqlite#specl
     @ [
       float_flag default_cutoff;
+      float_flag default_bayes_cutoff;
     ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
@@ -110,6 +113,29 @@ object (self)
                                             likelihood ASC)
                           GROUP  BY placement_id) USING (placement_id);
 
+      CREATE VIEW best_bayes_classifications
+      AS
+        SELECT placement_id,
+               rank,
+               tax_id,
+               likelihood,
+               evidence
+          FROM (SELECT *
+                  FROM (SELECT placement_id,
+                               rank,
+                               evidence
+                          FROM placement_evidence pe
+                               JOIN ranks USING (rank)
+                         WHERE bayes_factor >= (SELECT val
+                                                  FROM params
+                                                 WHERE name = 'bayes_cutoff')
+                         ORDER BY placement_id,
+                                  rank_order,
+                                  bayes_factor ASC)
+                 GROUP BY placement_id)
+               JOIN placement_classifications pc USING (placement_id, rank)
+         WHERE rank = pc.desired_rank;
+
       CREATE VIEW multiclass
       AS
         SELECT bc.placement_id,
@@ -155,6 +181,7 @@ object (self)
         [| Sql.D.TEXT "likelihood_cutoff"; Sql.D.FLOAT (fv default_cutoff) |];
         [| Sql.D.TEXT "multiclass_count"; Sql.D.INT (fv default_count |> Int64.of_int) |];
         [| Sql.D.TEXT "multiclass_likelihood"; Sql.D.FLOAT (fv default_likelihood) |];
+        [| Sql.D.TEXT "bayes_cutoff"; Sql.D.FLOAT (fv default_bayes_cutoff) |];
       ];
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
