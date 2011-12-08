@@ -466,6 +466,8 @@ let badness cutsetim =
     cutsetim
     (0, 0)
 
+(* From an stree, produce a map from all the node numbers in the stree to sets
+ * of all of the node numbers below that respective node. *)
 let rec belowm_of_stree = function
   | Leaf i -> IntSet.singleton i |> IntMap.singleton i
   | Node (i, subtrees) ->

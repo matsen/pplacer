@@ -2,7 +2,22 @@ open Ppatteries
 open Convex
 open Stree
 
-let of_refpkg rp =
+(* Edge painting. From the associated github issue:
+
+   The algorithm progressively builds up a map from edges to taxids. Maintain a
+   list of unpainted edges. Start at the lowest (most specific) rank.
+
+   * Is there exactly one taxid at that rank that appears on either side of the
+   edge? If so, then assign the edge to that taxid.
+
+   * If not, move up a rank.
+
+*)
+
+(* Build a map of node numbers (on the refpkg's reference tree) to the inferred
+ * tax_id for each node. Used for classifying things placed onto the reference
+ * tree. *)
+let of_refpkg: Refpkg.t -> Tax_id.t IntMap.t = fun rp ->
   let gt = Refpkg.get_ref_tree rp in
   let st = Gtree.get_stree gt in
   let rankmap = rank_tax_map_of_refpkg rp

@@ -11,6 +11,8 @@ type 'a placerun =
     pqueries  :  Pquery.pquery list;
   }
 
+type 'a t = 'a placerun
+
 let make ref_tree name pqueries = {ref_tree; name; pqueries}
 
 let get_ref_tree p = p.ref_tree
