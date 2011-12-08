@@ -1,6 +1,45 @@
+(*
+
+We will be calculating the Bayes factors on taxonomic rank, and they
+will guide us to an understanding of what taxonomic level is correct.
+Let ranks be numbered such that increasing numbers mean more specific
+taxonomic ranks (as in implementation.)
+
+For each rank r we will calculate an evidence; this is P(D|M), where
+in this case D is the posterior probabilities observed on the edges, and
+M is the hypothesis that r is the correct rank for classification. We
+will be marginalizing over the classifications themselves.
+
+P(D|M) = \sum_{\theta \in \Theta} P(\theta | M) P(D | \theta, M)
+
+Here, \theta is the actual classification, and \Theta is the set of
+classifications at rank r.
+
+P(\theta | M) is the prior given the rank. We will take it to be one
+over the number of edges painted with classification \theta. The
+probabilistically right thing to do would be to normalize this such that
+the sum of the priors is one, but this would penalize more specific
+classifications in cases where there were lots of choices. We can try it
+out.
+
+P(D | \theta, M) is the likelihood given the classification. In our
+case, the term that matters is the sum of the posterior probabilities
+for edges with classification theta.
+
+So, for every placement and every rank, we want to report the evidence
+for that rank, which will be the sum of the following over
+classifications theta of that rank:
+
+  [sum of the probability mass for all edges painted theta] /
+  [number of edges painted theta]
+
+ * *)
+
+
 open Ppatteries
 module TaxIdMap = Tax_id.TaxIdMap
 module IAMR = IntAlgMapR
+
 
 let of_refpkg rp =
   let post_map = Edge_painting.of_refpkg rp
