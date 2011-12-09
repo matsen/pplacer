@@ -1,3 +1,5 @@
+(* AAARON: this one needs the full treatment. *)
+
 open Ppatteries
 open Stree
 
@@ -403,7 +405,7 @@ let mark_map gt =
         |> List.sort_unique compare
       and bl = get_bl i in
       leaves_below,
-      (* XXX revisit how to use take_while instead of filter *)
+      (* AAARON revisit how to use take_while instead of filter *)
       List.enum above
         |> Enum.map
             (fun p ->

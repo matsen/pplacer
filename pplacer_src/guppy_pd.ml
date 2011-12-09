@@ -5,10 +5,12 @@ open Ppatteries
 let epsilon = 1e-10
 
 let merge a x = a := x +. !a
+(* AAARON *)
 let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
 
 module I = Mass_map.Indiv
 
+(* AAARON *)
 let total_along_mass gt mass cb =
   let partial_total id = Kr_distance.total_along_edge
     cb

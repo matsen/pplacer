@@ -27,6 +27,7 @@ let add_decor_by_map t decor_map =
   Gtree.set_bark_map t
     (IntMap.fold map_add_decor_listly decor_map (Gtree.get_bark_map t))
 
+(* AAARON *)
 let color_clades_above ?(color = Decor.red) leaves gt =
   let rec aux accum = function
     | Stree.Leaf i ->

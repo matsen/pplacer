@@ -1,3 +1,4 @@
+(* AAARON-- please put in a quick overview of how this algorithm works. *)
 open Ppatteries
 open Guppy_cmdobjs
 open Subcommand

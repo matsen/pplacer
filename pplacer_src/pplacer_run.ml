@@ -214,6 +214,7 @@ let run_file prefs query_fname =
               failwith (Printf.sprintf "%c is not a known base in %s" c name))
           seq
       in
+      (* AAARON *)
       let mask_of_enum enum =
         Enum.fold
           (tap check_seq
@@ -483,7 +484,7 @@ let run_file prefs query_fname =
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
     let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
-    (* XXX AG explain how these two functions are used. Clearly some sort of
+    (* AAARON explain how these two functions are used. Clearly some sort of
      * finalization. Perhaps a section at the beginning? *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
       (* start: build the Maximum A Posteriori sequences *)
@@ -579,6 +580,7 @@ let run_file prefs query_fname =
       else
         identity
     and queries = ref [] in
+    (* AAARON *)
     let rec gotfunc = function
       | Core.Pquery pq when not (Pquery.is_placed pq) ->
         dprintf "warning: %d identical sequences (including %s) were \

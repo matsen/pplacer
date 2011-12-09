@@ -1,3 +1,7 @@
+(* AAARON-- it would be great to have some overview documentation of how this
+ * works. A paragraph or so.
+ *)
+
 external quiet_close: int -> unit = "quiet_close"
 external fd_of_file_descr: Unix.file_descr -> int = "%identity"
 
