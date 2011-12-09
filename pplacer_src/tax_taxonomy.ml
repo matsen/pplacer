@@ -55,18 +55,37 @@ let get_lineage td ti =
 
 (* adds a lineage to the tree and the tax_rank_map *)
 let add_lineage_to_tree_and_map (t,m) l =
-  let check_add k v m =
-    try TaxIdMap.check_add k v m with
-    | Failure _ ->
-        failwith
-          ("Tax table broken: either "^(to_string k)^
-          "is defined to have multiple ancestors, or it is found at multiple \
-          taxonomic ranks.")
+  let check_add format_error k v m =
+    match begin
+      try
+        Some (TaxIdMap.find k m)
+      with Not_found -> None
+    end with
+      | Some v' when v <> v' -> failwith (format_error k v v')
+      | Some _ -> m
+      | None -> TaxIdMap.add k v m
+  in
+  let check_add_tid = check_add
+    (fun k v v' ->
+      Printf.sprintf
+        "Tax table broken: tax_id %s had established parent %s but %s is \
+         claiming to be the parent."
+        (to_string k)
+        (to_string v')
+        (to_string v))
+  and check_add_rank = check_add
+    (fun k v v' ->
+      Printf.sprintf
+        "Tax table broken: %s had established rank %d but was also found at \
+         rank %d."
+        (to_string k)
+        v'
+        v)
   in
   let rec aux (t,m) = function
     | (i,x)::((_,y)::_ as l') ->
-        aux (check_add y x t, check_add x i m) l'
-    | [(i,x)] -> (t, check_add x i m)
+      aux (check_add_tid y x t, check_add_rank x i m) l'
+    | [(i,x)] -> (t, check_add_rank x i m)
     | [] -> (t,m)
   in
   (* filter out the NoTax after adding rank numbers *)
