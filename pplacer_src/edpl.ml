@@ -22,8 +22,10 @@ let of_pquery criterion rdist_uptri pq =
   in
   2. *. (aux 0. pq.Pquery.place_list)
 
-let average fl =
-  List.fsum fl /. float_of_int (List.length fl)
+(* Take a weighted average of the elements of a list, the elements of which are
+ * of the form (x, weight). *)
+let weighted_average l =
+  List.fsum (List.map (fun (a, b) -> a *. b) l) /. List.fsum (List.map snd l)
 
 let map_of_placerun criterion pr =
   let dm = Placerun.get_ref_tree pr |> Edge_rdist.build_pairwise_dist in
@@ -32,9 +34,9 @@ let map_of_placerun criterion pr =
       let edpl_val = of_pquery criterion dm pq in
       List.fold_left
         (fun accum p ->
-          IntMap.add_listly (Placement.location p) edpl_val accum)
+          IntMap.add_listly (Placement.location p) (edpl_val, criterion p) accum)
         accum
         (Pquery.place_list pq))
     IntMap.empty
     (Placerun.get_pqueries pr)
-  |> IntMap.map average
+  |> IntMap.map weighted_average
