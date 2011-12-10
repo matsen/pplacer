@@ -1,6 +1,8 @@
 1.1.alpha11
 ===========
 
+ * Closed GH-42: Added --edpl flag to `guppy fat` for EDPL coloring in fat
+   trees.
  * Fixed a bug with parsing MAP identity from a jplace file.
  * Fixed a bug that occurred sometimes when running `rppr convexify` on a tree
    where not every leaf had a corresponding tax_id at a particular rank.
