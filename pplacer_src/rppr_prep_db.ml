@@ -16,6 +16,8 @@ object (self)
     (Formatted (0.2, "The default value for the multiclass_min param. Default: %0.2f"))
   val default_multiclass_sum = flag "--default-multiclass-sum"
     (Formatted (0.8, "The default value for the multiclass_sum param. Default: %0.2f"))
+  val best_as_bayes = flag "--best-as-bayes"
+    (Plain (false, "Generate the bayes_{best_classifications,multiclass} tables without the bayes_ prefix."))
 
   method specl =
     super_refpkg#specl
@@ -25,6 +27,7 @@ object (self)
       float_flag default_bayes_cutoff;
       float_flag default_multiclass_min;
       float_flag default_multiclass_sum;
+      toggle_flag best_as_bayes;
     ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
@@ -192,7 +195,10 @@ object (self)
          GROUP BY placement_id,
                   want_rank;
 
-      CREATE VIEW bayes_multiclass
+    ";
+
+    let bayes_tables = Scanf.format_from_string "
+      CREATE VIEW %s
       AS
         SELECT placement_id,
                want_rank,
@@ -203,7 +209,7 @@ object (self)
                JOIN placement_classifications pc USING (placement_id, rank)
          WHERE rank = pc.desired_rank;
 
-      CREATE VIEW bayes_best_classifications
+      CREATE VIEW %s
       AS
         SELECT placement_id,
                want_rank,
@@ -218,8 +224,15 @@ object (self)
                           likelihood ASC)
          GROUP BY placement_id,
                   want_rank
+    " "%s %s" in
+    if fv best_as_bayes then begin
+      Sql.check_exec db "DROP VIEW best_classifications; DROP VIEW multiclass;";
+      Printf.sprintf bayes_tables "multiclass" "best_classifications"
+        |> Sql.check_exec db;
+    end else
+      Printf.sprintf bayes_tables "bayes_multiclass" "bayes_best_classifications"
+        |> Sql.check_exec db;
 
-    ";
     let st = Sqlite3.prepare db "INSERT INTO params VALUES (?, ?)" in
     List.iter
       (Sql.bind_step_reset db st)
