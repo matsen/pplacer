@@ -47,7 +47,9 @@ let get_tax_name td ti =
   try TaxIdMap.find ti td.tax_name_map with
   | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
 
-let get_lineage td ti =
+let get_lineage td = function
+  | NoTax -> []
+  | TaxStr _ as ti -> (* ... *)
   let rec aux accu ti' =
     if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else ti' :: accu
   in
@@ -180,13 +182,15 @@ let sort_by_rank td ti1 ti2 =
 
 (* *** using *** *)
 let rec mrca td ti1 ti2 =
-  let rec aux ti1 ti2 =
-    if ti1 = ti2 then ti1
-    else
+  let rec aux = function
+    | x, NoTax
+    | NoTax, x -> x
+    | ti1, ti2 when ti1 = ti2 -> ti1
+    | ti1, ti2 ->
       let (ti_proximal, ti_distal) = sort_by_rank td ti1 ti2 in
-      aux (get_ancestor td ti_distal) ti_proximal
+      aux (get_ancestor td ti_distal, ti_proximal)
   in
-  try aux ti1 ti2 with
+  try aux (ti1, ti2) with
   | NoAncestor _ -> raise (NoMRCA (ti1, ti2))
 
 let list_mrca td = function

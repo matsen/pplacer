@@ -190,7 +190,7 @@ object (self)
                 (fun ti seql ->
                   Sql.bind_step_reset db pmi_st [|
                     Sql.D.INT place_id;
-                    Sql.D.TEXT (to_string ti);
+                    to_sql ti;
                     Sql.D.FLOAT
                       (List.map id seql |> List.sort compare |> median);
                   |])
@@ -214,7 +214,7 @@ object (self)
                   Sql.D.INT place_id;
                   Sql.D.TEXT (Tax_taxonomy.get_rank_name td desired_rank);
                   Sql.D.TEXT (Tax_taxonomy.rank_name_of_tax_id td tax_id);
-                  Sql.D.TEXT (Tax_id.to_string tax_id);
+                  Tax_id.to_sql tax_id;
                   Sql.D.FLOAT prob;
                 |])
                 rankl)
@@ -227,7 +227,7 @@ object (self)
               Sql.D.FLOAT (Placement.log_like p);
               Sql.D.FLOAT (Placement.distal_bl p);
               Sql.D.FLOAT (Placement.pendant_bl p);
-              Sql.D.TEXT (Tax_id.to_string (Placement.classif p));
+              Placement.classif p |> Tax_id.to_sql;
               (match Placement.map_identity_opt p with
                 | None -> Sql.D.NULL
                 | Some (ratio, _) -> Sql.D.FLOAT ratio);

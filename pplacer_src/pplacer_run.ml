@@ -548,7 +548,10 @@ let run_file prefs query_fname =
         let map_fasta = IntMap.fold
           (fun i mrca accum ->
             if not (IntMap.mem i seq_map) then accum else
-              let tax_name = Tax_taxonomy.get_tax_name td mrca in
+              let tax_name = match mrca with
+                | Tax_id.NoTax -> "none"
+                | _ -> Tax_taxonomy.get_tax_name td mrca
+              in
               List.rev_append
                 (IntMap.find i seq_map)
                 (((Printf.sprintf "%d_%s"

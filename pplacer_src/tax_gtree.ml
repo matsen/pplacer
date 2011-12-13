@@ -44,6 +44,7 @@ let build_topdown_tree td tips =
     | None -> (Some ti, tt)
   in
   let rec aux rooto tt = function
+    | NoTax :: l -> aux rooto tt l
     | ti::l ->
         assert(not(TaxIdMap.mem ti tt)); (* should be nonredundant list *)
         let (rooto', tt') = add_ancestry rooto tt ti in
@@ -84,6 +85,7 @@ let decor_gtree_of_topdown_tree bl_of_rank td root tt =
         new Decor_bark.decor_bark
           (`Of_bl_node_edge_label_decor
             (Some (bl_of_taxid ti), None, None,
+             (* this is okay because NoTax has been excluded earlier *)
             [Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)]))
   in
   (Gtree.gtree

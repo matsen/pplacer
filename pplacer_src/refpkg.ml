@@ -143,8 +143,10 @@ let of_path ?ref_tree path =
 (* mrca tax decor, that is *)
 let get_tax_decor_map rp =
   let td = get_taxonomy rp in
-  IntMap.map
-    (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
+  IntMap.filter_map
+    (fun _ -> function
+      | Tax_id.NoTax -> None
+      | ti -> Some (Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)))
     (get_mrcam rp)
 
 (* tax ref tree is the usual ref tree with but with taxonomic annotation *)

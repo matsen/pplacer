@@ -68,7 +68,7 @@ object (self)
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
         rank TEXT REFERENCES ranks (rank) NOT NULL,
-        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id),
         likelihood REAL NOT NULL
       );
       CREATE INDEX placement_classifications_id ON placement_classifications (placement_id);
@@ -80,7 +80,7 @@ object (self)
         log_like REAL NOT NULL,
         distal_bl REAL NOT NULL,
         pendant_bl REAL NOT NULL,
-        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id),
         map_identity_ratio REAL,
         map_identity_denom INTEGER
        );
@@ -182,7 +182,7 @@ object (self)
       (fun tax_id name ->
         let rank = Tax_taxonomy.rank_name_of_tax_id tax tax_id in
         Sql.bind_step_reset db st [|
-          Sql.D.TEXT (Tax_id.to_string tax_id);
+          Tax_id.to_sql tax_id;
           Sql.D.TEXT name;
           Sql.D.TEXT rank;
         |])

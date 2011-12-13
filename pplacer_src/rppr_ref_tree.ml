@@ -29,7 +29,10 @@ let trees_of_refpkg maybe_numbered painted colored rp =
   let ref_tree =
     if painted then
       Edge_painting.of_refpkg rp
-        |> IntMap.map (fun t -> [Decor.Taxinfo (t, tax_name t)])
+        |> IntMap.filter_map
+            (fun _ -> function
+              | Tax_id.NoTax -> None
+              | t -> Some [Decor.Taxinfo (t, tax_name t)])
         |> Decor_gtree.add_decor_by_map
             (Refpkg.get_ref_tree rp |> Decor_gtree.of_newick_gtree)
     else
