@@ -116,7 +116,7 @@ object (self)
           [data.rankname;
            seqname;
            Tax_id.to_string ti;
-           (* okay because cut_leaves will never include a NoTax. *)
+           (* below is okay because cut_leaves will never include a NoTax. *)
            Tax_taxonomy.get_tax_name td ti;
            string_of_int (Tax_id.TaxIdMap.find ti taxcounts)]
           :: accum)
@@ -130,8 +130,8 @@ object (self)
     and check_all_ranks = fv check_all_ranks in
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
-    (* also okay; this is only used on things coming from alternate_colors,
-     * which won't have NoTax fed into it. *)
+    (* below is also okay; this is only used on things coming from
+     * alternate_colors, which won't have NoTax fed into it. *)
     let tax_name = Tax_taxonomy.get_tax_name td in
     let foldf alternates data =
       let taxmap' = IntMap.filteri
