@@ -165,13 +165,21 @@ struct
 end
 
 let setup_git_version () =
-  let version_string = match run_and_read "git describe --long | tr -d '\\n'" with
-    | "" -> "None"
-    | version -> Printf.sprintf "Some \"%s\"" (String.escaped version)
+  let write_version version ch =
+    Printf.fprintf ch "let version = %S\n" version;
+    close_out ch
   in
-  let ch = open_out "common_src/git_version.ml" in
-  Printf.fprintf ch "let version = %s\n" version_string;
-  close_out ch
+  match run_and_read "git describe --long | tr -d '\\n'" with
+    | "" ->
+      begin match begin
+        try
+          Some (open_out_gen [Open_creat; Open_excl; Open_wronly] 0o644 "common_src/version.ml")
+        with Sys_error _ -> None
+      end with
+        | Some ch -> write_version "unknown" ch
+        | None -> ()
+      end
+    | version -> open_out "common_src/version.ml" |> write_version version
 
 let is_osx =
   (run_and_read "uname -s | tr -d '\\n'") = "Darwin"
