@@ -1,3 +1,4 @@
+open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
 
@@ -130,18 +131,18 @@ object (self)
         if not (tax_pred pq && mass_pred pq) then
           pqs
         else
-          let namel = List.filter
-            (fun name ->
+          let namlom = List.filter
+            (fst |- fun name ->
               if r_default_exclude then
                 (r_included name) && (not (r_excluded name))
               else
                 (not (r_excluded name)) || (r_included name))
-            (Pquery.namel pq)
+            (Pquery.namlom pq)
           in
-          if namel = [] then
+          if List.is_empty namlom then
             pqs
           else
-            (Pquery.set_namel pq namel) :: pqs
+            (Pquery.set_namlom pq namlom) :: pqs
       in
       let filtered = List.map
         (fun pr ->

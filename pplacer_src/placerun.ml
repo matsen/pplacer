@@ -91,6 +91,24 @@ let redup sequence_tbl pr =
            | Not_found -> pq)
     |> set_pqueries pr
 
+let really_redup sequence_tbl pr =
+  let namlom_transform (n, m) =
+    if not (Hashtbl.mem sequence_tbl n) then
+      [n, m]
+    else (* ... *)
+    List.map
+      (second (( *.) m))
+      (Hashtbl.find_all sequence_tbl n)
+  in
+  get_pqueries pr
+    |> List.map
+        (fun pq ->
+          Pquery.namlom pq
+            |> List.map namlom_transform
+            |> List.flatten
+            |> Pquery.set_namlom pq)
+    |> set_pqueries pr
+
 let transform func pr =
   get_pqueries pr
     |> List.map
