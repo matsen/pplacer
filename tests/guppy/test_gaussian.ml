@@ -4,7 +4,7 @@ open Test_util
 let rng = make_rng 1
 let n_samples = 1000
 let criterion = Placement.ml_ratio
-let weighting = Mass_map.Weighted
+let weighting = Mass_map.Spread
 let p = 1.
 
 (* Just a little regression test. *)

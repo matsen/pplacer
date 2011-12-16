@@ -33,7 +33,7 @@ let bump_function r =
 let pd_of_placerun criterion normalized pr =
   let gt = Placerun.get_ref_tree pr
   and mass = I.of_placerun
-    Mass_map.Unweighted
+    Mass_map.Point
     criterion
     pr
   in
@@ -47,7 +47,7 @@ let pd_of_placerun criterion normalized pr =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd ~weighting_allowed:false () as super_mass
+  inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 

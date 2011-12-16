@@ -14,7 +14,7 @@ $(RELEASE):
 	ocamlbuild $@
 
 clean:
-	rm -rf bin libs
+	rm -rf bin
 	rm -f tests.native
 	ocamlbuild -clean
 	rm -f *.mltop
@@ -32,10 +32,10 @@ test: tests.native
 	./tests.native
 
 %.runtop: %.top
-	ledit -x -h .toplevel_history ./$*.top
+	rlwrap ./$*.top
 
 runcaml:
-	ledit -x -h .toplevel_history ocaml
+	rlwrap ocaml
 
 tags:
 	taggage `find . -name "*.ml" | grep -v "_build"`

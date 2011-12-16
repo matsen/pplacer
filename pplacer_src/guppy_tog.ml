@@ -65,7 +65,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit output_cmd () as super_output
-  inherit mass_cmd ~weighting_allowed:false () as super_mass
+  inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit classic_viz_cmd () as super_classic_viz
 

@@ -2,7 +2,6 @@
  * tree. For us, these internal locations will be mrcams. *)
 
 open Ppatteries
-open Tax_id
 
 (* Given
  * u1 and u2: utility Glvs

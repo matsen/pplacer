@@ -14,12 +14,17 @@ object (self)
     (Formatted (3, "The default value for the multiclass_count param. Default: %d"))
   val default_likelihood = flag "--default-multiclass-likelihood"
     (Formatted (0.05, "The default value for the multiclass_likelihood param. Default: %0.3f"))
+  val default_classify_to = flag "--default-classify-to"
+    (Formatted ("species", "The default value for the classify_to param. Default: %s"))
 
   method specl =
     super_refpkg#specl
     @ super_sqlite#specl
     @ [
       float_flag default_cutoff;
+      int_flag default_count;
+      float_flag default_likelihood;
+      string_flag default_classify_to;
     ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
@@ -63,7 +68,7 @@ object (self)
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
         rank TEXT REFERENCES ranks (rank) NOT NULL,
-        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id),
         likelihood REAL NOT NULL
       );
       CREATE INDEX placement_classifications_id ON placement_classifications (placement_id);
@@ -75,11 +80,19 @@ object (self)
         log_like REAL NOT NULL,
         distal_bl REAL NOT NULL,
         pendant_bl REAL NOT NULL,
-        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id),
         map_identity_ratio REAL,
         map_identity_denom INTEGER
        );
       CREATE INDEX placement_positions_id ON placement_classifications (placement_id);
+
+      CREATE TABLE IF NOT EXISTS placement_median_identities (
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
+        tax_id TEXT REFERENCES taxa (tax_id) NOT NULL,
+        median_percent_identity REAL NOT NULL,
+        PRIMARY KEY (placement_id, tax_id)
+      );
+      CREATE INDEX placement_median_identities_id ON placement_median_identities (placement_id);
 
       CREATE VIEW best_classifications
       AS
@@ -97,6 +110,11 @@ object (self)
                                          AND likelihood > (SELECT val
                                                            FROM   params
                                                            WHERE  name = 'likelihood_cutoff')
+                                         AND rank_order <= (SELECT rank_order
+                                                            FROM   params
+                                                                   JOIN ranks
+                                                                     ON val = rank
+                                                            WHERE  name = 'classify_to')
                                   ORDER  BY placement_id,
                                             rank_order ASC,
                                             likelihood ASC)
@@ -114,21 +132,23 @@ object (self)
                                          bc.rank,
                                          pc.rank AS below_rank
                                   FROM   best_classifications bc
-                                         JOIN placement_classifications pc USING (placement_id)
+                                         JOIN placement_classifications pc USING ( placement_id )
                                          JOIN ranks bcr
                                            ON bc.rank = bcr.rank
                                          JOIN ranks pcr
                                            ON pc.rank = pcr.rank
-                                  WHERE  pcr.rank_order > bcr.rank_order
-                                         AND pc.likelihood >
-                                             (SELECT val
-                                              FROM   params
-                                              WHERE  name = 'multiclass_likelihood')
+                                  WHERE  pcr.rank_order <= bcr.rank_order
+                                         AND pc.likelihood > (SELECT val
+                                                              FROM   params
+                                                              WHERE  name = 'multiclass_likelihood')
                                   GROUP  BY placement_id,
                                             desired_rank
                                   HAVING COUNT(*) <= (SELECT val
                                                       FROM   params
                                                       WHERE  name = 'multiclass_count')
+                                         AND SUM(pc.likelihood) > (SELECT val
+                                                                   FROM   params
+                                                                   WHERE  name = 'likelihood_cutoff')
                                   ORDER  BY pcr.rank_order)
                           GROUP  BY placement_id) USING (placement_id, rank)
                LEFT JOIN placement_classifications pc
@@ -147,6 +167,7 @@ object (self)
         [| Sql.D.TEXT "likelihood_cutoff"; Sql.D.FLOAT (fv default_cutoff) |];
         [| Sql.D.TEXT "multiclass_count"; Sql.D.INT (fv default_count |> Int64.of_int) |];
         [| Sql.D.TEXT "multiclass_likelihood"; Sql.D.FLOAT (fv default_likelihood) |];
+        [| Sql.D.TEXT "classify_to"; Sql.D.TEXT (fv default_classify_to) |];
       ];
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
@@ -161,7 +182,7 @@ object (self)
       (fun tax_id name ->
         let rank = Tax_taxonomy.rank_name_of_tax_id tax tax_id in
         Sql.bind_step_reset db st [|
-          Sql.D.TEXT (Tax_id.to_string tax_id);
+          Tax_id.to_sql tax_id;
           Sql.D.TEXT name;
           Sql.D.TEXT rank;
         |])

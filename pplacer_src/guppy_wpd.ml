@@ -11,7 +11,7 @@ let reflect x =
   end
 
 let wpd_of_placerun exponent criterion pr =
-  let mass_map = Mass_map.Indiv.of_placerun Mass_map.Unweighted criterion pr in
+  let mass_map = Mass_map.Indiv.of_placerun Mass_map.Point criterion pr in
   let f =
     if exponent < 0. || exponent > 1. then
       failwith("exponent must be between 0 and 1, inclusive")
@@ -27,7 +27,7 @@ let wpd_of_placerun exponent criterion pr =
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd ~weighting_allowed:false () as super_mass
+  inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 
