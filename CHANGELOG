@@ -1,16 +1,27 @@
 1.1.alpha11
 ===========
 
- * Closed GH-42: Added --edpl flag to `guppy fat` for EDPL coloring in fat
-   trees.
  * Fixed a bug with parsing MAP identity from a jplace file.
  * Fixed a bug that occurred sometimes when running `rppr convexify` on a tree
    where not every leaf had a corresponding tax_id at a particular rank.
+ * Closed GH-42: Added --edpl flag to `guppy fat` for EDPL coloring in fat
+   trees.
+ * Closed GH-146: Added an --unweighted flag to `guppy pca`.
+ * Closed GH-168: Changed guppy and rppr to list the subcommands in --help;
+   reformatted the options flags to be more readable.
+ * Closed GH-169: Fixed all commands that work on reference packages to use the
+   -c flag to specify the reference package.
+ * Closed GH-176: Fixed `rppr reroot` to handle cases where not all tax_ids are
+   specified under the rank the rerooting is happening at.
  * Closed GH-177: Added --mass-gt and --mass-le flags to `guppy filter`.
  * Closed GH-178: Fixed `guppy compress` to add a zero root branch length.
  * Closed GH-179: Changed the JSON emitter to be able to represent a wider
    range of floats.
+ * Closed GH-182: Changed 'weighted' to 'spread' and 'unweighted' to 'point'
+   across all the guppy and rppr commands.
  * Closed GH-184: Added a placement_median_identites table for guppy classify.
+ * Closed GH-188: Added support for a reference package to be able to specify
+   that some reference sequences are unclassified.
 
 
 1.1.alpha10

@@ -20,7 +20,7 @@ let of_refpkg rp =
             if ColorSet.cardinal cset = 1 then
               i, ColorSet.choose cset
             else if rank = 0 then
-              failwith (Printf.sprintf "couldn't evaluate %d" i)
+              i, Tax_id.NoTax
             else
               aux (rank - 1)
           in

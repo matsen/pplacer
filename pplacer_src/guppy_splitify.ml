@@ -8,6 +8,10 @@ let tolerance = 1e-3
 (* *** splitify *** *)
 
 let splitify x = x -. (1. -. x)
+let unweighted_splitify = splitify |- flip compare 0. |- float_of_int
+
+let splitify_func_of_bool is_unweighted =
+  if is_unweighted then unweighted_splitify else splitify
 
 let soft_find i m = if IntMap.mem i m then IntMap.find i m else 0.
 
@@ -31,7 +35,7 @@ let below_mass_map edgem t =
 (* Take a placerun and turn it into a vector which is indexed by the edges of
  * the tree.
  * Later we may cut the edge mass in half; right now we don't do anything with it. *)
-let splitify_placerun weighting criterion pr =
+let splitify_placerun splitify weighting criterion pr =
   let preim = Mass_map.Pre.of_placerun weighting criterion pr
   and t = Placerun.get_ref_tree pr
   in
@@ -58,19 +62,25 @@ object (self)
   inherit mass_cmd () as super_mass
   inherit placefile_cmd () as super_placefile
 
+  val unweighted = flag "--unweighted"
+    (Plain (false, "Perform an unweighted splitify."))
+
   method specl =
     super_output#specl
     @ super_mass#specl
+    @ [
+      toggle_flag unweighted;
+    ]
 
   method desc =
 "writes out differences of masses for the splits of the tree"
   method usage = "usage: splitify [options] placefile(s)"
 
   method private placefile_action prl =
-    let weighting, criterion = self#mass_opts in
-    let data = List.map (splitify_placerun weighting criterion) prl
-    and names = (List.map Placerun.get_name prl)
-    in
+    let splitify = splitify_func_of_bool (fv unweighted)
+    and weighting, criterion = self#mass_opts in
+    let data = List.map (splitify_placerun splitify weighting criterion) prl
+    and names = (List.map Placerun.get_name prl) in
     save_out_named_fal
       self#out_channel
       (List.combine names data)
