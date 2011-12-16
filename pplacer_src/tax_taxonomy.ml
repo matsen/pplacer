@@ -37,11 +37,12 @@ let get_tax_rank td ti =
 
 let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
-let has_ancestor td ti = TaxIdMap.mem ti td.tax_tree
-
 let get_ancestor td ti =
   try TaxIdMap.find ti td.tax_tree with
   | Not_found -> raise (NoAncestor ti)
+
+let get_ancestor_opt td ti =
+  TaxIdMap.Exceptionless.find ti td.tax_tree
 
 let get_tax_name td ti =
   try TaxIdMap.find ti td.tax_name_map with
@@ -51,7 +52,10 @@ let get_lineage td = function
   | NoTax -> []
   | TaxStr _ as ti -> (* ... *)
   let rec aux accu ti' =
-    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else ti' :: accu
+    let accu' = ti' :: accu in
+    match get_ancestor_opt td ti' with
+      | Some ancestor -> aux accu' ancestor
+      | None -> accu'
   in
   aux [] ti
 
