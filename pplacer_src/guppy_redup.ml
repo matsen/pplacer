@@ -38,7 +38,7 @@ object (self)
             |> csv_in_channel
             |> Csv.of_in_obj
             |> Csv.iter ~f;
-          Placerun.really_redup sequence_tbl pr
+          Placerun.redup sequence_tbl pr
         else
           let sequence_tbl = Hashtbl.create 1024 in
           fv dupfile
@@ -49,7 +49,7 @@ object (self)
                   List.iter
                     (identity &&& const 1. |- Hashtbl.add sequence_tbl k)
                     vs);
-          Placerun.really_redup sequence_tbl pr
+          Placerun.redup sequence_tbl pr
 
       in
       self#write_placefile

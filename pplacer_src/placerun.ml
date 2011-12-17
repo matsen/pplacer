@@ -79,19 +79,6 @@ let filter_unplaced pr =
   { pr with pqueries = placed_l }
 
 let redup sequence_tbl pr =
-  get_pqueries pr
-    |> List.map
-        (fun pq ->
-          try
-            Pquery.namel pq
-              |> List.map (Hashtbl.find sequence_tbl)
-              |> List.flatten
-              |> Pquery.set_namel pq
-         with
-           | Not_found -> pq)
-    |> set_pqueries pr
-
-let really_redup sequence_tbl pr =
   let namlom_transform (n, m) =
     if not (Hashtbl.mem sequence_tbl n) then
       [n, m]

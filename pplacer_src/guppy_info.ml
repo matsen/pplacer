@@ -23,7 +23,7 @@ object (self)
           pr.name;
           string_of_int (Gtree.n_taxa pr.ref_tree);
           string_of_int (n_pqueries pr);
-          Pquery.total_multiplicity pr.pqueries |> Printf.sprintf "%12.12g";
+          Pquery.total_multiplicity pr.pqueries |> Printf.sprintf ".12g";
         |])
       prl;
 
