@@ -69,9 +69,9 @@ let boot_placerun rng pr =
   in
   let rubber_pquery pq desired_multi =
     assert(desired_multi > 0);
-    Pquery.namel pq
+    Pquery.namlom pq
       |> flip rubber_list desired_multi
-      |> Pquery.set_namel pq
+      |> Pquery.set_namlom pq
   in
   for i=(Array.length pqa)-1 downto 0 do
     if multa.(i) > 0 then

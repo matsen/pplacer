@@ -93,7 +93,6 @@ let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
 let uniform_namel namel = List.map (identity &&& const 1.) namel
-let set_namel pq namel = { pq with namlom = uniform_namel namel }
 let set_mass pq m = { pq with namlom = [name pq, m] }
 let set_namlom pq nm = { pq with namlom = nm }
 
