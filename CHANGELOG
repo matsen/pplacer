@@ -4,9 +4,9 @@
  * Fixed a bug with parsing MAP identity from a jplace file.
  * Fixed a bug that occurred sometimes when running `rppr convexify` on a tree
    where not every leaf had a corresponding tax_id at a particular rank.
- * Fixed a bug with fasttree placements where the wrong array was being
-   considered, which caused an error when the number of sites and rates weren't
-   equal.
+ * Fixed a bug with fasttree placements which caused failure when the site
+   categories had to be calculated (ie. when using a combined reference + query
+   alignment)
  * Changed versions to be parsed only out of git tags.
  * Closed GH-42: Added --edpl flag to `guppy fat` for EDPL coloring in fat
    trees.
