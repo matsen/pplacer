@@ -5,6 +5,12 @@ open Ppatteries
    A cutoff c is specified via a command line flag. We will be merging pairs of
    pqueries that have KR distance between them less than c.
 
+   The pqueries are put in an array so that they can be referred to by index
+   instead of trying to make an OrderedPquery module. In all of the following
+   description, these indices and the pqueries are interchangeable.
+
+   To compress the pqueries:
+
    * divide the pqueries into islands (see mass_islands.ml).
 
    * for each island, calculate all of the pairwise distances between the
@@ -17,15 +23,6 @@ open Ppatteries
    matrix)
 
    * merge pqueries according to this graph as described below.
-
-Aaron: this paragraph below needs to be updated according to what was actually
-done.
-
-   We will need to put the pqueries in an equivalently-ordered array so that we
-   can go from indices to actual pqueries. Because we will be wanting to go
-   back and forth between the actual pqueries and entries in the matrix, I
-   strongly suggest just using the indices instead of the actual pqueries
-   below. I'll still call them pqueries or nodes for convenience.
 
 
    == Merging the pqueries ==

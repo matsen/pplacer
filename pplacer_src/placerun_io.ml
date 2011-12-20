@@ -178,30 +178,6 @@ let of_json_file fname =
     (Filename.chop_extension (Filename.basename fname))
     pql
 
-(* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
-
-(* AAARON-- does any of this below actually get used? *)
-
-let csv_col_names =
-  [
-    "name";
-    "hit";
-    "location";
-    "ml_ratio";
-    "post_prob";
-    "log_like";
-    "marginal_prob";
-    "distal_bl";
-    "pendant_bl";
-    "classif";
-  ]
-
-let to_csv_strl pr =
-  List.flatten (List.map Pquery_io.to_csv_strl pr.Placerun.pqueries)
-
-let to_csv_file out_fname pr =
-  Csv.save out_fname (csv_col_names::(to_csv_strl pr))
-
 let ppr_placerun ff pr =
   Format.fprintf ff "Placerun %s" pr.Placerun.name
 
@@ -211,6 +187,7 @@ let split_file s =
     failwith "csv file provided with no jplace to split";
   Str.matched_group 1 s, Str.matched_group 2 s
 
+(* load in a .place or .jplace file. *)
 let of_any_file fname =
   if Filename.check_suffix fname ".place" then
     of_file fname
@@ -220,6 +197,9 @@ let of_any_file fname =
   else
     failwith ("unfamiliar suffix on " ^ fname)
 
+(* take a (filename -> placerun) function, some file, and a csv file, then
+ * split the resulting placerun into a placerun list according to the csv
+ * file. *)
 let of_split_file ?(getfunc = of_any_file) fname =
   let to_split, to_split_with = split_file fname in
   let to_split' = getfunc to_split

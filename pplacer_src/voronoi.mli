@@ -12,15 +12,21 @@
 
 open Ppatteries
 
+(* leaves are ints since the node numbers on an stree are ints. *)
 type leaf = int
 
+(* a leaf and the distance to that leaf. *)
 type ldist = {
   leaf: leaf;
   distance: float;
 }
 
+(* a map from nodes on a tree to the associated ldists. *)
 type ldistm = ldist IntMap.t
 
+(* a voronoi diagram: a tree, the leaves on the tree being considered, and the
+ * ldistm on the tree. The set of leaves in the ldistm is a strict subset of the
+ * all_leaves set. *)
 type v = {
   tree: Newick_gtree.t;
   ldistm: ldist IntMap.t;
@@ -90,9 +96,9 @@ val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement
     voronoi diagram. If a snipdist isn't provided, it will be calculated from
     the specified diagram. *)
 
-val update_score: Mass_map.Indiv.t -> v -> leaf -> float IntMap.t -> float IntMap.t
-val leaf_work: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> leaf -> float
 val ecld: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> float
+(** Find the ECLD of a voronoi diagram, given a mapping from leaves to mass on
+    the tree being moved to the leaf. o*)
 
 type solution = {
   leaves: IntSet.t;
@@ -106,9 +112,21 @@ module type Alg = sig
   val solve:
     Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
 end
+
 module Greedy: Alg
+(** Greedy algorithm: at each step, remove the leaf which reduces the ECLD by
+    the most. *)
+
 module Full: sig
   include Alg
   val csv_log: Csv.out_channel option ref
+(** If csv_log is Some out_channel, then a log of the solutions considered at
+    every internal node is written out in CSV format. *)
+
 end
+(** Full algorithm: determine the set of leaves which produces the smallest
+    ECLD by examining the tree. *)
+
 module Forced: Alg
+(** Forced algorithm: brute-force to try every combination of leaves looking
+    for which has the smallest ECLD. *)
