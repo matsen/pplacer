@@ -32,6 +32,7 @@ type t =
     (* inferred *)
     mrcam       : Tax_id.tax_id IntMap.t Lazy.t;
     uptree_map  : uptree_map Lazy.t;
+    item_path_fn: string -> string;
   }
 
 
@@ -45,6 +46,7 @@ let get_seqinfom    rp = Lazy.force rp.seqinfom
 let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
+let get_item_path   rp = rp.item_path_fn
 
 let refpkg_versions = ["1.1"]
 
@@ -133,6 +135,7 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     name        = (get "name");
     mrcam       = lmrcam;
     uptree_map  = luptree_map;
+    item_path_fn = get;
   }
 
 let of_path ?ref_tree path =

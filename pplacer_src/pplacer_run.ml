@@ -55,7 +55,7 @@ object (self)
   method progress_received = progressfunc
 end
 
-let run_file prefs query_fname =
+let run_file ?placerun_cb prefs query_fname =
   let timings = ref StringMap.empty in
 
   dprintf
@@ -598,9 +598,12 @@ let run_file prefs query_fname =
       Placerun.make orig_ref_tree query_bname (!queries)
         |> Placerun.redup redup_tbl
         |> classify
-        |> Placerun_io.to_json_file
-            (Array.to_list Sys.argv |> String.concat " ")
-            ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+        |> match placerun_cb with
+            | None ->
+              Placerun_io.to_json_file
+                (Array.to_list Sys.argv |> String.concat " ")
+                ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+            | Some cb -> cb
     in
     gotfunc, cachefunc, donefunc
 
