@@ -3,10 +3,9 @@ open Guppy_cmdobjs
 open Ppatteries
 
 let pentropy_of_placerun criterion pr =
-  let mass_map = Mass_map.Indiv.of_placerun Mass_map.Point criterion pr in
   Guppy_pd.total_along_mass
     (Placerun.get_ref_tree pr)
-    mass_map
+    (Mass_map.Indiv.of_placerun Mass_map.Point criterion pr)
     (fun r bl -> if approx_equal !r 0. then 0. else bl *. !r *. (log !r))
   |> (~-.)
 
