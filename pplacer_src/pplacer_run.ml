@@ -214,7 +214,7 @@ let run_file prefs query_fname =
               failwith (Printf.sprintf "%c is not a known base in %s" c name))
           seq
       in
-      (* turn an alignment enum into a bool array mask which represents if any
+      (* Turn an alignment enum into a bool array mask which represents if any
        * site seen in the alignment was informative. *)
       let mask_of_enum enum =
         let mask = Array.copy initial_mask in
@@ -227,6 +227,8 @@ let run_file prefs query_fname =
         mask
       in
       let ref_mask = Array.enum ref_align |> mask_of_enum in
+      (* This function takes a sequence string and returns if it overlaps any
+       * informative column of the reference sequence. *)
       let overlaps_mask s = String.enum s
         |> Enum.map Alignment.informative
         |> curry Enum.combine (Array.enum ref_mask)
@@ -234,8 +236,10 @@ let run_file prefs query_fname =
       in
       (try
          let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequence." seq)
+         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
        with Not_found -> ());
+      (* Mask out sites that are either all gap in the reference alignment or
+       * all gap in the query alignment. *)
       let mask = Array.map2
         (&&)
         ref_mask
