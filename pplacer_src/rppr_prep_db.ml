@@ -60,6 +60,7 @@ object (self)
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         name TEXT NOT NULL UNIQUE,
         origin TEXT NOT NULL,
+        mass REAL NOT NULL,
         PRIMARY KEY (placement_id, name, origin)
       );
       CREATE INDEX placement_names_id ON placement_names (placement_id);
