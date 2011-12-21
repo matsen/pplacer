@@ -136,6 +136,10 @@ val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
     node numbers to a list of the values of the map at each of the subtrees of
     that internal node. *)
 
+val build_rank_tax_map:
+  Tax_taxonomy.t -> ('a -> int option) -> ('a * Tax_id.t) Enum.t ->
+  Tax_id.t IntMap.t IntMap.t
+
 val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
 (** Build a map from leaves to tax_ids for each rank of the taxonomy in a
     reference package. *)

@@ -545,18 +545,9 @@ let node_label_map_of_tree t =
     t
     StringMap.empty
 
-let rank_tax_map_of_refpkg rp =
-  let gt = Refpkg.get_ref_tree rp in
-  let node_map = node_label_map_of_tree gt in
-  let td = Refpkg.get_taxonomy rp
-  and seqinfo = Refpkg.get_seqinfom rp in
+let build_rank_tax_map td node_fn enum =
   let add_to_rankmap seq rankmap ti =
-    match begin
-      try
-        Some (StringMap.find seq node_map)
-      with
-        | Not_found -> None
-    end with
+    match node_fn seq with
       | Some node ->
         let rank = Tax_taxonomy.get_tax_rank td ti in
         let seqmap = IntMap.get rank IntMap.empty rankmap in
@@ -566,14 +557,22 @@ let rank_tax_map_of_refpkg rp =
           rankmap
       | None -> rankmap
   in
-  StringMap.fold
-    (fun seq {Tax_seqinfo.tax_id = ti} rankmap ->
+  Enum.fold
+    (fun rankmap (seq, ti) ->
       List.fold_left
         (add_to_rankmap seq)
         rankmap
         (Tax_taxonomy.get_lineage td ti))
-    seqinfo
     IntMap.empty
+    enum
+
+let rank_tax_map_of_refpkg rp =
+  let node_map = Refpkg.get_ref_tree rp |> node_label_map_of_tree
+  and td = Refpkg.get_taxonomy rp in
+  Refpkg.get_seqinfom rp
+  |> StringMap.enum
+  |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
+  |> build_rank_tax_map td (flip StringMap.Exceptionless.find node_map)
   |> tap (fun m ->
     Array.iteri
       (fun rank rankname ->
