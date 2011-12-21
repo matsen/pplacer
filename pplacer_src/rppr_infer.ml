@@ -44,15 +44,37 @@ object (self)
     let gt = Refpkg.get_ref_tree rp
     and td = Refpkg.get_taxonomy rp
     and seqinfo = Refpkg.get_seqinfom rp in
-    let colors = Newick_gtree.leaf_label_map gt
-      |> IntMap.map (Tax_seqinfo.tax_id_by_node_label seqinfo)
+    let leaf_labels = Newick_gtree.leaf_label_map gt in
+    let colors =
+      IntMap.map
+        (Tax_seqinfo.tax_id_by_node_label seqinfo)
+        leaf_labels
+    and seq_nodes = IntMap.enum leaf_labels
+      |> Enum.map swap
+      |> StringMap.of_enum
     and st = Gtree.get_stree gt in
-    let sizemim, _ = Convex.build_sizemim_and_cutsetim (colors, st) in
-    let st' = prune_notax sizemim st in
+    let taxa_set colorm needle =
+      IntMap.fold
+        (fun i ti accum -> if ti = needle then IntSet.add i accum else accum)
+        colorm
+        IntSet.empty
+    and sizemim, _ = Convex.build_sizemim_and_cutsetim (colors, st) in
+    let dm = Edge_rdist.build_pairwise_dist gt
+    and no_tax = taxa_set colors Tax_id.NoTax in
+    let max_taxdist colorm ti =
+      let ta = taxa_set colorm ti |> IntSet.elements |> Array.of_list in
+      Uptri.init
+        (Array.length ta)
+        (fun i j -> Edge_rdist.find_pairwise_dist dm ta.(i) 0. ta.(j) 0.)
+      |> Uptri.to_array
+      |> Array.max
+    and st' = prune_notax sizemim st in
     let gt' = Gtree.set_stree gt st' in
     let prefs = Prefs.defaults () in
     prefs.Prefs.refpkg_path := fv refpkg_path;
     prefs.Prefs.children := fv processes;
+    prefs.Prefs.calc_pp := true;
+    prefs.Prefs.informative_prior := true;
     let results = RefList.empty () in
     let placerun_cb pr =
       Placerun.get_pqueries pr
@@ -62,11 +84,12 @@ object (self)
               |> List.map Placement.classif
               |> Tax_taxonomy.list_mrca td
             in
-            let classif_l =
-              [Tax_id.to_string classif; Tax_taxonomy.get_tax_name td classif]
-            in
             List.iter
-              (flip List.cons classif_l |- RefList.push results)
+              (Tuple3.curry
+                 identity
+                 classif
+                 (Pquery.best_place Placement.ml_ratio pq)
+               |- RefList.push results)
               (Pquery.namel pq))
     in
     File.with_temporary_out (fun ch tree_file ->
@@ -77,6 +100,68 @@ object (self)
         ~placerun_cb
         prefs
         (Refpkg.get_item_path rp "aln_fasta"));
-    RefList.to_list results |> self#write_ll_tab
+    let colors' =
+      RefList.fold_left
+        (fun accum (tid, _, seq) ->
+          IntMap.add (StringMap.find seq seq_nodes) tid accum)
+        colors
+        results
+    and best_placements =
+      RefList.fold_left
+        (fun accum (_, p, seq) ->
+          IntMap.add (StringMap.find seq seq_nodes) p accum)
+        IntMap.empty
+        results
+    in
+    let rankmap = IntMap.enum colors' |> Convex.build_rank_tax_map td some in
+    let highest_rank, _ = IntMap.max_binding rankmap in
+    IntSet.fold
+      (fun i accum ->
+        let p = IntMap.find i best_placements in
+        dprintf ~l:2 "%s:\n" (Gtree.get_node_label gt i);
+        let rec aux rank =
+          if not (IntMap.mem rank rankmap) then aux (rank - 1) else (* ... *)
+          let taxm = IntMap.find rank rankmap in
+          if not (IntMap.mem i taxm) then aux (rank - 1) else (* ... *)
+          let ti = IntMap.find i taxm in
+          let others = taxa_set taxm ti |> flip IntSet.diff no_tax
+          and max_pairwise = max_taxdist taxm ti in
+          let max_placement = others
+            |> IntSet.enum
+            |> Enum.map
+                (fun j ->
+                  Edge_rdist.find_pairwise_dist
+                    dm
+                    j
+                    0.
+                    (Placement.location p)
+                    (Placement.distal_bl p))
+            |> Enum.reduce max
+            |> (+.) (Placement.pendant_bl p)
+          in
+          dprintf ~l:2 "  %s -> %s (%s): %b %g max %g max+pend\n"
+            (Tax_taxonomy.get_rank_name td rank)
+            (Tax_id.to_string ti)
+            (Tax_taxonomy.get_tax_name td ti)
+            (max_placement < max_pairwise)
+            max_pairwise
+            max_placement;
+          if max_placement < max_pairwise then
+            ti
+          else if rank = 0 then
+            failwith
+              (Printf.sprintf "no inferred taxid for %s" (Tax_id.to_string ti))
+          else
+            aux (rank - 1)
+        in
+        let ti = aux highest_rank in
+        [Gtree.get_node_label gt i;
+         Tax_id.to_string ti;
+         Tax_taxonomy.get_tax_name td ti]
+        :: accum
+      )
+      no_tax
+      []
+    |> self#write_ll_tab
 
 end
