@@ -129,7 +129,6 @@ let total_over_tree a b c d e =
 
 module I = Mass_map.Indiv
 
-let some x = Some x
 (* N Indiv.v list IntMaps -> (float * float N-array) list IntMap.
  * The latter is the input for the KR distance function. *)
 let make_n_kr_map ml =

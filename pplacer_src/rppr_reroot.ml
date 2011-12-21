@@ -7,8 +7,6 @@ open Stree
 
 exception Found_root of stree
 
-let some x = Some x
-
 let find_root rp gt =
   let td = Refpkg.get_taxonomy rp
   and seqinfom = Refpkg.get_seqinfom rp in
