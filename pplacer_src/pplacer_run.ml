@@ -214,19 +214,21 @@ let run_file prefs query_fname =
               failwith (Printf.sprintf "%c is not a known base in %s" c name))
           seq
       in
+      (* Turn an alignment enum into a bool array mask which represents if any
+       * site seen in the alignment was informative. *)
       let mask_of_enum enum =
-        Enum.fold
+        let mask = Array.copy initial_mask in
+        Enum.iter
           (tap check_seq
            |- snd
-           |- String.enum
-           |- Enum.map Alignment.informative
-           |- Array.of_enum
-           |- Array.map2 (||)
-           |> flip)
-          initial_mask
-          enum
+           |- String.iteri
+               (fun i c -> if Alignment.informative c then mask.(i) <- true))
+          enum;
+        mask
       in
       let ref_mask = Array.enum ref_align |> mask_of_enum in
+      (* This function takes a sequence string and returns if it overlaps any
+       * informative column of the reference sequence. *)
       let overlaps_mask s = String.enum s
         |> Enum.map Alignment.informative
         |> curry Enum.combine (Array.enum ref_mask)
@@ -234,8 +236,10 @@ let run_file prefs query_fname =
       in
       (try
          let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequence." seq)
+         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
        with Not_found -> ());
+      (* Mask out sites that are either all gap in the reference alignment or
+       * all gap in the query alignment. *)
       let mask = Array.map2
         (&&)
         ref_mask
@@ -452,6 +456,9 @@ let run_file prefs query_fname =
     (fun (name, seq) -> Queue.push (name, (String.uppercase seq)) q)
     query_list;
 
+  (* functions called respectively: when a result is received from a child
+   * process, to determine if a sequence should be send to a child process, and
+   * when all child processes have finished. *)
   let gotfunc, cachefunc, donefunc = if Prefs.fantasy prefs <> 0. then begin
     (* fantasy baseball *)
     let fantasy_mat =
@@ -483,8 +490,8 @@ let run_file prefs query_fname =
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
     let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
-    (* XXX AG explain how these two functions are used. Clearly some sort of
-     * finalization. Perhaps a section at the beginning? *)
+    (* similar to gotfunc/donefunc, but called respectively when a pquery is
+     * received and after all pqueries have been received. *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
       (* start: build the Maximum A Posteriori sequences *)
       let mrcam = Refpkg.get_mrcam rp
@@ -682,7 +689,7 @@ let run_file prefs query_fname =
     Printf.printf "\ntiming data:\n";
     StringMap.iter
       (fun name values ->
-        Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
+        Printf.printf "  %s: %0.4fs\n" name (List.fsum values))
       (!timings)
   end
 

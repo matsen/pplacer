@@ -5,10 +5,15 @@ open Ppatteries
 let epsilon = 1e-10
 
 let merge a x = a := x +. !a
+(* float ref list -> float ref: sum a list of float refs, returning a new float
+ * ref. *)
 let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
 
 module I = Mass_map.Indiv
 
+(* convenience function to total the mass along the tree. the callback function
+ * is passed the branch length and the current mass total and returns another
+ * term to sum. the result of total_along_mass is the sum of all the terms. *)
 let total_along_mass gt mass cb =
   let partial_total id = Kr_distance.total_along_edge
     cb

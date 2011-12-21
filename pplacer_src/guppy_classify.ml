@@ -22,8 +22,8 @@ let keymap_add_by f m =
     (TIAMR.to_pairs m)
     TIAMR.empty
 
-(* m is a taxid_algmap and this outputs a list of string lists, one for each
- * placement *)
+(* classify a pquery at all ranks, returning a string list list representing
+ * the table of classifications. *)
 let classif_strll td pq rank_map =
   List.fold_left
     (fun accum name ->
