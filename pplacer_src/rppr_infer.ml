@@ -20,6 +20,41 @@ let prune_notax sizemim st =
   in
   aux st
 
+let place_on_rp prefs rp gt =
+  let td = Refpkg.get_taxonomy rp in
+  Prefs.(
+    prefs.calc_pp := true;
+    prefs.informative_prior := true;
+    prefs.keep_at_most := 20;
+    prefs.keep_factor := 0.001;
+    prefs.max_strikes := 20);
+  let results = RefList.empty () in
+  let placerun_cb pr =
+    Placerun.get_pqueries pr
+    |> List.iter
+        (fun pq ->
+          let classif = Pquery.place_list pq
+            |> List.map Placement.classif
+            |> Tax_taxonomy.list_mrca td
+          in
+          List.iter
+            (Tuple3.curry
+               identity
+               classif
+               (Pquery.best_place Placement.ml_ratio pq)
+                |- RefList.push results)
+            (Pquery.namel pq))
+  in
+  File.with_temporary_out (fun ch tree_file ->
+    Newick_gtree.write ch gt;
+    prefs.Prefs.tree_fname := tree_file;
+    dprintf "%s\n" tree_file;
+    Pplacer_run.run_file
+      ~placerun_cb
+      prefs
+      (Refpkg.get_item_path rp "aln_fasta"));
+  RefList.to_list results
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -58,7 +93,7 @@ object (self)
         (fun i ti accum -> if ti = needle then IntSet.add i accum else accum)
         colorm
         IntSet.empty
-    and sizemim, _ = Convex.build_sizemim_and_cutsetim (colors, st) in
+    and sizemim, _ = build_sizemim_and_cutsetim (colors, st) in
     let dm = Edge_rdist.build_pairwise_dist gt
     and no_tax = taxa_set colors Tax_id.NoTax in
     let max_taxdist colorm ti =
@@ -73,47 +108,21 @@ object (self)
     let prefs = Prefs.defaults () in
     prefs.Prefs.refpkg_path := fv refpkg_path;
     prefs.Prefs.children := fv processes;
-    prefs.Prefs.calc_pp := true;
-    prefs.Prefs.informative_prior := true;
-    let results = RefList.empty () in
-    let placerun_cb pr =
-      Placerun.get_pqueries pr
-      |> List.iter
-          (fun pq ->
-            let classif = Pquery.place_list pq
-              |> List.map Placement.classif
-              |> Tax_taxonomy.list_mrca td
-            in
-            List.iter
-              (Tuple3.curry
-                 identity
-                 classif
-                 (Pquery.best_place Placement.ml_ratio pq)
-               |- RefList.push results)
-              (Pquery.namel pq))
-    in
-    File.with_temporary_out (fun ch tree_file ->
-      Newick_gtree.write ch gt';
-      prefs.Prefs.tree_fname := tree_file;
-      dprintf "%s\n" tree_file;
-      Pplacer_run.run_file
-        ~placerun_cb
-        prefs
-        (Refpkg.get_item_path rp "aln_fasta"));
+    let results = place_on_rp prefs rp gt' in
     let colors' =
-      RefList.fold_left
+      List.fold_left
         (fun accum (tid, _, seq) ->
           IntMap.add (StringMap.find seq seq_nodes) tid accum)
         colors
         results
     and best_placements =
-      RefList.fold_left
+      List.fold_left
         (fun accum (_, p, seq) ->
           IntMap.add (StringMap.find seq seq_nodes) p accum)
         IntMap.empty
         results
     in
-    let rankmap = IntMap.enum colors' |> Convex.build_rank_tax_map td some in
+    let rankmap = IntMap.enum colors' |> build_rank_tax_map td some in
     let highest_rank, _ = IntMap.max_binding rankmap in
     IntSet.fold
       (fun i accum ->
