@@ -27,6 +27,9 @@ let add_decor_by_map t decor_map =
   Gtree.set_bark_map t
     (IntMap.fold map_add_decor_listly decor_map (Gtree.get_bark_map t))
 
+(* given a color, a tree and a set of leaves: first, give all of the leaves on
+ * the tree that color. then, proceed up the tree giving all edges that same
+ * color as long as all of the edges below also have that color. *)
 let color_clades_above ?(color = Decor.red) leaves gt =
   let rec aux accum = function
     | Stree.Leaf i ->

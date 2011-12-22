@@ -5,6 +5,10 @@ let lmerge = List.fold_left ((!) |- (+) |> flip) 0 |- ref
 
 module I = Mass_map.Indiv
 
+(* Convenience wrapper around the functions in Kr_distance for specifying just
+ * a callback with parameters for the count of edge segments below the current
+ * edge segment and the branch length. The return values of the callbacks are
+ * summed across the tree. *)
 let count_along_mass gt mass cb =
   let partial_total id =
     Kr_distance.total_along_edge
@@ -20,7 +24,11 @@ let count_along_mass gt mass cb =
     (fun () -> ref 0)
     (Gtree.get_stree gt)
 
-let of_placerun criterion ?k_max pr =
+(* Compute the rarefaction curve of a placerun, given a placement criterion and
+ * optionally the highest X value for the curve. *)
+let of_placerun:
+    (Placement.t -> float) -> ?k_max:int -> Newick_bark.t Placerun.t -> (int * float) Enum.t
+= fun criterion ?k_max pr ->
   let gt = Placerun.get_ref_tree pr
   and mass = I.of_placerun
     Mass_map.Point

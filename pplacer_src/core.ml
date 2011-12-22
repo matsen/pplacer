@@ -110,9 +110,11 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
   in
   let full_query_evolv = Glv.mimic full_query_orig in
   (* *** the main query loop *** *)
-  let process_query (query_name, query_seq) =
-    Printf.printf ">%s\n" query_name;
-    flush_all ();
+  let process_query ?show_query (query_name, query_seq) =
+    begin match show_query with
+      | Some fn -> fn query_name
+      | None -> Printf.printf ">%s\n" query_name; flush_all ()
+    end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
     (* prepare the query glv *)

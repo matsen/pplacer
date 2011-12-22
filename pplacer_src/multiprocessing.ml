@@ -1,3 +1,14 @@
+(* Run embarrassingly parallel computation in multiple processes.
+
+   This module implements an event loop and some classes that operate on top of
+   the event loop in order to fork, compute things in the new processes, and
+   transfer ocaml values between processes. Basic example classes are provided
+   which implement map, iter, and fold.
+
+   For more complicated processes, the classes provided can be extended.
+
+*)
+
 external quiet_close: int -> unit = "quiet_close"
 external fd_of_file_descr: Unix.file_descr -> int = "%identity"
 

@@ -150,5 +150,7 @@ val alternate_colors: cdtree -> cset IntMap.t
 
 module Naive: sig
   val solve: cdtree -> IntSet.t
+  (** Solve a tree using the naive algorithm. Returns a set of the leaves to
+      keep from the tree. *)
 end
 

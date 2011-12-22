@@ -102,6 +102,8 @@ class newick_bark arg =
 
   end
 
+type t = newick_bark
+
 let empty = new newick_bark `Empty
 
 let float_approx_compare epsilon x y =

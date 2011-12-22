@@ -2,6 +2,8 @@
 
 open Ppatteries
 
+(* Calculate the EDPL of a pquery, given a criterion and a pairwise distance
+ * uptri. *)
 let of_pquery criterion rdist_uptri pq =
   let d p1 p2 =
     Edge_rdist.find_pairwise_dist

@@ -198,7 +198,7 @@ let uptri_exp_kr_diff_times_bl p kr_v bl =
     (Array.length kr_v)
     (fun i j -> ((abs_float (kr_v.(i) -. kr_v.(j))) ** p) *. bl)
 
-(* Z_p distance between two Indiv mass maps *)
+(* Z_p distance between any number of Indiv mass maps *)
 let multi_dist ?(normalization=1.) ref_tree p ml =
   let starter_kr_v = Array.make (List.length ml) 0. in
   let starter_kr_uptri = Uptri.create (Array.length starter_kr_v) 0.
