@@ -5,22 +5,10 @@ open Convex
 
 class cmd () =
 object (self)
-  inherit subcommand () as super
-  inherit refpkg_cmd ~required:true as super_refpkg
-  inherit tabular_cmd () as super_tabular
+  inherit Rppr_infer.cmd () as super_infer
 
-  val processes = flag "-j"
-    (Formatted (2, "The number of processes to run pplacer with. default: %d"))
-
-  method specl =
-    super_refpkg#specl
-  @ super_tabular#specl
-  @ [
-    int_flag processes;
-  ]
-
-  method desc = "infer classifications of unclassified sequences in a reference package"
-  method usage = "usage: infer [options] -c my.refpkg"
+  method desc = "reclassify nonconvex sequences in a reference package"
+  method usage = "usage: reclass [options] -c my.refpkg"
 
   method action _ =
     let rp = self#get_rp in
@@ -65,10 +53,7 @@ object (self)
     let notax_sizemim, _ = build_sizemim_and_cutsetim (notax_colors, st) in
     let st' = Rppr_infer.prune_notax notax_sizemim st in
     let gt' = Gtree.set_stree gt st' in
-    let prefs = Prefs.defaults () in
-    prefs.Prefs.refpkg_path := fv refpkg_path;
-    prefs.Prefs.children := fv processes;
-    let results = Rppr_infer.place_on_rp prefs rp gt' in
+    let results = Rppr_infer.place_on_rp self#prefs rp gt' in
     dprint "finished classifying\n";
     let alternate_map = alternate_colors (uncolored_colors, st)
     and orig_sizemim, _ = build_sizemim_and_cutsetim (colors, st) in

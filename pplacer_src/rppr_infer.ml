@@ -23,12 +23,13 @@ let prune_notax sizemim st =
 let place_on_rp prefs rp gt =
   let td = Refpkg.get_taxonomy rp in
   Prefs.(
-    prefs.calc_pp := true;
     prefs.informative_prior := true;
     prefs.keep_at_most := 20;
     prefs.keep_factor := 0.001;
     prefs.max_strikes := 20);
-  let results = RefList.empty () in
+  let criterion =
+    if Prefs.calc_pp prefs then Placement.post_prob else Placement.ml_ratio
+  and results = RefList.empty () in
   let placerun_cb pr =
     Placerun.get_pqueries pr
     |> List.iter
@@ -41,8 +42,8 @@ let place_on_rp prefs rp gt =
             (Tuple3.curry
                identity
                classif
-               (Pquery.best_place Placement.ml_ratio pq)
-                |- RefList.push results)
+               (Pquery.best_place criterion pq)
+             |- RefList.push results)
             (Pquery.namel pq))
   in
   File.with_temporary_out (fun ch tree_file ->
@@ -63,16 +64,27 @@ object (self)
 
   val processes = flag "-j"
     (Formatted (2, "The number of processes to run pplacer with. default: %d"))
+  val post_prob = flag "-p"
+    (Plain (false, "Calculate posterior probabilities when doing placements."))
 
   method specl =
     super_refpkg#specl
   @ super_tabular#specl
   @ [
     int_flag processes;
+    toggle_flag post_prob;
   ]
 
   method desc = "infer classifications of unclassified sequences in a reference package"
   method usage = "usage: infer [options] -c my.refpkg"
+
+  method private prefs =
+    let prefs = Prefs.defaults () in
+    prefs.Prefs.refpkg_path := fv refpkg_path;
+    Prefs.(
+      prefs.children := fv processes;
+      prefs.calc_pp := fv post_prob);
+    prefs
 
   method action _ =
     let rp = self#get_rp in
@@ -105,10 +117,7 @@ object (self)
       |> Array.max
     and st' = prune_notax sizemim st in
     let gt' = Gtree.set_stree gt st' in
-    let prefs = Prefs.defaults () in
-    prefs.Prefs.refpkg_path := fv refpkg_path;
-    prefs.Prefs.children := fv processes;
-    let results = place_on_rp prefs rp gt' in
+    let results = place_on_rp self#prefs rp gt' in
     let colors' =
       List.fold_left
         (fun accum (tid, _, seq) ->
