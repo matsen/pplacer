@@ -680,10 +680,30 @@ let run_file prefs query_fname =
   in
   flush_all ();
   1 -- Prefs.children prefs
-    |> Enum.map
-      (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
+    |> Enum.filter_map
+      (fun _ ->
+        try
+          Some (new pplacer_process partial gotfunc nextfunc progressfunc)
+        with Unix.Unix_error (e, "fork", _) ->
+          dprintf "error (%s) when trying to fork\n" (Unix.error_message e);
+          None)
     |> List.of_enum
-    |> event_loop;
+    |> (function
+        | [] ->
+          dprint
+            "couldn't fork any children; falling back to a single process.\n";
+          let rec aux () =
+            match begin
+              try
+                Some (nextfunc ())
+              with Finished -> None
+            end with
+              | None -> ()
+              | Some query ->
+                partial ~show_query query |> List.iter gotfunc; aux ()
+          in
+          aux ()
+        | children -> event_loop children);
   donefunc ();
   if Prefs.timing prefs then begin
     Printf.printf "\ntiming data:\n";
