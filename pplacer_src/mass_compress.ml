@@ -53,16 +53,25 @@ let of_placerun ?(p = 1.) ~c weighting criterion pr =
      * single unit of mass for each pquery. *)
     Mass_map.Pre.of_pquery_list weighting criterion [pq]
       |> Mass_map.Indiv.of_pre
-  and gt = Placerun.get_ref_tree pr |> Like_stree.add_zero_root_bl in
+  and gt = Placerun.get_ref_tree pr |> Like_stree.add_zero_root_bl
+  and length = ref 0 in
   Placerun.get_pqueries pr
+  |> tap (fun _ -> dprint "Splitting pqueries into islands... ")
   |> Mass_islands.of_pql
-  |> List.map (fun (_, pql) ->
+  |> tap (fun l -> length := List.length l; dprint "done.\n")
+  |> List.mapi (fun i (_, pql) ->
+    dprintf "Compressing island %d/%d (%d pqueries)... "
+      (succ i)
+      !length
+      (List.length pql);
     (* For each mass island, make a graph between each pair of pqueries with a
      * KR distance below the `c` threshold. *)
+    dprint "kr-dist ";
     let uptri = List.map mass_of_pq pql
       |> Kr_distance.multi_dist gt p
     and pqa = Array.of_list pql
     and nodem = ref IntMap.empty in
+    dprint "graph-walk ";
     Uptri.iterij
       (fun i j v ->
         if i = j || v > c then () else (* ... *)
@@ -94,5 +103,7 @@ let of_placerun ?(p = 1.) ~c weighting criterion pr =
       in
       aux accum' nodem'
     in
-    IntMap.map IntSet.of_list !nodem |> aux singletons)
+    IntMap.map IntSet.of_list !nodem
+      |> aux singletons
+      |> tap (fun _ -> dprint "done.\n"))
   |> List.flatten
