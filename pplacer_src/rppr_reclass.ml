@@ -53,7 +53,7 @@ object (self)
     let notax_sizemim, _ = build_sizemim_and_cutsetim (notax_colors, st) in
     let st' = Rppr_infer.prune_notax notax_sizemim st in
     let gt' = Gtree.set_stree gt st' in
-    let results = Rppr_infer.place_on_rp self#prefs rp gt' in
+    let results = self#place_on_rp rp gt' in
     dprint "finished classifying\n";
     let alternate_map = alternate_colors (uncolored_colors, st)
     and orig_sizemim, _ = build_sizemim_and_cutsetim (colors, st) in
