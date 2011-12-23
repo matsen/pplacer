@@ -3,9 +3,20 @@ open Guppy_cmdobjs
 open Ppatteries
 open Convex
 
+let format_float f =
+  match classify_float f with
+    | FP_infinite
+    | FP_nan -> "-"
+    | _ -> Printf.sprintf "%g" f
+
 class cmd () =
 object (self)
   inherit Rppr_infer.cmd () as super_infer
+
+  val suggestion_tree = flag "-t"
+    (Needs_argument ("", "If specified, the path to write the suggestion tree to."))
+
+  method specl = super_infer#specl @ [string_flag suggestion_tree]
 
   method desc = "reclassify nonconvex sequences in a reference package"
   method usage = "usage: reclass [options] -c my.refpkg"
@@ -58,9 +69,10 @@ object (self)
     let alternate_map = alternate_colors (uncolored_colors, st)
     and orig_sizemim, _ = build_sizemim_and_cutsetim (colors, st) in
     let orig_sizem = IntMap.find (Stree.top_id st) orig_sizemim
-    and notax_sizem = IntMap.find (Stree.top_id st) notax_sizemim in
-    List.map
-      (fun (ti, _, seq) ->
+    and notax_sizem = IntMap.find (Stree.top_id st) notax_sizemim
+    and taxtree = Refpkg.get_tax_ref_tree rp in
+    let bm, rows = List.fold_left
+      (fun (bm, rows) (ti, _, seq) ->
         let prev_ti = Tax_seqinfo.tax_id_by_node_label seqinfo seq
         and i = StringMap.find seq seq_nodes in
         let alternates = IntMap.find i alternate_map
@@ -68,23 +80,35 @@ object (self)
           |> List.map (Tax_taxonomy.get_lineage td)
           |> List.flatten
           |> ColorSet.of_list
-        and prev_count = ColorMap.get prev_ti 0 orig_sizem in
+        and prev_count = ColorMap.get prev_ti 0 orig_sizem
+        and new_name = Tax_taxonomy.get_tax_name td ti in
+        IntMap.modify
+          i
+          (fun b -> Printf.sprintf "%s -> %s" seq new_name |> b#set_node_label)
+          bm,
         [seq;
          Tax_taxonomy.get_tax_name td prev_ti;
          Tax_id.to_string prev_ti;
-         Tax_taxonomy.get_tax_name td ti;
+         new_name;
          Tax_id.to_string ti;
          ColorSet.mem ti alternates |> string_of_bool;
-         avg_taxdist_from uncolored_colors prev_ti i |> Printf.sprintf "%g";
-         avg_taxdist_from uncolored_colors ti i |> Printf.sprintf "%g";
+         avg_taxdist_from uncolored_colors prev_ti i |> format_float;
+         avg_taxdist_from uncolored_colors ti i |> format_float;
          prev_count |> string_of_int;
          prev_count - ColorMap.get prev_ti 0 notax_sizem |> string_of_int;
-        ])
+        ] :: rows)
+      (Gtree.get_bark_map taxtree, [])
       results
+    in
+    rows
     |> List.cons
         ["seq_name"; "old_name"; "old_taxid"; "new_name"; "new_taxid";
          "makes_convex"; "old_avg_dist"; "new_avg_dist"; "n_with_old";
          "n_nonconvex"]
-    |> self#write_ll_tab
+    |> self#write_ll_tab;
+    match fvo suggestion_tree with
+      | None -> ()
+      | Some fname ->
+        Gtree.set_bark_map taxtree bm |> Phyloxml.gtree_to_file fname
 
 end
