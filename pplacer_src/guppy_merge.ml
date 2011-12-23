@@ -22,5 +22,5 @@ object (self)
         (List.hd prl)
         (List.tl prl)
       in
-      self#write_placefile "guppy merge" fname combined
+      self#write_placefile fname combined
 end

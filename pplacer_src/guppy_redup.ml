@@ -26,7 +26,6 @@ object (self)
         |> Enum.map (Str.split white_regexp |- (List.hd &&& identity))
         |> Enum.iter (Hashtbl.add sequence_tbl |> uncurry);
       self#write_placefile
-        "guppy to_json"
         (self#single_file ())
         (Placerun.redup sequence_tbl pr)
 

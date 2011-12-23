@@ -155,5 +155,5 @@ object (self)
         (List.hd filtered)
         (List.tl filtered)
       in
-      self#write_placefile "guppy filter" fname combined
+      self#write_placefile fname combined
 end

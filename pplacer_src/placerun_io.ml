@@ -52,8 +52,11 @@ let to_legacy_file invocation out_fname placerun =
     placerun;
   close_out ch
 
-let to_json_file invocation out_fname placerun =
-  let ret = Hashtbl.create 8
+let to_json_file ?invocation out_fname placerun =
+  let invocation = match invocation with
+    | Some s -> s
+    | None -> Array.to_list Sys.argv |> String.concat " "
+  and ret = Hashtbl.create 8
   and meta = Hashtbl.create 16
   and ref_tree = Placerun.get_ref_tree placerun
   and pqueries = Placerun.get_pqueries placerun in

@@ -714,7 +714,6 @@ let run_file prefs query_fname =
   and from_input_alignment = Option.is_some ref_align in
   let placerun_cb pr =
     Placerun_io.to_json_file
-      (Array.to_list Sys.argv |> String.concat " ")
       ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
       pr
   and query_list = Array.to_list query_align

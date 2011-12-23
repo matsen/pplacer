@@ -27,7 +27,7 @@ object (self)
       let weighting, criterion = self#mass_opts in
       Mass_compress.of_placerun ~c:(fv cutoff) weighting criterion pr
       |> Placerun.set_pqueries pr
-      |> self#write_placefile "guppy compress" (self#single_file ())
+      |> self#write_placefile (self#single_file ())
 
     | l ->
       List.length l
