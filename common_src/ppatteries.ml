@@ -573,3 +573,7 @@ module EnumFuns = struct
       |> Enum.flatten
 
 end
+
+let () =
+  Gsl_error.init ();
+  Random.self_init ();

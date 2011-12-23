@@ -45,15 +45,24 @@ let place_on_rp prefs rp gt =
                (Pquery.best_place criterion pq)
              |- RefList.push results)
             (Pquery.namel pq))
+  and ref_name_set = Newick_gtree.leaf_label_map gt
+    |> IntMap.values
+    |> StringSet.of_enum
   in
-  File.with_temporary_out (fun ch tree_file ->
-    Newick_gtree.write ch gt;
-    prefs.Prefs.tree_fname := tree_file;
-    dprintf "%s\n" tree_file;
-    Pplacer_run.run_file
-      ~placerun_cb
-      prefs
-      (Refpkg.get_item_path rp "aln_fasta"));
+  let query_align, ref_align = Pplacer_run.partition_queries
+    ref_name_set
+    (Refpkg.get_aln_fasta rp)
+  in
+  let rp' = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
+    |> Refpkg.set_ref_tree (Gtree.renumber gt)
+  in
+  Pplacer_run.run_placements
+    prefs
+    rp'
+    (Array.to_list query_align)
+    false
+    ""
+    placerun_cb;
   RefList.to_list results
 
 class cmd () =

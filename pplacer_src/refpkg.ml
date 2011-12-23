@@ -48,6 +48,9 @@ let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
 let get_item_path   rp = rp.item_path_fn
 
+let set_ref_tree gt rp = {rp with ref_tree = lazy gt}
+let set_aln_fasta aln rp = {rp with aln_fasta = lazy aln}
+
 let refpkg_versions = ["1.1"]
 
 let show_supported_versions () =

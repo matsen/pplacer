@@ -20,8 +20,6 @@ let () =
       exit 0;
     end;
     Prefs.check prefs;
-    Gsl_error.init ();
-    Random.self_init ();
     Check.directory (Prefs.out_dir prefs);
     if List.length files = 0 then
       print_endline
