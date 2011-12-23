@@ -717,11 +717,25 @@ let run_file prefs query_fname =
       (Array.to_list Sys.argv |> String.concat " ")
       ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
       pr
-  in
-  run_placements
-    prefs
-    rp
-    (Array.to_list query_align)
-    from_input_alignment
-    query_bname
-    placerun_cb
+  and query_list = Array.to_list query_align
+  and n_groups = Prefs.groups prefs in
+  if n_groups > 1 then begin
+    dprintf "Splitting query alignment into %d groups... " n_groups;
+    let groups = Seq_group.group n_groups query_list in
+    let prl = RefList.empty () in
+    dprint "done.\n";
+    Array.iteri
+      (fun i ql ->
+        dprintf "Running sequence group %d of %d.\n" (succ i) n_groups;
+        if not (List.is_empty ql) then
+          run_placements
+            prefs rp ql from_input_alignment query_bname (RefList.push prl))
+      groups;
+    RefList.to_list prl
+      |> List.reduce (Placerun.combine query_bname)
+      |> placerun_cb
+  end else begin
+    run_placements
+      prefs rp query_list from_input_alignment query_bname placerun_cb
+  end
+

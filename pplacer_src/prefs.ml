@@ -53,6 +53,7 @@ type prefs =
     keep_at_most : int ref;
     keep_factor : float ref;
     mrca_class : bool ref;
+    groups : int ref;
   }
 
 
@@ -107,6 +108,7 @@ let defaults () =
     keep_at_most = ref 7;
     keep_factor = ref 0.01;
     mrca_class = ref false;
+    groups = ref 0;
   }
 
 
@@ -160,6 +162,7 @@ let map_identity      p = !(p.map_identity)
 let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
+let groups            p = !(p.groups)
 
 
 (* arguments and preferences *)
@@ -260,6 +263,8 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Throw away anything that has ml_ratio below keep_factor times (best ml_ratio). Default is %g.";
 "--mrca-class", Arg.Set prefs.mrca_class,
 "Classify with MRCAs instead of a painted tree.";
+"--groups", Arg.Set_int prefs.groups,
+"Split query alignment into the specified number of groups.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
