@@ -11,6 +11,5 @@ let command_list () =
       "reroot", (fun () -> new Rppr_reroot.cmd ());
       "infer", (fun () -> new Rppr_infer.cmd ());
       "reclass", (fun () -> new Rppr_reclass.cmd ());
-      "group", (fun () -> new Rppr_group.cmd ());
     ];
   ]
