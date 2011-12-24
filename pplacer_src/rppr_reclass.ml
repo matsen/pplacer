@@ -55,11 +55,11 @@ object (self)
       |> dprintf "reclassifying at %s\n";
     let phi, _ = solve (colors, st) in
     let not_cut = nodeset_of_phi_and_tree phi st in
-    let notax_colors = Stree.leaf_ids st
+    let cut = Stree.leaf_ids st
       |> IntSet.of_list
       |> flip IntSet.diff not_cut
-      |> flip (IntSet.fold (flip IntMap.add Tax_id.NoTax)) colors
     in
+    let notax_colors = IntSet.fold (flip IntMap.add Tax_id.NoTax) cut colors in
     let uncolored_colors = IntMap.filter ((<>) Tax_id.NoTax) notax_colors in
     let notax_sizemim, _ = build_sizemim_and_cutsetim (notax_colors, st) in
     let st' = Rppr_infer.prune_notax notax_sizemim st in
@@ -109,6 +109,8 @@ object (self)
     match fvo suggestion_tree with
       | None -> ()
       | Some fname ->
-        Gtree.set_bark_map taxtree bm |> Phyloxml.gtree_to_file fname
+        Gtree.set_bark_map taxtree bm
+          |> Decor_gtree.color_clades_above cut
+          |> Phyloxml.gtree_to_file fname
 
 end
