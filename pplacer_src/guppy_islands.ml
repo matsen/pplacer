@@ -10,7 +10,7 @@ object (self)
   inherit mass_cmd ~point_choice_allowed:false () as super_mass
 
   val discard_below = flag "--discard-below"
-    (Plain (0., "Ignore pquery locations with a mass less than the specified value for island creation."))
+    (Plain (0., "Ignore pquery locations with a mass less than the specified value."))
 
   method specl =
     super_output#specl

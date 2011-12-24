@@ -12,7 +12,7 @@ object (self)
   val cutoff = flag "--cutoff"
     (Needs_argument ("cutoff", "The cutoff parameter for mass compression"))
   val discard_below = flag "--discard-below"
-    (Plain (0., "Ignore pquery locations with a mass less than the specified value for island creation."))
+    (Plain (0., "Ignore pquery locations with a mass less than the specified value."))
 
   method specl =
     super_mass#specl
