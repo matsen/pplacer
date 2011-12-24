@@ -9,18 +9,27 @@ dedup files for use with ``guppy redup``::
     guppy redup -d sample.dedup --prefix reduped_ sample_deduped.jplace
 
 The format for dedup files is very simple, for ease of reading and writing.
-Each dedup file is a series of lines, with a single-space-separated list of
-sequences on each line. The first sequence on the line is the sequence that's
-put into the deduplicated file, and the rest are synonyms for that same
-sequence. For example::
+Each dedup file is just a CSV file with three columns: the sequence name in the
+deduplicated file, the name to put in the reduplicated file, and the mass
+associated with the latter name. For example with the following dedup file::
 
-   A_0 A_1 A_2
-   B_0
-   C_0 C_1
+    A_0,A_0,1
+    A_0,A_1,3
+    A_0,A_2,1
+    B_0,B_0,1
+    C_0,C_0,2
+    C_0,C_1,2
 
-This represents a sequence file containing sequences ``A_0``, ``B_0``, and
-``C_0``, which redups to a sequence file where there are additional sequences
-``A_1`` and ``A_2`` sequences with the same value as ``A_0``, and an additional
-sequence ``C_1`` with the same value as ``C_0``. Sequences with no synonyms
-need not be present in the dedup file.
+For one set of name/mass pairs, the transformation done is::
 
+    [A_0, 1] -> [A_0, 1; A_1, 3; A_2, 1]
+    [B_0, 1] -> [B_0, 1]
+    [C_0, 1] -> [C_0, 2; C_1, 2]
+
+And a more complicated example::
+
+    [A_0, 2; B_0, 1] -> [A_0, 2; A_1, 6; A_2, 2; B_0, 1]
+    [C_0, 0.5] -> [C_0, 1; C_1, 1]
+    [D_0, 1] -> [D_0, 1]
+
+Sequences with no changes need not be present in the dedup file.
