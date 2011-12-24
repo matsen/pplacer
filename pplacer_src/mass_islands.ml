@@ -29,14 +29,20 @@ open Ppatteries
 
 (* Output is a list of IntSet.t, Pquery.t list pairs which represent (E, P) as
  * described above. *)
-let of_pql pql =
+let of_pql ?(discard_below = 0.) criterion pql =
   List.fold_left
     (fun accum pq ->
       let pq_edges = Pquery.place_list pq
         |> List.enum
-        |> Enum.map Placement.location
+        |> Enum.filter_map
+            (fun p ->
+              if criterion p < discard_below then
+                None
+              else
+                Some (Placement.location p))
         |> IntSet.of_enum
       in
+      if IntSet.is_empty pq_edges then accum else (* ... *)
       List.fold_left
         (fun (matches, accum') (edges, pqs) ->
           if IntSet.disjoint pq_edges edges then

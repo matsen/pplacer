@@ -11,12 +11,15 @@ object (self)
 
   val cutoff = flag "--cutoff"
     (Needs_argument ("cutoff", "The cutoff parameter for mass compression"))
+  val discard_below = flag "--discard-below"
+    (Plain (0., "If specified, ignore locations in a pquery with a mass less than the specified value."))
 
   method specl =
     super_mass#specl
   @ super_output#specl
   @ [
     float_flag cutoff;
+    float_flag discard_below;
   ]
 
   method desc = "compress a placefile's pqueries"
@@ -25,7 +28,12 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let weighting, criterion = self#mass_opts in
-      Mass_compress.of_placerun ~c:(fv cutoff) weighting criterion pr
+      Mass_compress.of_placerun
+        ~c:(fv cutoff)
+        (fv discard_below)
+        weighting
+        criterion
+        pr
       |> Placerun.set_pqueries pr
       |> self#write_placefile "guppy compress" (self#single_file ())
 
