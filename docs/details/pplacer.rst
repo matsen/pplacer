@@ -45,13 +45,21 @@ There are a couple of differences between the present version and the previous v
 * ``rppr`` binary for preparing reference packages
 
 
-Pre-masking
------------
+Pre-masking and groups
+----------------------
 
 Columns that are all gap in either the reference alignment or the query alignment do not impact the relative likelihood of placements.
 Thus, starting in v1.1alpha08, we don't compute them at all.
 This speeds things up a bunch, and uses a lot less memory.
 We call this pre-masking, and it can be disabled with the ``--no-pre-mask`` flag.
+
+When placing metagenomic sequences onto trees built from very wide alignments (such as concatenations), we suggest using the "groups" feature.
+Using, say, ``--groups 5`` will divide the alignment into 5 evenly spaced sectors across the width of the alignment.
+The reads are then grouped into which sector they fit into best, and each group is run sequentially.
+In combination with the pre-masking, this can result in a very substantial reduction of memory usage, because the likelihood vectors are calculated for one sector (plus a bit extra) at a time.
+Note that these gains will be eliminated if you have reads that span the whole reference alignment.
+Using this feature will not change the result except possibly for likelihood computations where the query sequence has a gap; these likelihoods are not meaningful, so if there is a substantial difference when you use groups your alignment is lacking signal!
+
 
 
 JSON_ format specification
