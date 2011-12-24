@@ -11,7 +11,8 @@ dedup files for use with ``guppy redup``::
 The format for dedup files is very simple, for ease of reading and writing.
 Each dedup file is just a CSV file with three columns: the sequence name in the
 deduplicated file, the name to put in the reduplicated file, and the mass
-associated with the latter name. For example with the following dedup file::
+associated with the latter name. For most purposes, the ingoing mass will
+simply be the number of reads. For example with the following dedup file::
 
     A_0,A_0,1
     A_0,A_1,3
