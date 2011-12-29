@@ -187,7 +187,7 @@ guppy subcommand:
 .. _kr_heat: generated_rst/kr_heat.html
 .. _bary: generated_rst/bary.html
 
-.. _pplacer: http://matsen.fhrcrc.org/pplacer
+.. _pplacer: http://matsen.fhcrc.org/pplacer
 .. _this configuration file: http://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
 .. _phyloxml: http://phyloxml.org/
 .. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/

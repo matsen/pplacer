@@ -397,8 +397,8 @@ reference tree.
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
 .. _taxtastic: http://github.com/fhcrc/taxtastic/
 .. _JSON: http://www.json.org/
-.. _PHYML: http://www.atgc-montpellier.fr/phyml/">Phyml</a> and
-.. _RAxML: http://icwww.epfl.ch/~stamatak/index-Dateien/Page443.htm">RAxML</a>
+.. _PHYML: http://www.atgc-montpellier.fr/phyml/
+.. _RAxML: http://sco.h-its.org/exelixis/software.html
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
