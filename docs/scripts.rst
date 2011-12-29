@@ -197,3 +197,12 @@ parameter and updates it in place, after making a backup copy.
     usage: check_placements.py example.jplace
 
 ..
+
+.. _deduplicate-sequences:
+
+``deduplicate_sequences.py``
+============================
+
+``deduplicate_sequences.py`` deduplicates a sequence file and produces a dedup
+file suitable for use with ``guppy redup -m``. See the
+:ref:`redup <guppy_redup>` documentation for details.
