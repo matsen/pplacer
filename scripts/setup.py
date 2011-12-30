@@ -26,15 +26,12 @@ def get_version():
 def scripts():
     # Scripts depending on biopython
     scripts = [i for i in glob.glob('*.py') if not i.startswith('test_') and i != 'setup.py']
-    bio_depends = ['refpkg_align.py']
 
     try:
         # Check for biopython
         import Bio
     except ImportError:
-        warnings.warn("BioPython is not installed. Proceeding without {0}".format(
-            ' '.join(bio_depends)))
-        scripts = frozenset(scripts) - frozenset(bio_depends)
+        warnings.warn("BioPython is not installed. Some scripts will not work")
 
     return scripts
 
