@@ -23,7 +23,7 @@ object (self)
     @ super_tabular#specl
 
   method desc =
-"calculate weighted phylogenetic and quadratic entropy of placefiles"
+"calculates weighted phylogenetic and quadratic entropy of placefiles"
   method usage = "usage: entropy [options] placefile[s]"
 
   method private placefile_action prl =
