@@ -92,7 +92,7 @@ object (self)
     string_flag placefile;
   ]
 
-  method desc = "infer classifications of unclassified sequences in a reference package"
+  method desc = "infers classifications of unclassified sequences in a reference package"
   method usage = "usage: infer [options] -c my.refpkg"
 
   method private prefs =
@@ -204,6 +204,7 @@ object (self)
       )
       no_tax
       []
+    |> List.cons ["seq_name"; "new_taxid"; "new_name"]
     |> self#write_ll_tab
 
 end

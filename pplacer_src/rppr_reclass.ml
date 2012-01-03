@@ -18,7 +18,7 @@ object (self)
 
   method specl = super_infer#specl @ [string_flag suggestion_tree]
 
-  method desc = "reclassify nonconvex sequences in a reference package"
+  method desc = "reclassifies nonconvex sequences in a reference package"
   method usage = "usage: reclass [options] -c my.refpkg"
 
   method action _ =
