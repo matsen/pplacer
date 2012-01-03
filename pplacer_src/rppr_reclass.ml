@@ -7,7 +7,7 @@ class cmd () =
 object (self)
   inherit Rppr_infer.cmd () as super_infer
 
-  method desc = "reclassify nonconvex sequences in a reference package"
+  method desc = "reclassifies nonconvex sequences in a reference package"
   method usage = "usage: reclass [options] -c my.refpkg"
 
   method action _ =

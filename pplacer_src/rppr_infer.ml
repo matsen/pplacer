@@ -75,7 +75,7 @@ object (self)
     toggle_flag post_prob;
   ]
 
-  method desc = "infer classifications of unclassified sequences in a reference package"
+  method desc = "infers classifications of unclassified sequences in a reference package"
   method usage = "usage: infer [options] -c my.refpkg"
 
   method private prefs =
