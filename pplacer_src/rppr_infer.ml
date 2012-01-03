@@ -180,6 +180,7 @@ object (self)
       )
       no_tax
       []
+    |> List.cons ["seq_name"; "new_taxid"; "new_name"]
     |> self#write_ll_tab
 
 end
