@@ -17,7 +17,7 @@ object (self)
   @ super_mass#specl
   @ [float_flag discard_below]
 
-  method desc = "find the mass islands of one or more pqueries"
+  method desc = "finds the mass islands of one or more pqueries"
   method usage = "usage: islands [options] placefile[s]"
 
   method private placefile_action prl =

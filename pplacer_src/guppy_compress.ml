@@ -22,7 +22,7 @@ object (self)
     float_flag discard_below;
   ]
 
-  method desc = "compress a placefile's pqueries"
+  method desc = "compresses a placefile's pqueries"
   method usage = "usage: compress [options] placefile"
 
   method private placefile_action = function
