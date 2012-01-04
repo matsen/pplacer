@@ -29,8 +29,8 @@ object (self)
     | [pr] ->
       let weighting, criterion = self#mass_opts in
       Mass_compress.of_placerun
+        ~discard_below:(fv discard_below)
         ~c:(fv cutoff)
-        (fv discard_below)
         weighting
         criterion
         pr
