@@ -227,7 +227,9 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   let query_list = Hashtbl.fold
     (fun seq namel accum ->
       let hd = List.hd namel in
-      Hashtbl.add redup_tbl hd namel;
+      List.iter
+        (Hashtbl.add redup_tbl hd)
+        (Pquery.uniform_namel namel);
       (hd, seq) :: accum)
     seq_tbl
     []

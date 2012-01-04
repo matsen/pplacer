@@ -75,9 +75,9 @@ let round_pquery_list cutoff sig_figs pql =
    * names associated with the other pqueries *)
   List.map
     (fun pql ->
-      List.map Pquery.namel pql
+      List.map Pquery.namlom pql
         |> List.flatten
-        |> Pquery.set_namel (List.hd pql))
+        |> Pquery.set_namlom (List.hd pql))
     (RPQMap.fold (fun _ v l -> (List.rev v)::l) m []) (* the clustered ones *)
 
 let round_placerun cutoff sig_figs out_name pr =

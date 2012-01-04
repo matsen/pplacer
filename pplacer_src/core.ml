@@ -377,7 +377,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         else results, sorted_ml_placements
       in
       Pquery (Pquery.make_ml_sorted
-        ~namel:[query_name]
+        ~namlom:[query_name, 1.]
         ~seq:query_seq
         placements) :: results
     end

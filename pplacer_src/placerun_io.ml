@@ -52,6 +52,9 @@ let to_legacy_file invocation out_fname placerun =
     placerun;
   close_out ch
 
+let json_versions = [1; 2; 3]
+let current_json_version = 3
+
 let to_json_file ?invocation out_fname placerun =
   let invocation = match invocation with
     | Some s -> s
@@ -77,7 +80,7 @@ let to_json_file ?invocation out_fname placerun =
     end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_node_numbers:true ref_tree));
-  Hashtbl.add ret "version" (Jsontype.Int 2);
+  Hashtbl.add ret "version" (Jsontype.Int current_json_version);
   Json.to_file out_fname (Jsontype.Object ret)
 
 (* ***** READING ***** *)
@@ -157,7 +160,6 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 exception Invalid_placerun of string
 
-let json_versions = [1; 2]
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
   if not (Hashtbl.mem json "version") then
@@ -216,31 +218,22 @@ let of_split_file ?(getfunc = of_any_file) fname =
   in
   let split_pqueries = List.fold_left
     (fun accum pq ->
-      if Pquery.has_single_mult pq then
-        match begin
-          try
-            Some (StringMap.find (Pquery.name pq) split_map)
-          with Not_found -> None
-        end with
-          | Some group -> StringMap.add_listly group pq accum
-          | None -> accum
-      else
-        let groups = List.fold_left
-          (fun accum name ->
-            match begin
-              try
-                Some (StringMap.find name split_map)
-              with Not_found -> None
-            end with
-              | Some group -> StringMap.add_listly group name accum
-              | None -> accum)
-          StringMap.empty
-          (Pquery.namel pq)
-        in
-        StringMap.fold
-          (Pquery.set_namel pq |- flip StringMap.add_listly |> flip)
-          groups
-          accum)
+      let groups = List.fold_left
+        (fun accum ((name, _) as namlom) ->
+          match begin
+            try
+              Some (StringMap.find name split_map)
+            with Not_found -> None
+          end with
+            | Some group -> StringMap.add_listly group namlom accum
+            | None -> accum)
+        StringMap.empty
+        (Pquery.namlom pq)
+      in
+      StringMap.fold
+        (Pquery.set_namlom pq |- flip StringMap.add_listly |> flip)
+        groups
+        accum)
     StringMap.empty
     (Placerun.get_pqueries to_split')
   in

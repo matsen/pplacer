@@ -155,7 +155,7 @@ object (self)
           "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE name = 'placement_classifications')";
         Sql.check_exec db "BEGIN TRANSACTION";
         let pn_st = Sqlite3.prepare db
-          "INSERT INTO placement_names VALUES (?, ?, ?);"
+          "INSERT INTO placement_names VALUES (?, ?, ?, ?);"
         and pc_st = Sqlite3.prepare db
           "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
         and pp_st = Sqlite3.prepare db
@@ -201,12 +201,13 @@ object (self)
           Sql.check_exec db "INSERT INTO placements VALUES (NULL)";
           let place_id = Sqlite3.last_insert_rowid db in
           List.iter
-            (fun name -> Sql.bind_step_reset db pn_st [|
+            (fun (name, mass) -> Sql.bind_step_reset db pn_st [|
                 Sql.D.INT place_id;
                 Sql.D.TEXT name;
                 Sql.D.TEXT prn;
+                Sql.D.FLOAT mass;
               |])
-            (Pquery.namel pq);
+            (Pquery.namlom pq);
           IntMap.iter
             (fun desired_rank rankl ->
               List.iter

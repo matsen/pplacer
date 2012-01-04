@@ -135,6 +135,8 @@ However, if one would like to decrease the impact of multiplicities on downstrea
 Doing so will convert your placements into labeled masses.
 
 
+.. _split-placefiles:
+
 'Split' placefiles
 ------------------
 
