@@ -62,6 +62,16 @@ let to_csv_out ch =
   (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
 let csv_out_channel ch = new IO.out_channel ch |> to_csv_out
 
+let to_csv_in ch = object
+  method input a b c =
+    try
+      ch#input a b c
+    with IO.No_more_input ->
+      raise End_of_file
+  method close_in = ch#close_in
+end
+let csv_in_channel ch = new IO.in_channel ch |> to_csv_in
+
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a

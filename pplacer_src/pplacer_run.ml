@@ -313,7 +313,9 @@ let run_file prefs query_fname =
   let query_list = Hashtbl.fold
     (fun seq namel accum ->
       let hd = List.hd namel in
-      Hashtbl.add redup_tbl hd namel;
+      List.iter
+        (Hashtbl.add redup_tbl hd)
+        (Pquery.uniform_namel namel);
       (hd, seq) :: accum)
     seq_tbl
     []

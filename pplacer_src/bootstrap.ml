@@ -62,14 +62,16 @@ let rubber_list l desired_len =
 
 let boot_placerun rng pr =
   let pqa = Array.of_list (Placerun.get_pqueries pr) in
-  let multa = multiplicity_boot rng (Array.map Pquery.naml_multiplicity pqa)
+  let multa = multiplicity_boot
+    rng
+    (Array.map (Pquery.namlom |- List.length) pqa)
   and pql = ref []
   in
   let rubber_pquery pq desired_multi =
     assert(desired_multi > 0);
-    Pquery.namel pq
+    Pquery.namlom pq
       |> flip rubber_list desired_multi
-      |> Pquery.set_namel pq
+      |> Pquery.set_namlom pq
   in
   for i=(Array.length pqa)-1 downto 0 do
     if multa.(i) > 0 then
