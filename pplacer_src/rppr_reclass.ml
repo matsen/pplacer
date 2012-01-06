@@ -39,10 +39,18 @@ object (self)
       |> Enum.map swap
       |> StringMap.of_enum
     in
-    let avg_taxdist_from colorm ti j =
+    let med_cv_taxdist_from colorm ti j =
       let ts = taxa_set colorm ti in
-      IntSet.fold (fun i accum -> pair_dist i 0. j 0. +. accum) ts 0.
-      /. (IntSet.cardinal ts |> float_of_int)
+      if IntSet.is_empty ts then nan, nan else (* ... *)
+      let distances = IntSet.elements ts
+        |> List.map (fun i -> pair_dist i 0. j 0.)
+      and fcardinal = IntSet.cardinal ts |> float_of_int in
+      let mean = List.fsum distances /. fcardinal in
+      median distances,
+      List.fold_left (fun a x -> (x -. mean) ** 2. +. a) 0. distances
+        |> flip (/.) (fcardinal -. 1.)
+        |> sqrt
+        |> flip (/.) mean
     and rank_tax_map = rank_tax_map_of_refpkg rp in
     let rank, colors = Enum.find
       (fun (_, colors) ->
@@ -81,7 +89,9 @@ object (self)
           |> List.flatten
           |> ColorSet.of_list
         and prev_count = ColorMap.get prev_ti 0 orig_sizem
-        and new_name = Tax_taxonomy.get_tax_name td ti in
+        and new_name = Tax_taxonomy.get_tax_name td ti
+        and prev_med, prev_cv = med_cv_taxdist_from uncolored_colors prev_ti i
+        and new_med, new_cv = med_cv_taxdist_from uncolored_colors ti i in
         IntMap.modify
           i
           (fun b -> Printf.sprintf "%s -> %s" seq new_name |> b#set_node_label)
@@ -92,8 +102,10 @@ object (self)
          new_name;
          Tax_id.to_string ti;
          ColorSet.mem ti alternates |> string_of_bool;
-         avg_taxdist_from uncolored_colors prev_ti i |> format_float;
-         avg_taxdist_from uncolored_colors ti i |> format_float;
+         prev_med |> format_float;
+         prev_cv *. 100. |> format_float;
+         new_med |> format_float;
+         new_cv *. 100. |> format_float;
          prev_count |> string_of_int;
          prev_count - ColorMap.get prev_ti 0 notax_sizem |> string_of_int;
         ] :: rows)
@@ -103,8 +115,8 @@ object (self)
     rows
     |> List.cons
         ["seq_name"; "old_name"; "old_taxid"; "new_name"; "new_taxid";
-         "makes_convex"; "old_avg_dist"; "new_avg_dist"; "n_with_old";
-         "n_nonconvex"]
+         "makes_convex"; "old_median_dist"; "old_avg_cv"; "new_median_dist";
+         "new_avg_cv"; "n_with_old"; "n_nonconvex"]
     |> self#write_ll_tab;
     match fvo suggestion_tree with
       | None -> ()
