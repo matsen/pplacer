@@ -77,6 +77,14 @@ let (&&--) f g a b = f a b && g a b
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
 
+let median l =
+  let rec aux = function
+    | e :: _, ([_] | [_; _]) -> e
+    | _ :: tl1, _ :: _ :: tl2 -> aux (tl1, tl2)
+    | _, _ -> invalid_arg "median"
+  in
+  aux (l, l)
+
 let verbosity = ref 1
 let dprintf ?(l = 1) ?(flush = true) fmt =
   if !verbosity >= l then begin
