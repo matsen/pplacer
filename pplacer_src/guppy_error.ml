@@ -10,6 +10,26 @@ let pr_to_map transform pr =
     StringMap.empty
     (Placerun.get_pqueries pr)
 
+let pr_error criterion include_pendant experimental expected =
+  let gt = Placerun.get_same_tree experimental expected in
+  let pair_dist = Edge_rdist.build_pairwise_dist gt
+    |> Edge_rdist.find_pairwise_dist
+  in
+  let placement_distance p1 p2 =
+    let open Placement in
+    pair_dist p1.location p1.distal_bl p2.location p2.distal_bl
+      +. (if include_pendant then p1.pendant_bl +. p2.pendant_bl else 0.)
+  in
+  StringMap.merge
+    (fun _ po plo -> match po, plo with
+      | Some p, Some pl ->
+        List.map (placement_distance p &&& criterion) pl
+          |> Edpl.weighted_average
+          |> (fun x -> Some x)
+      | _, _ -> None)
+    (pr_to_map (Pquery.best_place criterion) expected)
+    (pr_to_map Pquery.place_list experimental)
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -30,26 +50,7 @@ object (self)
 
   method private placefile_action = function
     | [experimental; expected] ->
-      let criterion = self#criterion
-      and include_pendant = fv include_pendant
-      and gt = Placerun.get_same_tree experimental expected in
-      let pair_dist = Edge_rdist.build_pairwise_dist gt
-        |> Edge_rdist.find_pairwise_dist
-      in
-      let placement_distance p1 p2 =
-        let open Placement in
-        pair_dist p1.location p1.distal_bl p2.location p2.distal_bl
-          +. (if include_pendant then p1.pendant_bl +. p2.pendant_bl else 0.)
-      in
-      StringMap.merge
-        (fun _ po plo -> match po, plo with
-          | Some p, Some pl ->
-            List.map (placement_distance p &&& criterion) pl
-            |> Edpl.weighted_average
-            |> (fun x -> Some x)
-          | _, _ -> None)
-        (pr_to_map (Pquery.best_place criterion) expected)
-        (pr_to_map Pquery.place_list experimental)
+      pr_error self#criterion (fv include_pendant) experimental expected
       |> StringMap.enum
       |> Enum.map (fun (a, b) -> [a; Printf.sprintf "%g" b])
       |> List.of_enum
