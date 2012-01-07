@@ -74,7 +74,7 @@ object (self)
         |> List.map (fun i -> pair_dist i 0. j 0.)
       and fcardinal = IntSet.cardinal ts |> float_of_int in
       let mean = List.fsum distances /. fcardinal in
-      median distances,
+      List.sort compare distances |> median,
       List.fold_left (fun a x -> (x -. mean) ** 2. +. a) 0. distances
         |> flip (/.) (fcardinal -. 1.)
         |> sqrt

@@ -26,7 +26,7 @@ n_with_old      The number of leaves in the original tree which were classified 
 n_nonconvex     The number of leaves in the original tree classified with the previous tax_id which were also non-convex.
 =============== ===========
 
-.. [#f1] This may be ``-`` if there is only one other leaf with that tax_id.
+.. [#f1] This may be ``-`` if there are only zero or one other leaves with that tax_id.
 .. [#f2] This may be ``-`` if there are no other leaves with that tax_id.
 
 Uninformative clades are determined to be clades containing all of the

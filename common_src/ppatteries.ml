@@ -77,6 +77,8 @@ let (&&--) f g a b = f a b && g a b
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
 
+(* find the median of a sorted list. returns the left item if there are an even
+ * number of items in the list. *)
 let median l =
   let rec aux = function
     | e :: _, ([_] | [_; _]) -> e
