@@ -19,6 +19,7 @@ let command_list () =
       "wpd", (fun () -> new Guppy_wpd.cmd ());
       "pentropy", (fun () -> new Guppy_pentropy.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
+      "error", (fun () -> new Guppy_error.cmd ());
     ];
 
     "classification", [
