@@ -148,14 +148,15 @@ let consolidate gt =
           |> Tuple3.map1 (List.rev |- node i)
       in
       let i = top_id t' in
+      let bark = Gtree.get_bark gt i in
       t',
       List.fold_left
         (fun accum (j, l) -> IntMap.add j (i, l) accum)
         (IntMap.add i (i, 0.) transm)
         (Option.default [] parent),
-      Newick_bark.map_set_bl
+      IntMap.add
         i
-        (bl i +. Option.map_default (List.last |- snd) 0. parent)
+        (bark#set_bl (bl i +. Option.map_default (List.last |- snd) 0. parent))
         barkm
   in
   let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
