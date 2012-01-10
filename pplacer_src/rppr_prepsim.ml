@@ -98,13 +98,15 @@ object (self)
     and gt', pql = prune_notax_to_pql sizemim colors gt in
     if StringSet.is_empty no_tax then
       dprint "warning: nothing was cut off the tree\n";
-    let gt'', transm = Gtree.renumber gt' in
+    let gt'', transm = Newick_gtree.consolidate gt' in
     List.map
       (fun pq ->
         let open Placement in
         Pquery.place_list pq
           |> List.map
-              (fun p -> {p with location = IntMap.find p.location transm})
+              (fun p ->
+                let location, bl_boost = IntMap.find p.location transm in
+                {p with location; distal_bl = p.distal_bl +. bl_boost})
           |> (fun place_list -> {pq with Pquery.place_list}))
       pql
     |> Placerun.make gt'' "inferred"

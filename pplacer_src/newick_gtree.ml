@@ -123,3 +123,41 @@ let of_file ?legacy_format fname =
 
 let list_of_file fname =
   List.map of_string (File_parsing.string_list_of_file fname)
+
+let consolidate gt =
+  let bl = Gtree.get_bl gt in
+  let open Stree in
+  let rec aux parent = function
+    | Node (i, [t]) ->
+      let ibl = bl i in
+      aux
+        (Some
+           ((i, ibl)
+            :: (Option.map_default (List.map (second ((+.) ibl))) [] parent)))
+        t
+    | t ->
+      let t', transm, barkm = match t with
+        | Leaf _ -> t, IntMap.empty, IntMap.empty
+        | Node (i, subtrees) ->
+          List.fold_left
+            (fun (ta, ba, ma) x ->
+              let tx, bx, mx = aux None x in
+              tx :: ta, IntMap.union bx ba, IntMap.union mx ma)
+            ([], IntMap.empty, IntMap.empty)
+            subtrees
+          |> Tuple3.map1 (List.rev |- node i)
+      in
+      let i = top_id t' in
+      t',
+      List.fold_left
+        (fun accum (j, l) -> IntMap.add j (i, l) accum)
+        (IntMap.add i (i, 0.) transm)
+        (Option.default [] parent),
+      Newick_bark.map_set_bl
+        i
+        (bl i +. Option.map_default (List.last |- snd) 0. parent)
+        barkm
+  in
+  let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
+  let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
+  gt', IntMap.map (flip IntMap.find transm' |> first) transm
