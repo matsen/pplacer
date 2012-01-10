@@ -18,6 +18,7 @@ let prune_notax_to_pql sizemim colorm gt =
         ~namlom:[name i, 1.]
         ~seq:Pquery_io.no_seq_str
         [Placement.make_ml loc ~ml_ratio:1. ~log_like:0. ~dist_bl:0. ~pend_bl
+         |> Placement.add_pp ~post_prob:1. ~marginal_prob:1.
          |> flip Placement.add_classif (IntMap.find i colorm)]
       in
       None, [pq]
@@ -80,9 +81,6 @@ object (self)
       IntMap.map
         (Tax_seqinfo.tax_id_by_node_label seqinfo)
         leaf_labels
-    and seq_nodes = IntMap.enum leaf_labels
-      |> Enum.map swap
-      |> StringMap.of_enum
     and st = Gtree.get_stree gt in
     let colors_notax = IntMap.map
       (junction should_keep identity (const Tax_id.NoTax))
