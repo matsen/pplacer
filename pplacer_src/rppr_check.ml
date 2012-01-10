@@ -6,7 +6,7 @@ object (self)
   inherit subcommand () as super
   inherit refpkg_cmd ~required:true as super_refpkg
 
-  method desc = "check a reference package"
+  method desc = "checks a reference package"
   method usage = "usage: check -c my.refpkg"
 
   method action _ =

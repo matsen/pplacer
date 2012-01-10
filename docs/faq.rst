@@ -29,3 +29,5 @@ This is what makes it fast!
 Pplacer uses about 1/4 of the memory when placing on a FastTree tree as compared to a RAxML tree inferred with GTRGAMMA.
 If your reads are short and in a fixed region, the memory used by pplacer v1.1 alpha08 (or later) scales with respect to the total number of non-gap columns in your query alignment.
 You can also make it use less memory (and run faster) by cutting down the size of your reference tree.
+
+Additionally, if you are placing metagenomic reads onto a very wide alignment (such as a concatenation) read about the ``--groups`` feature in the documentation.

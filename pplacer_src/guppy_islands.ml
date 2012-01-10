@@ -20,8 +20,6 @@ object (self)
       |> List.iteri
           (fun e (_, pql) ->
             Placerun.make gt (string_of_int e) pql
-              |> self#write_placefile
-                  "guppy islands"
-                  (Printf.sprintf "%s%d.jplace" prefix e))
+              |> self#write_placefile (Printf.sprintf "%s%d.jplace" prefix e))
 
 end

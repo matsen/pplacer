@@ -49,14 +49,14 @@ object (self)
               dir
               (prefix ^ pr.Placerun.name ^ ".jplace")
             in
-            self#write_placefile "guppy mft" fname pr)
+            self#write_placefile fname pr)
           prl
       | File fname ->
         prl
           |> List.map Placerun.get_pqueries
           |> List.flatten
           |> Placerun.make (Mokaphy_common.list_get_same_tree prl) ""
-          |> self#write_placefile "guppy mft" fname
+          |> self#write_placefile fname
       | Unspecified -> ()
 
 end

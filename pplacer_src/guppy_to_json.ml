@@ -16,9 +16,6 @@ object (self)
     List.iter
       (fun pr ->
         let out_name = (pr.Placerun.name ^ ".jplace") in
-        self#write_placefile
-          "guppy to_json"
-          out_name
-          pr)
+        self#write_placefile out_name pr)
       prl
 end

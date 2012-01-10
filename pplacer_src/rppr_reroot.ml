@@ -7,8 +7,6 @@ open Stree
 
 exception Found_root of stree
 
-let some x = Some x
-
 (* taxonomic rerooting of a tree, assuming all leaf labels are sequence names
  * in the reference packages. *)
 let find_root rp gt =
