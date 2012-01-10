@@ -5,6 +5,7 @@ except ImportError:
     from distutils.core import setup
 
 import glob
+import os.path
 import re
 import warnings
 
@@ -16,6 +17,8 @@ def get_version():
     parse version
     """
     r = re.compile(VERSION_PATTERN)
+    if not os.path.exists(VERSION_FILE):
+        return 'unknown'
     with open(VERSION_FILE) as fp:
         for line in fp:
             m = r.match(line)
