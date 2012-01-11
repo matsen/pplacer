@@ -287,8 +287,7 @@ I run RAxML like so, on similar alignments (the "F" suffix on PROTGAMMAWAGF mean
   raxmlHPC -m GTRGAMMA -n test -s nucleotides.phy
   raxmlHPC -m PROTGAMMAWAGF -n test -s amino_acids.phy
 
-Even though Alexandros Stamatakis is quite fond of the "CAT" models and they accelerate tree inference, they aren't appropriate for use with pplacer.
-We need to get an estimate of the gamma shape parameter.
+pplacer does not support using the CAT model from RAxML, although a similar model is available via FastTree.
 
 PHYML can be run like so, on non-interleaved (hence the -q) phylip-format alignments::
 
