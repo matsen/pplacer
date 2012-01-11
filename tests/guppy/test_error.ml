@@ -6,7 +6,7 @@ let suite = [
   "test_error" >:: begin fun () ->
     let exper = placerun_of_dir "misc" "test_error_experimental"
     and expec = placerun_of_dir "misc" "test_error_expected" in
-    Guppy_error.pr_error Placement.ml_ratio false exper expec
+    Guppy_error.pr_error Placement.ml_ratio false false exper expec
     |> StringMap.enum
     |> check_map_approx_equal
         "unequal (%s(%g) and %s(%g))"
@@ -15,7 +15,7 @@ let suite = [
           "three", 1.;
           "two", 0.94;
         ]);
-    Guppy_error.pr_error Placement.ml_ratio true exper expec
+    Guppy_error.pr_error Placement.ml_ratio true false exper expec
     |> StringMap.enum
     |> check_map_approx_equal
         "unequal (%s(%g) and %s(%g))"
