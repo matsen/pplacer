@@ -31,6 +31,13 @@ We suggest that you wait to do any serious analysis using features not described
 In particular, the taxonomic classification functionality is not stable and is still being validated.
 
 
+Tutorial
+--------
+
+We have made a tutorial_ available that demonstrates most of the functionality of the pplacer suite of programs.
+It can be downloaded and run as a shell script.
+
+
 Getting help
 ------------
 
@@ -87,3 +94,4 @@ path and you are ready to go!
 
 .. _user group: http://groups.google.com/group/pplacer-users
 .. _this installation script: _static/install_pplacer.sh
+.. _tutorial: http://fhcrc.github.com/microbiome-demo/
