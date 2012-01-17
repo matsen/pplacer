@@ -17,6 +17,7 @@ let command_list () =
       "edpl", (fun () -> new Guppy_edpl.cmd ());
       "pd", (fun () -> new Guppy_pd.cmd ());
       "wpd", (fun () -> new Guppy_wpd.cmd ());
+      "pentropy", (fun () -> new Guppy_pentropy.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
     ];
 

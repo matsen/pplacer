@@ -37,36 +37,61 @@ let get_tax_rank td ti =
 
 let rank_name_of_tax_id td ti = get_rank_name td (get_tax_rank td ti)
 
-let has_ancestor td ti = TaxIdMap.mem ti td.tax_tree
-
 let get_ancestor td ti =
   try TaxIdMap.find ti td.tax_tree with
   | Not_found -> raise (NoAncestor ti)
+
+let get_ancestor_opt td ti =
+  TaxIdMap.Exceptionless.find ti td.tax_tree
 
 let get_tax_name td ti =
   try TaxIdMap.find ti td.tax_name_map with
   | Not_found -> invalid_arg ("Tax_taxonomy.get_tax_name not known: "^(Tax_id.to_string ti))
 
-let get_lineage td ti =
+let get_lineage td = function
+  | NoTax -> []
+  | TaxStr _ as ti -> (* ... *)
   let rec aux accu ti' =
-    if has_ancestor td ti' then aux (ti'::accu) (get_ancestor td ti') else ti' :: accu
+    let accu' = ti' :: accu in
+    match get_ancestor_opt td ti' with
+      | Some ancestor -> aux accu' ancestor
+      | None -> accu'
   in
   aux [] ti
 
 (* adds a lineage to the tree and the tax_rank_map *)
 let add_lineage_to_tree_and_map (t,m) l =
-  let check_add k v m =
-    try TaxIdMap.check_add k v m with
-    | Failure _ ->
-        failwith
-          ("Tax table broken: either "^(to_string k)^
-          "is defined to have multiple ancestors, or it is found at multiple \
-          taxonomic ranks.")
+  let check_add format_error k v m =
+    match begin
+      try
+        Some (TaxIdMap.find k m)
+      with Not_found -> None
+    end with
+      | Some v' when v <> v' -> failwith (format_error k v v')
+      | Some _ -> m
+      | None -> TaxIdMap.add k v m
+  in
+  let check_add_tid = check_add
+    (fun k v v' ->
+      Printf.sprintf
+        "Tax table broken: tax_id %s had established parent %s but %s is \
+         claiming to be the parent."
+        (to_string k)
+        (to_string v')
+        (to_string v))
+  and check_add_rank = check_add
+    (fun k v v' ->
+      Printf.sprintf
+        "Tax table broken: %s had established rank %d but was also found at \
+         rank %d."
+        (to_string k)
+        v'
+        v)
   in
   let rec aux (t,m) = function
     | (i,x)::((_,y)::_ as l') ->
-        aux (check_add y x t, check_add x i m) l'
-    | [(i,x)] -> (t, check_add x i m)
+      aux (check_add_tid y x t, check_add_rank x i m) l'
+    | [(i,x)] -> (t, check_add_rank x i m)
     | [] -> (t,m)
   in
   (* filter out the NoTax after adding rank numbers *)
@@ -161,13 +186,15 @@ let sort_by_rank td ti1 ti2 =
 
 (* *** using *** *)
 let rec mrca td ti1 ti2 =
-  let rec aux ti1 ti2 =
-    if ti1 = ti2 then ti1
-    else
+  let rec aux = function
+    | x, NoTax
+    | NoTax, x -> x
+    | ti1, ti2 when ti1 = ti2 -> ti1
+    | ti1, ti2 ->
       let (ti_proximal, ti_distal) = sort_by_rank td ti1 ti2 in
-      aux (get_ancestor td ti_distal) ti_proximal
+      aux (get_ancestor td ti_distal, ti_proximal)
   in
-  try aux ti1 ti2 with
+  try aux (ti1, ti2) with
   | NoAncestor _ -> raise (NoMRCA (ti1, ti2))
 
 let list_mrca td = function

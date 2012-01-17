@@ -11,6 +11,8 @@ type 'a placerun =
     pqueries  :  Pquery.pquery list;
   }
 
+type 'a t = 'a placerun
+
 let make ref_tree name pqueries = {ref_tree; name; pqueries}
 
 let get_ref_tree p = p.ref_tree
@@ -79,16 +81,21 @@ let filter_unplaced pr =
   { pr with pqueries = placed_l }
 
 let redup sequence_tbl pr =
+  let namlom_transform (n, m) =
+    if not (Hashtbl.mem sequence_tbl n) then
+      [n, m]
+    else (* ... *)
+    List.map
+      (second (( *.) m))
+      (Hashtbl.find_all sequence_tbl n)
+  in
   get_pqueries pr
     |> List.map
         (fun pq ->
-          try
-            Pquery.namel pq
-              |> List.map (Hashtbl.find sequence_tbl)
-              |> List.flatten
-              |> Pquery.set_namel pq
-         with
-           | Not_found -> pq)
+          Pquery.namlom pq
+            |> List.map namlom_transform
+            |> List.flatten
+            |> Pquery.set_namlom pq)
     |> set_pqueries pr
 
 let transform func pr =

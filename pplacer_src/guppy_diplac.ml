@@ -5,7 +5,7 @@ open Guppy_cmdobjs
 class cmd () =
 object (self)
   inherit subcommand () as super
-  inherit mass_cmd ~weighting_allowed:false () as super_mass
+  inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd ~default_to_csv:true () as super_tabular

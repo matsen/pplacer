@@ -16,13 +16,9 @@ let rec is_decreasing criterion = function
 
 exception Name_list_needed
 
-(* namlom is short for Name List Or Mass *)
-type namlom =
-  | Name_list of string list
-  | Named_float of string * float
-
+(* namlom is now a list of name, mass pairs *)
 type pquery = {
-  namlom: namlom;
+  namlom: (string * float) list;
   seq: string;
   place_list: Placement.placement list;
 }
@@ -33,31 +29,12 @@ let place_list p = p.place_list
 let namlom p = p.namlom
 let name p =
   match p.namlom with
-    | Name_list (n :: _)
-    | Named_float (n, _) -> n
+    | (n, _) :: _ -> n
     | _ -> failwith "no name"
-let namel p =
-  match p.namlom with
-    | Name_list l -> l
-    | _ -> raise Name_list_needed
-let force_namel p =
-  match p.namlom with
-    | Name_list l -> l
-    | Named_float (n, _) -> [n]
-let has_single_mult p =
-  match p.namlom with
-    | Named_float _ -> true
-    | Name_list _ -> false
+let namel p = List.map fst p.namlom
+let force_namel = namel
 
-let multiplicity p =
-  match p.namlom with
-    | Name_list l -> List.length l |> float_of_int
-    | Named_float (_, f) -> f
-
-let naml_multiplicity p =
-  match p.namlom with
-    | Name_list l -> List.length l
-    | _ -> raise Name_list_needed
+let multiplicity p = List.map snd p.namlom |> List.fsum
 
 let total_multiplicity =
   List.fold_left (multiplicity |- (+.) |> flip) 0.
@@ -106,18 +83,17 @@ let is_placed pq =
   | [] -> false
   | _ -> true
 
-let make criterion ~namel ~seq pl =
+let make criterion ~namlom ~seq pl =
   {
-    seq;
-    namlom = Name_list namel;
+    seq; namlom;
     place_list = sort_placement_list criterion pl;
   }
 
 let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
-let set_namel pq namel = { pq with namlom = Name_list namel }
-let set_mass pq m = { pq with namlom = Named_float (name pq, m) }
+let uniform_namel namel = List.map (identity &&& const 1.) namel
+let set_mass pq m = { pq with namlom = [name pq, m] }
 let set_namlom pq nm = { pq with namlom = nm }
 
 let apply_to_place_list f pq =
@@ -137,19 +113,7 @@ let make_map_by_best_loc criterion pquery_list =
       ~val_f:(fun x -> x)
       placed_l)
 
-let merge_into pq pql =
-  match pq.namlom with
-    | Name_list my_namel ->
-      List.map namel pql
-      |> List.cons my_namel
-      |> List.flatten
-      |> set_namel pq
-    | Named_float (_, m) ->
-      List.map multiplicity pql
-      |> List.cons m
-      |> List.fsum
-      |> set_mass pq
-
-let merge = function
-  | h :: t -> merge_into h t
-  | [] -> invalid_arg "merge"
+let merge_two pq pq' =
+  { pq with namlom = List.append pq.namlom pq'.namlom }
+let merge_into pq pql = List.fold_left merge_two pq pql
+let merge pql = List.reduce merge_two pql

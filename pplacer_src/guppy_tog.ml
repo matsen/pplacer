@@ -10,50 +10,44 @@ let tog_tree criterion ref_tree placed_map =
       List.map
         (fun pquery ->
           let best = Pquery.best_place criterion pquery in
-          let addition = match Pquery.namlom pquery with
-              | Pquery.Name_list _ ->
-                let n_names = List.length (Pquery.namel pquery) in
-                if n_names = 1 then
-                  make_zero_leaf
-                    [ Decor.red ]
-                    (Placement.pendant_bl best)
-                    (String.concat "_" (Pquery.namel pquery))
-                else
-                  let tree =
-                    Stree.node
-                      n_names
-                      (0 --^ n_names |> Enum.map Stree.leaf |> List.of_enum)
-                  in
-                  let decor_map = IntMap.add
-                    n_names
+          let n_names = List.length (Pquery.namel pquery) in
+          let addition =
+            if n_names = 1 then
+              make_zero_leaf
+                [ Decor.red ]
+                (Placement.pendant_bl best)
+                (String.concat "_" (Pquery.namel pquery))
+            else
+              let tree =
+                Stree.node
+                  n_names
+                  (0 --^ n_names |> Enum.map Stree.leaf |> List.of_enum)
+              in
+              let decor_map = IntMap.add
+                n_names
+                (new Decor_bark.decor_bark
+                   (`Of_bl_node_edge_label_decor
+                       (Some (Placement.pendant_bl best),
+                        None,
+                        None,
+                        [Decor.red])))
+                IntMap.empty
+              in
+              let decor_map = Enum.fold2
+                (fun i name ->
+                  IntMap.add
+                    i
                     (new Decor_bark.decor_bark
                        (`Of_bl_node_edge_label_decor
-                           (Some (Placement.pendant_bl best),
+                           (Some 0.0,
+                            Some name,
                             None,
-                            None,
-                            [Decor.red])))
-                    IntMap.empty
-                  in
-                  let decor_map = Enum.fold2
-                    (fun i name ->
-                      IntMap.add
-                        i
-                        (new Decor_bark.decor_bark
-                           (`Of_bl_node_edge_label_decor
-                               (Some 0.0,
-                                Some name,
-                                None,
-                                [Decor.red]))))
-                    decor_map
-                    (0 --^ n_names)
-                    (Pquery.namel pquery |> List.enum)
-                  in
-                  Gtree.Subtree (Gtree.gtree tree decor_map)
-              | Pquery.Named_float (n, mass) ->
-                  make_zero_leaf
-                    [ Decor.red ]
-                    (Placement.pendant_bl best)
-                    (n^"_"^(string_of_float mass))
+                            [Decor.red]))))
+                decor_map
+                (0 --^ n_names)
+                (Pquery.namel pquery |> List.enum)
+              in
+              Gtree.Subtree (Gtree.gtree tree decor_map)
           in
           Placement.distal_bl best,
           addition,
@@ -65,7 +59,7 @@ class cmd () =
 object (self)
   inherit subcommand () as super
   inherit output_cmd () as super_output
-  inherit mass_cmd ~weighting_allowed:false () as super_mass
+  inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit placefile_cmd () as super_placefile
   inherit classic_viz_cmd () as super_classic_viz
 

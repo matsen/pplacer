@@ -4,21 +4,21 @@
 open Ppatteries
 
   (*
-Adenine 	   A 	                A
-Cytosine     	   C 	                C
+Adenine 	         A 	                A
+Cytosine           C 	                C
 Guanine            G 	                G
-Thymine 	   T 	                T
-Purine 	           G or A 	        R
-Pyrimidine 	   T or C 	        Y
-Amino 	           A or C               M
-Keto 	           G or T 	        K
-Strong (3H bonds)  G or C 	        S
-Weak (2H bonds)    A or T 	        W
-Not G 	           A or C or T 	        H
-Not A 	           G or T or C 	        B
-Not T 	           G or C or A 	        V
-Not C 	           G or A or T 	        D
-Any 	           G or C or T or A 	N
+Thymine 	         T 	                T
+Purine 	           G or A 	          R
+Pyrimidine 	       T or C 	          Y
+Amino 	           A or C             M
+Keto 	             G or T 	          K
+Strong (3H bonds)  G or C 	          S
+Weak (2H bonds)    A or T 	          W
+Not G 	           A or C or T 	      H
+Not A 	           G or T or C 	      B
+Not T 	           G or C or A 	      V
+Not C 	           G or A or T 	      D
+Any 	           G or C or T or A 	  N
    *)
 
 let nuc_map =

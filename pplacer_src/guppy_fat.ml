@@ -13,6 +13,8 @@ object (self)
 
   val average = flag "--average"
     (Plain (false, "Average all input placefiles together."))
+  val edpl = flag "--edpl"
+    (Needs_argument ("", "Specify the maximum EDPL for an EDPL tree."))
 
   method specl =
     super_output#specl
@@ -21,6 +23,7 @@ object (self)
     @ super_fat#specl
     @ [
       toggle_flag average;
+      float_flag edpl;
     ]
 
   method desc =
@@ -34,6 +37,7 @@ object (self)
 
   method private to_pre_pair tax_info pr =
     let weighting, criterion = self#mass_opts in
+    pr,
     Mass_map.Pre.of_placerun weighting criterion pr,
     try
       match tax_info with
@@ -53,11 +57,37 @@ object (self)
       (* if we get a No_classif exception then don't make a tax fat tree *)
       | Placement.No_classif -> None
 
-  method private to_fat_tree final_rt name (phylo_pre, tax_pre) =
+  method private decor_map_of_mass_map ?multiplier_override m =
+    let v = super_fat#decor_map_of_mass_map ?multiplier_override m in
+    match fvo edpl with
+      | None -> v
+      | Some _ -> IntMap.map (List.filter ((<>) Decor.sand)) v
+
+  method private maybe_edpl pr gt =
+    match fvo edpl with
+      | None -> gt
+      | Some max ->
+        IntMap.fold
+          (fun i v accum ->
+            let r = v /. max in
+            Decor_gtree.map_add_decor_listly
+              i
+              (if r > 1. then
+                [Decor.yellow]
+               else
+                [Decor.color_avg r Decor.red Decor.white])
+              accum)
+          (Edpl.map_of_placerun self#criterion pr)
+          (Gtree.get_bark_map gt)
+        |> Gtree.set_bark_map gt
+
+  method private to_fat_tree final_rt name (pr, phylo_pre, tax_pre) =
     let phylo_mass = Mass_map.By_edge.of_pre phylo_pre in
     [
       Some (name^".ref.fat"),
-      self#fat_tree_of_massm final_rt phylo_mass |> self#maybe_numbered
+      self#fat_tree_of_massm final_rt phylo_mass
+        |> self#maybe_numbered
+        |> self#maybe_edpl pr
     ]
     @
       (match tax_pre with
@@ -82,8 +112,8 @@ object (self)
     let pre_pairs = List.map (self#to_pre_pair tax_info) prl in
 
     if fv average then begin
-      let pair = List.fold_left
-        (fun (phylo_accum, tax_accum) (phylo_pre, tax_pre) ->
+      let phylo_pre, tax_pre = List.fold_left
+        (fun (phylo_accum, tax_accum) (_, phylo_pre, tax_pre) ->
           let phylo_pre' = Mass_map.Pre.normalize_mass phylo_pre in
           List.rev_append phylo_pre' phylo_accum,
           match tax_accum, tax_pre with
@@ -99,7 +129,7 @@ object (self)
       let trees = self#to_fat_tree
         (snd (self#get_rpo_and_tree (List.hd prl)))
         (safe_chop_suffix fname ".xml")
-        pair
+        (List.hd prl, phylo_pre, tax_pre)
       in
       Phyloxml.named_gtrees_to_file
         fname

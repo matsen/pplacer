@@ -26,6 +26,8 @@ type placement =
     map_identity: (float * int) option;
   }
 
+type t = placement
+
 let location            p = p.location
 let ml_ratio            p = p.ml_ratio
 let post_prob_opt       p = p.post_prob

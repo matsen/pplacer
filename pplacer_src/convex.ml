@@ -466,6 +466,37 @@ let badness cutsetim =
     cutsetim
     (0, 0)
 
+(* From an stree, produce a map from all the node numbers in the stree to sets
+ * of all of the node numbers below that respective node. *)
+let rec belowm_of_stree = function
+  | Leaf i -> IntSet.singleton i |> IntMap.singleton i
+  | Node (i, subtrees) ->
+    let map = List.map belowm_of_stree subtrees |> List.reduce IntMap.union in
+    IntMap.add
+      i
+      (IntMap.values map |> Enum.reduce IntSet.union |> IntSet.add i)
+      map
+
+let prune_tree (colors, st) =
+  let kept_leaves = IntMap.keys colors |> IntSet.of_enum
+  and belowm = belowm_of_stree st
+  and all_leaves = leaf_ids st |> IntSet.of_list in
+  let rec should_keep i =
+    IntMap.find i belowm
+      |> IntSet.disjoint kept_leaves
+      |> not
+  and aux = function
+    | Leaf _ as l -> l
+    | Node (i, subtrees) ->
+      List.filter_map
+        (fun t -> let j = top_id t in
+          if not (should_keep j) then None
+          else Some (aux t))
+        subtrees
+      |> node i
+  in
+  IntSet.diff all_leaves kept_leaves, aux st
+
 let solve ?strict ?nu_f ((_, tree) as cdtree) =
   let sizemim, cutsetim = build_sizemim_and_cutsetim cdtree in
   let cutsetim = IntMap.add (top_id tree) CS.empty cutsetim in

@@ -24,11 +24,14 @@ type snip = {
   finish: float;
 }
 
+(* qs: queue and set. An item will only be enqueued if it's not already present
+ * in the set. *)
 type qs = {
   queue: int Queue.t;
   set: IntSet.t;
 }
 
+(* push an item on the queue if it's not in the set. *)
 let qs_push {queue = q; set = s} l =
   let s' = List.fold_left
     (fun accum x ->
@@ -39,6 +42,7 @@ let qs_push {queue = q; set = s} l =
     l
   in {queue = q; set = s'}
 
+(* pop an item from the queue; remove it from the set. *)
 let qs_pop ({queue = q; set = s} as qs) =
   match begin
     try
@@ -49,6 +53,7 @@ let qs_pop ({queue = q; set = s} as qs) =
     | None -> None, qs
     | Some x -> Some x, {qs with set = IntSet.remove x s}
 
+(* create a queue set from a list. *)
 let qs l =
   qs_push {queue = Queue.create (); set = IntSet.empty} l
 
@@ -290,6 +295,8 @@ let placement_distance v ?snipdist p =
     | Some d -> d
     | None -> invalid_arg "dist"
 
+(* find the work it takes to move the mass in the mass map to the specified
+ * leaf in the voronoi diagram. *)
 let leaf_work ?(p_exp = 1.) v indiv_map leaf =
   if not (IntMap.mem leaf indiv_map) then 0.0 else
     let indiv = IntMap.find leaf indiv_map in
@@ -307,6 +314,8 @@ let ecld ?p_exp v indiv_map =
 
 
 (* voronoi' *)
+
+(* a partial solution to the full voronoi algorithm *)
 type partial_solution = {
   leaf_set: IntSet.t;
   mv_dist: float;
@@ -315,6 +324,7 @@ type partial_solution = {
   wk_subtot: float;
 }
 
+(* a solution to any variant of the voronoi algorithm *)
 type solution = {
   leaves: IntSet.t;
   work: float;
@@ -331,6 +341,8 @@ let soln_of_tuple (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot) =
 let soln_to_tuple {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot} =
  (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot)
 
+(* from a set of leaves and a tree, produce a map from all nodes on the tree to
+ * a map from each leaf to the distance between that node and leaf. *)
 let all_dist_map all_leaves gt =
   let adjacency_map = adjacent_bls gt
   and n_leaves = IntSet.cardinal all_leaves in
@@ -370,6 +382,9 @@ let all_dist_map all_leaves gt =
       |> IntMap.of_enum)
     (IntSet.elements all_leaves |> qs)
 
+(* from a tree, return a map from each node to a list of marks on the edge
+ * above that node and a map from each node to the distance to the closest
+ * leaf to that node. *)
 let mark_map gt =
   let distm = all_dist_map (Gtree.leaf_ids gt |> IntSet.of_list) gt
   and parents = Gtree.get_stree gt |> parent_map
@@ -403,7 +418,6 @@ let mark_map gt =
         |> List.sort_unique compare
       and bl = get_bl i in
       leaves_below,
-      (* XXX revisit how to use take_while instead of filter *)
       List.enum above
         |> Enum.map
             (fun p ->
@@ -428,12 +442,19 @@ let mark_map gt =
      |> Enum.fold (snd |- min |> flip) infinity)
     distm
 
+(* check if a solution is strictly a better solution than another. the
+ * cardinality of the leaf set must also be equal, but that's already
+ * accounted for in `cull`. *)
 let does_dominate sup inf =
   sup.cl_dist <= inf.cl_dist
   && sup.prox_mass <= inf.prox_mass
   && sup.wk_subtot <= inf.wk_subtot
 
+(* a polymorphic map for keys of int, bool *)
 let empty_pairmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
+
+(* cull solutions from an enum of solutions down to a list of strictly the
+ * best solutions per leaf set cardinality. *)
 let cull ?(verbose = false) sols =
   if verbose then begin
     Printf.eprintf "culling solutions";
@@ -474,6 +495,8 @@ let cull ?(verbose = false) sols =
           Printf.eprintf " -> culled nothing\n")
     else identity
 
+(* returns a new solution in which mass is moving up from both sol1 and sol2
+ * toward the root. *)
 let arrow_up sol1 sol2 = {
   leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
   mv_dist = min sol1.mv_dist sol2.mv_dist;
@@ -482,6 +505,8 @@ let arrow_up sol1 sol2 = {
   wk_subtot = sol1.wk_subtot +. sol2.wk_subtot;
 }
 
+(* returns a new solution in which mass is moving up from sol1 and then down
+ * toward sol2. *)
 let arrow_down sol1 sol2 = {
   leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
   mv_dist = infinity;
@@ -491,6 +516,8 @@ let arrow_down sol1 sol2 = {
     sol1.wk_subtot +. sol2.wk_subtot +. sol2.prox_mass *. sol1.cl_dist;
 }
 
+(* given a mark map, a tree, and mass on the tree, remove redundant marks from
+ * the tree. i.e. remove any mark that doesn't have mass on one side of it. *)
 let collapse_marks gt mass markm =
   let get_bl = Gtree.get_bl gt in
   let bubbles_from i =
@@ -513,6 +540,10 @@ let collapse_marks gt mass markm =
       |> snd |> List.tl |> List.rev)
     markm
 
+(* combine across the solutions below an internal node, given a solution list
+ * for each node immediately below this node. knowing the max_leaves can help
+ * in not having to consider every solution, as they can be pruned off
+ * early. *)
 let combine_solutions ?(verbose = false) max_leaves solsl =
   if verbose then begin
     Printf.eprintf "combining across ";
@@ -562,6 +593,7 @@ let csvrow i sol = match !soln_csv_opt with
     string_of_int i :: soln_to_info sol
       |> Csv.output_record ch
 
+(* solve a tree using the full algorithm. *)
 let solve ?(verbose = false) gt mass n_leaves =
   let markm, cleafm = mark_map gt
   and mass = I.sort mass in
@@ -657,6 +689,8 @@ let solve ?(verbose = false) gt mass n_leaves =
   in
   Gtree.get_stree gt |> aux
 
+(* brute-force a voronoi solution by trying every combination of leaves,
+ * calculating the ECLD of each, and choosing the best. *)
 let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
   let leaves_ecld leaves =
     let v = of_gtree_and_leaves gt leaves in
@@ -706,6 +740,8 @@ module Forced = struct
   let solve = force
 end
 
+(* update a map with what the ECLD would be if a particular leaf was removed
+ * from the voronoi diagram. *)
 let update_score indiv v leaf map =
   let v', _ = uncolor_leaf v leaf in
   ecld v' (partition_indiv_on_leaves v' indiv)

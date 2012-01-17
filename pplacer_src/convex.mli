@@ -116,6 +116,10 @@ val phi_recurse: ?strict:bool -> ?nu_f:nu_f ->
 
 *)
 
+val prune_tree: cdtree -> IntSet.t * stree
+(** Prune a tree down to just the leaves that are represented in the color map,
+    also providing the leaves which were cut. *)
+
 val solve: ?strict:bool -> ?nu_f:nu_f -> cdtree -> phi * int
 (** Solve a tree, returning the solved phi and the omega of the best
     solution. *)
@@ -142,5 +146,7 @@ val alternate_colors: cdtree -> cset IntMap.t
 
 module Naive: sig
   val solve: cdtree -> IntSet.t
+  (** Solve a tree using the naive algorithm. Returns a set of the leaves to
+      keep from the tree. *)
 end
 
