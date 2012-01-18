@@ -41,7 +41,7 @@ object (self)
         let db = self#get_db in
         Sql.check_exec db "BEGIN TRANSACTION";
         let pn_st = Sqlite3.prepare db
-          "INSERT INTO placement_names VALUES (?, ?, ?);"
+          "INSERT INTO placement_names VALUES (?, ?, ?, 1.);"
         and pc_st = Sqlite3.prepare db
           "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
         in
