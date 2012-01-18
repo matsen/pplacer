@@ -52,3 +52,23 @@ let color_clades_above ?(color = Decor.red) leaves gt =
   in
   let decor_map' = aux (Gtree.get_bark_map gt) (Gtree.get_stree gt) in
   Gtree.set_bark_map gt decor_map'
+
+(* not a real average, but good enough *)
+let list_color_average = List.reduce (Decor.color_avg 0.5) |- some
+let keep_only_one _ = None
+let keep_first = function [x] -> Some x | _ -> None
+
+let consolidate_colors resolution_fn gt =
+  Gtree.get_bark_map gt
+  |> IntMap.map
+      (fun b ->
+        let decor' = match List.partition
+            (function Decor.Color _ -> true | _ -> false)
+          b#get_decor
+        with
+          | [], others -> others
+          | [color], others -> color :: others
+          | colors, others -> maybe_cons (resolution_fn colors) others
+        in
+        b#set_decor decor')
+  |> Gtree.set_bark_map gt

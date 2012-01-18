@@ -34,7 +34,6 @@ object (self)
       (fun pr ->
         let out_name = (prefix^(pr.Placerun.name)) in
         self#write_placefile
-          "guppy demulti"
           (out_name^".jplace")
           (demulti_placerun out_name pr))
       prl

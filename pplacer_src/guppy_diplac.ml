@@ -20,7 +20,7 @@ object (self)
     int_flag max_reported
   ] @ super_tabular#specl
 
-  method desc = "find the most DIstant PLACements from the leaves"
+  method desc = "finds the most DIstant PLACements from the leaves"
   method usage = "usage: diplac [options] placefile"
 
   method private placefile_action = function

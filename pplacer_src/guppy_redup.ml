@@ -53,7 +53,6 @@ object (self)
 
       in
       self#write_placefile
-        "guppy redup"
         (self#single_file ())
         pr'
 

@@ -91,14 +91,6 @@ let classify how criterion n_ranks td pr f mrca_map =
       invalid_arg
         ((Placerun.get_name pr)^" contains unclassified queries!")
 
-let median l =
-  let rec aux = function
-    | e :: _, ([_] | [_; _]) -> e
-    | _ :: tl1, _ :: _ :: tl2 -> aux (tl1, tl2)
-    | _, _ -> invalid_arg "median"
-  in
-  aux (l, l)
-
 
 (* UI-related *)
 

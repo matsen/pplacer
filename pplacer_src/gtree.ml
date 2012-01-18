@@ -141,6 +141,26 @@ let swap_bark a b ({bark_map = m} as t) =
 let reroot t i =
   swap_bark i (top_id t) {t with stree = Stree.reroot t.stree i}
 
+let renumber {bark_map; stree} =
+  let open Stree in
+  let next ir = let res = !ir in incr ir; res
+  and counter = ref 0 in
+  let rec aux = function
+    | Leaf i ->
+      let j = next counter in
+      leaf j,
+      IntMap.Exceptionless.find i bark_map
+        |> Option.map_default (IntMap.singleton j) IntMap.empty
+    | Node (i, subtrees) ->
+      let subtrees', accum = List.map aux subtrees |> List.split in
+      let j = next counter
+      and accum' = List.reduce IntMap.union accum in
+      node j subtrees',
+      IntMap.Exceptionless.find i bark_map
+        |> Option.map_default (flip (IntMap.add j) accum') accum'
+  in
+  aux stree |> uncurry gtree
+
 (* join a list of info_trees *)
 let join new_id tL =
   gtree

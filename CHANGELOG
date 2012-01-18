@@ -1,3 +1,22 @@
+1.1.alpha12
+===========
+
+ * Closed GH-189: Added `guppy pentropy`.
+ * Closed GH-192: Added `rppr infer`.
+ * Closed GH-193: Added `rppr reclass`.
+ * Closed GH-195: Added a --groups flag to pplacer for placing metagenomic
+   sequences onto trees built from very wide alignments.
+ * Closed GH-196: Added code to pplacer to better handle errors raised when
+   calling fork(2).
+ * Closed GH-198: Added progress reporting code to `guppy compress`.
+ * Closed GH-199: Renamed `guppy pentropy` to `guppy entropy`; added quadratic
+   entropy calculation.
+ * Closed GH-200: Added --discard-below to `guppy {islands,compress}`.
+ * Closed GH-201: Added a setup.py file to the scripts directory.
+ * Closed GH-204: Added more columns to `rppr reclass`.
+ * Closed GH-206: Updated some pplacer documentation.
+
+
 1.1.alpha11
 ===========
 

@@ -72,6 +72,7 @@ let to_csv_in ch = object
 end
 let csv_in_channel ch = new IO.in_channel ch |> to_csv_in
 
+let some x = Some x
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
@@ -85,6 +86,16 @@ let (&&--) f g a b = f a b && g a b
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
+
+(* find the median of a sorted list. returns the left item if there are an even
+ * number of items in the list. *)
+let median l =
+  let rec aux = function
+    | e :: _, ([_] | [_; _]) -> e
+    | _ :: tl1, _ :: _ :: tl2 -> aux (tl1, tl2)
+    | _, _ -> invalid_arg "median"
+  in
+  aux (l, l)
 
 let verbosity = ref 1
 let dprintf ?(l = 1) ?(flush = true) fmt =
@@ -582,3 +593,7 @@ module EnumFuns = struct
       |> Enum.flatten
 
 end
+
+let () =
+  Gsl_error.init ();
+  Random.self_init ();
