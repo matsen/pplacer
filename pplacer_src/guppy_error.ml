@@ -10,21 +10,24 @@ let pr_to_map transform pr =
     StringMap.empty
     (Placerun.get_pqueries pr)
 
-let pr_error criterion include_pendant ignore_experimental_bl experimental expected =
+let pr_error criterion include_pendant scale_experimental_bl experimental expected =
   let gt =
-    if ignore_experimental_bl then Placerun.get_ref_tree expected
+    if scale_experimental_bl then Placerun.get_ref_tree expected
     else Placerun.get_same_tree experimental expected
   in
   let pair_dist = Edge_rdist.build_pairwise_dist gt
     |> Edge_rdist.find_pairwise_dist
-  and bl = Gtree.get_bl gt in
+  and ec_bl = Gtree.get_bl gt
+  and em_bl = Placerun.get_ref_tree experimental |> Gtree.get_bl in
   let placement_distance p_em p_ec =
     let open Placement in
     pair_dist
       p_ec.location
       p_ec.distal_bl
       p_em.location
-      (if ignore_experimental_bl then bl p_em.location /. 2. else p_em.distal_bl)
+      (if scale_experimental_bl then
+         ec_bl p_em.location *. p_em.distal_bl /. em_bl p_em.location
+       else p_em.distal_bl)
     +. (if include_pendant then p_em.pendant_bl +. p_ec.pendant_bl else 0.)
   in
   StringMap.merge
@@ -46,15 +49,15 @@ object (self)
 
   val include_pendant = flag "--include-pendant"
     (Plain (false, "Include pendant branch lengths in distance calculations."))
-  val ignore_experimental_bl = flag "--ignore-experimental-bl"
-    (Plain (false, "Ignore the branch lengths in the experimental jplace file."))
+  val scale_experimental_bl = flag "--scale-experimental-bl"
+    (Plain (false, "Scale the branch lengths in the experimental jplace file."))
 
   method specl =
     super_mass#specl
   @ super_tabular#specl
   @ [
     toggle_flag include_pendant;
-    toggle_flag ignore_experimental_bl;
+    toggle_flag scale_experimental_bl;
   ]
 
   method desc = "finds the error between two placefiles"
@@ -65,7 +68,7 @@ object (self)
       pr_error
         self#criterion
         (fv include_pendant)
-        (fv ignore_experimental_bl)
+        (fv scale_experimental_bl)
         experimental
         expected
       |> StringMap.enum
