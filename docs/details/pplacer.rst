@@ -425,6 +425,21 @@ The colored trees written out by the ``--fig-tree`` and
 reference tree.
 
 
+Model refinement
+----------------
+
+By default when using the FastTree CAT model, the site rate categories used
+directly from the FastTree run. This is not possible, however, when a different
+reference alignment is supplied than was used to build the tree. This can
+happen when supplying an integrated reference and query alignment.
+
+When the site rates cannot be used directly, the model gets "refined".
+Currently, this only actually means something for the CAT model, in which case
+it infers site categories. You can force this behavior by using the
+``--always-refine`` flag.
+
+
+
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
