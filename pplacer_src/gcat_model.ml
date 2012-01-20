@@ -391,13 +391,16 @@ struct
         |> failwith
 
   let mask_sites model mask =
-    if Array.length model.site_categories <> Array.length mask then
-      invalid_arg "mask_sites";
-    model.site_categories <-
-      (Enum.combine (Array.enum model.site_categories, Array.enum mask)
-       |> Enum.filter_map (function x, true -> Some x | _, false -> None)
-       |> Array.of_enum);
-    setup_occupied_rates model
+    (* We don't care about the case when they're not equal; either the
+     * refinement will already repopulate the site_categories or the mask is
+     * invalid and `check` will raise an error. *)
+    if Array.length model.site_categories = Array.length mask then begin
+      model.site_categories <-
+        (Enum.combine (Array.enum model.site_categories, Array.enum mask)
+         |> Enum.filter_map (function x, true -> Some x | _, false -> None)
+         |> Array.of_enum);
+      setup_occupied_rates model
+    end
 
 end
 and Like_stree: sig
