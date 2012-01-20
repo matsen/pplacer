@@ -69,7 +69,7 @@ object (self)
       |> List.map Tax_id.of_string
       |> Tax_id.TaxIdSet.of_list
     and prefix = self#single_prefix ~requires_user_prefix:true ()
-    and gt = Refpkg.get_ref_tree rp
+    and gt = Refpkg.get_ref_tree rp |> Like_stree.add_zero_root_bl
     and td = Refpkg.get_taxonomy rp
     and seqinfo = Refpkg.get_seqinfom rp in
     let should_keep ti =
