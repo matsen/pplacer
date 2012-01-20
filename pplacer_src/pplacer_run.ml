@@ -272,9 +272,11 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   dprint "done.\n";
 
   Option.may (Model.mask_sites model) mask;
-  (* Refine the model if it's not coming directly from the reference package. *)
-  if from_input_alignment then
+  (* Refine the model if it's not coming directly from the reference package or
+   * if the user wants it. *)
+  if from_input_alignment || Prefs.always_refine prefs then
     Model.refine model n_sites ref_tree like_aln_map darr parr;
+  Model.check model ref_align;
   if !verbosity >= 2 then Model.write stdout model;
 
   dprint "Caching likelihood information on reference tree... ";

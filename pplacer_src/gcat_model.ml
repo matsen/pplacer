@@ -55,12 +55,6 @@ struct
 
   let build ref_align = function
     | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
-      let n_sites = ref_align.(0) |> snd |> String.length in
-      if n_sites <> Array.length site_categories then
-        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
-          n_sites
-          (Array.length site_categories)
-        |> failwith;
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions emperical_freqs ref_align
@@ -387,6 +381,14 @@ struct
     done;
     set_site_categories model best_log_lk_cats;
     dprint "done.\n"
+
+  let check model ref_align =
+    let n_sites = ref_align.(0) |> snd |> String.length in
+      if n_sites <> Array.length model.site_categories then
+        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
+          n_sites
+          (Array.length model.site_categories)
+        |> failwith
 
   let mask_sites model mask =
     if Array.length model.site_categories <> Array.length mask then
