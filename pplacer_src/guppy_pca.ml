@@ -13,6 +13,7 @@ object (self)
   inherit heat_cmd () as super_heat
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
+  inherit splitify_cmd () as super_splitify
 
   val write_n = flag "--write-n"
     (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
@@ -22,19 +23,17 @@ object (self)
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
   val raw_eval = flag "--raw-eval"
     (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
-  val unweighted = flag "--unweighted"
-    (Plain (false, "Perform an unweighted splitify."))
 
   method specl =
     super_output#specl
     @ super_mass#specl
     @ super_refpkg#specl
     @ super_heat#specl
+    @ super_splitify#specl
     @ [
       int_flag write_n;
       toggle_flag scale;
       toggle_flag symmv;
-      toggle_flag unweighted;
     ]
 
   method desc =
@@ -47,18 +46,13 @@ object (self)
     and scale = fv scale
     and write_n = fv write_n
     and refpkgo = self#get_rpo
-    and prefix = self#single_prefix ~requires_user_prefix:true ()
-    and splitify = Guppy_splitify.splitify_func_of_bool (fv unweighted) in
+    and prefix = self#single_prefix ~requires_user_prefix:true () in
     let prt = Mokaphy_common.list_get_same_tree prl in
     let t = match refpkgo with
     | None -> Decor_gtree.of_newick_gtree prt
     | Some rp -> Refpkg.get_tax_ref_tree rp
     in
-    let data =
-      List.map
-        (Guppy_splitify.splitify_placerun splitify weighting criterion)
-        prl
-    in
+    let data = List.map (self#splitify_placerun weighting criterion) prl in
     let (eval, evect) =
       Pca.gen_pca ~use_raw_eval:(fv raw_eval)
                   ~scale ~symmv:(fv symmv) write_n (Array.of_list data)

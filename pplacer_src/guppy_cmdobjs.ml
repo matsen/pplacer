@@ -461,3 +461,58 @@ object
   method private get_db =
     Sqlite3.db_open (fv sqlite_fname)
 end
+
+class splitify_cmd () =
+
+let tolerance = 1e-3
+and splitify x = x -. (1. -. x)
+and sgn = flip compare 0. |- float_of_int
+and arr_of_map len m = Array.init len (fun i -> IntMap.get i 0. m) in
+
+(* get the mass below the given edge, excluding that edge *)
+let below_mass_map edgem t =
+  let m = ref IntMap.empty in
+  let total =
+    Gtree.recur
+      (fun i below_massl ->
+        let below_tot = List.fold_left ( +. ) 0. below_massl in
+        m := IntMap.check_add i below_tot (!m);
+        (IntMap.get i 0. edgem) +. below_tot)
+      (fun i -> IntMap.get i 0. edgem)
+      t
+  in
+  assert(abs_float(1. -. total) < tolerance);
+  !m
+in
+
+object (self)
+  val kappa = flag "--kappa"
+    (Plain (1., "Specify the exponent for scaling between weighted and unweighted splitification."))
+  method specl = [float_flag kappa]
+
+  method private splitify_transform =
+    let kappa = fv kappa in
+    if kappa =~ 0. then
+      splitify |- sgn
+    else if kappa  =~ 1. then
+      splitify
+    else if kappa > 1. || kappa < 0. then
+      failwith "--kappa must be on the range [0, 1]"
+    else
+      fun x -> let y = splitify x in sgn y *. abs_float y ** kappa
+
+  (* Take a placerun and turn it into a vector which is indexed by the edges of
+   * the tree.
+   * Later we may cut the edge mass in half; right now we don't do anything with it. *)
+  method private splitify_placerun weighting criterion pr =
+    let preim = Mass_map.Pre.of_placerun weighting criterion pr
+    and t = Placerun.get_ref_tree pr
+    and splitify = self#splitify_transform in
+    arr_of_map
+      (1+(Gtree.top_id t))
+      (IntMap.map
+         splitify
+         (below_mass_map (Mass_map.By_edge.of_pre preim) t))
+
+end
+
