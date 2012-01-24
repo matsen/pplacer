@@ -41,8 +41,23 @@ module TaxIdMap = Tax_id.TaxIdMap
 module IAMR = IntAlgMapR
 
 
-let of_refpkg rp =
-  let post_map = Edge_painting.of_refpkg rp
+let all_mrcas rp =
+  let mrcam = Refpkg.get_mrcam rp
+  and utm = Refpkg.get_uptree_map rp in
+  let rec update mrcam i =
+    match IntMap.Exceptionless.find i mrcam with
+      | Some x -> mrcam, x
+      | None ->
+        let mrcam', x = update mrcam (IntMap.find i utm) in
+        IntMap.add i x mrcam', x
+  in
+  Refpkg.get_ref_tree rp
+    |> Gtree.get_stree
+    |> Stree.node_ids
+    |> List.fold_left (update |-- fst) mrcam
+
+let of_refpkg rp mrca_class =
+  let post_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
     |> IntMap.values
     |> TaxIdMap.histogram_of_enum
     |> TaxIdMap.map float_of_int
@@ -58,7 +73,7 @@ let of_refpkg rp =
             accum
         with Not_found ->
           Printf.sprintf
-            "tax_id %s is not represented on the painted tree. this suggests the \
+            "tax_id %s is not represented on the classification tree. this suggests the \
              placefile was classified with an old version of the reference package"
             (Tax_id.to_string ti)
           |> failwith)

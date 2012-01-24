@@ -116,6 +116,8 @@ object (self)
     (Plain (false, "Print the number of placements just proximal to MRCAs."))
   val tax_identity = flag "--tax-median-identity-from"
     (Needs_argument ("", "Calculate the median identity for each sequence per-tax_id from the specified alignment."))
+  val mrca_class = flag "--mrca-class"
+    (Plain (false, "Classify against a placefile that was generated with MRCA classification"))
 
   method specl =
     super_refpkg#specl
@@ -124,6 +126,7 @@ object (self)
     toggle_flag use_pp;
     toggle_flag mrca_stats;
     string_flag tax_identity;
+    toggle_flag mrca_class;
   ]
 
   method desc =
@@ -141,7 +144,7 @@ object (self)
     in
     let out_func pr =
       if sqlite_out then
-        let bayes_factors = Bayes_factor.of_refpkg rp criterion in
+        let bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion in
         let prn = Placerun.get_name pr in
         let db = self#get_db in
         let close () =
