@@ -7,7 +7,7 @@ import os
 import os.path
 import re
 import shlex
-import string
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -242,16 +242,38 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
             merged.close()
             os.rename(merged.name, output_path)
 
+def pynast_align(refpkg, sequence_file, output_path, use_mask=True,
+        use_mpi=False, mpi_args=None, mpi_program='mpirun',
+        program_path='pynast', alignment_options=None):
+    d = os.path.dirname(output_path)
+    if use_mask and refpkg.has_mask:
+        raise NotImplementedError("Cannot mask with PyNAST")
+
+    with tempfile.NamedTemporaryFile(prefix='pynast', dir=d) as tf:
+        cmd = [program_path]
+        cmd.extend(alignment_options or [])
+        cmd.extend(['-t', refpkg.file_abspath('aln_fasta'),
+                    '-i', sequence_file,
+                    '-a', tf.name])
+
+        log.info(cmd)
+        subprocess.check_call(cmd)
+        # Add reference sequences
+        with open(refpkg.file_abspath('aln_fasta')) as i, open(output_path, 'w') as o:
+            shutil.copyfileobj(i, o)
+            shutil.copyfileobj(tf, o)
 
 ALIGNERS = {
     'HMMER3': hmmer_align,
     'INFERNAL': infernal_align,
+    'PyNAST': pynast_align,
 }
 
 # Default options that can be used by scripts.
 # Keys for search_options and alignment options must map to a valid profile.
 ALIGNMENT_DEFAULTS = {
     'INFERNAL': ['-1', '--hbanded', '--sub', '--dna'],
+    'PyNAST': ['-l', '150', '-f', os.devnull, '-g', os.devnull]
 }
 
 def align(arguments):
@@ -336,9 +358,10 @@ def main(argv=sys.argv[1:]):
             template variables.  Available template variables are $aln_sto,
             $profile.  Defaults are as follows for the different profiles:
             """ + align_defaults)
-    parser_align.add_argument('--profile-version', dest='profile_version',
-            choices=ALIGNERS.keys(), help="""Profile version to use.
-            [default: guess]""")
+    parser_align.add_argument('--alignment-method', dest='profile_version',
+            choices=ALIGNERS.keys(), help="""Profile version to use.  [default:
+            Guess. PyNAST is used if a valid CM or HMM is not found in the
+            reference package.]""")
     parser_align.add_argument('--no-mask', default=True, dest="use_mask",
             action='store_false', help="""Do not
             trim the alignment to unmasked columns. [default:
