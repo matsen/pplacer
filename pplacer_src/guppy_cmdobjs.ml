@@ -487,7 +487,7 @@ in
 
 object (self)
   val kappa = flag "--kappa"
-    (Plain (1., "Specify the exponent for scaling between weighted and unweighted splitification."))
+    (Formatted (1., "Specify the exponent for scaling between weighted and unweighted splitification. default: %g"))
   method specl = [float_flag kappa]
 
   method private splitify_transform =
