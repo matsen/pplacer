@@ -112,7 +112,7 @@ object (self)
           (fun pr ->
             let pe, qe = entropy pr in
             [pe; qe; pd pr; wpd 1. pr]
-            |> List.append (List.map (flip wpd pr) exponents)
+            |> (flip List.append (List.map (flip wpd pr) exponents))
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
