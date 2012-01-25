@@ -6,7 +6,7 @@ let suite = [
   "test_simple" >:: begin fun () ->
     placeruns_of_dir "simple"
       |> List.map
-          (Placerun.get_name &&& Guppy_pd.pd_of_placerun Placement.ml_ratio false)
+          (Placerun.get_name &&& Guppy_fpd.pd_of_placerun Placement.ml_ratio)
       |> List.sort compare
       |> List.enum
       |> check_map_approx_equal

@@ -6,7 +6,7 @@ let test exponent results () =
   placeruns_of_dir "simple"
     |> List.cons (placerun_of_dir "multi" "test1and3")
     |> List.map
-        (Placerun.get_name &&& Guppy_wpd.wpd_of_placerun exponent Placement.ml_ratio)
+        (Placerun.get_name &&& Guppy_fpd.wpd_of_placerun Placement.ml_ratio exponent)
     |> List.sort compare
     |> List.enum
     |> check_map_approx_equal
