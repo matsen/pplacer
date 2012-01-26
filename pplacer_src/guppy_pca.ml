@@ -29,12 +29,12 @@ object (self)
     @ super_mass#specl
     @ super_refpkg#specl
     @ super_heat#specl
-    @ super_splitify#specl
     @ [
       int_flag write_n;
       toggle_flag scale;
       toggle_flag symmv;
     ]
+    @ super_splitify#specl
 
   method desc =
 "performs edge principal components"

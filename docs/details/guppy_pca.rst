@@ -13,5 +13,7 @@ out.trans
 out.xml
   The eigenvectors visualized as fattened and colored trees.
 
+See the :doc:`guppy_splitify` documentation for information about the ``--kappa`` flag.
+
 .. _visualize: http://matsen.fhcrc.org/pplacer/demo/pca.html
 .. _edge principal components: http://arxiv.org/abs/1107.5095
