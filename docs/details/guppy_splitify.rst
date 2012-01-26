@@ -10,6 +10,6 @@ The ``--kappa`` option enables a componentwise transformation :math:`\varphi_\ka
 .. math::
   \varphi_\kappa(x) = \mathrm{sgn}(x) |x|^\kappa
 
-where the :math:`\kappa` parameter can be specified in the range between 0 and 1, inclusive.
-This parameter scales between ignoring abundance information (:math:`\kappa = 0`) and using it at face value (:math:`\kappa = 1`).
+where the :math:`\kappa` parameter can any non-negative number.
+This parameter scales between ignoring abundance information (:math:`\kappa = 0`), using it linearly (:math:`\kappa = 1`), and emphasizing it (:math:`\kappa > 1`).
 

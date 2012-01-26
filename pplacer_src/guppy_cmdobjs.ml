@@ -496,8 +496,8 @@ object (self)
       splitify |- sgn
     else if kappa  =~ 1. then
       splitify
-    else if kappa > 1. || kappa < 0. then
-      failwith "--kappa must be on the range [0, 1]"
+    else if kappa < 0. then
+      failwith "--kappa must be a non-negative number"
     else
       fun x -> let y = splitify x in sgn y *. abs_float y ** kappa
 
