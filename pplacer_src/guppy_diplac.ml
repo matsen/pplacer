@@ -23,7 +23,7 @@ object (self)
     toggle_flag include_pendant;
   ] @ super_tabular#specl
 
-  method desc = "find the most DIstant PLACements from the leaves"
+  method desc = "finds the most DIstant PLACements from the leaves"
   method usage = "usage: diplac [options] placefile"
 
   method private dist dist_fn p =

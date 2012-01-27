@@ -6,8 +6,21 @@
 scripts
 =======
 
+
 The `pplacer` package comes with a few scripts to perform common tasks on
 reference packages and placements:
+
+Installing
+==========
+
+All scripts can be used by specifying the full path.  For convenience, a Python
+``setup.py`` file is provided, which will install them globally.  To install,
+run::
+
+   $ python setup.py install
+
+from the ``scripts/`` subdirectory, prefixed with ``sudo`` if the python
+installation directory is not writable.
 
 ``refpkg_align.py``
 ===================

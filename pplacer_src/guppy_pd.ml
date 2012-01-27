@@ -64,7 +64,7 @@ object (self)
   @ super_tabular#specl
   @ [toggle_flag normalized]
 
-  method desc = "calculate phylogenetic diversity"
+  method desc = "calculates phylogenetic diversity"
   method usage = "usage: pd [options] placefile[s]"
 
   method private placefile_action prl =

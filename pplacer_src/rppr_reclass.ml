@@ -9,6 +9,34 @@ let format_float f =
     | FP_nan -> "-"
     | _ -> Printf.sprintf "%g" f
 
+let contained_in inner outer =
+  ColorMap.for_all
+    (fun k v -> ColorMap.get k 0 outer = v)
+    inner
+
+let uninformative_nodes top_sizem sizemim st =
+  let prelim = IntMap.fold
+    (fun i sizem accum ->
+      if ColorMap.cardinal sizem = 2 && contained_in sizem top_sizem then
+        IntSet.add i accum
+      else accum)
+    sizemim
+    IntSet.empty
+  in
+  let open Stree in
+  let rec aux accum = function
+    | [] -> accum
+    | Node (i, subtrees) :: rest ->
+      let accum' =
+        if IntSet.mem i accum then
+          List.fold_left (top_id |- IntSet.add |> flip) accum subtrees
+        else accum
+      and rest' = List.append rest subtrees in
+      aux accum' rest'
+    | Leaf _ :: rest -> aux accum rest
+  in
+  aux prelim [st]
+
 class cmd () =
 object (self)
   inherit Rppr_infer.cmd () as super_infer
@@ -39,10 +67,18 @@ object (self)
       |> Enum.map swap
       |> StringMap.of_enum
     in
-    let avg_taxdist_from colorm ti j =
+    let med_cv_taxdist_from colorm ti j =
       let ts = taxa_set colorm ti in
-      IntSet.fold (fun i accum -> pair_dist i 0. j 0. +. accum) ts 0.
-      /. (IntSet.cardinal ts |> float_of_int)
+      if IntSet.is_empty ts then nan, nan else (* ... *)
+      let distances = IntSet.elements ts
+        |> List.map (fun i -> pair_dist i 0. j 0.)
+      and fcardinal = IntSet.cardinal ts |> float_of_int in
+      let mean = List.fsum distances /. fcardinal in
+      List.sort compare distances |> median,
+      List.fold_left (fun a x -> (x -. mean) ** 2. +. a) 0. distances
+        |> flip (/.) (fcardinal -. 1.)
+        |> sqrt
+        |> flip (/.) mean
     and rank_tax_map = rank_tax_map_of_refpkg rp in
     let rank, colors = Enum.find
       (fun (_, colors) ->
@@ -71,6 +107,7 @@ object (self)
     let orig_sizem = IntMap.find (Stree.top_id st) orig_sizemim
     and notax_sizem = IntMap.find (Stree.top_id st) notax_sizemim
     and taxtree = Refpkg.get_tax_ref_tree rp in
+    let uninformative = uninformative_nodes orig_sizem orig_sizemim st in
     let bm, rows = List.fold_left
       (fun (bm, rows) (ti, _, seq) ->
         let prev_ti = Tax_seqinfo.tax_id_by_node_label seqinfo seq
@@ -81,7 +118,9 @@ object (self)
           |> List.flatten
           |> ColorSet.of_list
         and prev_count = ColorMap.get prev_ti 0 orig_sizem
-        and new_name = Tax_taxonomy.get_tax_name td ti in
+        and new_name = Tax_taxonomy.get_tax_name td ti
+        and prev_med, prev_cv = med_cv_taxdist_from uncolored_colors prev_ti i
+        and new_med, new_cv = med_cv_taxdist_from uncolored_colors ti i in
         IntMap.modify
           i
           (fun b -> Printf.sprintf "%s -> %s" seq new_name |> b#set_node_label)
@@ -92,8 +131,11 @@ object (self)
          new_name;
          Tax_id.to_string ti;
          ColorSet.mem ti alternates |> string_of_bool;
-         avg_taxdist_from uncolored_colors prev_ti i |> format_float;
-         avg_taxdist_from uncolored_colors ti i |> format_float;
+         IntSet.mem i uninformative |> string_of_bool;
+         prev_med |> format_float;
+         prev_cv *. 100. |> format_float;
+         new_med |> format_float;
+         new_cv *. 100. |> format_float;
          prev_count |> string_of_int;
          prev_count - ColorMap.get prev_ti 0 notax_sizem |> string_of_int;
         ] :: rows)
@@ -103,14 +145,16 @@ object (self)
     rows
     |> List.cons
         ["seq_name"; "old_name"; "old_taxid"; "new_name"; "new_taxid";
-         "makes_convex"; "old_avg_dist"; "new_avg_dist"; "n_with_old";
-         "n_nonconvex"]
+         "makes_convex"; "uninformative"; "old_median_dist"; "old_avg_cv";
+         "new_median_dist"; "new_avg_cv"; "n_with_old"; "n_nonconvex"]
     |> self#write_ll_tab;
     match fvo suggestion_tree with
       | None -> ()
       | Some fname ->
         Gtree.set_bark_map taxtree bm
           |> Decor_gtree.color_clades_above cut
+          |> Decor_gtree.color_clades_above ~color:Decor.yellow uninformative
+          |> Decor_gtree.consolidate_colors Decor_gtree.list_color_average
           |> Phyloxml.gtree_to_file fname
 
 end

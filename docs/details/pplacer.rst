@@ -144,24 +144,28 @@ An example JSON document follows, with the first placement showing uncertainty
 in location, and the second showing two reads that had identical placements but
 different masses::
 
-    {
-      "tree": "((A:2{0},B:9{1}):7{2},C:5{3},D:1{4}):0{5};",
-      "placements": [
-        {"p":
-          [[0, -1091.576026, 0.762438, 0.000008, 0.019642],
-            [1, -10982.742117, 0.237562, 0.000008, 0.019579]
-          ], "nm": [["GLKT0ZE01CQ1P1", 1]]
-        },
-        {"p": [[2, -1061.467623, 1.0, 0.003555, 0.000006]],
-         "nm": [["GLKT0ZE01C36CH", 1], ["GLKT0ZE01A0IBO", 2]]}
-      ],
-      "metadata": {"invocation": "guppy to_json"},
-      "version": 3,
-      "fields": [
-        "edge_num", "likelihood", "like_weight_ratio", "distal_length",
-        "pendant_length"
-      ]
-    }
+  {
+    "tree": "((A:0.2{0},B:0.09{1}):0.7{2},C:0.5{3}){4};",
+    "placements":
+    [
+      {"p":
+        [[1, -2578.16, 0.777385, 0.004132, 0.0006],
+         [0, -2580.15, 0.107065, 0.000009, 0.0153]
+        ],
+       "n": ["fragment1", "fragment2"]
+      },
+      {"p": [[2, -2576.46, 1.0, 0.003555, 0.000006]],
+       "nm": [["fragment3", 1.5], ["fragment4", 2]]}
+    ],
+    "metadata":
+    {"invocation":
+      "pplacer -c tiny.refpkg frags.fasta"
+    },
+    "version": 3,
+    "fields":
+    ["edge_num", "likelihood", "like_weight_ratio",
+                 "distal_length", "pendant_length"]
+  }
 
 .. [#f1] New in format version ``2``.
 .. [#f2] Removed in format version ``2``.
@@ -295,8 +299,7 @@ I run RAxML like so, on similar alignments (the "F" suffix on PROTGAMMAWAGF mean
   raxmlHPC -m GTRGAMMA -n test -s nucleotides.phy
   raxmlHPC -m PROTGAMMAWAGF -n test -s amino_acids.phy
 
-Even though Alexandros Stamatakis is quite fond of the "CAT" models and they accelerate tree inference, they aren't appropriate for use with pplacer.
-We need to get an estimate of the gamma shape parameter.
+pplacer does not support using the CAT model from RAxML, although a similar model is available via FastTree.
 
 PHYML can be run like so, on non-interleaved (hence the -q) phylip-format alignments::
 
@@ -420,6 +423,21 @@ each sequence where the two differ.
 The colored trees written out by the ``--fig-tree`` and
 ``--fig-eval-discrepancy-tree`` flags shows figs as colored subtrees within the
 reference tree.
+
+
+Model refinement
+----------------
+
+By default when using the FastTree CAT model, the site rate categories used
+directly from the FastTree run. This is not possible, however, when a different
+reference alignment is supplied than was used to build the tree. This can
+happen when supplying an integrated reference and query alignment.
+
+When the site rates cannot be used directly, the model gets "refined".
+Currently, this only actually means something for the CAT model, in which case
+it infers site categories. You can force this behavior by using the
+``--always-refine`` flag.
+
 
 
 .. _Infernal: http://infernal.janelia.org/

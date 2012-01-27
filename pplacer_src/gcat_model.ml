@@ -55,12 +55,6 @@ struct
 
   let build ref_align = function
     | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
-      let n_sites = ref_align.(0) |> snd |> String.length in
-      if n_sites <> Array.length site_categories then
-        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
-          n_sites
-          (Array.length site_categories)
-        |> failwith;
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions emperical_freqs ref_align
@@ -388,14 +382,25 @@ struct
     set_site_categories model best_log_lk_cats;
     dprint "done.\n"
 
+  let check model ref_align =
+    let n_sites = ref_align.(0) |> snd |> String.length in
+      if n_sites <> Array.length model.site_categories then
+        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
+          n_sites
+          (Array.length model.site_categories)
+        |> failwith
+
   let mask_sites model mask =
-    if Array.length model.site_categories <> Array.length mask then
-      invalid_arg "mask_sites";
-    model.site_categories <-
-      (Enum.combine (Array.enum model.site_categories, Array.enum mask)
-       |> Enum.filter_map (function x, true -> Some x | _, false -> None)
-       |> Array.of_enum);
-    setup_occupied_rates model
+    (* We don't care about the case when they're not equal; either the
+     * refinement will already repopulate the site_categories or the mask is
+     * invalid and `check` will raise an error. *)
+    if Array.length model.site_categories = Array.length mask then begin
+      model.site_categories <-
+        (Enum.combine (Array.enum model.site_categories, Array.enum mask)
+         |> Enum.filter_map (function x, true -> Some x | _, false -> None)
+         |> Array.of_enum);
+      setup_occupied_rates model
+    end
 
 end
 and Like_stree: sig
