@@ -103,3 +103,12 @@ let transform func pr =
     |> List.map
         (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
     |> set_pqueries pr
+
+let unitize pr =
+  let tot_mass = get_pqueries pr
+    |> Pquery.total_multiplicity
+  in
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
+    |> set_pqueries pr

@@ -117,3 +117,15 @@ let merge_two pq pq' =
   { pq with namlom = List.append pq.namlom pq'.namlom }
 let merge_into pq pql = List.fold_left merge_two pq pql
 let merge pql = List.reduce merge_two pql
+
+let translate_pql transm pql =
+  List.map
+    (fun pq ->
+      let open Placement in
+      pq.place_list
+        |> List.map
+            (fun p ->
+              let location, bl_boost = IntMap.find p.location transm in
+              {p with location; distal_bl = p.distal_bl +. bl_boost})
+        |> (fun place_list -> {pq with place_list}))
+    pql
