@@ -99,16 +99,7 @@ object (self)
     if StringSet.is_empty no_tax then
       dprint "warning: nothing was cut off the tree\n";
     let gt'', transm = Newick_gtree.consolidate gt' in
-    List.map
-      (fun pq ->
-        let open Placement in
-        Pquery.place_list pq
-          |> List.map
-              (fun p ->
-                let location, bl_boost = IntMap.find p.location transm in
-                {p with location; distal_bl = p.distal_bl +. bl_boost})
-          |> (fun place_list -> {pq with Pquery.place_list}))
-      pql
+    Pquery.translate_pql transm pql
     |> Placerun.make gt'' "inferred"
     |> self#write_placefile (prefix ^ "inferred.jplace");
     Newick_gtree.to_file gt'' (prefix ^ "cut.tre");
