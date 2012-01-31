@@ -150,16 +150,23 @@ let renumber {bark_map; stree} =
       let j = next counter in
       leaf j,
       IntMap.Exceptionless.find i bark_map
-        |> Option.map_default (IntMap.singleton j) IntMap.empty
+        |> Option.map_default (IntMap.singleton j) IntMap.empty,
+      IntMap.singleton i j
     | Node (i, subtrees) ->
-      let subtrees', accum = List.map aux subtrees |> List.split in
-      let j = next counter
-      and accum' = List.reduce IntMap.union accum in
-      node j subtrees',
+      let subtrees', barkm, transm = List.fold_left
+        (fun (ta, ba, ma) x ->
+          let tx, bx, mx = aux x in
+          tx :: ta, IntMap.union bx ba, IntMap.union mx ma)
+        ([], IntMap.empty, IntMap.empty)
+        subtrees
+      and j = next counter in
+      List.rev subtrees' |> node j,
       IntMap.Exceptionless.find i bark_map
-        |> Option.map_default (flip (IntMap.add j) accum') accum'
+        |> Option.map_default (flip (IntMap.add j) barkm) barkm,
+      IntMap.add i j transm
   in
-  aux stree |> uncurry gtree
+  let stree, bark_map, transm = aux stree in
+  {stree; bark_map}, transm
 
 (* join a list of info_trees *)
 let join new_id tL =

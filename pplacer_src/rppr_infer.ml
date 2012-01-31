@@ -55,7 +55,7 @@ let place_on_rp prefs ?placerun_cb rp gt =
     (Refpkg.get_aln_fasta rp)
   in
   let rp' = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
-    |> Refpkg.set_ref_tree (Gtree.renumber gt)
+    |> Refpkg.set_ref_tree (Gtree.renumber gt |> fst)
   in
   Pplacer_run.run_placements
     prefs
