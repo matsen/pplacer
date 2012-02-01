@@ -298,6 +298,7 @@ object
 
 end
 
+exception Invalid_abs_tot
 class fat_cmd () =
 object(self)
   inherit numbered_tree_cmd () as super_numbered_tree
@@ -317,7 +318,7 @@ object(self)
   (* Given an absolute total quantity, come up with a scaling which will make
    * that total. *)
   method private multiplier_of_abs_tot abs_tot =
-    assert(abs_tot > 0.);
+    if abs_tot <= 0. then raise Invalid_abs_tot;
     match fv width_multiplier with
     | 0. -> (fv total_width) /. abs_tot  (* not set manually *)
     | mw -> mw
