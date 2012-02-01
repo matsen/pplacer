@@ -120,12 +120,27 @@ let merge pql = List.reduce merge_two pql
 
 let translate_pql transm pql =
   List.map
-    (fun pq ->
-      let open Placement in
-      pq.place_list
-        |> List.map
-            (fun p ->
-              let location, bl_boost = IntMap.find p.location transm in
-              {p with location; distal_bl = p.distal_bl +. bl_boost})
-        |> (fun place_list -> {pq with place_list}))
+    (let open Placement in
+     apply_to_place_list
+       (List.map
+          (fun p ->
+            let location, bl_boost = IntMap.find p.location transm in
+            {p with location; distal_bl = p.distal_bl +. bl_boost})))
     pql
+
+let renormalize_log_like =
+  let open Placement in
+  let update getter setter pl =
+    pl
+    |> List.map (getter &&& identity)
+    |> List.partition (fst |- Option.is_some)
+    |> Tuple2.mapn
+        (List.split
+         |- first (List.map Option.get |- ll_normalized_prob)
+         |- uncurry (List.map2 setter))
+        (List.map snd)
+    |> uncurry List.append
+  in
+  update (ml_ratio |- some) (fun ml_ratio p -> {p with ml_ratio})
+  |- update post_prob_opt (fun pp p -> {p with post_prob = Some pp})
+  |> apply_to_place_list

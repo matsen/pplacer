@@ -63,6 +63,7 @@ object (self)
             (fun place_list -> Some {pq with Pquery.place_list}))
       pql
     |> Pquery.translate_pql transm
+    |> List.map Pquery.renormalize_log_like
     |> Placerun.make gt' ""
     |> self#write_placefile (self#single_file ())
 end

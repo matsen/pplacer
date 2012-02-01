@@ -132,6 +132,21 @@ let combine_list_intmaps l =
    |> flip List.fold_left IntMap.empty)
     l
 
+(* ll_normalized_prob :
+ * ll_list is a list of log likelihoods. this function gives the normalized
+ * probabilities, i.e. exponentiate then our_like / (sum other_likes)
+ * have to do it this way to avoid underflow problems.
+ * *)
+let ll_normalized_prob ll_list =
+  List.map
+    (fun log_like ->
+      1. /.
+        (List.fold_left ( +. ) 0.
+          (List.map
+            (fun other_ll -> exp (other_ll -. log_like))
+            ll_list)))
+    ll_list
+
 (* parsing *)
 module Sparse = struct
   open Lexing
