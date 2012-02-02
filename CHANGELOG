@@ -15,6 +15,9 @@
  * Closed GH-201: Added a setup.py file to the scripts directory.
  * Closed GH-204: Added more columns to `rppr reclass`.
  * Closed GH-206: Updated some pplacer documentation.
+ * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
+   alignment had a different number of sites from the refpkg; added
+   --always-refine to pplacer.
 
 
 1.1.alpha11

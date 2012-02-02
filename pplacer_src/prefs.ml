@@ -54,6 +54,7 @@ type prefs =
     keep_factor : float ref;
     mrca_class : bool ref;
     groups : int ref;
+    always_refine : bool ref;
   }
 
 
@@ -109,6 +110,7 @@ let defaults () =
     keep_factor = ref 0.01;
     mrca_class = ref false;
     groups = ref 0;
+    always_refine = ref false;
   }
 
 
@@ -163,6 +165,7 @@ let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
 let groups            p = !(p.groups)
+let always_refine     p = !(p.always_refine)
 
 
 (* arguments and preferences *)
@@ -265,6 +268,8 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Classify with MRCAs instead of a painted tree.";
 "--groups", Arg.Set_int prefs.groups,
 "Split query alignment into the specified number of groups.";
+"--always-refine", Arg.Set prefs.always_refine,
+"Always refine the model before placing.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
