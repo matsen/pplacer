@@ -23,4 +23,9 @@ object (self)
       |> Enum.map (String.join " ")
       |> File.write_lines (self#single_file ())
 
+    | l ->
+      List.length l
+      |> Printf.sprintf "ograph takes exactly one placefile (%d given)"
+      |> failwith
+
 end
