@@ -19,7 +19,10 @@ object (self)
   method specl =
     super_mass#specl
   @ super_output#specl
-  @ [float_flag min_path_mass]
+  @ [
+    float_flag min_path_mass;
+    string_flag discarded;
+  ]
 
   method desc = "trims placefiles down to only containing an informative subset of the mass"
   method usage = "usage: trim [options] placefile[s]"
