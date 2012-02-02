@@ -13,6 +13,8 @@ object (self)
 
   val min_path_mass = flag "--min-path-mass"
     (Formatted (0.001, "The minimum mass which must be on the path to a leaf to keep it. default: %g"))
+  val discarded = flag "--discarded"
+    (Needs_argument ("", "A file to write discarded pqueries to."))
 
   method specl =
     super_mass#specl
@@ -49,7 +51,8 @@ object (self)
       |> Option.get
       |> Gtree.set_stree gt
       |> Newick_gtree.consolidate
-    in
+    and discarded_reads = RefList.empty () in
+    let add_discarded = List.iter (RefList.add discarded_reads) in
     List.filter_map
       (fun pq ->
         Pquery.place_list pq
@@ -59,11 +62,18 @@ object (self)
               then Some p else None)
         |> junction
             List.is_empty
-            (const None)
+            (fun _ -> add_discarded (Pquery.namel pq); None)
             (fun place_list -> Some {pq with Pquery.place_list}))
       pql
     |> Pquery.translate_pql transm
     |> List.map Pquery.renormalize_log_like
     |> Placerun.make gt' ""
-    |> self#write_placefile (self#single_file ())
+    |> self#write_placefile (self#single_file ());
+    match fvo discarded with
+      | Some fname -> RefList.enum discarded_reads |> File.write_lines fname
+      | None when RefList.is_empty discarded_reads -> ()
+      | None ->
+        dprint "Discarded reads:\n";
+        RefList.iter (dprintf "%s\n") discarded_reads
+
 end
