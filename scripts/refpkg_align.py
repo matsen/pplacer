@@ -253,7 +253,7 @@ def pynast_align(refpkg, sequence_file, output_path, use_mask=True,
                 '-i', sequence_file,
                 '-a', output_path])
 
-    log.info(cmd)
+    log.info(' '.join(cmd))
     subprocess.check_call(cmd)
 
 ALIGNERS = {
