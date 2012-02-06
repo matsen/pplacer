@@ -95,7 +95,7 @@ object (self)
       string_list_flag kappa;
     ]
 
-  method desc = "calculates various diversity metrics of placefiles"
+  method desc = "calculates various alpha diversity metrics of placefiles"
   method usage = "usage: fpd [options] placefile[s]"
 
   method private placefile_action prl =
@@ -116,7 +116,7 @@ object (self)
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
-          (["placerun"; "phylogenetic"; "quadratic"; "pd"; "wpd"]
+          (["placerun"; "phylo_entropy"; "quadratic"; "pd"; "wpd"]
            @ List.map (Printf.sprintf "wpd_%g") exponents)
       |> self#write_ll_tab
 
