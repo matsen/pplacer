@@ -66,6 +66,9 @@ let of_refpkg rp mrca_class =
     let evidence_m = List.fold_left
       (fun accum p ->
         let ti = Placement.classif p in
+        match ti with
+          | Tax_id.NoTax -> accum
+          | _ -> (* ... *)
         try
           IAMR.add_by
             (Tax_taxonomy.get_tax_rank td ti)
