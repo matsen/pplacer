@@ -47,6 +47,7 @@ sig
   val keylist: 'a t -> key list
   val to_pairs: 'a t -> (key * 'a) list
   val merge_counts: int t list -> int t
+  val histogram_of_enum: key Enum.t -> int t
   val ppr_gen: (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a t -> unit
   val ppr_string: Format.formatter -> string t -> unit
   val ppr_int: Format.formatter -> int t -> unit
@@ -135,6 +136,12 @@ module BetterMap (OM: Map.S) (PBLE: PPRABLE with type t = OM.key) : (M with type
             accum)
         empty
         ml
+
+    let histogram_of_enum e =
+      Enum.fold
+        (fun accum v -> add v (get v 0 accum + 1) accum)
+        empty
+        e
 
     let ppr_gen ppr_val ff m =
       Format.fprintf ff "@[[";

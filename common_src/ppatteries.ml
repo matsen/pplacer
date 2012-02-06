@@ -3,6 +3,7 @@
     functions. *)
 
 include MapsSets
+include AlgMap
 include Batteries
 
 let round x = int_of_float (floor (x +. 0.5))

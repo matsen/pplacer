@@ -10,21 +10,24 @@ object (self)
 
   val default_cutoff = flag "--default-cutoff"
     (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
-  val default_count = flag "--default-multiclass-count"
-    (Formatted (3, "The default value for the multiclass_count param. Default: %d"))
-  val default_likelihood = flag "--default-multiclass-likelihood"
-    (Formatted (0.05, "The default value for the multiclass_likelihood param. Default: %0.3f"))
-  val default_classify_to = flag "--default-classify-to"
-    (Formatted ("species", "The default value for the classify_to param. Default: %s"))
+  val default_bayes_cutoff = flag "--default-bayes-cutoff"
+    (Formatted (1., "The default value for the bayes_cutoff param. Default: %0.2f"))
+  val default_multiclass_min = flag "--default-multiclass-min"
+    (Formatted (0.2, "The default value for the multiclass_min param. Default: %0.2f"))
+  val default_multiclass_sum = flag "--default-multiclass-sum"
+    (Formatted (0.8, "The default value for the multiclass_sum param. Default: %0.2f"))
+  val best_as_bayes = flag "--best-as-bayes"
+    (Plain (false, "Generate the bayes_{best_classifications,multiclass} tables without the bayes_ prefix."))
 
   method specl =
     super_refpkg#specl
     @ super_sqlite#specl
     @ [
       float_flag default_cutoff;
-      int_flag default_count;
-      float_flag default_likelihood;
-      string_flag default_classify_to;
+      float_flag default_bayes_cutoff;
+      float_flag default_multiclass_min;
+      float_flag default_multiclass_sum;
+      toggle_flag best_as_bayes;
     ]
 
   method desc = "makes SQL enabling taxonomic querying of placement results"
@@ -74,6 +77,14 @@ object (self)
       );
       CREATE INDEX placement_classifications_id ON placement_classifications (placement_id);
 
+      CREATE TABLE IF NOT EXISTS placement_evidence (
+        placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
+        rank TEXT REFERENCES ranks (rank) NOT NULL,
+        evidence REAL NOT NULL,
+        bayes_factor REAL
+      );
+      CREATE INDEX placement_evidence_id ON placement_evidence (placement_id);
+
       CREATE TABLE IF NOT EXISTS placement_positions (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
         location INTEGER NOT NULL,
@@ -98,77 +109,139 @@ object (self)
       CREATE VIEW best_classifications
       AS
         SELECT *
-        FROM   placements
-               LEFT JOIN (SELECT placement_id,
-                                 tax_id,
-                                 rank,
-                                 likelihood
-                          FROM   (SELECT *
-                                  FROM   placements
-                                         JOIN placement_classifications USING (placement_id)
-                                         JOIN ranks USING (rank)
-                                  WHERE  rank = desired_rank
-                                         AND likelihood > (SELECT val
-                                                           FROM   params
-                                                           WHERE  name = 'likelihood_cutoff')
-                                         AND rank_order <= (SELECT rank_order
-                                                            FROM   params
-                                                                   JOIN ranks
-                                                                     ON val = rank
-                                                            WHERE  name = 'classify_to')
-                                  ORDER  BY placement_id,
-                                            rank_order ASC,
-                                            likelihood ASC)
-                          GROUP  BY placement_id) USING (placement_id);
+          FROM (SELECT placement_id,
+                       tax_id,
+                       r_want.rank AS want_rank,
+                       r_got.rank  AS rank,
+                       likelihood
+                  FROM placement_classifications pc,
+                       ranks r_got,
+                       ranks r_want
+                 WHERE pc.rank = pc.desired_rank
+                   AND pc.rank = r_got.rank
+                   AND r_got.rank_order <= r_want.rank_order
+                   AND likelihood >= (SELECT val
+                                       FROM params
+                                      WHERE name = 'likelihood_cutoff')
+                 ORDER BY placement_id,
+                          r_want.rank_order,
+                          r_got.rank_order ASC,
+                          likelihood ASC)
+         GROUP BY placement_id,
+                  want_rank;
 
       CREATE VIEW multiclass
       AS
-        SELECT bc.placement_id,
-               pc.tax_id,
-               COALESCE(below_rank, bc.rank) AS rank,
-               pc.likelihood
-        FROM   best_classifications bc
-               LEFT JOIN (SELECT *
-                          FROM   (SELECT placement_id,
-                                         bc.rank,
-                                         pc.rank AS below_rank
-                                  FROM   best_classifications bc
-                                         JOIN placement_classifications pc USING ( placement_id )
-                                         JOIN ranks bcr
-                                           ON bc.rank = bcr.rank
-                                         JOIN ranks pcr
-                                           ON pc.rank = pcr.rank
-                                  WHERE  pcr.rank_order <= bcr.rank_order
-                                         AND pc.likelihood > (SELECT val
-                                                              FROM   params
-                                                              WHERE  name = 'multiclass_likelihood')
-                                  GROUP  BY placement_id,
-                                            desired_rank
-                                  HAVING COUNT(*) <= (SELECT val
-                                                      FROM   params
-                                                      WHERE  name = 'multiclass_count')
-                                         AND SUM(pc.likelihood) > (SELECT val
-                                                                   FROM   params
-                                                                   WHERE  name = 'likelihood_cutoff')
-                                  ORDER  BY pcr.rank_order)
-                          GROUP  BY placement_id) USING (placement_id, rank)
-               LEFT JOIN placement_classifications pc
-                 ON pc.placement_id = bc.placement_id
-                    AND pc.desired_rank = pc.rank
-                    AND pc.rank = COALESCE(below_rank, bc.rank)
-        WHERE  COALESCE(pc.likelihood > (SELECT val
-                                         FROM   params
-                                         WHERE  name = 'multiclass_likelihood'), 1);
+        SELECT placement_id,
+               tax_id,
+               want_rank,
+               rank,
+               likelihood
+          FROM (SELECT *
+                  FROM (SELECT placement_id,
+                               r_got.rank  AS rank,
+                               r_want.rank AS want_rank
+                          FROM placement_classifications pc,
+                               ranks r_got,
+                               ranks r_want
+                         WHERE pc.rank = pc.desired_rank
+                           AND pc.rank = r_got.rank
+                           AND r_got.rank_order <= r_want.rank_order
+                           AND likelihood >= (SELECT val
+                                               FROM params
+                                              WHERE name = 'multiclass_min')
+                         GROUP BY placement_id,
+                                  r_want.rank,
+                                  r_got.rank
+                        HAVING SUM(pc.likelihood) >= (SELECT val
+                                                       FROM params
+                                                      WHERE name = 'likelihood_cutoff')
+                         ORDER BY r_got.rank_order ASC)
+                 GROUP BY placement_id,
+                          want_rank)
+               JOIN placement_classifications pc USING (placement_id, rank)
+         WHERE pc.rank = pc.desired_rank;
+
+      CREATE VIEW placement_evidence_ranks
+      AS
+        SELECT *
+          FROM placement_evidence
+               JOIN ranks USING (rank);
+
+      CREATE VIEW _bayes_base
+      AS
+        SELECT *
+          FROM (SELECT per_want.placement_id,
+                       per_want.rank AS want_rank,
+                       CASE
+                         WHEN per_below.rank IS NOT NULL THEN per_want.rank
+                         ELSE per_above.rank
+                       END           AS rank
+                  FROM placement_evidence_ranks per_want
+                       LEFT JOIN placement_evidence_ranks per_above
+                         ON per_want.placement_id = per_above.placement_id
+                            AND per_above.bayes_factor >= (SELECT val
+                                                             FROM params
+                                                            WHERE name = 'bayes_cutoff')
+                            AND per_want.rank_order >= per_above.rank_order
+                       LEFT JOIN placement_evidence_ranks per_below
+                         ON per_want.placement_id = per_below.placement_id
+                            AND per_below.bayes_factor >= (SELECT val
+                                                             FROM params
+                                                            WHERE name = 'bayes_cutoff')
+                            AND per_want.rank_order <= per_below.rank_order
+                 ORDER BY per_want.placement_id,
+                          per_want.rank_order,
+                          per_above.rank_order ASC)
+         GROUP BY placement_id,
+                  want_rank;
 
     ";
+
+    let bayes_tables = Scanf.format_from_string "
+      CREATE VIEW %s
+      AS
+        SELECT placement_id,
+               want_rank,
+               rank,
+               tax_id,
+               likelihood
+          FROM _bayes_base
+               JOIN placement_classifications pc USING (placement_id, rank)
+         WHERE rank = pc.desired_rank;
+
+      CREATE VIEW %s
+      AS
+        SELECT placement_id,
+               want_rank,
+               rank,
+               tax_id,
+               likelihood
+          FROM (SELECT *
+                  FROM _bayes_base
+                       JOIN placement_classifications USING (placement_id, rank)
+                 ORDER BY placement_id,
+                          want_rank,
+                          likelihood ASC)
+         GROUP BY placement_id,
+                  want_rank
+    " "%s %s" in
+    if fv best_as_bayes then begin
+      Sql.check_exec db "DROP VIEW best_classifications; DROP VIEW multiclass;";
+      Printf.sprintf bayes_tables "multiclass" "best_classifications"
+        |> Sql.check_exec db;
+    end else
+      Printf.sprintf bayes_tables "bayes_multiclass" "bayes_best_classifications"
+        |> Sql.check_exec db;
+
     let st = Sqlite3.prepare db "INSERT INTO params VALUES (?, ?)" in
     List.iter
       (Sql.bind_step_reset db st)
       [
         [| Sql.D.TEXT "likelihood_cutoff"; Sql.D.FLOAT (fv default_cutoff) |];
-        [| Sql.D.TEXT "multiclass_count"; Sql.D.INT (fv default_count |> Int64.of_int) |];
-        [| Sql.D.TEXT "multiclass_likelihood"; Sql.D.FLOAT (fv default_likelihood) |];
-        [| Sql.D.TEXT "classify_to"; Sql.D.TEXT (fv default_classify_to) |];
+        [| Sql.D.TEXT "bayes_cutoff"; Sql.D.FLOAT (fv default_bayes_cutoff) |];
+        [| Sql.D.TEXT "multiclass_min"; Sql.D.FLOAT (fv default_multiclass_min) |];
+        [| Sql.D.TEXT "multiclass_sum"; Sql.D.FLOAT (fv default_multiclass_sum) |];
       ];
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri

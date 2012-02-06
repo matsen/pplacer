@@ -1,6 +1,9 @@
 1.1.alpha12
 ===========
 
+ * Closed GH-113: Updated the `best_classification` and `multiclass` SQL views;
+   correspondingly changed the flags to `rppr prep_db`; added the
+   `placement_evidence` table for bayes classification.
  * Closed GH-189: Added `guppy pentropy`.
  * Closed GH-192: Added `rppr infer`.
  * Closed GH-193: Added `rppr reclass`.
