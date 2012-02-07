@@ -29,7 +29,7 @@ let classify_mode_str = function
   | s -> failwith ("unknown tax cluster mode: "^s)
 
 let t_prel_of_prl weighting criterion prl =
-  (Mokaphy_common.list_get_same_tree prl,
+  (Mokaphy_common.list_get_same_tree prl |> Like_stree.add_zero_root_bl,
     List.map (Mass_map.Pre.of_placerun weighting criterion) prl)
 
 let tax_t_prel_of_prl tgt_fun weighting criterion rp prl =
