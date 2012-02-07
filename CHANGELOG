@@ -21,6 +21,8 @@
  * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
    alignment had a different number of sites from the refpkg; added
    --always-refine to pplacer.
+ * Closed GH-219: Fixed some guppy commands which needed a zero root branch
+   length.
 
 
 1.1.alpha11

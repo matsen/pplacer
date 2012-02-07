@@ -40,7 +40,9 @@ object (self)
   method usage = "usage: bary [options] placefile[s]"
 
   method private placefile_action prl =
-    let t = Mokaphy_common.list_get_same_tree prl |> self#maybe_numbered
+    let t = Mokaphy_common.list_get_same_tree prl
+      |> Like_stree.add_zero_root_bl
+      |> self#maybe_numbered
     and weighting, criterion = self#mass_opts
     in
     let prel = prel_of_prl weighting criterion prl
