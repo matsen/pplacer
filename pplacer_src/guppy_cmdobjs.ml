@@ -156,10 +156,20 @@ object(self)
     | None -> ()
     | Some rp -> Refpkg.check_tree_approx rp name t
 
+  method private check_rpo_tree_subset name t =
+    match self#get_rpo with
+      | None -> ()
+      | Some rp -> Refpkg.check_tree_subset rp name t
+
+  method private check_placerun pr =
+    (if Placerun.get_transm_opt pr |> Option.is_some
+     then self#check_rpo_tree_subset
+     else self#check_rpo_tree)
+      (Placerun.get_name pr)
+      (Placerun.get_ref_tree pr)
+
   method private check_placerunl =
-    List.iter
-      (fun pr ->
-        self#check_rpo_tree (Placerun.get_name pr) (Placerun.get_ref_tree pr))
+    List.iter self#check_placerun
 
   (* This checks to make sure that the placerun given has a reference tree that
    * matches the reference package tree, if it exists. *)
@@ -168,9 +178,14 @@ object(self)
     match self#get_rpo with
       | None -> (None, alt_tree)
       | Some rp ->
-        Refpkg.pr_check_tree_approx rp pr;
-        if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
-        else (None, alt_tree)
+        self#check_placerun pr;
+        if Refpkg.tax_equipped rp then begin
+          Some rp,
+          let alt_gt = Placerun.get_transm_opt pr
+            |> Option.map (const pr.Placerun.ref_tree)
+          in
+          Refpkg.get_tax_ref_tree ?alt_gt rp
+        end else (None, alt_tree)
 
   method private get_decor_ref_tree =
     let rp = self#get_rp in
