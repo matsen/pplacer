@@ -70,7 +70,7 @@ object (self)
       pql
     |> Pquery.translate_pql transm
     |> List.map Pquery.renormalize_log_like
-    |> Placerun.make gt' ""
+    |> Placerun.make ~transm gt' ""
     |> self#write_placefile (self#single_file ());
     match fvo discarded with
       | Some fname -> RefList.enum discarded_reads |> File.write_lines fname
