@@ -128,13 +128,7 @@ let consolidate gt =
   let bl = Gtree.get_bl gt in
   let open Stree in
   let rec aux parent = function
-    | Node (i, [t]) ->
-      let ibl = bl i in
-      aux
-        (Some
-           ((i, ibl)
-            :: (Option.map_default (List.map (second ((+.) ibl))) [] parent)))
-        t
+    | Node (i, [t]) -> aux (Some ((i, bl i) :: Option.default [] parent)) t
     | t ->
       let t', transm, barkm = match t with
         | Leaf _ -> t, IntMap.empty, IntMap.empty
@@ -149,15 +143,12 @@ let consolidate gt =
       in
       let i = top_id t' in
       let bark = Gtree.get_bark gt i in
-      t',
-      List.fold_left
-        (fun accum (j, l) -> IntMap.add j (i, l) accum)
-        (IntMap.add i (i, 0.) transm)
-        (Option.default [] parent),
-      IntMap.add
-        i
-        (bark#set_bl (bl i +. Option.map_default (List.last |- snd) 0. parent))
-        barkm
+      let transm', bl' = List.fold_left
+        (fun (tma, bla) (j, jbl) -> IntMap.add j (i, bla) tma, bla +. jbl)
+        (IntMap.add i (i, 0.) transm, bl i)
+        (Option.default [] parent)
+      in
+      t', transm', IntMap.add i (bark#set_bl bl') barkm
   in
   let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
   let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
