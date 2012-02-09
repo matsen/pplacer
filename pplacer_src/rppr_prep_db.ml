@@ -61,7 +61,7 @@ object (self)
 
       CREATE TABLE IF NOT EXISTS placement_names (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
-        name TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
         origin TEXT NOT NULL,
         mass REAL NOT NULL,
         PRIMARY KEY (placement_id, name, origin)

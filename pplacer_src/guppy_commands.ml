@@ -19,6 +19,7 @@ let command_list () =
       "wpd", (fun () -> new Guppy_wpd.cmd ());
       "entropy", (fun () -> new Guppy_entropy.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
+      "error", (fun () -> new Guppy_error.cmd ());
     ];
 
     "classification", [
@@ -35,6 +36,8 @@ let command_list () =
       "info", (fun () -> new Guppy_info.cmd ());
       "redup", (fun () -> new Guppy_redup.cmd ());
       "diplac", (fun () -> new Guppy_diplac.cmd ());
+      "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
+      "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
       "mft", (fun () -> new Guppy_mft.cmd ());
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());

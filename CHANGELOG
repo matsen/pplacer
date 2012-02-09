@@ -1,6 +1,7 @@
 1.1.alpha12
 ===========
 
+ * Added `guppy to_rdp` and `guppy classify_rdp`.
  * Closed GH-113: Updated the `best_classification` and `multiclass` SQL views;
    correspondingly changed the flags to `rppr prep_db`; added the
    `placement_evidence` table for bayes classification.
@@ -16,11 +17,15 @@
    entropy calculation.
  * Closed GH-200: Added --discard-below to `guppy {islands,compress}`.
  * Closed GH-201: Added a setup.py file to the scripts directory.
+ * Closed GH-202: Added `rppr prepsim`; added --include-pendant to
+   `guppy diplac`.
  * Closed GH-204: Added more columns to `rppr reclass`.
+ * Closed GH-205: Added `guppy error`.
  * Closed GH-206: Updated some pplacer documentation.
  * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
    alignment had a different number of sites from the refpkg; added
    --always-refine to pplacer.
+ * Closed GH-218: Added --split-csv to `guppy merge`.
  * Closed GH-219: Fixed some guppy commands which needed a zero root branch
    length.
 
