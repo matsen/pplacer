@@ -124,6 +124,11 @@ let of_file ?legacy_format fname =
 let list_of_file fname =
   List.map of_string (File_parsing.string_list_of_file fname)
 
+(* Given a newick gtree, collapse all nodes with only one child, so that the
+ * resulting tree is always at least bifurcating. The result is also
+ * renumbered through Gtree.renumber. The translation map returned is similar
+ * to that returned by Gtree.renumber, except that it maps from the node
+ * number to a pair of (new node number, increased distal branch length). *)
 let consolidate gt =
   let bl = Gtree.get_bl gt in
   let open Stree in

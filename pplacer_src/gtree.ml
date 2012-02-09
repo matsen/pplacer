@@ -141,6 +141,9 @@ let swap_bark a b ({bark_map = m} as t) =
 let reroot t i =
   swap_bark i (top_id t) {t with stree = Stree.reroot t.stree i}
 
+(* Given a gtree, renumber its nodes so that all of the node numbers are on the
+ * range [0, N), where N is the number of nodes. A translation map is also
+ * returned that maps from the old node numbers to the new node numbers. *)
 let renumber {bark_map; stree} =
   let open Stree in
   let next ir = let res = !ir in incr ir; res
