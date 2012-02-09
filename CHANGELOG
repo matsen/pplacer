@@ -5,9 +5,14 @@
  * Closed GH-113: Updated the `best_classification` and `multiclass` SQL views;
    correspondingly changed the flags to `rppr prep_db`; added the
    `placement_evidence` table for bayes classification.
+ * Closed GH-183: Added documentation for more functions.
  * Closed GH-189: Added `guppy pentropy`.
+ * Closed GH-191: Added -m to `guppy redup`; bumped the jplace format version
+   to 3 with the ability to give each name for a pquery a different mass.
  * Closed GH-192: Added `rppr infer`.
  * Closed GH-193: Added `rppr reclass`.
+ * Closed GH-194: Added a `mass` column to `placement_names` to parallel new
+   features in the jplace format.
  * Closed GH-195: Added a --groups flag to pplacer for placing metagenomic
    sequences onto trees built from very wide alignments.
  * Closed GH-196: Added code to pplacer to better handle errors raised when
