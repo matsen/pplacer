@@ -58,7 +58,7 @@ object (self)
   @ super_output#specl
   @ [string_list_flag prune_taxids]
 
-  method desc = "infers classifications of unclassified sequences in a reference package"
+  method desc = "makes a simulation by taking out taxids and turning them into fake placements"
   method usage = "usage: prepsim [options] -c my.refpkg"
 
   method action _ =
