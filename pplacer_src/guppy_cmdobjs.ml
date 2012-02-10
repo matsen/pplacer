@@ -224,7 +224,7 @@ object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for the weight."))
   val spread = flag "--point-mass"
-    (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
+    (Plain (true, "Treat every pquery as a point mass concentrated on the highest-weight placement."))
   method specl = [
     toggle_flag use_pp;
   ]
