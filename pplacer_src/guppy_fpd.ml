@@ -10,13 +10,17 @@ let merge a x = a := x +. !a
 let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
 
 module I = Mass_map.Indiv
+module P = Mass_map.Pre
 
 (* convenience function to total the mass along the tree. the callback function
  * is passed the branch length and the current mass total and returns another
  * term to sum. the result of total_along_mass is the sum of all the terms. *)
-let total_along_mass gt mass cb =
+let total_along_mass ?(include_pendant = false) criterion pr cb =
+  let gt = Placerun.get_ref_tree pr in
+  let pre = P.of_placerun Mass_map.Point criterion pr in
+  let mass = I.of_pre pre in
   let partial_total id = Kr_distance.total_along_edge
-    cb
+    ((!) |- cb)
     (Gtree.get_bl gt id)
     (IntMap.get id [] mass |> List.map I.to_pair |> List.sort compare)
     merge
@@ -27,6 +31,16 @@ let total_along_mass gt mass cb =
     lmerge
     (fun () -> ref 0.)
     (Gtree.get_stree gt)
+  |> (if not include_pendant then identity else fun v ->
+    List.fold_left
+      (fun accum {P.multi; P.mul} ->
+        List.fold_left
+          (fun accum {P.pendant_bl; P.mass} ->
+            accum +. cb (mass *. multi) pendant_bl)
+          accum
+          mul)
+      v
+      pre)
 
 (* When we're passing along the induced tree, the mass will be on the range
  * (0, total_mass), and the branch length coefficient should be 1. Otherwise,
@@ -35,17 +49,12 @@ let total_along_mass gt mass cb =
 let bump_function r =
   if r = 0. || approx_equal ~epsilon r 1. then 0. else 1.
 
-let pd_of_placerun criterion pr =
-  let gt = Placerun.get_ref_tree pr
-  and mass = I.of_placerun
-    Mass_map.Point
+let pd_of_placerun ?include_pendant criterion pr =
+  total_along_mass
+    ?include_pendant
     criterion
     pr
-  in
-  total_along_mass
-    gt
-    mass
-    (fun r bl -> bump_function !r *. bl)
+    (fun r bl -> bump_function r *. bl)
 
 let reflect x =
   if approx_equal ~epsilon x 1. then 0.
@@ -55,8 +64,7 @@ let reflect x =
     else y
   end
 
-let wpd_of_placerun criterion exponent pr =
-  let mass_map = Mass_map.Indiv.of_placerun Mass_map.Point criterion pr in
+let wpd_of_placerun ?include_pendant criterion exponent pr =
   let f =
     if exponent < 0. || exponent > 1. then
       failwith("exponent must be between 0 and 1, inclusive")
@@ -65,17 +73,15 @@ let wpd_of_placerun criterion exponent pr =
     else (fun x -> (2. *. x) ** exponent)
   in
   total_along_mass
-    (Placerun.get_ref_tree pr)
-    mass_map
-    (fun r bl -> min (f !r) (f (reflect !r)) *. bl)
+    ?include_pendant
+    criterion
+    pr
+    (fun r bl -> min (f r) (f (reflect r)) *. bl)
 
-let entropy_of_placerun criterion pr =
-  let total = total_along_mass
-    (Placerun.get_ref_tree pr)
-    (Mass_map.Indiv.of_placerun Mass_map.Point criterion pr)
-  in
-  let phylo r bl = if approx_equal !r 0. then 0. else bl *. !r *. (log !r)
-  and quadro r bl = bl *. !r *. (1. -. !r) in
+let entropy_of_placerun ?include_pendant criterion pr =
+  let total = total_along_mass ?include_pendant criterion pr in
+  let phylo r bl = if approx_equal r 0. then 0. else bl *. r *. (log r)
+  and quadro r bl = bl *. r *. (1. -. r) in
   ~-. (total phylo), total quadro
 
 class cmd () =
@@ -87,12 +93,15 @@ object (self)
 
   val kappa = flag "--kappa"
     (Plain ([], "A comma-separated list of additional exponents to use for calculating wpd."))
+  val include_pendant = flag "--include-pendant"
+    (Plain (false, "Consider pendant branch length in diversity calculations."))
 
   method specl =
     super_mass#specl
     @ super_tabular#specl
     @ [
       string_list_flag kappa;
+      toggle_flag include_pendant;
     ]
 
   method desc = "calculates various alpha diversity metrics of placefiles"
@@ -103,10 +112,11 @@ object (self)
       |> List.map (flip String.nsplit ",")
       |> List.flatten
       |> List.map float_of_string
-    and criterion = self#criterion in
-    let wpd = wpd_of_placerun criterion
-    and pd = pd_of_placerun criterion
-    and entropy = entropy_of_placerun criterion in
+    and criterion = self#criterion
+    and include_pendant = fv include_pendant in
+    let wpd = wpd_of_placerun ~include_pendant criterion
+    and pd = pd_of_placerun ~include_pendant criterion
+    and entropy = entropy_of_placerun ~include_pendant criterion in
     prl
       |> List.map
           (fun pr ->
