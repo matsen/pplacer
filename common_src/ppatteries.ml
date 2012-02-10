@@ -143,16 +143,13 @@ module Sparse = struct
   let parse_error_of_positions s p1 p2 =
     Parse_error (s, location_of_position p1, location_of_position p2)
 
-  let format_error = function
-    | Parse_error (msg, (l1, c1), (l2, c2)) ->
-      Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
-    | _ -> raise (Invalid_argument "format_error")
-
-  let error_wrap f =
-    try
-      f ()
-    with (Parse_error (_, _, _)) as e ->
-      failwith (format_error e)
+  let () =
+    Printexc.register_printer
+      (function
+        | Parse_error (msg, (l1, c1), (l2, c2)) ->
+          Some (Printf.sprintf "%s between line %d col %d and line %d col %d"
+                  msg l1 c1 l2 c2)
+        | _ -> None)
 
   let incr_lineno lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -594,6 +591,8 @@ module EnumFuns = struct
       |> Enum.flatten
 
 end
+
+let exn_wrap f = Printexc.pass f ()
 
 let () =
   Gsl_error.init ();
