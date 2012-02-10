@@ -215,7 +215,7 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         base_command = [mpi_program] + (mpi_args or []) + base_command + \
                        ['--mpi']
 
-    with tempfile.NamedTemporaryFile(prefix='infernal_aln') as tf, \
+    with tempfile.NamedTemporaryFile(prefix='infernal_aln', dir=d) as tf, \
          tempfile.NamedTemporaryFile(prefix='infernal_merged', dir=d) as merged:
         cmd = base_command[:]
         cmd.extend(alignment_options or [])
