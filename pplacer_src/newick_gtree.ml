@@ -124,7 +124,18 @@ let of_file ?legacy_format fname =
 let list_of_file fname =
   List.map of_string (File_parsing.string_list_of_file fname)
 
+let add_zero_root_bl gt =
+  let bm = Gtree.get_bark_map gt
+  and i = Gtree.top_id gt in
+  let bark = Newick_bark.map_find_loose i bm in
+  let bark' = match bark#get_bl_opt with
+    | None -> bark#set_bl 0.
+    | Some _ -> bark
+  in
+  IntMap.add i bark' bm |> Gtree.set_bark_map gt
+
 let consolidate gt =
+  let gt = add_zero_root_bl gt in
   let bl = Gtree.get_bl gt in
   let open Stree in
   let rec aux parent = function

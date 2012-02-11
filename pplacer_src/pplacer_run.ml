@@ -58,7 +58,7 @@ end
 let run_placements prefs rp query_list from_input_alignment placerun_name placerun_cb =
   let timings = ref StringMap.empty in
   let orig_ref_tree = Refpkg.get_ref_tree rp in
-  let ref_tree = Like_stree.add_zero_root_bl orig_ref_tree in
+  let ref_tree = Newick_gtree.add_zero_root_bl orig_ref_tree in
   let ref_align =
     try
       Refpkg.get_aln_fasta rp
