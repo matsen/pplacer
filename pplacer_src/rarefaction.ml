@@ -29,7 +29,7 @@ let count_along_mass gt mass cb =
 let of_placerun:
     (Placement.t -> float) -> ?k_max:int -> Newick_bark.t Placerun.t -> (int * float) Enum.t
 = fun criterion ?k_max pr ->
-  let gt = Placerun.get_ref_tree pr
+  let gt = Placerun.get_ref_tree pr |> Like_stree.add_zero_root_bl
   and mass = I.of_placerun
     Mass_map.Point
     criterion
