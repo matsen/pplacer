@@ -448,7 +448,6 @@ object (self)
             trees)
         named_trees
     | File fname ->
-      let fname = fname ^ suffix in
       Visualization.trees_to_file
         self#fmt
         fname
