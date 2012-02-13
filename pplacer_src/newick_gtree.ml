@@ -125,15 +125,19 @@ let of_file ?legacy_format fname =
 let list_of_file fname =
   List.map (of_string ~fname) (File_parsing.string_list_of_file fname)
 
-let add_zero_root_bl gt =
+let gen_add_zero_root_bl empty gt =
   let bm = Gtree.get_bark_map gt
   and i = Gtree.top_id gt in
-  let bark = Newick_bark.map_find_loose i bm in
+  let bark = IntMap.get i empty bm in
   let bark' = match bark#get_bl_opt with
     | None -> bark#set_bl 0.
     | Some _ -> bark
   in
   IntMap.add i bark' bm |> Gtree.set_bark_map gt
+
+let add_zero_root_bl =
+  gen_add_zero_root_bl
+    (new Newick_bark.newick_bark `Empty)
 
 (* Given a newick gtree, collapse all nodes with only one child, so that the
  * resulting tree is always at least bifurcating. The result is also
