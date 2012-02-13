@@ -93,18 +93,19 @@ let check_string s =
     dprintf "warning: %d open parens and %d closed parens\n" n_open n_closed;
   ()
 
-let of_lexbuf ?(legacy_format = false) lexbuf =
+let of_lexbuf ?(legacy_format = false) ?fname lexbuf =
   Newick_parse_state.node_num := (-1);
   Newick_parse_state.legacy_format := legacy_format;
-  try
-    Newick_parser.tree Newick_lexer.token lexbuf
-  with
-  | Parsing.Parse_error -> failwith "couldn't parse tree!"
+  Sparse.wrap_of_fname_opt
+    fname
+    (Newick_parser.tree Newick_lexer.token)
+    lexbuf
 
-let of_string ?legacy_format s =
+let of_string ?legacy_format ?fname s =
   check_string s;
   try
     of_lexbuf
+      ?fname
       ?legacy_format
       (Lexing.from_string s)
   with
@@ -118,11 +119,11 @@ let of_file ?legacy_format fname =
       (File_parsing.string_list_of_file fname)
   with
     | [] -> failwith ("empty file in "^fname)
-    | [s] -> of_string ?legacy_format s
+    | [s] -> of_string ?legacy_format ~fname s
     | _ -> failwith ("expected a single tree on a single line in "^fname)
 
 let list_of_file fname =
-  List.map of_string (File_parsing.string_list_of_file fname)
+  List.map (of_string ~fname) (File_parsing.string_list_of_file fname)
 
 (* Given a newick gtree, collapse all nodes with only one child, so that the
  * resulting tree is always at least bifurcating. The result is also

@@ -30,9 +30,12 @@
  * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
    alignment had a different number of sites from the refpkg; added
    --always-refine to pplacer.
+ * Closed GH-212: Changed parsing error messages to be more specific.
  * Closed GH-218: Added --split-csv to `guppy merge`.
  * Closed GH-219: Fixed some guppy commands which needed a zero root branch
    length.
+ * Closed GH-220: Added error messages for some exceptions; fixed
+   `guppy rarefact`.
 
 
 1.1.alpha11

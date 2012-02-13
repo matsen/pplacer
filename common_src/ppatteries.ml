@@ -137,22 +137,33 @@ let combine_list_intmaps l =
 module Sparse = struct
   open Lexing
 
+  let update_fref file fref =
+    match !fref with
+      | None -> fref := Some file
+      | Some _ -> ()
+
+  let format_fref ?(prep = "of") fref =
+    Option.map_default (Printf.sprintf " %s %s" prep) "" !fref
+
   let location_of_position p = p.pos_lnum, p.pos_cnum - p.pos_bol
 
-  exception Parse_error of string * (int * int) * (int * int)
-  let parse_error_of_positions s p1 p2 =
-    Parse_error (s, location_of_position p1, location_of_position p2)
+  exception Parse_error of string * (int * int) * (int * int) * string option ref
+  let parse_error_of_positions ?file s p1 p2 =
+    Parse_error (s, location_of_position p1, location_of_position p2, ref file)
 
-  let format_error = function
-    | Parse_error (msg, (l1, c1), (l2, c2)) ->
-      Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
-    | _ -> raise (Invalid_argument "format_error")
-
-  let error_wrap f =
-    try
-      f ()
-    with (Parse_error (_, _, _)) as e ->
-      failwith (format_error e)
+  let () =
+    Printexc.register_printer
+      (function
+        | Parse_error (msg, (l1, c1), (l2, c2), file) ->
+          Some (Printf.sprintf
+                  "%s between line %d character %d and line %d character %d%s"
+                  msg
+                  l1
+                  c1
+                  l2
+                  c2
+                  (format_fref file))
+        | _ -> None)
 
   let incr_lineno lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -161,16 +172,37 @@ module Sparse = struct
       pos_bol = pos.pos_cnum;
     }
 
-  let syntax_error tok msg =
-    raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
+  let parse_error ?file tok msg =
+    raise
+      (parse_error_of_positions ?file msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
 
   let try_map f x tok msg =
     try
       f x
     with _ ->
-      syntax_error tok msg
+      parse_error tok msg
 
-  exception Syntax_error of int * int
+  exception Tokenizer_error of int * int * string option ref
+  exception Syntax_error of string * string option ref
+
+  let syntax_error msg =
+    raise (Syntax_error (msg, ref None))
+
+  let () =
+    Printexc.register_printer
+      (function
+        | Tokenizer_error (line, col, file) ->
+          Some (Printf.sprintf
+                  "syntax error at line %d character %d%s"
+                  line
+                  col
+                  (format_fref file))
+        | Syntax_error (msg, file) ->
+          Some (Printf.sprintf
+                  "syntax error%s: %s"
+                  (format_fref ~prep:"in" file)
+                  msg)
+        | _ -> None)
 
   let rec first_match groups s =
     match groups with
@@ -208,16 +240,37 @@ module Sparse = struct
         in aux (Str.match_end ()) accum
       else
         let line, col = pos s en in
-        raise (Syntax_error (line, col))
+        raise (Tokenizer_error (line, col, ref None))
     in
     aux 0 []
       |> maybe_cons eof_token
       |> List.rev
       |> List.enum
 
+  let file_parse_wrap file f x =
+    try
+      f x
+    with
+      | Tokenizer_error (_, _, fref)
+      | Syntax_error (_, fref)
+      | Parse_error (_, _, _, fref) as e ->
+        update_fref file fref;
+        raise e
+
+  let wrap_of_fname_opt = function
+    | None -> identity
+    | Some fname -> file_parse_wrap fname
+
   let gen_parsers tokenize parse =
-    tokenize |- parse,
-    File.lines_of |- Enum.map tokenize |- Enum.flatten |- parse
+    let of_string ?fname s =
+      wrap_of_fname_opt fname (tokenize |- parse) s
+    and of_file fname =
+      file_parse_wrap
+        fname
+        (File.lines_of |- Enum.map tokenize |- Enum.flatten |- parse)
+        fname
+    in
+    of_string, of_file
 
 end
 
@@ -594,6 +647,8 @@ module EnumFuns = struct
       |> Enum.flatten
 
 end
+
+let exn_wrap f = Printexc.pass f ()
 
 let () =
   Gsl_error.init ();
