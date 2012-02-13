@@ -1,13 +1,18 @@
+open Ppatteries
 open Jsontype
 
-let of_string s =
+let of_string ?fname s =
   let lexbuf = Lexing.from_string s in
-  Jsonparse.parse Jsonlex.token lexbuf
+  Sparse.wrap_of_fname_opt fname (Jsonparse.parse Jsonlex.token) lexbuf
 
 let of_file fname =
   let fobj = open_in fname in
   let lexbuf = Lexing.from_channel fobj in
-  let ret = Jsonparse.parse Jsonlex.token lexbuf in
+  let ret = Sparse.file_parse_wrap
+    fname
+    (Jsonparse.parse Jsonlex.token)
+    lexbuf
+  in
   close_in fobj;
   ret
 
