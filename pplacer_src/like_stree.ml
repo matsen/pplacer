@@ -5,11 +5,6 @@
 open Ppatteries
 open Stree
 
-let add_zero_root_bl gt =
-  Gtree.get_bark_map gt
-    |> Newick_bark.map_set_bl (Gtree.top_id gt) 0.
-    |> Gtree.set_bark_map gt
-
 (* below 2^-50 = 1e-15 we pull out the exponent into the int *)
 let min_allowed_twoexp = -50
 

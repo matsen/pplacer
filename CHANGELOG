@@ -27,6 +27,9 @@
  * Closed GH-204: Added more columns to `rppr reclass`.
  * Closed GH-205: Added `guppy error`.
  * Closed GH-206: Updated some pplacer documentation.
+ * Closed GH-207: Added CSV output to `guppy edpl`.
+ * Closed GH-208: Fixed the -o flag to reflect the actual file written to for
+   `guppy {sing,tog,edpl}`.
  * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
    alignment had a different number of sites from the refpkg; added
    --always-refine to pplacer.
@@ -36,6 +39,7 @@
    length.
  * Closed GH-220: Added error messages for some exceptions; fixed
    `guppy rarefact`.
+ * Closed GH-222: Added a -c flag to `guppy bary`.
 
 
 1.1.alpha11

@@ -20,7 +20,7 @@ let make_bary_tree t prel =
                    (Some bl, None, None, [Decor.dot i]))))))
         prel)
   in
-  Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
+  Gtree.add_subtrees_by_map t bary_map
 
 class cmd () =
 object (self)
@@ -29,9 +29,11 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit output_cmd () as super_output
   inherit numbered_tree_cmd () as super_numbered_tree
+  inherit refpkg_cmd ~required:false as super_refpkg
 
   method specl =
-    super_mass#specl
+    super_refpkg#specl
+  @ super_mass#specl
   @ super_output#specl
   @ super_numbered_tree#specl
 
@@ -40,13 +42,11 @@ object (self)
   method usage = "usage: bary [options] placefile[s]"
 
   method private placefile_action prl =
-    let t = Mokaphy_common.list_get_same_tree prl
-      |> Like_stree.add_zero_root_bl
+    let t = self#decor_ref_tree_from_placerunl prl
+      |> Decor_gtree.add_zero_root_bl
       |> self#maybe_numbered
-    and weighting, criterion = self#mass_opts
-    in
-    let prel = prel_of_prl weighting criterion prl
-    in
+    and weighting, criterion = self#mass_opts in
+    let prel = prel_of_prl weighting criterion prl in
     if prl <> [] then begin
       let fname = self#single_file
         ~default:(File ((Mokaphy_common.cat_names prl) ^ ".heat.xml"))

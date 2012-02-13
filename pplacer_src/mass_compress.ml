@@ -53,7 +53,7 @@ let of_placerun ?(p = 1.) ?discard_below ~c weighting criterion pr =
      * single unit of mass for each pquery. *)
     Mass_map.Pre.of_pquery_list weighting criterion [pq]
       |> Mass_map.Indiv.of_pre
-  and gt = Placerun.get_ref_tree pr |> Like_stree.add_zero_root_bl
+  and gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
   and length = ref 0 in
   Placerun.get_pqueries pr
   |> tap (fun _ -> dprint "Splitting pqueries into islands... ")

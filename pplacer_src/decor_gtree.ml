@@ -72,3 +72,7 @@ let consolidate_colors resolution_fn gt =
         in
         b#set_decor decor')
   |> Gtree.set_bark_map gt
+
+let add_zero_root_bl =
+  Newick_gtree.gen_add_zero_root_bl
+    (new Decor_bark.decor_bark `Empty)

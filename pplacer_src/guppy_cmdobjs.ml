@@ -177,6 +177,10 @@ object(self)
     if Refpkg.tax_equipped rp then Refpkg.get_tax_ref_tree rp
     else Decor_gtree.of_newick_gtree (Refpkg.get_ref_tree rp)
 
+  method private decor_ref_tree_from_placerunl prl =
+    self#check_placerunl prl;
+    List.hd prl |> self#get_rpo_and_tree |> snd
+
 end
 
 
@@ -444,7 +448,6 @@ object (self)
             trees)
         named_trees
     | File fname ->
-      let fname = fname ^ suffix in
       Visualization.trees_to_file
         self#fmt
         fname

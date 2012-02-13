@@ -2,7 +2,7 @@ open Ppatteries
 open OUnit
 open Test_util
 open Gmix_model
-let add_zero_root_bl = Like_stree.add_zero_root_bl
+let add_zero_root_bl = Newick_gtree.add_zero_root_bl
 module Glv = Model.Glv
 module Like_stree = Like_stree.Make(Model)
 
