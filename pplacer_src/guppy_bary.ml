@@ -20,7 +20,7 @@ let make_bary_tree t prel =
                    (Some bl, None, None, [Decor.dot i]))))))
         prel)
   in
-  Gtree.add_subtrees_by_map (Decor_gtree.of_newick_gtree t) bary_map
+  Gtree.add_subtrees_by_map t bary_map
 
 class cmd () =
 object (self)
