@@ -156,7 +156,7 @@ module Sparse = struct
       (function
         | Parse_error (msg, (l1, c1), (l2, c2), file) ->
           Some (Printf.sprintf
-                  "%s between line %d col %d and line %d col %d%s"
+                  "%s between line %d character %d and line %d character %d%s"
                   msg
                   l1
                   c1
@@ -193,7 +193,7 @@ module Sparse = struct
       (function
         | Tokenizer_error (line, col, file) ->
           Some (Printf.sprintf
-                  "syntax error at line %d col %d%s"
+                  "syntax error at line %d character %d%s"
                   line
                   col
                   (format_fref file))
