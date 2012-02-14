@@ -1,6 +1,6 @@
 open Ppatteries
 
-module SAMR = AlgMap.AlgMapR (StringMap)
+module SAMR = AlgMapR (StringMap)
 let sorted_tuple ?(cmp = compare) (a, b) = if cmp a b < 0 then b, a else a, b
 
 let of_pql criterion pql =
