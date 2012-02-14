@@ -36,6 +36,7 @@ well as the external tools used for alignment: HMMER3_, Infernal_, and PyNAST_.
 .. _HMMER3: http://hmmer.janelia.org
 .. _Infernal: http://infernal.janelia.org
 .. _PyNAST: http://pynast.sourceforge.net
+
 List of subcommands
 -------------------
 
