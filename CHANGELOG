@@ -36,6 +36,7 @@
  * Closed GH-210: Merged `guppy {pd,wpd,entropy}` into `guppy fpd`.
  * Closed GH-212: Changed parsing error messages to be more specific.
  * Closed GH-213: Added PyNAST support to refpkg_align.py.
+ * Closed GH-214: Added `guppy ograph`.
  * Closed GH-218: Added --split-csv to `guppy merge`.
  * Closed GH-219: Fixed some guppy commands which needed a zero root branch
    length.

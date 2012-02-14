@@ -14,4 +14,5 @@ let suite = [
   "islands" >::: Test_islands.suite;
   "compress" >::: Test_compress.suite;
   "error" >::: Test_error.suite;
+  "overlap" >::: Test_overlap.suite;
 ]
