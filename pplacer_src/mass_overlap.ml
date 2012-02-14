@@ -32,4 +32,4 @@ let of_pql criterion pql =
           let k = sorted_tuple (names.(i), names.(j)) in
           map := Map.modify_def 0. k ((+.) w) !map));
   Map.enum !map
-  |> Enum.map (fun ((n1, n2), v) -> [n1; n2; Printf.sprintf "%g" v])
+  |> Enum.map (fun ((n1, n2), v) -> n1, n2, v)

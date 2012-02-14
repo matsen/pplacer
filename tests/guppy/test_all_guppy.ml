@@ -13,4 +13,5 @@ let suite = [
   "rarefact" >::: Test_rarefact.suite;
   "islands" >::: Test_islands.suite;
   "compress" >::: Test_compress.suite;
+  "overlap" >::: Test_overlap.suite;
 ]

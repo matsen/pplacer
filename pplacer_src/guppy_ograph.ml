@@ -20,7 +20,7 @@ object (self)
     | [pr] ->
       Placerun.get_pqueries pr
       |> Mass_overlap.of_pql self#criterion
-      |> Enum.map (String.join " ")
+      |> Enum.map (Tuple3.uncurry (Printf.sprintf "%s %s %g"))
       |> File.write_lines (self#single_file ())
 
     | l ->
