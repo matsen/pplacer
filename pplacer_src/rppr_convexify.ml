@@ -74,7 +74,7 @@ object (self)
     string_flag alternates_file;
     toggle_flag check_all_ranks;
     int_flag badness_cutoff;
-    string_list_flag limit_ranks;
+    delimited_list_flag limit_ranks;
     string_flag timing;
     toggle_flag strict;
     toggle_flag use_naive;
@@ -196,9 +196,6 @@ object (self)
       | [] -> None
       | ranks -> Some
         (List.enum ranks
-         |> Enum.map (flip String.nsplit ",")
-         |> Enum.map List.enum
-         |> Enum.flatten
          |> Enum.map (fun rk -> Array.findi ((=) rk) td.Tax_taxonomy.rank_names)
          |> IntSet.of_enum)
     and cutoff = fv badness_cutoff in

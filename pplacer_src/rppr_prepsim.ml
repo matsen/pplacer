@@ -56,7 +56,7 @@ object (self)
   method specl =
     super_refpkg#specl
   @ super_output#specl
-  @ [string_list_flag prune_taxids]
+  @ [delimited_list_flag prune_taxids]
 
   method desc = "makes a simulation by taking out taxids and turning them into fake placements"
   method usage = "usage: prepsim [options] -c my.refpkg"
@@ -64,8 +64,6 @@ object (self)
   method action _ =
     let rp = self#get_rp in
     let pruned = fv prune_taxids
-      |> List.map (flip String.nsplit ",")
-      |> List.flatten
       |> List.map Tax_id.of_string
       |> Tax_id.TaxIdSet.of_list
     and prefix = self#single_prefix ~requires_user_prefix:true ()
