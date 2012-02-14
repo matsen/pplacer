@@ -31,6 +31,7 @@ module Pre = struct
     {
       loc: int;
       distal_bl: float;
+      pendant_bl: float;
       mass: float;
     }
 
@@ -67,6 +68,7 @@ module Pre = struct
             {
               loc = Placement.location place;
               distal_bl = Placement.distal_bl place;
+              pendant_bl = Placement.pendant_bl place;
               mass = mass_per_read *. weight
             })
           pc

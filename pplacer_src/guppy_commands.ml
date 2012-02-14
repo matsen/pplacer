@@ -15,11 +15,9 @@ let command_list () =
       "pca", (fun () -> new Guppy_pca.cmd ());
       "splitify", (fun () -> new Guppy_splitify.cmd ());
       "edpl", (fun () -> new Guppy_edpl.cmd ());
-      "pd", (fun () -> new Guppy_pd.cmd ());
-      "wpd", (fun () -> new Guppy_wpd.cmd ());
-      "entropy", (fun () -> new Guppy_entropy.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
       "error", (fun () -> new Guppy_error.cmd ());
+      "fpd", (fun () -> new Guppy_fpd.cmd ());
     ];
 
     "classification", [

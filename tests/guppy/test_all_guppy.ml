@@ -9,7 +9,7 @@ let suite = [
   "edpl" >::: Test_edpl.suite;
   "gaussian" >::: Test_gaussian.suite;
   "pd" >::: Test_pd.suite;
-  "wpd" >::: Test_wpd.suite;
+  "fpd" >::: Test_fpd.suite;
   "rarefact" >::: Test_rarefact.suite;
   "islands" >::: Test_islands.suite;
   "compress" >::: Test_compress.suite;

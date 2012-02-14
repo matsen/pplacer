@@ -33,6 +33,7 @@
  * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
    alignment had a different number of sites from the refpkg; added
    --always-refine to pplacer.
+ * Closed GH-210: Merged `guppy {pd,wpd,entropy}` into `guppy fpd`.
  * Closed GH-212: Changed parsing error messages to be more specific.
  * Closed GH-218: Added --split-csv to `guppy merge`.
  * Closed GH-219: Fixed some guppy commands which needed a zero root branch
