@@ -64,7 +64,7 @@ let reflect x =
     else y
   end
 
-let wpd_of_placerun ?include_pendant criterion exponent pr =
+let awpd_of_placerun ?include_pendant criterion exponent pr =
   let f =
     if exponent < 0. || exponent > 1. then
       failwith("exponent must be between 0 and 1, inclusive")
@@ -92,7 +92,7 @@ object (self)
   inherit tabular_cmd () as super_tabular
 
   val kappa = flag "--kappa"
-    (Plain ([], "A comma-separated list of additional exponents to use for calculating wpd."))
+    (Plain ([], "A comma-separated list of additional exponents to use for calculating awpd."))
   val include_pendant = flag "--include-pendant"
     (Plain (false, "Consider pendant branch length in diversity calculations."))
 
@@ -114,20 +114,20 @@ object (self)
       |> List.map float_of_string
     and criterion = self#criterion
     and include_pendant = fv include_pendant in
-    let wpd = wpd_of_placerun ~include_pendant criterion
+    let awpd = awpd_of_placerun ~include_pendant criterion
     and pd = pd_of_placerun ~include_pendant criterion
     and entropy = entropy_of_placerun ~include_pendant criterion in
     prl
       |> List.map
           (fun pr ->
             let pe, qe = entropy pr in
-            [pe; qe; pd pr; wpd 1. pr]
-            |> (flip List.append (List.map (flip wpd pr) exponents))
+            [pe; qe; pd pr; awpd 1. pr]
+            |> (flip List.append (List.map (flip awpd pr) exponents))
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
-          (["placerun"; "phylo_entropy"; "quadratic"; "pd"; "wpd"]
-           @ List.map (Printf.sprintf "wpd_%g") exponents)
+          (["placerun"; "phylo_entropy"; "quadratic"; "pd"; "awpd"]
+           @ List.map (Printf.sprintf "awpd_%g") exponents)
       |> self#write_ll_tab
 
 end
