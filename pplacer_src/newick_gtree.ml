@@ -183,3 +183,37 @@ let consolidate gt =
   let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
   let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
   gt', IntMap.map (flip IntMap.find transm' |> first) transm
+
+let prune_to_pql should_prune ?(placement_transform = const identity) gt =
+  let open Stree in
+  let st = Gtree.get_stree gt
+  and bl = Gtree.get_bl gt
+  and name = Gtree.get_node_label gt in
+  let rec aux attachment_opt = function
+    | Leaf i when should_prune i ->
+      let loc, pend_bl = Option.get attachment_opt |> second ((+.) (bl i)) in
+      let pq = Pquery.make_ml_sorted
+        ~namlom:[name i, 1.]
+        ~seq:Pquery_io.no_seq_str
+        [Placement.make_ml loc ~ml_ratio:1. ~log_like:0. ~dist_bl:0. ~pend_bl
+         |> Placement.add_pp ~post_prob:1. ~marginal_prob:1.
+         |> placement_transform i]
+      in
+      None, [pq]
+    | Leaf _ as l -> Some l, []
+    | Node (i, subtrees) ->
+      let pruned = should_prune i in
+      let attachment_opt' = match attachment_opt with
+        | _ when not pruned -> Some (i, 0.)
+        | Some (loc, pend_bl) -> Some (loc, pend_bl +. bl i)
+        | None -> failwith "whole tree pruned"
+      in
+      List.fold_left
+        (fun (st_accum, pql_accum) t ->
+          let t_opt, pql = aux attachment_opt' t in
+          maybe_cons t_opt st_accum, List.append pql pql_accum)
+        ([], [])
+        subtrees
+      |> first (if pruned then const None else node i |- some)
+  in
+  aux None st |> first (Option.get |- Gtree.set_stree gt)
