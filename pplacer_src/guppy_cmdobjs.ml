@@ -520,3 +520,91 @@ object (self)
 
 end
 
+class voronoi_cmd () =
+object (self)
+  inherit tabular_cmd ~default_to_csv:true () as super_tabular
+  inherit numbered_tree_cmd () as super_numbered_tree
+
+  val verbose = flag "-v"
+    (Plain (false, "If specified, write progress output to stderr."))
+  val trimmed_tree_file = flag "-t"
+    (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
+  val leaf_cutoff = flag "--leaves"
+    (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
+  val algorithm = flag "--algorithm"
+    (Formatted ("full",
+                "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
+  val all_eclds_file = flag "--all-eclds-file"
+    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
+  val soln_log = flag "--log"
+    (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
+                          every internal node."))
+
+  method specl =
+    super_tabular#specl
+  @ super_numbered_tree#specl
+  @ [
+    toggle_flag verbose;
+    string_flag trimmed_tree_file;
+    int_flag leaf_cutoff;
+    string_flag algorithm;
+    string_flag all_eclds_file;
+    string_flag soln_log;
+  ]
+
+  method private perform_voronoi ?decor_tree gt mass_cb =
+      let alg = match fv algorithm with
+        | "greedy" -> (module Voronoi.Greedy: Voronoi.Alg)
+        | "full" -> (module Voronoi.Full: Voronoi.Alg)
+        | "force" -> (module Voronoi.Forced: Voronoi.Alg)
+        | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
+      and verbose = fv verbose
+      and leaf_cutoff = fv leaf_cutoff in
+      Voronoi.Full.csv_log :=
+        fvo soln_log
+          |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
+      let module Alg = (val alg: Voronoi.Alg) in
+      let diagram = Voronoi.of_gtree gt in
+      let mass = mass_cb diagram in
+      let solm = Alg.solve
+        ~strict:(fvo all_eclds_file |> Option.is_none)
+        ~verbose
+        gt
+        mass
+        leaf_cutoff
+      in
+      let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
+      let cut_leaves = gt
+        |> Gtree.leaf_ids
+        |> IntSet.of_list
+        |> flip IntSet.diff leaves
+      in
+
+      begin match fvo trimmed_tree_file with
+        | Some fname ->
+          decor_tree
+            |> Option.default (Decor_gtree.of_newick_gtree gt)
+            |> Decor_gtree.color_clades_above cut_leaves
+            |> self#maybe_numbered
+            |> Phyloxml.gtree_to_file fname
+        | None -> ()
+      end;
+
+      begin match fvo all_eclds_file with
+        | Some fname ->
+          IntMap.enum solm
+            |> Enum.map
+                (fun (c, {Voronoi.work}) ->
+                  [string_of_int c; Printf.sprintf "%g" work])
+            |> List.of_enum
+            |> Csv.save fname
+        | None -> ()
+      end;
+
+      cut_leaves
+        |> IntSet.enum
+        |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+        |> List.of_enum
+        |> self#write_ll_tab;
+
+end
