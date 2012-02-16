@@ -9,10 +9,15 @@ let intmap_of_arr a =
   !m
 
 (* writing various tree formats *)
-let trees_to_file tree_fmt prefix trees =
+let trees_to_file ?(with_suffix = true) tree_fmt prefix trees =
+  let fname = match tree_fmt with
+    | _ when not with_suffix -> prefix
+    | Newick -> prefix ^ ".tre"
+    | Phyloxml -> prefix ^ ".xml"
+  in
   match tree_fmt with
-  | Newick -> Newick_gtree.tree_list_to_file trees (prefix^".tre")
-  | Phyloxml -> Phyloxml.gtrees_to_file (prefix^".xml") trees
+    | Newick -> Newick_gtree.tree_list_to_file trees fname
+    | Phyloxml -> Phyloxml.gtrees_to_file fname trees
 
 let make_zero_leaf decor_list bl node_label =
   Gtree.Subtree
@@ -50,14 +55,6 @@ let num_tree bogus_bl ref_tree placed_map =
       decor_bark_of_bl)])
     ref_tree
     placed_map
-
-let write_num_file bogus_bl tree_fmt fname_base ref_tree
-                                                   placed_map =
-  trees_to_file
-    tree_fmt
-    (fname_base^".num")
-    [num_tree bogus_bl ref_tree placed_map]
-
 
 (* fat trees.
  * massm are By_edge mass maps.

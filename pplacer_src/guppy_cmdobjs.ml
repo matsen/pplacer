@@ -449,6 +449,7 @@ object (self)
         named_trees
     | File fname ->
       Visualization.trees_to_file
+        ~with_suffix:false
         self#fmt
         fname
         (List.map snd named_trees |> List.flatten)
