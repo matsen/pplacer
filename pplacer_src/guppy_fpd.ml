@@ -16,7 +16,7 @@ module P = Mass_map.Pre
  * is passed the branch length and the current mass total and returns another
  * term to sum. the result of total_along_mass is the sum of all the terms. *)
 let total_along_mass ?(include_pendant = false) criterion pr cb =
-  let gt = Placerun.get_ref_tree pr in
+  let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl in
   let pre = P.of_placerun Mass_map.Point criterion pr in
   let mass = I.of_pre pre in
   let partial_total id = Kr_distance.total_along_edge

@@ -56,7 +56,7 @@ object (self)
         | "force" -> (module Voronoi.Forced: Voronoi.Alg)
         | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
       and weighting, criterion = self#mass_opts
-      and gt = Placerun.get_ref_tree pr
+      and gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
       and leaf_mass_fract = fv leaf_mass
       and verbose = fv verbose
       and leaf_cutoff = fv leaf_cutoff in
