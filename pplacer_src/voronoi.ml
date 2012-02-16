@@ -638,10 +638,12 @@ let solve ?(verbose = false) gt mass n_leaves =
           flush_all ()
         end;
         mark,
+        (* Moving through a bubble. *)
         List.fold_left
           (fun accum sol ->
             let accum = accum
               |> maybe_cons
+                  (* step 3 *)
                   (if bub_mass > 0.
                       && sol.cl_dist <> infinity
                       && sol.mv_dist = infinity
@@ -658,19 +660,23 @@ let solve ?(verbose = false) gt mass n_leaves =
                    else None)
             in
             match sol with
+              (* step 2b *)
               | sol when approx_equal sol.mv_dist 0. ->
                 {sol with
                   prox_mass = sol.prox_mass +. bub_mass;
                   wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len;
                   cl_dist = sol.cl_dist +. bub_len}
                 :: accum
+              (* step 1 *)
               | sol when sol.mv_dist < bub_len ->
                 accum
+              (* step 2a *)
               | sol when sol.mv_dist = infinity ->
                 {sol with
                   cl_dist = sol.cl_dist +. bub_len;
                   wk_subtot = sol.wk_subtot +. wk_distal +. bub_mass *. sol.cl_dist}
                 :: accum
+              (* step 2c *)
               | sol ->
                 {sol with
                   mv_dist = sol.mv_dist -. bub_len;
