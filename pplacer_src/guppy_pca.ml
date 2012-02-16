@@ -53,6 +53,12 @@ object (self)
     | Some rp -> Refpkg.get_tax_ref_tree rp
     in
     let data = List.map (self#splitify_placerun weighting criterion) prl in
+    let n_unique_rows = List.length (List.sort_unique compare data) in
+    if n_unique_rows <= 2 || n_unique_rows < write_n then
+      failwith(Printf.sprintf "You have requested %d principal components, but \
+      you have only %d unique row(s) in your data after transformation. Please \
+      ask for fewer principal components and/or supply more diverse data sets."
+      write_n n_unique_rows);
     let (eval, evect) =
       Pca.gen_pca ~use_raw_eval:(fv raw_eval)
                   ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
