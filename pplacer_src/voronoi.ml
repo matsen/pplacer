@@ -332,7 +332,11 @@ type solution = {
 type solutions = solution IntMap.t
 
 let mv_dist {mv_dist} = mv_dist
+let cl_dist {cl_dist} = cl_dist
+let leaf_set {leaf_set} = leaf_set
 let leaf_card {leaf_set} = IntSet.cardinal leaf_set
+let prox_mass {prox_mass} = prox_mass
+let wk_subtot {wk_subtot} = wk_subtot
 let sleaves {leaves} = leaves
 let swork {work} = work
 
@@ -495,27 +499,6 @@ let cull ?(verbose = false) sols =
           Printf.eprintf " -> culled nothing\n")
     else identity
 
-(* returns a new solution in which mass is moving up from both sol1 and sol2
- * toward the root. *)
-let arrow_up sol1 sol2 = {
-  leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
-  mv_dist = min sol1.mv_dist sol2.mv_dist;
-  cl_dist = min sol1.cl_dist sol2.cl_dist;
-  prox_mass = sol1.prox_mass +. sol2.prox_mass;
-  wk_subtot = sol1.wk_subtot +. sol2.wk_subtot;
-}
-
-(* returns a new solution in which mass is moving up from sol1 and then down
- * toward sol2. *)
-let arrow_down sol1 sol2 = {
-  leaf_set = IntSet.union sol1.leaf_set sol2.leaf_set;
-  mv_dist = infinity;
-  cl_dist = min sol1.cl_dist sol2.cl_dist;
-  prox_mass = 0.;
-  wk_subtot =
-    sol1.wk_subtot +. sol2.wk_subtot +. sol2.prox_mass *. sol1.cl_dist;
-}
-
 (* given a mark map, a tree, and mass on the tree, remove redundant marks from
  * the tree. i.e. remove any mark that doesn't have mass on one side of it. *)
 let collapse_marks gt mass markm =
@@ -540,6 +523,9 @@ let collapse_marks gt mass markm =
       |> snd |> List.tl |> List.rev)
     markm
 
+let map_min f l = List.map f l |> List.min
+let map_reduce f_map f_reduce l = List.map f_map l |> List.reduce f_reduce
+
 (* combine across the solutions below an internal node, given a solution list
  * for each node immediately below this node. knowing the max_leaves can help
  * in not having to consider every solution, as they can be pruned off
@@ -554,25 +540,19 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
   solsl
   |> EnumFuns.n_cartesian_product
   |> Enum.map
-      (List.partition (mv_dist |- (=) infinity)
-       |- (function
-           | [i], [j] -> [arrow_up i j; arrow_down i j]
-           | [], [a; b]
-           | [a; b], [] -> [arrow_up a b]
-           | [], l
-           | l, [] -> [List.reduce arrow_up l]
-           | i, j ->
-             let i' = List.reduce arrow_up i in
-             List.fold_left
-               (fun (prev_down, sols) cur ->
-                 let cur' = arrow_down prev_down cur in
-                 cur',
-                 cur' :: List.map (arrow_up cur) sols)
-               (i', [i'])
-               (List.sort (comparing mv_dist |> flip) j)
-             |> uncurry List.cons)
-       |- List.filter (leaf_card |- (>=) max_leaves))
-  |> Enum.map List.enum
+      (fun sols ->
+        let min_mv_dist = map_min mv_dist sols
+        and cl_dist = map_min cl_dist sols
+        and leaf_set = map_reduce leaf_set IntSet.union sols
+        and prox_mass = map_reduce prox_mass (+.) sols
+        and wk_subtot = map_reduce wk_subtot (+.) sols in
+        let min_min = min min_mv_dist cl_dist in
+        [{leaf_set; prox_mass; wk_subtot; cl_dist; mv_dist = min_min}]
+        |> maybe_cons
+            (if min_mv_dist < cl_dist then None else Some {
+              leaf_set; cl_dist; mv_dist = infinity; prox_mass = 0.;
+              wk_subtot = wk_subtot +. cl_dist *. prox_mass}))
+  |> Enum.map (List.enum |- Enum.filter (leaf_card |- (>=) max_leaves))
   |> Enum.flatten
   |> if verbose then
       Enum.suffix_action (fun () -> Printf.eprintf " (finished combining)"; flush_all ())
