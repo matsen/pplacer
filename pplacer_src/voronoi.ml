@@ -643,7 +643,8 @@ let solve ?(verbose = false) gt mass n_leaves =
           (fun accum sol ->
             let accum = accum
               |> maybe_cons
-                  (* step 3 *)
+                  (* step 3: add on a solution with just this bubble giving
+                   * prox_mass *)
                   (if bub_mass > 0.
                       && sol.cl_dist <> infinity
                       && sol.mv_dist = infinity
@@ -659,24 +660,25 @@ let solve ?(verbose = false) gt mass n_leaves =
                         }
                    else None)
             in
+            (* Filter and move solutions through bubbles. *)
             match sol with
-              (* step 2b *)
+              (* step 2b: advance solutions with no leaves selected *)
               | sol when approx_equal sol.mv_dist 0. ->
                 {sol with
                   prox_mass = sol.prox_mass +. bub_mass;
                   wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len;
                   cl_dist = sol.cl_dist +. bub_len}
                 :: accum
-              (* step 1 *)
+              (* step 1: throw out solutions with short mv_dist *)
               | sol when sol.mv_dist < bub_len ->
                 accum
-              (* step 2a *)
+              (* step 2a: move along a zero prox_mass solution *)
               | sol when sol.mv_dist = infinity ->
                 {sol with
                   cl_dist = sol.cl_dist +. bub_len;
                   wk_subtot = sol.wk_subtot +. wk_distal +. bub_mass *. sol.cl_dist}
                 :: accum
-              (* step 2c *)
+              (* step 2c: all other cases, move bubble mass to proximal side *)
               | sol ->
                 {sol with
                   mv_dist = sol.mv_dist -. bub_len;
