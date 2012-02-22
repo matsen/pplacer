@@ -541,14 +541,14 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
   |> EnumFuns.n_cartesian_product
   |> Enum.map
       (fun sols ->
-        let min_mv_dist = map_min mv_dist sols
+        let mv_dist = map_min mv_dist sols
         and cl_dist = map_min cl_dist sols
         and leaf_set = map_reduce leaf_set IntSet.union sols
         and prox_mass = map_reduce prox_mass (+.) sols
         and wk_subtot = map_reduce wk_subtot (+.) sols in
-        [{leaf_set; prox_mass; wk_subtot; cl_dist; mv_dist = min_mv_dist}]
+        [{leaf_set; prox_mass; wk_subtot; cl_dist; mv_dist}]
         |> maybe_cons
-            (if min_mv_dist < cl_dist then None else Some {
+            (if cl_dist = infinity then None else Some {
               leaf_set; cl_dist; mv_dist = infinity; prox_mass = 0.;
               wk_subtot = wk_subtot +. cl_dist *. prox_mass}))
   |> Enum.map (List.enum |- Enum.filter (leaf_card |- (>=) max_leaves))
