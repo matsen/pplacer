@@ -103,3 +103,26 @@ let transform func pr =
     |> List.map
         (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
     |> set_pqueries pr
+
+let split split_map pr =
+  List.fold_left
+    (fun accum pq ->
+      let groups = List.fold_left
+        (fun accum ((name, _) as namlom) ->
+          match begin
+            try
+              Some (StringMap.find name split_map)
+            with Not_found -> None
+          end with
+            | Some group -> StringMap.add_listly group namlom accum
+            | None -> accum)
+        StringMap.empty
+        (Pquery.namlom pq)
+      in
+      StringMap.fold
+        (Pquery.set_namlom pq |- flip StringMap.add_listly |> flip)
+        groups
+        accum)
+    StringMap.empty
+    (get_pqueries pr)
+  |> StringMap.mapi (make (get_ref_tree pr))

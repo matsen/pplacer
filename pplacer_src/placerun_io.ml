@@ -218,36 +218,9 @@ let of_split_file ?(getfunc = of_any_file) fname =
     StringMap.empty
     split_data
   in
-  let split_pqueries = List.fold_left
-    (fun accum pq ->
-      let groups = List.fold_left
-        (fun accum ((name, _) as namlom) ->
-          match begin
-            try
-              Some (StringMap.find name split_map)
-            with Not_found -> None
-          end with
-            | Some group -> StringMap.add_listly group namlom accum
-            | None -> accum)
-        StringMap.empty
-        (Pquery.namlom pq)
-      in
-      StringMap.fold
-        (Pquery.set_namlom pq |- flip StringMap.add_listly |> flip)
-        groups
-        accum)
-    StringMap.empty
-    (Placerun.get_pqueries to_split')
-  in
-  StringMap.fold
-    (fun name pqueries accum ->
-      Placerun.make
-        (Placerun.get_ref_tree to_split')
-        name
-        pqueries
-      :: accum)
-    split_pqueries
-    []
+  Placerun.split split_map to_split'
+  |> StringMap.values
+  |> List.of_enum
 
 let maybe_of_split_file ?(getfunc = of_any_file) fname =
   if Filename.check_suffix fname ".csv" then
