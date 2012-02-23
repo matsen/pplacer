@@ -208,6 +208,12 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     end
   in
 
+  let query_list =
+    if Prefs.sim_query_prefix prefs <> "" then
+      query_list @ Array.to_list ref_align
+    else query_list
+  in
+
   (* *** deduplicate sequences *** *)
   (* seq_tbl maps from sequence to the names that correspond to that seq. *)
   let seq_tbl = Hashtbl.create 1024 in
@@ -738,6 +744,34 @@ let run_file prefs query_fname =
       |> List.reduce (Placerun.combine query_bname)
       |> placerun_cb
   end else begin
+    let placerun_cb = if Prefs.sim_query_prefix prefs <> "" then begin
+      let split_map = StringSet.enum ref_name_set
+        |> Enum.map (fun n -> n, "ref")
+        |> StringMap.of_enum
+      in
+      let split_map = List.enum query_list
+        |> Enum.map (fun (n, _) -> n, "query")
+        |> StringMap.of_enum
+        |> StringMap.union split_map
+      in
+      fun pr ->
+        let split_prs = Placerun.split split_map pr in
+        let prefix = Printf.sprintf "%s/%s%s"
+          (Prefs.out_dir prefs)
+          (Prefs.sim_query_prefix prefs)
+          query_bname
+        in
+        Refpkg.get_seqinfom rp
+          |> StringMap.enum
+          |> Enum.map
+              (fun (k, {Tax_seqinfo.tax_id}) -> [k; Tax_id.to_string tax_id])
+          |> List.of_enum
+          |> Csv.save (prefix ^ ".csv");
+        let open StringMap.Exceptionless in
+        find "query" split_prs |> Option.may placerun_cb;
+        find "ref" split_prs
+        |> Option.may (Placerun_io.to_json_file (prefix ^ ".jplace"))
+    end else placerun_cb in
     run_placements
       prefs rp query_list from_input_alignment query_bname placerun_cb
   end

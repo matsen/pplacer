@@ -55,6 +55,7 @@ type prefs =
     mrca_class : bool ref;
     groups : int ref;
     always_refine : bool ref;
+    sim_query_prefix : string ref;
   }
 
 
@@ -111,6 +112,7 @@ let defaults () =
     mrca_class = ref false;
     groups = ref 0;
     always_refine = ref false;
+    sim_query_prefix = ref "";
   }
 
 
@@ -166,6 +168,7 @@ let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
 let groups            p = !(p.groups)
 let always_refine     p = !(p.always_refine)
+let sim_query_prefix  p = !(p.sim_query_prefix)
 
 
 (* arguments and preferences *)
@@ -270,6 +273,7 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Split query alignment into the specified number of groups.";
 "--always-refine", Arg.Set prefs.always_refine,
 "Always refine the model before placing.";
+"--sim-query-prefix", Arg.Set_string prefs.sim_query_prefix, "";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]
