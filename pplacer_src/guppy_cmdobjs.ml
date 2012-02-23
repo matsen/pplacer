@@ -449,6 +449,7 @@ object (self)
         named_trees
     | File fname ->
       Visualization.trees_to_file
+        ~with_suffix:false
         self#fmt
         fname
         (List.map snd named_trees |> List.flatten)
@@ -471,7 +472,8 @@ class splitify_cmd () =
 let tolerance = 1e-3
 and splitify x = x -. (1. -. x)
 and sgn = flip compare 0. |- float_of_int
-and arr_of_map len m = Array.init len (fun i -> IntMap.get i 0. m) in
+and arr_of_map default len m =
+  Array.init len (fun i -> IntMap.get i default m) in
 
 (* get the mass below the given edge, excluding that edge *)
 let below_mass_map edgem t =
@@ -498,7 +500,7 @@ object (self)
     let kappa = fv kappa in
     if kappa =~ 0. then
       splitify |- sgn
-    else if kappa  =~ 1. then
+    else if kappa =~ 1. then
       splitify
     else if kappa < 0. then
       failwith "--kappa must be a non-negative number"
@@ -511,11 +513,12 @@ object (self)
   method private splitify_placerun weighting criterion pr =
     let preim = Mass_map.Pre.of_placerun weighting criterion pr
     and t = Placerun.get_ref_tree pr
-    and splitify = self#splitify_transform in
+    and splitify_fn = self#splitify_transform in
     arr_of_map
+      (splitify_fn 0.)
       (1+(Gtree.top_id t))
       (IntMap.map
-         splitify
+         splitify_fn
          (below_mass_map (Mass_map.By_edge.of_pre preim) t))
 
 end

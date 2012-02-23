@@ -19,7 +19,7 @@ let pr_error criterion include_pendant scale_experimental_bl experimental expect
     |> Edge_rdist.find_pairwise_dist
   and ec_bl = Gtree.get_bl gt
   and em_bl = Placerun.get_ref_tree experimental |> Gtree.get_bl in
-  let placement_distance p_em p_ec =
+  let placement_distance p_ec p_em =
     let open Placement in
     pair_dist
       p_ec.location

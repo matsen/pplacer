@@ -51,7 +51,7 @@ object (self)
 
     | l ->
       List.length l
-      |> Printf.sprintf "voronoi takes exactly one placefile (%d given)"
+      |> Printf.sprintf "vorotree takes exactly one tree (%d given)"
       |> failwith
 
 end

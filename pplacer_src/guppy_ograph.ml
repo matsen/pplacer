@@ -14,7 +14,7 @@ object (self)
   @ super_mass#specl
 
   method desc = "finds the mass islands of one or more pqueries"
-  method usage = "usage: ograph [options] placefile[s]"
+  method usage = "usage: ograph [options] placefile"
 
   method private placefile_action = function
     | [pr] ->

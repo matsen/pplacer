@@ -58,7 +58,8 @@ let add_listly k v m =
 (* given a list of pqueries, we round them, then cluster the pqueries which are
  * identical after the rounding step. *)
 let round_pquery_list cutoff sig_figs pql =
-  assert(sig_figs > 0);
+  if sig_figs < 0 then
+    invalid_arg "round_pquery_list";
   let multiplier = match sig_figs with
     | 0 -> None
     | f -> Some (int_pow 10. f)

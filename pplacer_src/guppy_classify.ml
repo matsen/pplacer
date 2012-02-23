@@ -114,6 +114,7 @@ object (self)
   method specl =
     super_refpkg#specl
   @ super_sqlite#specl
+  @ super_tabular#specl
   @ [
     toggle_flag use_pp;
     toggle_flag mrca_stats;
@@ -251,16 +252,13 @@ object (self)
         end;
 
       else
-        let prn = Placerun.get_name pr in
-        let ch =
-          prn ^ ".class" ^ (if fv as_csv then ".csv" else ".tab")
-            |> open_out
+        let prn = Placerun.get_name pr
         and rows = ref [] in
         (fun () ->
           !rows
             |> List.cons ["name"; "desired_rank"; "rank";
                           "tax_id"; "likelihood"; "origin"]
-            |> self#write_ll_tab ~ch),
+            |> self#write_ll_tab),
         (fun pq rank_map ->
           classif_strll td pq rank_map
             |> List.map (flip List.append [prn])

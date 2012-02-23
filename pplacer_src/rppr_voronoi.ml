@@ -29,7 +29,7 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let weighting, criterion = self#mass_opts
-      and gt = Placerun.get_ref_tree pr
+      and gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
       and leaf_mass_fract = fv leaf_mass
       and _, decor_tree = self#get_rpo_and_tree pr in
       if 0. > leaf_mass_fract || leaf_mass_fract > 1. then
