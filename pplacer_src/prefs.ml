@@ -273,7 +273,8 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Split query alignment into the specified number of groups.";
 "--always-refine", Arg.Set prefs.always_refine,
 "Always refine the model before placing.";
-"--sim-query-prefix", Arg.Set_string prefs.sim_query_prefix, "";
+"--sim-query-prefix", Arg.Set_string prefs.sim_query_prefix,
+"Place the pre-masked reference sequences onto the tree, then save those placements with this prefix.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

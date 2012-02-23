@@ -753,24 +753,23 @@ let run_file prefs query_fname =
         |> Enum.map (fun (n, _) -> n, "query")
         |> StringMap.of_enum
         |> StringMap.union split_map
+      and prefix = Printf.sprintf "%s/%s%s"
+        (Prefs.out_dir prefs)
+        (Prefs.sim_query_prefix prefs)
+        query_bname
       in
+      Refpkg.get_seqinfom rp
+        |> StringMap.enum
+        |> Enum.map
+            (fun (k, {Tax_seqinfo.tax_id}) -> [k; Tax_id.to_string tax_id])
+        |> List.of_enum
+        |> Csv.save (prefix ^ ".csv");
       fun pr ->
         let split_prs = Placerun.split split_map pr in
-        let prefix = Printf.sprintf "%s/%s%s"
-          (Prefs.out_dir prefs)
-          (Prefs.sim_query_prefix prefs)
-          query_bname
-        in
-        Refpkg.get_seqinfom rp
-          |> StringMap.enum
-          |> Enum.map
-              (fun (k, {Tax_seqinfo.tax_id}) -> [k; Tax_id.to_string tax_id])
-          |> List.of_enum
-          |> Csv.save (prefix ^ ".csv");
         let open StringMap.Exceptionless in
         find "query" split_prs |> Option.may placerun_cb;
         find "ref" split_prs
-        |> Option.may (Placerun_io.to_json_file (prefix ^ ".jplace"))
+          |> Option.may (Placerun_io.to_json_file (prefix ^ ".jplace"))
     end else placerun_cb in
     run_placements
       prefs rp query_list from_input_alignment query_bname placerun_cb
