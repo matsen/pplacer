@@ -134,3 +134,17 @@ let reroot tree root =
     |> List.rev
     |> List.reduce (fun (bi, btl) (ai, atl) -> ai, node bi btl :: atl)
     |> uncurry node
+
+let rec nodes_containing nodes = function
+  | Leaf _ -> nodes
+  | Node (i, subtrees) ->
+    let nodes' = List.fold_left
+      (nodes_containing nodes |- IntSet.union |> flip)
+      IntSet.empty
+      subtrees
+    in
+    if List.for_all (top_id |- flip IntSet.mem nodes') subtrees then
+      IntSet.add i nodes'
+    else
+      nodes'
+

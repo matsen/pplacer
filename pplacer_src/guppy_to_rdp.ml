@@ -31,7 +31,7 @@ object (self)
   method specl =
     super_output#specl
   @ super_refpkg#specl
-  @ [string_list_flag included_ranks;]
+  @ [delimited_list_flag included_ranks]
 
   method desc = "convert a reference package to a format RDP wants"
   method usage = "usage: to_rdp -c my.refpkg -o prefix"
@@ -40,8 +40,6 @@ object (self)
     let rp = self#get_rp in
     let tax = Refpkg.get_taxonomy rp in
     let included = fv included_ranks
-      |> List.map (flip String.nsplit ",")
-      |> List.flatten
       |> List.map (fun rk -> Array.findi ((=) rk) tax.Tax_taxonomy.rank_names)
       |> List.sort compare
     in
