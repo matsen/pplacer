@@ -208,7 +208,10 @@ object (self)
                likelihood
           FROM _bayes_base
                JOIN placement_classifications pc USING (placement_id, rank)
-         WHERE rank = pc.desired_rank;
+         WHERE rank = pc.desired_rank
+           AND likelihood > (SELECT val
+                               FROM params
+                              WHERE name = 'multiclass_min');
 
       CREATE VIEW %s
       AS
