@@ -454,6 +454,19 @@ let does_dominate sup inf =
   && sup.prox_mass <= inf.prox_mass
   && sup.wk_subtot <= inf.wk_subtot
 
+let empty_ilmap = List.make_compare Int.compare |> Map.create
+
+let hull_cull sols =
+  let sola = Array.of_list sols in
+  Array.map
+    (fun sol ->
+      sol.wk_subtot,
+      if sol.mv_dist = infinity then sol.cl_dist else sol.prox_mass)
+    sola
+  |> Cdd.extreme_vertices
+  |> Array.enum
+  |> Enum.map (Tuple3.first |- Array.get sola)
+
 (* a polymorphic map for keys of int, bool *)
 let empty_pairmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
 
@@ -469,19 +482,15 @@ let cull ?(verbose = false) sols =
     (fun solm sol ->
       incr count;
       let key = IntSet.cardinal sol.leaf_set, sol.mv_dist = infinity in
-      if Map.mem key solm then
-        let sols = Map.find key solm in
-        if List.exists (fun sup -> does_dominate sup sol) sols then
-          solm
-        else
-          sol :: (List.filter (fun inf -> not (does_dominate sol inf)) sols)
-          |> flip (Map.add key) solm
-      else
-        Map.add key [sol] solm)
+      Map.modify_def [] key (List.cons sol) solm)
     empty_pairmap
     sols
-  |> Map.values
-  |> Enum.map List.enum
+  |> Map.enum
+  |> Enum.map (function
+      | (_, true), sols ->
+        List.enum sols |> Enum.arg_min wk_subtot |> Enum.singleton
+      | _, ([] | [_] as sols) -> List.enum sols
+      | _, sols -> hull_cull sols)
   |> Enum.flatten
   |> List.of_enum
   |> if verbose then tap

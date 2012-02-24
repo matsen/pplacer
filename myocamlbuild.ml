@@ -203,9 +203,13 @@ let _ = dispatch begin function
         A"-cc"; A"/usr/bin/gcc";
         A"-ccopt"; A"-Wall";
         A"-ccopt"; A"-funroll-loops";
+        A"-ccopt"; A"-fnested-functions";
         A"-ccopt"; A"-O3";
         A"-ccopt"; A"-fPIC";
       ]);
+    dep ["compile"; "c"]
+      ["cdd_src/cdd.h"; "cdd_src/cddmp.h";
+       "cdd_src/cddtypes.h"; "cdd_src/setoper.h"];
 
     if not is_osx then
       flag ["link"; "ocaml"; "native"] (S[A"-cclib"; A"-lpthread"]);
@@ -214,11 +218,15 @@ let _ = dispatch begin function
     flag ["link"; "ocaml"; "byte"] (A"-custom");
 
     (* link with libpplacercside given c_pplacer tag *)
-    flag ["link"; "ocaml"; "c_pplacer"]
+    flag ["link"; "ocaml"; "c_pplacer"; "toplevel"]
       (S[A"-cclib"; A"-lpplacercside"; A"-cclib"; A"-Lpplacer_src"]);
+
+    flag ["link"; "ocaml"; "c_cdd"; "toplevel"]
+      (S[A"-cclib"; A"-lcdd"; A"-cclib"; A"-Lcdd_src"]);
 
     (* make libpplacercside when needed *)
     dep ["c_pplacer"] ["pplacer_src/libpplacercside.a"];
+    dep ["c_cdd"] ["cdd_src/libcdd.a"];
 
   | After_options ->
     setup_git_version ()
