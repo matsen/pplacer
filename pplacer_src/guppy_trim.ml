@@ -4,6 +4,17 @@ open Ppatteries
 
 module I = Mass_map.Indiv
 
+let translate_pendant_pql transm pql =
+  List.map
+    (let open Placement in
+     Pquery.apply_to_place_list
+       (List.map
+          (fun p ->
+            let loc_opt, bl_boost = IntMap.find p.location transm in
+            {p with location = Option.get loc_opt; distal_bl = 0.;
+              pendant_bl = bl_boost -. p.distal_bl +. p.pendant_bl})))
+    pql
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -15,6 +26,8 @@ object (self)
     (Formatted (0.001, "The minimum mass which must be on the path to a leaf to keep it. default: %g"))
   val discarded = flag "--discarded"
     (Needs_argument ("", "A file to write discarded pqueries to."))
+  val rewrite_discarded_mass = flag "--rewrite-discarded-mass"
+    (Plain (false, "Move placements which were on discarded leaves to the nearest non-discarded node."))
 
   method specl =
     super_mass#specl
@@ -22,6 +35,7 @@ object (self)
   @ [
     float_flag min_path_mass;
     string_flag discarded;
+    toggle_flag rewrite_discarded_mass;
   ]
 
   method desc = "trims placefiles down to only containing an informative subset of the mass"
@@ -37,21 +51,32 @@ object (self)
       |> Mass_map.Pre.of_pquery_list weighting criterion
       |> Mass_map.Indiv.of_pre
       |> IntMap.map (List.fold_left (fun accum {I.mass} -> accum +. mass) 0.)
-    and min_mass = fv min_path_mass in
+    and min_mass = fv min_path_mass
+    and bl = Gtree.get_bl gt in
     let rec aux mass_above t =
       let open Stree in
       let i = top_id t in
       let mass_above' = mass_above +. IntMap.get i 0. mass in
       match t with
-        | Leaf _ when mass_above' >= min_mass -> Some t
-        | Leaf _ -> None
+        | Leaf _ when mass_above' >= min_mass -> Some t, IntMap.empty
+        | Leaf _ -> None, IntMap.singleton i (None, bl i)
         | Node (_, subtrees) ->
-          List.filter_map (aux mass_above') subtrees
-          |> junction List.is_empty (const None) (node i |- some)
+          match List.map (aux mass_above') subtrees
+            |> List.split
+            |> (List.filter_map identity *** List.reduce IntMap.union)
+            |> second (IntMap.map (second ((+.) (bl i))))
+          with
+            | [], transm -> None, transm
+            | subtrees', transm ->
+              Some (node i subtrees'),
+              IntMap.add i (None, bl i) transm
+                |> IntMap.map (first (function None -> Some i | x -> x))
     in
-    let gt', transm = Gtree.get_stree gt
-      |> aux 0.
-      |> Option.get
+    let st', pre_transm = Gtree.get_stree gt |> aux 0. in
+    let pql = if not (fv rewrite_discarded_mass) then pql else (* ... *)
+      translate_pendant_pql pre_transm pql
+    in
+    let gt', transm = Option.get st'
       |> Gtree.set_stree gt
       |> Newick_gtree.consolidate
     and discarded_reads = RefList.empty () in
