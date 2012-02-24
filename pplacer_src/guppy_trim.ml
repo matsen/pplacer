@@ -9,10 +9,12 @@ let translate_pendant_pql transm pql =
     (let open Placement in
      Pquery.apply_to_place_list
        (List.map
-          (fun p ->
-            let loc_opt, bl_boost = IntMap.find p.location transm in
-            {p with location = Option.get loc_opt; distal_bl = 0.;
-              pendant_bl = bl_boost -. p.distal_bl +. p.pendant_bl})))
+          (fun p -> match IntMap.Exceptionless.find p.location transm with
+            | None -> p
+            | Some (None, _) -> invalid_arg "translate_pendant_bl"
+            | Some (Some location, bl_boost) ->
+              {p with location; distal_bl = 0.;
+                pendant_bl = bl_boost -. p.distal_bl +. p.pendant_bl})))
     pql
 
 class cmd () =
@@ -43,6 +45,7 @@ object (self)
 
   method private placefile_action prl =
     let gt = Mokaphy_common.list_get_same_tree prl
+      |> Newick_gtree.add_zero_root_bl
     and weighting, criterion = self#mass_opts in
     let pql = List.map (Placerun.unitize |- Placerun.get_pqueries) prl
       |> List.flatten
@@ -64,13 +67,14 @@ object (self)
           match List.map (aux mass_above') subtrees
             |> List.split
             |> (List.filter_map identity *** List.reduce IntMap.union)
-            |> second (IntMap.map (second ((+.) (bl i))))
           with
-            | [], transm -> None, transm
+            | [], transm ->
+              None,
+              IntMap.map (second ((+.) (bl i))) transm
+              |> IntMap.add i (None, bl i)
             | subtrees', transm ->
               Some (node i subtrees'),
-              IntMap.add i (None, bl i) transm
-                |> IntMap.map (first (function None -> Some i | x -> x))
+              IntMap.map (first (function None -> Some i | x -> x)) transm
     in
     let st', pre_transm = Gtree.get_stree gt |> aux 0. in
     let pql = if not (fv rewrite_discarded_mass) then pql else (* ... *)
