@@ -485,12 +485,10 @@ let cull ?(verbose = false) sols =
       Map.modify_def [] key (List.cons sol) solm)
     empty_pairmap
     sols
-  |> Map.enum
+  |> Map.values
   |> Enum.map (function
-      | (_, true), sols ->
-        List.enum sols |> Enum.arg_min wk_subtot |> Enum.singleton
-      | _, ([] | [_] as sols) -> List.enum sols
-      | _, sols -> hull_cull sols)
+      | ([] | [_] as sols) -> List.enum sols
+      | sols -> hull_cull sols)
   |> Enum.flatten
   |> List.of_enum
   |> if verbose then tap
