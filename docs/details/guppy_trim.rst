@@ -27,4 +27,4 @@ with the leaf set {a,d}, we would get the tree
 with the branch lengths induced by adding branch lengths along edges that are not bifurcating.
 
 This trimmed tree is then put in the placefile.
-Note that even though the tree is different than the one in the reference package, we have arranged things so that it's possible to use the same reference package with a trimmed tree.
+Note that even though the tree is different than the one in the reference package, we have arranged things so that it's possible to use reference package *C* with a tree that has been trimmed from *C*'s tree.
