@@ -67,7 +67,7 @@ let node_number x tok =
   Sparse.try_map int_of_string x tok "node numbers must be integers"
 let check_legacy tok =
   if !legacy_format then
-    Sparse.syntax_error tok "braced node numbers not allowed in legacy format"
+    Sparse.parse_error tok "braced node numbers not allowed in legacy format"
 let add_id_or_edge_label x tok =
   if !legacy_format then
     add_id (node_number x tok)
@@ -144,4 +144,4 @@ tree:
   | bare_tree EOF
       { Gtree.gtree $1.stree (combine $1.bark $1.my_bark) }
   | error EOF
-      { Sparse.syntax_error 1 "syntax error parsing" }
+      { Sparse.parse_error 1 "syntax error parsing" }

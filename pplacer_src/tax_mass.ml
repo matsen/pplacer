@@ -24,7 +24,7 @@ let pre root_id tax_id_of_place weighting criterion ti_imap pr =
                 Mass_map.Pre.loc =
                   (if ti=Tax_id.NoTax then root_id
                   else TaxIdMap.find ti revm);
-                distal_bl = 0.;
+                distal_bl = 0.; pendant_bl = 0.;
                 mass = criterion p;
               }
             with

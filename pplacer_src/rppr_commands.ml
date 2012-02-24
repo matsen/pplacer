@@ -11,5 +11,7 @@ let command_list () =
       "reroot", (fun () -> new Rppr_reroot.cmd ());
       "infer", (fun () -> new Rppr_infer.cmd ());
       "reclass", (fun () -> new Rppr_reclass.cmd ());
+      "prepsim", (fun () -> new Rppr_prepsim.cmd ());
+      "vorotree", (fun () -> new Rppr_vorotree.cmd ());
     ];
   ]

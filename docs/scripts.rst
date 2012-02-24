@@ -25,14 +25,17 @@ installation directory is not writable.
 ``refpkg_align.py``
 ===================
 
-``refpkg_align.py`` performs operations using an alignment within a reference
-package.  The script can align an input sequence file to the reference
-alignment using ``cmalign`` or ``hmmalign``, search for sequences in a file that
-match an alignment using ``hmmsearch``, or simply extract the alignment from the
-reference package in the format of your choosing.
+``refpkg_align.py`` works with reference package alignments and alignment
+profiles, providing methods to align sequences to a reference package
+alignment, and extract an alignment from a reference package.
 
-``refpkg_align.py`` depends on both `BioPython <http://www.biopython.org/>`_
-and `Taxtastic <http://github.com/fhcrc/taxtastic>`_.
+``refpkg_align.py`` depends on `BioPython <http://www.biopython.org/>`_, as
+well as the external tools used for alignment: HMMER3_, Infernal_, and PyNAST_.
+
+
+.. _HMMER3: http://hmmer.janelia.org
+.. _Infernal: http://infernal.janelia.org
+.. _PyNAST: http://pynast.sourceforge.net
 
 List of subcommands
 -------------------
@@ -40,11 +43,16 @@ List of subcommands
 ``align``
 *********
 
-``align`` aligns input sequences to a reference package alignment. For packages
-built with Infernal, ``cmalign`` is used. For packages built using HMMER3,
-``hmmalign`` is used. By default, a :ref:`mask` is applied if it exists.
+``refpkg_align.py align`` aligns sequences to a reference package alignment for
+use with pplacer.  For reference packages built with Infernal_, ``cmalign`` is
+used for alignment. For packages built using HMMER3_, alignment is performed
+with ``hmmalign``. Reference packages lacking a ``profile`` entry are aligned
+using PyNAST_.  By default, an alignment :ref:`mask` is applied if it exists.
 
-The output is stored in stockholm format.
+The output format varies: Stockholm for Infernal- and HMMER-based reference
+packages, FASTA for all others.
+
+For Infernal-based reference packages, MPI may be used.
 
 ::
 
@@ -55,26 +63,28 @@ Options
 
 ::
 
-    positional arguments:
-      refpkg                Reference package directory
-      seqfile               Input file, in FASTA format.
-      outfile               Output file
-
-    optional arguments:
       -h, --help            show this help message and exit
       --align-opts OPTS     Alignment options, such as "--mapali $aln_sto". '$'
                             characters will need to be escaped if using template
                             variables. Available template variables are $aln_sto,
                             $profile. Defaults are as follows for the different
-                            profiles: (hmmer3: "--mapali $aln_sto") (infernal1:
-                            "-1 --hbanded --sub --dna")
-      --profile-version {infernal1mpi,hmmer3,infernal1}
-                            Profile version to use. [default: hmmer3]
+                            profiles: (PyNAST: "-l 150 -f /dev/null -g /dev/null")
+                            (INFERNAL: "-1 --hbanded --sub --dna")
+      --alignment-method {PyNAST,HMMER3,INFERNAL}
+                            Profile version to use. [default: Guess. PyNAST is
+                            used if a valid CM or HMM is not found in the
+                            reference package.]
       --no-mask             Do not trim the alignment to unmasked columns.
                             [default: apply mask if it exists]
       --debug               Enable debug output
       --verbose             Enable verbose output
 
+      MPI Options
+
+      --use-mpi             Use MPI [infernal only]
+      --mpi-arguments MPI_ARGUMENTS
+                            Arguments to pass to mpirun
+      --mpi-run MPI_RUN     Name of mpirun executable
 
 ``extract``
 ***********
@@ -101,52 +111,6 @@ Options
                             output format [default: stockholm]
       --no-mask             Do not apply mask to alignment [default: apply mask
                             if it exists]
-
-
-``search-align``
-****************
-
-``search-align`` searches input sequences for matches to reference alignment,
-aligning any high-scoring matches to reference alignment. By default, a
-:ref:`mask` is applied if it exists.
-
-The output is stored in stockholm format.
-
-.. note::
-    ``search-align`` is only available for reference packages created with HMMER3.
-
-::
-
-    usage: refpkg_align.py search-align [options] refpkg seqfile outfile
-
-Options
-^^^^^^^
-
-::
-
-    positional arguments:
-      refpkg                Reference package directory
-      seqfile               Input file, in FASTA format.
-      outfile               Output file
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      --search-opts OPTS    search options, such as "--notextw --noali -E 1e-2"
-                            Defaults are as follows for the different profiles:
-                            (hmmer3: "--notextw --noali")
-      --align-opts OPTS     Alignment options, such as "--mapali $aln_sto". '$'
-                            characters will need to be escaped if using template
-                            variables. Available template variables are $aln_sto,
-                            $profile. Defaults are as follows for the different
-                            profiles: (hmmer3: "--mapali $aln_sto") (infernal1:
-                            "-1 --hbanded --sub --dna")
-      --profile-version {infernal1mpi,hmmer3,infernal1}
-                            Profile version to use. [default: hmmer3]
-      --no-mask             Do not trim the alignment to unmasked columns.
-                            [default: apply mask if it exists]
-      --debug               Enable debug output
-      --verbose             Enable verbose output
-
 
 
 .. _mask:

@@ -192,6 +192,10 @@ object(self)
     if Refpkg.tax_equipped rp then Refpkg.get_tax_ref_tree rp
     else Decor_gtree.of_newick_gtree (Refpkg.get_ref_tree rp)
 
+  method private decor_ref_tree_from_placerunl prl =
+    self#check_placerunl prl;
+    List.hd prl |> self#get_rpo_and_tree |> snd
+
 end
 
 
@@ -239,7 +243,7 @@ object (self)
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for the weight."))
   val spread = flag "--point-mass"
-    (Plain (true, "Treat every placement as a point mass concentrated on the highest-weight placement."))
+    (Plain (true, "Treat every pquery as a point mass concentrated on the highest-weight placement."))
   method specl = [
     toggle_flag use_pp;
   ]
@@ -313,6 +317,7 @@ object
 
 end
 
+exception Invalid_abs_tot
 class fat_cmd () =
 object(self)
   inherit numbered_tree_cmd () as super_numbered_tree
@@ -332,7 +337,7 @@ object(self)
   (* Given an absolute total quantity, come up with a scaling which will make
    * that total. *)
   method private multiplier_of_abs_tot abs_tot =
-    assert(abs_tot > 0.);
+    if abs_tot <= 0. then raise Invalid_abs_tot;
     match fv width_multiplier with
     | 0. -> (fv total_width) /. abs_tot  (* not set manually *)
     | mw -> mw
@@ -458,8 +463,8 @@ object (self)
             trees)
         named_trees
     | File fname ->
-      let fname = fname ^ suffix in
       Visualization.trees_to_file
+        ~with_suffix:false
         self#fmt
         fname
         (List.map snd named_trees |> List.flatten)
@@ -475,4 +480,149 @@ object
 
   method private get_db =
     Sqlite3.db_open (fv sqlite_fname)
+end
+
+class splitify_cmd () =
+
+let tolerance = 1e-3
+and splitify x = x -. (1. -. x)
+and sgn = flip compare 0. |- float_of_int
+and arr_of_map default len m =
+  Array.init len (fun i -> IntMap.get i default m) in
+
+(* get the mass below the given edge, excluding that edge *)
+let below_mass_map edgem t =
+  let m = ref IntMap.empty in
+  let total =
+    Gtree.recur
+      (fun i below_massl ->
+        let below_tot = List.fold_left ( +. ) 0. below_massl in
+        m := IntMap.check_add i below_tot (!m);
+        (IntMap.get i 0. edgem) +. below_tot)
+      (fun i -> IntMap.get i 0. edgem)
+      t
+  in
+  assert(abs_float(1. -. total) < tolerance);
+  !m
+in
+
+object (self)
+  val kappa = flag "--kappa"
+    (Formatted (1., "Specify the exponent for scaling between weighted and unweighted splitification. default: %g"))
+  method specl = [float_flag kappa]
+
+  method private splitify_transform =
+    let kappa = fv kappa in
+    if kappa =~ 0. then
+      splitify |- sgn
+    else if kappa =~ 1. then
+      splitify
+    else if kappa < 0. then
+      failwith "--kappa must be a non-negative number"
+    else
+      fun x -> let y = splitify x in sgn y *. abs_float y ** kappa
+
+  (* Take a placerun and turn it into a vector which is indexed by the edges of
+   * the tree.
+   * Later we may cut the edge mass in half; right now we don't do anything with it. *)
+  method private splitify_placerun weighting criterion pr =
+    let preim = Mass_map.Pre.of_placerun weighting criterion pr
+    and t = Placerun.get_ref_tree pr
+    and splitify_fn = self#splitify_transform in
+    arr_of_map
+      (splitify_fn 0.)
+      (1+(Gtree.top_id t))
+      (IntMap.map
+         splitify_fn
+         (below_mass_map (Mass_map.By_edge.of_pre preim) t))
+
+end
+
+class voronoi_cmd () =
+object (self)
+  inherit tabular_cmd ~default_to_csv:true () as super_tabular
+  inherit numbered_tree_cmd () as super_numbered_tree
+
+  val verbose = flag "-v"
+    (Plain (false, "If specified, write progress output to stderr."))
+  val trimmed_tree_file = flag "-t"
+    (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
+  val leaf_cutoff = flag "--leaves"
+    (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
+  val algorithm = flag "--algorithm"
+    (Formatted ("full",
+                "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
+  val all_eclds_file = flag "--all-eclds-file"
+    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
+  val soln_log = flag "--log"
+    (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
+                          every internal node."))
+
+  method specl =
+    super_tabular#specl
+  @ super_numbered_tree#specl
+  @ [
+    toggle_flag verbose;
+    string_flag trimmed_tree_file;
+    int_flag leaf_cutoff;
+    string_flag algorithm;
+    string_flag all_eclds_file;
+    string_flag soln_log;
+  ]
+
+  method private perform_voronoi ?decor_tree gt mass_cb =
+      let alg = match fv algorithm with
+        | "greedy" -> (module Voronoi.Greedy: Voronoi.Alg)
+        | "full" -> (module Voronoi.Full: Voronoi.Alg)
+        | "force" -> (module Voronoi.Forced: Voronoi.Alg)
+        | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
+      and verbose = fv verbose
+      and leaf_cutoff = fv leaf_cutoff in
+      Voronoi.Full.csv_log :=
+        fvo soln_log
+          |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
+      let module Alg = (val alg: Voronoi.Alg) in
+      let diagram = Voronoi.of_gtree gt in
+      let mass = mass_cb diagram in
+      let solm = Alg.solve
+        ~strict:(fvo all_eclds_file |> Option.is_none)
+        ~verbose
+        gt
+        mass
+        leaf_cutoff
+      in
+      let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
+      let cut_leaves = gt
+        |> Gtree.leaf_ids
+        |> IntSet.of_list
+        |> flip IntSet.diff leaves
+      in
+
+      begin match fvo trimmed_tree_file with
+        | Some fname ->
+          decor_tree
+            |> Option.default (Decor_gtree.of_newick_gtree gt)
+            |> Decor_gtree.color_clades_above cut_leaves
+            |> self#maybe_numbered
+            |> Phyloxml.gtree_to_file fname
+        | None -> ()
+      end;
+
+      begin match fvo all_eclds_file with
+        | Some fname ->
+          IntMap.enum solm
+            |> Enum.map
+                (fun (c, {Voronoi.work}) ->
+                  [string_of_int c; Printf.sprintf "%g" work])
+            |> List.of_enum
+            |> Csv.save fname
+        | None -> ()
+      end;
+
+      cut_leaves
+        |> IntSet.enum
+        |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+        |> List.of_enum
+        |> self#write_ll_tab;
+
 end

@@ -190,7 +190,9 @@ let of_json_file fname =
 
   let ref_tree = Hashtbl.find json "tree"
     |> Jsontype.string
-    |> Newick_gtree.of_string ~legacy_format:(version = 1)
+    |> Newick_gtree.of_string
+        ~fname:(Printf.sprintf "the tree in %s" fname)
+        ~legacy_format:(version = 1)
   and fields = Hashtbl.find json "fields"
     |> Jsontype.array
     |> List.map

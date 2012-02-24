@@ -93,18 +93,19 @@ let check_string s =
     dprintf "warning: %d open parens and %d closed parens\n" n_open n_closed;
   ()
 
-let of_lexbuf ?(legacy_format = false) lexbuf =
+let of_lexbuf ?(legacy_format = false) ?fname lexbuf =
   Newick_parse_state.node_num := (-1);
   Newick_parse_state.legacy_format := legacy_format;
-  try
-    Newick_parser.tree Newick_lexer.token lexbuf
-  with
-  | Parsing.Parse_error -> failwith "couldn't parse tree!"
+  Sparse.wrap_of_fname_opt
+    fname
+    (Newick_parser.tree Newick_lexer.token)
+    lexbuf
 
-let of_string ?legacy_format s =
+let of_string ?legacy_format ?fname s =
   check_string s;
   try
     of_lexbuf
+      ?fname
       ?legacy_format
       (Lexing.from_string s)
   with
@@ -118,28 +119,43 @@ let of_file ?legacy_format fname =
       (File_parsing.string_list_of_file fname)
   with
     | [] -> failwith ("empty file in "^fname)
-    | [s] -> of_string ?legacy_format s
+    | [s] -> of_string ?legacy_format ~fname s
     | _ -> failwith ("expected a single tree on a single line in "^fname)
 
 let list_of_file fname =
-  List.map of_string (File_parsing.string_list_of_file fname)
+  List.map (of_string ~fname) (File_parsing.string_list_of_file fname)
 
-let add_zero_root_bl gt =
+let gen_add_zero_root_bl empty gt =
   let bm = Gtree.get_bark_map gt
   and i = Gtree.top_id gt in
-  let bark = Newick_bark.map_find_loose i bm in
+  let bark = IntMap.get i empty bm in
   let bark' = match bark#get_bl_opt with
     | None -> bark#set_bl 0.
     | Some _ -> bark
   in
   IntMap.add i bark' bm |> Gtree.set_bark_map gt
 
+let add_zero_root_bl =
+  gen_add_zero_root_bl
+    (new Newick_bark.newick_bark `Empty)
+
+(* Given a newick gtree, collapse all nodes with only one child, so that the
+ * resulting tree is always at least bifurcating. The result is also
+ * renumbered through Gtree.renumber. The translation map returned is similar
+ * to that returned by Gtree.renumber, except that it maps from the node
+ * number to a pair of (new node number, increased distal branch length). *)
 let consolidate gt =
   let gt = add_zero_root_bl gt in
   let bl = Gtree.get_bl gt in
   let open Stree in
   let rec aux parent = function
-    | Node (i, [t]) -> aux (Some ((i, bl i) :: Option.default [] parent)) t
+    | Node (i, [t]) ->
+      let ibl = bl i in
+      aux
+        (Some
+           ((i, ibl)
+            :: (Option.map_default (List.map (second ((+.) ibl))) [] parent)))
+        t
     | t ->
       let t', transm, barkm = match t with
         | Leaf _ -> t, IntMap.empty, IntMap.empty
@@ -154,13 +170,50 @@ let consolidate gt =
       in
       let i = top_id t' in
       let bark = Gtree.get_bark gt i in
-      let transm', bl' = List.fold_left
-        (fun (tma, bla) (j, jbl) -> IntMap.add j (i, bla) tma, bla +. jbl)
-        (IntMap.add i (i, 0.) transm, bl i)
-        (Option.default [] parent)
-      in
-      t', transm', IntMap.add i (bark#set_bl bl') barkm
+      t',
+      List.fold_left
+        (fun accum (j, l) -> IntMap.add j (i, l) accum)
+        (IntMap.add i (i, 0.) transm)
+        (Option.default [] parent),
+      IntMap.add
+        i
+        (bark#set_bl (bl i +. Option.map_default (List.last |- snd) 0. parent))
+        barkm
   in
   let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
   let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
   gt', IntMap.map (flip IntMap.find transm' |> first) transm
+
+let prune_to_pql should_prune ?(placement_transform = const identity) gt =
+  let open Stree in
+  let st = Gtree.get_stree gt
+  and bl = Gtree.get_bl gt
+  and name = Gtree.get_node_label gt in
+  let rec aux attachment_opt = function
+    | Leaf i when should_prune i ->
+      let loc, pend_bl = Option.get attachment_opt |> second ((+.) (bl i)) in
+      let pq = Pquery.make_ml_sorted
+        ~namlom:[name i, 1.]
+        ~seq:Pquery_io.no_seq_str
+        [Placement.make_ml loc ~ml_ratio:1. ~log_like:0. ~dist_bl:0. ~pend_bl
+         |> Placement.add_pp ~post_prob:1. ~marginal_prob:1.
+         |> placement_transform i]
+      in
+      None, [pq]
+    | Leaf _ as l -> Some l, []
+    | Node (i, subtrees) ->
+      let pruned = should_prune i in
+      let attachment_opt' = match attachment_opt with
+        | _ when not pruned -> Some (i, 0.)
+        | Some (loc, pend_bl) -> Some (loc, pend_bl +. bl i)
+        | None -> failwith "whole tree pruned"
+      in
+      List.fold_left
+        (fun (st_accum, pql_accum) t ->
+          let t_opt, pql = aux attachment_opt' t in
+          maybe_cons t_opt st_accum, List.append pql pql_accum)
+        ([], [])
+        subtrees
+      |> first (if pruned then const None else node i |- some)
+  in
+  aux None st |> first (Option.get |- Gtree.set_stree gt)

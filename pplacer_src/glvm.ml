@@ -15,6 +15,7 @@ sig
   val rates: t -> float array
   val refine: t -> int -> Newick_gtree.t ->
     Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> unit
+  val check: t -> Alignment.t -> unit
   val mask_sites: t -> bool array -> unit
   val write: unit IO.output -> t -> unit
 

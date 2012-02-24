@@ -15,14 +15,15 @@ let command_list () =
       "pca", (fun () -> new Guppy_pca.cmd ());
       "splitify", (fun () -> new Guppy_splitify.cmd ());
       "edpl", (fun () -> new Guppy_edpl.cmd ());
-      "pd", (fun () -> new Guppy_pd.cmd ());
-      "wpd", (fun () -> new Guppy_wpd.cmd ());
-      "entropy", (fun () -> new Guppy_entropy.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
+      "error", (fun () -> new Guppy_error.cmd ());
+      "fpd", (fun () -> new Guppy_fpd.cmd ());
     ];
 
     "classification", [
       "classify", (fun () -> new Guppy_classify.cmd ());
+      "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
+      "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
     ];
 
     "utilities", [
@@ -39,5 +40,6 @@ let command_list () =
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());
       "trim", (fun () -> new Guppy_trim.cmd ());
+      "ograph", (fun () -> new Guppy_ograph.cmd ());
     ];
   ]

@@ -58,6 +58,7 @@ object (self)
     super_mass#specl
     @ super_output#specl
     @ super_fat#specl
+    @ super_classic_viz#specl
 
   method desc = "makes one tree for each query sequence, showing uncertainty"
   method usage = "usage: sing [options] placefile[s]"

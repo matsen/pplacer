@@ -1,9 +1,24 @@
+1.1.alpha13
+===========
+
+ * Closed GH-225: Added `rppr vorotree`.
+
+
 1.1.alpha12
 ===========
 
+ * Added `guppy to_rdp` and `guppy classify_rdp`.
+ * Closed GH-113: Updated the `best_classification` and `multiclass` SQL views;
+   correspondingly changed the flags to `rppr prep_db`; added the
+   `placement_evidence` table for bayes classification.
+ * Closed GH-183: Added documentation for more functions.
  * Closed GH-189: Added `guppy pentropy`.
+ * Closed GH-191: Added -m to `guppy redup`; bumped the jplace format version
+   to 3 with the ability to give each name for a pquery a different mass.
  * Closed GH-192: Added `rppr infer`.
  * Closed GH-193: Added `rppr reclass`.
+ * Closed GH-194: Added a `mass` column to `placement_names` to parallel new
+   features in the jplace format.
  * Closed GH-195: Added a --groups flag to pplacer for placing metagenomic
    sequences onto trees built from very wide alignments.
  * Closed GH-196: Added code to pplacer to better handle errors raised when
@@ -13,8 +28,27 @@
    entropy calculation.
  * Closed GH-200: Added --discard-below to `guppy {islands,compress}`.
  * Closed GH-201: Added a setup.py file to the scripts directory.
+ * Closed GH-202: Added `rppr prepsim`; added --include-pendant to
+   `guppy diplac`.
  * Closed GH-204: Added more columns to `rppr reclass`.
+ * Closed GH-205: Added `guppy error`.
  * Closed GH-206: Updated some pplacer documentation.
+ * Closed GH-207: Added CSV output to `guppy edpl`.
+ * Closed GH-208: Fixed the -o flag to reflect the actual file written to for
+   `guppy {sing,tog,edpl}`.
+ * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
+   alignment had a different number of sites from the refpkg; added
+   --always-refine to pplacer.
+ * Closed GH-210: Merged `guppy {pd,wpd,entropy}` into `guppy fpd`.
+ * Closed GH-212: Changed parsing error messages to be more specific.
+ * Closed GH-213: Added PyNAST support to refpkg_align.py.
+ * Closed GH-214: Added `guppy ograph`.
+ * Closed GH-218: Added --split-csv to `guppy merge`.
+ * Closed GH-219: Fixed some guppy commands which needed a zero root branch
+   length.
+ * Closed GH-220: Added error messages for some exceptions; fixed
+   `guppy rarefact`.
+ * Closed GH-222: Added a -c flag to `guppy bary`.
 
 
 1.1.alpha11

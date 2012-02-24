@@ -120,6 +120,9 @@ let merge_two pq pq' =
 let merge_into pq pql = List.fold_left merge_two pq pql
 let merge pql = List.reduce merge_two pql
 
+(* From a translation map produced by Newick_gtree.consolidate and a list of
+ * pqueries, renumber and boost the location of each placement in the pqueries
+ * according to the translation map. *)
 let translate_pql transm pql =
   List.map
     (let open Placement in

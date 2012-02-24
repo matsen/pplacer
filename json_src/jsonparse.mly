@@ -101,4 +101,4 @@ parse:
     value EOF
       { $1 }
   | error EOF
-      { Sparse.syntax_error 1 "syntax error parsing" }
+      { Sparse.parse_error 1 "syntax error parsing" }

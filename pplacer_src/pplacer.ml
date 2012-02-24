@@ -13,7 +13,7 @@ let parse_args () =
 
 
 let () =
-  if not !Sys.interactive then begin Sparse.error_wrap (fun () ->
+  if not !Sys.interactive then begin exn_wrap (fun () ->
     let (files, prefs) = parse_args () in
     if Prefs.version prefs then begin
       print_endline Version.version;

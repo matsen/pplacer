@@ -2,7 +2,7 @@ Makes
 
 For example, given a tree like so::
 
-((A:2[0],B:9[1]):7[2],C:5[3],D:1[4]):0[5];
+((A:2{0},B:9{1}):7{2},C:5{3},D:1{4}):0{5};
 
 and a CSV line::
 

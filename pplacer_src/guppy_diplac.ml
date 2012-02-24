@@ -14,14 +14,21 @@ object (self)
     (Needs_argument ("min distance", "Specify the minimum distance to leaves to report"))
   val max_reported = flag "--max-matches"
     (Needs_argument ("N", "Only report the deepest N placements"))
+  val include_pendant = flag "--include-pendant"
+    (Plain (false, "Include pendant branch lengths in distance calculations."))
 
   method specl = super_mass#specl @ [
     float_flag max_dist;
-    int_flag max_reported
+    int_flag max_reported;
+    toggle_flag include_pendant;
   ] @ super_tabular#specl
 
   method desc = "finds the most DIstant PLACements from the leaves"
   method usage = "usage: diplac [options] placefile"
+
+  method private dist dist_fn p =
+    dist_fn p
+    |> (if fv include_pendant then (+.) (Placement.pendant_bl p) else identity)
 
   method private placefile_action = function
     | [pr] ->
@@ -32,7 +39,7 @@ object (self)
       let dist = Voronoi.placement_distance graph ~snipdist
       and best_placement = Pquery.best_place criterion in
       Placerun.get_pqueries pr
-      |> List.map (best_placement |- dist &&& Pquery.name)
+      |> List.map (best_placement |- self#dist dist &&& Pquery.name)
       |> List.sort (flip compare)
       |> List.enum
       |> (match fvo max_dist with

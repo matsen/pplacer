@@ -2,7 +2,7 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
-module TIAMR = AlgMap.AlgMapR (Tax_id.TaxIdMap)
+module TIAMR = AlgMapR (Tax_id.TaxIdMap)
 
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
  * the first time that the tax rank is less than or equal to rank *)
@@ -108,14 +108,18 @@ object (self)
     (Plain (false, "Print the number of placements just proximal to MRCAs."))
   val tax_identity = flag "--tax-median-identity-from"
     (Needs_argument ("", "Calculate the median identity for each sequence per-tax_id from the specified alignment."))
+  val mrca_class = flag "--mrca-class"
+    (Plain (false, "Classify against a placefile that was generated with MRCA classification"))
 
   method specl =
     super_refpkg#specl
   @ super_sqlite#specl
+  @ super_tabular#specl
   @ [
     toggle_flag use_pp;
     toggle_flag mrca_stats;
     string_flag tax_identity;
+    toggle_flag mrca_class;
   ]
 
   method desc =
@@ -133,6 +137,7 @@ object (self)
     in
     let out_func pr =
       if sqlite_out then
+        let bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion in
         let prn = Placerun.get_name pr in
         let db = self#get_db in
         let close () =
@@ -152,6 +157,8 @@ object (self)
           "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
         and pp_st = Sqlite3.prepare db
           "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        and pe_st = Sqlite3.prepare db
+          "INSERT INTO placement_evidence VALUES (?, ?, ?, ?)"
         in
 
         let tax_identity_func = match fvo tax_identity with
@@ -229,22 +236,29 @@ object (self)
                 | Some (_, denom) -> Sql.D.INT (Int64.of_int denom));
             |])
             (Pquery.place_list pq);
+          Array.iter
+            (fun (rank, ev, bf) -> Sql.bind_step_reset db pe_st [|
+              Sql.D.INT place_id;
+              Sql.D.TEXT rank;
+              Sql.D.FLOAT ev;
+              (match bf with
+                | None -> Sql.D.NULL
+                | Some bf -> Sql.D.FLOAT bf);
+            |])
+            (bayes_factors pq);
 
           tax_identity_func place_id pq;
 
         end;
 
       else
-        let prn = Placerun.get_name pr in
-        let ch =
-          prn ^ ".class" ^ (if fv as_csv then ".csv" else ".tab")
-            |> open_out
+        let prn = Placerun.get_name pr
         and rows = ref [] in
         (fun () ->
           !rows
             |> List.cons ["name"; "desired_rank"; "rank";
                           "tax_id"; "likelihood"; "origin"]
-            |> self#write_ll_tab ~ch),
+            |> self#write_ll_tab),
         (fun pq rank_map ->
           classif_strll td pq rank_map
             |> List.map (flip List.append [prn])

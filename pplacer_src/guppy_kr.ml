@@ -202,13 +202,12 @@ object (self)
       let (taxt, ti_imap) = Tax_gtree.of_refpkg_gen bl_of_rank rp in
       (Decor_gtree.to_newick_gtree taxt,
       Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap)
-    in
+    and gt = Mokaphy_common.list_get_same_tree prl |> Newick_gtree.add_zero_root_bl in
     (* here we make a list of uptris, which are to get printed *)
     let uptris =
       List.map
         uptri_of_t_pre_f
-        ([Mokaphy_common.list_get_same_tree prl,
-        Mass_map.Pre.of_placerun weighting criterion] @
+        ([gt, Mass_map.Pre.of_placerun weighting criterion] @
         (match tax_refpkgo with
         | None -> []
         | Some rp ->

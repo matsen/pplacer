@@ -34,8 +34,6 @@ let sline_of_match s =
 
 let tokenize_stockholm = Sparse.tokenize_string stockholm_regexp sline_of_match
 
-exception Parse_error of string
-
 module SM = MapsSets.StringMap
 type phase =
   | Needs_header
@@ -48,8 +46,8 @@ let parse tokens =
     (fun state tok ->
       match state, tok with
         | Needs_header, Header -> Needs_footer SM.empty
-        | Needs_header, _ -> raise (Parse_error "something before header")
-        | _, Header -> raise (Parse_error "header unexpected")
+        | Needs_header, _ -> Sparse.syntax_error "something before header"
+        | _, Header -> Sparse.syntax_error "header unexpected"
 
         | Needs_footer m, Alignment (name, seq) ->
           let seq = Str.global_replace gap_regexp "-" seq in
@@ -66,21 +64,21 @@ let parse tokens =
                       name
                       (String.length seq)
                       (String.length prev_seq)
-                    |> failwith
+                    |> Sparse.syntax_error
                 end;
                 (name, seq) :: l)
               m
               []
           in Found_footer l
         | Needs_footer m, _ -> Needs_footer m
-        | _, Footer -> raise (Parse_error "footer unexpected")
+        | _, Footer -> Sparse.syntax_error "footer unexpected"
 
-        | Found_footer _, _ -> raise (Parse_error "something after footer")
+        | Found_footer _, _ -> Sparse.syntax_error "something after footer"
     )
     Needs_header
     tokens
   in match res with
     | Found_footer l -> l
-    | _ -> raise (Parse_error "didn't reach footer by EOF")
+    | _ -> Sparse.syntax_error "didn't reach footer by EOF"
 
 let of_string, of_file = Sparse.gen_parsers tokenize_stockholm parse

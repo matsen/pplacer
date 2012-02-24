@@ -13,6 +13,7 @@ object (self)
   inherit heat_cmd () as super_heat
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
+  inherit splitify_cmd () as super_splitify
 
   val write_n = flag "--write-n"
     (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
@@ -22,8 +23,6 @@ object (self)
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
   val raw_eval = flag "--raw-eval"
     (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
-  val unweighted = flag "--unweighted"
-    (Plain (false, "Perform an unweighted splitify."))
 
   method specl =
     super_output#specl
@@ -34,8 +33,8 @@ object (self)
       int_flag write_n;
       toggle_flag scale;
       toggle_flag symmv;
-      toggle_flag unweighted;
     ]
+    @ super_splitify#specl
 
   method desc =
 "performs edge principal components"
@@ -47,12 +46,21 @@ object (self)
     and scale = fv scale
     and write_n = fv write_n
     and _, t = self#get_rpo_and_tree (List.hd prl)
-    and prefix = self#single_prefix ~requires_user_prefix:true ()
-    and splitify = Guppy_splitify.splitify_func_of_bool (fv unweighted) in
-    let data =
-      List.map
-        (Guppy_splitify.splitify_placerun splitify weighting criterion)
-        prl
+    and prefix = self#single_prefix ~requires_user_prefix:true () in
+    let data = List.map (self#splitify_placerun weighting criterion) prl in
+    let n_unique_rows = List.length (List.sort_unique compare data) in
+    if n_unique_rows <= 2 then
+      failwith(Printf.sprintf "You have only %d unique row(s) in your data \
+      after transformation. This is not enough to do edge PCA." n_unique_rows);
+    let write_n =
+      if n_unique_rows < write_n then begin
+        Printf.printf "You have only %d unique rows in your data after \
+          transformation. Restricting to this number of principal components.\n"
+          n_unique_rows;
+        n_unique_rows
+      end
+      else
+        write_n
     in
     let (eval, evect) =
       Pca.gen_pca ~use_raw_eval:(fv raw_eval)
