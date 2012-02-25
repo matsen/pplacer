@@ -17,6 +17,59 @@ let translate_pendant_pql transm pql =
                 pendant_bl = bl_boost -. p.distal_bl +. p.pendant_bl})))
     pql
 
+let trim min_mass rewrite_discarded_mass weighting criterion gt pql =
+  let mass = pql
+    |> Mass_map.Pre.of_pquery_list weighting criterion
+    |> Mass_map.Indiv.of_pre
+    |> IntMap.map (List.fold_left (fun accum {I.mass} -> accum +. mass) 0.)
+  and bl = Gtree.get_bl gt in
+  let rec aux mass_above t =
+    let open Stree in
+    let i = top_id t in
+    let mass_above' = mass_above +. IntMap.get i 0. mass in
+    match t with
+      | Leaf _ when mass_above' >= min_mass -> Some t, IntMap.empty
+      | Leaf _ -> None, IntMap.singleton i (None, bl i)
+      | Node (_, subtrees) ->
+        match List.map (aux mass_above') subtrees
+          |> List.split
+          |> (List.filter_map identity *** List.reduce IntMap.union)
+        with
+          | [], transm ->
+            None,
+            IntMap.map (second ((+.) (bl i))) transm
+            |> IntMap.add i (None, bl i)
+          | subtrees', transm ->
+            Some (node i subtrees'),
+            IntMap.map (first (function None -> Some i | x -> x)) transm
+  in
+  let st', pre_transm = Gtree.get_stree gt |> aux 0. in
+  let pql =
+    if not rewrite_discarded_mass then pql
+    else translate_pendant_pql pre_transm pql
+  in
+  let gt', transm = Option.get st'
+    |> Gtree.set_stree gt
+    |> Newick_gtree.consolidate
+  and discarded_reads = RefList.empty () in
+  let add_discarded = List.iter (RefList.add discarded_reads) in
+  List.filter_map
+    (fun pq ->
+      Pquery.place_list pq
+        |> List.filter_map
+            (fun p ->
+              if IntMap.mem (Placement.location p) transm
+              then Some p else None)
+        |> junction
+            List.is_empty
+            (fun _ -> add_discarded (Pquery.namel pq); None)
+            (fun place_list -> Some {pq with Pquery.place_list}))
+    pql
+  |> Pquery.translate_pql transm
+  |> List.map Pquery.renormalize_log_like
+  |> Placerun.make ~transm gt' "",
+  discarded_reads
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -47,60 +100,17 @@ object (self)
     let gt = Mokaphy_common.list_get_same_tree prl
       |> Newick_gtree.add_zero_root_bl
     and weighting, criterion = self#mass_opts in
-    let pql = List.map (Placerun.unitize |- Placerun.get_pqueries) prl
-      |> List.flatten
+    let pr, discarded_reads = prl
+    |> List.map (Placerun.unitize |- Placerun.get_pqueries)
+    |> List.flatten
+    |> trim
+        (fv min_path_mass)
+        (fv rewrite_discarded_mass)
+        weighting
+        criterion
+        gt
     in
-    let mass = pql
-      |> Mass_map.Pre.of_pquery_list weighting criterion
-      |> Mass_map.Indiv.of_pre
-      |> IntMap.map (List.fold_left (fun accum {I.mass} -> accum +. mass) 0.)
-    and min_mass = fv min_path_mass
-    and bl = Gtree.get_bl gt in
-    let rec aux mass_above t =
-      let open Stree in
-      let i = top_id t in
-      let mass_above' = mass_above +. IntMap.get i 0. mass in
-      match t with
-        | Leaf _ when mass_above' >= min_mass -> Some t, IntMap.empty
-        | Leaf _ -> None, IntMap.singleton i (None, bl i)
-        | Node (_, subtrees) ->
-          match List.map (aux mass_above') subtrees
-            |> List.split
-            |> (List.filter_map identity *** List.reduce IntMap.union)
-          with
-            | [], transm ->
-              None,
-              IntMap.map (second ((+.) (bl i))) transm
-              |> IntMap.add i (None, bl i)
-            | subtrees', transm ->
-              Some (node i subtrees'),
-              IntMap.map (first (function None -> Some i | x -> x)) transm
-    in
-    let st', pre_transm = Gtree.get_stree gt |> aux 0. in
-    let pql = if not (fv rewrite_discarded_mass) then pql else (* ... *)
-      translate_pendant_pql pre_transm pql
-    in
-    let gt', transm = Option.get st'
-      |> Gtree.set_stree gt
-      |> Newick_gtree.consolidate
-    and discarded_reads = RefList.empty () in
-    let add_discarded = List.iter (RefList.add discarded_reads) in
-    List.filter_map
-      (fun pq ->
-        Pquery.place_list pq
-        |> List.filter_map
-            (fun p ->
-              if IntMap.mem (Placement.location p) transm
-              then Some p else None)
-        |> junction
-            List.is_empty
-            (fun _ -> add_discarded (Pquery.namel pq); None)
-            (fun place_list -> Some {pq with Pquery.place_list}))
-      pql
-    |> Pquery.translate_pql transm
-    |> List.map Pquery.renormalize_log_like
-    |> Placerun.make ~transm gt' ""
-    |> self#write_placefile (self#single_file ());
+    self#write_placefile (self#single_file ()) pr;
     match fvo discarded with
       | Some fname -> RefList.enum discarded_reads |> File.write_lines fname
       | None when RefList.is_empty discarded_reads -> ()
