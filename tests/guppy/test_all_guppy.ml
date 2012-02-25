@@ -15,4 +15,5 @@ let suite = [
   "compress" >::: Test_compress.suite;
   "error" >::: Test_error.suite;
   "overlap" >::: Test_overlap.suite;
+  "trim" >::: Test_trim.suite;
 ]
