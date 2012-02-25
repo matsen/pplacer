@@ -1,0 +1,25 @@
+{"tree": "(:2{0},(:1{1},:1{2}):2{3}):0{4};", "placements":
+  [
+    {"p":
+      [[1, -1309.83, 0.710949502625, 0.5, 0.9],
+        [0, -1309.83, 0.289050497375, 1, 2.4]
+      ], "nm": [["A", 1]]
+    },
+    {"p":
+      [[2, -1309.83, 0.465209619762, 0.5, 0.9],
+        [0, -1309.83, 0.465209619762, 0.5, 0.9],
+        [3, -1309.83, 0.0695807604768, 1, 1.4]
+      ], "nm": [["preserve", 1]]
+    }
+  ], "metadata":
+  {"invocation":
+    "bin\/guppy trim --min-path-mass .1 tests\/data\/trim\/trim_in.jplace -o trimmed.jplace --rewrite-discarded-mass",
+    "transm":
+    [[3, 0, 0], [4, 0, 1], [6, 1, 0], [7, 2, 0], [8, 3, 0], [9, 3, 1],
+      [10, 4, 0]
+    ]
+  }, "version": 3, "fields":
+  ["edge_num", "likelihood", "like_weight_ratio", "distal_length",
+    "pendant_length"
+  ]
+}

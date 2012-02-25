@@ -1,0 +1,15 @@
+{"tree": "(((:1,:1):1,:1):1,(:1,(:1,:1):1):1);", "placements": [
+  {"p": [
+    [6, -1309.83, 0.95, 0.5, 0.9],
+    [1, -1309.83, 0.05, 0.5, 0.9]
+  ], "n": ["A"]},
+  {"p": [
+    [5, -1309.83, 0.1, 0.5, 0.9],
+    [7, -1309.83, 2, 0.5, 0.9],
+    [3, -1309.83, 2, 0.5, 0.9]
+  ], "n": ["preserve"]}
+ ],
+ "metadata": {"invocation": "by hand"},
+ "version": 2,
+ "fields": ["edge_num", "likelihood", "like_weight_ratio", "distal_length", "pendant_length"]
+}
