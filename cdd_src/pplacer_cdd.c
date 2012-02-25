@@ -83,7 +83,8 @@ static long set_first(const set_type s) {
   assert(0);
 }
 
-/* Returns ordered indices of rows in m, ordered first by m col 0 (desc), then
+/*
+ * Returns ordered indices of rows in m, ordered first by m col 0 (desc), then
  * col 1 (asc)
  * This gives vertices before rays, ordered by point on x axis.
  */
@@ -135,6 +136,9 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
   /* Determine output size by counting vertices (and omitting rays) */
   size_t vertex_count = count_vertices(generators);
 
+  /* Vertex count should always be positive for 1+ inequalities, as we're adding one to correspond to x>0 */
+  assert(vertex_count > 0);
+
   double* output = (double*)malloc(3*sizeof(double)*vertex_count);
   *output_size = 3*vertex_count;
   size_t* indices = sort_generators(generators);
@@ -144,7 +148,14 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
       assert(out_row < vertex_count);
       cur_vert_set = incidence->set[r];
 
-      if(i < vertex_count - 1) { // Not last vertex
+
+      if(vertex_count == 1 && i == 0) {
+        // First and only vertex. Result is just:
+        //    current_set \ {added_index}
+        // added_index is removed below.
+        set_initialize(&s, cur_vert_set[0]);
+        set_copy(s, cur_vert_set);
+      } else if(i < vertex_count - 1) { // Not the last vertex
         next_vert_set = incidence->set[indices[i+1]];
 
         /* Sets should be same size */
@@ -153,6 +164,7 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
         set_int(s, cur_vert_set, next_vert_set);
       } else { // Last vertex
         // Previous set instead of next
+        assert(i);
         prev_vert_set = incidence->set[indices[i-1]];
 
         // Sets should be same size
