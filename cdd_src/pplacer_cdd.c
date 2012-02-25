@@ -96,13 +96,14 @@ static size_t* sort_generators(dd_MatrixPtr m) {
     const size_t *ib = (const size_t *)b;
 
     d = *m->matrix[*ib][0] - *m->matrix[*ia][0];
-    if(d) {
-      return d;
-    } else {
+    if(!d) {
       // Sort by second column
-      return *m->matrix[*ia][1] - *m->matrix[*ib][1];
+      d = *m->matrix[*ia][1] - *m->matrix[*ib][1];
     }
-    /* integer comparatorison: returns negative if b > a
+    if(d < 0.0) return -1;
+    if(d > 0.0) return 1;
+    return 0;
+    /* integer compararison: returns negative if b > a
      * and positive if a > b */
   }
 
