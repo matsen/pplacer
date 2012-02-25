@@ -456,14 +456,15 @@ let does_dominate sup inf =
 
 let empty_ilmap = List.make_compare Int.compare |> Map.create
 
+let y_value sol = if sol.mv_dist = infinity then sol.cl_dist else sol.prox_mass
 let hull_cull sols =
-  let sola = Array.of_list sols in
-  Array.map
-    (fun sol ->
-      sol.wk_subtot,
-      if sol.mv_dist = infinity then sol.cl_dist else sol.prox_mass)
-    sola
-  |> Cdd.extreme_vertices
+  let keys, sola = List.map ((wk_subtot &&& y_value) &&& identity) sols
+    |> List.sort_unique (comparing fst)
+    |> List.split
+    |> (Array.of_list *** Array.of_list)
+  in
+  if Array.length sola < 2 then Array.enum sola else (* ... *)
+  Cdd.extreme_vertices keys
   |> Array.enum
   |> Enum.map (Tuple3.first |- Array.get sola)
 
@@ -486,9 +487,7 @@ let cull ?(verbose = false) sols =
     empty_pairmap
     sols
   |> Map.values
-  |> Enum.map (function
-      | ([] | [_] as sols) -> List.enum sols
-      | sols -> hull_cull sols)
+  |> Enum.map hull_cull
   |> Enum.flatten
   |> List.of_enum
   |> if verbose then tap
