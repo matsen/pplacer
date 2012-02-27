@@ -256,11 +256,9 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
         /* Remove added index for first item */
         if(!i) set_delelem(s, added_index);
 
-        if(set_card(s) == 0) {
-          set_write(cur_vert_set);
-        }
-
-        assert(set_card(s) == 1);
+        /* Set may have > 1 solution if ~identical slopes and intercepts due to
+         * rounding. */
+        /*assert(set_card(s) == 1);*/
 
         /* Only one item in the set */
         elem = set_first(s);
