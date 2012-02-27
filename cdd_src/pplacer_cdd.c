@@ -8,6 +8,7 @@
 #include <math.h>
 #include <float.h>
 
+#define EPS 1e-7
 
 #ifdef PPLACER_CDD_TEST
 /* Debugging functions */
@@ -394,9 +395,9 @@ int main(int argc, char* argv[]) {
   double* result = extreme_vertices(INPUT_MATRIX, ROWS, COLS, &result_size);
   assert(result_size == 9);
 
-  assert(result[0] <= DBL_MIN);
-  assert(result[1] <= DBL_MIN);
-  assert(result[2] <= DBL_MIN);
+  assert(abs(result[0]) < EPS);
+  assert(abs(result[1]) < EPS);
+  assert(abs(result[2]) < EPS);
 
   assert(result[3] == 1.0);
   assert(result[4] == 2.0);
