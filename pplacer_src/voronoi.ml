@@ -479,7 +479,7 @@ let cull ?(verbose = false) ?closest_leaf sols =
     flush_all ()
   end;
   let invalid_mv_dist = match closest_leaf with
-    | None -> const true
+    | None -> const false
     | Some cl -> fun sol -> sol.mv_dist < cl
   and count = ref 0 in
   Enum.fold
