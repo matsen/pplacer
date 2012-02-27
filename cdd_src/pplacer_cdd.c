@@ -153,83 +153,125 @@ static size_t* sort_generators(dd_MatrixPtr m) {
 }
 
 /*
- * Parse the output. Find the generators which are vertices (non-rays) add
- * their corresponding inequalities to an output set.
+ * Parse the generator output. Find the generators which are vertices
+ * (non-rays) add their corresponding inequalities to an output set.
  *
- * Returns the indexes of all inequalities that bound the polytope.
+ * Returns a matrix where each row contains the x-coordinate of the vertex,
+ * y-coordinate of the vertex, and 0-based index of the inequality which bounds
+ * the polytope to the right of the vertex. output_size is set to the total
+ * length of the ouptut.
  */
 static double* list_extreme_vertices(const dd_MatrixPtr generators,
     const dd_SetFamilyPtr incidence, const size_t nrows, long added_index,
     /*OUT*/size_t* output_size) {
+  assert(generators->rowsize > 0);
+  assert(generators->colsize > 2);
 
-  /* At most, all nrows are included in the hull */
   set_type cur_vert_set, next_vert_set, prev_vert_set, s;
   dd_rowrange i;
   long elem;
   size_t out_row = 0, r;
 
-  /* Determine output size by counting vertices (and omitting rays) */
+  /*
+   * Determine output size by counting vertices (and omitting rays)
+   *
+   * If The polytope has only one vertex, and that vertex is the origin, no
+   * vertices are returned - only rays.
+   */
   size_t vertex_count = count_vertices(generators);
-
-  /* Vertex count should always be positive for 1+ inequalities, as we're adding one to correspond to x>0 */
-  assert(vertex_count > 0);
-
-  double* output = (double*)malloc(3*sizeof(double)*vertex_count);
-  *output_size = 3*vertex_count;
+  *output_size = !vertex_count ? 3 : 3*vertex_count;
+  double* output = (double*)malloc(sizeof(double)*(*output_size));
   size_t* indices = sort_generators(generators);
-  for(i = 0; i < generators->rowsize; i++) {
-    r = indices[i];
-    if(is_vertex(generators->matrix[r][0])) {
-      assert(out_row < vertex_count);
+
+  assert(*output_size > 0);
+
+  /*
+   * One special case:
+   * cddlib doesn't report solution vertices containing only the origin.
+   * Solutions with the origin and additional points are reported.
+   */
+  if(!vertex_count) { // Origin-only solution = no vertices
+    assert(generators->rowsize == 2);
+    /* Find the first ray without added_index incident - this is the ray to the
+       right of the origin. */
+    for(i = 0; i < generators->rowsize; i++) {
+      r = indices[i];
       cur_vert_set = incidence->set[r];
 
+      if(set_member(added_index, cur_vert_set)) // Ray has added_index incident
+        continue;
 
-      if(vertex_count == 1 && i == 0) {
-        // First and only vertex. Result is just:
-        //    current_set \ {added_index}
-        // added_index is removed below.
-        set_initialize(&s, cur_vert_set[0]);
-        set_copy(s, cur_vert_set);
-      } else if(i < vertex_count - 1) { // Not the last vertex
-        next_vert_set = incidence->set[indices[i+1]];
+      assert(set_card(cur_vert_set) == 1);
 
-        /* Sets should be same size */
-        assert(cur_vert_set[0] == next_vert_set[0]);
-        set_initialize(&s, cur_vert_set[0]);
-        set_int(s, cur_vert_set, next_vert_set);
-      } else { // Last vertex
-        // Previous set instead of next
-        assert(i);
-        prev_vert_set = incidence->set[indices[i-1]];
-
-        // Sets should be same size
-        assert(cur_vert_set[0] == prev_vert_set[0]);
-        set_initialize(&s, cur_vert_set[0]);
-
-        // Diff, instead of intersection
-        set_diff(s, cur_vert_set, prev_vert_set);
-      }
-
-      /* Remove added index for first item */
-      if(!i) set_delelem(s, added_index);
-
+      set_initialize(&s, cur_vert_set[0]);
+      set_copy(s, cur_vert_set);
+      set_delelem(s, added_index);
       assert(set_card(s) == 1);
 
-      // Only one item in the set
-      elem = set_first(s);
-      set_free(s);
+      output[0] = 0.0;                        // x
+      output[1] = 0.0;                        // y
+      output[2] = (double)(set_first(s) - 1); // inequality index
+      break;
+    }
+  } else { // 1+ vertices
+    for(i = 0; i < generators->rowsize; i++) {
+      r = indices[i];
+      if(is_vertex(generators->matrix[r][0])) {
+        assert(out_row < vertex_count);
+        cur_vert_set = incidence->set[r];
 
-      /* Fill output row */
-      int base = out_row * 3;
-      output[base] = *generators->matrix[r][1];   // x
-      output[base+1] = *generators->matrix[r][2]; // y
-      output[base+2] = (double)(elem - 1);        // ineq index, converted to 0-base
+        if(vertex_count == 1 && i == 0) {
+          // First and only vertex. Result is just:
+          //    current_set \ {added_index}
+          // added_index is removed below.
+          set_initialize(&s, cur_vert_set[0]);
+          set_copy(s, cur_vert_set);
+        } else if(i < vertex_count - 1) { // Not the last vertex
+          next_vert_set = incidence->set[indices[i+1]];
 
-      out_row++;
-    } else {
-      assert(out_row == vertex_count);
+          /* Sets should be same size */
+          assert(cur_vert_set[0] == next_vert_set[0]);
+          set_initialize(&s, cur_vert_set[0]);
+          set_int(s, cur_vert_set, next_vert_set);
+        } else { // Last vertex
+          // Previous set instead of next
+          assert(i);
+          prev_vert_set = incidence->set[indices[i-1]];
+
+          // Sets should be same size
+          assert(cur_vert_set[0] == prev_vert_set[0]);
+          set_initialize(&s, cur_vert_set[0]);
+
+          // Diff, instead of intersection
+          set_diff(s, cur_vert_set, prev_vert_set);
+        }
+
+        /* Remove added index for first item */
+        if(!i) set_delelem(s, added_index);
+
+        if(set_card(s) == 0) {
+          set_write(cur_vert_set);
+        }
+
+        assert(set_card(s) == 1);
+
+        // Only one item in the set
+        elem = set_first(s);
+        set_free(s);
+
+        /* Fill output row */
+        int base = out_row * 3;
+        output[base] = *generators->matrix[r][1];   // x
+        output[base+1] = *generators->matrix[r][2]; // y
+        output[base+2] = (double)(elem - 1);        // ineq index, converted to 0-base
+
+        out_row++;
+      } else {
+        assert(out_row == vertex_count);
+      }
     }
   }
+
   free(indices);
 
   return output;
