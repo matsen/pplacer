@@ -17,7 +17,7 @@ static void dd_PrintMatrix(dd_Amatrix m, dd_rowrange rows, dd_colrange cols) {
   dd_colrange j;
   for(i = 0; i < rows; i++) {
     for(j = 0; j < cols; j++) {
-       printf("%5.3f\t", *m[i][j]);
+       printf("%e\t", *m[i][j]);
     }
     printf("\n");
   }
@@ -58,6 +58,9 @@ static dd_MatrixPtr init_ineq_doubles(const double* init_vals, int rows, int col
 
   /* Mark the representation as inequalities */
   m->representation = dd_Inequality;
+
+  /* Input types = reals */
+  m->numbtype = dd_Real;
   return m;
 }
 
