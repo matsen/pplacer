@@ -1,3 +1,5 @@
+/* cddlib-based solution pruning for `rppr voronoi` */
+
 #include "setoper.h"
 #include "cdd.h"
 #include <stdio.h>
@@ -34,32 +36,32 @@ void dd_PrintMatrixPtr(dd_MatrixPtr m) {
  * Caller must free returned matrix.
  */
 static dd_MatrixPtr init_ineq_doubles(const double* init_vals, int rows, int cols) {
-  /* For now, only 3-column inputs supported */
+  /* Only 3-column inputs supported */
   assert(cols == 3);
 
   dd_MatrixPtr m = dd_CreateMatrix(rows+1, cols);
   dd_rowrange i;
   dd_colrange j;
 
-  // Fill values
+  /* Fill values */
   for(i = 0; i < m->rowsize-1; i++) {
     for(j = 0; j < m->colsize; j++) {
       dd_set_d(m->matrix[i][j], init_vals[m->colsize*i+j]);
     }
   }
 
-  // Add a row constraining solution space x>=0
-  dd_set_d(m->matrix[rows][0], 0); // intercept
-  dd_set_d(m->matrix[rows][1], 1); // coef of x
-  dd_set_d(m->matrix[rows][2], 0); // coef of y
+  /* Add a row constraining solution space x>=0 */
+  dd_set_d(m->matrix[rows][0], 0); /* intercept */
+  dd_set_d(m->matrix[rows][1], 1); /* coef of x */
+  dd_set_d(m->matrix[rows][2], 0); /* coef of y */
 
-  // Mark the representation as inequalities
+  /* Mark the representation as inequalities */
   m->representation = dd_Inequality;
   return m;
 }
 
 static int is_vertex(const mytype i) {
-  // Vertices are 1, rays 0
+  /* Vertices are 1, rays 0 */
   return *i > dd_almostzero;
 }
 
@@ -85,7 +87,7 @@ static long set_first(const set_type s) {
       return elem;
     }
   }
-  assert(0); // empty set
+  assert(0); /* empty set */
 }
 
 /*
@@ -110,17 +112,17 @@ static int generator_row_cmp(const void *a, const void*b) {
   da = *(ia->row[0]);
   db = *(ib->row[0]);
 
-  // Compare first column - sort descending
-  if(db - da < 0.0) return -1; // da > db
-  if(db - da > 0.0) return 1;  // da < db
+  /* Compare first column - sort descending */
+  if(db - da < 0.0) return -1; /* da > db */
+  if(db - da > 0.0) return 1;  /* da < db */
 
-  // Sort by second column - ascending
+  /* Sort by second column - ascending */
   da = *(ia->row[1]);
   db = *(ib->row[1]);
   if(da - db < 0.0) return -1;
   if(da - db > 0.0) return 1;
 
-  // Tie
+  /* Tie */
   return 0;
 }
 
@@ -132,17 +134,17 @@ static int generator_row_cmp(const void *a, const void*b) {
  */
 static size_t* sort_generators(dd_MatrixPtr m) {
   dd_rowrange i;
-  // Create SortRows for performing ordering
+  /* Create SortRows for performing ordering */
   SortRow* rows = (SortRow*)malloc(sizeof(SortRow)*m->rowsize);
   for(i = 0; i < m->rowsize; i++) {
     rows[i].index = i;
     rows[i].row = m->matrix[i];
   }
 
-  // Sort
+  /* Sort */
   qsort(rows, m->rowsize, sizeof(SortRow), generator_row_cmp);
 
-  // Extract sorted indices
+  /* Extract sorted indices */
   size_t* result = (size_t*)malloc(sizeof(size_t)*m->rowsize);
   for(i = 0; i < m->rowsize; i++)
     result[i] = rows[i].index;
@@ -167,6 +169,7 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
   assert(generators->rowsize > 0);
   assert(generators->colsize > 2);
 
+  /* At most, all nrows are included in the hull */
   set_type cur_vert_set, next_vert_set, prev_vert_set, s;
   dd_rowrange i;
   long elem;
@@ -190,7 +193,7 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
    * cddlib doesn't report solution vertices containing only the origin.
    * Solutions with the origin and additional points are reported.
    */
-  if(!vertex_count) { // Origin-only solution = no vertices
+  if(!vertex_count) { /* Origin-only solution = no vertices */
     assert(generators->rowsize == 2);
     /* Find the first ray without added_index incident - this is the ray to the
        right of the origin. */
@@ -198,7 +201,7 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
       r = indices[i];
       cur_vert_set = incidence->set[r];
 
-      if(set_member(added_index, cur_vert_set)) // Ray has added_index incident
+      if(set_member(added_index, cur_vert_set)) /* Ray has added_index incident */
         continue;
 
       assert(set_card(cur_vert_set) == 1);
@@ -208,12 +211,12 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
       set_delelem(s, added_index);
       assert(set_card(s) == 1);
 
-      output[0] = 0.0;                        // x
-      output[1] = 0.0;                        // y
-      output[2] = (double)(set_first(s) - 1); // inequality index
+      output[0] = 0.0;                        /* x */
+      output[1] = 0.0;                        /* y */
+      output[2] = (double)(set_first(s) - 1); /* inequality index */
       break;
     }
-  } else { // 1+ vertices
+  } else { /* 1+ vertices */
     for(i = 0; i < generators->rowsize; i++) {
       r = indices[i];
       if(is_vertex(generators->matrix[r][0])) {
@@ -221,28 +224,28 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
         cur_vert_set = incidence->set[r];
 
         if(vertex_count == 1 && i == 0) {
-          // First and only vertex. Result is just:
-          //    current_set \ {added_index}
-          // added_index is removed below.
+          /* First and only vertex. Result is just: */
+          /*    current_set \ {added_index} */
+          /* added_index is removed below. */
           set_initialize(&s, cur_vert_set[0]);
           set_copy(s, cur_vert_set);
-        } else if(i < vertex_count - 1) { // Not the last vertex
+        } else if(i < vertex_count - 1) { /* Not the last vertex */
           next_vert_set = incidence->set[indices[i+1]];
 
           /* Sets should be same size */
           assert(cur_vert_set[0] == next_vert_set[0]);
           set_initialize(&s, cur_vert_set[0]);
           set_int(s, cur_vert_set, next_vert_set);
-        } else { // Last vertex
-          // Previous set instead of next
+        } else { /* Last vertex */
+          /* Previous set instead of next */
           assert(i);
           prev_vert_set = incidence->set[indices[i-1]];
 
-          // Sets should be same size
+          /* Sets should be same size */
           assert(cur_vert_set[0] == prev_vert_set[0]);
           set_initialize(&s, cur_vert_set[0]);
 
-          // Diff, instead of intersection
+          /* Diff, instead of intersection */
           set_diff(s, cur_vert_set, prev_vert_set);
         }
 
@@ -255,15 +258,15 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
 
         assert(set_card(s) == 1);
 
-        // Only one item in the set
+        /* Only one item in the set */
         elem = set_first(s);
         set_free(s);
 
         /* Fill output row */
         int base = out_row * 3;
-        output[base] = *generators->matrix[r][1];   // x
-        output[base+1] = *generators->matrix[r][2]; // y
-        output[base+2] = (double)(elem - 1);        // ineq index, converted to 0-base
+        output[base] = *generators->matrix[r][1];   /* x */
+        output[base+1] = *generators->matrix[r][2]; /* y */
+        output[base+2] = (double)(elem - 1);        /* ineq index, converted to 0-base */
 
         out_row++;
       } else {
@@ -297,7 +300,8 @@ double* extreme_vertices(const double* ineqs, const size_t nrows, const size_t c
   assert(cols == 3);
   assert(output_size != NULL);
 
-  /* Initialize library
+  /*
+   * Initialize library
    * TODO: Do we want to do this on every call?
    */
   dd_set_global_constants();
@@ -339,7 +343,7 @@ static dd_MatrixPtr init_matrix(const double* init_vals, int rows, int cols) {
   dd_rowrange i;
   dd_colrange j;
 
-  // Fill values
+  /* Fill values */
   for(i = 0; i < m->rowsize; i++) {
     for(j = 0; j < m->colsize; j++) {
       dd_set_d(m->matrix[i][j], init_vals[m->colsize*i+j]);
@@ -371,7 +375,7 @@ static void test_sort_generators() {
   free(sorted_indices);
 }
 
-// Test data
+/* Test data */
 const double INPUT_MATRIX[] = {
   0.0, 2.0, -1.0 ,
   1.0, 1.0, -1.0 ,
@@ -383,9 +387,9 @@ const double INPUT_MATRIX[] = {
 const int ROWS = 6;
 const int COLS = 3;
 
-// Run a simple test
+/* Run a simple test */
 int main(int argc, char* argv[]) {
-  // Init cdd
+  /* Init cdd */
   size_t result_size;
   double* result = extreme_vertices(INPUT_MATRIX, ROWS, COLS, &result_size);
   assert(result_size == 9);
