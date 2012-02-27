@@ -388,7 +388,7 @@ let all_dist_map all_leaves gt =
 
 (* from a tree, return a map from each node to a list of marks on the edge
  * above that node and a map from each node to the distance to the closest
- * leaf to that node. *)
+ * leaf proximal to that node. *)
 let mark_map gt =
   let distm = all_dist_map (Gtree.leaf_ids gt |> IntSet.of_list) gt
   and parents = Gtree.get_stree gt |> parent_map
@@ -473,15 +473,19 @@ let empty_pairmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
 
 (* cull solutions from an enum of solutions down to a list of strictly the
  * best solutions per leaf set cardinality. *)
-let cull ?(verbose = false) sols =
+let cull ?(verbose = false) ?closest_leaf sols =
   if verbose then begin
     Printf.eprintf "culling solutions";
     flush_all ()
   end;
-  let count = ref 0 in
+  let invalid_mv_dist = match closest_leaf with
+    | None -> const true
+    | Some cl -> fun sol -> sol.mv_dist < cl
+  and count = ref 0 in
   Enum.fold
     (fun solm sol ->
       incr count;
+      if invalid_mv_dist sol then solm else (* ... *)
       let key = IntSet.cardinal sol.leaf_set, sol.mv_dist = infinity in
       Map.modify_def [] key (List.cons sol) solm)
     empty_pairmap
@@ -597,17 +601,18 @@ let solve ?(verbose = false) gt mass n_leaves =
          IntSet.singleton i, infinity, 0., 0., 0.]
         |> List.map soln_of_tuple
       | Node (i, subtrees) ->
+        let closest_leaf = IntMap.find i cleafm in
         i,
         List.map aux subtrees
           |> combine_solutions ~verbose n_leaves
-          |> cull ~verbose
+          |> cull ~verbose ~closest_leaf
 
     in
     List.iter (csvrow i) solutions;
     if i = top_id then solutions else (* ... *)
     let marks = bubbles_of i
     and masses = IntMap.get i [] mass |> List.enum
-    and closest_leaf = IntMap.find i cleafm in
+    and node_closest_leaf = IntMap.find i cleafm in
     Enum.fold
       (fun (last_mark, solutions) mark ->
         let masses =
@@ -616,7 +621,8 @@ let solve ?(verbose = false) gt mass n_leaves =
         and bub_len = mark -. last_mark in
         let bub_mass = I.v_mass masses
         and wk_distal = I.work_moving_to masses last_mark
-        and wk_prox = I.work_moving_to masses mark in
+        and wk_prox = I.work_moving_to masses mark
+        and closest_leaf = node_closest_leaf -. mark in
         if verbose then begin
           Printf.eprintf "%d: %g (%g) -> %g %g %g %g"
             i mark last_mark bub_len bub_mass wk_distal wk_prox;
@@ -674,7 +680,7 @@ let solve ?(verbose = false) gt mass n_leaves =
           []
           solutions
         |> (if verbose then tap (fun _ -> Printf.eprintf " -> finished\n") else identity)
-        |> (if bub_mass > 0. then List.enum |- (cull ~verbose) else identity))
+        |> (if bub_mass > 0. then List.enum |- (cull ~verbose ~closest_leaf) else identity))
       (0., solutions)
       marks
     |> snd
