@@ -203,7 +203,6 @@ let _ = dispatch begin function
         A"-cc"; A"/usr/bin/gcc";
         A"-ccopt"; A"-Wall";
         A"-ccopt"; A"-funroll-loops";
-        A"-ccopt"; A"-fnested-functions";
         A"-ccopt"; A"-O3";
         A"-ccopt"; A"-fPIC";
       ]);

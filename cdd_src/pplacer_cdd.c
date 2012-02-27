@@ -6,6 +6,9 @@
 #include <math.h>
 #include <float.h>
 
+
+#ifdef PPLACER_CDD_TEST
+/* Debugging functions */
 static void dd_PrintMatrix(dd_Amatrix m, dd_rowrange rows, dd_colrange cols) {
   dd_rowrange i;
   dd_colrange j;
@@ -20,6 +23,7 @@ static void dd_PrintMatrix(dd_Amatrix m, dd_rowrange rows, dd_colrange cols) {
 void dd_PrintMatrixPtr(dd_MatrixPtr m) {
   dd_PrintMatrix(m->matrix, m->rowsize, m->colsize);
 }
+#endif
 
 /*
  * Create a dd_MatrixPtr, filled with values from init_vals.
@@ -55,6 +59,7 @@ static dd_MatrixPtr init_ineq_doubles(const double* init_vals, int rows, int col
 }
 
 static int is_vertex(const mytype i) {
+  // Vertices are 1, rays 0
   return *i > dd_almostzero;
 }
 
@@ -71,7 +76,7 @@ static size_t count_vertices(const dd_MatrixPtr generators) {
   return vertex_count;
 }
 
-/* Returns first item in s */
+/* Returns first item in s. s must be non-empty. */
 static long set_first(const set_type s) {
   long elem;
 
@@ -80,8 +85,45 @@ static long set_first(const set_type s) {
       return elem;
     }
   }
-  assert(0);
+  assert(0); // empty set
 }
+
+/*
+ * Functions for sorting generators.
+ *
+ * All assume a matrix with at least 2 columns.
+ */
+typedef struct {
+  size_t index;
+  dd_Arow row;
+} SortRow;
+
+/*
+ * Comparison function for qsort. Sorts by first column (desc), then second
+ * (asc).
+ */
+static int generator_row_cmp(const void *a, const void*b) {
+  const SortRow *ia = (const SortRow *)a;
+  const SortRow *ib = (const SortRow *)b;
+
+  double da, db;
+  da = *(ia->row[0]);
+  db = *(ib->row[0]);
+
+  // Compare first column - sort descending
+  if(db - da < 0.0) return -1; // da > db
+  if(db - da > 0.0) return 1;  // da < db
+
+  // Sort by second column - ascending
+  da = *(ia->row[1]);
+  db = *(ib->row[1]);
+  if(da - db < 0.0) return -1;
+  if(da - db > 0.0) return 1;
+
+  // Tie
+  return 0;
+}
+
 
 /*
  * Returns ordered indices of rows in m, ordered first by m col 0 (desc), then
@@ -89,33 +131,25 @@ static long set_first(const set_type s) {
  * This gives vertices before rays, ordered by point on x axis.
  */
 static size_t* sort_generators(dd_MatrixPtr m) {
-  /* Define comparator */
-  int cmp(const void *a, const void *b) {
-    double d;
-    const size_t *ia = (const size_t *)a; // casting pointer types
-    const size_t *ib = (const size_t *)b;
-
-    d = *m->matrix[*ib][0] - *m->matrix[*ia][0];
-    if(!d) {
-      // Sort by second column
-      d = *m->matrix[*ia][1] - *m->matrix[*ib][1];
-    }
-    if(d < 0.0) return -1;
-    if(d > 0.0) return 1;
-    return 0;
-    /* integer compararison: returns negative if b > a
-     * and positive if a > b */
+  dd_rowrange i;
+  // Create SortRows for performing ordering
+  SortRow* rows = (SortRow*)malloc(sizeof(SortRow)*m->rowsize);
+  for(i = 0; i < m->rowsize; i++) {
+    rows[i].index = i;
+    rows[i].row = m->matrix[i];
   }
 
-  size_t i;
-  size_t* ind = malloc(sizeof(size_t)*m->rowsize);
-
-  // Fill
-  for(i = 0; i < m-> rowsize; i++) ind[i] = i;
-
   // Sort
-  qsort(ind, m->rowsize, sizeof(size_t), cmp);
-  return ind;
+  qsort(rows, m->rowsize, sizeof(SortRow), generator_row_cmp);
+
+  // Extract sorted indices
+  size_t* result = (size_t*)malloc(sizeof(size_t)*m->rowsize);
+  for(i = 0; i < m->rowsize; i++)
+    result[i] = rows[i].index;
+
+  free(rows);
+
+  return result;
 }
 
 /*
@@ -277,7 +311,7 @@ static void test_sort_generators() {
     1.0, 1.0, 2.0,
     1.0, 0.0, 0.0,
     0.0, 0.0, -1.0,
-    0.0, 2.0, 1.0,
+    0.0, 0.2, 1.0,
     1.0, 2.0, 3.0 };
 
   const int rows = 5;
