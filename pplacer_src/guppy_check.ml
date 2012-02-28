@@ -23,8 +23,14 @@ object (self)
       let name = Pquery.name pq in
       List.iter
         (fun p ->
-          if p.distal_bl > bl p.location || p.distal_bl < 0. then
-            failwith (Printf.sprintf "invalid placement location in %s" name))
+          if p.distal_bl > bl p.location then
+            failwith
+              (Printf.sprintf "invalid placement location in %s: %g > %g"
+                 name p.distal_bl (bl p.location));
+          if p.distal_bl < 0. then
+            failwith
+              (Printf.sprintf "invalid placement location in %s: %g < 0"
+                 name p.distal_bl))
       (Pquery.place_list pq))
 
   method private placefile_action prl =
