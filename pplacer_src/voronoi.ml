@@ -457,9 +457,11 @@ let does_dominate sup inf =
 let empty_ilmap = List.make_compare Int.compare |> Map.create
 
 let y_value sol = if sol.mv_dist = infinity then sol.cl_dist else sol.prox_mass
+let sol_count = ref 0
 let hull_cull sols =
   let keys, sola = List.map ((wk_subtot &&& y_value) &&& identity) sols
-    |> List.sort_unique (comparing fst)
+    |> List.group (on fst (on snd approx_compare))
+    |> List.map (List.enum |- Enum.arg_min (fst |- fst))
     |> List.split
     |> (Array.of_list *** Array.of_list)
   in
@@ -473,19 +475,15 @@ let empty_pairmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
 
 (* cull solutions from an enum of solutions down to a list of strictly the
  * best solutions per leaf set cardinality. *)
-let cull ?(verbose = false) ?closest_leaf sols =
+let cull ?(verbose = false) sols =
   if verbose then begin
     Printf.eprintf "culling solutions";
     flush_all ()
   end;
-  let invalid_mv_dist = match closest_leaf with
-    | None -> const false
-    | Some cl -> fun sol -> sol.mv_dist < cl
-  and count = ref 0 in
+  let count = ref 0 in
   Enum.fold
     (fun solm sol ->
       incr count;
-      if invalid_mv_dist sol then solm else (* ... *)
       let key = IntSet.cardinal sol.leaf_set, sol.mv_dist = infinity in
       Map.modify_def [] key (List.cons sol) solm)
     empty_pairmap
@@ -584,7 +582,7 @@ let csvrow i sol = match !soln_csv_opt with
 
 (* solve a tree using the full algorithm. *)
 let solve ?(verbose = false) gt mass n_leaves =
-  let markm, cleafm = mark_map gt
+  let markm, _ = mark_map gt
   and mass = I.sort mass in
   let bubbles = collapse_marks gt mass markm
   and get_bl = Gtree.get_bl gt
@@ -601,18 +599,16 @@ let solve ?(verbose = false) gt mass n_leaves =
          IntSet.singleton i, infinity, 0., 0., 0.]
         |> List.map soln_of_tuple
       | Node (i, subtrees) ->
-        let closest_leaf = IntMap.find i cleafm in
         i,
         List.map aux subtrees
           |> combine_solutions ~verbose n_leaves
-          |> cull ~verbose ~closest_leaf
+          |> cull ~verbose
 
     in
     List.iter (csvrow i) solutions;
     if i = top_id then solutions else (* ... *)
     let marks = bubbles_of i
-    and masses = IntMap.get i [] mass |> List.enum
-    and node_closest_leaf = IntMap.find i cleafm in
+    and masses = IntMap.get i [] mass |> List.enum in
     Enum.fold
       (fun (last_mark, solutions) mark ->
         let masses =
@@ -621,8 +617,7 @@ let solve ?(verbose = false) gt mass n_leaves =
         and bub_len = mark -. last_mark in
         let bub_mass = I.v_mass masses
         and wk_distal = I.work_moving_to masses last_mark
-        and wk_prox = I.work_moving_to masses mark
-        and closest_leaf = node_closest_leaf -. mark in
+        and wk_prox = I.work_moving_to masses mark in
         if verbose then begin
           Printf.eprintf "%d: %g (%g) -> %g %g %g %g"
             i mark last_mark bub_len bub_mass wk_distal wk_prox;
@@ -642,13 +637,12 @@ let solve ?(verbose = false) gt mass n_leaves =
                       && wk_prox < wk_distal +. bub_mass *. sol.cl_dist
                    then
                       let mv_dist = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass) in
-                      if mv_dist > closest_leaf then None else
-                        Some {sol with
-                          mv_dist;
-                          cl_dist = sol.cl_dist +. bub_len;
-                          prox_mass = bub_mass;
-                          wk_subtot = sol.wk_subtot +. wk_prox;
-                        }
+                      Some {sol with
+                        mv_dist;
+                        cl_dist = sol.cl_dist +. bub_len;
+                        prox_mass = bub_mass;
+                        wk_subtot = sol.wk_subtot +. wk_prox;
+                      }
                    else None)
             in
             (* Filter and move solutions through bubbles. *)
@@ -680,7 +674,7 @@ let solve ?(verbose = false) gt mass n_leaves =
           []
           solutions
         |> (if verbose then tap (fun _ -> Printf.eprintf " -> finished\n") else identity)
-        |> (if bub_mass > 0. then List.enum |- (cull ~verbose ~closest_leaf) else identity))
+        |> (if bub_mass > 0. then List.enum |- (cull ~verbose) else identity))
       (0., solutions)
       marks
     |> snd

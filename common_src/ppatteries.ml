@@ -87,6 +87,9 @@ let (&&--) f g a b = f a b && g a b
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
+let approx_compare ?epsilon f1 f2 =
+  if approx_equal ?epsilon f1 f2 then 0 else compare f1 f2
+let (<~>) = approx_compare
 
 (* find the median of a sorted list. returns the left item if there are an even
  * number of items in the list. *)
@@ -597,6 +600,10 @@ end
 module EnumFuns = struct
 
   let n_cartesian_product ll =
+    if List.is_empty ll then
+      invalid_arg "n_cartesian_product: list-list empty";
+    if List.exists List.is_empty ll then
+      invalid_arg "n_cartesian_procuct: some list empty";
     let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
     let n = Array.length pool in
     let indices = Array.make n 0
