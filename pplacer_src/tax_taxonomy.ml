@@ -29,6 +29,9 @@ let get_rank_name td i =
   try td.rank_names.(i) with
   | Invalid_argument _ -> invalid_arg "Tax_taxonomy.get_rank_name"
 
+let get_rank_index td rk =
+  Array.findi ((=) rk) td.rank_names
+
 let get_n_ranks td = Array.length td.rank_names
 
 let get_tax_rank td ti =
