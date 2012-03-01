@@ -40,5 +40,6 @@ let command_list () =
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());
       "ograph", (fun () -> new Guppy_ograph.cmd ());
+      "nbc", (fun () -> new Guppy_nbc.cmd ());
     ];
   ]
