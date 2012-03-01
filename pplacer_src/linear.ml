@@ -59,4 +59,5 @@ external ten_statd_pairwise_prod : Gsl_vector.vector -> Tensor.tensor -> Tensor.
  * *)
 external ten_bounded_logdot : Tensor.tensor -> Tensor.tensor -> int -> int -> Gsl_vector.vector -> float = "ten_bounded_logdot_c"
 
-
+(* vec_pairwise_prod src x y *)
+external vec_pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> unit = "vec_pairwise_prod_c"

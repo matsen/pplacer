@@ -91,10 +91,11 @@ end
 module Classifier = struct
   type t = {
     pc: Preclassifier.base;
-    taxid_word_counts: (float, BA.float64_elt, BA.c_layout) BA2.t;
+    taxid_word_counts: Gsl_matrix.matrix;
+    boot_matrix: Gsl_matrix.matrix;
   }
 
-  let make c add float_of_x =
+  let make c ?(boot_rows = 100) add float_of_x =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
     and n = float_of_int (succ !(c.seq_count)) in
@@ -116,18 +117,48 @@ module Classifier = struct
         log (float_of_x m +. prior_counts.(j)) -. denom)
       BA.float64
       c.freq_table
-    in
-    {pc = c.base; taxid_word_counts}
+    and fill_boot_row vec =
+      Random.enum_int c.base.n_words
+        |> Enum.take (c.base.n_words / c.base.word_length)
+        |> Enum.iter
+            (fun i -> Gsl_vector.get vec i +. 1. |> Gsl_vector.set vec i)
+    and boot_matrix = Gsl_matrix.create boot_rows c.base.n_words in
+    0 --^ boot_rows
+      |> Enum.iter (fun i -> Gsl_matrix.row boot_matrix i |> fill_boot_row);
+    {pc = c.base; taxid_word_counts; boot_matrix}
 
-  let classify cf seq =
+  let classify_vec cf vec =
     let open Preclassifier in
-    let vec = Gsl_vector.create ~init:0. cf.pc.n_words in
+    Linear_utils.alloc_mat_vec_mul cf.taxid_word_counts vec
+    |> Gsl_vector.max_index
+    |> Array.get cf.pc.tax_ids
+
+  let count_seq cf seq =
+    let open Preclassifier in
+    let vec = Gsl_vector.create cf.pc.n_words in
     gen_count_by_seq
       cf.pc.word_length
       (fun i -> Gsl_vector.get vec i +. 1. |> Gsl_vector.set vec i)
       seq;
-    Linear_utils.alloc_mat_vec_mul cf.taxid_word_counts vec
-    |> Gsl_vector.max_index
-    |> Array.get cf.pc.tax_ids
+    vec
+
+  let classify cf seq =
+    count_seq cf seq |> classify_vec cf
+
+  let bootstrap cf seq =
+    let open Preclassifier in
+    let module TIM = Tax_id.TaxIdMap in
+    let seq_word_counts = count_seq cf seq in
+    let boot_rows, _ = Gsl_matrix.dims cf.boot_matrix in
+    let incr = 1. /. float_of_int boot_rows |> (+.) in
+    let booted_word_counts = Gsl_vector.create cf.pc.n_words in
+    0 --^ boot_rows
+    |> Enum.fold
+        (fun accum i ->
+          let boot_row = Gsl_matrix.row cf.boot_matrix i in
+          Linear.vec_pairwise_prod booted_word_counts boot_row seq_word_counts;
+          let ti = classify_vec cf booted_word_counts in
+          TIM.modify_def 0. ti incr accum)
+        TIM.empty
 
 end

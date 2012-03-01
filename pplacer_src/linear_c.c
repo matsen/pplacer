@@ -479,3 +479,15 @@ CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_va
   CAMLreturn(ml_ll_tot);
 }
 
+CAMLprim value vec_pairwise_prod_c(value dst_value, value x_value, value y_value)
+{
+  CAMLparam3(dst_value, x_value, y_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  int i;
+  for(i=0; i < Bigarray_val(x_value)->dim[0]; i++) {
+    dst[i] = x[i] * y[i];
+  }
+  CAMLreturn(Val_unit);
+}

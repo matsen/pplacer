@@ -18,6 +18,7 @@ end
 
 module Classifier: sig
   type t
-  val make: ('a, 'b) Preclassifier.t -> ('a -> 'a -> 'a) -> ('a -> float) -> t
+  val make: ('a, 'b) Preclassifier.t -> ?boot_rows:int -> ('a -> 'a -> 'a) -> ('a -> float) -> t
   val classify: t -> string -> Tax_id.t
+  val bootstrap: t -> string -> float Tax_id.TaxIdMap.t
 end
