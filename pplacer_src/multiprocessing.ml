@@ -273,6 +273,7 @@ let queue_of_list l =
   q
 
 let map ?(children = 4) ?progress_handler f l =
+  if children = 0 then List.map f l else (* ... *)
   let q = queue_of_list l in
   let children =
     List.map

@@ -1,6 +1,7 @@
 open Ppatteries
 
 module BA = Bigarray
+module BA1 = BA.Array1
 module BA2 = BA.Array2
 
 let bases = "ACGT"
@@ -96,8 +97,8 @@ end
 module Classifier = struct
   type t = {
     pc: Preclassifier.base;
-    taxid_word_counts: Gsl_matrix.matrix;
-    boot_matrix: Gsl_matrix.matrix;
+    taxid_word_counts: Matrix.matrix;
+    boot_matrix: (int, BA.int16_unsigned_elt, BA.c_layout) BA2.t;
     classify_vec: Gsl_vector.vector;
   }
 
@@ -124,32 +125,37 @@ module Classifier = struct
         log (float_of_x m +. prior_counts.(j)) -. denom)
       BA.float64
       c.freq_table
+    |> Matrix.rect_transpose
     and fill_boot_row vec =
       Random.enum_int c.base.n_words
         |> Enum.take (c.base.n_words / c.base.word_length)
         |> Enum.iter
-            (fun i -> Gsl_vector.get vec i +. 1. |> Gsl_vector.set vec i)
-    and boot_matrix = Gsl_matrix.create boot_rows c.base.n_words
+            (fun i -> BA1.get vec i |> succ |> BA1.set vec i)
+    and boot_matrix = BA2.create
+      BA.int16_unsigned
+      BA.c_layout
+      boot_rows
+      c.base.n_words
     and classify_vec = Gsl_vector.create n_taxids in
     0 --^ boot_rows
-      |> Enum.iter (fun i -> Gsl_matrix.row boot_matrix i |> fill_boot_row);
+      |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
   (* find the tax_id associated with a count vector *)
   let classify_vec cf vec =
     let open Preclassifier in
     let dest = cf.classify_vec in
-    Linear_utils.mat_vec_mul dest cf.taxid_word_counts vec;
-    Gsl_vector.max_index dest
-    |> Array.get cf.pc.tax_ids
+    Gsl_vector.set_zero dest;
+    Linear.float_mat_int_vec_mul dest cf.taxid_word_counts vec;
+    Gsl_vector.max_index dest |> Array.get cf.pc.tax_ids
 
   (* fill a vector with counts for a sequence *)
   let count_seq cf seq =
     let open Preclassifier in
-    let vec = Gsl_vector.create cf.pc.n_words in
+    let vec = BA1.create BA.int16_unsigned BA.c_layout cf.pc.n_words in
     gen_count_by_seq
       cf.pc.word_length
-      (fun i -> Gsl_vector.get vec i +. 1. |> Gsl_vector.set vec i)
+      (fun i -> BA1.get vec i |> succ |> BA1.set vec i)
       seq;
     vec
 
@@ -164,14 +170,17 @@ module Classifier = struct
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
     let seq_word_counts = count_seq cf seq in
-    let boot_rows, _ = Gsl_matrix.dims cf.boot_matrix in
-    let incr = 1. /. float_of_int boot_rows |> (+.) in
-    let booted_word_counts = Gsl_vector.create cf.pc.n_words in
+    let boot_rows = BA2.dim1 cf.boot_matrix in
+    let booted_word_counts = BA1.create
+      BA.int16_unsigned
+      BA.c_layout
+      cf.pc.n_words
+    and incr = 1. /. float_of_int boot_rows |> (+.) in
     0 --^ boot_rows
     |> Enum.fold
         (fun accum i ->
-          let boot_row = Gsl_matrix.row cf.boot_matrix i in
-          Linear.vec_pairwise_prod booted_word_counts boot_row seq_word_counts;
+          let boot_row = BA2.slice_left cf.boot_matrix i in
+          Linear.int_vec_pairwise_prod booted_word_counts boot_row seq_word_counts;
           let ti = classify_vec cf booted_word_counts in
           TIM.modify_def 0. ti incr accum)
         TIM.empty
