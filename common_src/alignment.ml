@@ -224,6 +224,8 @@ let identity s1 s2 =
 
 let informative = function '?' | '-' -> false | _ -> true
 
+let ungap = String.filter informative
+
 let span s =
   let first = ref None
   and last = ref None in
