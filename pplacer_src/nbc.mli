@@ -2,7 +2,6 @@ exception Invalid_base of char
 
 val bases: string
 val informative: char -> bool
-val filter_informative: string -> string
 val word_to_int: string -> int
 val int_to_word: ?word_length:int -> int -> string
 

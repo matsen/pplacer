@@ -9,7 +9,8 @@ let informative = function
   | 'A' | 'C' | 'G' | 'T' -> true
   | _ -> false
 
-let filter_informative = String.filter informative
+let word_uninformative s =
+  String.enum s |> Enum.for_all informative |> not
 
 exception Invalid_base of char
 
@@ -38,10 +39,11 @@ let int_to_word ?word_length i =
 let max_word_length =
   log (float_of_int max_int) /. log 4. |> int_of_float |> pred
 
+(* generalized count something by words in a sequence *)
 let gen_count_by_seq word_length modify seq =
   0 -- (String.length seq - word_length)
   |> Enum.map (flip (String.sub seq) word_length)
-  |> Enum.iter (word_to_int |- modify)
+  |> Enum.iter (junction word_uninformative (const ()) (word_to_int |- modify))
 
 (* the thing that accumulates reference sequences before classification *)
 module Preclassifier = struct
@@ -59,6 +61,7 @@ module Preclassifier = struct
 
   exception Tax_id_not_found of Tax_id.t
 
+  (* make a preclassifier, given kind, word_length, and tax_ids *)
   let make kind word_length tax_ids =
     if word_length > max_word_length then
       failwith
@@ -71,11 +74,13 @@ module Preclassifier = struct
     and seq_count = ref 0 in
     {base = {word_length; n_words; tax_ids}; taxid_counts; freq_table; seq_count}
 
+  (* find the index of a tax_id in the tax_ids array *)
   let tax_id_idx c tid =
     try
       Array.findi ((=) tid) c.base.tax_ids
     with Not_found -> raise (Tax_id_not_found tid)
 
+  (* add a sequence to the counts for a particular tax_id *)
   let add_seq c succ tax_id seq =
     let i = tax_id_idx c tax_id in
     incr c.seq_count;
@@ -93,8 +98,10 @@ module Classifier = struct
     pc: Preclassifier.base;
     taxid_word_counts: Gsl_matrix.matrix;
     boot_matrix: Gsl_matrix.matrix;
+    classify_vec: Gsl_vector.vector;
   }
 
+  (* make a classifier from a preclassifier *)
   let make c ?(boot_rows = 100) add float_of_x =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
@@ -122,17 +129,21 @@ module Classifier = struct
         |> Enum.take (c.base.n_words / c.base.word_length)
         |> Enum.iter
             (fun i -> Gsl_vector.get vec i +. 1. |> Gsl_vector.set vec i)
-    and boot_matrix = Gsl_matrix.create boot_rows c.base.n_words in
+    and boot_matrix = Gsl_matrix.create boot_rows c.base.n_words
+    and classify_vec = Gsl_vector.create n_taxids in
     0 --^ boot_rows
       |> Enum.iter (fun i -> Gsl_matrix.row boot_matrix i |> fill_boot_row);
-    {pc = c.base; taxid_word_counts; boot_matrix}
+    {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
+  (* find the tax_id associated with a count vector *)
   let classify_vec cf vec =
     let open Preclassifier in
-    Linear_utils.alloc_mat_vec_mul cf.taxid_word_counts vec
-    |> Gsl_vector.max_index
+    let dest = cf.classify_vec in
+    Linear_utils.mat_vec_mul dest cf.taxid_word_counts vec;
+    Gsl_vector.max_index dest
     |> Array.get cf.pc.tax_ids
 
+  (* fill a vector with counts for a sequence *)
   let count_seq cf seq =
     let open Preclassifier in
     let vec = Gsl_vector.create cf.pc.n_words in
@@ -142,9 +153,13 @@ module Classifier = struct
       seq;
     vec
 
+  (* classify a sequence, returning a tax_id *)
   let classify cf seq =
     count_seq cf seq |> classify_vec cf
 
+  (* bootstrap a sequence, returning a map from tax_ids to a float on the range
+   * (0, 1] representing the percentage of bootstrappings done that produced a
+   * particular tax_id. *)
   let bootstrap cf seq =
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
