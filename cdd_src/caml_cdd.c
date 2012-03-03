@@ -1,3 +1,4 @@
+#include <string.h>
 #include <caml/bigarray.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
@@ -14,7 +15,8 @@ CAMLprim value caml_extreme_vertices(value vertices)
   int ncols = (Bigarray_val(vertices)->dim[1]);
   size_t res_size;
   double *res = extreme_vertices(vert_arr, nrows, ncols, &res_size);
-  value res_bigarr = alloc_bigarray_dims(BIGARRAY_FLOAT64 | BIGARRAY_C_LAYOUT, 2, res, res_size / 3, 3);
+  value res_bigarr = alloc_bigarray_dims(BIGARRAY_FLOAT64 | BIGARRAY_C_LAYOUT, 2, NULL, res_size / 3, 3);
+  memcpy(Data_bigarray_val(res_bigarr), res, sizeof *res * res_size);
   free(res);
   CAMLreturn(res_bigarr);
 }

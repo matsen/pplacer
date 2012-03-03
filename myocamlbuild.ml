@@ -206,6 +206,13 @@ let _ = dispatch begin function
         A"-ccopt"; A"-O3";
         A"-ccopt"; A"-fPIC";
       ]);
+
+    flag ["compile"; "c"; "debug"]
+      (S[
+        A"-ccopt"; A"-O0";
+        A"-ccopt"; A"-g";
+      ]);
+
     dep ["compile"; "c"]
       ["cdd_src/cdd.h"; "cdd_src/cddmp.h";
        "cdd_src/cddtypes.h"; "cdd_src/setoper.h"];
