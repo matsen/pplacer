@@ -218,6 +218,7 @@ static double* list_extreme_vertices(const dd_MatrixPtr generators,
       output[0] = 0.0;                        /* x */
       output[1] = 0.0;                        /* y */
       output[2] = (double)(set_first(s) - 1); /* inequality index */
+      set_free(s);
       break;
     }
   } else { /* 1+ vertices */
