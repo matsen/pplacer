@@ -673,8 +673,7 @@ let solve ?(verbose = false) gt mass n_leaves =
                 :: accum)
           []
           solutions
-        |> (if verbose then tap (fun _ -> Printf.eprintf " -> finished\n") else identity)
-        |> (if bub_mass > 0. then List.enum |- (cull ~verbose) else identity))
+        |> (if verbose then tap (fun _ -> Printf.eprintf " -> finished\n") else identity))
       (0., solutions)
       marks
     |> snd
