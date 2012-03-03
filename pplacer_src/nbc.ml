@@ -15,12 +15,14 @@ let word_uninformative s =
 
 exception Invalid_base of char
 
+(* get an index of a base *)
 let base_idx base =
   try
     String.of_char base |> String.find bases
   with Not_found -> raise (Invalid_base base)
 
-(* convert from a word to an int *)
+(* convert from a word to an int. Successive base indices are packed into the
+ * integer using left shifts. *)
 let word_to_int =
   String.fold_left
     (fun accum c -> base_idx c |> (lor) (accum lsl 2))

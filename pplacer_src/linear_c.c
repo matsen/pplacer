@@ -522,6 +522,7 @@ CAMLprim value float_mat_int_vec_mul_c(value dst_value, value mat_value, value v
     caml_failwith("dim_0 dst != dim_1 mat");
 
   for (j = 0; j < n; ++j) {
+    /* skip a whole row if we are multiplying by zero */
     if (!(vec_j = vec[j])) {
       mat += k;
       continue;
