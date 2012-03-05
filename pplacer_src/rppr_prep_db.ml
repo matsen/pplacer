@@ -14,8 +14,6 @@ object (self)
     (Formatted (1., "The default value for the bayes_cutoff param. Default: %0.2f"))
   val default_multiclass_min = flag "--default-multiclass-min"
     (Formatted (0.2, "The default value for the multiclass_min param. Default: %0.2f"))
-  val default_multiclass_sum = flag "--default-multiclass-sum"
-    (Formatted (0.8, "The default value for the multiclass_sum param. Default: %0.2f"))
   val best_as_bayes = flag "--best-as-bayes"
     (Plain (false, "Generate the bayes_{best_classifications,multiclass} tables without the bayes_ prefix."))
 
@@ -26,7 +24,6 @@ object (self)
       float_flag default_cutoff;
       float_flag default_bayes_cutoff;
       float_flag default_multiclass_min;
-      float_flag default_multiclass_sum;
       toggle_flag best_as_bayes;
     ]
 
@@ -160,7 +157,10 @@ object (self)
                  GROUP BY placement_id,
                           want_rank)
                JOIN placement_classifications pc USING (placement_id, rank)
-         WHERE pc.rank = pc.desired_rank;
+         WHERE pc.rank = pc.desired_rank
+           AND likelihood >= (SELECT val
+                               FROM params
+                              WHERE name = 'multiclass_min');
 
       CREATE VIEW placement_evidence_ranks
       AS
@@ -244,7 +244,6 @@ object (self)
         [| Sql.D.TEXT "likelihood_cutoff"; Sql.D.FLOAT (fv default_cutoff) |];
         [| Sql.D.TEXT "bayes_cutoff"; Sql.D.FLOAT (fv default_bayes_cutoff) |];
         [| Sql.D.TEXT "multiclass_min"; Sql.D.FLOAT (fv default_multiclass_min) |];
-        [| Sql.D.TEXT "multiclass_sum"; Sql.D.FLOAT (fv default_multiclass_sum) |];
       ];
     let st = Sqlite3.prepare db "INSERT INTO ranks VALUES (?, ?)" in
     Array.iteri
