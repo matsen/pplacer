@@ -42,7 +42,8 @@ let int_to_word ?word_length i =
 let max_word_length =
   log (float_of_int max_int) /. log 4. |> int_of_float |> pred
 
-(* generalized count something by words in a sequence *)
+(* generalized count something by words in a sequence. generalized because we
+ * are able to specify a modify function specifying action. *)
 let gen_count_by_seq word_length modify seq =
   0 -- (String.length seq - word_length)
   |> Enum.map (flip (String.sub seq) word_length)
@@ -113,6 +114,7 @@ module Classifier = struct
     let prior_counts = Array.init
       c.base.n_words
       (fun j ->
+        (* w_j is the prior for seeing word j *)
         let w_j = 0 --^ n_taxids
           |> Enum.map (fun i -> c.freq_table.{i, j})
           |> Enum.sum
