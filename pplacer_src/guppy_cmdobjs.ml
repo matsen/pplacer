@@ -576,6 +576,12 @@ object (self)
         mass
         leaf_cutoff
       in
+      if not (IntMap.mem leaf_cutoff solm) then
+        failwith
+          (Printf.sprintf "no solution with cardinality %d found; only solutions on the range [%d, %d]"
+             leaf_cutoff
+             (IntMap.min_binding solm |> fst)
+             (IntMap.max_binding solm |> fst));
       let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
       let cut_leaves = gt
         |> Gtree.leaf_ids

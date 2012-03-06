@@ -78,6 +78,7 @@ let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
 let junction pred f g a = if pred a then f a else g a
+let fold_both f g a (x, y) = f a x, g a y
 let (|--) f g a b = g (f a b)
 let (|~) = (-|)
 let (||-) f g a = f a || g a

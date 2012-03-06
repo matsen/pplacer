@@ -318,10 +318,9 @@ let ecld ?p_exp v indiv_map =
 (* a partial solution to the full voronoi algorithm *)
 type partial_solution = {
   leaf_set: IntSet.t;
-  mv_dist: float;
   cl_dist: float;
-  prox_mass: float;
   wk_subtot: float;
+  prox_mass: float option;
 }
 
 (* a solution to any variant of the voronoi algorithm *)
@@ -331,19 +330,21 @@ type solution = {
 }
 type solutions = solution IntMap.t
 
-let mv_dist {mv_dist} = mv_dist
 let cl_dist {cl_dist} = cl_dist
 let leaf_set {leaf_set} = leaf_set
 let leaf_card {leaf_set} = IntSet.cardinal leaf_set
-let prox_mass {prox_mass} = prox_mass
+let prox_mass {prox_mass} = Option.default 0. prox_mass
 let wk_subtot {wk_subtot} = wk_subtot
 let sleaves {leaves} = leaves
 let swork {work} = work
 
-let soln_of_tuple (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot) =
-  {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot}
-let soln_to_tuple {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot} =
- (leaf_set, mv_dist, cl_dist, prox_mass, wk_subtot)
+let is_rmd = function
+  | {prox_mass = None} -> true
+  | _ -> false
+
+let is_rmp = function
+  | {prox_mass = Some _} -> true
+  | _ -> false
 
 (* from a set of leaves and a tree, produce a map from all nodes on the tree to
  * a map from each leaf to the distance between that node and leaf. *)
@@ -387,8 +388,8 @@ let all_dist_map all_leaves gt =
     (IntSet.elements all_leaves |> qs)
 
 (* from a tree, return a map from each node to a list of marks on the edge
- * above that node and a map from each node to the distance to the closest
- * leaf proximal to that node. *)
+ * above that node and a map from each node to the distance to both the closest
+ * and farthest away leaves proximal to that node. *)
 let mark_map gt =
   let distm = all_dist_map (Gtree.leaf_ids gt |> IntSet.of_list) gt
   and parents = Gtree.get_stree gt |> parent_map
@@ -443,69 +444,64 @@ let mark_map gt =
           |> IntSet.of_list
           |> flip (IntSet.mem |-- not)
           |~ fst)
-     |> Enum.fold (snd |- min |> flip) infinity)
+     |> List.of_enum
+     |> List.fold_left (snd |- fold_both min max |> flip) (infinity, neg_infinity))
     distm
 
-(* check if a solution is strictly a better solution than another. the
- * cardinality of the leaf set must also be equal, but that's already
- * accounted for in `cull`. *)
-let does_dominate sup inf =
-  sup.cl_dist <= inf.cl_dist
-  && sup.prox_mass <= inf.prox_mass
-  && sup.wk_subtot <= inf.wk_subtot
+let y_value = function
+  | {prox_mass = Some y}
+  | {cl_dist = y} -> y
 
-let empty_ilmap = List.make_compare Int.compare |> Map.create
-
-let y_value sol = if sol.mv_dist = infinity then sol.cl_dist else sol.prox_mass
-let sol_count = ref 0
-let hull_cull sols =
+let hull_cull ?(verbose = false) lower_bound upper_bound sols =
+  if verbose then
+    Printf.eprintf " hull cull: %g %g" lower_bound upper_bound;
   let keys, sola = List.map ((wk_subtot &&& y_value) &&& identity) sols
     |> List.group (on fst (on snd approx_compare))
     |> List.map (List.enum |- Enum.arg_min (fst |- fst))
     |> List.split
     |> (Array.of_list *** Array.of_list)
   in
-  if Array.length sola < 2 then Array.enum sola else (* ... *)
-  Cdd.extreme_vertices keys
-  |> Array.enum
-  |> Enum.map (Tuple3.first |- Array.get sola)
+  if Array.length sola < 2 then begin
+    if verbose then begin
+      Printf.eprintf " skipped\n";
+      flush_all ()
+    end;
+    Array.enum sola
+  end else begin
+    if verbose then begin
+      Printf.eprintf " culling %d\n" (Array.length sola);
+      flush_all ()
+    end;
+    Cdd.extreme_vertices (max lower_bound 0.) upper_bound keys
+    |> Array.enum
+    |> Enum.map (Tuple3.first |- Array.get sola)
+  end
 
 (* a polymorphic map for keys of int, bool *)
-let empty_pairmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
+let empty_solmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
+let solmap_key = leaf_card &&& is_rmp
 
 (* cull solutions from an enum of solutions down to a list of strictly the
  * best solutions per leaf set cardinality. *)
-let cull ?(verbose = false) sols =
+let cull mass_above (minleaf, maxleaf) ?(verbose = false) sols =
   if verbose then begin
-    Printf.eprintf "culling solutions";
+    Printf.eprintf "culling solutions\n";
     flush_all ()
   end;
   let count = ref 0 in
   Enum.fold
     (fun solm sol ->
       incr count;
-      let key = IntSet.cardinal sol.leaf_set, sol.mv_dist = infinity in
-      Map.modify_def [] key (List.cons sol) solm)
-    empty_pairmap
+      Map.modify_def [] (solmap_key sol) (List.cons sol) solm)
+    empty_solmap
     sols
-  |> Map.values
-  |> Enum.map hull_cull
+  |> Map.enum
+  |> Enum.map
+      (junction
+         (fst |- snd)
+         (snd |- hull_cull ~verbose minleaf maxleaf)
+         (snd |- hull_cull ~verbose 0. mass_above))
   |> Enum.flatten
-  |> List.of_enum
-  |> if verbose then tap
-      (fun sols' ->
-        let l1 = !count and l2 = List.length sols' in
-        if l1 <> l2 then
-          Printf.eprintf
-            " -> culled %d solutions from %d to %d (%g%%; max card %d)\n"
-            (l1 - l2)
-            l1
-            l2
-            ((float_of_int l1 -. float_of_int l2) /. float_of_int l1 *. 100.)
-            (List.enum sols' |> Enum.arg_max leaf_card |> leaf_card)
-        else
-          Printf.eprintf " -> culled nothing\n")
-    else identity
 
 (* given a mark map, a tree, and mass on the tree, remove redundant marks from
  * the tree. i.e. remove any mark that doesn't have mass on one side of it. *)
@@ -541,7 +537,7 @@ let map_reduce f_map f_reduce l = List.map f_map l |> List.reduce f_reduce
 let combine_solutions ?(verbose = false) max_leaves solsl =
   if verbose then begin
     Printf.eprintf "combining across ";
-    List.print ~first:"" ~last:"; " ~sep:", "
+    List.print ~first:"" ~last:"\n" ~sep:", "
       Int.print stderr (List.map List.length solsl);
     flush_all ()
   end;
@@ -549,28 +545,29 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
   |> EnumFuns.n_cartesian_product
   |> Enum.map
       (fun sols ->
-        let mv_dist = map_min mv_dist sols
-        and cl_dist = map_min cl_dist sols
-        and leaf_set = map_reduce leaf_set IntSet.union sols
-        and prox_mass = map_reduce prox_mass (+.) sols
-        and wk_subtot = map_reduce wk_subtot (+.) sols in
-        [{leaf_set; prox_mass; wk_subtot; cl_dist; mv_dist}]
-        |> maybe_cons
-            (if cl_dist = infinity then None else Some {
-              leaf_set; cl_dist; mv_dist = infinity; prox_mass = 0.;
-              wk_subtot = wk_subtot +. cl_dist *. prox_mass}))
-  |> Enum.map (List.enum |- Enum.filter (leaf_card |- (>=) max_leaves))
+        let leaf_set = map_reduce leaf_set IntSet.union sols in
+        if IntSet.cardinal leaf_set > max_leaves then [] else (* ... *)
+        let cl_dist = map_min cl_dist sols
+        and wk_subtot = map_reduce wk_subtot (+.) sols
+        and tot_prox_mass = map_reduce prox_mass (+.) sols in
+        let prox_mass =
+          if List.for_all is_rmd sols then None else Some tot_prox_mass
+        and addition =
+          if List.for_all is_rmp sols then None else
+            Some {
+              leaf_set; cl_dist; prox_mass = None;
+              wk_subtot = wk_subtot +. cl_dist *. tot_prox_mass}
+        in
+        [{leaf_set; wk_subtot; cl_dist; prox_mass}]
+        |> maybe_cons addition)
+  |> Enum.map List.enum
   |> Enum.flatten
-  |> if verbose then
-      Enum.suffix_action (fun () -> Printf.eprintf " (finished combining)"; flush_all ())
-    else identity
 
-let soln_to_info {leaf_set; mv_dist; cl_dist; prox_mass; wk_subtot} =
+let soln_to_info {leaf_set; cl_dist; prox_mass; wk_subtot} =
   let fmt = Printf.sprintf "%g" in
   [IntSet.cardinal leaf_set |> string_of_int;
-   fmt mv_dist;
    fmt cl_dist;
-   fmt prox_mass;
+   Option.map_default fmt "RMD" prox_mass;
    fmt wk_subtot]
 
 let soln_csv_opt = ref None
@@ -580,10 +577,16 @@ let csvrow i sol = match !soln_csv_opt with
     string_of_int i :: soln_to_info sol
       |> Csv.output_record ch
 
+let base_rmd leaf =
+  {leaf_set = IntSet.singleton leaf; prox_mass = None; wk_subtot = 0.; cl_dist = 0.}
+let base_rmp =
+  {leaf_set = IntSet.empty; prox_mass = Some 0.; wk_subtot = 0.; cl_dist = infinity}
+
 (* solve a tree using the full algorithm. *)
 let solve ?(verbose = false) gt mass n_leaves =
-  let markm, _ = mark_map gt
-  and mass = I.sort mass in
+  let markm, minmaxlm = mark_map gt
+  and mass = I.sort mass
+  and total_mass = I.total_mass mass in
   let bubbles = collapse_marks gt mass markm
   and get_bl = Gtree.get_bl gt
   and top_id = Gtree.top_id gt in
@@ -592,23 +595,30 @@ let solve ?(verbose = false) gt mass n_leaves =
       |> List.enum
       |> flip Enum.append (get_bl i |> Enum.singleton)
   in
-  let rec aux tree =
-    let i, solutions = match tree with
-      | Leaf i -> i,
-        [IntSet.empty, 0., infinity, 0., 0.;
-         IntSet.singleton i, infinity, 0., 0., 0.]
-        |> List.map soln_of_tuple
+  let rec aux tree = Return.with_label (_aux tree)
+  and _aux tree lbl =
+    let i, mass_below, solutions = match tree with
+      | Leaf i -> i, 0., List.enum [base_rmp; base_rmd i]
       | Node (i, subtrees) ->
+        let massl, subsols = List.map aux subtrees |> List.split in
+        let mass_below = List.fsum massl in
+        let cull_fn = if i = top_id then identity
+          else cull (total_mass -. mass_below) (IntMap.find i minmaxlm) ~verbose
+        in
+        if verbose then Printf.eprintf "node %d:\n" i;
         i,
-        List.map aux subtrees
+        mass_below,
+        List.map List.of_enum subsols
           |> combine_solutions ~verbose n_leaves
-          |> cull ~verbose
+          |> cull_fn
 
     in
-    List.iter (csvrow i) solutions;
-    if i = top_id then solutions else (* ... *)
+    let solutions = Enum.map (tap (csvrow i)) solutions in
+    if i = top_id then Return.return lbl (mass_below, solutions);
     let marks = bubbles_of i
     and masses = IntMap.get i [] mass |> List.enum in
+    IntMap.get i [] mass
+      |> List.fold_left (fun accum {I.mass} -> mass +. accum) mass_below,
     Enum.fold
       (fun (last_mark, solutions) mark ->
         let masses =
@@ -618,68 +628,40 @@ let solve ?(verbose = false) gt mass n_leaves =
         let bub_mass = I.v_mass masses
         and wk_distal = I.work_moving_to masses last_mark
         and wk_prox = I.work_moving_to masses mark in
-        if verbose then begin
-          Printf.eprintf "%d: %g (%g) -> %g %g %g %g"
-            i mark last_mark bub_len bub_mass wk_distal wk_prox;
-          flush_all ()
-        end;
         mark,
         (* Moving through a bubble. *)
         List.fold_left
-          (fun accum sol ->
-            let accum = accum
-              |> maybe_cons
-                  (* step 3: add on a solution with just this bubble giving
-                   * prox_mass *)
-                  (if bub_mass > 0.
-                      && sol.cl_dist <> infinity
-                      && sol.mv_dist = infinity
-                      && wk_prox < wk_distal +. bub_mass *. sol.cl_dist
-                   then
-                      let mv_dist = sol.cl_dist +. ((wk_distal -. wk_prox) /. bub_mass) in
-                      Some {sol with
-                        mv_dist;
-                        cl_dist = sol.cl_dist +. bub_len;
-                        prox_mass = bub_mass;
-                        wk_subtot = sol.wk_subtot +. wk_prox;
-                      }
-                   else None)
-            in
-            (* Filter and move solutions through bubbles. *)
-            match sol with
-              (* step 2b: advance solutions with no leaves selected *)
-              | sol when approx_equal sol.mv_dist 0. ->
-                {sol with
-                  prox_mass = sol.prox_mass +. bub_mass;
-                  wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len;
-                  cl_dist = sol.cl_dist +. bub_len}
-                :: accum
-              (* step 1: throw out solutions with short mv_dist *)
-              | sol when sol.mv_dist < bub_len ->
-                accum
-              (* step 2a: move along a zero prox_mass solution *)
-              | sol when sol.mv_dist = infinity ->
-                {sol with
-                  cl_dist = sol.cl_dist +. bub_len;
-                  wk_subtot = sol.wk_subtot +. wk_distal +. bub_mass *. sol.cl_dist}
-                :: accum
-              (* step 2c: all other cases, move bubble mass to proximal side *)
-              | sol ->
-                {sol with
-                  mv_dist = sol.mv_dist -. bub_len;
-                  cl_dist = sol.cl_dist +. bub_len;
-                  prox_mass = sol.prox_mass +. bub_mass;
-                  wk_subtot = sol.wk_subtot +. wk_prox +. sol.prox_mass *. bub_len}
-                :: accum)
+          (fun accum -> function
+            (* RMD solutions move all mass toward the leaves. *)
+            | {prox_mass = None} as sol ->
+              (* ... and maybe also start moving mass away from the leaves. *)
+              let addition =
+                if bub_mass =~ 0. then None else
+                  Some {sol with
+                    cl_dist = sol.cl_dist +. bub_len;
+                    prox_mass = Some bub_mass;
+                    wk_subtot = sol.wk_subtot +. wk_prox}
+              in
+              maybe_cons addition accum
+              |> List.cons {sol with
+                cl_dist = sol.cl_dist +. bub_len;
+                wk_subtot = sol.wk_subtot +. wk_distal +. bub_mass *. sol.cl_dist}
+            (* RMP solutions move all mass away from the leaves. *)
+            | {prox_mass = Some prox_mass} as sol ->
+              {sol with
+                prox_mass = Some (prox_mass +. bub_mass);
+                wk_subtot = sol.wk_subtot +. wk_prox +. prox_mass *. bub_len;
+                cl_dist = sol.cl_dist +. bub_len}
+              :: accum)
           []
-          solutions
-        |> (if verbose then tap (fun _ -> Printf.eprintf " -> finished\n") else identity))
-      (0., solutions)
+          solutions)
+      (0., List.of_enum solutions)
       marks
     |> snd
+    |> List.enum
 
   in
-  Gtree.get_stree gt |> aux
+  Gtree.get_stree gt |> aux |> snd
 
 (* brute-force a voronoi solution by trying every combination of leaves,
  * calculating the ECLD of each, and choosing the best. *)
@@ -711,14 +693,19 @@ module type Alg = sig
     Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
 end
 
+let best_wk_subtot sol1 sol2 =
+  if sol1.wk_subtot <= sol2.wk_subtot then sol1 else sol2
+
 module Full = struct
   let csv_log = soln_csv_opt
-  let solve gt mass ?strict:_ ?verbose n_leaves =
-    solve ?verbose gt mass n_leaves
-      |> List.enum
-      |> Enum.filter (fun {mv_dist} -> mv_dist = infinity)
-      |> Enum.group leaf_card
-      |> Enum.map (Enum.arg_min (fun {wk_subtot} -> wk_subtot))
+  let solve gt mass ?strict:_ ?(verbose = false) n_leaves =
+    solve ~verbose gt mass n_leaves
+      |> Enum.filter is_rmd
+      |> Enum.fold
+          (fun accum sol ->
+            IntMap.modify_def sol (leaf_card sol) (best_wk_subtot sol) accum)
+          IntMap.empty
+      |> IntMap.values
       |> Enum.map
           (fun {leaf_set; wk_subtot} ->
             IntSet.cardinal leaf_set,
@@ -741,10 +728,9 @@ let update_score indiv v leaf map =
 
 module Greedy = struct
   let solve gt mass ?strict:_ ?(verbose = false) n_leaves =
-    let rec aux diagram accum score_map updated_leaves =
+    let rec aux diagram accum score_map updated_leaves lbl =
       if IntSet.cardinal diagram.all_leaves <= n_leaves then
-        accum
-      else (* ... *)
+        Return.return lbl accum;
       let score_map' = IntSet.fold
         (update_score mass diagram)
         updated_leaves
@@ -766,6 +752,7 @@ module Greedy = struct
         accum'
         (IntMap.remove leaf score_map')
         (IntSet.remove leaf updated_leaves')
+        lbl
     in
     let v = of_gtree gt in
     aux
@@ -776,5 +763,6 @@ module Greedy = struct
           work = partition_indiv_on_leaves v mass |> ecld v})
       IntMap.empty
       v.all_leaves
+    |> Return.with_label
 
 end
