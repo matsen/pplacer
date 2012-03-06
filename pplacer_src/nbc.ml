@@ -55,9 +55,9 @@ module Preclassifier = struct
     n_words: int;
     tax_ids: Tax_id.t array;
   }
-  type ('a, 'b) t = {
+  type 'a t = {
     base: base;
-    freq_table: ('a, 'b, BA.c_layout) BA2.t;
+    freq_table: (int, 'a, BA.c_layout) BA2.t;
     taxid_counts: int array;
     seq_count: int ref;
   }
@@ -75,6 +75,7 @@ module Preclassifier = struct
     let freq_table = BA2.create kind BA.c_layout n_taxids n_words
     and taxid_counts = Array.make n_taxids 0
     and seq_count = ref 0 in
+    BA2.fill freq_table 0;
     {base = {word_length; n_words; tax_ids}; taxid_counts; freq_table; seq_count}
 
   (* find the index of a tax_id in the tax_ids array *)
@@ -84,13 +85,13 @@ module Preclassifier = struct
     with Not_found -> raise (Tax_id_not_found tid)
 
   (* add a sequence to the counts for a particular tax_id *)
-  let add_seq c succ tax_id seq =
+  let add_seq c tax_id seq =
     let i = tax_id_idx c tax_id in
     incr c.seq_count;
     c.taxid_counts.(i) <- c.taxid_counts.(i) + 1;
     gen_count_by_seq
       c.base.word_length
-      (fun j -> BA2.get c.freq_table i j |> succ |> BA2.set c.freq_table i j)
+      (fun j -> c.freq_table.{i, j} <- succ c.freq_table.{i, j})
       seq
 
 end
@@ -105,7 +106,7 @@ module Classifier = struct
   }
 
   (* make a classifier from a preclassifier *)
-  let make c ?(boot_rows = 100) add float_of_x =
+  let make ?(boot_rows = 100) c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
     and n = float_of_int (succ !(c.seq_count)) in
@@ -113,9 +114,9 @@ module Classifier = struct
       c.base.n_words
       (fun j ->
         let w_j = 0 --^ n_taxids
-          |> Enum.map (fun i -> BA2.get c.freq_table i j)
-          |> Enum.reduce add
-          |> float_of_x
+          |> Enum.map (fun i -> c.freq_table.{i, j})
+          |> Enum.sum
+          |> float_of_int
         in
         (* (n(w_j) + 0.5) / (N + 1) *)
         (w_j +. 0.5) /. n)
@@ -124,21 +125,21 @@ module Classifier = struct
       (fun i j m ->
         let denom = log (float_of_int c.taxid_counts.(i) +. 1.) in
         (* log (m(w_j) + prior_counts[j]) - denom *)
-        log (float_of_x m +. prior_counts.(j)) -. denom)
+        log (float_of_int m +. prior_counts.(j)) -. denom)
       BA.float64
       c.freq_table
     |> Matrix.rect_transpose
     and fill_boot_row vec =
       Random.enum_int c.base.n_words
         |> Enum.take (c.base.n_words / c.base.word_length)
-        |> Enum.iter
-            (fun i -> BA1.get vec i |> succ |> BA1.set vec i)
+        |> Enum.iter (fun i -> vec.{i} <- succ vec.{i})
     and boot_matrix = BA2.create
       BA.int16_unsigned
       BA.c_layout
       boot_rows
       c.base.n_words
-    and classify_vec = Gsl_vector.create n_taxids in
+    and classify_vec = Gsl_vector.create ~init:0. n_taxids in
+    BA2.fill boot_matrix 0;
     0 --^ boot_rows
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
@@ -155,9 +156,10 @@ module Classifier = struct
   let count_seq cf seq =
     let open Preclassifier in
     let vec = BA1.create BA.int16_unsigned BA.c_layout cf.pc.n_words in
+    BA1.fill vec 0;
     gen_count_by_seq
       cf.pc.word_length
-      (fun i -> BA1.get vec i |> succ |> BA1.set vec i)
+      (fun i -> vec.{i} <- succ vec.{i})
       seq;
     vec
 
@@ -173,6 +175,9 @@ module Classifier = struct
     let module TIM = Tax_id.TaxIdMap in
     let seq_word_counts = count_seq cf seq in
     let boot_rows = BA2.dim1 cf.boot_matrix in
+    if boot_rows = 0 then
+      TIM.singleton (classify_vec cf seq_word_counts) 1.
+    else (* ... *)
     let booted_word_counts = BA1.create
       BA.int16_unsigned
       BA.c_layout
@@ -186,5 +191,4 @@ module Classifier = struct
           let ti = classify_vec cf booted_word_counts in
           TIM.modify_def 0. ti incr accum)
         TIM.empty
-
 end

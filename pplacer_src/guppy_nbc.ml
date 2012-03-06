@@ -81,8 +81,8 @@ object (self)
     Refpkg.get_aln_fasta rp
       |> Array.enum
       |> Enum.filter_map (filter seq_tax_ids)
-      |> Enum.iter (uncurry (Nbc.Preclassifier.add_seq preclassif succ));
-    let classif = Nbc.Classifier.make preclassif ~boot_rows (+) float_of_int in
+      |> Enum.iter (uncurry (Nbc.Preclassifier.add_seq preclassif));
+    let classif = Nbc.Classifier.make ~boot_rows preclassif in
     let bootstrap = Alignment.ungap
       |- Nbc.Classifier.bootstrap classif
       |- full_classify td
