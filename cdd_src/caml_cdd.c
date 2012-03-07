@@ -35,7 +35,6 @@ CAMLprim value caml_extreme_vertices(value vertices, value lower_bound, value up
     CAMLreturn(Val_none);
   else {
     value res_bigarr = alloc_bigarray_dims(BIGARRAY_FLOAT64 | BIGARRAY_C_LAYOUT, 2, NULL, res_size / 3, 3);
-    printf("CAML output_size %lu\n", res_size);
     memcpy(Data_bigarray_val(res_bigarr), res, sizeof *res * res_size);
     free(res);
     CAMLreturn(Val_some(res_bigarr));

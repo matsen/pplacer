@@ -472,9 +472,11 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
       Printf.eprintf " culling %d\n" (Array.length sola);
       flush_all ()
     end;
-    Cdd.extreme_vertices (max lower_bound 0.) upper_bound keys
-    |> Array.enum
-    |> Enum.map (Tuple3.first |- Array.get sola)
+    match Cdd.extreme_vertices (max lower_bound 0.) upper_bound keys with
+      | Some s -> s
+        |> Array.enum
+        |> Enum.map (Tuple3.first |- Array.get sola)
+      | None -> Array.enum sola
   end
 
 (* a polymorphic map for keys of int, bool *)
