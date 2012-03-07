@@ -53,36 +53,16 @@ object (self)
     let td = Refpkg.get_taxonomy rp
     and target_rank = fv target_rank
     and boot_rows = fv boot_rows
-    and children = fv children
-    and gt = Refpkg.get_ref_tree rp in
+    and children = fv children in
     let rank_idx =
       try
         Tax_taxonomy.get_rank_index td target_rank
       with Not_found ->
         failwith (Printf.sprintf "invalid rank %s" target_rank)
     in
-    let rank_tax_map = Convex.rank_tax_map_of_refpkg rp in
-    let preclassif = IntMap.find rank_idx rank_tax_map
-      |> IntMap.values
-      |> Tax_id.TaxIdSet.of_enum
-      |> Tax_id.TaxIdSet.enum
-      |> Array.of_enum
-      |> Nbc.Preclassifier.make Bigarray.int (fv word_length)
-    (* a map from reference sequence names to chosen-rank tax_ids *)
-    and seq_tax_ids = IntMap.find rank_idx rank_tax_map
-      |> IntMap.enum
-      |> Enum.map (first (Gtree.get_node_label gt))
-      |> StringMap.of_enum
-    and filter m (k, seq) =
-      match StringMap.Exceptionless.find k m with
-        | Some v -> Some (v, Alignment.ungap seq)
-        | None -> None
+    let classif =
+      Nbc.Classifier.of_refpkg ~boot_rows (fv word_length) rank_idx rp
     in
-    Refpkg.get_aln_fasta rp
-      |> Array.enum
-      |> Enum.filter_map (filter seq_tax_ids)
-      |> Enum.iter (uncurry (Nbc.Preclassifier.add_seq preclassif));
-    let classif = Nbc.Classifier.make ~boot_rows preclassif in
     let bootstrap = Alignment.ungap
       |- Nbc.Classifier.bootstrap classif
       |- full_classify td

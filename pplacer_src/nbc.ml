@@ -193,4 +193,30 @@ module Classifier = struct
           let ti = classify_vec cf booted_word_counts in
           TIM.modify_def 0. ti incr accum)
         TIM.empty
+
+  let of_refpkg ?boot_rows word_length rank_idx rp =
+    let rank_tax_map = Convex.rank_tax_map_of_refpkg rp
+    and gt = Refpkg.get_ref_tree rp in
+    let preclassif = IntMap.find rank_idx rank_tax_map
+      |> IntMap.values
+      |> Tax_id.TaxIdSet.of_enum
+      |> Tax_id.TaxIdSet.enum
+      |> Array.of_enum
+      |> Preclassifier.make Bigarray.int word_length
+    (* a map from reference sequence names to chosen-rank tax_ids *)
+    and seq_tax_ids = IntMap.find rank_idx rank_tax_map
+      |> IntMap.enum
+      |> Enum.map (first (Gtree.get_node_label gt))
+      |> StringMap.of_enum
+    and filter m (k, seq) =
+      match StringMap.Exceptionless.find k m with
+        | Some v -> Some (v, Alignment.ungap seq)
+        | None -> None
+    in
+    Refpkg.get_aln_fasta rp
+      |> Array.enum
+      |> Enum.filter_map (filter seq_tax_ids)
+      |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
+    make ?boot_rows preclassif
+
 end
