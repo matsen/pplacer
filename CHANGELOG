@@ -43,6 +43,7 @@
  * Closed GH-220: Added error messages for some exceptions; fixed
    `guppy rarefact`.
  * Closed GH-222: Added a -c flag to `guppy bary`.
+ * Closed GH-236: Fixed support for numeric leaf names when writing out XML.
 
 
 1.1.alpha11
