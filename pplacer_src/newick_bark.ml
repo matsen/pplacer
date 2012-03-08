@@ -63,9 +63,13 @@ class newick_bark arg =
     method set_edge_label x = {< edge_label = Some x >}
 
     method get_confidence_name_opt is_leaf =
-      match maybe_float node_label with
-        | c when not is_leaf -> c, None
-        | _ -> maybe_float edge_label, node_label
+      match maybe_float edge_label with
+        | None when is_leaf -> None, node_label
+        | None -> begin match maybe_float node_label with
+          | None -> None, node_label
+          | c -> c, None
+        end
+        | c -> c, node_label
 
     method to_newick_string node_number =
       Printf.sprintf "%s%s%s%s"
