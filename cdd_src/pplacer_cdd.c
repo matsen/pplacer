@@ -59,7 +59,7 @@ static dd_MatrixPtr init_ineq_doubles(const double *init_vals,
   }
 
   /* Add a row constraining solution space x >= lower_bound */
-  dd_set_d(m->matrix[rows][0], lower_bound);    /* intercept */
+  dd_set_d(m->matrix[rows][0], -lower_bound);   /* intercept */
   dd_set_d(m->matrix[rows][1], 1);              /* coef of x */
   dd_set_d(m->matrix[rows][2], 0);              /* coef of y */
 
