@@ -22,6 +22,8 @@ let keymap_add_by f m =
     (TIAMR.to_pairs m)
     TIAMR.empty
 
+(* Produce a classification map for each pquery in a placerun using pplacer
+ * classification. The callback function `f` will be called for each pquery. *)
 let pplacer_classify how criterion td f pr =
   let n_ranks = Tax_taxonomy.get_n_ranks td
   and prn = Placerun.get_name pr in
@@ -45,10 +47,11 @@ let pplacer_classify how criterion td f pr =
         f prn pq !outmap)
       (Placerun.get_pqueries pr)
   with
-    | Placement.No_classif ->
-      invalid_arg
-        ((Placerun.get_name pr)^" contains unclassified queries!")
+  | Placement.No_classif ->
+    invalid_arg
+      ((Placerun.get_name pr)^" contains unclassified queries!")
 
+(* From an bootstrap map, produce a full classification map. *)
 let nbc_classify td boot_map =
   let outmap = ref IntMap.empty
   and m = ref boot_map
@@ -62,36 +65,44 @@ let nbc_classify td boot_map =
   done;
   !outmap
 
+(* From a classificication map, find the best classifications for each rank. *)
 let best_classifications td ?multiclass_min cutoff m =
   let best_per_rank = IntMap.mapi
     (fun rank l ->
+      (* This is the equivalent to filtering by `rank = desired_rank` in the
+       * old best_classifications view. *)
       let l = List.filter (fst |- Tax_taxonomy.get_tax_rank td |- (=) rank) l in
       try
+        (* If there's a clear best, pick that. *)
         List.find_map
           (fun (_, l as t) -> if l >= cutoff then Some [t] else None)
           l
         |> some
       with Not_found ->
         match multiclass_min with
-          | None -> None
-          | Some multiclass_min ->
-            let cl, sum = List.fold_left
-              (fun (cl, sum as accum) (_, l as t) ->
-                if l >= multiclass_min then t :: cl, sum +. l else accum)
-              ([], 0.)
-              l
-            in
-            if sum >= cutoff then Some cl else None)
+        | None -> None
+        | Some multiclass_min ->
+          (* Otherwise, if we're multiclassifying, see if it adds up. *)
+          let cl, sum = List.fold_left
+            (fun (cl, sum as accum) (_, l as t) ->
+              if l >= multiclass_min then t :: cl, sum +. l else accum)
+            ([], 0.)
+            l
+          in
+          if sum >= cutoff then Some cl else None)
     m
   in
+  (* For every rank, find the first rank at or above it with a valid set of
+   * classifications. *)
   let rec aux rank =
     match IntMap.Exceptionless.find rank best_per_rank with
-      | Some Some cl -> rank, cl
-      | _ when rank = 0 -> rank, []
-      | _ -> aux (rank - 1)
+    | Some Some cl -> rank, cl
+    | _ when rank = 0 -> rank, []
+    | _ -> aux (rank - 1)
   in
   IntMap.mapi (fun want_rank _ -> aux want_rank) m
 
+(* Merge pplacer and nbc classifications, preferring pplacer. *)
 let merge_pplacer_nbc_best_classif pp_id nbc_id _ pp nbc = match pp, nbc with
   | None, None -> None
   | None, Some nbc -> Some (nbc, nbc_id)
