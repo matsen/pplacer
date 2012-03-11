@@ -154,8 +154,8 @@ object (self)
     (Formatted (8, "The length of the words used for NBC classification. default: %d"))
   val target_rank = flag "--target-rank"
     (Formatted ("genus", "The desired most specific rank for NBC classification. default: %s"))
-  val boot_rows = flag "--boot-rows"
-    (Formatted (100, "The number of times to bootstrap a sequence with the NBC classifier. default: %d"))
+  val n_boot = flag "--n-boot"
+    (Formatted (100, "The number of times to bootstrap a sequence with the NBC classifier. 0 = no bootstrap. default: %d"))
   val children = flag "-j"
     (Formatted (2, "The number of processes to spawn to do NBC classification. default: %d"))
 
@@ -174,7 +174,7 @@ object (self)
     delimited_list_flag nbc_sequences;
     int_flag word_length;
     string_flag target_rank;
-    int_flag boot_rows;
+    int_flag n_boot;
     int_flag children;
  ]
 
@@ -222,7 +222,7 @@ object (self)
 
     let best_nbc = if not do_nbc then None else
       let target_rank = fv target_rank
-      and boot_rows = fv boot_rows
+      and n_boot = fv n_boot
       and children = fv children
       and bootstrap_min = fv bootstrap_min in
       let rank_idx =
@@ -232,7 +232,7 @@ object (self)
           failwith (Printf.sprintf "invalid rank %s" target_rank)
       in
       let classif =
-        Nbc.Classifier.of_refpkg ~boot_rows (fv word_length) rank_idx rp
+        Nbc.Classifier.of_refpkg ~n_boot (fv word_length) rank_idx rp
       in
       let bootstrap = Alignment.ungap
         |- Nbc.Classifier.bootstrap classif

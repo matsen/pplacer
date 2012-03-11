@@ -107,7 +107,7 @@ module Classifier = struct
   }
 
   (* make a classifier from a preclassifier *)
-  let make ?(boot_rows = 100) c =
+  let make ?(n_boot = 100) c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
     and n = float_of_int (succ !(c.seq_count)) in
@@ -138,11 +138,11 @@ module Classifier = struct
     and boot_matrix = BA2.create
       BA.int16_unsigned
       BA.c_layout
-      boot_rows
+      n_boot
       c.base.n_words
     and classify_vec = Gsl_vector.create ~init:0. n_taxids in
     BA2.fill boot_matrix 0;
-    0 --^ boot_rows
+    0 --^ n_boot
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
@@ -176,16 +176,16 @@ module Classifier = struct
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
     let seq_word_counts = count_seq cf seq in
-    let boot_rows = BA2.dim1 cf.boot_matrix in
-    if boot_rows = 0 then
+    let n_boot = BA2.dim1 cf.boot_matrix in
+    if n_boot = 0 then
       TIM.singleton (classify_vec cf seq_word_counts) 1.
     else (* ... *)
     let booted_word_counts = BA1.create
       BA.int16_unsigned
       BA.c_layout
       cf.pc.n_words
-    and incr = 1. /. float_of_int boot_rows |> (+.) in
-    0 --^ boot_rows
+    and incr = 1. /. float_of_int n_boot |> (+.) in
+    0 --^ n_boot
     |> Enum.fold
         (fun accum i ->
           let boot_row = BA2.slice_left cf.boot_matrix i in
@@ -194,7 +194,7 @@ module Classifier = struct
           TIM.modify_def 0. ti incr accum)
         TIM.empty
 
-  let of_refpkg ?boot_rows word_length rank_idx rp =
+  let of_refpkg ?n_boot word_length rank_idx rp =
     let rank_tax_map = Convex.rank_tax_map_of_refpkg rp
     and gt = Refpkg.get_ref_tree rp in
     let preclassif = IntMap.find rank_idx rank_tax_map
@@ -217,6 +217,6 @@ module Classifier = struct
       |> Array.enum
       |> Enum.filter_map (filter seq_tax_ids)
       |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
-    make ?boot_rows preclassif
+    make ?n_boot preclassif
 
 end
