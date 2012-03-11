@@ -494,6 +494,19 @@ CAMLprim value vec_pairwise_prod_c(value dst_value, value x_value, value y_value
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value int_vec_tot_c(value x_value)
+{
+  CAMLparam1(x_value);
+  uint16_t *x = Data_bigarray_val(x_value);
+  CAMLlocal1(ml_tot);
+  int32_t tot=0;
+  int i;
+  for(i=0; i < Bigarray_val(x_value)->dim[0]; i++)
+    tot += *x++;
+  ml_tot = caml_copy_nativeint(tot);
+  CAMLreturn(ml_tot);
+}
+
 CAMLprim value int_vec_pairwise_prod_c(value dst_value, value x_value, value y_value)
 {
   CAMLparam3(dst_value, x_value, y_value);

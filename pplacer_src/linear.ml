@@ -64,6 +64,10 @@ external vec_pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vecto
 
 type int_vector = (int, BA.int16_unsigned_elt, BA.c_layout) BA1.t
 
+(* int_vec_tot x
+ * The total of an integer vector. *)
+external int_vec_tot : int_vector -> int = "int_vec_tot_c"
+
 (* int_vec_pairwise_prod dst x y *)
 external int_vec_pairwise_prod : int_vector -> int_vector -> int_vector  -> unit = "int_vec_pairwise_prod_c"
 
