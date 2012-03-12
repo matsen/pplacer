@@ -476,7 +476,12 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
       | Some s -> s
         |> Array.enum
         |> Enum.map (Tuple3.first |- Array.get sola)
-      | None -> Array.enum sola
+      | None ->
+          if verbose then begin
+            Printf.eprintf " cddlib failed.\n";
+            flush_all ()
+          end;
+          Array.enum sola
   end
 
 (* a polymorphic map for keys of int, bool *)
