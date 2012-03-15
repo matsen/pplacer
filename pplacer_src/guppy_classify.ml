@@ -380,7 +380,6 @@ object (self)
               | Some bf -> Sql.D.FLOAT bf);
           |])
           (bayes_factors pq);
-        dprintf "%s: " (Pquery.name pq);
         let bc = best_classifications td ~multiclass_min cutoff rank_map in
         List.fold_left
           (flip StringMap.add (place_id, bc) |> flip)
