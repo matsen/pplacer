@@ -65,9 +65,22 @@ let nbc_classify td boot_map =
   done;
   !outmap
 
+(* For every rank, find the first rank at or above it with a valid set of
+ * classifications. *)
+let find_ranks_per_want_rank td m =
+  let rec aux rank =
+    match IntMap.Exceptionless.find rank m with
+    | Some cl -> rank, cl
+    | _ when rank = 0 -> rank, []
+    | _ -> aux (rank - 1)
+  in
+  0 --^ Tax_taxonomy.get_n_ranks td
+  |> Enum.map (identity &&& aux)
+  |> IntMap.of_enum
+
 (* From a classificication map, find the best classifications for each rank. *)
 let best_classifications td ?multiclass_min cutoff m =
-  let best_per_rank = IntMap.mapi
+  IntMap.filter_map
     (fun rank l ->
       (* This is the equivalent to filtering by `rank = desired_rank` in the
        * old best_classifications view. *)
@@ -91,16 +104,28 @@ let best_classifications td ?multiclass_min cutoff m =
           in
           if sum >= cutoff then Some cl else None)
     m
-  in
-  (* For every rank, find the first rank at or above it with a valid set of
-   * classifications. *)
-  let rec aux rank =
-    match IntMap.Exceptionless.find rank best_per_rank with
-    | Some Some cl -> rank, cl
-    | _ when rank = 0 -> rank, []
-    | _ -> aux (rank - 1)
-  in
-  IntMap.mapi (fun want_rank _ -> aux want_rank) m
+  |> find_ranks_per_want_rank td
+
+let best_bayes_classifications td ?multiclass_min bayes_cutoff factors m =
+  (match multiclass_min with
+    | None -> m
+    | Some multiclass_min ->
+      IntMap.filter_map
+        (List.filter (snd |- (<=) multiclass_min)
+         |- junction List.is_empty (const None) some
+         |> const)
+        m)
+  |> IntMap.backwards
+  |> Enum.fold
+      (fun (found_evidence, accum) (rank, value) ->
+        if found_evidence then true, IntMap.add rank value accum else (* ... *)
+        match factors.(rank) with
+        | _, _, Some evidence when evidence >= bayes_cutoff ->
+          true, IntMap.add rank value accum
+        | _ -> false, accum)
+      (false, IntMap.empty)
+  |> snd
+  |> find_ranks_per_want_rank td
 
 (* Merge pplacer and nbc classifications, preferring pplacer. *)
 let merge_pplacer_nbc_best_classif pp_id nbc_id _ pp nbc = match pp, nbc with
@@ -300,6 +325,7 @@ object (self)
         "INSERT INTO placement_evidence VALUES (?, ?, ?, ?)"
       and best_classif_map = ref StringMap.empty
       and multiclass_min = fv multiclass_min
+      and bayes_cutoff = fv bayes_cutoff
       and cutoff = fv cutoff in
 
       let tax_identity_func = match fvo tax_identity with
@@ -376,6 +402,8 @@ object (self)
               | Some (_, denom) -> Sql.D.INT (Int64.of_int denom));
           |])
           (Pquery.place_list pq);
+
+        let bf = bayes_factors pq in
         Array.iter
           (fun (rank, ev, bf) -> Sql.bind_step_reset db pe_st [|
             Sql.D.INT place_id;
@@ -385,8 +413,13 @@ object (self)
               | None -> Sql.D.NULL
               | Some bf -> Sql.D.FLOAT bf);
           |])
-          (bayes_factors pq);
-        let bc = best_classifications td ~multiclass_min cutoff rank_map in
+          bf;
+        let bc =
+          if bayes_cutoff =~ 0. then
+            best_classifications td ~multiclass_min cutoff rank_map
+          else
+            best_bayes_classifications td ~multiclass_min bayes_cutoff bf rank_map
+        in
         List.fold_left
           (flip StringMap.add (place_id, bc) |> flip)
           !best_classif_map
