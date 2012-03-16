@@ -425,12 +425,13 @@ object (self)
 
         let class_map = List.fold_left
           (fun accum arr ->
-            IntMap.add
-              (Tax_taxonomy.get_rank_index td arr.(0))
-              [Tax_id.of_string arr.(2), float_of_string arr.(3)]
+            TIAMR.add_by
+              (Tax_id.of_string arr.(2))
+              (float_of_string arr.(3))
               accum)
-          IntMap.empty
+          TIAMR.empty
           rows
+        |> nbc_classify td
         in
         StringMap.add
           name
