@@ -130,7 +130,7 @@ object (self)
   inherit sqlite_cmd () as super_sqlite
 
   val classifier = flag "--classifier"
-    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', or 'hybrid'. default: %s"))
+    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid', or 'rdp'. default: %s"))
   val cutoff = flag "--cutoff"
     (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
   val bayes_cutoff = flag "--bayes-cutoff"
@@ -159,6 +159,10 @@ object (self)
   val children = flag "-j"
     (Formatted (2, "The number of processes to spawn to do NBC classification. default: %d"))
 
+  val rdp_results = flag "--rdp-results"
+    (Needs_argument ("rdp results", "The RDP results file for use with the RDP classifier. \
+                                     Can be specified multiple times for multiple inputs."))
+
   method specl =
     super_refpkg#specl
   @ super_sqlite#specl
@@ -176,6 +180,7 @@ object (self)
     string_flag target_rank;
     int_flag n_boot;
     int_flag children;
+    delimited_list_flag rdp_results;
  ]
 
   method desc =
@@ -187,10 +192,11 @@ object (self)
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
 
-    let do_pplacer, do_nbc = match fv classifier with
-      | "pplacer" -> true, false
-      | "nbc" -> false, true
-      | "hybrid" -> true, true
+    let do_pplacer, do_nbc, do_rdp = match fv classifier with
+      | "pplacer" -> true, false, false
+      | "nbc" -> false, true, false
+      | "hybrid" -> true, true, false
+      | "rdp" -> false, false, true
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
     in
 
@@ -392,11 +398,79 @@ object (self)
       Some (!best_classif_map)
     in
 
-    let multiclass = match best_pplacer, best_nbc with
-      | None, None -> invalid_arg "multiclass"
-      | Some x, None
-      | None, Some x -> StringMap.merge merge_pplacer_nbc x StringMap.empty
-      | Some pp, Some nbc -> StringMap.merge merge_pplacer_nbc pp nbc
+    let best_rdp = if not do_rdp then None else
+      let name_map = Tax_id.TaxIdMap.enum td.Tax_taxonomy.tax_name_map
+        |> Enum.map (curry identity |> flip |> uncurry |- second Tax_id.to_string)
+        |> StringMap.of_enum
+      and pn_st = Sqlite3.prepare db
+        "INSERT INTO placement_names VALUES (?, ?, ?, 1.);"
+      and pc_st = Sqlite3.prepare db
+        "INSERT INTO placement_nbc VALUES (?, ?, ?, ?, ?)"
+      and best_classif_map = ref StringMap.empty
+      and bootstrap_min = fv bootstrap_min in
+
+      let process origin name rows =
+        let place_id = new_place_id "rdp" in
+        Sql.bind_step_reset db pn_st
+          [|
+            Sql.D.INT place_id;
+            Sql.D.TEXT name;
+            Sql.D.TEXT origin;
+          |];
+        List.iter
+          (Array.map (fun x -> Sql.D.TEXT x)
+              |- Array.append [| Sql.D.INT place_id |]
+              |- Sql.bind_step_reset db pc_st)
+          rows;
+
+        let class_map = List.fold_left
+          (fun accum arr ->
+            IntMap.add
+              (Tax_taxonomy.get_rank_index td arr.(0))
+              [Tax_id.of_string arr.(2), float_of_string arr.(3)]
+              accum)
+          IntMap.empty
+          rows
+        in
+        StringMap.add
+          name
+          (place_id, best_classifications td bootstrap_min class_map)
+          !best_classif_map
+        |> (:=) best_classif_map
+
+      and classify line =
+        (* past participle of 'to split' *)
+        let splut = String.nsplit line "\t" |> Array.of_list in
+        splut.(0), List.fold_left
+          (fun accum idx ->
+            [|
+              splut.(idx + 1);
+              splut.(idx + 1);
+              (try
+                 StringMap.find splut.(idx) name_map
+               with Not_found ->
+                 failwith (splut.(idx)^" not found in refpkg's taxonomy"));
+              splut.(idx + 2);
+            |] :: accum)
+          []
+          [8; 11; 14; 17; 20]
+
+      in
+      fv rdp_results
+        |> List.enum
+        |> Enum.map
+            (identity &&& (File.lines_of |- Enum.map classify))
+        |> Enum.iter (fun (a, bcl) -> Enum.iter (process a |> uncurry) bcl);
+
+      Some !best_classif_map
+    in
+
+    let multiclass = match best_pplacer, best_nbc, best_rdp with
+      | Some x, None, None
+      | None, Some x, None
+      | None, None, Some x -> StringMap.merge merge_pplacer_nbc x StringMap.empty
+      | Some pp, Some nbc, None -> StringMap.merge merge_pplacer_nbc pp nbc
+      | _ -> invalid_arg "multiclass"
     and mc_st = Sqlite3.prepare db
       "INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)"
     in

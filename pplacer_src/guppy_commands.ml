@@ -22,7 +22,6 @@ let command_list () =
 
     "classification", [
       "classify", (fun () -> new Guppy_classify.cmd ());
-      "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
       "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
     ];
 
