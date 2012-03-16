@@ -18,7 +18,7 @@ object (self)
    @ super_sqlite#specl
    @ super_output#specl
 
-  method desc = "converts RDP output to something resmbling guppy classify output"
+  method desc = "converts RDP output to something resembling guppy classify output"
   method usage = "usage: classify_rdp -c some.refpkg rdp_output_file[s]"
 
   method action argl =
