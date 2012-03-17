@@ -1,8 +1,27 @@
+(* The Naive Bayes taxonomic classifier of Wang et. al. *)
+
 open Ppatteries
 
 module BA = Bigarray
 module BA1 = BA.Array1
 module BA2 = BA.Array2
+
+(* We bootstrap on columns rather than on words of a read. Because of this, the
+ * number of actual words used in a given bootstrap sample for a read (the
+ * number of "occupied" words) will often deviate from the expected number for
+ * that read. In order to make sure that these have the right number of occupied
+ * words, we throw out the bootstrap sample if the number of occupied words is
+ * not within `boot_range_pct` of the expected number.
+ *
+ * For this reason, our bootstrap matrix has `n_boot` times `extra_boot_factor`
+ * rows. The bootstrap function will not provde a reasonable value if we throw
+ * out `(extra_boot_factor-1)*n_boot` values; it is not hard to see using the
+ * CDF of the negative binomal distribution that the probability of this
+ * happening for the values below is essentially zero. *)
+let extra_boot_factor = 5
+let boot_range_pct = 15
+let in_boot_range expected actual =
+  abs (actual - expected) <= expected * boot_range_pct / 100
 
 let bases = "ACGT"
 
@@ -110,6 +129,7 @@ module Classifier = struct
   let make ?(n_boot = 100) c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
+    and boot_rows = n_boot * extra_boot_factor
     and n = float_of_int (succ !(c.seq_count)) in
     let prior_counts = Array.init
       c.base.n_words
@@ -133,16 +153,19 @@ module Classifier = struct
     |> Matrix.rect_transpose
     and fill_boot_row vec =
       Random.enum_int c.base.n_words
+      (* boot with 1/word_length of the words. this number of bootstrapped
+       * columns is assumed below in the definition of `expected` in the
+       * bootstrap function. *)
         |> Enum.take (c.base.n_words / c.base.word_length)
         |> Enum.iter (fun i -> vec.{i} <- succ vec.{i})
     and boot_matrix = BA2.create
       BA.int16_unsigned
       BA.c_layout
-      n_boot
+      boot_rows
       c.base.n_words
     and classify_vec = Gsl_vector.create ~init:0. n_taxids in
     BA2.fill boot_matrix 0;
-    0 --^ n_boot
+    0 --^ boot_rows
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
@@ -176,7 +199,8 @@ module Classifier = struct
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
     let seq_word_counts = count_seq cf seq in
-    let n_boot = BA2.dim1 cf.boot_matrix in
+    let boot_rows = BA2.dim1 cf.boot_matrix in
+    let n_boot = boot_rows / extra_boot_factor in
     if n_boot = 0 then
       TIM.singleton (classify_vec cf seq_word_counts) 1.
     else (* ... *)
@@ -184,14 +208,28 @@ module Classifier = struct
       BA.int16_unsigned
       BA.c_layout
       cf.pc.n_words
-    and incr = 1. /. float_of_int n_boot |> (+.) in
-    0 --^ n_boot
+    and boot_incr = 1. /. float_of_int n_boot |> (+.)
+    (* the expected number of occupied columns under bootstrapping *)
+    and expected = (Linear.int_vec_tot seq_word_counts) / cf.pc.word_length
+    and n_successes = ref 0 in
+    0 --^ boot_rows
     |> Enum.fold
         (fun accum i ->
-          let boot_row = BA2.slice_left cf.boot_matrix i in
-          Linear.int_vec_pairwise_prod booted_word_counts boot_row seq_word_counts;
-          let ti = classify_vec cf booted_word_counts in
-          TIM.modify_def 0. ti incr accum)
+          if !n_successes >= n_boot then accum (* done *)
+          else begin
+            let boot_row = BA2.slice_left cf.boot_matrix i in
+            Linear.int_vec_pairwise_prod
+              booted_word_counts boot_row seq_word_counts;
+            if in_boot_range expected (Linear.int_vec_tot booted_word_counts)
+            then begin
+              (* the number of occupied columns for this bootstrap resample is
+               * within the desired range *)
+              let ti = classify_vec cf booted_word_counts in
+              incr n_successes;
+              TIM.modify_def 0. ti boot_incr accum
+              end
+            else accum
+          end)
         TIM.empty
 
   let of_refpkg ?n_boot word_length rank_idx rp =
