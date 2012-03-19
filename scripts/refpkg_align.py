@@ -189,7 +189,7 @@ def mask_sequences(refpkg, source, target):
 
 def hmmer_align(refpkg, sequence_file, output_path, use_mask=True,
         use_mpi=False, mpi_args=None, mpi_program=None, program_path='hmmalign',
-        alignment_options=None):
+        alignment_options=None, stdout=None):
     d = os.path.dirname(output_path)
     with tempfile.NamedTemporaryFile(dir=d, prefix='hmmer_aln') as tf:
         cmd = [program_path, '-o', tf.name,
@@ -197,7 +197,7 @@ def hmmer_align(refpkg, sequence_file, output_path, use_mask=True,
         cmd.extend(alignment_options or [])
         cmd.extend((refpkg.file_abspath('profile'), sequence_file))
         log.info(' '.join(cmd))
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd, stdout=stdout)
 
         if refpkg.has_mask and use_mask:
             mask_sequences(refpkg, tf.name, output_path)
@@ -208,7 +208,7 @@ def hmmer_align(refpkg, sequence_file, output_path, use_mask=True,
 
 def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         use_mpi=False, mpi_args=None, mpi_program='mpirun',
-        program_path='cmalign', alignment_options=None):
+        program_path='cmalign', alignment_options=None, stdout=None):
     d = os.path.dirname(output_path)
     base_command = ['cmalign']
     if use_mpi:
@@ -222,7 +222,7 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         cmd.extend(['-o', tf.name, refpkg.file_abspath('profile'),
                     sequence_file])
         log.info(' '.join(cmd))
-        subprocess.check_call(cmd, stdout=open(os.devnull))
+        subprocess.check_call(cmd, stdout=stdout)
 
         # Merge
         log.info("Merging.")
@@ -231,7 +231,11 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         cmd.extend((refpkg.file_abspath('profile'),
                     refpkg.file_abspath('aln_sto'), tf.name))
         log.info(' '.join(cmd))
-        subprocess.check_call(cmd, stdout=open(os.devnull))
+
+        # write the merge output to /dev/null: only the initial cmalign command
+        # produces useful output.
+        with open(os.devnull) as devnull:
+            subprocess.check_call(cmd, stdout=devnull)
         tf.close()
 
         if refpkg.has_mask and use_mask:
@@ -243,7 +247,7 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
 
 def pynast_align(refpkg, sequence_file, output_path, use_mask=True,
         use_mpi=False, mpi_args=None, mpi_program='mpirun',
-        program_path='pynast', alignment_options=None):
+        program_path='pynast', alignment_options=None, stdout=None):
     if use_mask and refpkg.has_mask:
         raise NotImplementedError("Cannot mask with PyNAST")
 
@@ -254,7 +258,7 @@ def pynast_align(refpkg, sequence_file, output_path, use_mask=True,
                 '-a', output_path])
 
     log.info(' '.join(cmd))
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, stdout=stdout)
 
 ALIGNERS = {
     'HMMER3': hmmer_align,
@@ -280,7 +284,7 @@ def align(arguments):
     return alignment_func(refpkg, arguments.seqfile, arguments.outfile,
             use_mask=arguments.use_mask, use_mpi=arguments.use_mpi,
             mpi_args=arguments.mpi_arguments, mpi_program=arguments.mpi_run,
-            alignment_options=alignment_options)
+            alignment_options=alignment_options, stdout=arguments.stdout)
 
 def extract(arguments):
     """
@@ -364,17 +368,20 @@ def main(argv=sys.argv[1:]):
     parser_align.add_argument('seqfile', help="""Input file, in FASTA
             format.""")
     parser_align.add_argument('outfile', help="""Output file""")
+    parser_align.add_argument('--stdout', help="""Write alignment program
+            stdout to FILE [default: /dev/null]""", default=open(os.devnull),
+            metavar='FILE', type=argparse.FileType('w'))
     parser_align.add_argument('--debug', action='store_true',
             help='Enable debug output', default=False)
     parser_align.add_argument('--verbose', action='store_true',
             help='Enable verbose output')
-    mpi_args = parser_align.add_argument_group(description="MPI Options")
-    mpi_args.add_argument('--use-mpi', action='store_true',
-            help="""Use MPI [infernal only]""")
+    mpi_args = parser_align.add_argument_group(description="MPI Options [Infernal only]")
+    mpi_args.add_argument('--use-mpi', action='store_true', default=False,
+            help="""Use MPI [default: %(default)s]""")
     mpi_args.add_argument('--mpi-arguments', type=shlex.split,
-            help="""Arguments to pass to mpirun""")
+            help="""Arguments to pass to mpirun [default: %(default)s]""")
     mpi_args.add_argument('--mpi-run', default='mpirun',
-            help="""Name of mpirun executable""")
+            help="""Name of mpirun executable [default: %(default)s]""")
 
     # extract
     parser_extract = subparsers.add_parser('extract',
