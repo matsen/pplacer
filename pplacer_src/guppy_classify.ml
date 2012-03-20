@@ -127,8 +127,13 @@ let best_bayes_classifications td ?multiclass_min bayes_cutoff factors m =
   |> snd
   |> find_ranks_per_want_rank td
 
+let maybe_cl = function
+  | Some (_, cl) as x when not (List.is_empty cl) -> x
+  | _ -> None
+
 (* Merge pplacer and nbc classifications, preferring pplacer. *)
-let merge_pplacer_nbc_best_classif pp_id nbc_id _ pp nbc = match pp, nbc with
+let merge_pplacer_nbc_best_classif pp_id nbc_id _ pp nbc =
+  match maybe_cl pp, maybe_cl nbc with
   | None, None -> None
   | None, Some nbc -> Some (nbc, nbc_id)
   | Some (pp_rank, _), Some ((nbc_rank, _) as nbc) when nbc_rank > pp_rank ->
@@ -158,7 +163,7 @@ let merge_pplacer_nbc_best_classif2 td pp_id nbc_id _ pp nbc =
     pp_rank > nbc_rank
     && on_lineage td (best_classification nbc_cl) (best_classification pp_cl)
   in
-  match pp, nbc with
+  match maybe_cl pp, maybe_cl nbc with
   | None, None -> None
   | Some pp, None -> Some (pp, pp_id)
   | Some pp, Some nbc when supersedes pp nbc -> Some (pp, pp_id)
