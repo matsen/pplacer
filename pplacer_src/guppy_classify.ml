@@ -176,6 +176,28 @@ let merge_pplacer_nbc2 td _ pp nbc = match pp, nbc with
   | Some (pp_id, pp), Some (nbc_id, nbc) ->
     Some (IntMap.merge (merge_pplacer_nbc_best_classif2 td pp_id nbc_id) pp nbc)
 
+let mrca td cl =
+  List.map fst cl
+    |> Tax_taxonomy.list_mrca td
+
+let merge_pplacer_nbc_best_classif3 td pp_id nbc_id _ pp nbc =
+  let supersedes (pp_rank, pp_cl) (nbc_rank, nbc_cl) =
+    pp_rank > nbc_rank
+    && on_lineage td (best_classification nbc_cl) (mrca td pp_cl)
+  in
+  match maybe_cl pp, maybe_cl nbc with
+  | None, None -> None
+  | Some pp, None -> Some (pp, pp_id)
+  | Some pp, Some nbc when supersedes pp nbc -> Some (pp, pp_id)
+  | _, Some nbc -> Some (nbc, nbc_id)
+
+let merge_pplacer_nbc3 td _ pp nbc = match pp, nbc with
+  | None, None -> None
+  | Some (x_id, x), None
+  | None, Some (x_id, x) -> Some (add_id x_id x)
+  | Some (pp_id, pp), Some (nbc_id, nbc) ->
+    Some (IntMap.merge (merge_pplacer_nbc_best_classif2 td pp_id nbc_id) pp nbc)
+
 (* UI-related *)
 
 class cmd () =
@@ -530,6 +552,8 @@ object (self)
         StringMap.merge merge_pplacer_nbc (best_pplacer ()) (best_nbc ())
       | "hybrid2" ->
         StringMap.merge (merge_pplacer_nbc2 td) (best_pplacer ()) (best_nbc ())
+      | "hybrid3" ->
+        StringMap.merge (merge_pplacer_nbc3 td) (best_pplacer ()) (best_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
     and mc_st = Sqlite3.prepare db
       "INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)"
