@@ -145,6 +145,32 @@ let merge_pplacer_nbc _ pp nbc = match pp, nbc with
   | Some (pp_id, pp), Some (nbc_id, nbc) ->
     Some (IntMap.merge (merge_pplacer_nbc_best_classif pp_id nbc_id) pp nbc)
 
+let on_lineage td parent child =
+  Tax_taxonomy.get_lineage td child |> List.mem parent
+
+let best_classification cl =
+  List.enum cl
+    |> Enum.arg_max snd
+    |> fst
+
+let merge_pplacer_nbc_best_classif2 td pp_id nbc_id _ pp nbc =
+  let supersedes (pp_rank, pp_cl) (nbc_rank, nbc_cl) =
+    pp_rank > nbc_rank
+    && on_lineage td (best_classification nbc_cl) (best_classification pp_cl)
+  in
+  match pp, nbc with
+  | None, None -> None
+  | Some pp, None -> Some (pp, pp_id)
+  | Some pp, Some nbc when supersedes pp nbc -> Some (pp, pp_id)
+  | _, Some nbc -> Some (nbc, nbc_id)
+
+let merge_pplacer_nbc2 td _ pp nbc = match pp, nbc with
+  | None, None -> None
+  | Some (x_id, x), None
+  | None, Some (x_id, x) -> Some (add_id x_id x)
+  | Some (pp_id, pp), Some (nbc_id, nbc) ->
+    Some (IntMap.merge (merge_pplacer_nbc_best_classif2 td pp_id nbc_id) pp nbc)
+
 (* UI-related *)
 
 class cmd () =
@@ -217,14 +243,6 @@ object (self)
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
 
-    let do_pplacer, do_nbc, do_rdp = match fv classifier with
-      | "pplacer" -> true, false, false
-      | "nbc" -> false, true, false
-      | "hybrid" -> true, true, false
-      | "rdp" -> false, false, true
-      | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
-    in
-
     let bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion in
     let db = self#get_db in
     Sql.check_exec
@@ -251,7 +269,7 @@ object (self)
         Sqlite3.last_insert_rowid db
     in
 
-    let best_nbc = if not do_nbc then None else
+    let best_nbc () =
       let target_rank = fv target_rank
       and n_boot = fv n_boot
       and children = fv children
@@ -311,10 +329,8 @@ object (self)
           (tap (Tuple3.second |- dprintf "classifying %s...\n")
            |- Tuple3.map3 bootstrap)
       |> List.fold_left (Tuple3.uncurry classify |> flip) StringMap.empty
-      |> some
-    in
 
-    let best_pplacer = if not do_pplacer then None else
+    and best_pplacer () =
       let pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, ?);"
       and pc_st = Sqlite3.prepare db
@@ -428,10 +444,9 @@ object (self)
         tax_identity_func place_id pq;
       in
       List.iter (pplacer_classify Placement.classif criterion td classify) prl;
-      Some (!best_classif_map)
-    in
+      !best_classif_map
 
-    let best_rdp = if not do_rdp then None else
+    and best_rdp () =
       let name_map = Tax_id.TaxIdMap.enum td.Tax_taxonomy.tax_name_map
         |> Enum.map (curry identity |> flip |> uncurry |- second Tax_id.to_string)
         |> StringMap.of_enum
@@ -496,15 +511,21 @@ object (self)
             (identity &&& (File.lines_of |- Enum.map classify))
         |> Enum.iter (fun (a, bcl) -> Enum.iter (process a |> uncurry) bcl);
 
-      Some !best_classif_map
+      !best_classif_map
+
+    and sole_classifier x =
+      StringMap.merge merge_pplacer_nbc x StringMap.empty
     in
 
-    let multiclass = match best_pplacer, best_nbc, best_rdp with
-      | Some x, None, None
-      | None, Some x, None
-      | None, None, Some x -> StringMap.merge merge_pplacer_nbc x StringMap.empty
-      | Some pp, Some nbc, None -> StringMap.merge merge_pplacer_nbc pp nbc
-      | _ -> invalid_arg "multiclass"
+    let multiclass = match fv classifier with
+      | "pplacer" -> best_pplacer () |> sole_classifier
+      | "nbc" -> best_nbc () |> sole_classifier
+      | "rdp" -> best_rdp () |> sole_classifier
+      | "hybrid" ->
+        StringMap.merge merge_pplacer_nbc (best_pplacer ()) (best_nbc ())
+      | "hybrid2" ->
+        StringMap.merge (merge_pplacer_nbc2 td) (best_pplacer ()) (best_nbc ())
+      | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
     and mc_st = Sqlite3.prepare db
       "INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)"
     in
