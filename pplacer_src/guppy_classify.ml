@@ -139,25 +139,24 @@ let find_ranks_per_want_rank td cf =
 (*   | Some (_, cl) as x when not (List.is_empty cl) -> x *)
 (*   | _ -> None *)
 
-(* Merge pplacer and nbc classifications, preferring pplacer. *)
-let merge_hybrid _ pp nbc =
-  let merge_tiamrim _ pp nbc = match pp, nbc with
-    | None, None -> None
-    | Some pp, _ -> Some pp
-    | None, Some nbc -> Some nbc
-  in
-  match pp, nbc with
-  | None, None -> None
-  | Some x, None
-  | None, Some x -> Some x
-  | Some pp, Some nbc ->
-    Some (IntMap.merge merge_tiamrim pp.tiamrim nbc.tiamrim |> subclassification)
-
 let on_lineage td parent child =
   Tax_taxonomy.get_lineage td child |> List.mem parent
 
 let filter_ranks_below rank tiamrim =
   IntMap.split (succ rank) tiamrim |> Tuple3.first
+
+let best_classification {tiamr} =
+  TIAMR.enum tiamr |> Enum.arg_max snd |> fst
+
+let mrca td {tiamr} =
+  TIAMR.keys tiamr |> List.of_enum |> Tax_taxonomy.list_mrca td
+
+let merge_fn f _ a b =
+  match a, b with
+  | None, None -> None
+  | Some x, None
+  | None, Some x -> Some x
+  | Some a, Some b -> Some (f a b)
 
 (* UI-related *)
 
@@ -229,13 +228,37 @@ object (self)
     "outputs classification information in SQLite format"
   method usage = "usage: classify [options] placefile[s]"
 
-  method private merge_hybrid4 td _ pp nbc =
+  method private merge_hybrid pp nbc =
+    let pp_rank, _ = IntMap.max_binding pp.tiamrim
+    and nbc_rank, _ = IntMap.max_binding nbc.tiamrim in
+    if nbc_rank > pp_rank then nbc else pp
+
+  method private merge_hybrid2 td pp nbc =
+    let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
+    and nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
+    if pp_rank > nbc_rank
+      && on_lineage
+        td
+        (best_classification nbc_best)
+        (best_classification pp_best)
+    then pp
+    else nbc
+
+  method private merge_hybrid3 td pp nbc =
+    let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
+    and nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
+    if pp_rank > nbc_rank
+      && on_lineage td (best_classification nbc_best) (mrca td pp_best)
+    then pp
+    else nbc
+
+  method private merge_hybrid4 td =
     let bootstrap_cutoff = fv bootstrap_cutoff
     and bootstrap_extension_cutoff = fv bootstrap_extension_cutoff
     and bayes_cutoff = fv bayes_cutoff
     and cutoff = fv cutoff
     and multiclass_min = fv multiclass_min in
-    let merge pp nbc =
+    fun pp nbc ->
       let factors = bayes_factors pp in
       let pp_rank, _ = pp.tiamrim
         |> IntMap.filter_map (fun i _ -> factors.(i) |> Tuple3.third)
@@ -280,12 +303,6 @@ object (self)
       match aux pp_rank with
       | Some pp -> pp
       | None -> filter_ranks_below nbc_rank |> map_tiamrim nbc
-    in
-    match pp, nbc with
-    | None, None -> None
-    | Some x, None
-    | None, Some x -> Some x
-    | Some pp, Some nbc -> Some (merge pp nbc)
 
   method private placefile_action prl =
     let rp = self#get_rp in
@@ -560,9 +577,24 @@ object (self)
       | "pplacer" -> default_pplacer ()
       | "nbc" -> default_nbc ()
       | "rdp" -> default_rdp ()
+      | "hybrid" ->
+        StringMap.merge
+          (merge_fn self#merge_hybrid)
+          (default_pplacer ())
+          (default_nbc ())
+      | "hybrid2" ->
+        StringMap.merge
+          (self#merge_hybrid2 td |> merge_fn)
+          (default_pplacer ())
+          (default_nbc ())
+      | "hybrid3" ->
+        StringMap.merge
+          (self#merge_hybrid3 td |> merge_fn)
+          (default_pplacer ())
+          (default_nbc ())
       | "hybrid4" ->
         StringMap.merge
-          (self#merge_hybrid4 td)
+          (self#merge_hybrid4 td |> merge_fn)
           (perform_pplacer ())
           (perform_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
