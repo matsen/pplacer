@@ -4,6 +4,32 @@ open Ppatteries
 
 module TIAMR = AlgMapR (Tax_id.TaxIdMap)
 
+type tiamr = {
+  tiamr: float TIAMR.t;
+  place_id: int64;
+}
+
+type classification = {
+  tiamrim: tiamr IntMap.t;
+  bayes_factors: Bayes_factor.t option;
+}
+
+type seq_classifications = classification StringMap.t
+
+let classification ?bayes_factors place_id tiamrim =
+  let tiamrim = IntMap.map (fun tiamr -> {tiamr; place_id}) tiamrim in
+  {tiamrim; bayes_factors}
+let subclassification ?bayes_factors tiamrim = {tiamrim; bayes_factors}
+
+let tiamr {tiamr} = tiamr
+let set_tiamr t tiamr = {t with tiamr}
+let map_tiamr t f = {t with tiamr = f t.tiamr}
+
+let tiamrim {tiamrim} = tiamrim
+let bayes_factors {bayes_factors} = Option.get bayes_factors
+let set_tiamrim cf tiamrim = {cf with tiamrim}
+let map_tiamrim cf f = {cf with tiamrim = f cf.tiamrim}
+
 (* if rank is less than the tax rank of ti, then move up the taxonomy until
  * the first time that the tax rank is less than or equal to rank *)
 let classify_at_rank td rank ti =
@@ -22,99 +48,68 @@ let keymap_add_by f m =
     (TIAMR.to_pairs m)
     TIAMR.empty
 
-(* Produce a classification map for each pquery in a placerun using pplacer
- * classification. The callback function `f` will be called for each pquery. *)
-let pplacer_classify how criterion td f pr =
-  let n_ranks = Tax_taxonomy.get_n_ranks td
-  and prn = Placerun.get_name pr in
-  try
-    List.iter
-      (fun pq ->
-        let outmap = ref IntMap.empty in
-        let m = ref
-          (List.fold_right
-             (fun p -> TIAMR.add_by (how p) (criterion p))
-             (Pquery.place_list pq)
-             (TIAMR.empty))
-        in
-        for desired_rank=(n_ranks-1) downto 0 do
-          m := keymap_add_by (classify_at_rank td desired_rank) !m;
-          outmap := IntMap.add
-            desired_rank
-            (TIAMR.to_pairs (!m))
-            !outmap
-        done;
-        f prn pq !outmap)
-      (Placerun.get_pqueries pr)
-  with
-  | Placement.No_classif ->
-    invalid_arg
-      ((Placerun.get_name pr)^" contains unclassified queries!")
+(* This is the equivalent to filtering by `rank = desired_rank` in the
+ * old best_classifications view. *)
+let tiamr_at_rank td rank tiamr =
+  TIAMR.filteri (fun ti _ -> Tax_taxonomy.get_tax_rank td ti = rank) tiamr
+  |> junction TIAMR.is_empty (const None) some
 
 (* From an bootstrap map, produce a full classification map. *)
-let nbc_classify td boot_map =
+let partition_by_rank td tiamr =
   let outmap = ref IntMap.empty
-  and m = ref boot_map
+  and m = ref tiamr
   and n_ranks = Tax_taxonomy.get_n_ranks td in
   for desired_rank=(n_ranks-1) downto 0 do
     m := keymap_add_by (classify_at_rank td desired_rank) !m;
-    outmap := IntMap.add
+    outmap := IntMap.opt_add
       desired_rank
-      (TIAMR.to_pairs (!m))
+      (tiamr_at_rank td desired_rank !m)
       !outmap
   done;
   !outmap
 
-(* For every rank, find the first rank at or above it with a valid set of
- * classifications. *)
-let find_ranks_per_want_rank td m =
-  let rec aux rank =
-    match IntMap.Exceptionless.find rank m with
-    | Some cl -> rank, cl
-    | _ when rank = 0 -> rank, []
-    | _ -> aux (rank - 1)
-  in
-  0 --^ Tax_taxonomy.get_n_ranks td
-  |> Enum.map (identity &&& aux)
-  |> IntMap.of_enum
+(* Produce a classification map for each pquery in a placerun using pplacer
+ * classification. The callback function `f` will be called for each pquery. *)
+let placerun_classify how criterion td f pr =
+  let prn = Placerun.get_name pr in
+  List.iter
+    (fun pq ->
+      partition_by_rank
+        td
+        (List.fold_right
+           (fun p -> TIAMR.add_by (how p) (criterion p))
+           (Pquery.place_list pq)
+           (TIAMR.empty))
+      |> f prn pq)
+    (Placerun.get_pqueries pr)
 
 (* From a classificication map, find the best classifications for each rank. *)
-let best_classifications td ?multiclass_min cutoff m =
-  IntMap.filter_map
-    (fun rank l ->
-      (* This is the equivalent to filtering by `rank = desired_rank` in the
-       * old best_classifications view. *)
-      let l = List.filter (fst |- Tax_taxonomy.get_tax_rank td |- (=) rank) l in
-      try
-        (* If there's a clear best, pick that. *)
-        List.find_map
-          (fun (_, l as t) -> if l >= cutoff then Some [t] else None)
-          l
-        |> some
-      with Not_found ->
-        match multiclass_min with
-        | None -> None
-        | Some multiclass_min ->
-          (* Otherwise, if we're multiclassifying, see if it adds up. *)
-          let cl, sum = List.fold_left
-            (fun (cl, sum as accum) (_, l as t) ->
-              if l >= multiclass_min then t :: cl, sum +. l else accum)
-            ([], 0.)
-            l
-          in
-          if sum >= cutoff then Some cl else None)
-    m
-  |> find_ranks_per_want_rank td
+let filter_best ?multiclass_min cutoff cf =
+  IntMap.filter_map (fun _ {tiamr; place_id} ->
+    match TIAMR.enum tiamr |> Enum.arg_max snd, multiclass_min with
+    (* If there's a clear best, pick that. *)
+    | (t, l), _ when l >= cutoff ->
+      Some {tiamr = TIAMR.singleton t l; place_id}
+    | _, None -> None
+    | _, Some multiclass_min ->
+      (* Otherwise, if we're multiclassifying, see if it adds up. *)
+      TIAMR.filter ((<=) multiclass_min) tiamr
+      |> junction
+          (TIAMR.values |- Enum.fold (+.) 0. |- (<=) cutoff)
+          (fun tiamr -> Some {tiamr; place_id})
+          (const None))
+  |> map_tiamrim cf
 
-let best_bayes_classifications td ?multiclass_min bayes_cutoff factors m =
+let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
+  let factors = bayes_factors cf in
   (match multiclass_min with
-    | None -> m
+    | None -> cf.tiamrim
     | Some multiclass_min ->
       IntMap.filter_map
-        (List.filter (snd |- (<=) multiclass_min)
-         |- junction List.is_empty (const None) some
-         |> const)
-        m)
+        (fun _ t ->
+          TIAMR.filter ((<=) multiclass_min) t.tiamr
+          |> junction TIAMR.is_empty (const None) (set_tiamr t |- some))
+        cf.tiamrim)
   |> IntMap.backwards
   |> Enum.fold
       (fun (found_evidence, accum) (rank, value) ->
@@ -125,78 +120,78 @@ let best_bayes_classifications td ?multiclass_min bayes_cutoff factors m =
         | _ -> false, accum)
       (false, IntMap.empty)
   |> snd
-  |> find_ranks_per_want_rank td
+  |> set_tiamrim cf
 
-let maybe_cl = function
-  | Some (_, cl) as x when not (List.is_empty cl) -> x
-  | _ -> None
+(* For every rank, find the first rank at or above it with a valid set of
+ * classifications. *)
+let find_ranks_per_want_rank td cf =
+  let rec aux rank =
+    match IntMap.Exceptionless.find rank cf.tiamrim with
+    | Some tiamr -> tiamr
+    | _ when rank = 0 -> {tiamr = TIAMR.empty; place_id = -1L}
+    | _ -> aux (rank - 1)
+  in
+  0 --^ Tax_taxonomy.get_n_ranks td
+  |> Enum.map (identity &&& aux)
+  |> IntMap.of_enum
+
+(* let maybe_cl = function *)
+(*   | Some (_, cl) as x when not (List.is_empty cl) -> x *)
+(*   | _ -> None *)
 
 (* Merge pplacer and nbc classifications, preferring pplacer. *)
-let merge_pplacer_nbc_best_classif pp_id nbc_id _ pp nbc =
-  match maybe_cl pp, maybe_cl nbc with
+let merge_hybrid _ pp nbc =
+  let merge_tiamrim _ pp nbc = match pp, nbc with
+    | None, None -> None
+    | Some pp, _ -> Some pp
+    | None, Some nbc -> Some nbc
+  in
+  match pp, nbc with
   | None, None -> None
-  | None, Some nbc -> Some (nbc, nbc_id)
-  | Some (pp_rank, _), Some ((nbc_rank, _) as nbc) when nbc_rank > pp_rank ->
-    Some (nbc, nbc_id)
-  | Some pp, _ -> Some (pp, pp_id)
-
-let add_id id m =
-  IntMap.map (fun x -> x, id) m
-
-let merge_pplacer_nbc _ pp nbc = match pp, nbc with
-  | None, None -> None
-  | Some (x_id, x), None
-  | None, Some (x_id, x) -> Some (add_id x_id x)
-  | Some (pp_id, pp), Some (nbc_id, nbc) ->
-    Some (IntMap.merge (merge_pplacer_nbc_best_classif pp_id nbc_id) pp nbc)
+  | Some x, None
+  | None, Some x -> Some x
+  | Some pp, Some nbc ->
+    Some (IntMap.merge merge_tiamrim pp.tiamrim nbc.tiamrim |> subclassification)
 
 let on_lineage td parent child =
   Tax_taxonomy.get_lineage td child |> List.mem parent
 
-let best_classification cl =
-  List.enum cl
-    |> Enum.arg_max snd
-    |> fst
-
-let merge_pplacer_nbc_best_classif2 td pp_id nbc_id _ pp nbc =
-  let supersedes (pp_rank, pp_cl) (nbc_rank, nbc_cl) =
-    pp_rank > nbc_rank
-    && on_lineage td (best_classification nbc_cl) (best_classification pp_cl)
+let merge_hybrid4 td bootstrap_min bootstrap_support bayes_cutoff _ pp nbc =
+  let merge pp nbc =
+    let factors = bayes_factors pp in
+    let pp_rank, _ = pp.tiamrim
+      |> IntMap.filter_map (fun i _ -> factors.(i) |> Tuple3.third)
+      |> IntMap.backwards
+      |> Enum.find (snd |- (<=) bayes_cutoff)
+    and nbc_rank, nbc_best = nbc.tiamrim
+      |> IntMap.filter_map
+          (tiamr
+           |- TIAMR.enum
+           |- Enum.arg_max snd
+           |- junction (snd |- (<=) bootstrap_min) (fst |- some) (const None)
+           |> const)
+      |> IntMap.max_binding
+    in
+    let pp_best, _ = IntMap.find pp_rank pp.tiamrim
+      |> tiamr
+      |> TIAMR.enum
+      |> Enum.arg_max snd
+    in
+    let pp_best_bootstrap = IntMap.find pp_rank nbc.tiamrim
+      |> tiamr
+      |> TIAMR.get pp_best 0.
+    in
+    if pp_rank > nbc_rank
+      && on_lineage td nbc_best pp_best
+      && pp_best_bootstrap >= bootstrap_support
+    then pp
+    else nbc
   in
-  match maybe_cl pp, maybe_cl nbc with
+  match pp, nbc with
   | None, None -> None
-  | Some pp, None -> Some (pp, pp_id)
-  | Some pp, Some nbc when supersedes pp nbc -> Some (pp, pp_id)
-  | _, Some nbc -> Some (nbc, nbc_id)
-
-let merge_pplacer_nbc2 td _ pp nbc = match pp, nbc with
-  | None, None -> None
-  | Some (x_id, x), None
-  | None, Some (x_id, x) -> Some (add_id x_id x)
-  | Some (pp_id, pp), Some (nbc_id, nbc) ->
-    Some (IntMap.merge (merge_pplacer_nbc_best_classif2 td pp_id nbc_id) pp nbc)
-
-let mrca td cl =
-  List.map fst cl
-    |> Tax_taxonomy.list_mrca td
-
-let merge_pplacer_nbc_best_classif3 td pp_id nbc_id _ pp nbc =
-  let supersedes (pp_rank, pp_cl) (nbc_rank, nbc_cl) =
-    pp_rank > nbc_rank
-    && on_lineage td (best_classification nbc_cl) (mrca td pp_cl)
-  in
-  match maybe_cl pp, maybe_cl nbc with
-  | None, None -> None
-  | Some pp, None -> Some (pp, pp_id)
-  | Some pp, Some nbc when supersedes pp nbc -> Some (pp, pp_id)
-  | _, Some nbc -> Some (nbc, nbc_id)
-
-let merge_pplacer_nbc3 td _ pp nbc = match pp, nbc with
-  | None, None -> None
-  | Some (x_id, x), None
-  | None, Some (x_id, x) -> Some (add_id x_id x)
-  | Some (pp_id, pp), Some (nbc_id, nbc) ->
-    Some (IntMap.merge (merge_pplacer_nbc_best_classif2 td pp_id nbc_id) pp nbc)
+  | Some x, None
+  | None, Some x -> Some x
+  | Some pp, Some nbc -> Some (merge pp nbc)
 
 (* UI-related *)
 
@@ -217,6 +212,8 @@ object (self)
     (Formatted (0.2, "The default value for the multiclass_min param. Default: %0.2f"))
   val bootstrap_min = flag "--bootstrap-min"
     (Formatted (0.8, "The default value for the bootstrap_min param. Default: %0.2f"))
+  val bootstrap_support = flag "--bootstrap-support"
+    (Formatted (0.4, "The default value for the bootstrap_min param. Default: %0.2f"))
 
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria in the pplacer classifier."))
@@ -250,6 +247,7 @@ object (self)
     float_flag bayes_cutoff;
     float_flag multiclass_min;
     float_flag bootstrap_min;
+    float_flag bootstrap_support;
     toggle_flag use_pp;
     string_flag tax_identity;
     toggle_flag mrca_class;
@@ -296,11 +294,11 @@ object (self)
         Sqlite3.last_insert_rowid db
     in
 
-    let best_nbc () =
+    let default_filter_nbc m = filter_best (fv bootstrap_min) m
+    and perform_nbc () =
       let target_rank = fv target_rank
       and n_boot = fv n_boot
-      and children = fv children
-      and bootstrap_min = fv bootstrap_min in
+      and children = fv children in
       let rank_idx =
         try
           Tax_taxonomy.get_rank_index td target_rank
@@ -312,11 +310,11 @@ object (self)
       in
       let bootstrap = Alignment.ungap
         |- Nbc.Classifier.bootstrap classif
-        |- nbc_classify td
+        |- partition_by_rank td
       and pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, 1);"
       and pc_st = Sqlite3.prepare db
-        "INSERT INTO placement_nbc VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO placement_nbc VALUES (?, ?, ?)"
       in
 
       let classify origin name boot_map accum =
@@ -326,19 +324,16 @@ object (self)
           Sql.D.TEXT name;
           Sql.D.TEXT origin;
         |];
-        flip IntMap.iter boot_map (fun rank_idx likelihoods ->
-          let desired_rank = Tax_taxonomy.get_rank_name td rank_idx in
-          flip List.iter likelihoods (fun (ti, likelihood) ->
+        flip IntMap.iter boot_map (fun _ likelihoods ->
+          flip TIAMR.iter likelihoods (fun ti likelihood ->
             Sql.bind_step_reset db pc_st [|
               Sql.D.INT place_id;
-              Sql.D.TEXT desired_rank;
-              Sql.D.TEXT (Tax_taxonomy.rank_name_of_tax_id td ti);
               Sql.D.TEXT (Tax_id.to_string ti);
               Sql.D.FLOAT likelihood
         |]));
         StringMap.add
           name
-          (place_id, best_classifications td bootstrap_min boot_map)
+          (classification place_id boot_map)
           accum
       in
 
@@ -357,19 +352,25 @@ object (self)
            |- Tuple3.map3 bootstrap)
       |> List.fold_left (Tuple3.uncurry classify |> flip) StringMap.empty
 
-    and best_pplacer () =
+    and default_filter_pplacer =
+      let multiclass_min = fv multiclass_min
+      and bayes_cutoff = fv bayes_cutoff
+      and cutoff = fv cutoff in
+      fun m ->
+        if bayes_cutoff =~ 0. then
+          filter_best ~multiclass_min cutoff m
+        else
+          filter_best_by_bayes ~multiclass_min bayes_cutoff m
+    and perform_pplacer () =
       let pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, ?);"
       and pc_st = Sqlite3.prepare db
-        "INSERT INTO placement_classifications VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO placement_classifications VALUES (?, ?, ?)"
       and pp_st = Sqlite3.prepare db
         "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
       and pe_st = Sqlite3.prepare db
         "INSERT INTO placement_evidence VALUES (?, ?, ?, ?)"
-      and best_classif_map = ref StringMap.empty
-      and multiclass_min = fv multiclass_min
-      and bayes_cutoff = fv bayes_cutoff
-      and cutoff = fv cutoff in
+      and best_classif_map = ref StringMap.empty in
 
       let tax_identity_func = match fvo tax_identity with
         | None -> fun _ _ -> ()
@@ -416,18 +417,13 @@ object (self)
             Sql.D.FLOAT mass;
           |])
           (Pquery.namlom pq);
-        IntMap.iter
-          (fun desired_rank rankl ->
-            List.iter
-              (fun (tax_id, prob) -> Sql.bind_step_reset db pc_st [|
-                Sql.D.INT place_id;
-                Sql.D.TEXT (Tax_taxonomy.get_rank_name td desired_rank);
-                Sql.D.TEXT (Tax_taxonomy.rank_name_of_tax_id td tax_id);
-                Tax_id.to_sql tax_id;
-                Sql.D.FLOAT prob;
-              |])
-              rankl)
-          rank_map;
+        flip IntMap.iter rank_map (fun _ tiamr ->
+          flip TIAMR.iter tiamr (fun tax_id prob ->
+            Sql.bind_step_reset db pc_st [|
+              Sql.D.INT place_id;
+              Tax_id.to_sql tax_id;
+              Sql.D.FLOAT prob;
+            |]));
         List.iter
           (fun p -> Sql.bind_step_reset db pp_st [|
             Sql.D.INT place_id;
@@ -446,7 +442,7 @@ object (self)
           |])
           (Pquery.place_list pq);
 
-        let bf = bayes_factors pq in
+        let bayes_factors = bayes_factors pq in
         Array.iter
           (fun (rank, ev, bf) -> Sql.bind_step_reset db pe_st [|
             Sql.D.INT place_id;
@@ -456,33 +452,28 @@ object (self)
               | None -> Sql.D.NULL
               | Some bf -> Sql.D.FLOAT bf);
           |])
-          bf;
-        let bc =
-          if bayes_cutoff =~ 0. then
-            best_classifications td ~multiclass_min cutoff rank_map
-          else
-            best_bayes_classifications td ~multiclass_min bayes_cutoff bf rank_map
-        in
+          bayes_factors;
+        let bc = classification ~bayes_factors place_id rank_map in
         List.fold_left
-          (flip StringMap.add (place_id, bc) |> flip)
+          (flip StringMap.add bc |> flip)
           !best_classif_map
           (Pquery.namel pq)
         |> (:=) best_classif_map;
         tax_identity_func place_id pq;
       in
-      List.iter (pplacer_classify Placement.classif criterion td classify) prl;
+      List.iter (placerun_classify Placement.classif criterion td classify) prl;
       !best_classif_map
 
-    and best_rdp () =
+    and default_filter_rdp m = filter_best (fv bootstrap_min) m
+    and perform_rdp () =
       let name_map = Tax_id.TaxIdMap.enum td.Tax_taxonomy.tax_name_map
         |> Enum.map (curry identity |> flip |> uncurry |- second Tax_id.to_string)
         |> StringMap.of_enum
       and pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, 1.);"
       and pc_st = Sqlite3.prepare db
-        "INSERT INTO placement_nbc VALUES (?, ?, ?, ?, ?)"
-      and best_classif_map = ref StringMap.empty
-      and bootstrap_min = fv bootstrap_min in
+        "INSERT INTO placement_nbc VALUES (?, ?, ?)"
+      and best_classif_map = ref StringMap.empty in
 
       let process origin name rows =
         let place_id = new_place_id "rdp" in
@@ -494,11 +485,11 @@ object (self)
           |];
         List.iter
           (Array.map (fun x -> Sql.D.TEXT x)
-              |- Array.append [| Sql.D.INT place_id |]
-              |- Sql.bind_step_reset db pc_st)
+           |- Array.append [| Sql.D.INT place_id |]
+           |- Sql.bind_step_reset db pc_st)
           rows;
 
-        let class_map = List.fold_left
+        List.fold_left
           (fun accum arr ->
             TIAMR.add_by
               (Tax_id.of_string arr.(2))
@@ -506,12 +497,9 @@ object (self)
               accum)
           TIAMR.empty
           rows
-        |> nbc_classify td
-        in
-        StringMap.add
-          name
-          (place_id, best_classifications td bootstrap_min class_map)
-          !best_classif_map
+        |> partition_by_rank td
+        |> classification place_id
+        |> flip (StringMap.add name) !best_classif_map
         |> (:=) best_classif_map
 
       and classify line =
@@ -520,8 +508,6 @@ object (self)
         splut.(0), List.fold_left
           (fun accum idx ->
             [|
-              splut.(idx + 1);
-              splut.(idx + 1);
               (try
                  StringMap.find splut.(idx) name_map
                with Not_found ->
@@ -540,31 +526,36 @@ object (self)
 
       !best_classif_map
 
-    and sole_classifier x =
-      StringMap.merge merge_pplacer_nbc x StringMap.empty
     in
 
+    let default_pplacer () =
+      perform_pplacer () |> StringMap.map default_filter_pplacer
+    and default_nbc () = perform_nbc () |> StringMap.map default_filter_nbc
+    and default_rdp () = perform_rdp () |> StringMap.map default_filter_rdp in
     let multiclass = match fv classifier with
-      | "pplacer" -> best_pplacer () |> sole_classifier
-      | "nbc" -> best_nbc () |> sole_classifier
-      | "rdp" -> best_rdp () |> sole_classifier
-      | "hybrid" ->
-        StringMap.merge merge_pplacer_nbc (best_pplacer ()) (best_nbc ())
-      | "hybrid2" ->
-        StringMap.merge (merge_pplacer_nbc2 td) (best_pplacer ()) (best_nbc ())
-      | "hybrid3" ->
-        StringMap.merge (merge_pplacer_nbc3 td) (best_pplacer ()) (best_nbc ())
+      | "pplacer" -> default_pplacer ()
+      | "nbc" -> default_nbc ()
+      | "rdp" -> default_rdp ()
+      | "hybrid4" ->
+        StringMap.merge
+          (merge_hybrid4
+             td
+             (fv bootstrap_min)
+             (fv bootstrap_support)
+             (fv bayes_cutoff))
+          (perform_pplacer ())
+          (perform_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
     and mc_st = Sqlite3.prepare db
       "INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)"
     in
-    flip StringMap.iter multiclass (fun seq_name rank_map ->
-      flip IntMap.iter rank_map (fun want_rank ((rank, cl), pid) ->
-        flip List.iter cl (fun (ti, l) -> Sql.bind_step_reset db mc_st [|
-          Sql.D.INT pid;
+    flip StringMap.iter multiclass (fun seq_name cf ->
+      flip IntMap.iter (find_ranks_per_want_rank td cf) (fun want_rank t ->
+        flip TIAMR.iter t.tiamr (fun ti l -> Sql.bind_step_reset db mc_st [|
+          Sql.D.INT t.place_id;
           Sql.D.TEXT seq_name;
           Sql.D.TEXT (Tax_taxonomy.get_rank_name td want_rank);
-          Sql.D.TEXT (Tax_taxonomy.get_rank_name td rank);
+          Sql.D.TEXT (Tax_taxonomy.rank_name_of_tax_id td ti);
           Sql.D.TEXT (Tax_id.to_string ti);
           Sql.D.FLOAT l;
         |])));

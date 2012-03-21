@@ -54,8 +54,6 @@ object (self)
 
       CREATE TABLE placement_classifications (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
-        desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
-        rank TEXT REFERENCES ranks (rank) NOT NULL,
         tax_id TEXT REFERENCES taxa (tax_id),
         likelihood REAL NOT NULL
       );
@@ -63,8 +61,6 @@ object (self)
 
       CREATE TABLE placement_nbc (
         placement_id INTEGER REFERENCES placements (placement_id) NOT NULL,
-        desired_rank TEXT REFERENCES ranks (rank) NOT NULL,
-        rank TEXT REFERENCES ranks (rank) NOT NULL,
         tax_id TEXT REFERENCES taxa (tax_id),
         bootstrap REAL NOT NULL
       );
