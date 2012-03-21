@@ -493,8 +493,8 @@ object (self)
         List.fold_left
           (fun accum arr ->
             TIAMR.add_by
-              (Tax_id.of_string arr.(2))
-              (float_of_string arr.(3))
+              (Tax_id.of_string arr.(0))
+              (float_of_string arr.(1))
               accum)
           TIAMR.empty
           rows
