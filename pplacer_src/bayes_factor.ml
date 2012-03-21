@@ -40,6 +40,7 @@ open Ppatteries
 module TaxIdMap = Tax_id.TaxIdMap
 module IAMR = IntAlgMapR
 
+type t = (string * float * float option) array
 
 let all_mrcas rp =
   let mrcam = Refpkg.get_mrcam rp
