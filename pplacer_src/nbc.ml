@@ -208,11 +208,10 @@ module Classifier = struct
       BA.int16_unsigned
       BA.c_layout
       cf.pc.n_words
-    and boot_incr = 1. /. float_of_int n_boot |> (+.)
     (* the expected number of occupied columns under bootstrapping *)
     and expected = (Linear.int_vec_tot seq_word_counts) / cf.pc.word_length
     and n_successes = ref 0 in
-    0 --^ boot_rows
+    let counts = 0 --^ boot_rows
     |> Enum.fold
         (fun accum i ->
           if !n_successes >= n_boot then accum (* done *)
@@ -226,11 +225,14 @@ module Classifier = struct
                * within the desired range *)
               let ti = classify_vec cf booted_word_counts in
               incr n_successes;
-              TIM.modify_def 0. ti boot_incr accum
+              TIM.modify_def 0 ti succ accum
               end
             else accum
           end)
         TIM.empty
+    in
+    let total = TIM.values counts |> Enum.sum |> float_of_int in
+    TIM.map (fun c -> float_of_int c /. total) counts
 
   let of_refpkg ?n_boot word_length rank_idx rp =
     let rank_tax_map = Convex.rank_tax_map_of_refpkg rp
