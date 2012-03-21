@@ -290,6 +290,10 @@ double *extreme_vertices(const double *ineqs, const size_t nrows,
   assert(output_size != NULL);
   assert(lower_bound <= upper_bound);
 
+  /* Check for approx equal lower and upper bound */
+  if (abs(lower_bound - upper_bound) < EPS)
+    return NULL;
+
   /*
    * Initialize library
    * TODO: Do we want to do this on every call?
