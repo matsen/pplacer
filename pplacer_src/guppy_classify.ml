@@ -102,15 +102,7 @@ let filter_best ?multiclass_min cutoff cf =
 
 let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
   let factors = bayes_factors cf in
-  (match multiclass_min with
-    | None -> cf.tiamrim
-    | Some multiclass_min ->
-      IntMap.filter_map
-        (fun _ t ->
-          TIAMR.filter ((<=) multiclass_min) t.tiamr
-          |> junction TIAMR.is_empty (const None) (set_tiamr t |- some))
-        cf.tiamrim)
-  |> IntMap.backwards
+  IntMap.backwards cf.tiamrim
   |> Enum.fold
       (fun (found_evidence, accum) (rank, value) ->
         if found_evidence then true, IntMap.add rank value accum else (* ... *)
@@ -120,6 +112,13 @@ let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
         | _ -> false, accum)
       (false, IntMap.empty)
   |> snd
+  |> (match multiclass_min with
+    | None -> identity
+    | Some multiclass_min ->
+      IntMap.filter_map
+        (fun _ t ->
+          TIAMR.filter ((<=) multiclass_min) t.tiamr
+          |> junction TIAMR.is_empty (const None) (set_tiamr t |- some)))
   |> set_tiamrim cf
 
 (* For every rank, find the first rank at or above it with a valid set of
