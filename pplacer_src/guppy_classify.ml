@@ -156,43 +156,8 @@ let merge_hybrid _ pp nbc =
 let on_lineage td parent child =
   Tax_taxonomy.get_lineage td child |> List.mem parent
 
-let merge_hybrid4 td bootstrap_min bootstrap_support bayes_cutoff _ pp nbc =
-  let merge pp nbc =
-    let factors = bayes_factors pp in
-    let pp_rank, _ = pp.tiamrim
-      |> IntMap.filter_map (fun i _ -> factors.(i) |> Tuple3.third)
-      |> IntMap.backwards
-      |> Enum.find (snd |- (<=) bayes_cutoff)
-    and nbc_rank, nbc_best = nbc.tiamrim
-      |> IntMap.filter_map
-          (tiamr
-           |- TIAMR.enum
-           |- Enum.arg_max snd
-           |- junction (snd |- (<=) bootstrap_min) (fst |- some) (const None)
-           |> const)
-      |> IntMap.max_binding
-    in
-    let pp_best, _ = IntMap.find pp_rank pp.tiamrim
-      |> tiamr
-      |> TIAMR.enum
-      |> Enum.arg_max snd
-    in
-    let pp_best_bootstrap =
-      try
-        IntMap.find pp_rank nbc.tiamrim |> tiamr |> TIAMR.find pp_best
-      with Not_found -> 0.
-    in
-    if pp_rank > nbc_rank
-      && on_lineage td nbc_best pp_best
-      && pp_best_bootstrap >= bootstrap_support
-    then pp
-    else nbc
-  in
-  match pp, nbc with
-  | None, None -> None
-  | Some x, None
-  | None, Some x -> Some x
-  | Some pp, Some nbc -> Some (merge pp nbc)
+let filter_ranks_below rank tiamrim =
+  IntMap.split (succ rank) tiamrim |> Tuple3.first
 
 (* UI-related *)
 
@@ -211,10 +176,10 @@ object (self)
     (Formatted (1., "The default value for the bayes_cutoff param. Default: %0.2f"))
   val multiclass_min = flag "--multiclass-min"
     (Formatted (0.2, "The default value for the multiclass_min param. Default: %0.2f"))
-  val bootstrap_min = flag "--bootstrap-min"
-    (Formatted (0.8, "The default value for the bootstrap_min param. Default: %0.2f"))
-  val bootstrap_support = flag "--bootstrap-support"
-    (Formatted (0.4, "The default value for the bootstrap_min param. Default: %0.2f"))
+  val bootstrap_cutoff = flag "--bootstrap-cutoff"
+    (Formatted (0.8, "The default value for the bootstrap_cutoff param. Default: %0.2f"))
+  val bootstrap_extension_cutoff = flag "--bootstrap-extension-cutoff"
+    (Formatted (0.4, "The default value for the bootstrap_cutoff param. Default: %0.2f"))
 
   val use_pp = flag "--pp"
     (Plain (false, "Use posterior probability for our criteria in the pplacer classifier."))
@@ -247,8 +212,8 @@ object (self)
     float_flag cutoff;
     float_flag bayes_cutoff;
     float_flag multiclass_min;
-    float_flag bootstrap_min;
-    float_flag bootstrap_support;
+    float_flag bootstrap_cutoff;
+    float_flag bootstrap_extension_cutoff;
     toggle_flag use_pp;
     string_flag tax_identity;
     toggle_flag mrca_class;
@@ -263,6 +228,64 @@ object (self)
   method desc =
     "outputs classification information in SQLite format"
   method usage = "usage: classify [options] placefile[s]"
+
+  method private merge_hybrid4 td _ pp nbc =
+    let bootstrap_cutoff = fv bootstrap_cutoff
+    and bootstrap_extension_cutoff = fv bootstrap_extension_cutoff
+    and bayes_cutoff = fv bayes_cutoff
+    and cutoff = fv cutoff
+    and multiclass_min = fv multiclass_min in
+    let merge pp nbc =
+      let factors = bayes_factors pp in
+      let pp_rank, _ = pp.tiamrim
+        |> IntMap.filter_map (fun i _ -> factors.(i) |> Tuple3.third)
+        |> IntMap.backwards
+        |> Enum.find (snd |- (<=) bayes_cutoff)
+      and nbc_rank, nbc_best = nbc.tiamrim
+        |> IntMap.filter_map
+            (tiamr
+             |- TIAMR.enum
+             |- Enum.arg_max snd
+             |- junction (snd |- (<=) bootstrap_cutoff) (fst |- some) (const None)
+             |> const)
+        |> IntMap.max_binding
+      in
+      let rec aux = function
+        | pp_rank when pp_rank <= nbc_rank -> None
+        | pp_rank when not (IntMap.mem pp_rank pp.tiamrim) ->
+          aux (pred pp_rank)
+        | pp_rank ->
+          let pp_best, _ = IntMap.find pp_rank pp.tiamrim
+            |> tiamr
+            |> TIAMR.enum
+            |> Enum.arg_max snd
+          in
+          let bootstrap_valid =
+            try
+              (IntMap.find pp_rank nbc.tiamrim |> tiamr |> TIAMR.get pp_best 0.)
+              >= bootstrap_extension_cutoff
+            (* this should only catch the IntMap.find call *)
+            with Not_found -> true
+          in
+          if pp_rank > nbc_rank
+            && on_lineage td nbc_best pp_best
+            && bootstrap_valid
+          then
+            filter_ranks_below pp_rank
+            |> map_tiamrim pp
+            |> filter_best ~multiclass_min cutoff
+            |> some
+          else aux (pred pp_rank)
+      in
+      match aux pp_rank with
+      | Some pp -> pp
+      | None -> filter_ranks_below nbc_rank |> map_tiamrim nbc
+    in
+    match pp, nbc with
+    | None, None -> None
+    | Some x, None
+    | None, Some x -> Some x
+    | Some pp, Some nbc -> Some (merge pp nbc)
 
   method private placefile_action prl =
     let rp = self#get_rp in
@@ -295,7 +318,7 @@ object (self)
         Sqlite3.last_insert_rowid db
     in
 
-    let default_filter_nbc m = filter_best (fv bootstrap_min) m
+    let default_filter_nbc m = filter_best (fv bootstrap_cutoff) m
     and perform_nbc () =
       let target_rank = fv target_rank
       and n_boot = fv n_boot
@@ -465,7 +488,7 @@ object (self)
       List.iter (placerun_classify Placement.classif criterion td classify) prl;
       !best_classif_map
 
-    and default_filter_rdp m = filter_best (fv bootstrap_min) m
+    and default_filter_rdp m = filter_best (fv bootstrap_cutoff) m
     and perform_rdp () =
       let name_map = Tax_id.TaxIdMap.enum td.Tax_taxonomy.tax_name_map
         |> Enum.map (curry identity |> flip |> uncurry |- second Tax_id.to_string)
@@ -539,11 +562,7 @@ object (self)
       | "rdp" -> default_rdp ()
       | "hybrid4" ->
         StringMap.merge
-          (merge_hybrid4
-             td
-             (fv bootstrap_min)
-             (fv bootstrap_support)
-             (fv bayes_cutoff))
+          (self#merge_hybrid4 td)
           (perform_pplacer ())
           (perform_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
