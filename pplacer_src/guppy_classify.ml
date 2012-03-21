@@ -177,9 +177,10 @@ let merge_hybrid4 td bootstrap_min bootstrap_support bayes_cutoff _ pp nbc =
       |> TIAMR.enum
       |> Enum.arg_max snd
     in
-    let pp_best_bootstrap = IntMap.find pp_rank nbc.tiamrim
-      |> tiamr
-      |> TIAMR.get pp_best 0.
+    let pp_best_bootstrap =
+      try
+        IntMap.find pp_rank nbc.tiamrim |> tiamr |> TIAMR.find pp_best
+      with Not_found -> 0.
     in
     if pp_rank > nbc_rank
       && on_lineage td nbc_best pp_best
