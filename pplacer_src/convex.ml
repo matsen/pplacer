@@ -547,15 +547,15 @@ let node_label_map_of_tree t =
     t
     StringMap.empty
 
-let build_rank_tax_map td node_fn enum =
+let gen_build_rank_tax_map empty add_fn td node_fn enum =
   let add_to_rankmap seq rankmap ti =
     match node_fn seq with
       | Some node ->
         let rank = Tax_taxonomy.get_tax_rank td ti in
-        let seqmap = IntMap.get rank IntMap.empty rankmap in
+        let seqmap = IntMap.get rank empty rankmap in
         IntMap.add
           rank
-          (IntMap.add node ti seqmap)
+          (add_fn node ti seqmap)
           rankmap
       | None -> rankmap
   in
@@ -567,6 +567,9 @@ let build_rank_tax_map td node_fn enum =
         (Tax_taxonomy.get_lineage td ti))
     IntMap.empty
     enum
+
+let build_rank_tax_map a b c =
+  gen_build_rank_tax_map IntMap.empty IntMap.add a b c
 
 let rank_tax_map_of_refpkg rp =
   let node_map = Refpkg.get_ref_tree rp |> node_label_map_of_tree

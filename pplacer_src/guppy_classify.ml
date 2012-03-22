@@ -311,7 +311,6 @@ object (self)
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
 
-    let bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion in
     let db = self#get_db in
     Sql.check_exec
       db
@@ -413,6 +412,7 @@ object (self)
         "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
       and pe_st = Sqlite3.prepare db
         "INSERT INTO placement_evidence VALUES (?, ?, ?, ?)"
+      and bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion
       and best_classif_map = ref StringMap.empty in
 
       let tax_identity_func = match fvo tax_identity with

@@ -68,6 +68,13 @@ let gen_count_by_seq word_length modify seq =
   |> Enum.map (flip (String.sub seq) word_length)
   |> Enum.iter (junction word_uninformative (const ()) (word_to_int |- modify))
 
+let rank_tax_map_of_refpkg rp =
+  let td = Refpkg.get_taxonomy rp in
+  Refpkg.get_seqinfom rp
+  |> StringMap.enum
+  |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
+  |> Convex.gen_build_rank_tax_map StringMap.empty StringMap.add td some
+
 (* the thing that accumulates reference sequences before classification *)
 module Preclassifier = struct
   type base = {
@@ -235,19 +242,15 @@ module Classifier = struct
     TIM.map (fun c -> float_of_int c /. total) counts
 
   let of_refpkg ?n_boot word_length rank_idx rp =
-    let rank_tax_map = Convex.rank_tax_map_of_refpkg rp
-    and gt = Refpkg.get_ref_tree rp in
+    let rank_tax_map = rank_tax_map_of_refpkg rp in
     let preclassif = IntMap.find rank_idx rank_tax_map
-      |> IntMap.values
+      |> StringMap.values
       |> Tax_id.TaxIdSet.of_enum
       |> Tax_id.TaxIdSet.enum
       |> Array.of_enum
       |> Preclassifier.make Bigarray.int word_length
     (* a map from reference sequence names to chosen-rank tax_ids *)
     and seq_tax_ids = IntMap.find rank_idx rank_tax_map
-      |> IntMap.enum
-      |> Enum.map (first (Gtree.get_node_label gt))
-      |> StringMap.of_enum
     and filter m (k, seq) =
       match StringMap.Exceptionless.find k m with
         | Some v -> Some (v, Alignment.ungap seq)
