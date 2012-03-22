@@ -301,7 +301,10 @@ object (self)
       in
       match aux pp_rank with
       | Some pp -> pp
-      | None -> filter_ranks_below nbc_rank |> map_tiamrim nbc
+      | None ->
+        filter_ranks_below nbc_rank
+        |> map_tiamrim nbc
+        |> filter_best bootstrap_cutoff
 
   method private placefile_action prl =
     let rp = self#get_rp in
