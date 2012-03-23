@@ -448,16 +448,21 @@ let mark_map gt =
      |> List.fold_left (snd |- fold_both min max |> flip) (infinity, neg_infinity))
     distm
 
-let y_value = function
+let slope = function
   | {prox_mass = Some y}
   | {cl_dist = y} -> y
 
 let hull_cull ?(verbose = false) lower_bound upper_bound sols =
   if verbose then
     Printf.eprintf " hull cull: %g %g" lower_bound upper_bound;
-  let keys, sola = List.map ((wk_subtot &&& y_value) &&& identity) sols
-    |> List.group (on fst (on snd approx_compare))
-    |> List.map (List.enum |- Enum.arg_min (fst |- fst))
+  let keys, sola = List.map ((slope &&& wk_subtot) &&& identity) sols
+    |> List.sort
+        (on fst (Tuple2.compare ~cmp1:approx_compare ~cmp2:approx_compare))
+    |> List.fold_left
+        (fun accum ((m, b), sol) -> match accum with
+         | ((b_prev, _), _) :: _ when b <~> b_prev >= 0 -> accum
+         | _ -> ((b, m), sol) :: accum)
+        []
     |> List.split
     |> (Array.of_list *** Array.of_list)
   in
