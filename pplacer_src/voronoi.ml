@@ -321,6 +321,7 @@ type partial_solution = {
   cl_dist: float;
   wk_subtot: float;
   prox_mass: float option;
+  interval: (float * float) option;
 }
 
 (* a solution to any variant of the voronoi algorithm *)
@@ -335,6 +336,9 @@ let leaf_set {leaf_set} = leaf_set
 let leaf_card {leaf_set} = IntSet.cardinal leaf_set
 let prox_mass {prox_mass} = Option.default 0. prox_mass
 let wk_subtot {wk_subtot} = wk_subtot
+let set_interval lhs rhs sol = {sol with interval = Some (lhs, rhs)}
+let clear_interval sol = {sol with interval = None}
+
 let sleaves {leaves} = leaves
 let swork {work} = work
 
@@ -474,13 +478,22 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
     if verbose then
       Printf.eprintf " culling %d\n%!" (Array.length sola);
     match Cdd.extreme_vertices (max lower_bound 0.) upper_bound keys with
-      | Some s -> s
-        |> Array.enum
-        |> Enum.map (Tuple3.first |- Array.get sola)
+      | Some culled ->
+        let last_i = Array.length culled |> pred in
+        Enum.init
+          (Array.length culled)
+          (fun i ->
+            let sol_idx, x, _ = culled.(i) in
+            set_interval
+              x
+              (if i = last_i then upper_bound
+               else Tuple3.second culled.(succ i))
+              sola.(sol_idx))
       | None ->
-          if verbose then
-            Printf.eprintf " cddlib failed.\n%!";
-          Array.enum sola
+        if verbose then
+          Printf.eprintf " cddlib failed.\n%!";
+        Array.enum sola
+          |> Enum.map clear_interval
   end
 
 (* a polymorphic map for keys of int, bool *)
@@ -559,20 +572,22 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
         and addition =
           if List.for_all is_rmp sols then None else
             Some {
-              leaf_set; cl_dist; prox_mass = None;
+              leaf_set; cl_dist; prox_mass = None; interval = None;
               wk_subtot = wk_subtot +. cl_dist *. tot_prox_mass}
         in
-        [{leaf_set; wk_subtot; cl_dist; prox_mass}]
+        [{leaf_set; wk_subtot; cl_dist; prox_mass; interval = None}]
         |> maybe_cons addition)
   |> Enum.map List.enum
   |> Enum.flatten
 
-let soln_to_info {leaf_set; cl_dist; prox_mass; wk_subtot} =
+let soln_to_info {leaf_set; cl_dist; prox_mass; wk_subtot; interval} =
   let fmt = Printf.sprintf "%g" in
   [IntSet.cardinal leaf_set |> string_of_int;
    fmt cl_dist;
    Option.map_default fmt "RMD" prox_mass;
-   fmt wk_subtot]
+   fmt wk_subtot;
+   Option.map_default (fst |- fmt) "-" interval;
+   Option.map_default (snd |- fmt) "-" interval]
 
 let soln_csv_opt = ref None
 let csvrow i sol = match !soln_csv_opt with
@@ -582,9 +597,11 @@ let csvrow i sol = match !soln_csv_opt with
       |> Csv.output_record ch
 
 let base_rmd leaf =
-  {leaf_set = IntSet.singleton leaf; prox_mass = None; wk_subtot = 0.; cl_dist = 0.}
+  {leaf_set = IntSet.singleton leaf; prox_mass = None; wk_subtot = 0.;
+   cl_dist = 0.; interval = None}
 let base_rmp =
-  {leaf_set = IntSet.empty; prox_mass = Some 0.; wk_subtot = 0.; cl_dist = infinity}
+  {leaf_set = IntSet.empty; prox_mass = Some 0.; wk_subtot = 0.;
+   cl_dist = infinity; interval = None}
 
 (* solve a tree using the full algorithm. *)
 let solve ?(verbose = false) gt mass n_leaves =
