@@ -57,7 +57,7 @@ static void pam_choose_random_partition(pam_partition p);
 static void pam_find_closest_medoid(pam_partition p);
 static void pam_find_closest_medoid_index(pam_partition p, size_t i);
 
-static void pam_run(pam_partition p);
+static void pam_run(pam_partition p, size_t max_iters);
 
 /* Initialize a PAM partition given distances M, keep count k */
 pam_partition pam_init_partition(gsl_matrix_float *M, const size_t k) {
@@ -237,7 +237,7 @@ float pam_swap_update_cost(pam_partition p, size_t i, size_t j,
 
 /* Run PAM */
 void pam_run(pam_partition p, size_t max_iters) {
-  size_t i, j, k, m, n, trimmed_size = p->M->size1 - p->k, any_swaps = 0;
+  size_t i, j, k, m, n, trimmed_size = p->M->size1 - p->k, any_swaps = 0, iter = 0;
   size_t *medoids, *trimmed;
   float c, current_cost;
   gsl_vector_float *cost = gsl_vector_float_alloc(trimmed_size);
@@ -291,7 +291,7 @@ void pam_run(pam_partition p, size_t max_iters) {
         pam_find_closest_medoid(p);
       }
     }
-  } while (any_swaps);
+  } while (any_swaps && ++iter < max_iters);
 
   gsl_vector_float_free(cost);
   gsl_vector_uint_free(cl_index);
@@ -307,7 +307,7 @@ int main() {
   m = gsl_matrix_float_calloc(10, 3);
   gsl_matrix_float_set_all(m, 0.5);
   p = pam_init_partition(m, 6);
-  pam_run(p);
+  pam_run(p, 1000);
 
   free_pam_partition(p);
   gsl_matrix_float_free(m);
