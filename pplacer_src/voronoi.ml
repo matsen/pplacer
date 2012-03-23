@@ -462,25 +462,19 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
     |> (Array.of_list *** Array.of_list)
   in
   if Array.length sola < 2 then begin
-    if verbose then begin
-      Printf.eprintf " skipped\n";
-      flush_all ()
-    end;
+    if verbose then
+      Printf.eprintf " skipped\n%!";
     Array.enum sola
   end else begin
-    if verbose then begin
-      Printf.eprintf " culling %d\n" (Array.length sola);
-      flush_all ()
-    end;
+    if verbose then
+      Printf.eprintf " culling %d\n%!" (Array.length sola);
     match Cdd.extreme_vertices (max lower_bound 0.) upper_bound keys with
       | Some s -> s
         |> Array.enum
         |> Enum.map (Tuple3.first |- Array.get sola)
       | None ->
-          if verbose then begin
-            Printf.eprintf " cddlib failed.\n";
-            flush_all ()
-          end;
+          if verbose then
+            Printf.eprintf " cddlib failed.\n%!";
           Array.enum sola
   end
 
@@ -491,10 +485,8 @@ let solmap_key = leaf_card &&& is_rmp
 (* cull solutions from an enum of solutions down to a list of strictly the
  * best solutions per leaf set cardinality. *)
 let cull mass_above (minleaf, maxleaf) ?(verbose = false) sols =
-  if verbose then begin
-    Printf.eprintf "culling solutions\n";
-    flush_all ()
-  end;
+  if verbose then
+    Printf.eprintf "culling solutions\n%!";
   let count = ref 0 in
   Enum.fold
     (fun solm sol ->
@@ -690,7 +682,7 @@ let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
         (Enum.map (identity &&& leaves_ecld)
          |- Enum.arg_min snd
          |- (if verbose then
-               tap (fun (leaves, _) -> IntSet.cardinal leaves |> Printf.eprintf "solved %d\n"; flush_all ())
+               tap (fst |- IntSet.cardinal |- Printf.eprintf "solved %d\n%!")
              else identity)
          |- (fun (leaves, work) -> IntSet.cardinal leaves, {leaves; work}))
     |> IntMap.of_enum
