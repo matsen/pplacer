@@ -23,8 +23,8 @@ let suite = [
       (fun prev_edges (max_edge_d, edge_changes) ->
         let expected_edges = IntSet.of_list edge_changes
           |> IntSet.sdiff prev_edges
-        and got_edges = Guppy_splitify.find_rep_edges max_edge_d fal gt in
-        assert_equal ~printer ~cmp:IntSet.equal ~msg:(Printf.sprintf "%g" max_edge_d) expected_edges got_edges;
+        and got_edges = Guppy_cmdobjs.find_rep_edges max_edge_d fal gt in
+        assert_equal ~printer ~cmp:IntSet.equal expected_edges got_edges;
         expected_edges)
       (0 -- 13 |> IntSet.of_enum)
       (* the second value represents the edges added or removed at each step *)
