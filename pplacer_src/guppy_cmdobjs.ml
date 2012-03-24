@@ -520,7 +520,7 @@ object (self)
   val kappa = flag "--kappa"
     (Formatted (1., "Specify the exponent for scaling between weighted and unweighted splitification. default: %g"))
   val rep_edges = flag "--rep-edges"
-    (Needs_argument ("", "rep edges"))
+    (Needs_argument ("", "Cluster neighboring edges that have splitified euclidean distance less than the argument."))
   method specl = [
     float_flag kappa;
     float_flag rep_edges;
