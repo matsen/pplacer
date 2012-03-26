@@ -440,15 +440,21 @@ int main()
   size_t *result;
   float work;
 
-  m = gsl_matrix_float_alloc(30, 30);
+  m = gsl_matrix_float_alloc(16, 16);
   f = fopen("sample-data.txt", "r");
   assert(!gsl_matrix_float_fscanf(f, m));
   fclose(f);
 
-  result = pam(m, 2, &work);
-  assert(result[0] == 1);
-  assert(result[1] == 4);
-  assert(abs(work - 2.799999) < 1e-5);
+  result = pam(m, 8, &work);
+  assert(result[0] == 0);
+  assert(result[1] == 1);
+  assert(result[2] == 2);
+  assert(result[3] == 3);
+  assert(result[4] == 4);
+  assert(result[5] == 6);
+  assert(result[6] == 7);
+  assert(result[7] == 15);
+  assert(abs(work - 0.321014) < 1e-5);
 
   gsl_matrix_float_free(m);
   free(result);
