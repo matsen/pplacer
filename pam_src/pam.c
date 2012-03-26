@@ -26,7 +26,7 @@
  */
 
 /* Types */
-typedef struct {
+typedef struct __pam_partition_t {
   /* Number of medoids */
   size_t k;
   /* |S| x |U| Distance matrix */
@@ -47,15 +47,14 @@ int PAM_VERBOSE = 0;
 
 /* Declarations */
 static void gsl_vector_float_masked_min_index(const gsl_vector_float * v,
-                                              const gsl_vector_uchar *
-                                              mask, size_t * index,
-                                              /*OUT*/ float *value
-                                              /*OUT*/);
+                                              const gsl_vector_uchar * mask,
+                                              /*OUT*/ size_t * index,
+                                              /*OUT*/ float *value);
 
-static size_t *range(const size_t n);
+static size_t * range(const size_t n);
 
-pam_partition pam_init_partition(gsl_matrix_float * M, const size_t k);
-void free_pam_partition(const pam_partition p);
+pam_partition pam_partition_init(gsl_matrix_float * M, const size_t k);
+void pam_partition_free(const pam_partition p);
 void pam_partition_fprintf(FILE * stream, const pam_partition p);
 float pam_total_cost(const pam_partition p);
 
@@ -70,8 +69,10 @@ static void pam_find_closest_medoid_index(pam_partition p, size_t i);
 
 static void pam_run(pam_partition p, size_t max_iters);
 
+size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist);
+
 /* Initialize a PAM partition given distances M, keep count k */
-pam_partition pam_init_partition(gsl_matrix_float * M, const size_t k)
+pam_partition pam_partition_init(gsl_matrix_float * M, const size_t k)
 {
   assert(k <= M->size1);
   assert(k > 0);
@@ -111,7 +112,7 @@ float pam_total_cost(const pam_partition p)
  *
  * Note that the distance matrix p->M is *not* freed by this function.
  */
-void free_pam_partition(const pam_partition p)
+void pam_partition_free(const pam_partition p)
 {
   gsl_vector_uchar_free(p->in_set);
   gsl_vector_ulong_free(p->cl_index);
@@ -416,7 +417,7 @@ size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist)
 
   assert(k <= distances->size1);
 
-  p = pam_init_partition(distances, k);
+  p = pam_partition_init(distances, k);
   pam_run(p, 100000);
 
   *dist = pam_total_cost(p);
@@ -427,7 +428,7 @@ size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist)
   }
   assert(j == k);
 
-  free_pam_partition(p);
+  pam_partition_free(p);
 
   return result;
 }
