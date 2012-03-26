@@ -30,7 +30,7 @@ typedef struct __pam_partition_t {
   /* Number of medoids */
   size_t k;
   /* |S| x |U| Distance matrix */
-  gsl_matrix_float *M;
+  gsl_matrix *M;
 
   /* Indicator whether s_i is a medoid */
   gsl_vector_uchar *in_set;
@@ -38,7 +38,7 @@ typedef struct __pam_partition_t {
   /* Index of closest item in set */
   gsl_vector_ulong *cl_index;
   /* distance to item referenced by cl_index */
-  gsl_vector_float *cl_dist;
+  gsl_vector *cl_dist;
 } pam_partition_t;
 
 typedef pam_partition_t *pam_partition;
@@ -46,22 +46,22 @@ typedef pam_partition_t *pam_partition;
 int PAM_VERBOSE = 0;
 
 /* Declarations */
-static void gsl_vector_float_masked_min_index(const gsl_vector_float * v,
+static void gsl_vector_masked_min_index(const gsl_vector * v,
                                               const gsl_vector_uchar * mask,
                                               /*OUT*/ size_t * index,
-                                              /*OUT*/ float *value);
+                                              /*OUT*/ double *value);
 
 static size_t * range(const size_t n);
 
-pam_partition pam_partition_init(gsl_matrix_float * M, const size_t k);
+pam_partition pam_partition_init(gsl_matrix * M, const size_t k);
 void pam_partition_free(const pam_partition p);
 void pam_partition_fprintf(FILE * stream, const pam_partition p);
-float pam_total_cost(const pam_partition p);
+double pam_total_cost(const pam_partition p);
 
-static float pam_swap_cost(pam_partition p, size_t m, size_t n);
-static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
+static double pam_swap_cost(pam_partition p, size_t m, size_t n);
+static double pam_swap_update_cost(pam_partition p, size_t m, size_t n,
                                   gsl_vector_ulong * cl_index,
-                                  gsl_vector_float * cl_dist);
+                                  gsl_vector * cl_dist);
 
 static void pam_choose_random_partition(pam_partition p);
 static void pam_find_closest_medoid(pam_partition p);
@@ -69,10 +69,10 @@ static void pam_find_closest_medoid_index(pam_partition p, size_t i);
 
 static void pam_run(pam_partition p, size_t max_iters);
 
-size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist);
+size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist);
 
 /* Initialize a PAM partition given distances M, keep count k */
-pam_partition pam_partition_init(gsl_matrix_float * M, const size_t k)
+pam_partition pam_partition_init(gsl_matrix * M, const size_t k)
 {
   assert(k <= M->size1);
   assert(k > 0);
@@ -84,7 +84,7 @@ pam_partition pam_partition_init(gsl_matrix_float * M, const size_t k)
   p->in_set = gsl_vector_uchar_calloc(M->size1);
 
   p->cl_index = gsl_vector_ulong_calloc(M->size2);
-  p->cl_dist = gsl_vector_float_calloc(M->size2);
+  p->cl_dist = gsl_vector_calloc(M->size2);
 
   /* Initialize S' randomly, calculate distances between U and S' */
   pam_choose_random_partition(p);
@@ -94,14 +94,14 @@ pam_partition pam_partition_init(gsl_matrix_float * M, const size_t k)
 }
 
 /* Return the total cost of a partition */
-float pam_total_cost(const pam_partition p)
+double pam_total_cost(const pam_partition p)
 {
-  float cost = 0.0;
-  const gsl_vector_float *cl_dist = p->cl_dist;
+  double cost = 0.0;
+  const gsl_vector *cl_dist = p->cl_dist;
   size_t i;
 
   for (i = 0; i < cl_dist->size; i++) {
-    cost += gsl_vector_float_get(cl_dist, i);
+    cost += gsl_vector_get(cl_dist, i);
   }
 
   return cost;
@@ -116,7 +116,7 @@ void pam_partition_free(const pam_partition p)
 {
   gsl_vector_uchar_free(p->in_set);
   gsl_vector_ulong_free(p->cl_index);
-  gsl_vector_float_free(p->cl_dist);
+  gsl_vector_free(p->cl_dist);
 
   free(p);
 }
@@ -162,7 +162,7 @@ void pam_partition_fprintf(FILE * stream, const pam_partition p)
   for (i = 0; i < p->M->size1; i++) {
     fprintf(stream, "%d:\t", gsl_vector_uchar_get(p->in_set, i));
     for (j = 0; j < p->M->size2; j++) {
-      fprintf(stream, "%f\t", gsl_matrix_float_get(p->M, i, j));
+      fprintf(stream, "%f\t", gsl_matrix_get(p->M, i, j));
     }
     fprintf(stream, "\n");
   }
@@ -171,7 +171,7 @@ void pam_partition_fprintf(FILE * stream, const pam_partition p)
   }
   fprintf(stream, "\n");
   for (i = 0; i < p->cl_dist->size; i++) {
-    fprintf(stream, "\t%f", gsl_vector_float_get(p->cl_dist, i));
+    fprintf(stream, "\t%f", gsl_vector_get(p->cl_dist, i));
   }
   fprintf(stream, "\n");
 }
@@ -194,18 +194,18 @@ static void pam_find_closest_medoid(pam_partition p)
 static void pam_find_closest_medoid_index(pam_partition p, size_t i)
 {
   size_t index;
-  float min;
-  gsl_vector_float_view col;
+  double min;
+  gsl_vector_view col;
 
   min = FLT_MAX;
-  col = gsl_matrix_float_column(p->M, i);
-  gsl_vector_float_masked_min_index(&(col.vector), p->in_set, &index,
+  col = gsl_matrix_column(p->M, i);
+  gsl_vector_masked_min_index(&(col.vector), p->in_set, &index,
                                     &min);
 
   assert(min < FLT_MAX);
 
   gsl_vector_ulong_set(p->cl_index, i, index);
-  gsl_vector_float_set(p->cl_dist, i, min);
+  gsl_vector_set(p->cl_dist, i, min);
 }
 
 /*
@@ -213,12 +213,12 @@ static void pam_find_closest_medoid_index(pam_partition p, size_t i)
  * mask: boolean vector to indicate if v[i] is to be used
  */
 static void
-gsl_vector_float_masked_min_index(const gsl_vector_float * v,
+gsl_vector_masked_min_index(const gsl_vector * v,
                                   const gsl_vector_uchar * mask,
                                   size_t * index, /*OUT*/
-                                  float * value /*OUT*/)
+                                  double * value /*OUT*/)
 {
-  float min = FLT_MAX, val;
+  double min = FLT_MAX, val;
   long idx = -1;
   size_t i;
   assert(v->size == mask->size);
@@ -228,7 +228,7 @@ gsl_vector_float_masked_min_index(const gsl_vector_float * v,
     if (!gsl_vector_uchar_get(mask, i))
       continue;
 
-    val = gsl_vector_float_get(v, i);
+    val = gsl_vector_get(v, i);
     if (val < min) {
       min = val;
       idx = i;
@@ -249,20 +249,20 @@ gsl_vector_float_masked_min_index(const gsl_vector_float * v,
  * p: partition
  * i, j: indices to swap. *i* must be a medoid; *j* must not.
  */
-static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
+static double pam_swap_update_cost(pam_partition p, size_t m, size_t n,
                                   gsl_vector_ulong * cl_index,
-                                  gsl_vector_float * cl_dist)
+                                  gsl_vector * cl_dist)
 {
   assert(gsl_vector_uchar_get(p->in_set, m)
          && !gsl_vector_uchar_get(p->in_set, n));
   /* Back up current values */
   gsl_vector_ulong *cli = p->cl_index;
-  gsl_vector_float *cld = p->cl_dist;
-  float result;
+  gsl_vector *cld = p->cl_dist;
+  double result;
 
   /* Copy current values */
   gsl_vector_ulong_memcpy(cl_index, cli);
-  gsl_vector_float_memcpy(cl_dist, cld);
+  gsl_vector_memcpy(cl_dist, cld);
   p->cl_index = cl_index;
   p->cl_dist = cl_dist;
 
@@ -284,11 +284,11 @@ static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
  * Update the cost after swapping current medoid m with non-medoid n
  * Distance to closest medoid, closest medoid index are updated.
  */
-static float pam_swap_cost(pam_partition p, size_t m, size_t n)
+static double pam_swap_cost(pam_partition p, size_t m, size_t n)
 {
-  float cost = 0.0;
+  double cost = 0.0;
   size_t i, cl;
-  gsl_vector_float_view col;
+  gsl_vector_view col;
 
   /* Update for each column */
   for (i = 0; i < p->M->size2; i++) {
@@ -296,25 +296,25 @@ static float pam_swap_cost(pam_partition p, size_t m, size_t n)
 
     /* If closest to medoid being removed, find new closest medoid */
     if (cl == m) {
-      col = gsl_matrix_float_column(p->M, i);
-      gsl_vector_float_masked_min_index(&(col.vector), p->in_set,
+      col = gsl_matrix_column(p->M, i);
+      gsl_vector_masked_min_index(&(col.vector), p->in_set,
                                         &cl,
-                                        gsl_vector_float_ptr(p->cl_dist,
+                                        gsl_vector_ptr(p->cl_dist,
                                                              i));
       gsl_vector_ulong_set(p->cl_index, i, cl);
     } else {
       /* Check if the new medoid is closer than the old */
-      assert(gsl_vector_float_get(p->cl_dist, i) ==
-             gsl_matrix_float_get(p->M,
+      assert(gsl_vector_get(p->cl_dist, i) ==
+             gsl_matrix_get(p->M,
                                   gsl_vector_ulong_get(p->cl_index, i), i));
-      if (gsl_matrix_float_get(p->M, n, i) <
-          gsl_vector_float_get(p->cl_dist, i)) {
-        gsl_vector_float_set(p->cl_dist, i,
-                             gsl_matrix_float_get(p->M, n, i));
+      if (gsl_matrix_get(p->M, n, i) <
+          gsl_vector_get(p->cl_dist, i)) {
+        gsl_vector_set(p->cl_dist, i,
+                             gsl_matrix_get(p->M, n, i));
         gsl_vector_ulong_set(p->cl_index, i, n);
       }
     }
-    cost += gsl_vector_float_get(p->cl_dist, i);
+    cost += gsl_vector_get(p->cl_dist, i);
   }
 
   return cost;
@@ -331,10 +331,10 @@ static void pam_run(pam_partition p, size_t max_iters)
   size_t i, j, k, m, n, trimmed_size = p->M->size1 - p->k, any_swaps =
       0, iter = 0;
   size_t *medoids, *trimmed;
-  float c, current_cost;
-  gsl_vector_float *cost = gsl_vector_float_alloc(trimmed_size);
+  double c, current_cost;
+  gsl_vector *cost = gsl_vector_alloc(trimmed_size);
   gsl_vector_ulong *cl_index = gsl_vector_ulong_alloc(p->cl_index->size);
-  gsl_vector_float *cl_dist = gsl_vector_float_alloc(p->cl_dist->size);
+  gsl_vector *cl_dist = gsl_vector_alloc(p->cl_dist->size);
 
   medoids = malloc(sizeof(size_t) * p->k);
   trimmed = malloc(sizeof(size_t) * (p->M->size1 - p->k));
@@ -362,17 +362,17 @@ static void pam_run(pam_partition p, size_t max_iters)
       m = medoids[i];
       current_cost = pam_total_cost(p);
       /* Try every non-medoid */
-      gsl_vector_float_set_all(cost, FLT_MAX);
+      gsl_vector_set_all(cost, FLT_MAX);
 
       for (j = 0; j < trimmed_size; j++) {
         n = trimmed[j];
         c = pam_swap_update_cost(p, m, n, cl_index, cl_dist);
-        gsl_vector_float_set(cost, j, c);
+        gsl_vector_set(cost, j, c);
       }
 
       /* Find the minimum cost from all swaps */
-      j = gsl_vector_float_min_index(cost);
-      if (gsl_vector_float_get(cost, j) < current_cost) {
+      j = gsl_vector_min_index(cost);
+      if (gsl_vector_get(cost, j) < current_cost) {
         /* Current cost beaten */
         any_swaps = 1;
         n = trimmed[j];
@@ -381,7 +381,7 @@ static void pam_run(pam_partition p, size_t max_iters)
         assert(gsl_vector_uchar_get(p->in_set, m));
         if (PAM_VERBOSE)
           fprintf(stderr, "SWAP: %lu->%lu [%f -> %f]\n", m, n,
-                  current_cost, gsl_vector_float_get(cost, j));
+                  current_cost, gsl_vector_get(cost, j));
         gsl_vector_uchar_swap_elements(p->in_set, m, n);
 
         /* Move n to medoids, m to trimmed */
@@ -401,15 +401,15 @@ static void pam_run(pam_partition p, size_t max_iters)
     fprintf(stderr, "Final cost: %f\n", pam_total_cost(p));
   }
 
-  gsl_vector_float_free(cost);
+  gsl_vector_free(cost);
   gsl_vector_ulong_free(cl_index);
-  gsl_vector_float_free(cl_dist);
+  gsl_vector_free(cl_dist);
   free(medoids);
   free(trimmed);
 }
 
 /* Partition around medoids. Returns the indices of the medoids. */
-size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist)
+size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist)
 {
   size_t * result = malloc(sizeof(size_t) * k);
   size_t i = 0, j = 0;
@@ -436,14 +436,14 @@ size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist)
 #ifdef PAM_TEST
 int main()
 {
-  gsl_matrix_float *m;
+  gsl_matrix *m;
   FILE *f;
   size_t *result;
-  float work;
+  double work;
 
-  m = gsl_matrix_float_alloc(16, 16);
+  m = gsl_matrix_alloc(16, 16);
   f = fopen("sample-data.txt", "r");
-  assert(!gsl_matrix_float_fscanf(f, m));
+  assert(!gsl_matrix_fscanf(f, m));
   fclose(f);
 
   result = pam(m, 8, &work);
@@ -457,7 +457,7 @@ int main()
   assert(result[7] == 15);
   assert(abs(work - 0.321014) < 1e-5);
 
-  gsl_matrix_float_free(m);
+  gsl_matrix_free(m);
   free(result);
 
   return 0;
