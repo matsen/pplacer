@@ -257,6 +257,7 @@ static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
   gsl_vector_float *cld = p->cl_dist;
   float result;
 
+  /* Copy current values */
   gsl_vector_uint_memcpy(cl_index, cli);
   gsl_vector_float_memcpy(cl_dist, cld);
   p->cl_index = cl_index;
@@ -276,7 +277,10 @@ static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
   return result;
 }
 
-/* Update the cost after swapping current medoid m with non-medoid n */
+/*
+ * Update the cost after swapping current medoid m with non-medoid n
+ * Distance to closest medoid, closest medoid index are updated.
+ */
 static float pam_swap_cost(pam_partition p, size_t m, size_t n)
 {
   float cost = 0.0;
@@ -297,7 +301,7 @@ static float pam_swap_cost(pam_partition p, size_t m, size_t n)
       gsl_vector_uint_set(p->cl_index, i, cl);
     } else {
       /* Check if the new medoid is closer than the old */
-      assert(gsl_vector_float_get(p->cl_dist, i) == 
+      assert(gsl_vector_float_get(p->cl_dist, i) ==
           gsl_matrix_float_get(p->M, gsl_vector_uint_get(p->cl_index, i), i));
       if (gsl_matrix_float_get(p->M, n, i) <
           gsl_vector_float_get(p->cl_dist, i)) {
@@ -366,7 +370,7 @@ void pam_run(pam_partition p, size_t max_iters)
         /* Current cost beaten */
         any_swaps = 1;
         n = trimmed[j];
-        fprintf(stderr, "SWAP: %lu->%lu [%f -> %f]\n", m, n, 
+        fprintf(stderr, "SWAP: %lu->%lu [%f -> %f]\n", m, n,
             current_cost,
             gsl_vector_float_get(cost, j));
         gsl_vector_uchar_swap_elements(p->in_set, m, n);
@@ -406,9 +410,6 @@ int main()
   fclose(f);
 
   p = pam_init_partition(m, 3);
-  /*
-   *pam_print_partition(stderr, p);
-   */
   pam_run(p, 1000);
 
   free_pam_partition(p);
