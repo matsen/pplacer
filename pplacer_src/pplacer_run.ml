@@ -590,32 +590,27 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     if cachefunc x then nextfunc ()
     else x
   in
-  flush_all ();
-  1 -- Prefs.children prefs
-    |> Enum.filter_map
-      (fun _ ->
+  begin match
+    Multiprocessing.try_fork
+      (Prefs.children prefs)
+      (new pplacer_process partial gotfunc nextfunc)
+      progressfunc
+  with
+  | [] ->
+    dprint "couldn't fork any children; falling back to a single process.\n";
+    let rec aux () =
+      match begin
         try
-          Some (new pplacer_process partial gotfunc nextfunc progressfunc)
-        with Unix.Unix_error (e, "fork", _) ->
-          dprintf "error (%s) when trying to fork\n" (Unix.error_message e);
-          None)
-    |> List.of_enum
-    |> (function
-        | [] ->
-          dprint
-            "couldn't fork any children; falling back to a single process.\n";
-          let rec aux () =
-            match begin
-              try
-                Some (nextfunc ())
-              with Finished -> None
-            end with
-              | None -> ()
-              | Some query ->
-                partial ~show_query query |> List.iter gotfunc; aux ()
-          in
-          aux ()
-        | children -> event_loop children);
+          Some (nextfunc ())
+        with Finished -> None
+      end with
+      | None -> ()
+      | Some query ->
+        partial ~show_query query |> List.iter gotfunc; aux ()
+    in
+    aux ()
+  | children -> event_loop children
+  end;
   donefunc ();
   if Prefs.timing prefs then begin
     Printf.printf "\ntiming data:\n";

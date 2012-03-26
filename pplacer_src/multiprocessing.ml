@@ -117,7 +117,7 @@ class virtual ['a] process child_func =
    * them, so it closes them. The child has no use for anything but them, so
    * it closes everything but them. *)
   let child_only = [child_rd; parent_wr; progress_wr]
-  in
+  and _ = flush_all () in
   let pid = match Unix.fork () with
     | 0 ->
       (* Do the actual closing of the irrelevant descriptors. *)
@@ -272,23 +272,32 @@ let queue_of_list l =
   List.iter (fun x -> Queue.push x q) l;
   q
 
+let try_fork n f x =
+  List.fold_left
+    (fun accum _ ->
+      try
+        f x :: accum
+      with Unix.Unix_error (e, "fork", _) ->
+        Ppatteries.dprintf
+          "error (%s) when trying to fork\n"
+          (Unix.error_message e);
+        accum)
+    []
+    (range n)
+
 let map ?(children = 4) ?progress_handler f l =
-  if children = 0 then List.map f l else (* ... *)
   let q = queue_of_list l in
-  let children =
-    List.map
-      (fun _ -> new map_process ?progress_handler f q)
-      (range children) in
-  event_loop children;
-  List.flatten (List.map (fun c -> c#ret) children)
+  match try_fork children (new map_process ?progress_handler f) q with
+  | [] -> List.map f l
+  | children ->
+    event_loop children;
+    List.flatten (List.map (fun c -> c#ret) children)
 
 let iter ?(children = 4) ?progress_handler f l =
   let q = queue_of_list l in
-  let children =
-    List.map
-      (fun _ -> new map_process ?progress_handler f q)
-      (range children) in
-  event_loop children
+  match try_fork children (new map_process ?progress_handler f) q with
+  | [] -> List.iter f l
+  | children -> event_loop children
 
 class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
   (f: 'a -> 'b -> 'b) (q: 'a Queue.t) (initial: 'b) =
@@ -350,10 +359,8 @@ end
 
 let fold ?(children = 4) ?progress_handler f l initial =
   let q = queue_of_list l in
-  let children =
-    List.map
-      (fun _ -> new fold_process ?progress_handler f q initial)
-      (range children)
-  in
-  event_loop children;
-  List.map (fun c -> c#ret) children
+  match try_fork children (new fold_process ?progress_handler f q) initial with
+  | [] -> [List.fold_left (Ppatteries.flip f) initial l]
+  | children ->
+    event_loop children;
+    List.map (fun c -> c#ret) children
