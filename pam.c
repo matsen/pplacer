@@ -43,6 +43,8 @@ typedef struct {
 
 typedef pam_partition_t *pam_partition;
 
+int PAM_VERBOSE = 0;
+
 /* Declarations */
 static void gsl_vector_float_masked_min_index(const gsl_vector_float * v,
                                               const gsl_vector_uchar *
@@ -54,7 +56,7 @@ static size_t *range(const size_t n);
 
 pam_partition pam_init_partition(gsl_matrix_float * M, const size_t k);
 void free_pam_partition(const pam_partition p);
-void pam_print_partition(FILE * stream, const pam_partition p);
+void pam_partition_fprintf(FILE * stream, const pam_partition p);
 float pam_total_cost(const pam_partition p);
 
 static float pam_swap_cost(pam_partition p, size_t m, size_t n);
@@ -151,14 +153,14 @@ static void pam_choose_random_partition(pam_partition p)
   free(chosen);
 }
 
-void pam_print_partition(FILE * stream, const pam_partition p)
+void pam_partition_fprintf(FILE * stream, const pam_partition p)
 {
   size_t i, j;
-  fprintf(stream, "%lu x %lu; k= %lu; total cost= %f\n", p->M->size1, p->M->size2, p->k,
-      pam_total_cost(p));
-  for(i = 0; i < p->M->size1; i++) {
+  fprintf(stream, "%lu x %lu; k= %lu; total cost= %f\n", p->M->size1,
+          p->M->size2, p->k, pam_total_cost(p));
+  for (i = 0; i < p->M->size1; i++) {
     fprintf(stream, "%d:\t", gsl_vector_uchar_get(p->in_set, i));
-    for(j = 0; j < p->M->size2; j++) {
+    for (j = 0; j < p->M->size2; j++) {
       fprintf(stream, "%f\t", gsl_matrix_float_get(p->M, i, j));
     }
     fprintf(stream, "\n");
@@ -247,8 +249,8 @@ gsl_vector_float_masked_min_index(const gsl_vector_float * v,
  * i, j: indices to swap. *i* must be a medoid; *j* must not.
  */
 static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
-                     gsl_vector_uint * cl_index,
-                     gsl_vector_float * cl_dist)
+                                  gsl_vector_uint * cl_index,
+                                  gsl_vector_float * cl_dist)
 {
   assert(gsl_vector_uchar_get(p->in_set, m)
          && !gsl_vector_uchar_get(p->in_set, n));
@@ -302,7 +304,8 @@ static float pam_swap_cost(pam_partition p, size_t m, size_t n)
     } else {
       /* Check if the new medoid is closer than the old */
       assert(gsl_vector_float_get(p->cl_dist, i) ==
-          gsl_matrix_float_get(p->M, gsl_vector_uint_get(p->cl_index, i), i));
+             gsl_matrix_float_get(p->M,
+                                  gsl_vector_uint_get(p->cl_index, i), i));
       if (gsl_matrix_float_get(p->M, n, i) <
           gsl_vector_float_get(p->cl_dist, i)) {
         gsl_vector_float_set(p->cl_dist, i,
@@ -371,8 +374,7 @@ void pam_run(pam_partition p, size_t max_iters)
         any_swaps = 1;
         n = trimmed[j];
         fprintf(stderr, "SWAP: %lu->%lu [%f -> %f]\n", m, n,
-            current_cost,
-            gsl_vector_float_get(cost, j));
+                current_cost, gsl_vector_float_get(cost, j));
         gsl_vector_uchar_swap_elements(p->in_set, m, n);
 
         /* Move n to medoids, m to trimmed */
