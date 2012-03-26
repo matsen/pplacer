@@ -23,19 +23,19 @@ value Val_some(value v)
 
 size_t* pam(gsl_matrix*, size_t, /*OUT*/ float*);
 
-CAMLprim value caml_extreme_vertices(value dist_value, value k)
+CAMLprim value caml_pam(value dist_value, value k)
 {
-  CAMLparam2(distances, k);
+  CAMLparam2(dist_value, k);
   double *dist = Data_bigarray_val(dist_value);
-  gsl_matrix_view *m;
+  gsl_matrix_view m;
   float work;
   size_t *medoids;
   size_t nrow, ncol;
-  nrow = Bigarray_val(dist_value)->dim[0]);
-  ncol = Bigarray_val(dist_value)->dim[1]);
+  nrow = Bigarray_val(dist_value)->dim[0];
+  ncol = Bigarray_val(dist_value)->dim[1];
   m = gsl_matrix_view_array(dist, nrow, ncol);
 
-  medoids = pam(&(m->matrix), Int_value(k), &work);
+  medoids = pam(&m.matrix, Int_val(k), &work);
 
   CAMLreturn(Val_none);
 }
