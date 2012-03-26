@@ -257,6 +257,8 @@ static float pam_swap_update_cost(pam_partition p, size_t m, size_t n,
   gsl_vector_float *cld = p->cl_dist;
   float result;
 
+  gsl_vector_uint_memcpy(cl_index, cli);
+  gsl_vector_float_memcpy(cl_dist, cld);
   p->cl_index = cl_index;
   p->cl_dist = cl_dist;
 
@@ -325,7 +327,6 @@ void pam_run(pam_partition p, size_t max_iters)
   gsl_vector_float *cost = gsl_vector_float_alloc(trimmed_size);
   gsl_vector_uint *cl_index = gsl_vector_uint_alloc(p->cl_index->size);
   gsl_vector_float *cl_dist = gsl_vector_float_alloc(p->cl_dist->size);
-
 
   medoids = malloc(sizeof(size_t) * p->k);
   trimmed = malloc(sizeof(size_t) * (p->M->size1 - p->k));
