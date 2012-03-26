@@ -137,7 +137,6 @@ static void pam_choose_random_partition(pam_partition p)
   size_t *indices, *chosen, i;
 
   rng = gsl_rng_alloc(gsl_rng_taus2);
-  gsl_rng_set(rng, 50);
   indices = range(p->M->size1);
   chosen = (size_t *) calloc(p->k, sizeof(size_t));
   gsl_ran_choose(rng, (void *) chosen, p->k, indices, p->M->size1,
