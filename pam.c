@@ -215,7 +215,7 @@ static void
 gsl_vector_float_masked_min_index(const gsl_vector_float * v,
                                   const gsl_vector_uchar * mask,
                                   size_t * index, /*OUT*/
-                                  float *value /*OUT*/)
+                                  float * value /*OUT*/)
 {
   float min = FLT_MAX, val;
   long idx = -1;
@@ -320,7 +320,7 @@ static float pam_swap_cost(pam_partition p, size_t m, size_t n)
 }
 
 /* Run PAM */
-void pam_run(pam_partition p, size_t max_iters)
+static void pam_run(pam_partition p, size_t max_iters)
 {
   if (p->k == p->M->size1) {
     /* Simple case */
@@ -351,7 +351,7 @@ void pam_run(pam_partition p, size_t max_iters)
   assert(k == p->M->size1 - p->k);
 
   do {
-    if(PAM_VERBOSE)
+    if (PAM_VERBOSE)
       fprintf(stderr, "Iteration %lu\n", iter);
 
     any_swaps = 0;
@@ -407,23 +407,52 @@ void pam_run(pam_partition p, size_t max_iters)
   free(trimmed);
 }
 
+/* Partition around medoids. Returns the indices of the medoids. */
+size_t * pam(gsl_matrix_float * distances, size_t k, /*OUT*/ float * dist)
+{
+  size_t * result = malloc(sizeof(size_t) * k);
+  size_t i = 0, j = 0;
+  pam_partition p;
+
+  assert(k <= distances->size1);
+
+  p = pam_init_partition(distances, k);
+  pam_run(p, 100000);
+
+  *dist = pam_total_cost(p);
+
+  for (i = 0; i < p->in_set->size; i++) {
+    if (gsl_vector_uchar_get(p->in_set, i))
+      result[j++] = i;
+  }
+  assert(j == k);
+
+  free_pam_partition(p);
+
+  return result;
+}
+
+#ifdef PAM_TEST
 int main()
 {
   gsl_matrix_float *m;
-  pam_partition p;
   FILE *f;
-  PAM_VERBOSE = 1;
+  size_t *result;
+  float work;
 
-  m = gsl_matrix_float_alloc(6, 6);
+  m = gsl_matrix_float_alloc(30, 30);
   f = fopen("sample-data.txt", "r");
   assert(!gsl_matrix_float_fscanf(f, m));
   fclose(f);
 
-  p = pam_init_partition(m, 2);
-  pam_run(p, 1000);
+  result = pam(m, 2, &work);
+  assert(result[0] == 1);
+  assert(result[1] == 4);
+  assert(abs(work - 2.799999) < 1e-5);
 
-  free_pam_partition(p);
   gsl_matrix_float_free(m);
+  free(result);
 
   return 0;
 }
+#endif
