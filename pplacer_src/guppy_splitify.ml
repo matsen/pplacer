@@ -25,8 +25,8 @@ object (self)
 
   method specl =
     super_output#specl
-    @ super_mass#specl
-    @ super_splitify#specl
+  @ super_mass#specl
+  @ super_splitify#specl
 
   method desc =
 "writes out differences of masses for the splits of the tree"
@@ -36,7 +36,9 @@ object (self)
     let weighting, criterion = self#mass_opts in
     let data = List.map (self#splitify_placerun weighting criterion) prl
     and names = (List.map Placerun.get_name prl) in
+    let data' = self#filter_rep_edges prl data |> Tuple3.first in
     save_out_named_fal
       self#out_channel
-      (List.combine names data)
+      (List.combine names data')
+
 end
