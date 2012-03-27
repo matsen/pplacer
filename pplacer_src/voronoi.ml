@@ -787,3 +787,14 @@ module Greedy = struct
     |> Return.with_label
 
 end
+
+module PAM = struct
+  let solve gt mass ?strict:_ ?verbose:_ n_leaves =
+    let leaves = Pam_solver.solve gt mass n_leaves in
+    let diagram = of_gtree_and_leaves gt leaves in
+    let work = partition_indiv_on_leaves diagram mass
+      |> ecld diagram
+    in
+    IntMap.singleton n_leaves {leaves; work}
+
+end

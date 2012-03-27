@@ -130,3 +130,6 @@ end
 module Forced: Alg
 (** Forced algorithm: brute-force to try every combination of leaves looking
     for which has the smallest ECLD. *)
+
+module PAM: Alg
+(** PAM algorithm. *)

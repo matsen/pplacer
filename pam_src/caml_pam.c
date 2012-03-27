@@ -8,34 +8,32 @@
 
 #include <stdio.h>
 
-#define Val_none Val_int(0)
-
-value Val_some(value v)
-{
-    CAMLparam1(v);
-    CAMLlocal1(some);
-    some = caml_alloc_small(1, 0);
-    Field(some, 0) = v;
-    CAMLreturn(some);
-}
-
-#define Some_val(v) Field(v,0)
-
 size_t* pam(gsl_matrix*, size_t, /*OUT*/ float*);
 
-CAMLprim value caml_pam(value dist_value, value k)
+/* rows for leaves; columns for masses */
+CAMLprim value caml_pam(value k_value, value dist_value)
 {
-  CAMLparam2(dist_value, k);
+  CAMLparam2(k_value, dist_value);
   double *dist = Data_bigarray_val(dist_value);
   gsl_matrix_view m;
   float work;
-  size_t *medoids;
+  size_t *medoids, *medoids_ptr;
   size_t nrow, ncol;
+  value res_bigarr;
+  intnat *res_ptr;
+  int i, k;
   nrow = Bigarray_val(dist_value)->dim[0];
   ncol = Bigarray_val(dist_value)->dim[1];
   m = gsl_matrix_view_array(dist, nrow, ncol);
+  k = Int_val(k_value);
+  medoids = pam(&m.matrix, k, &work);
 
-  medoids = pam(&m.matrix, Int_val(k), &work);
-
-  CAMLreturn(Val_none);
+  res_bigarr = alloc_bigarray_dims(BIGARRAY_CAML_INT | BIGARRAY_C_LAYOUT, 1, NULL, k);
+  res_ptr = Data_bigarray_val(res_bigarr);
+  medoids_ptr = medoids;
+  for (i = 0; i < k; ++i) {
+    *res_ptr++ = *medoids_ptr++;
+  }
+  free(medoids);
+  CAMLreturn(res_bigarr);
 }

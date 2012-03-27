@@ -230,9 +230,13 @@ let _ = dispatch begin function
     flag ["link"; "ocaml"; "c_cdd"; "toplevel"]
       (S[A"-cclib"; A"-lcdd"; A"-cclib"; A"-Lcdd_src"]);
 
+    flag ["link"; "ocaml"; "c_pam"; "toplevel"]
+      (S[A"-cclib"; A"-lpam"; A"-cclib"; A"-Lpam_src"]);
+
     (* make libpplacercside when needed *)
     dep ["c_pplacer"] ["pplacer_src/libpplacercside.a"];
     dep ["c_cdd"] ["cdd_src/libcdd.a"];
+    dep ["c_pam"] ["pam_src/libpam.a"];
 
   | After_options ->
     setup_git_version ()

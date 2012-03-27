@@ -536,7 +536,8 @@ object (self)
     (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
   val algorithm = flag "--algorithm"
     (Formatted ("full",
-                "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
+                "Which algorithm to use to prune leaves. \
+                 Choices are 'greedy', 'full', 'force', and 'pam'. Default %s."))
   val all_eclds_file = flag "--all-eclds-file"
     (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
   val soln_log = flag "--log"
@@ -560,6 +561,7 @@ object (self)
         | "greedy" -> (module Voronoi.Greedy: Voronoi.Alg)
         | "full" -> (module Voronoi.Full: Voronoi.Alg)
         | "force" -> (module Voronoi.Forced: Voronoi.Alg)
+        | "pam" -> (module Voronoi.PAM: Voronoi.Alg)
         | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
       and verbose = fv verbose
       and leaf_cutoff = fv leaf_cutoff in
