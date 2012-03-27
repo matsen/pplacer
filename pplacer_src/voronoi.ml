@@ -644,7 +644,7 @@ let solve ?(verbose = false) gt mass n_leaves =
     Enum.fold
       (fun (last_mark, solutions) mark ->
         let masses =
-          Enum.take_while (fun {I.distal_bl} -> distal_bl < mark) masses
+          Enum.take_while (fun {I.distal_bl} -> distal_bl <= mark) masses
           |> List.of_enum
         and bub_len = mark -. last_mark in
         let bub_mass = I.v_mass masses
