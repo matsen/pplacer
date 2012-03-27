@@ -682,6 +682,10 @@ let solve ?(verbose = false) gt mass n_leaves =
       marks
     |> snd
     |> List.enum
+    |> tap
+        (fun _ -> match Enum.get masses with
+         | None -> ()
+         | Some _ -> failwith (Printf.sprintf "unused mass on node %d" i))
 
   in
   Gtree.get_stree gt |> aux |> snd
