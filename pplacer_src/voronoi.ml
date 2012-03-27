@@ -580,9 +580,10 @@ let combine_solutions ?(verbose = false) max_leaves solsl =
   |> Enum.map List.enum
   |> Enum.flatten
 
-let soln_to_info {leaf_set; cl_dist; prox_mass; wk_subtot; interval} =
+let soln_to_info mark {leaf_set; cl_dist; prox_mass; wk_subtot; interval} =
   let fmt = Printf.sprintf "%g" in
-  [IntSet.cardinal leaf_set |> string_of_int;
+  [Option.map_default fmt "-" mark;
+   IntSet.cardinal leaf_set |> string_of_int;
    fmt cl_dist;
    Option.map_default fmt "RMD" prox_mass;
    fmt wk_subtot;
@@ -590,10 +591,10 @@ let soln_to_info {leaf_set; cl_dist; prox_mass; wk_subtot; interval} =
    Option.map_default (snd |- fmt) "-" interval]
 
 let soln_csv_opt = ref None
-let csvrow i sol = match !soln_csv_opt with
+let csvrow ?mark i sol = match !soln_csv_opt with
   | None -> ()
   | Some ch ->
-    string_of_int i :: soln_to_info sol
+    string_of_int i :: soln_to_info mark sol
       |> Csv.output_record ch
 
 let base_rmd leaf =
@@ -651,7 +652,7 @@ let solve ?(verbose = false) gt mass n_leaves =
         and wk_prox = I.work_moving_to masses mark in
         mark,
         (* Moving through a bubble. *)
-        List.fold_left
+        (List.fold_left
           (fun accum -> function
             (* RMD solutions move all mass toward the leaves. *)
             | {prox_mass = None} as sol ->
@@ -676,6 +677,7 @@ let solve ?(verbose = false) gt mass n_leaves =
               :: accum)
           []
           solutions)
+        |> tap (List.iter (csvrow ~mark i)))
       (0., List.of_enum solutions)
       marks
     |> snd
@@ -720,6 +722,13 @@ let best_wk_subtot sol1 sol2 =
 module Full = struct
   let csv_log = soln_csv_opt
   let solve gt mass ?strict:_ ?(verbose = false) n_leaves =
+    begin match !csv_log with
+    | None -> ()
+    | Some ch ->
+      Csv.output_record ch
+        ["node"; "mark"; "leaf_card"; "cl_dist"; "prox_mass"; "wk_subtot";
+         "oinv_lft"; "oinv_rgt"]
+    end;
     solve ~verbose gt mass n_leaves
       |> Enum.filter is_rmd
       |> Enum.fold
