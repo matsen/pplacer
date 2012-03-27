@@ -556,7 +556,7 @@ object (self)
     match fvo rep_edges with
     | None ->
       fal,
-      0 --^ List.length fal
+      0 --^ orig_length
         |> Enum.map (identity &&& identity)
         |> IntMap.of_enum,
       orig_length
