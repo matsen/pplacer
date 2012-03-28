@@ -57,12 +57,12 @@ object (self)
     | None -> Decor_gtree.of_newick_gtree prt
     | Some rp -> Refpkg.get_tax_ref_tree rp
     in
-    let data, const_reduction_map, const_orig_length =
-      List.map (self#splitify_placerun weighting criterion) prl
-        |> self#filter_constant_columns
-    in
     let data, rep_reduction_map, rep_orig_length =
-      self#filter_rep_edges prl data
+      List.map (self#splitify_placerun weighting criterion) prl
+        |> self#filter_rep_edges prl
+    in
+    let data, const_reduction_map, const_orig_length =
+      self#filter_constant_columns data
     in
     let n_unique_rows = List.length (List.sort_unique compare data) in
     if n_unique_rows <= 2 then
@@ -86,8 +86,8 @@ object (self)
     and names = (List.map Placerun.get_name prl) in
     let full_combol = List.map
       (second
-         (expand rep_orig_length rep_reduction_map
-          |- expand const_orig_length const_reduction_map))
+         (expand const_orig_length const_reduction_map
+          |- expand rep_orig_length rep_reduction_map))
       combol
     in
     Phyloxml.named_gtrees_to_file
