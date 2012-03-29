@@ -288,11 +288,12 @@ double *extreme_vertices(const double *ineqs, const size_t nrows,
   assert(ineqs != NULL);
   assert(ncols == 3);
   assert(output_size != NULL);
-  assert(lower_bound <= upper_bound);
 
   /* Check for approx equal lower and upper bound */
   if (abs(lower_bound - upper_bound) < EPS)
     return NULL;
+
+  assert(lower_bound <= upper_bound);
 
   /*
    * Initialize library
