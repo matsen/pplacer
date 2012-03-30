@@ -48,6 +48,7 @@ typedef struct __pam_partition_t {
 typedef pam_partition_t *pam_partition;
 
 int PAM_VERBOSE = 0;
+int PAM_ITERATIONS = 1000000;
 
 /* Declarations */
 static void gsl_vector_masked_min_index(const gsl_vector * v,
@@ -422,7 +423,7 @@ size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist)
   assert(k <= distances->size1);
 
   p = pam_partition_init(distances, k);
-  pam_run(p, 100000);
+  pam_run(p, PAM_ITERATIONS);
 
   *dist = pam_total_cost(p);
 
