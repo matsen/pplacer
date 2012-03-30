@@ -23,6 +23,9 @@ object (self)
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
   val raw_eval = flag "--raw-eval"
     (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
+  val som = flag "--som"
+    (Formatted (0, "The number of dimensions to rotate for support overlap minimization\
+    (default is %d; options are 0, 2, 3)."))
 
   method specl =
     super_output#specl
@@ -38,13 +41,14 @@ object (self)
 
   method desc =
 "performs edge principal components"
-  method usage = "usage: pca [options] placefiles"
+  method usage = "usage: epca [options] placefiles"
 
   method private placefile_action prl =
     self#check_placerunl prl;
     let weighting, criterion = self#mass_opts
     and scale = fv scale
     and write_n = fv write_n
+    and som = fv som
     and refpkgo = self#get_rpo
     and prefix = self#single_prefix ~requires_user_prefix:true () in
     let prt = Mokaphy_common.list_get_same_tree prl in
@@ -54,6 +58,8 @@ object (self)
     in
     let data = List.map (self#splitify_placerun weighting criterion) prl in
     let n_unique_rows = List.length (List.sort_unique compare data) in
+
+    (* Various checks and so on... *)
     if n_unique_rows <= 2 then
       failwith(Printf.sprintf "You have only %d unique row(s) in your data \
       after transformation. This is not enough to do edge PCA." n_unique_rows);
@@ -67,31 +73,46 @@ object (self)
       else
         write_n
     in
-    let (eval, evect) =
-      Pca.gen_pca ~use_raw_eval:(fv raw_eval)
-                  ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
+    if som > write_n || not (Array.exists (fun x -> x = som) [|0; 2; 3|]) then
+      failwith(Printf.sprintf "Number of components to rotate cannot be greater \
+      than write-n, and must be either 0, 2 or 3.");
+    let comp_n = max write_n 3 in
+
+    (* Once we have results, this will process and write out *)
+    let write_results vals vects pre =
+      (* Write out results *)
+      let combol = (List.combine (Array.to_list vals) (Array.to_list vects))
+      and names = (List.map Placerun.get_name prl)
+      in
+      Phyloxml.named_gtrees_to_file
+        (pre^".xml")
+        (List.map
+          (fun (vals, vects) ->
+            (Some (string_of_float vals),
+            super_heat#heat_tree_of_float_arr t vects |> self#maybe_numbered))
+          combol);
+      save_named_fal
+        (pre^".trans")
+        (List.map (fun (vals, vects) -> (string_of_float vals, vects)) combol);
+      save_named_fal
+        (pre^".proj")
+        (List.combine
+          names
+          (List.map (fun d -> Array.map (Pca.dot d) vects) data));
+      save_named_fal
+        (pre^".edgediff")
+        (List.combine names data)
     in
-    let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
-    and names = (List.map Placerun.get_name prl)
+
+    (* And now for the magic *)
+    (* Don't forget to get it to do the selections when needed *)
+    let (vals, vects) = Pca.gen_pca ~use_raw_eval:(fv raw_eval)
+                  ~scale ~symmv:(fv symmv) comp_n (Array.of_list data)
     in
-    Phyloxml.named_gtrees_to_file
-      (prefix^".xml")
-      (List.map
-        (fun (eval, evect) ->
-          (Some (string_of_float eval),
-          super_heat#heat_tree_of_float_arr t evect |> self#maybe_numbered))
-        combol);
-    save_named_fal
-      (prefix^".rot")
-      (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
-    save_named_fal
-      (prefix^".trans")
-      (List.combine
-        names
-        (List.map (fun d -> Array.map (Pca.dot d) evect) data));
-    save_named_fal
-      (prefix^".edgediff")
-      (List.combine names data);
-    ()
+    write_results vals vects prefix;
+    if not (som = 0) then begin
+      let (rot_vals, rot_vects) = Som.som_rotation vects 3 vals in
+      write_results rot_vals rot_vects (prefix^".som")
+    end
 
 end

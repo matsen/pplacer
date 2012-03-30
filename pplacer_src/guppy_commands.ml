@@ -12,7 +12,7 @@ let command_list () =
       "squash", (fun () -> new Guppy_squash.cmd ());
       "kr_heat", (fun () -> new Guppy_kr_heat.cmd ());
       "kr", (fun () -> new Guppy_kr.cmd ());
-      "pca", (fun () -> new Guppy_pca.cmd ());
+      "epca", (fun () -> new Guppy_pca.cmd ());
       "splitify", (fun () -> new Guppy_splitify.cmd ());
       "edpl", (fun () -> new Guppy_edpl.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
