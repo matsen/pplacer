@@ -26,7 +26,7 @@ let () =
         "Warning: pplacer couldn't find any sequences to place. Please supply \
         an alignment with sequences to place as an argument at the end of \
         the command line."
-    else if List.length files > 1 && Prefs.out_file prefs != "" then
-      failwith("`-o` may not be specified with multiple alignments.");
+    else if List.length files > 1 && Prefs.out_file prefs <> "" then
+      failwith "`-o` may not be specified with multiple alignments.";
     List.iter (Pplacer_run.run_file prefs) files)
   end
