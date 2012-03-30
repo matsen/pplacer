@@ -17,7 +17,8 @@ let solve gt mass leaves =
   and trans i = IntMap.find i transm
   (* rtransm is new -> old *)
   and rtransm = IntMap.enum transm |> Enum.map swap |> IntMap.of_enum in
-  let rtrans i = IntMap.find i rtransm in
+  let rtrans i = IntMap.find i rtransm
+  and total_mass = I.total_mass mass in
   (* Generate a work matrix. *)
   let leaf_vec, work = IntMap.fold
     (fun i vl accum ->
