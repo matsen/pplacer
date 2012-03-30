@@ -538,8 +538,8 @@ object (self)
     (Formatted ("full",
                 "Which algorithm to use to prune leaves. \
                  Choices are 'greedy', 'full', 'force', and 'pam'. Default %s."))
-  val all_eclds_file = flag "--all-eclds-file"
-    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
+  val all_adcls_file = flag "--all-adcls-file"
+    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ADCL."))
   val soln_log = flag "--log"
     (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
                           every internal node."))
@@ -552,7 +552,7 @@ object (self)
     string_flag trimmed_tree_file;
     int_flag leaf_cutoff;
     string_flag algorithm;
-    string_flag all_eclds_file;
+    string_flag all_adcls_file;
     string_flag soln_log;
   ]
 
@@ -572,7 +572,7 @@ object (self)
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
       let solm = Alg.solve
-        ~strict:(fvo all_eclds_file |> Option.is_none)
+        ~strict:(fvo all_adcls_file |> Option.is_none)
         ~verbose
         gt
         mass
@@ -601,7 +601,7 @@ object (self)
         | None -> ()
       end;
 
-      begin match fvo all_eclds_file with
+      begin match fvo all_adcls_file with
         | Some fname ->
           IntMap.enum solm
             |> Enum.map

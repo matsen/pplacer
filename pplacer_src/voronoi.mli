@@ -96,8 +96,8 @@ val placement_distance: v -> ?snipdist:snip list IntMap.t -> Placement.placement
     voronoi diagram. If a snipdist isn't provided, it will be calculated from
     the specified diagram. *)
 
-val ecld: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> float
-(** Find the ECLD of a voronoi diagram, given a mapping from leaves to mass on
+val adcl: ?p_exp:float -> v -> Mass_map.Indiv.t IntMap.t -> float
+(** Find the ADCL of a voronoi diagram, given a mapping from leaves to mass on
     the tree being moved to the leaf. o*)
 
 type solution = {
@@ -114,7 +114,7 @@ module type Alg = sig
 end
 
 module Greedy: Alg
-(** Greedy algorithm: at each step, remove the leaf which reduces the ECLD by
+(** Greedy algorithm: at each step, remove the leaf which reduces the ADCL by
     the most. *)
 
 module Full: sig
@@ -125,11 +125,11 @@ module Full: sig
 
 end
 (** Full algorithm: determine the set of leaves which produces the smallest
-    ECLD by examining the tree. *)
+    ADCL by examining the tree. *)
 
 module Forced: Alg
 (** Forced algorithm: brute-force to try every combination of leaves looking
-    for which has the smallest ECLD. *)
+    for which has the smallest ADCL. *)
 
 module PAM: Alg
 (** PAM algorithm. *)

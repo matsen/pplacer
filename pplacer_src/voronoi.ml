@@ -306,7 +306,7 @@ let leaf_work ?(p_exp = 1.) v indiv_map leaf =
     in
     Kr_distance.dist v.tree p_exp indiv squashed_indiv
 
-let ecld ?p_exp v indiv_map =
+let adcl ?p_exp v indiv_map =
   IntSet.fold
     (leaf_work ?p_exp v indiv_map |- (+.))
     v.all_leaves
@@ -691,11 +691,11 @@ let solve ?(verbose = false) gt mass n_leaves =
   Gtree.get_stree gt |> aux |> snd
 
 (* brute-force a voronoi solution by trying every combination of leaves,
- * calculating the ECLD of each, and choosing the best. *)
+ * calculating the ADCL of each, and choosing the best. *)
 let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
-  let leaves_ecld leaves =
+  let leaves_adcl leaves =
     let v = of_gtree_and_leaves gt leaves in
-    partition_indiv_on_leaves v mass |> ecld v
+    partition_indiv_on_leaves v mass |> adcl v
   in
   Gtree.leaf_ids gt
     |> EnumFuns.powerset
@@ -707,7 +707,7 @@ let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
           | _ -> None)
     |> Enum.group IntSet.cardinal
     |> Enum.map
-        (Enum.map (identity &&& leaves_ecld)
+        (Enum.map (identity &&& leaves_adcl)
          |- Enum.arg_min snd
          |- (if verbose then
                tap (fst |- IntSet.cardinal |- Printf.eprintf "solved %d\n%!")
@@ -753,11 +753,11 @@ module Forced = struct
   let solve = force
 end
 
-(* update a map with what the ECLD would be if a particular leaf was removed
+(* update a map with what the ADCL would be if a particular leaf was removed
  * from the voronoi diagram. *)
 let update_score indiv v leaf map =
   let v', _ = uncolor_leaf v leaf in
-  ecld v' (partition_indiv_on_leaves v' indiv)
+  adcl v' (partition_indiv_on_leaves v' indiv)
   |> flip (IntMap.add leaf) map
 
 module Greedy = struct
@@ -777,7 +777,7 @@ module Greedy = struct
       let accum' =
         IntMap.add
           (IntSet.cardinal diagram'.all_leaves)
-          {work = partition_indiv_on_leaves diagram' mass |> ecld diagram';
+          {work = partition_indiv_on_leaves diagram' mass |> adcl diagram';
            leaves = diagram'.all_leaves}
           accum
       in
@@ -794,7 +794,7 @@ module Greedy = struct
       (IntMap.singleton
          (IntSet.cardinal v.all_leaves)
          {leaves = v.all_leaves;
-          work = partition_indiv_on_leaves v mass |> ecld v})
+          work = partition_indiv_on_leaves v mass |> adcl v})
       IntMap.empty
       v.all_leaves
     |> Return.with_label
@@ -807,7 +807,7 @@ module PAM = struct
     let leaves = Pam_solver.solve gt mass n_leaves in
     let diagram = of_gtree_and_leaves gt leaves in
     let work = partition_indiv_on_leaves diagram mass
-      |> ecld diagram
+      |> adcl diagram
     in
     IntMap.singleton n_leaves {leaves; work}
 
