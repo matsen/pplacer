@@ -533,7 +533,9 @@ object (self)
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
   val leaf_cutoff = flag "--leaves"
-    (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
+    (Needs_argument ("", "The maximum number of leaves to keep in the tree."))
+  val adcl_cutoff = flag "--max-adcl"
+    (Needs_argument ("", "The maximum ADCL that a solution can have."))
   val algorithm = flag "--algorithm"
     (Formatted ("full",
                 "Which algorithm to use to prune leaves. \
@@ -551,6 +553,7 @@ object (self)
     toggle_flag verbose;
     string_flag trimmed_tree_file;
     int_flag leaf_cutoff;
+    float_flag adcl_cutoff;
     string_flag algorithm;
     string_flag all_adcls_file;
     string_flag soln_log;
@@ -564,7 +567,8 @@ object (self)
         | "pam" -> (module Voronoi.PAM: Voronoi.Alg)
         | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
       and verbose = fv verbose
-      and leaf_cutoff = fv leaf_cutoff in
+      and n_leaves = fvo leaf_cutoff
+      and max_adcl = fvo adcl_cutoff in
       Voronoi.Full.csv_log :=
         fvo soln_log
           |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
@@ -572,50 +576,60 @@ object (self)
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
       let solm = Alg.solve
+        ?n_leaves
+        ?max_adcl
         ~strict:(fvo all_adcls_file |> Option.is_none)
         ~verbose
         gt
         mass
-        leaf_cutoff
       in
-      if not (IntMap.mem leaf_cutoff solm) then
-        failwith
-          (Printf.sprintf "no solution with cardinality %d found; only solutions on the range [%d, %d]"
-             leaf_cutoff
-             (IntMap.min_binding solm |> fst)
-             (IntMap.max_binding solm |> fst));
-      let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
+      if IntMap.is_empty solm then
+        failwith "no solutions were found";
+      let leaves = match n_leaves with
+        | Some leaf_cutoff ->
+          if not (IntMap.mem leaf_cutoff solm) then
+            failwith
+              (Printf.sprintf
+                 "no solution with cardinality %d found; only solutions on the range [%d, %d]"
+                 leaf_cutoff
+                 (IntMap.min_binding solm |> fst)
+                 (IntMap.max_binding solm |> fst));
+          (IntMap.find leaf_cutoff solm).Voronoi.leaves
+        (* if there's no obvious cardinality to choose, pick the one which cuts
+         * the smallest number of leaves. *)
+        | None -> (IntMap.max_binding solm |> snd).Voronoi.leaves
+      in
       let cut_leaves = gt
-        |> Gtree.leaf_ids
-        |> IntSet.of_list
-        |> flip IntSet.diff leaves
+          |> Gtree.leaf_ids
+          |> IntSet.of_list
+          |> flip IntSet.diff leaves
       in
 
       begin match fvo trimmed_tree_file with
-        | Some fname ->
-          decor_tree
-            |> Option.default (Decor_gtree.of_newick_gtree gt)
-            |> Decor_gtree.color_clades_above cut_leaves
-            |> self#maybe_numbered
-            |> Phyloxml.gtree_to_file fname
-        | None -> ()
+      | Some fname ->
+        decor_tree
+      |> Option.default (Decor_gtree.of_newick_gtree gt)
+      |> Decor_gtree.color_clades_above cut_leaves
+      |> self#maybe_numbered
+      |> Phyloxml.gtree_to_file fname
+      | None -> ()
       end;
 
       begin match fvo all_adcls_file with
-        | Some fname ->
-          IntMap.enum solm
-            |> Enum.map
-                (fun (c, {Voronoi.work}) ->
-                  [string_of_int c; Printf.sprintf "%g" work])
-            |> List.of_enum
-            |> Csv.save fname
-        | None -> ()
+      | Some fname ->
+        IntMap.enum solm
+      |> Enum.map
+          (fun (c, {Voronoi.work}) ->
+            [string_of_int c; Printf.sprintf "%g" work])
+      |> List.of_enum
+      |> Csv.save fname
+      | None -> ()
       end;
 
       cut_leaves
-        |> IntSet.enum
-        |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
-        |> List.of_enum
-        |> self#write_ll_tab;
+          |> IntSet.enum
+          |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+          |> List.of_enum
+          |> self#write_ll_tab;
 
 end
