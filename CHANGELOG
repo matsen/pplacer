@@ -3,6 +3,7 @@
 
  * Closed GH-225: Added `rppr vorotree`.
  * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
+ * Closed GH-240: Added a `-o` flag for pplacer.
 
 
 1.1.alpha12
