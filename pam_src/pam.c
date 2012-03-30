@@ -8,6 +8,10 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#ifdef PAM_TEST
+#include <time.h>
+#endif
+
 /*
  * Partitioning Around Medoids (PAM)
  *
@@ -434,31 +438,40 @@ size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist)
 }
 
 #ifdef PAM_TEST
-int main()
+int main(int argc, char **argv)
 {
   gsl_matrix *m;
   FILE *f;
   size_t *result;
   double work;
-  int rows, cols;
+  int rows, cols, keep, i;
+  time_t start, end;
 
-  f = fopen("sample-data.txt", "r");
+  if (argc != 3) {
+    fprintf(stderr, "USAGE: %s dist_matrix keep_rows\n\n", argv[0]);
+    fprintf(stderr, "dist_matrix should have one line with 'n_rows n_cols' ");
+    fprintf(stderr, "followed by the matrix.\n");
+    return 1;
+  }
+
+  keep = atoi(argv[2]);
+
+  f = fopen(argv[1], "r");
   /* Read dimensions: width then height */
   assert(fscanf(f, "%d %d", &rows, &cols) == 2);
   m = gsl_matrix_alloc(rows, cols);
   assert(!gsl_matrix_fscanf(f, m));
   fclose(f);
 
-  result = pam(m, 8, &work);
-  assert(result[0] == 0);
-  assert(result[1] == 1);
-  assert(result[2] == 2);
-  assert(result[3] == 3);
-  assert(result[4] == 4);
-  assert(result[5] == 6);
-  assert(result[6] == 7);
-  assert(result[7] == 15);
-  assert(abs(work - 0.321014) < 1e-5);
+  time(&start);
+  result = pam(m, keep, &work);
+  time(&end);
+
+  for(i = 0; i < keep; i++)
+    printf("%lu ", result[i]);
+  printf("\n");
+  printf("Total work: %f\n", work);
+  printf("Took: %.2lfs\n", difftime(end, start));
 
   gsl_matrix_free(m);
   free(result);
