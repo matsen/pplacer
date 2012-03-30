@@ -440,9 +440,12 @@ int main()
   FILE *f;
   size_t *result;
   double work;
+  int rows, cols;
 
-  m = gsl_matrix_alloc(16, 16);
   f = fopen("sample-data.txt", "r");
+  /* Read dimensions: width then height */
+  assert(fscanf(f, "%d %d", &rows, &cols) == 2);
+  m = gsl_matrix_alloc(rows, cols);
   assert(!gsl_matrix_fscanf(f, m));
   fclose(f);
 
