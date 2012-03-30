@@ -19,13 +19,13 @@ let solve gt mass leaves =
   and rtransm = IntMap.enum transm |> Enum.map swap |> IntMap.of_enum in
   let rtrans i = IntMap.find i rtransm in
   (* Generate a work matrix. *)
-  let mat =
-  IntMap.fold
+  let leaf_vec, work = IntMap.fold
     (fun i vl accum ->
       List.fold_left
         (fun accum {I.distal_bl; I.mass} ->
           (* bl scaled by mass *)
-          Array.map (fun j -> dist (trans i) (distal_bl *. mass) j 0.) leaf_arr :: accum)
+          let work = distal_bl *. mass in
+          Array.map (fun j -> dist (trans i) work j 0.) leaf_arr :: accum)
         accum
         vl)
     mass
@@ -33,10 +33,10 @@ let solve gt mass leaves =
   |> Array.of_list
   |> Matrix.of_arrays
   (* rows are masses; columns are leaves. thus, we need to transpose *)
-  |> Matrix.rect_transpose and total_mass = I.total_mass mass in
-  let leaf_idx, work = c_pam leaves mat in
-  let result = leaf_idx
-  |> BA1.enum
+  |> Matrix.rect_transpose
+  |> c_pam leaves
+  in
+  BA1.enum leaf_vec
   |> Enum.map (Array.get leaf_arr |- rtrans)
-  |> IntSet.of_enum in
-    (result, work /. total_mass)
+  |> IntSet.of_enum,
+  work /. total_mass
