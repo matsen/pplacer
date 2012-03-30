@@ -8,20 +8,21 @@
 
 #include <stdio.h>
 
-size_t* pam(gsl_matrix*, size_t, /*OUT*/ float*);
+size_t* pam(gsl_matrix*, size_t, /*OUT*/ double*);
 
 /* rows for leaves; columns for masses */
-CAMLprim value caml_pam(value k_value, value dist_value)
+CAMLprim value caml_pam(value k_value, value dist_value, value weight_value)
 {
   CAMLparam2(k_value, dist_value);
   double *dist = Data_bigarray_val(dist_value);
   gsl_matrix_view m;
-  float work;
+  double work;
   size_t *medoids, *medoids_ptr;
   size_t nrow, ncol;
-  value res_bigarr;
+  CAMLlocal2(res_bigarr, res_tuple);
   intnat *res_ptr;
   int i, k;
+
   nrow = Bigarray_val(dist_value)->dim[0];
   ncol = Bigarray_val(dist_value)->dim[1];
   m = gsl_matrix_view_array(dist, nrow, ncol);
@@ -35,5 +36,12 @@ CAMLprim value caml_pam(value k_value, value dist_value)
     *res_ptr++ = *medoids_ptr++;
   }
   free(medoids);
-  CAMLreturn(res_bigarr);
+
+  /* Create a [bigarray;float] tuple to return */
+  res_tuple = caml_alloc(2, 0);
+  Store_field(res_tuple, 0, res_bigarr);
+  /* Work returned is total. */
+  Store_field(res_tuple, 1, caml_copy_double(work));
+
+  CAMLreturn(res_tuple);
 }
