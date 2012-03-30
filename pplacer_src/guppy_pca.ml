@@ -17,15 +17,15 @@ object (self)
 
   val write_n = flag "--write-n"
     (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
+  val som = flag "--som"
+    (Formatted (0, "The number of dimensions to rotate for support overlap minimization\
+    (default is %d; options are 0, 2, 3)."))
   val scale = flag "--scale"
     (Plain (false, "Scale variances to one before performing principal components."))
   val symmv = flag "--symmv"
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
   val raw_eval = flag "--raw-eval"
     (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
-  val som = flag "--som"
-    (Formatted (0, "The number of dimensions to rotate for support overlap minimization\
-    (default is %d; options are 0, 2, 3)."))
 
   method specl =
     super_output#specl
@@ -34,6 +34,7 @@ object (self)
     @ super_heat#specl
     @ [
       int_flag write_n;
+      int_flag som;
       toggle_flag scale;
       toggle_flag symmv;
     ]
@@ -80,7 +81,9 @@ object (self)
 
     (* Once we have results, this will process and write out *)
     let write_results vals vects pre =
-      (* Write out results *)
+      (* Only want to keep as many of the results as were asked for in --write-n*)
+      let write_keep arr = Array.sub arr 0 write_n in
+      let (vals, vects) = (write_keep vals, write_keep vects) in
       let combol = (List.combine (Array.to_list vals) (Array.to_list vects))
       and names = (List.map Placerun.get_name prl)
       in
