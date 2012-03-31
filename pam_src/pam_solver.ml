@@ -25,8 +25,7 @@ let solve gt mass leaves =
       List.fold_left
         (fun accum {I.distal_bl; I.mass} ->
           (* bl scaled by mass *)
-          let work = distal_bl *. mass in
-          Array.map (fun j -> dist (trans i) work j 0.) leaf_arr :: accum)
+          Array.map (fun j -> mass *. (dist (trans i) distal_bl j 0.)) leaf_arr :: accum)
         accum
         vl)
     mass
