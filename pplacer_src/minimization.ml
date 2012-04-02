@@ -58,7 +58,7 @@ let brent f raw_start left right tolerance =
   with
     | FoundMin minLoc -> minLoc
 
-
+(* No max iteration checking going on here yet... *)
 let multimin obj_fun start lower_bounds upper_bounds tolerance =
   let dims = Array.init (Array.length start) (fun i -> i) in
   let dim_it start' dim =

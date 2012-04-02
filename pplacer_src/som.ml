@@ -74,23 +74,3 @@ let som_rotation trans dims vars =
   Array.blit (Gsl_matrix.to_arrays (rotate_trans trans_part min)) 0 rotated_trans 0 3;
   (rotate_vars vars min, rotated_trans);;
 
-
-(*let trans = [|*)
-    (*[| 1.2; 0.35; (-2.1); 4.2 |];*)
-    (*[| (-3.1); 0.12; 1.2; (-0.4) |];*)
-    (*[| 2.1; 0.12; 1.2; (-3.2) |];*)
-    (*[| 1.3; 5.4; (-2.1); (-3.2) |];*)
-    (*[| 0.001; (-10.); 6.8; 3.4 |]*)
-(*|];;*)
-(*let vars = [| 0.5; 0.3; 0.2; 0.24; 0.21|];;*)
-
-(*let results = som_rotation trans 2 vars;;*)
-
-
-(*[> 3D rotation matrix <]*)
-(*let rot_mat theta =*)
-  (*Gsl_matrix.of_arrays [|*)
-    (*[| cos theta ; (-1.) *. sin theta ; 0. |];*)
-    (*[| sin theta ; cos theta        ; 0. |];*)
-    (*[| 0.        ; 0.               ; 1. |] |];;*)
-
