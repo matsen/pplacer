@@ -192,7 +192,7 @@ object (self)
             ti
           else if rank = 0 then begin
             dprintf
-              "warning: no inferred taxid for %s"
+              "warning: no inferred taxid for %s\n"
               (Gtree.get_node_label gt i);
             Tax_id.NoTax
           end else
@@ -201,7 +201,9 @@ object (self)
         let ti = aux highest_rank in
         [Gtree.get_node_label gt i;
          Tax_id.to_string ti;
-         Tax_taxonomy.get_tax_name td ti]
+         match ti with
+         | Tax_id.NoTax -> "-"
+         | _ -> Tax_taxonomy.get_tax_name td ti]
         :: accum)
       no_tax
       []
