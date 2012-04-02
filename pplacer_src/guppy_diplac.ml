@@ -39,16 +39,20 @@ object (self)
       let dist = Voronoi.placement_distance graph ~snipdist
       and best_placement = Pquery.best_place criterion in
       Placerun.get_pqueries pr
-      |> List.map (best_placement |- self#dist dist &&& Pquery.name)
+      |> List.map (fun p ->
+                      (self#dist dist (best_placement p),
+                        Pquery.multiplicity p,
+                        Pquery.name p))
       |> List.sort (flip compare)
       |> List.enum
       |> (match fvo max_dist with
-          | Some max_dist -> Enum.filter (fun (dist, _) -> dist > max_dist)
+          | Some max_dist -> Enum.filter (fun (dist, _, _) -> dist > max_dist)
           | None -> identity)
       |> (match fvo max_reported with
           | Some n -> Enum.take n
           | None -> identity)
-      |> Enum.map (fun (dist, name) -> [name; Printf.sprintf "%1.6f" dist])
+      |> Enum.map (fun (dist, multiplicity, name) ->
+          [name; Printf.sprintf "%1.6f" dist; Printf.sprintf "%g" multiplicity])
       |> List.of_enum
       |> self#write_ll_tab
 
