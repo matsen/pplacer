@@ -21,7 +21,7 @@ let find_root rp gt =
           try
             Gtree.get_node_label gt leaf
             |> Tax_seqinfo.tax_id_by_node_label seqinfom
-            |> some
+            |> junction ((=) NoTax) (const None) some
           with Gtree.Lacking_bark _ -> None)
     |> junction
         List.is_empty
@@ -91,8 +91,7 @@ object (self)
         (IntMap.enum rank_tax_map)
       in
       Tax_taxonomy.get_rank_name td rank
-        |> Printf.sprintf "rerooting at %s"
-        |> print_endline;
+        |> dprintf "rerooting at %s\n";
       (* next, find the convex subset of leaves at that rank. *)
       let phi, _ = Convex.solve (taxmap, st) in
       let not_cut = Convex.nodeset_of_phi_and_tree phi st in
@@ -101,6 +100,7 @@ object (self)
         |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
         |> Gtree.set_bark_map gt
         |> find_root rp
+        |> tap (dprintf "root found at node %d\n")
         |> Gtree.reroot gt
         |> flip Newick_gtree.to_file (self#single_file ())
 
