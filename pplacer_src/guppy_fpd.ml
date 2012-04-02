@@ -100,7 +100,7 @@ object (self)
     super_mass#specl
     @ super_tabular#specl
     @ [
-      string_list_flag kappa;
+      delimited_list_flag kappa;
       toggle_flag include_pendant;
     ]
 
@@ -108,10 +108,7 @@ object (self)
   method usage = "usage: fpd [options] placefile[s]"
 
   method private placefile_action prl =
-    let exponents = fv kappa
-      |> List.map (flip String.nsplit ",")
-      |> List.flatten
-      |> List.map float_of_string
+    let exponents = fv kappa |> List.map float_of_string
     and criterion = self#criterion
     and include_pendant = fv include_pendant in
     let awpd = awpd_of_placerun ~include_pendant criterion

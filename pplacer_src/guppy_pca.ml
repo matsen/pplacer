@@ -5,6 +5,11 @@ open Guppy_cmdobjs
 let save_named_fal fname fal =
   Csv.save fname (Guppy_splitify.fal_to_strll fal)
 
+let expand full_length m arr =
+  let full = Array.make full_length 0. in
+  Array.iteri (fun i v -> full.(IntMap.find i m) <- v) arr;
+  full
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -57,7 +62,13 @@ object (self)
     | None -> Decor_gtree.of_newick_gtree prt
     | Some rp -> Refpkg.get_tax_ref_tree rp
     in
-    let data = List.map (self#splitify_placerun weighting criterion) prl in
+    let data, rep_reduction_map, rep_orig_length =
+      List.map (self#splitify_placerun weighting criterion) prl
+        |> self#filter_rep_edges prl
+    in
+    let data, const_reduction_map, const_orig_length =
+      self#filter_constant_columns data
+    in
     let n_unique_rows = List.length (List.sort_unique compare data) in
 
     (* Various checks and so on... *)
@@ -85,7 +96,12 @@ object (self)
       let write_keep arr = Array.sub arr 0 write_n in
       let (vals, vects) = (write_keep vals, write_keep vects) in
       let combol = (List.combine (Array.to_list vals) (Array.to_list vects))
-      and names = (List.map Placerun.get_name prl)
+      and names = (List.map Placerun.get_name prl) in
+      let full_combol = List.map
+        (second
+           (expand const_orig_length const_reduction_map
+            |- expand rep_orig_length rep_reduction_map))
+        combol
       in
       Phyloxml.named_gtrees_to_file
         (pre^".xml")
@@ -93,7 +109,7 @@ object (self)
           (fun (vals, vects) ->
             (Some (string_of_float vals),
             super_heat#heat_tree_of_float_arr t vects |> self#maybe_numbered))
-          combol);
+          full_combol);
       save_named_fal
         (pre^".trans")
         (List.map (fun (vals, vects) -> (string_of_float vals, vects)) combol);

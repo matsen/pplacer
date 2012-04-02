@@ -467,6 +467,31 @@ object
     Sqlite3.db_open (fv sqlite_fname)
 end
 
+let find_rep_edges max_edge_d fal gt =
+  let dist i j =
+    List.map (fun arr -> (arr.(i) -. arr.(j)) ** 2.) fal
+    |> List.fsum
+    |> sqrt
+  in
+  let open Stree in
+  let rec aux = function
+    | Leaf i -> IntSet.empty, IntSet.singleton i
+    | Node (i, subtrees) ->
+      let rep_edges, possible_cur_edges = List.fold_left
+        (fun (rea, pcea) t ->
+          let re, pce = aux t in IntSet.union re rea, IntSet.union pce pcea)
+        (IntSet.empty, IntSet.empty)
+        subtrees
+      in
+      let cur_edges, far_edges = IntSet.partition
+        (fun j -> dist i j < max_edge_d)
+        possible_cur_edges
+      in
+      IntSet.union rep_edges far_edges,
+      if IntSet.is_empty cur_edges then IntSet.singleton i else cur_edges
+  in
+  Gtree.get_stree gt |> aux |> uncurry IntSet.union
+
 class splitify_cmd () =
 
 let tolerance = 1e-3
@@ -494,7 +519,17 @@ in
 object (self)
   val kappa = flag "--kappa"
     (Formatted (1., "Specify the exponent for scaling between weighted and unweighted splitification. default: %g"))
-  method specl = [float_flag kappa]
+  val rep_edges = flag "--rep-edges"
+    (Needs_argument ("", "Cluster neighboring edges that have splitified euclidean distance less than the argument."))
+  val epsilon = flag "--epsilon"
+    (Formatted (1e-5, "The epsilon to use to determine if a split matrix's column \
+                       is constant for filtering. default: %g"))
+
+  method specl = [
+    float_flag kappa;
+    float_flag rep_edges;
+    float_flag epsilon;
+  ]
 
   method private splitify_transform =
     let kappa = fv kappa in
@@ -521,5 +556,128 @@ object (self)
          splitify_fn
          (below_mass_map (Mass_map.By_edge.of_pre preim) t))
 
+  method private filter_fal orig_length fal edges =
+    List.map (Array.filteri (fun i _ -> IntSet.mem i edges)) fal,
+    Enum.combine (Enum.range 0, IntSet.enum edges) |> IntMap.of_enum,
+    orig_length
+
+  method private filter_rep_edges prl fal =
+    let orig_length = Array.length (List.hd fal) in
+    match fvo rep_edges with
+    | None ->
+      fal,
+      0 --^ orig_length
+        |> Enum.map (identity &&& identity)
+        |> IntMap.of_enum,
+      orig_length
+    | Some max_edge_d ->
+      let gt = Mokaphy_common.list_get_same_tree prl in
+      find_rep_edges max_edge_d fal gt
+      |> self#filter_fal orig_length fal
+
+  method private filter_constant_columns fal =
+    let width = Array.length (List.hd fal) in
+    let minarr = Array.make width infinity
+    and maxarr = Array.make width neg_infinity
+    and epsilon = fv epsilon in
+    List.iter
+      (fun arr ->
+        Array.modifyi (Array.get arr |- min) minarr;
+        Array.modifyi (Array.get arr |- max) maxarr)
+      fal;
+    0 --^ width
+      |> Enum.filter
+          (fun i -> not (approx_equal ~epsilon minarr.(i) maxarr.(i)))
+      |> IntSet.of_enum
+      |> self#filter_fal width fal
+
 end
 
+class voronoi_cmd () =
+object (self)
+  inherit tabular_cmd ~default_to_csv:true () as super_tabular
+  inherit numbered_tree_cmd () as super_numbered_tree
+
+  val verbose = flag "-v"
+    (Plain (false, "If specified, write progress output to stderr."))
+  val trimmed_tree_file = flag "-t"
+    (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
+  val leaf_cutoff = flag "--leaves"
+    (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
+  val algorithm = flag "--algorithm"
+    (Formatted ("full",
+                "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
+  val all_eclds_file = flag "--all-eclds-file"
+    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
+  val soln_log = flag "--log"
+    (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
+                          every internal node."))
+
+  method specl =
+    super_tabular#specl
+  @ super_numbered_tree#specl
+  @ [
+    toggle_flag verbose;
+    string_flag trimmed_tree_file;
+    int_flag leaf_cutoff;
+    string_flag algorithm;
+    string_flag all_eclds_file;
+    string_flag soln_log;
+  ]
+
+  method private perform_voronoi ?decor_tree gt mass_cb =
+      let alg = match fv algorithm with
+        | "greedy" -> (module Voronoi.Greedy: Voronoi.Alg)
+        | "full" -> (module Voronoi.Full: Voronoi.Alg)
+        | "force" -> (module Voronoi.Forced: Voronoi.Alg)
+        | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
+      and verbose = fv verbose
+      and leaf_cutoff = fv leaf_cutoff in
+      Voronoi.Full.csv_log :=
+        fvo soln_log
+          |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
+      let module Alg = (val alg: Voronoi.Alg) in
+      let diagram = Voronoi.of_gtree gt in
+      let mass = mass_cb diagram in
+      let solm = Alg.solve
+        ~strict:(fvo all_eclds_file |> Option.is_none)
+        ~verbose
+        gt
+        mass
+        leaf_cutoff
+      in
+      let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
+      let cut_leaves = gt
+        |> Gtree.leaf_ids
+        |> IntSet.of_list
+        |> flip IntSet.diff leaves
+      in
+
+      begin match fvo trimmed_tree_file with
+        | Some fname ->
+          decor_tree
+            |> Option.default (Decor_gtree.of_newick_gtree gt)
+            |> Decor_gtree.color_clades_above cut_leaves
+            |> self#maybe_numbered
+            |> Phyloxml.gtree_to_file fname
+        | None -> ()
+      end;
+
+      begin match fvo all_eclds_file with
+        | Some fname ->
+          IntMap.enum solm
+            |> Enum.map
+                (fun (c, {Voronoi.work}) ->
+                  [string_of_int c; Printf.sprintf "%g" work])
+            |> List.of_enum
+            |> Csv.save fname
+        | None -> ()
+      end;
+
+      cut_leaves
+        |> IntSet.enum
+        |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+        |> List.of_enum
+        |> self#write_ll_tab;
+
+end
