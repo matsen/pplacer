@@ -58,3 +58,25 @@ let brent f raw_start left right tolerance =
   with
     | FoundMin minLoc -> minLoc
 
+
+let multimin obj_fun start lower_bounds upper_bounds tolerance =
+  let dims = Array.init (Array.length start) (fun i -> i) in
+  let dim_it start' dim =
+    let input x =
+      let arr = Array.copy start' in
+      Array.set arr dim x;
+      arr
+    in
+    let obj_part x = obj_fun (input x) in
+    let min = brent obj_part start'.(dim) lower_bounds.(dim) upper_bounds.(dim) tolerance in
+    input min
+  in
+  let iteration start' = (start', Array.fold_left dim_it start' dims) in
+  let rec iterator (input1, input2) =
+      if ( (obj_fun input1) -. (obj_fun input2) > tolerance ) then
+        iterator (iteration input2)
+      else input2
+  in
+  iterator (iteration start);;
+
+
