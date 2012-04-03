@@ -5,6 +5,10 @@
  * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
  * Closed GH-237: Added a multiplicity column to `guppy diplac`.
  * Closed GH-240: Added a `-o` flag for pplacer.
+ * Closed GH-243: Updated `rppr reroot` so it can run on reference packages
+   which have unannotated sequences.
+ * Closed GH-244: Updated `rppr infer` to handle sequences which could not be
+   reasonably placed anywhere on the tree.
 
 
 1.1.alpha12
