@@ -241,8 +241,32 @@ module Classifier = struct
     let total = TIM.values counts |> Enum.sum |> float_of_int in
     TIM.map (fun c -> float_of_int c /. total) counts
 
+  let find_auto_rank td rank_tax_map =
+    let n_all_seqs = IntMap.values rank_tax_map
+      |> Enum.map StringMap.keys
+      |> Enum.flatten
+      |> StringSet.of_enum
+      |> StringSet.cardinal
+    and highest_rank, _ = IntMap.max_binding rank_tax_map in
+    let rec is_viable rank_map =
+      (StringMap.cardinal rank_map * 100 / n_all_seqs) > 80
+    and aux rank =
+      match IntMap.Exceptionless.find rank rank_tax_map with
+      | _ when rank = -1 -> failwith "no rank could be automatically determined"
+      | Some rank_map when is_viable rank_map -> rank
+      | _ -> aux (rank - 1)
+    in
+    aux highest_rank
+      |> tap
+          (Tax_taxonomy.get_rank_name td
+           |- dprintf "automatically determined best rank: %s\n")
+
   let of_refpkg ?n_boot word_length rank_idx rp =
-    let rank_tax_map = rank_tax_map_of_refpkg rp in
+    let td = Refpkg.get_taxonomy rp
+    and rank_tax_map = rank_tax_map_of_refpkg rp in
+    let rank_idx =
+      if rank_idx = -1 then find_auto_rank td rank_tax_map else rank_idx
+    in
     let preclassif = IntMap.find rank_idx rank_tax_map
       |> StringMap.values
       |> Tax_id.TaxIdSet.of_enum
