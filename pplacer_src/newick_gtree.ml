@@ -122,6 +122,9 @@ let of_file ?legacy_format fname =
     | [s] -> of_string ?legacy_format ~fname s
     | _ -> failwith ("expected a single tree on a single line in "^fname)
 
+let of_refpkg_contents =
+  Refpkg_parse.of_file_or_string of_file (of_string ?legacy_format:None)
+
 let list_of_file fname =
   List.map (of_string ~fname) (File_parsing.string_list_of_file fname)
 
