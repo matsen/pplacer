@@ -5,7 +5,7 @@ let rot_mat angles  =
   and s i = sin angles.(i) in
   Gsl_matrix.of_arrays [|
     [| (c 1)*.(c 2);  (-1.)*.(c 0)*.(s 2)+.(s 0)*.(s 1)*.(c 2);         (s 0)*.(s 2)+.(c 0)*.(s 1)*.(c 2)|];
-    [| (c 1)*.(s 2);         (c 0)*.(c 2)+.(s 0)*.(s 1)*.(s 2);  (-1.)*.(s 2)*.(c 2)+.(c 0)*.(s 1)*.(s 2)|];
+    [| (c 1)*.(s 2);         (c 0)*.(c 2)+.(s 0)*.(s 1)*.(s 2);  (-1.)*.(s 0)*.(c 2)+.(c 0)*.(s 1)*.(s 2)|];
     [| (-1.)*.(s 1);         (s 0)*.(c 1)                     ;         (c 0)*.(c 1)                     |]
   |];;
 
@@ -39,31 +39,33 @@ let overlap trans_part dims angles =
   and indices = match dims with
   | 2 -> [(0, 1)]
   | 3 -> [(0, 1); (0, 2); (1, 2)]
-  | _ -> failwith "Can only rotate in 2 or 3 dimensions"
+  | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
   in
   let rec overlapper ls = match ls with
   | [] -> 0.0
   | (i, j)::ls' ->
-      let mult = row i in
+      let mult = Gsl_vector.copy (row i) in
       Gsl_vector.mul mult (row j);
       (Gsl_blas.asum mult) +. overlapper(ls')
   in
   overlapper indices;;
 
 (* Performs overlap minimization using Brent *)
-let min_overlap trans_part dims = match dims with
+let min_overlap trans_part dims = 
+  let tolerance = (overlap trans_part dims [|0.; 0.; 0.|]) *. (0.0001) in
+  match dims with
   | 2 ->
       let obj_fun theta = overlap trans_part dims [|0.0; 0.0; theta|] in
-      let min = Minimization.brent obj_fun 0.0 (-. Gsl_math.pi_4) Gsl_math.pi_4 0.001 in
+      let min = Minimization.brent obj_fun 0.0 (-. Gsl_math.pi_4) Gsl_math.pi_4 tolerance in
       [|0.; 0.; min|]
   | 3 ->
       let obj_fun = overlap trans_part dims
       and start = [|0.; 0.; 0.|]
-      and lower = Array.make 3 (Gsl_math.pi /. (-4.))
-      and upper = Array.make 3 (Gsl_math.pi /. (4.))
+      and lower = Array.make 3 (-. Gsl_math.pi_4)
+      and upper = Array.make 3 (Gsl_math.pi_4)
       in
-      Minimization.multimin obj_fun start lower upper 0.001
-  | _ -> failwith "Can only rotate in 2 or 3 dimensions"
+      Minimization.multimin obj_fun start lower upper tolerance
+  | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
 
 (* Returns a tuple of the roated trans (as an array of arrays), the rotated
  * vars, and the optimal theta value(s) *)

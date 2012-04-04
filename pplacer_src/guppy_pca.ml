@@ -130,7 +130,7 @@ object (self)
     in
     write_results vals vects prefix;
     if not (som = 0) then begin
-      let (rot_vals, rot_vects) = Som.som_rotation vects 3 vals in
+      let (rot_vals, rot_vects) = Som.som_rotation vects som vals in
       write_results rot_vals rot_vects (prefix^".som")
     end
 
