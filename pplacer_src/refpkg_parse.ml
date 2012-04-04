@@ -46,31 +46,59 @@ let remove_terminal_slash s =
   if s.[len - 1] <> '/' then s
   else String.sub s 0 (len-1)
 
-let strmap_of_path path =
-  if not (Sys.is_directory path) then
-    failwith ("Purported refpkg "^path^" is not a directory");
+let maybe_add_version contents map =
+  try
+    StringMap.add
+      "format_version"
+      (Jsontype.string
+         (Hashtbl.find
+            (Jsontype.obj (Hashtbl.find contents "metadata"))
+            "format_version")
+       |> metadata)
+      map
+  with Not_found ->
+    map
+
+let strmap_of_zipfile path =
+  let z = Zip.open_in path in
+  let dirent = match List.filter (fun e -> e.Zip.is_directory) (Zip.entries z) with
+  | [e] -> e
+  | _ -> failwith "reference package zipfiles must contain exactly one directory"
+  in
+  let dirname = dirent.Zip.filename in
+  let fname = dirname ^ refpkg_str in
+  let contents = fname
+    |> Zip.find_entry z
+    |> Zip.read_entry z
+    |> Json.of_string ~fname
+    |> Jsontype.obj
+  and read_contents ent =
+    File_contents (ent.Zip.filename, (lazy (Zip.read_entry z ent)))
+  in
+  Hashtbl.find contents "files"
+    |> Jsontype.obj
+    |> sstringMap_of_Sjobj
+    |> StringMap.map ((^) dirname |- Zip.find_entry z |- read_contents)
+    |> maybe_add_version contents
+    |> StringMap.add
+        "name"
+        (safe_chop_suffix (Filename.basename path) ".refpkg" |> metadata)
+
+let strmap_of_dir path =
   let noslash = remove_terminal_slash path in
   let dirize fname = noslash^"/"^fname in
   let contents = Jsontype.obj (Json.of_file (dirize refpkg_str)) in
-  let map = Hashtbl.find contents "files"
+  Hashtbl.find contents "files"
     |> Jsontype.obj
     |> sstringMap_of_Sjobj
     |> StringMap.map (dirize |- file_path)
-  in
-  let map' =
-    try
-      StringMap.add
-        "format_version"
-        (Jsontype.string
-           (Hashtbl.find
-              (Jsontype.obj (Hashtbl.find contents "metadata"))
-              "format_version")
-         |> metadata)
-        map
-    with Not_found ->
-      map
-  in
-  StringMap.add
-    "name"
-    (safe_chop_suffix (Filename.basename noslash) ".refpkg" |> metadata)
-    map'
+    |> maybe_add_version contents
+    |> StringMap.add
+        "name"
+        (safe_chop_suffix (Filename.basename noslash) ".refpkg" |> metadata)
+
+let strmap_of_path path =
+  if Sys.is_directory path then
+    strmap_of_dir path
+  else
+    strmap_of_zipfile path
