@@ -219,7 +219,7 @@ def hmmer_align(refpkg, sequence_file, output_path, use_mask=True,
         use_mpi=False, mpi_args=None, mpi_program=None, program_path='hmmalign',
         alignment_options=None):
     d = os.path.dirname(output_path)
-    with tempfile.NamedTemporaryFile(dir=d, prefix='hmmer_aln') as tf:
+    with tempfile.NamedTemporaryFile(dir=d, prefix='.hmmer_aln') as tf:
         cmd = [program_path, '-o', tf.name,
                 '--mapali', refpkg.file_abspath('aln_sto')]
         cmd.extend(alignment_options or [])
@@ -243,8 +243,8 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         base_command = [mpi_program] + (mpi_args or []) + base_command + \
                        ['--mpi']
 
-    with tempfile.NamedTemporaryFile(prefix='infernal_aln', dir=d) as tf, \
-         tempfile.NamedTemporaryFile(prefix='infernal_merged', dir=d) as merged:
+    with tempfile.NamedTemporaryFile(prefix='.infernal_aln', dir=d) as tf, \
+         tempfile.NamedTemporaryFile(prefix='.infernal_merged', dir=d) as merged:
         cmd = base_command[:]
         cmd.extend(alignment_options or [])
         cmd.extend(['-o', tf.name, refpkg.file_abspath('profile'),
@@ -310,7 +310,7 @@ def align(arguments):
     alignment_options = (arguments.alignment_options or ALIGNMENT_DEFAULTS.get(prof))
 
     dn = os.path.dirname(arguments.outfile)
-    with _temp_file(prefix='refpkg_align', dir=dn) as tf:
+    with _temp_file(prefix='.refpkg_align', dir=dn) as tf:
         tf.close()
         r = alignment_func(refpkg, arguments.seqfile, tf.name,
             use_mask=arguments.use_mask, use_mpi=arguments.use_mpi,
