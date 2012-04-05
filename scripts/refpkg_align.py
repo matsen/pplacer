@@ -15,36 +15,46 @@ import tempfile
 from Bio import SeqIO, AlignIO
 from Bio.Seq import Seq
 
-
 log = logging.getLogger(__name__)
 
 class InvalidReferencePackage(Exception):
     pass
 
-class Refpkg(object):
-    """
-    Minimal representation of a reference package, supporting file lookup.
+# Prefer taxtastic refpkg
+try:
+    from taxtastic.refpkg import Refpkg
+except ImportError:
+    class Refpkg(object):
+        """
+        Minimal representation of a reference package, supporting file lookup.
 
-    All of this (and much more) is in taxtastic.refpkg, but this loses a
-    dependency.
-    """
-    def __init__(self, path):
-        if not os.path.isdir(path):
-            raise InvalidReferencePackage("{0} is not a directory.".format(path))
-        self.path = os.path.abspath(path)
-        self.contents_path = self._join('CONTENTS.json')
-        if not os.path.exists(self.contents_path):
-            raise InvalidReferencePackage(
-                    "CONTENTS.json not found. Is this a reference package?")
+        All of this (and much more) is in taxtastic.refpkg, but this loses a
+        dependency.
+        """
+        def __init__(self, path, create=False):
+            if not os.path.isdir(path):
+                raise InvalidReferencePackage("{0} is not a directory.".format(path))
+            self.path = os.path.abspath(path)
+            self.contents_path = self._join('CONTENTS.json')
+            if not os.path.exists(self.contents_path):
+                raise InvalidReferencePackage(
+                        "CONTENTS.json not found. Is this a reference package?")
 
-        with open(self.contents_path) as fp:
-            self.contents = json.load(fp)
+            with open(self.contents_path) as fp:
+                self.contents = json.load(fp)
 
-    def _join(self, *args):
-        return os.path.join(self.path, *args)
+        def _join(self, *args):
+            return os.path.join(self.path, *args)
 
-    def file_abspath(self, key):
-        return self._join(self.contents['files'][key])
+        def file_abspath(self, key):
+            return self._join(self.contents['files'][key])
+
+
+# Add some functionality to the Taxtastic / minimal reference package
+# from above
+class ReferencePackage(Refpkg):
+    def __init__(self, *args, **kwargs):
+        super(ReferencePackage, self).__init__(*args, **kwargs)
 
     def guess_align_method(self):
         if 'profile' not in self.contents['files']:
@@ -393,7 +403,7 @@ def main(argv=sys.argv[1:]):
             action='store_false', help="""Do not
             trim the alignment to unmasked columns. [default:
             apply mask if it exists]""")
-    parser_align.add_argument('refpkg', type=Refpkg, help="""Reference package
+    parser_align.add_argument('refpkg', type=ReferencePackage, help="""Reference package
             directory""")
     parser_align.add_argument('seqfile', help="""Input file, in FASTA
             format.""")
@@ -422,7 +432,7 @@ def main(argv=sys.argv[1:]):
     parser_extract.add_argument("--no-mask", dest='use_mask', default=True,
             action="store_false", help="""Do not apply mask to alignment
             [default: apply mask if it exists]""")
-    parser_extract.add_argument('refpkg', type=Refpkg,
+    parser_extract.add_argument('refpkg', type=ReferencePackage,
             help='Reference package directory')
     parser_extract.add_argument('output_file', type=argparse.FileType('w'),
             help="""Destination""")
