@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import argparse
+import contextlib
 import itertools
 import json
 import logging
@@ -62,6 +63,20 @@ class Refpkg(object):
     @property
     def has_mask(self):
         return 'mask' in self.contents['files']
+
+@contextlib.contextmanager
+def _temp_file(**kwargs):
+    """
+    Returns a handle for a temporary file, kept for the length of the context
+    manager.
+    """
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, **kwargs) as tf:
+            yield tf
+    finally:
+        if os.path.exists(tf.name):
+            os.unlink(tf.name)
+
 
 # Alignment tools
 def _parse_stockholm_consensus(sto_handle):
@@ -155,6 +170,9 @@ class AlignmentMask(object):
         return AlignmentMask(new_mask)
 
 def generate_mask(refpkg, stockholm_alignment):
+    """
+    Generate an AlignmentMask from a reference package and stockholm alignment
+    """
     with open(refpkg.file_abspath('mask')) as fp:
         unmasked_positions = set(int(i.strip())
                                      for i in fp.read().split(','))
@@ -269,6 +287,9 @@ ALIGNMENT_DEFAULTS = {
     'PyNAST': ['-l', '150', '-f', os.devnull, '-g', os.devnull]
 }
 
+# Default output format
+DEFAULT_FORMAT = {'HMMER3': 'stockholm', 'INFERNAL': 'stockholm', 'PyNAST': 'fasta'}
+
 def align(arguments):
     """
     Align sequences to a reference package alignment.
@@ -277,10 +298,25 @@ def align(arguments):
     prof = arguments.profile_version or refpkg.guess_align_method()
     alignment_func = ALIGNERS[prof]
     alignment_options = (arguments.alignment_options or ALIGNMENT_DEFAULTS.get(prof))
-    return alignment_func(refpkg, arguments.seqfile, arguments.outfile,
+
+    dn = os.path.dirname(arguments.outfile)
+    with _temp_file(prefix='refpkg_align', dir=dn) as tf:
+        tf.close()
+        r = alignment_func(refpkg, arguments.seqfile, tf.name,
             use_mask=arguments.use_mask, use_mpi=arguments.use_mpi,
             mpi_args=arguments.mpi_arguments, mpi_program=arguments.mpi_run,
             alignment_options=alignment_options)
+
+        if (not arguments.output_format or
+                arguments.output_format == DEFAULT_FORMAT[prof]):
+            # No format converseion needed
+            os.rename(tf.name, arguments.outfile)
+        else:
+            # Convert
+            SeqIO.convert(tf.name, DEFAULT_FORMAT[prof], arguments.outfile,
+                    arguments.output_format)
+
+    return r
 
 def extract(arguments):
     """
@@ -296,7 +332,6 @@ def extract(arguments):
                         arguments.output_format)
         logging.info("Wrote %d sequences", result)
         return
-
 
     # Mask will be applied if available
     with open(refpkg.file_abspath('aln_sto')) as fp:
@@ -324,7 +359,6 @@ def main(argv=sys.argv[1:]):
     """
     Parse command-line arguments.
     """
-
     logging.basicConfig(level=logging.INFO,
             format="%(levelname)s: %(message)s")
 
@@ -368,6 +402,9 @@ def main(argv=sys.argv[1:]):
             help='Enable debug output', default=False)
     parser_align.add_argument('--verbose', action='store_true',
             help='Enable verbose output')
+    parser_align.add_argument('--output-format', help="""Write output in FORMAT
+            [default: stockholm for HMMER, Infernal; fasta for PyNAST]""",
+            choices=('fasta', 'stockholm'))
     mpi_args = parser_align.add_argument_group(description="MPI Options")
     mpi_args.add_argument('--use-mpi', action='store_true',
             help="""Use MPI [infernal only]""")
