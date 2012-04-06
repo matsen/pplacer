@@ -46,8 +46,11 @@ except ImportError:
         def _join(self, *args):
             return os.path.join(self.path, *args)
 
-        def file_abspath(self, key):
+        def resource_path(self, key):
             return self._join(self.contents['files'][key])
+
+        def open_resource(self, key, *mode):
+            return open(self.resource_path(key), *mode)
 
 
 # Add some functionality to the Taxtastic / minimal reference package
@@ -60,7 +63,7 @@ class ReferencePackage(Refpkg):
         if 'profile' not in self.contents['files']:
             return 'PyNAST'
         else:
-            with open(self.file_abspath('profile')) as fp:
+            with self.open_resource('profile') as fp:
                 header = next(fp)
             if header.startswith('INFERNAL-1'):
                 return 'INFERNAL'
@@ -183,7 +186,7 @@ def generate_mask(refpkg, stockholm_alignment):
     """
     Generate an AlignmentMask from a reference package and stockholm alignment
     """
-    with open(refpkg.file_abspath('mask')) as fp:
+    with refpkg.open_resource('mask') as fp:
         unmasked_positions = set(int(i.strip())
                                      for i in fp.read().split(','))
 
@@ -221,9 +224,9 @@ def hmmer_align(refpkg, sequence_file, output_path, use_mask=True,
     d = os.path.dirname(output_path)
     with tempfile.NamedTemporaryFile(dir=d, prefix='.hmmer_aln') as tf:
         cmd = [program_path, '-o', tf.name,
-                '--mapali', refpkg.file_abspath('aln_sto')]
+                '--mapali', refpkg.resource_path('aln_sto')]
         cmd.extend(alignment_options or [])
-        cmd.extend((refpkg.file_abspath('profile'), sequence_file))
+        cmd.extend((refpkg.resource_path('profile'), sequence_file))
         log.info(' '.join(cmd))
         subprocess.check_call(cmd, stdout=stdout)
 
@@ -247,7 +250,7 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
          tempfile.NamedTemporaryFile(prefix='.infernal_merged', dir=d) as merged:
         cmd = base_command[:]
         cmd.extend(alignment_options or [])
-        cmd.extend(['-o', tf.name, refpkg.file_abspath('profile'),
+        cmd.extend(['-o', tf.name, refpkg.resource_path('profile'),
                     sequence_file])
         log.info(' '.join(cmd))
         subprocess.check_call(cmd, stdout=stdout)
@@ -256,8 +259,8 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         log.info("Merging.")
         cmd = [program_path, '--merge', '-o', merged.name]
         cmd.extend(alignment_options or [])
-        cmd.extend((refpkg.file_abspath('profile'),
-                    refpkg.file_abspath('aln_sto'), tf.name))
+        cmd.extend((refpkg.resource_path('profile'),
+                    refpkg.resource_path('aln_sto'), tf.name))
         log.info(' '.join(cmd))
         subprocess.check_call(cmd, stdout=stdout)
         tf.close()
@@ -277,7 +280,7 @@ def pynast_align(refpkg, sequence_file, output_path, use_mask=True,
 
     cmd = [program_path]
     cmd.extend(alignment_options or [])
-    cmd.extend(['-t', refpkg.file_abspath('aln_fasta'),
+    cmd.extend(['-t', refpkg.resource_path('aln_fasta'),
                 '-i', sequence_file,
                 '-a', output_path])
 
@@ -336,7 +339,7 @@ def extract(arguments):
 
     # If not masking, just copy the sequences, reformatting if appropriate
     if not arguments.use_mask:
-        with open(refpkg.file_abspath('aln_sto')) as input_fp:
+        with refpkg.open_resource('aln_sto') as input_fp:
             with arguments.output_file as output_fp:
                 result = SeqIO.convert(input_fp, 'stockholm', output_fp,
                         arguments.output_format)
@@ -344,7 +347,7 @@ def extract(arguments):
         return
 
     # Mask will be applied if available
-    with open(refpkg.file_abspath('aln_sto')) as fp:
+    with refpkg.open_resource('aln_sto') as fp:
         alignment_length = len(next(SeqIO.parse(fp, 'stockholm')))
 
         # Rewind
@@ -352,7 +355,7 @@ def extract(arguments):
         sequences = SeqIO.parse(fp, 'stockholm')
 
         try:
-            with open(refpkg.file_abspath('mask')) as fp:
+            with refpkg.open_resource('mask') as fp:
                 mask = AlignmentMask.from_csv_file(fp, alignment_length)
             logging.info("Applying mask - keeping %d/%d positions",
                     mask.unmasked_count, len(mask))
