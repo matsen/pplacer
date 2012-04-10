@@ -17,11 +17,12 @@ let solve ?keep gt mass leaves =
   and trans i = IntMap.find i transm
   (* rtransm is new -> old *)
   and rtransm = IntMap.enum transm |> Enum.map swap |> IntMap.of_enum in
-  let rtrans i = IntMap.find i rtransm
+  let old_leaf_idx old = Array.findi ((=) (IntMap.find old transm)) leaf_arr
+  and rtrans i = IntMap.find i rtransm
   and total_mass = I.total_mass mass in
   let keep_string = String.make (Array.length leaf_arr) '\000' in
   Option.may
-    (IntSet.iter (fun leaf -> keep_string.[IntMap.find leaf transm] <- '\001'))
+    (IntSet.iter (fun leaf -> keep_string.[old_leaf_idx leaf] <- '\001'))
     keep;
   (* Generate a work matrix. *)
   let leaf_vec, work = IntMap.fold
