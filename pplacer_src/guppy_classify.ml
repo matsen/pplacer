@@ -191,7 +191,7 @@ object (self)
                                              Can be specified multiple times for multiple inputs."))
   val word_length = flag "--word-length"
     (Formatted (8, "The length of the words used for NBC classification. default: %d"))
-  val target_rank = flag "--target-rank"
+  val nbc_rank = flag "--nbc-rank"
     (Formatted ("genus", "The desired most specific rank for NBC classification. default: %s"))
   val n_boot = flag "--n-boot"
     (Formatted (100, "The number of times to bootstrap a sequence with the NBC classifier. 0 = no bootstrap. default: %d"))
@@ -217,7 +217,7 @@ object (self)
     toggle_flag mrca_class;
     delimited_list_flag nbc_sequences;
     int_flag word_length;
-    string_flag target_rank;
+    string_flag nbc_rank;
     int_flag n_boot;
     int_flag children;
     delimited_list_flag rdp_results;
@@ -338,14 +338,16 @@ object (self)
 
     let default_filter_nbc m = filter_best (fv bootstrap_cutoff) m
     and perform_nbc () =
-      let target_rank = fv target_rank
+      let nbc_rank = fv nbc_rank
       and n_boot = fv n_boot
       and children = fv children in
-      let rank_idx =
-        try
-          Tax_taxonomy.get_rank_index td target_rank
-        with Not_found ->
-          failwith (Printf.sprintf "invalid rank %s" target_rank)
+      let rank_idx = match nbc_rank with
+        | "auto" -> -1
+        | _ ->
+          try
+            Tax_taxonomy.get_rank_index td nbc_rank
+          with Not_found ->
+            failwith (Printf.sprintf "invalid rank %s" nbc_rank)
       in
       let classif =
         Nbc.Classifier.of_refpkg ~n_boot (fv word_length) rank_idx rp
