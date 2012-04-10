@@ -5,10 +5,11 @@
 #include <caml/alloc.h>
 #include <caml/custom.h>
 #include <gsl/gsl_matrix.h>
+#include <gsl/gsl_vector.h>
 
 #include <stdio.h>
 
-size_t* pam(gsl_matrix*, size_t, /*OUT*/ double*);
+size_t * pam(gsl_matrix *, size_t, gsl_vector_char *, /*OUT*/ double *);
 
 /* rows for leaves; columns for masses */
 CAMLprim value caml_pam(value k_value, value keep_value, value dist_value)
@@ -17,6 +18,7 @@ CAMLprim value caml_pam(value k_value, value keep_value, value dist_value)
   char *keep = String_val(keep_value);
   double *dist = Data_bigarray_val(dist_value);
   gsl_matrix_view m;
+  gsl_vector_char_view v;
   double work;
   size_t *medoids, *medoids_ptr;
   size_t nrow, ncol;
@@ -27,8 +29,9 @@ CAMLprim value caml_pam(value k_value, value keep_value, value dist_value)
   nrow = Bigarray_val(dist_value)->dim[0];
   ncol = Bigarray_val(dist_value)->dim[1];
   m = gsl_matrix_view_array(dist, nrow, ncol);
+  v = gsl_vector_char_view_array(keep, nrow);
   k = Int_val(k_value);
-  medoids = pam(&m.matrix, k, &work);
+  medoids = pam(&m.matrix, k, &v.vector, &work);
 
   res_bigarr = alloc_bigarray_dims(BIGARRAY_CAML_INT | BIGARRAY_C_LAYOUT, 1, NULL, k);
   res_ptr = Data_bigarray_val(res_bigarr);
