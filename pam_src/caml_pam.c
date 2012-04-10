@@ -11,9 +11,10 @@
 size_t* pam(gsl_matrix*, size_t, /*OUT*/ double*);
 
 /* rows for leaves; columns for masses */
-CAMLprim value caml_pam(value k_value, value dist_value)
+CAMLprim value caml_pam(value k_value, value keep_value, value dist_value)
 {
-  CAMLparam2(k_value, dist_value);
+  CAMLparam3(k_value, keep_value, dist_value);
+  char *keep = String_val(keep_value);
   double *dist = Data_bigarray_val(dist_value);
   gsl_matrix_view m;
   double work;

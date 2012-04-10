@@ -692,7 +692,7 @@ let solve ?(verbose = false) gt mass n_leaves =
 
 (* brute-force a voronoi solution by trying every combination of leaves,
  * calculating the ECLD of each, and choosing the best. *)
-let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
+let force gt mass ?keep:_ ?(strict = true) ?(verbose = false) n_leaves =
   let leaves_ecld leaves =
     let v = of_gtree_and_leaves gt leaves in
     partition_indiv_on_leaves v mass |> ecld v
@@ -717,7 +717,9 @@ let force gt mass ?(strict = true) ?(verbose = false) n_leaves =
 
 module type Alg = sig
   val solve:
-    Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
+    Newick_gtree.t -> Mass_map.Indiv.t ->
+    ?keep:IntSet.t -> ?strict:bool -> ?verbose:bool ->
+    int -> solutions
 end
 
 let best_wk_subtot sol1 sol2 =
@@ -725,7 +727,7 @@ let best_wk_subtot sol1 sol2 =
 
 module Full = struct
   let csv_log = soln_csv_opt
-  let solve gt mass ?strict:_ ?(verbose = false) n_leaves =
+  let solve gt mass ?keep:_ ?strict:_ ?(verbose = false) n_leaves =
     begin match !csv_log with
     | None -> ()
     | Some ch ->
@@ -761,7 +763,7 @@ let update_score indiv v leaf map =
   |> flip (IntMap.add leaf) map
 
 module Greedy = struct
-  let solve gt mass ?strict:_ ?(verbose = false) n_leaves =
+  let solve gt mass ?keep:_ ?strict:_ ?(verbose = false) n_leaves =
     let rec aux diagram accum score_map updated_leaves lbl =
       if IntSet.cardinal diagram.all_leaves <= n_leaves then
         Return.return lbl accum;
@@ -802,9 +804,9 @@ module Greedy = struct
 end
 
 module PAM = struct
-  let solve gt mass ?strict:_ ?verbose:_ n_leaves =
+  let solve gt mass ?keep ?strict:_ ?verbose:_ n_leaves =
     let gt = Newick_gtree.add_zero_root_bl gt in
-    let leaves, work = Pam_solver.solve gt mass n_leaves in
+    let leaves, work = Pam_solver.solve ?keep gt mass n_leaves in
     IntMap.singleton n_leaves {leaves; work}
 
 end
