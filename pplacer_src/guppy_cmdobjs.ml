@@ -575,13 +575,19 @@ object (self)
             |> Enum.map swap
             |> StringMap.of_enum
           in
+          let keep =
           File.lines_of fname
             |> Enum.map
                 (fun name -> match StringMap.Exceptionless.find name name_map with
                  | None -> failwith ("no leaf named " ^ name)
                  | Some i -> i)
-            |> IntSet.of_enum
-            |> some
+            |> IntSet.of_enum in
+          match IntSet.cardinal keep with
+            | i when i > leaf_cutoff ->
+                Printf.sprintf "More leaves specified via --always-include \
+                (%d) than --leaves (%d)" i leaf_cutoff
+                  |> failwith
+            | _ -> some keep
       and verbose = fv verbose in
       Voronoi.Full.csv_log :=
         fvo soln_log
