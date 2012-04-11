@@ -110,7 +110,9 @@ val swork: solution -> float
 
 module type Alg = sig
   val solve:
-    Newick_gtree.t -> Mass_map.Indiv.t -> ?strict:bool -> ?verbose:bool -> int -> solutions
+    Newick_gtree.t -> Mass_map.Indiv.t ->
+    ?keep:IntSet.t -> ?strict:bool -> ?verbose:bool ->
+    int -> solutions
 end
 
 module Greedy: Alg
