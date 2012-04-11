@@ -590,20 +590,22 @@ object (self)
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
 
-      begin match keep with
-        | Some i ->
-            let n_include = IntSet.cardinal i in
-            if n_include > leaf_cutoff then
-               failwith
-                 (Printf.sprintf "More leaves specified via --always-include (%d) than --leaves (%d)"
-                   (IntSet.cardinal i) leaf_cutoff)
+      begin match Option.map IntSet.cardinal keep with
+        | Some n_include when n_include > leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "More leaves specified via --always-include (%d) than --leaves (%d)"
+               n_include
+               leaf_cutoff)
         | _ -> ()
       end;
       begin match Gtree.n_taxa gt with
         | n_taxa when n_taxa < leaf_cutoff ->
-          Printf.sprintf "Cannot prune %d leaves from a tree with %d taxa"
-              leaf_cutoff n_taxa
-            |> failwith
+          failwith
+            (Printf.sprintf
+               "Cannot prune %d leaves from a tree with %d taxa"
+               leaf_cutoff
+               n_taxa)
         | _ -> ()
       end;
 
