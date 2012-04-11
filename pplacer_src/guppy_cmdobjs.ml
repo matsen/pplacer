@@ -575,19 +575,13 @@ object (self)
             |> Enum.map swap
             |> StringMap.of_enum
           in
-          let keep =
           File.lines_of fname
             |> Enum.map
                 (fun name -> match StringMap.Exceptionless.find name name_map with
                  | None -> failwith ("no leaf named " ^ name)
                  | Some i -> i)
-            |> IntSet.of_enum in
-          match IntSet.cardinal keep with
-            | i when i > leaf_cutoff ->
-                Printf.sprintf "More leaves specified via --always-include \
-                (%d) than --leaves (%d)" i leaf_cutoff
-                  |> failwith
-            | _ -> some keep
+            |> IntSet.of_enum
+            |> some
       and verbose = fv verbose in
       Voronoi.Full.csv_log :=
         fvo soln_log
@@ -595,6 +589,24 @@ object (self)
       let module Alg = (val alg: Voronoi.Alg) in
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
+
+      begin match keep with
+        | Some i ->
+            let n_include = IntSet.cardinal i in
+            if n_include > leaf_cutoff then
+               failwith
+                 (Printf.sprintf "More leaves specified via --always-include (%d) than --leaves (%d)"
+                   (IntSet.cardinal i) leaf_cutoff)
+        | _ -> ()
+      end;
+      begin match Gtree.n_taxa gt with
+        | n_taxa when n_taxa < leaf_cutoff ->
+          Printf.sprintf "Cannot prune %d leaves from a tree with %d taxa"
+              leaf_cutoff n_taxa
+            |> failwith
+        | _ -> ()
+      end;
+
       let solm = Alg.solve
         ?keep
         ~strict:(fvo all_eclds_file |> Option.is_none)
