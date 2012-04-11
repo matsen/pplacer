@@ -596,8 +596,8 @@ object (self)
                  (IntMap.max_binding solm |> fst));
           (IntMap.find leaf_cutoff solm).Voronoi.leaves
         (* if there's no obvious cardinality to choose, pick the one which cuts
-         * the smallest number of leaves. *)
-        | None -> (IntMap.max_binding solm |> snd).Voronoi.leaves
+         * the largest number of leaves. *)
+        | None -> (IntMap.min_binding solm |> snd).Voronoi.leaves
       in
       let cut_leaves = gt
           |> Gtree.leaf_ids
