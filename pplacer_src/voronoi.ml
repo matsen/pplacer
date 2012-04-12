@@ -306,7 +306,7 @@ let leaf_work ?(p_exp = 1.) v indiv_map leaf =
     in
     Kr_distance.dist v.tree p_exp indiv squashed_indiv
 
-let ecld ?p_exp v indiv_map =
+let adcl ?p_exp v indiv_map =
   IntSet.fold
     (leaf_work ?p_exp v indiv_map |- (+.))
     v.all_leaves
@@ -551,21 +551,30 @@ let map_reduce f_map f_reduce l = List.map f_map l |> List.reduce f_reduce
  * for each node immediately below this node. knowing the max_leaves can help
  * in not having to consider every solution, as they can be pruned off
  * early. *)
-let combine_solutions ?(verbose = false) max_leaves solsl =
+let combine_solutions ?(verbose = false) ?n_leaves ?max_adcl solsl =
   if verbose then begin
     Printf.eprintf "combining across ";
     List.print ~first:"" ~last:"\n" ~sep:", "
       Int.print stderr (List.map List.length solsl);
     flush_all ()
   end;
+  let is_invalid =
+    (||--)
+      (match n_leaves with
+       | None -> const (const false)
+       | Some max -> fun leaves _ -> IntSet.cardinal leaves > max)
+      (match max_adcl with
+       | None -> const (const false)
+       | Some max -> fun _ work -> work > max)
+  in
   solsl
   |> EnumFuns.n_cartesian_product
   |> Enum.map
       (fun sols ->
-        let leaf_set = map_reduce leaf_set IntSet.union sols in
-        if IntSet.cardinal leaf_set > max_leaves then [] else (* ... *)
+        let leaf_set = map_reduce leaf_set IntSet.union sols
+        and wk_subtot = map_reduce wk_subtot (+.) sols in
+        if is_invalid leaf_set wk_subtot then [] else (* ... *)
         let cl_dist = map_min cl_dist sols
-        and wk_subtot = map_reduce wk_subtot (+.) sols
         and tot_prox_mass = map_reduce prox_mass (+.) sols in
         let prox_mass =
           if List.for_all is_rmd sols then None else Some tot_prox_mass
@@ -605,7 +614,11 @@ let base_rmp =
    cl_dist = infinity; interval = None}
 
 (* solve a tree using the full algorithm. *)
-let solve ?(verbose = false) gt mass n_leaves =
+let solve ?(verbose = false) ?n_leaves ?max_adcl gt mass =
+  begin match n_leaves, max_adcl with
+  | None, None -> failwith "voronoi full needs n_leaves or max_adcl"
+  | _ -> ()
+  end;
   let markm, minmaxlm = mark_map gt
   and mass = I.sort mass
   and total_mass = I.total_mass mass in
@@ -631,7 +644,7 @@ let solve ?(verbose = false) gt mass n_leaves =
         i,
         mass_below,
         List.map List.of_enum subsols
-          |> combine_solutions ~verbose n_leaves
+          |> combine_solutions ~verbose ?n_leaves ?max_adcl
           |> cull_fn
 
     in
@@ -691,11 +704,15 @@ let solve ?(verbose = false) gt mass n_leaves =
   Gtree.get_stree gt |> aux |> snd
 
 (* brute-force a voronoi solution by trying every combination of leaves,
- * calculating the ECLD of each, and choosing the best. *)
-let force gt mass ?keep:_ ?(strict = true) ?(verbose = false) n_leaves =
-  let leaves_ecld leaves =
+ * calculating the ADCL of each, and choosing the best. *)
+let force ?n_leaves ?max_adcl:_ ?keep:_ ?(strict = true) ?(verbose = false) gt mass =
+  let n_leaves = match n_leaves with
+    | None -> failwith "voronoi force needs n_leaves"
+    | Some x -> x
+  in
+  let leaves_adcl leaves =
     let v = of_gtree_and_leaves gt leaves in
-    partition_indiv_on_leaves v mass |> ecld v
+    partition_indiv_on_leaves v mass |> adcl v
   in
   Gtree.leaf_ids gt
     |> EnumFuns.powerset
@@ -707,7 +724,7 @@ let force gt mass ?keep:_ ?(strict = true) ?(verbose = false) n_leaves =
           | _ -> None)
     |> Enum.group IntSet.cardinal
     |> Enum.map
-        (Enum.map (identity &&& leaves_ecld)
+        (Enum.map (identity &&& leaves_adcl)
          |- Enum.arg_min snd
          |- (if verbose then
                tap (fst |- IntSet.cardinal |- Printf.eprintf "solved %d\n%!")
@@ -717,9 +734,9 @@ let force gt mass ?keep:_ ?(strict = true) ?(verbose = false) n_leaves =
 
 module type Alg = sig
   val solve:
-    Newick_gtree.t -> Mass_map.Indiv.t ->
-    ?keep:IntSet.t -> ?strict:bool -> ?verbose:bool ->
-    int -> solutions
+    ?n_leaves:int -> ?max_adcl:float -> ?keep:IntSet.t ->
+    ?strict:bool -> ?verbose:bool ->
+    Newick_gtree.t -> Mass_map.Indiv.t -> solutions
 end
 
 let best_wk_subtot sol1 sol2 =
@@ -727,7 +744,7 @@ let best_wk_subtot sol1 sol2 =
 
 module Full = struct
   let csv_log = soln_csv_opt
-  let solve gt mass ?keep:_ ?strict:_ ?(verbose = false) n_leaves =
+  let solve ?n_leaves ?max_adcl ?keep:_ ?strict:_ ?(verbose = false) gt mass =
     begin match !csv_log with
     | None -> ()
     | Some ch ->
@@ -735,7 +752,7 @@ module Full = struct
         ["node"; "mark"; "leaf_card"; "cl_dist"; "prox_mass"; "wk_subtot";
          "oinv_lft"; "oinv_rgt"]
     end;
-    solve ~verbose gt mass n_leaves
+    solve ?n_leaves ?max_adcl ~verbose gt mass
       |> Enum.filter is_rmd
       |> Enum.fold
           (fun accum sol ->
@@ -755,15 +772,19 @@ module Forced = struct
   let solve = force
 end
 
-(* update a map with what the ECLD would be if a particular leaf was removed
+(* update a map with what the ADCL would be if a particular leaf was removed
  * from the voronoi diagram. *)
 let update_score indiv v leaf map =
   let v', _ = uncolor_leaf v leaf in
-  ecld v' (partition_indiv_on_leaves v' indiv)
+  adcl v' (partition_indiv_on_leaves v' indiv)
   |> flip (IntMap.add leaf) map
 
 module Greedy = struct
-  let solve gt mass ?keep:_ ?strict:_ ?(verbose = false) n_leaves =
+  let solve ?n_leaves ?max_adcl:_ ?keep:_ ?strict:_ ?(verbose = false) gt mass =
+    let n_leaves = match n_leaves with
+      | None -> failwith "voronoi greedy needs n_leaves"
+      | Some x -> x
+    in
     let rec aux diagram accum score_map updated_leaves lbl =
       if IntSet.cardinal diagram.all_leaves <= n_leaves then
         Return.return lbl accum;
@@ -779,7 +800,7 @@ module Greedy = struct
       let accum' =
         IntMap.add
           (IntSet.cardinal diagram'.all_leaves)
-          {work = partition_indiv_on_leaves diagram' mass |> ecld diagram';
+          {work = partition_indiv_on_leaves diagram' mass |> adcl diagram';
            leaves = diagram'.all_leaves}
           accum
       in
@@ -796,7 +817,7 @@ module Greedy = struct
       (IntMap.singleton
          (IntSet.cardinal v.all_leaves)
          {leaves = v.all_leaves;
-          work = partition_indiv_on_leaves v mass |> ecld v})
+          work = partition_indiv_on_leaves v mass |> adcl v})
       IntMap.empty
       v.all_leaves
     |> Return.with_label
@@ -804,7 +825,11 @@ module Greedy = struct
 end
 
 module PAM = struct
-  let solve gt mass ?keep ?strict:_ ?verbose:_ n_leaves =
+  let solve ?n_leaves ?max_adcl:_ ?keep ?strict:_ ?verbose:_ gt mass =
+    let n_leaves = match n_leaves with
+      | None -> failwith "voronoi PAM needs n_leaves"
+      | Some x -> x
+    in
     let gt = Newick_gtree.add_zero_root_bl gt in
     let leaves, work = Pam_solver.solve ?keep gt mass n_leaves in
     IntMap.singleton n_leaves {leaves; work}
