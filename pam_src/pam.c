@@ -1,12 +1,17 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <assert.h>
 
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+
+#ifdef PAM_TEST
+#include <time.h>
+#endif
 
 /*
  * Partitioning Around Medoids (PAM)
@@ -39,11 +44,17 @@ typedef struct __pam_partition_t {
   gsl_vector_ulong *cl_index;
   /* distance to item referenced by cl_index */
   gsl_vector *cl_dist;
+
+  /* Indicator vector of positions which must be in solution */
+  gsl_vector_char *always_select;
+  size_t always_select_count;
 } pam_partition_t;
 
 typedef pam_partition_t *pam_partition;
 
+/* Constants */
 int PAM_VERBOSE = 0;
+int PAM_ITERATIONS = 1000000;
 
 /* Declarations */
 static void gsl_vector_masked_min_index(const gsl_vector * v,
@@ -51,9 +62,7 @@ static void gsl_vector_masked_min_index(const gsl_vector * v,
                                               /*OUT*/ size_t * index,
                                               /*OUT*/ double *value);
 
-static size_t * range(const size_t n);
-
-pam_partition pam_partition_init(gsl_matrix * M, const size_t k);
+pam_partition pam_partition_init(gsl_matrix * M, const size_t k, gsl_vector_char * always_select);
 void pam_partition_free(const pam_partition p);
 void pam_partition_fprintf(FILE * stream, const pam_partition p);
 double pam_total_cost(const pam_partition p);
@@ -66,20 +75,34 @@ static double pam_swap_update_cost(pam_partition p, size_t m, size_t n,
 static void pam_choose_random_partition(pam_partition p);
 static void pam_find_closest_medoid(pam_partition p);
 static void pam_find_closest_medoid_index(pam_partition p, size_t i);
+/* Indicates if row i must be part of the solution */
+static bool pam_always_select(pam_partition p, size_t i);
 
 static void pam_run(pam_partition p, size_t max_iters);
 
-size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist);
+size_t * pam(gsl_matrix * distances, size_t k, gsl_vector_char * always_select, /*OUT*/ double * dist);
 
 /* Initialize a PAM partition given distances M, keep count k */
-pam_partition pam_partition_init(gsl_matrix * M, const size_t k)
+pam_partition pam_partition_init(gsl_matrix * M, const size_t k, gsl_vector_char * always_select)
 {
   assert(k <= M->size1);
   assert(k > 0);
+  size_t i;
 
   pam_partition p = malloc(sizeof(pam_partition_t));
   p->M = M;
   p->k = k;
+  p->always_select_count = 0;
+  p->always_select = always_select;
+
+  /* Always select */
+  if(always_select != NULL) {
+    /* Calculate the total number of items */
+    for (i = 0; i < M->size1; i++) {
+      p->always_select_count += gsl_vector_char_get(always_select, i) != 0;
+    }
+  }
+  assert(p->always_select_count <= k);
 
   p->in_set = gsl_vector_uchar_calloc(M->size1);
 
@@ -121,31 +144,39 @@ void pam_partition_free(const pam_partition p)
   free(p);
 }
 
-/* Generate an array containing the range from 0 to n-1 */
-static size_t *range(const size_t n)
-{
-  size_t i;
-  size_t *r = malloc(sizeof(size_t) * n);
-  for (i = 0; i < n; i++)
-    r[i] = i;
-  return r;
-}
-
 /* Randomly set S' */
 static void pam_choose_random_partition(pam_partition p)
 {
   gsl_rng *rng;
-  size_t *indices, *chosen, i;
+  size_t *indices, *chosen, i, *j;
+  /* Number of unconstrained medoids */
+  size_t random_n = p->M->size1 - p->always_select_count;
+  /* Number of unconstrained medoids to pick */
+  size_t random_k = p->k - p->always_select_count;
 
   rng = gsl_rng_alloc(gsl_rng_taus2);
-  indices = range(p->M->size1);
-  chosen = (size_t *) calloc(p->k, sizeof(size_t));
-  gsl_ran_choose(rng, (void *) chosen, p->k, indices, p->M->size1,
-                 sizeof(size_t));
+  indices = malloc(sizeof(size_t) * random_n);
+  chosen = calloc(random_k, sizeof(size_t));
 
   /* Reset */
   gsl_vector_uchar_set_zero(p->in_set);
-  for (i = 0; i < p->k; i++) {
+
+  /* First, fill with any indices which must be part of the solution */
+  j = indices;
+  for (i = 0; i < p->M->size1; i++) {
+    if (pam_always_select(p, i)){
+      gsl_vector_uchar_set(p->in_set, i, 1);
+    } else {
+      *j++ = i;
+    }
+  }
+
+  /* Choose randomly from all indices we can */
+  gsl_ran_choose(rng, (void *) chosen, random_k, indices,
+                 random_n,
+                 sizeof(size_t));
+
+  for (i = 0; i < random_k; i++) {
     gsl_vector_uchar_set(p->in_set, chosen[i], 1);
   }
 
@@ -176,6 +207,11 @@ void pam_partition_fprintf(FILE * stream, const pam_partition p)
   fprintf(stream, "\n");
 }
 
+static bool pam_always_select(pam_partition p, size_t i)
+{
+  return p->always_select == NULL ? false : gsl_vector_char_get(p->always_select, i);
+}
+
 /* Set the closest medoid, distance to closest medoid for all i */
 static void pam_find_closest_medoid(pam_partition p)
 {
@@ -189,6 +225,7 @@ static void pam_find_closest_medoid(pam_partition p)
     pam_find_closest_medoid_index(p, i);
   }
 }
+
 
 /* Set the closest medoid, distance to closest medoid for column i */
 static void pam_find_closest_medoid_index(pam_partition p, size_t i)
@@ -246,7 +283,7 @@ gsl_vector_masked_min_index(const gsl_vector * v,
  * Calculate cost if states of i and j are reversed. Restores original
  * configuration prior to returning.
  *
- * p: partition
+ * p:    partition
  * i, j: indices to swap. *i* must be a medoid; *j* must not.
  */
 static double pam_swap_update_cost(pam_partition p, size_t m, size_t n,
@@ -328,8 +365,9 @@ static void pam_run(pam_partition p, size_t max_iters)
     return;
   }
 
-  size_t i, j, k, m, n, trimmed_size = p->M->size1 - p->k, any_swaps =
-      0, iter = 0;
+  size_t i, j, k, m, n, trimmed_size = p->M->size1 - p->k,
+         any_swaps = 0,
+         iter = 0;
   size_t *medoids, *trimmed;
   double c, current_cost;
   gsl_vector *cost = gsl_vector_alloc(trimmed_size);
@@ -344,8 +382,10 @@ static void pam_run(pam_partition p, size_t max_iters)
   for (i = 0; i < p->M->size1; i++) {
     if (gsl_vector_uchar_get(p->in_set, i))
       medoids[j++] = i;
-    else
+    else {
+      assert(!pam_always_select(p, i));
       trimmed[k++] = i;
+    }
   }
 
   assert(j == p->k);
@@ -360,7 +400,13 @@ static void pam_run(pam_partition p, size_t max_iters)
     /* For every medoid, m, swap with every non-medoid, compute cost */
     for (i = 0; i < p->k; i++) {
       m = medoids[i];
+
+      /* If medoid is in the always_select set, no action. */
+      if (pam_always_select(p, m))
+        continue;
+
       current_cost = pam_total_cost(p);
+
       /* Try every non-medoid */
       gsl_vector_set_all(cost, FLT_MAX);
 
@@ -408,8 +454,17 @@ static void pam_run(pam_partition p, size_t max_iters)
   free(trimmed);
 }
 
-/* Partition around medoids. Returns the indices of the medoids. */
-size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist)
+/* Partition around medoids.
+ *
+ * distances:     distances between U (columns) and S (rows)
+ * k:             Number of medoids to select
+ * always_select: |S|-length vector indicating if s_i is required to be in the
+ *                final solution. If NULL, there are no constraints on the solution.
+ * dist:          Set to total cost of the partition.
+ *
+ * Returns the indices of the k selected medoids.
+ */
+size_t * pam(gsl_matrix * distances, size_t k, gsl_vector_char * always_select, /*OUT*/ double * dist)
 {
   size_t * result = malloc(sizeof(size_t) * k);
   size_t i = 0, j = 0;
@@ -417,8 +472,8 @@ size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist)
 
   assert(k <= distances->size1);
 
-  p = pam_partition_init(distances, k);
-  pam_run(p, 100000);
+  p = pam_partition_init(distances, k, always_select);
+  pam_run(p, PAM_ITERATIONS);
 
   *dist = pam_total_cost(p);
 
@@ -434,31 +489,41 @@ size_t * pam(gsl_matrix * distances, size_t k, /*OUT*/ double * dist)
 }
 
 #ifdef PAM_TEST
-int main()
+int main(int argc, char **argv)
 {
   gsl_matrix *m;
   FILE *f;
   size_t *result;
   double work;
-  int rows, cols;
+  int rows, cols, keep, i;
+  time_t start, end;
 
-  f = fopen("sample-data.txt", "r");
+
+  if (argc != 3) {
+    fprintf(stderr, "USAGE: %s dist_matrix keep_rows\n\n", argv[0]);
+    fprintf(stderr, "dist_matrix should have one line with 'n_rows n_cols' ");
+    fprintf(stderr, "followed by the matrix.\n");
+    return 1;
+  }
+
+  keep = atoi(argv[2]);
+
+  f = fopen(argv[1], "r");
   /* Read dimensions: width then height */
   assert(fscanf(f, "%d %d", &rows, &cols) == 2);
   m = gsl_matrix_alloc(rows, cols);
   assert(!gsl_matrix_fscanf(f, m));
   fclose(f);
 
-  result = pam(m, 8, &work);
-  assert(result[0] == 0);
-  assert(result[1] == 1);
-  assert(result[2] == 2);
-  assert(result[3] == 3);
-  assert(result[4] == 4);
-  assert(result[5] == 6);
-  assert(result[6] == 7);
-  assert(result[7] == 15);
-  assert(abs(work - 0.321014) < 1e-5);
+  time(&start);
+  result = pam(m, keep, NULL, &work);
+  time(&end);
+
+  for(i = 0; i < keep; i++)
+    printf("%lu ", result[i]);
+  printf("\n");
+  printf("Total work: %f\n", work);
+  printf("Took: %.2lfs\n", difftime(end, start));
 
   gsl_matrix_free(m);
   free(result);

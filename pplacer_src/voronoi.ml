@@ -705,7 +705,7 @@ let solve ?(verbose = false) ?n_leaves ?max_adcl gt mass =
 
 (* brute-force a voronoi solution by trying every combination of leaves,
  * calculating the ADCL of each, and choosing the best. *)
-let force ?n_leaves ?max_adcl:_ ?(strict = true) ?(verbose = false) gt mass =
+let force ?n_leaves ?max_adcl:_ ?keep:_ ?(strict = true) ?(verbose = false) gt mass =
   let n_leaves = match n_leaves with
     | None -> failwith "voronoi force needs n_leaves"
     | Some x -> x
@@ -734,7 +734,8 @@ let force ?n_leaves ?max_adcl:_ ?(strict = true) ?(verbose = false) gt mass =
 
 module type Alg = sig
   val solve:
-    ?n_leaves:int -> ?max_adcl:float -> ?strict:bool -> ?verbose:bool ->
+    ?n_leaves:int -> ?max_adcl:float -> ?keep:IntSet.t ->
+    ?strict:bool -> ?verbose:bool ->
     Newick_gtree.t -> Mass_map.Indiv.t -> solutions
 end
 
@@ -743,7 +744,7 @@ let best_wk_subtot sol1 sol2 =
 
 module Full = struct
   let csv_log = soln_csv_opt
-  let solve ?n_leaves ?max_adcl ?strict:_ ?(verbose = false) gt mass =
+  let solve ?n_leaves ?max_adcl ?keep:_ ?strict:_ ?(verbose = false) gt mass =
     begin match !csv_log with
     | None -> ()
     | Some ch ->
@@ -779,7 +780,7 @@ let update_score indiv v leaf map =
   |> flip (IntMap.add leaf) map
 
 module Greedy = struct
-  let solve ?n_leaves ?max_adcl:_ ?strict:_ ?(verbose = false) gt mass =
+  let solve ?n_leaves ?max_adcl:_ ?keep:_ ?strict:_ ?(verbose = false) gt mass =
     let n_leaves = match n_leaves with
       | None -> failwith "voronoi greedy needs n_leaves"
       | Some x -> x
@@ -824,17 +825,13 @@ module Greedy = struct
 end
 
 module PAM = struct
-  let solve ?n_leaves ?max_adcl:_ ?strict:_ ?verbose:_ gt mass =
+  let solve ?n_leaves ?max_adcl:_ ?keep ?strict:_ ?verbose:_ gt mass =
     let n_leaves = match n_leaves with
       | None -> failwith "voronoi PAM needs n_leaves"
       | Some x -> x
     in
     let gt = Newick_gtree.add_zero_root_bl gt in
-    let leaves = Pam_solver.solve gt mass n_leaves in
-    let diagram = of_gtree_and_leaves gt leaves in
-    let work = partition_indiv_on_leaves diagram mass
-      |> adcl diagram
-    in
+    let leaves, work = Pam_solver.solve ?keep gt mass n_leaves in
     IntMap.singleton n_leaves {leaves; work}
 
 end

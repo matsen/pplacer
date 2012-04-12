@@ -545,6 +545,8 @@ object (self)
   val soln_log = flag "--log"
     (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
                           every internal node."))
+  val always_include = flag "--always-include"
+    (Needs_argument ("", "If specified, the leaf names read from the provided file will not be trimmed."))
 
   method specl =
     super_tabular#specl
@@ -557,6 +559,7 @@ object (self)
     string_flag algorithm;
     string_flag all_adcls_file;
     string_flag soln_log;
+    string_flag always_include;
   ]
 
   method private perform_voronoi ?decor_tree gt mass_cb =
@@ -566,6 +569,21 @@ object (self)
         | "force" -> (module Voronoi.Forced: Voronoi.Alg)
         | "pam" -> (module Voronoi.PAM: Voronoi.Alg)
         | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
+      and keep = match fvo always_include with
+        | None -> None
+        | Some fname ->
+          let name_map = Newick_gtree.leaf_label_map gt
+            |> IntMap.enum
+            |> Enum.map swap
+            |> StringMap.of_enum
+          in
+          File.lines_of fname
+            |> Enum.map
+                (fun name -> match StringMap.Exceptionless.find name name_map with
+                 | None -> failwith ("no leaf named " ^ name)
+                 | Some i -> i)
+            |> IntSet.of_enum
+            |> some
       and verbose = fv verbose
       and n_leaves = fvo leaf_cutoff
       and max_adcl = fvo adcl_cutoff in
@@ -575,9 +593,30 @@ object (self)
       let module Alg = (val alg: Voronoi.Alg) in
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
+
+      begin match Option.map IntSet.cardinal keep, n_leaves with
+        | Some n_include, Some leaf_cutoff when n_include > leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "More leaves specified via --always-include (%d) than --leaves (%d)"
+               n_include
+               leaf_cutoff)
+        | _ -> ()
+      end;
+      begin match Gtree.n_taxa gt, n_leaves with
+        | n_taxa, Some leaf_cutoff when n_taxa < leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "Cannot prune %d leaves from a tree with %d taxa"
+               leaf_cutoff
+               n_taxa)
+        | _ -> ()
+      end;
+
       let solm = Alg.solve
         ?n_leaves
         ?max_adcl
+        ?keep
         ~strict:(fvo all_adcls_file |> Option.is_none)
         ~verbose
         gt
@@ -606,24 +645,24 @@ object (self)
       in
 
       begin match fvo trimmed_tree_file with
-      | Some fname ->
-        decor_tree
-      |> Option.default (Decor_gtree.of_newick_gtree gt)
-      |> Decor_gtree.color_clades_above cut_leaves
-      |> self#maybe_numbered
-      |> Phyloxml.gtree_to_file fname
+        | Some fname ->
+          decor_tree
+            |> Option.default (Decor_gtree.of_newick_gtree gt)
+            |> Decor_gtree.color_clades_above cut_leaves
+            |> self#maybe_numbered
+            |> Phyloxml.gtree_to_file fname
       | None -> ()
       end;
 
       begin match fvo all_adcls_file with
-      | Some fname ->
-        IntMap.enum solm
-      |> Enum.map
-          (fun (c, {Voronoi.work}) ->
-            [string_of_int c; Printf.sprintf "%g" work])
-      |> List.of_enum
-      |> Csv.save fname
-      | None -> ()
+        | Some fname ->
+          IntMap.enum solm
+            |> Enum.map
+                (fun (c, {Voronoi.work}) ->
+                  [string_of_int c; Printf.sprintf "%g" work])
+            |> List.of_enum
+            |> Csv.save fname
+        | None -> ()
       end;
 
       cut_leaves
