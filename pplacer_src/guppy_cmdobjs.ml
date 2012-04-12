@@ -582,12 +582,15 @@ object (self)
     (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
   val algorithm = flag "--algorithm"
     (Formatted ("full",
-                "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
+                "Which algorithm to use to prune leaves. \
+                 Choices are 'greedy', 'full', 'force', and 'pam'. Default %s."))
   val all_eclds_file = flag "--all-eclds-file"
     (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
   val soln_log = flag "--log"
     (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
                           every internal node."))
+  val always_include = flag "--always-include"
+    (Needs_argument ("", "If specified, the leaf names read from the provided file will not be trimmed."))
 
   method specl =
     super_tabular#specl
@@ -599,29 +602,73 @@ object (self)
     string_flag algorithm;
     string_flag all_eclds_file;
     string_flag soln_log;
+    string_flag always_include;
   ]
 
   method private perform_voronoi ?decor_tree gt mass_cb =
+      let leaf_cutoff = fv leaf_cutoff in
       let alg = match fv algorithm with
         | "greedy" -> (module Voronoi.Greedy: Voronoi.Alg)
         | "full" -> (module Voronoi.Full: Voronoi.Alg)
         | "force" -> (module Voronoi.Forced: Voronoi.Alg)
+        | "pam" -> (module Voronoi.PAM: Voronoi.Alg)
         | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
-      and verbose = fv verbose
-      and leaf_cutoff = fv leaf_cutoff in
+      and keep = match fvo always_include with
+        | None -> None
+        | Some fname ->
+          let name_map = Newick_gtree.leaf_label_map gt
+            |> IntMap.enum
+            |> Enum.map swap
+            |> StringMap.of_enum
+          in
+          File.lines_of fname
+            |> Enum.map
+                (fun name -> match StringMap.Exceptionless.find name name_map with
+                 | None -> failwith ("no leaf named " ^ name)
+                 | Some i -> i)
+            |> IntSet.of_enum
+            |> some
+      and verbose = fv verbose in
       Voronoi.Full.csv_log :=
         fvo soln_log
           |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
       let module Alg = (val alg: Voronoi.Alg) in
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
+
+      begin match Option.map IntSet.cardinal keep with
+        | Some n_include when n_include > leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "More leaves specified via --always-include (%d) than --leaves (%d)"
+               n_include
+               leaf_cutoff)
+        | _ -> ()
+      end;
+      begin match Gtree.n_taxa gt with
+        | n_taxa when n_taxa < leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "Cannot prune %d leaves from a tree with %d taxa"
+               leaf_cutoff
+               n_taxa)
+        | _ -> ()
+      end;
+
       let solm = Alg.solve
+        ?keep
         ~strict:(fvo all_eclds_file |> Option.is_none)
         ~verbose
         gt
         mass
         leaf_cutoff
       in
+      if not (IntMap.mem leaf_cutoff solm) then
+        failwith
+          (Printf.sprintf "no solution with cardinality %d found; only solutions on the range [%d, %d]"
+             leaf_cutoff
+             (IntMap.min_binding solm |> fst)
+             (IntMap.max_binding solm |> fst));
       let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
       let cut_leaves = gt
         |> Gtree.leaf_ids

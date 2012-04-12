@@ -22,6 +22,7 @@ val is_null: matrix -> bool
 val swap_rows: matrix -> int -> int -> unit
 val swap_columns: matrix -> int -> int -> unit
 val swap_rowcol: matrix -> int -> int -> unit
+val rect_transpose: matrix -> matrix
 val transpose: matrix -> matrix -> unit
 val transpose_in_place: matrix -> unit
 val create: int -> int -> matrix
