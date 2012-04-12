@@ -2,6 +2,8 @@
 ===========
 
  * Closed GH-225: Added `rppr vorotree`.
+ * Closed GH-242: Renamed ECLD to ADCL; added --max-adcl to voronoi commands.
+ * Closed GH-246: Added --always-include to voronoi commands.
 
 
 1.1.alpha12
