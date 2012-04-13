@@ -57,7 +57,7 @@ object (self)
   inherit output_cmd () as super_output
 
   method desc =
-"converts old-style .place files to .jplace placement files"
+"calculates unifrac on two or more placefiles"
   method usage = "usage: unifrac 1.jplace 2.jplace [3.jplace [...]]"
 
   method private nontrivial_placefile_action prl =
