@@ -54,7 +54,15 @@ object (self)
   inherit subcommand () as super
   inherit placefile_cmd () as super_placefile
   inherit mass_cmd () as super_mass
-  inherit output_cmd () as super_output
+  inherit tabular_cmd () as super_tabular
+
+  val list_output = flag "--list-out"
+    (Plain (false, "Output the KR results as a list rather than a matrix."))
+
+  method specl =
+    super_mass#specl
+  @ super_tabular#specl
+  @ [toggle_flag list_output]
 
   method desc =
 "calculates unifrac on two or more placefiles"
@@ -66,8 +74,17 @@ object (self)
     and weighting, criterion = self#mass_opts in
     let ml = List.map (Mass_map.Indiv.of_placerun weighting criterion) prl
     and names = List.map Placerun.get_name prl |> Array.of_list in
-    unifrac gt ml
-      |> Mokaphy_common.write_named_float_uptri self#out_channel names
+    let uptri = unifrac gt ml in
+    if fv list_output then begin
+      let res = RefList.empty () in
+      RefList.push res ["sample_1"; "sample_2"; "unifrac"];
+      Uptri.iterij
+        (fun i j x ->
+          RefList.push res [names.(i); names.(j); Printf.sprintf "%g" x])
+        uptri;
+      RefList.to_list res |> List.rev |> self#write_ll_tab
+    end else
+      Mokaphy_common.write_named_float_uptri self#out_channel names uptri
 
   method private placefile_action prl =
     match List.length prl with
