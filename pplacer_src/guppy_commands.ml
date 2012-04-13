@@ -18,6 +18,7 @@ let command_list () =
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
       "error", (fun () -> new Guppy_error.cmd ());
       "fpd", (fun () -> new Guppy_fpd.cmd ());
+      "unifrac", (fun () -> new Guppy_unifrac.cmd ());
     ];
 
     "classification", [
