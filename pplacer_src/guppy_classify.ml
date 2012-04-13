@@ -204,6 +204,10 @@ object (self)
     (Needs_argument ("rdp results", "The RDP results file for use with the RDP classifier. \
                                      Can be specified multiple times for multiple inputs."))
 
+  val blast_results = flag "--blast-results"
+    (Needs_argument ("BLAST results", "The BLAST results file for use with the BLAST classifier. \
+                                       Can be specified multiple times for multiple inputs."))
+
   method specl =
     super_refpkg#specl
   @ super_sqlite#specl
@@ -224,6 +228,7 @@ object (self)
     int_flag children;
     toggle_flag no_pre_mask;
     delimited_list_flag rdp_results;
+    delimited_list_flag blast_results;
  ]
 
   method desc =
@@ -589,6 +594,59 @@ object (self)
 
       !best_classif_map
 
+    and perform_blast () =
+      let ref_name_map = Refpkg.get_seqinfom rp
+        |> StringMap.map (fun {Tax_seqinfo.tax_id} -> tax_id)
+      and pn_st = Sqlite3.prepare db
+        "INSERT INTO placement_names VALUES (?, ?, ?, 1.);"
+      and pc_st = Sqlite3.prepare db
+        "INSERT INTO placement_nbc VALUES (?, ?, ?)"
+      and best_classif_map = ref StringMap.empty in
+
+      let process origin (name, ref_name, pid) =
+        let place_id = new_place_id "blast"
+        and tax_id = StringMap.find ref_name ref_name_map in
+        let tiamrim = TIAMR.singleton tax_id pid
+          |> partition_by_rank td
+        in
+
+        Sql.bind_step_reset db pn_st
+          [|
+            Sql.D.INT place_id;
+            Sql.D.TEXT name;
+            Sql.D.TEXT origin;
+          |];
+        flip IntMap.iter tiamrim (fun _ tiamr ->
+          flip TIAMR.iter tiamr (fun tid pid ->
+            Sql.bind_step_reset db pc_st
+              [|
+                Sql.D.INT place_id;
+                Sql.D.TEXT (Tax_id.to_string tid);
+                Sql.D.FLOAT pid;
+              |]));
+
+        tiamrim
+          |> classification place_id
+          |> flip (StringMap.add name) !best_classif_map
+          |> (:=) best_classif_map
+
+      and classify line =
+        let splut = String.nsplit line "\t" |> Array.of_list in
+        splut.(0), splut.(1), float_of_string splut.(2)
+
+      in
+      fv blast_results
+        |> List.enum
+        |> Enum.map
+            (identity &&&
+               (File.lines_of
+                |- Enum.map classify
+                |- Enum.group Tuple3.first
+                |- Enum.map (Enum.arg_max Tuple3.third)))
+        |> Enum.iter (fun (a, bcl) -> Enum.iter (process a) bcl);
+
+      !best_classif_map
+
     in
 
     let default_pplacer () =
@@ -599,6 +657,7 @@ object (self)
       | "pplacer" -> default_pplacer ()
       | "nbc" -> default_nbc ()
       | "rdp" -> default_rdp ()
+      | "blast" -> perform_blast ()
       | "hybrid" ->
         StringMap.merge
           (merge_fn self#merge_hybrid)
