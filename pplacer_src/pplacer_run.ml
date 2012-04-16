@@ -137,6 +137,26 @@ let premask seq_type ref_align query_list =
   and ref_align' = Array.map cut_from_mask ref_align in
   query_list', ref_align', masklen, Some mask
 
+let check_query n_sites query_list =
+  begin match begin
+    try
+      Some
+        (List.find
+           (fun (_, seq) -> (String.length seq) != n_sites)
+           query_list)
+    with
+      | Not_found -> None
+  end with
+    | Some (name, seq) ->
+      Printf.printf
+        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
+        name
+        (String.length seq)
+        n_sites;
+      exit 1;
+    | None -> ()
+  end
+
 
 let run_placements prefs rp query_list from_input_alignment placerun_name placerun_cb =
   let timings = ref StringMap.empty in
@@ -169,24 +189,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       seqmagick.\n";
 
   let n_sites = Alignment.length ref_align in
-  begin match begin
-    try
-      Some
-        (List.find
-           (fun (_, seq) -> (String.length seq) != n_sites)
-           query_list)
-    with
-      | Not_found -> None
-  end with
-    | Some (name, seq) ->
-      Printf.printf
-        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
-        name
-        (String.length seq)
-        n_sites;
-      exit 1;
-    | None -> ()
-  end;
+  check_query n_sites query_list;
 
   let m, i = Refpkg.get_model rp in
   let module Model = (val m: Glvm.Model) in

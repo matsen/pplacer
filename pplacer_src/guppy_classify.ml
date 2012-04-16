@@ -354,6 +354,8 @@ object (self)
           failwith (Printf.sprintf "invalid rank %s" target_rank)
       and query_list, ref_aln, _, _ =
         if fv pre_mask then begin
+          let n_sites = Alignment.length ref_aln in
+          Pplacer_run.check_query n_sites query_list;
           dprint "pre-masking sequences... ";
           Pplacer_run.premask Alignment.Nucleotide_seq ref_aln query_list
         end else
