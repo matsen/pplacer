@@ -197,6 +197,8 @@ object (self)
     (Formatted (100, "The number of times to bootstrap a sequence with the NBC classifier. 0 = no bootstrap. default: %d"))
   val children = flag "-j"
     (Formatted (2, "The number of processes to spawn to do NBC classification. default: %d"))
+  val pre_mask = flag "--pre-mask"
+    (Plain (false, "Pre-mask the sequences for NBC classification."))
 
   val rdp_results = flag "--rdp-results"
     (Needs_argument ("rdp results", "The RDP results file for use with the RDP classifier. \
@@ -220,6 +222,7 @@ object (self)
     string_flag target_rank;
     int_flag n_boot;
     int_flag children;
+    toggle_flag pre_mask;
     delimited_list_flag rdp_results;
  ]
 
@@ -336,9 +339,12 @@ object (self)
         Sqlite3.last_insert_rowid db
     in
 
-    let default_filter_nbc m = filter_best (fv bootstrap_cutoff) m
-    and perform_nbc () =
-      let target_rank = fv target_rank
+    let rec default_filter_nbc m = filter_best (fv bootstrap_cutoff) m
+    and perform_one_nbc infile =
+      let query_list = Alignment.upper_aln_of_any_file infile
+        |> Array.to_list
+      and ref_aln = Refpkg.get_aln_fasta rp
+      and target_rank = fv target_rank
       and n_boot = fv n_boot
       and children = fv children in
       let rank_idx =
@@ -346,9 +352,15 @@ object (self)
           Tax_taxonomy.get_rank_index td target_rank
         with Not_found ->
           failwith (Printf.sprintf "invalid rank %s" target_rank)
+      and query_list, ref_aln, _, _ =
+        if fv pre_mask then begin
+          dprint "pre-masking sequences... ";
+          Pplacer_run.premask Alignment.Nucleotide_seq ref_aln query_list
+        end else
+          query_list, ref_aln, Alignment.length ref_aln, None
       in
       let classif =
-        Nbc.Classifier.of_refpkg ~n_boot (fv word_length) rank_idx rp
+        Nbc.Classifier.of_refpkg ~ref_aln ~n_boot (fv word_length) rank_idx rp
       in
       let bootstrap = Alignment.ungap
         |- Nbc.Classifier.bootstrap classif
@@ -359,12 +371,12 @@ object (self)
         "INSERT INTO placement_nbc VALUES (?, ?, ?)"
       in
 
-      let classify origin name boot_map accum =
+      let classify name boot_map accum =
         let place_id = new_place_id "nbc" in
         Sql.bind_step_reset db pn_st [|
           Sql.D.INT place_id;
           Sql.D.TEXT name;
-          Sql.D.TEXT origin;
+          Sql.D.TEXT infile;
         |];
         flip IntMap.iter boot_map (fun _ likelihoods ->
           flip TIAMR.iter likelihoods (fun ti likelihood ->
@@ -379,20 +391,17 @@ object (self)
           accum
       in
 
-      List.fold_left
-        (fun accum infile ->
-          Alignment.upper_aln_of_any_file infile
-            |> Array.enum
-            |> Enum.map (fun (name, seq) -> infile, name, seq)
-            |> Enum.fold (flip List.cons) accum)
-        []
-        (fv nbc_sequences)
-      |> Multiprocessing.map
-          ~children
-          ~progress_handler:(dprintf "%s\n")
-          (tap (Tuple3.second |- dprintf "classifying %s...\n")
-           |- Tuple3.map3 bootstrap)
-      |> List.fold_left (Tuple3.uncurry classify |> flip) StringMap.empty
+      Multiprocessing.map
+        ~children
+        ~progress_handler:(dprintf "%s\n")
+        (tap (fst |- dprintf "classifying %s...\n")
+         |- second bootstrap)
+        query_list
+      |> List.fold_left (uncurry classify |> flip) StringMap.empty
+    and perform_nbc () =
+      fv nbc_sequences
+        |> List.map perform_one_nbc
+        |> List.fold_left StringMap.union StringMap.empty
 
     and default_filter_pplacer =
       let multiclass_min = fv multiclass_min

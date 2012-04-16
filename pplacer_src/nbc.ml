@@ -241,7 +241,7 @@ module Classifier = struct
     let total = TIM.values counts |> Enum.sum |> float_of_int in
     TIM.map (fun c -> float_of_int c /. total) counts
 
-  let of_refpkg ?n_boot word_length rank_idx rp =
+  let of_refpkg ?ref_aln ?n_boot word_length rank_idx rp =
     let rank_tax_map = rank_tax_map_of_refpkg rp in
     let preclassif = IntMap.find rank_idx rank_tax_map
       |> StringMap.values
@@ -256,7 +256,7 @@ module Classifier = struct
         | Some v -> Some (v, Alignment.ungap seq)
         | None -> None
     in
-    Refpkg.get_aln_fasta rp
+    Option.default (Refpkg.get_aln_fasta rp) ref_aln
       |> Array.enum
       |> Enum.filter_map (filter seq_tax_ids)
       |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
