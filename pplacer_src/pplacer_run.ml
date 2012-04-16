@@ -55,6 +55,89 @@ object (self)
   method progress_received = progressfunc
 end
 
+let premask seq_type ref_align query_list =
+  let base_map = match seq_type with
+    | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
+    | Alignment.Protein_seq -> Prot_models.prot_map
+  and n_sites = Alignment.length ref_align in
+  let check_seq (name, seq) =
+    String.iter
+      (fun c ->
+        if not (CharMap.mem c base_map) then
+          failwith (Printf.sprintf "%c is not a known base in %s" c name))
+      seq
+  and initial_mask = Array.make n_sites false in
+  (* Turn an alignment enum into a bool array mask which represents if any
+   * site seen in the alignment was informative. *)
+  let mask_of_enum enum =
+    let mask = Array.copy initial_mask in
+    Enum.iter
+      (tap check_seq
+       |- snd
+       |- String.iteri
+           (fun i c -> if Alignment.informative c then mask.(i) <- true))
+      enum;
+    mask
+  in
+  let ref_mask = Array.enum ref_align |> mask_of_enum in
+  (* This function takes a sequence string and returns if it overlaps any
+   * informative column of the reference sequence. *)
+  let overlaps_mask s = String.enum s
+    |> Enum.map Alignment.informative
+    |> curry Enum.combine (Array.enum ref_mask)
+    |> Enum.exists (uncurry (&&))
+  in
+  (try
+     let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
+     failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
+   with Not_found -> ());
+  (* Mask out sites that are either all gap in the reference alignment or
+   * all gap in the query alignment. *)
+  let mask = Array.map2
+    (&&)
+    ref_mask
+    (List.enum query_list |> mask_of_enum)
+  in
+  let masklen = Array.fold_left
+    (fun accum -> function true -> accum + 1 | _ -> accum)
+    0
+    mask
+  in
+  let cut_from_mask (name, seq) =
+    let seq' = String.create masklen
+    and pos = ref 0 in
+    Array.iteri
+      (fun e not_masked ->
+        if not_masked then
+          (seq'.[!pos] <- seq.[e];
+           incr pos))
+      mask;
+    name, seq'
+  in
+  dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
+  let effective_length = match seq_type with
+    | Alignment.Nucleotide_seq -> masklen
+    | Alignment.Protein_seq -> 3*masklen
+  in
+  if effective_length = 0 then
+    (print_endline
+       "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
+     exit 1)
+  else if effective_length <= 10 then
+    dprintf
+      "WARNING: you have %d sites after pre-masking. \
+      That means there is very little information in these sequences for placement.\n"
+      masklen
+  else if effective_length <= 100 then
+    dprintf
+      "Note: you have %d sites after pre-masking. \
+      That means there is rather little information in these sequences for placement.\n"
+      masklen;
+  let query_list' = List.map cut_from_mask query_list
+  and ref_align' = Array.map cut_from_mask ref_align in
+  query_list', ref_align', masklen, Some mask
+
+
 let run_placements prefs rp query_list from_input_alignment placerun_name placerun_cb =
   let timings = ref StringMap.empty in
   let orig_ref_tree = Refpkg.get_ref_tree rp in
@@ -117,96 +200,18 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       query_list, ref_align, n_sites, None
     else begin
       dprint "Pre-masking sequences... ";
-      let base_map = match Model.seq_type model with
-        | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
-        | Alignment.Protein_seq -> Prot_models.prot_map
-      and initial_mask = Array.make n_sites false in
-      let check_seq (name, seq) =
-        String.iter
-          (fun c ->
-            if not (CharMap.mem c base_map) then
-              failwith (Printf.sprintf "%c is not a known base in %s" c name))
-          seq
-      in
-      (* Turn an alignment enum into a bool array mask which represents if any
-       * site seen in the alignment was informative. *)
-      let mask_of_enum enum =
-        let mask = Array.copy initial_mask in
-        Enum.iter
-          (tap check_seq
-           |- snd
-           |- String.iteri
-               (fun i c -> if Alignment.informative c then mask.(i) <- true))
-          enum;
-        mask
-      in
-      let ref_mask = Array.enum ref_align |> mask_of_enum in
-      (* This function takes a sequence string and returns if it overlaps any
-       * informative column of the reference sequence. *)
-      let overlaps_mask s = String.enum s
-        |> Enum.map Alignment.informative
-        |> curry Enum.combine (Array.enum ref_mask)
-        |> Enum.exists (uncurry (&&))
-      in
-      (try
-         let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
-       with Not_found -> ());
-      (* Mask out sites that are either all gap in the reference alignment or
-       * all gap in the query alignment. *)
-      let mask = Array.map2
-        (&&)
-        ref_mask
-        (List.enum query_list |> mask_of_enum)
-      in
-      let masklen = Array.fold_left
-        (fun accum -> function true -> accum + 1 | _ -> accum)
-        0
-        mask
-      in
-      let cut_from_mask (name, seq) =
-        let seq' = String.create masklen
-        and pos = ref 0 in
-        Array.iteri
-          (fun e not_masked ->
-            if not_masked then
-              (seq'.[!pos] <- seq.[e];
-               incr pos))
-          mask;
-        name, seq'
-      in
-      dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
-      let effective_length = match Model.seq_type model with
-        | Alignment.Nucleotide_seq -> masklen
-        | Alignment.Protein_seq -> 3*masklen
-      in
-      if effective_length = 0 then
-        (print_endline
-           "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
-         exit 1)
-      else if effective_length <= 10 then
-        dprintf
-          "WARNING: you have %d sites after pre-masking. \
-          That means there is very little information in these sequences for placement.\n"
-          masklen
-      else if effective_length <= 100 then
-        dprintf
-          "Note: you have %d sites after pre-masking. \
-          That means there is rather little information in these sequences for placement.\n"
-          masklen;
-      let query_list' = List.map cut_from_mask query_list
-      and ref_align' = Array.map cut_from_mask ref_align in
-      if (Prefs.pre_masked_file prefs) <> "" then begin
-        let ch = open_out (Prefs.pre_masked_file prefs) in
-        let write_line = Alignment.write_fasta_line ch in
-        Array.iter write_line ref_align';
-        List.iter write_line query_list';
-        close_out ch;
-        exit 0;
-      end;
-      query_list', ref_align', masklen, Some mask
+      premask (Model.seq_type model) ref_align query_list
     end
   in
+
+  if Option.is_some mask && (Prefs.pre_masked_file prefs) <> "" then begin
+    let ch = open_out (Prefs.pre_masked_file prefs) in
+    let write_line = Alignment.write_fasta_line ch in
+    Array.iter write_line ref_align;
+    List.iter write_line query_list;
+    close_out ch;
+    exit 0;
+  end;
 
   (* *** deduplicate sequences *** *)
   (* seq_tbl maps from sequence to the names that correspond to that seq. *)
