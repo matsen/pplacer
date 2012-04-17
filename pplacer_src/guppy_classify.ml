@@ -341,8 +341,7 @@ object (self)
 
     let rec default_filter_nbc m = filter_best (fv bootstrap_cutoff) m
     and perform_one_nbc infile =
-      let query_list = Alignment.upper_aln_of_any_file infile
-        |> Array.to_list
+      let query_aln = Alignment.upper_aln_of_any_file infile
       and ref_aln = Refpkg.get_aln_fasta rp
       and target_rank = fv target_rank
       and n_boot = fv n_boot
@@ -354,12 +353,21 @@ object (self)
           failwith (Printf.sprintf "invalid rank %s" target_rank)
       and query_list, ref_aln, _, _ =
         if fv pre_mask then begin
-          let n_sites = Alignment.length ref_aln in
+          let ref_name_set = Array.enum ref_aln
+            |> Enum.map fst
+            |> StringSet.of_enum
+          in
+          let query_aln', ref_aln' =
+            Pplacer_run.partition_queries ref_name_set query_aln
+              |> second (Option.default ref_aln)
+          in
+          let n_sites = Alignment.length ref_aln'
+          and query_list = Array.to_list query_aln' in
           Pplacer_run.check_query n_sites query_list;
           dprint "pre-masking sequences... ";
-          Pplacer_run.premask Alignment.Nucleotide_seq ref_aln query_list
+          Pplacer_run.premask Alignment.Nucleotide_seq ref_aln' query_list
         end else
-          query_list, ref_aln, Alignment.length ref_aln, None
+          Array.to_list query_aln, ref_aln, Alignment.length ref_aln, None
       in
       let classif =
         Nbc.Classifier.of_refpkg ~ref_aln ~n_boot (fv word_length) rank_idx rp
