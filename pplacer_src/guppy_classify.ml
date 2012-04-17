@@ -238,7 +238,7 @@ object (self)
   method private merge_hybrid2 td pp nbc =
     let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
     and nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
-    if pp_rank > nbc_rank
+    if pp_rank >= nbc_rank
       && on_lineage
         td
         (best_classification nbc_best)
@@ -249,7 +249,7 @@ object (self)
   method private merge_hybrid3 td pp nbc =
     let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
     and nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
-    if pp_rank > nbc_rank
+    if pp_rank >= nbc_rank
       && on_lineage td (best_classification nbc_best) (mrca td pp_best)
     then pp
     else nbc
