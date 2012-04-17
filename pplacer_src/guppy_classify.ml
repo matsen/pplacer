@@ -197,8 +197,8 @@ object (self)
     (Formatted (100, "The number of times to bootstrap a sequence with the NBC classifier. 0 = no bootstrap. default: %d"))
   val children = flag "-j"
     (Formatted (2, "The number of processes to spawn to do NBC classification. default: %d"))
-  val pre_mask = flag "--pre-mask"
-    (Plain (false, "Pre-mask the sequences for NBC classification."))
+  val no_pre_mask = flag "--no-pre-mask"
+    (Plain (false, "Don't pre-mask the sequences for NBC classification."))
 
   val rdp_results = flag "--rdp-results"
     (Needs_argument ("rdp results", "The RDP results file for use with the RDP classifier. \
@@ -222,7 +222,7 @@ object (self)
     string_flag target_rank;
     int_flag n_boot;
     int_flag children;
-    toggle_flag pre_mask;
+    toggle_flag no_pre_mask;
     delimited_list_flag rdp_results;
  ]
 
@@ -352,7 +352,9 @@ object (self)
         with Not_found ->
           failwith (Printf.sprintf "invalid rank %s" target_rank)
       and query_list, ref_aln, _, _ =
-        if fv pre_mask then begin
+        if fv no_pre_mask then
+          Array.to_list query_aln, ref_aln, Alignment.length ref_aln, None
+        else begin
           let ref_name_set = Array.enum ref_aln
             |> Enum.map fst
             |> StringSet.of_enum
@@ -366,8 +368,7 @@ object (self)
           Pplacer_run.check_query n_sites query_list;
           dprint "pre-masking sequences... ";
           Pplacer_run.premask Alignment.Nucleotide_seq ref_aln' query_list
-        end else
-          Array.to_list query_aln, ref_aln, Alignment.length ref_aln, None
+        end
       in
       let classif =
         Nbc.Classifier.of_refpkg ~ref_aln ~n_boot (fv word_length) rank_idx rp
