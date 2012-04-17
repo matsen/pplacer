@@ -233,7 +233,7 @@ object (self)
   method private merge_hybrid pp nbc =
     let pp_rank, _ = IntMap.max_binding pp.tiamrim
     and nbc_rank, _ = IntMap.max_binding nbc.tiamrim in
-    if nbc_rank > pp_rank then nbc else pp
+    if nbc_rank >= pp_rank then nbc else pp
 
   method private merge_hybrid2 td pp nbc =
     let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
