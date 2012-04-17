@@ -23,6 +23,10 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit splitify_cmd () as super_splitify
 
+  val! epsilon = flag "--epsilon"
+    (Needs_argument ("", "The epsilon to use to determine if a split matrix's column \
+                          is constant for filtering. default: no filtering"))
+
   method specl =
     super_output#specl
   @ super_mass#specl
@@ -32,11 +36,19 @@ object (self)
 "writes out differences of masses for the splits of the tree"
   method usage = "usage: splitify [options] placefile(s)"
 
+  method private maybe_filter_constant_columns =
+    match fvo epsilon with
+    | None -> identity
+    | Some _ -> self#filter_constant_columns |- Tuple3.first
+
   method private placefile_action prl =
     let weighting, criterion = self#mass_opts in
     let data = List.map (self#splitify_placerun weighting criterion) prl
     and names = (List.map Placerun.get_name prl) in
-    let data' = self#filter_rep_edges prl data |> Tuple3.first in
+    let data' = self#filter_rep_edges prl data
+      |> Tuple3.first
+      |> self#maybe_filter_constant_columns
+    in
     save_out_named_fal
       self#out_channel
       (List.combine names data')
