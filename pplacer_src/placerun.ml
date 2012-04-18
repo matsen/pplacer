@@ -9,19 +9,24 @@ type 'a placerun =
     ref_tree  :  'a Gtree.gtree;
     name      :  string;
     pqueries  :  Pquery.pquery list;
+    transm    :  (int * float) IntMap.t option;
   }
 
 type 'a t = 'a placerun
 
-let make ref_tree name pqueries = {ref_tree; name; pqueries}
+let make ?transm ref_tree name pqueries = {ref_tree; name; pqueries; transm}
 
 let get_ref_tree p = p.ref_tree
 let get_name p = p.name
 let get_pqueries p = p.pqueries
+let get_transm_opt p = p.transm
+let get_transm p = Option.get p.transm
 
 let set_ref_tree p ref_tree = {p with ref_tree}
 let set_name p name = {p with name}
 let set_pqueries p pqueries = {p with pqueries}
+let set_transm p tro = {p with transm = Some tro}
+let set_transm_opt p transm = {p with transm}
 
 let n_pqueries p = List.length p.pqueries
 let total_multiplicity p = Pquery.total_multiplicity p.pqueries
@@ -102,4 +107,13 @@ let transform func pr =
   get_pqueries pr
     |> List.map
         (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
+    |> set_pqueries pr
+
+let unitize pr =
+  let tot_mass = get_pqueries pr
+    |> Pquery.total_multiplicity
+  in
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
     |> set_pqueries pr

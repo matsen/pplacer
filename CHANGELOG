@@ -1,6 +1,7 @@
 1.1.alpha13
 ===========
 
+ * Closed GH-216: Added `guppy trim` and `guppy check`.
  * Closed GH-225: Added `rppr vorotree`.
  * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
  * Closed GH-237: Added a multiplicity column to `guppy diplac`.
@@ -11,6 +12,8 @@
    which have unannotated sequences.
  * Closed GH-244: Updated `rppr infer` to handle sequences which could not be
    reasonably placed anywhere on the tree.
+ * Closed GH-247: Added `guppy unifrac`.
+ * Closed GH-249: Added `guppy rarefy`.
 
 
 1.1.alpha12

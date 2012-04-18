@@ -50,13 +50,8 @@ object (self)
     let weighting, criterion = self#mass_opts
     and scale = fv scale
     and write_n = fv write_n
-    and refpkgo = self#get_rpo
+    and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
-    let prt = Mokaphy_common.list_get_same_tree prl in
-    let t = match refpkgo with
-    | None -> Decor_gtree.of_newick_gtree prt
-    | Some rp -> Refpkg.get_tax_ref_tree rp
-    in
     let data, rep_reduction_map, rep_orig_length =
       List.map (self#splitify_placerun weighting criterion) prl
         |> self#filter_rep_edges prl

@@ -49,9 +49,28 @@ let gtree_equal g1 g2 =
   g1.Gtree.stree = g2.Gtree.stree
   && IntMap.equal (fun b1 b2 -> (Newick_bark.compare b1 b2) = 0) g1.Gtree.bark_map g2.Gtree.bark_map
 
+let placement_equal p1 p2 =
+  let open Placement in
+  p1.location = p2.location
+  && (p1.ml_ratio =~ p2.ml_ratio)
+  && (p1.log_like =~ p2.log_like)
+  && Option.eq ~eq:(=~) p1.post_prob p2.post_prob
+  && Option.eq ~eq:(=~) p1.marginal_prob p2.marginal_prob
+  && (p1.distal_bl =~ p2.distal_bl)
+  && (p1.pendant_bl =~ p2.pendant_bl)
+  && (p1.classif = p2.classif)
+  && Option.eq ~eq:(fun (a1, b1) (a2, b2) -> a1 =~ a2 && b1 = b2) p1.map_identity p2.map_identity
+
+let pquery_equal pq1 pq2 =
+  let open Pquery in
+  pq1.namlom = pq2.namlom
+  && List.for_all2 placement_equal pq1.place_list pq2.place_list
+
 let placerun_equal pr1 pr2 =
-  gtree_equal pr1.Placerun.ref_tree pr2.Placerun.ref_tree
-  && pr1.Placerun.pqueries = pr2.Placerun.pqueries
+  let open Placerun in
+  gtree_equal pr1.ref_tree pr2.ref_tree
+  && Option.eq ~eq:(IntMap.equal (=)) pr1.transm pr2.transm
+  && List.for_all2 pquery_equal pr1.pqueries pr2.pqueries
 
 
 (* *** approximate equalities *** *)
