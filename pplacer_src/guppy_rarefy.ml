@@ -41,7 +41,7 @@ object (self)
   @ super_rng#specl
   @ [int_flag n_taken]
 
-  method desc = "calculates phylogenetic rarefaction curves"
+  method desc = "perform rarefaction on collections of placements"
   method usage = "usage: rarefy [options] placefile"
 
   method private placefile_action = function
