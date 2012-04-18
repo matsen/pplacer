@@ -2,7 +2,7 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
-let rarify rng n pqa =
+let rarify sample pqa =
   let multi_arr = Array.range pqa
     |> Enum.map
         (fun i ->
@@ -13,7 +13,7 @@ let rarify rng n pqa =
     |> Array.of_enum
   in
   let p = Array.map (snd |- snd) multi_arr in
-  Gsl_randist.multinomial rng ~n ~p
+  sample ~p
     |> Array.fold_lefti
         (fun accum j -> function
          | 0 -> accum
@@ -48,7 +48,7 @@ object (self)
     | [pr] ->
       Placerun.get_pqueries pr
         |> Array.of_list
-        |> rarify self#rng (fv n_taken)
+        |> rarify (Gsl_randist.multinomial self#rng ~n:(fv n_taken))
         |> Placerun.set_pqueries pr
         |> self#write_placefile (self#single_file ())
 
