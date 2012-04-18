@@ -15,6 +15,7 @@ let suite = [
   "compress" >::: Test_compress.suite;
   "error" >::: Test_error.suite;
   "overlap" >::: Test_overlap.suite;
+  "trim" >::: Test_trim.suite;
   "newick_bark" >::: Test_newick_bark.suite;
   "splitify" >::: Test_splitify.suite;
 ]

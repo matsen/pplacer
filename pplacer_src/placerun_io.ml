@@ -64,6 +64,16 @@ let to_json_file ?invocation out_fname placerun =
   and ref_tree = Placerun.get_ref_tree placerun
   and pqueries = Placerun.get_pqueries placerun in
   Hashtbl.add meta "invocation" (Jsontype.String invocation);
+  begin match Placerun.get_transm_opt placerun with
+    | None -> ()
+    | Some transm ->
+      IntMap.enum transm
+      |> Enum.map (fun (k, (v1, v2)) ->
+        Jsontype.Array [Jsontype.Int k; Jsontype.Int v1; Jsontype.Float v2])
+      |> List.of_enum
+      |> (fun l -> Jsontype.Array l)
+      |> Hashtbl.add meta "transm"
+  end;
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
   let json_state = ref None in
@@ -160,6 +170,16 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 exception Invalid_placerun of string
 
+let transm_of_json j =
+  Jsontype.array j
+  |> List.enum
+  |> Enum.map
+      (function
+        | Jsontype.Array [k; v1; v2] ->
+          Jsontype.int k, (Jsontype.int v1, Jsontype.float v2)
+        | _ -> failwith "malformed transm in jplace file")
+  |> IntMap.of_enum
+
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
   if not (Hashtbl.mem json "version") then
@@ -178,9 +198,15 @@ let of_json_file fname =
     |> List.map
         (Jsontype.string
          |- (function "marginal_prob" when version = 1 -> "marginal_like" | x -> x))
+  and meta = Hashtbl.find json "metadata" |> Jsontype.obj in
+  let pql = List.map
+    (Pquery_io.of_json fields)
+    (Jsontype.array (Hashtbl.find json "placements"))
+  and transm = Hashtbl.Exceptionless.find meta "transm"
+    |> Option.map transm_of_json
   in
-  let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   Placerun.make
+    ?transm
     ref_tree
     (Filename.chop_extension (Filename.basename fname))
     pql
@@ -242,6 +268,7 @@ let of_split_file ?(getfunc = of_any_file) fname =
   StringMap.fold
     (fun name pqueries accum ->
       Placerun.make
+        ?transm:(Placerun.get_transm_opt to_split')
         (Placerun.get_ref_tree to_split')
         name
         pqueries

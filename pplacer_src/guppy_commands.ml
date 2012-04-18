@@ -39,6 +39,8 @@ let command_list () =
       "mft", (fun () -> new Guppy_mft.cmd ());
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());
+      "trim", (fun () -> new Guppy_trim.cmd ());
       "ograph", (fun () -> new Guppy_ograph.cmd ());
+      "check", (fun () -> new Guppy_check.cmd ());
     ];
   ]
