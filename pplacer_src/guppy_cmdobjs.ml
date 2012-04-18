@@ -482,6 +482,31 @@ object
     Sqlite3.db_open (fv sqlite_fname)
 end
 
+let find_rep_edges max_edge_d fal gt =
+  let dist i j =
+    List.map (fun arr -> (arr.(i) -. arr.(j)) ** 2.) fal
+    |> List.fsum
+    |> sqrt
+  in
+  let open Stree in
+  let rec aux = function
+    | Leaf i -> IntSet.empty, IntSet.singleton i
+    | Node (i, subtrees) ->
+      let rep_edges, possible_cur_edges = List.fold_left
+        (fun (rea, pcea) t ->
+          let re, pce = aux t in IntSet.union re rea, IntSet.union pce pcea)
+        (IntSet.empty, IntSet.empty)
+        subtrees
+      in
+      let cur_edges, far_edges = IntSet.partition
+        (fun j -> dist i j < max_edge_d)
+        possible_cur_edges
+      in
+      IntSet.union rep_edges far_edges,
+      if IntSet.is_empty cur_edges then IntSet.singleton i else cur_edges
+  in
+  Gtree.get_stree gt |> aux |> uncurry IntSet.union
+
 class splitify_cmd () =
 
 let tolerance = 1e-3
@@ -509,7 +534,17 @@ in
 object (self)
   val kappa = flag "--kappa"
     (Formatted (1., "Specify the exponent for scaling between weighted and unweighted splitification. default: %g"))
-  method specl = [float_flag kappa]
+  val rep_edges = flag "--rep-edges"
+    (Needs_argument ("", "Cluster neighboring edges that have splitified euclidean distance less than the argument."))
+  val epsilon = flag "--epsilon"
+    (Formatted (1e-5, "The epsilon to use to determine if a split matrix's column \
+                       is constant for filtering. default: %g"))
+
+  method specl = [
+    float_flag kappa;
+    float_flag rep_edges;
+    float_flag epsilon;
+  ]
 
   method private splitify_transform =
     let kappa = fv kappa in
@@ -535,6 +570,41 @@ object (self)
       (IntMap.map
          splitify_fn
          (below_mass_map (Mass_map.By_edge.of_pre preim) t))
+
+  method private filter_fal orig_length fal edges =
+    List.map (Array.filteri (fun i _ -> IntSet.mem i edges)) fal,
+    Enum.combine (Enum.range 0, IntSet.enum edges) |> IntMap.of_enum,
+    orig_length
+
+  method private filter_rep_edges prl fal =
+    let orig_length = Array.length (List.hd fal) in
+    match fvo rep_edges with
+    | None ->
+      fal,
+      0 --^ orig_length
+        |> Enum.map (identity &&& identity)
+        |> IntMap.of_enum,
+      orig_length
+    | Some max_edge_d ->
+      let gt = Mokaphy_common.list_get_same_tree prl in
+      find_rep_edges max_edge_d fal gt
+      |> self#filter_fal orig_length fal
+
+  method private filter_constant_columns fal =
+    let width = Array.length (List.hd fal) in
+    let minarr = Array.make width infinity
+    and maxarr = Array.make width neg_infinity
+    and epsilon = fv epsilon in
+    List.iter
+      (fun arr ->
+        Array.modifyi (Array.get arr |- min) minarr;
+        Array.modifyi (Array.get arr |- max) maxarr)
+      fal;
+    0 --^ width
+      |> Enum.filter
+          (fun i -> not (approx_equal ~epsilon minarr.(i) maxarr.(i)))
+      |> IntSet.of_enum
+      |> self#filter_fal width fal
 
 end
 

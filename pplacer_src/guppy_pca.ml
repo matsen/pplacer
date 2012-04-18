@@ -5,6 +5,11 @@ open Guppy_cmdobjs
 let save_named_fal fname fal =
   Csv.save fname (Guppy_splitify.fal_to_strll fal)
 
+let expand full_length m arr =
+  let full = Array.make full_length 0. in
+  Array.iteri (fun i v -> full.(IntMap.find i m) <- v) arr;
+  full
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -47,7 +52,13 @@ object (self)
     and write_n = fv write_n
     and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
-    let data = List.map (self#splitify_placerun weighting criterion) prl in
+    let data, rep_reduction_map, rep_orig_length =
+      List.map (self#splitify_placerun weighting criterion) prl
+        |> self#filter_rep_edges prl
+    in
+    let data, const_reduction_map, const_orig_length =
+      self#filter_constant_columns data
+    in
     let n_unique_rows = List.length (List.sort_unique compare data) in
     if n_unique_rows <= 2 then
       failwith(Printf.sprintf "You have only %d unique row(s) in your data \
@@ -67,7 +78,12 @@ object (self)
                   ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
-    and names = (List.map Placerun.get_name prl)
+    and names = (List.map Placerun.get_name prl) in
+    let full_combol = List.map
+      (second
+         (expand const_orig_length const_reduction_map
+          |- expand rep_orig_length rep_reduction_map))
+      combol
     in
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")
@@ -75,7 +91,7 @@ object (self)
         (fun (eval, evect) ->
           (Some (string_of_float eval),
           super_heat#heat_tree_of_float_arr t evect |> self#maybe_numbered))
-        combol);
+        full_combol);
     save_named_fal
       (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);

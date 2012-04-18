@@ -190,18 +190,21 @@ object (self)
             max_placement;
           if max_placement < max_pairwise then
             ti
-          else if rank = 0 then
-            failwith
-              (Printf.sprintf "no inferred taxid for %s" (Tax_id.to_string ti))
-          else
+          else if rank = 0 then begin
+            dprintf
+              "warning: no inferred taxid for %s\n"
+              (Gtree.get_node_label gt i);
+            Tax_id.NoTax
+          end else
             aux (rank - 1)
         in
         let ti = aux highest_rank in
         [Gtree.get_node_label gt i;
          Tax_id.to_string ti;
-         Tax_taxonomy.get_tax_name td ti]
-        :: accum
-      )
+         match ti with
+         | Tax_id.NoTax -> "-"
+         | _ -> Tax_taxonomy.get_tax_name td ti]
+        :: accum)
       no_tax
       []
     |> List.cons ["seq_name"; "new_taxid"; "new_name"]

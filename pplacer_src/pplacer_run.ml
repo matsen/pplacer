@@ -716,9 +716,12 @@ let run_file prefs query_fname =
     rp_strmap
   and query_bname = Filename.basename (Filename.chop_extension query_fname)
   and from_input_alignment = Option.is_some ref_align in
+  let jplace_name = match Prefs.out_file prefs with
+    | "" -> ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+    | x -> x in
   let placerun_cb pr =
     Placerun_io.to_json_file
-      ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+      jplace_name
       pr
   and query_list = Array.to_list query_align
   and n_groups = Prefs.groups prefs in
