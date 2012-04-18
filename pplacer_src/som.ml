@@ -7,7 +7,7 @@ let rot_mat angles  =
     [| (c 1)*.(c 2);  (-1.)*.(c 0)*.(s 2)+.(s 0)*.(s 1)*.(c 2);         (s 0)*.(s 2)+.(c 0)*.(s 1)*.(c 2)|];
     [| (c 1)*.(s 2);         (c 0)*.(c 2)+.(s 0)*.(s 1)*.(s 2);  (-1.)*.(s 0)*.(c 2)+.(c 0)*.(s 1)*.(s 2)|];
     [| (-1.)*.(s 1);         (s 0)*.(c 1)                     ;         (c 0)*.(c 1)                     |]
-  |];;
+  |]
 
 (* This does the actual rotations and returns the rotated matrix *)
 let rotate_trans trans_part angles =
@@ -16,7 +16,7 @@ let rotate_trans trans_part angles =
     Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha: 1. ~beta: 0.0
   in
   mat_mult ~a:(rot_mat angles) ~b:trans_part ~c:result;
-  result;;
+  result
 
 (* Once we know the min angles, we can rotate the vars into place *)
 let rotate_vars vars angles =
@@ -29,7 +29,7 @@ let rotate_vars vars angles =
   (* Multiply it's transpose by our vars to get the rotated vars*)
   Gsl_blas.gemv Gsl_blas.Trans ~alpha:1.0 ~beta:0.0 ~a:rot ~x:vars_part ~y:vars_result;
   (* Merge and return *)
-  Array.append (Gsl_vector.to_array vars_result) vars_rest;;
+  Array.append (Gsl_vector.to_array vars_result) vars_rest
 
 (* measures the overlap between the tranform vector components when rotated
  * through the given angles. *)
@@ -41,17 +41,17 @@ let overlap trans_part dims angles =
   | 3 -> [(0, 1); (0, 2); (1, 2)]
   | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
   in
-  let rec overlapper ls = match ls with
+  let rec overlapper = function
   | [] -> 0.0
   | (i, j)::ls' ->
       let mult = Gsl_vector.copy (row i) in
       Gsl_vector.mul mult (row j);
       (Gsl_blas.asum mult) +. overlapper(ls')
   in
-  overlapper indices;;
+  overlapper indices
 
 (* Performs overlap minimization using Brent *)
-let min_overlap trans_part dims = 
+let min_overlap trans_part dims =
   let tolerance = (overlap trans_part dims [|0.; 0.; 0.|]) *. (0.0001) in
   match dims with
   | 2 ->
@@ -74,5 +74,5 @@ let som_rotation trans dims vars =
   let trans_part = Gsl_matrix.of_arrays (Array.sub trans 0 3) in
   let min = min_overlap trans_part dims in
   Array.blit (Gsl_matrix.to_arrays (rotate_trans trans_part min)) 0 rotated_trans 0 3;
-  (rotate_vars vars min, rotated_trans);;
+  (rotate_vars vars min, rotated_trans)
 

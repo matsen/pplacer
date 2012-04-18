@@ -125,13 +125,16 @@ object (self)
 
     (* And now for the magic *)
     (* Don't forget to get it to do the selections when needed *)
-    let (vals, vects) = Pca.gen_pca ~use_raw_eval:(fv raw_eval)
-                  ~scale ~symmv:(fv symmv) comp_n (Array.of_list data)
+    let (vals, vects) = Pca.gen_pca
+      ~use_raw_eval:(fv raw_eval)
+      ~scale
+      ~symmv:(fv symmv)
+      comp_n
+      (Array.of_list data)
     in
     write_results vals vects prefix;
-    if not (som = 0) then begin
+    if not (som = 0) then
       let (rot_vals, rot_vects) = Som.som_rotation vects som vals in
       write_results rot_vals rot_vects (prefix^".som")
-    end
 
 end
