@@ -43,6 +43,8 @@ object (self)
       |> List.map (fun rk -> Array.findi ((=) rk) tax.Tax_taxonomy.rank_names)
       |> List.sort compare
     in
+    if List.is_empty included then
+      failwith "to_rdp must be passed at least one rank";
     let prefix = self#single_prefix ~requires_user_prefix:true () in
 
     let new_taxonomy = begin
