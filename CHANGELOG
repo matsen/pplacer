@@ -2,6 +2,10 @@
 ===========
 
  * Closed GH-225: Added `rppr vorotree`.
+ * Closed GH-241: On the NBC classifier of `guppy classify`: renamed
+   `--target-rank` to `--nbc-rank`; added `--nbc-rank auto`.
+ * Closed GH-248: Added premasking by default to the NBC classifier of `guppy
+   classify`; correspondingly added `--no-pre-mask`.
 
 
 1.1.alpha12
