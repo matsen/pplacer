@@ -57,7 +57,7 @@ object (self)
   inherit tabular_cmd () as super_tabular
 
   val list_output = flag "--list-out"
-    (Plain (false, "Output the KR results as a list rather than a matrix."))
+    (Plain (false, "Output the unifrac results as a list rather than a matrix."))
 
   method specl =
     super_mass#specl
