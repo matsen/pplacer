@@ -121,6 +121,29 @@ module Preclassifier = struct
       (fun j -> c.freq_table.{i, j} <- succ c.freq_table.{i, j})
       seq
 
+  let to_taxid_word_counts c dest =
+    let n = float_of_int (succ !(c.seq_count))
+    and n_taxids = Array.length c.base.tax_ids in
+    let prior_counts = Array.init
+      c.base.n_words
+      (fun j ->
+        (* w_j is the prior for seeing word j *)
+        let w_j = 0 --^ n_taxids
+          |> Enum.map (fun i -> c.freq_table.{i, j})
+          |> Enum.sum
+          |> float_of_int
+        in
+        (* (n(w_j) + 0.5) / (N + 1) *)
+        (w_j +. 0.5) /. n)
+    in
+    BA2.modifyij
+      (fun j i _ ->
+        let m = c.freq_table.{i, j}
+        and denom = log (float_of_int c.taxid_counts.(i) +. 1.) in
+        (* log (m(w_j) + prior_counts[j]) - denom *)
+        log (float_of_int m +. prior_counts.(j)) -. denom)
+      dest
+
 end
 
 (* the thing that does actual classification *)
@@ -136,28 +159,8 @@ module Classifier = struct
   let make ?(n_boot = 100) c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
-    and boot_rows = n_boot * extra_boot_factor
-    and n = float_of_int (succ !(c.seq_count)) in
-    let prior_counts = Array.init
-      c.base.n_words
-      (fun j ->
-        (* w_j is the prior for seeing word j *)
-        let w_j = 0 --^ n_taxids
-          |> Enum.map (fun i -> c.freq_table.{i, j})
-          |> Enum.sum
-          |> float_of_int
-        in
-        (* (n(w_j) + 0.5) / (N + 1) *)
-        (w_j +. 0.5) /. n)
-    in
-    let taxid_word_counts = BA2.mapij
-      (fun i j m ->
-        let denom = log (float_of_int c.taxid_counts.(i) +. 1.) in
-        (* log (m(w_j) + prior_counts[j]) - denom *)
-        log (float_of_int m +. prior_counts.(j)) -. denom)
-      BA.float64
-      c.freq_table
-    |> Matrix.rect_transpose
+    and boot_rows = n_boot * extra_boot_factor in
+    let taxid_word_counts = Matrix.create c.base.n_words n_taxids
     and fill_boot_row vec =
       Random.enum_int c.base.n_words
       (* boot with 1/word_length of the words. this number of bootstrapped
@@ -171,6 +174,7 @@ module Classifier = struct
       boot_rows
       c.base.n_words
     and classify_vec = Gsl_vector.create ~init:0. n_taxids in
+    Preclassifier.to_taxid_word_counts c taxid_word_counts;
     BA2.fill boot_matrix 0;
     0 --^ boot_rows
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
