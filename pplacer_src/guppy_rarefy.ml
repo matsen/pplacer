@@ -34,27 +34,24 @@ object (self)
   inherit rng_cmd () as super_rng
 
   val n_taken = flag "-n"
-    (Needs_argument ("n_taken", "The number of pqueries to keep."))
+    (Needs_argument ("n_taken", "The number of pqueries to keep per placefile."))
 
   method specl =
     super_output#specl
   @ super_rng#specl
   @ [int_flag n_taken]
 
-  method desc = "perform rarefaction on collections of placements"
+  method desc = "performs rarefaction on collections of placements"
   method usage = "usage: rarefy [options] placefile"
 
-  method private placefile_action = function
-    | [pr] ->
-      Placerun.get_pqueries pr
-        |> Array.of_list
-        |> rarefy (Gsl_randist.multinomial self#rng ~n:(fv n_taken))
-        |> Placerun.set_pqueries pr
-        |> self#write_placefile (self#single_file ())
-
-    | l ->
-      List.length l
-      |> Printf.sprintf "rarefy takes exactly one placefile (%d given)"
-      |> failwith
+  method private placefile_action prl =
+    let sample = Gsl_randist.multinomial self#rng ~n:(fv n_taken)
+    and gt = Mokaphy_common.list_get_same_tree prl in
+    List.map
+      (Placerun.get_pqueries |- Array.of_list |- rarefy sample)
+      prl
+    |> List.flatten
+    |> Placerun.make gt ""
+    |> self#write_placefile (self#single_file ())
 
 end
