@@ -199,6 +199,8 @@ object (self)
     (Formatted (2, "The number of processes to spawn to do NBC classification. default: %d"))
   val no_pre_mask = flag "--no-pre-mask"
     (Plain (false, "Don't pre-mask the sequences for NBC classification."))
+  val nbc_counts = flag "--nbc-counts"
+    (Needs_argument ("", "If specified, read/write counts for NBC classification to the given file."))
 
   val rdp_results = flag "--rdp-results"
     (Needs_argument ("rdp results", "The RDP results file for use with the RDP classifier. \
@@ -227,6 +229,7 @@ object (self)
     int_flag n_boot;
     int_flag children;
     toggle_flag no_pre_mask;
+    string_flag nbc_counts;
     delimited_list_flag rdp_results;
     delimited_list_flag blast_results;
  ]
@@ -314,6 +317,44 @@ object (self)
         |> map_tiamrim nbc
         |> filter_best bootstrap_cutoff
 
+  method private nbc_classifier rp rank_idx infile =
+    let query_aln = Alignment.upper_aln_of_any_file infile
+    and n_boot = fv n_boot
+    and word_length = fv word_length in
+    match fvo nbc_counts with
+    | Some counts ->
+      let map_file =
+        if Sys.file_exists counts then
+          Unix.openfile counts [Unix.O_RDONLY] 0o666, false
+        else
+          Unix.openfile counts [Unix.O_RDWR; Unix.O_CREAT] 0o666, true
+      in
+      Nbc.Classifier.of_refpkg ~n_boot ~map_file word_length rank_idx rp,
+      Array.to_list query_aln
+    | None ->
+      let ref_aln = Refpkg.get_aln_fasta rp in
+      let query_list, ref_aln, _, _ =
+        if fv no_pre_mask then
+          Array.to_list query_aln, ref_aln, 0, None
+        else begin
+          let ref_name_set = Array.enum ref_aln
+            |> Enum.map fst
+            |> StringSet.of_enum
+          in
+          let query_aln', ref_aln' =
+            Pplacer_run.partition_queries ref_name_set query_aln
+              |> second (Option.default ref_aln)
+          in
+          let n_sites = Alignment.length ref_aln'
+          and query_list = Array.to_list query_aln' in
+          Pplacer_run.check_query n_sites query_list;
+          dprint "pre-masking sequences... ";
+          Pplacer_run.premask Alignment.Nucleotide_seq ref_aln' query_list
+        end
+      in
+      Nbc.Classifier.of_refpkg ~ref_aln ~n_boot word_length rank_idx rp,
+      query_list
+
   method private placefile_action prl =
     let rp = self#get_rp in
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
@@ -346,10 +387,7 @@ object (self)
 
     let rec default_filter_nbc m = filter_best (fv bootstrap_cutoff) m
     and perform_one_nbc infile =
-      let query_aln = Alignment.upper_aln_of_any_file infile
-      and ref_aln = Refpkg.get_aln_fasta rp
-      and nbc_rank = fv nbc_rank
-      and n_boot = fv n_boot
+      let nbc_rank = fv nbc_rank
       and children = fv children in
       let rank_idx = match nbc_rank with
         | "auto" -> -1
@@ -358,28 +396,8 @@ object (self)
             Tax_taxonomy.get_rank_index td nbc_rank
           with Not_found ->
             failwith (Printf.sprintf "invalid rank %s" nbc_rank)
-      and query_list, ref_aln, _, _ =
-        if fv no_pre_mask then
-          Array.to_list query_aln, ref_aln, Alignment.length ref_aln, None
-        else begin
-          let ref_name_set = Array.enum ref_aln
-            |> Enum.map fst
-            |> StringSet.of_enum
-          in
-          let query_aln', ref_aln' =
-            Pplacer_run.partition_queries ref_name_set query_aln
-              |> second (Option.default ref_aln)
-          in
-          let n_sites = Alignment.length ref_aln'
-          and query_list = Array.to_list query_aln' in
-          Pplacer_run.check_query n_sites query_list;
-          dprint "pre-masking sequences... ";
-          Pplacer_run.premask Alignment.Nucleotide_seq ref_aln' query_list
-        end
       in
-      let classif =
-        Nbc.Classifier.of_refpkg ~ref_aln ~n_boot (fv word_length) rank_idx rp
-      in
+      let classif, query_list = self#nbc_classifier rp rank_idx infile in
       let bootstrap = Alignment.ungap
         |- Nbc.Classifier.bootstrap classif
         |- partition_by_rank td
