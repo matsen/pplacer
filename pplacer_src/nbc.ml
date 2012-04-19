@@ -156,11 +156,21 @@ module Classifier = struct
   }
 
   (* make a classifier from a preclassifier *)
-  let make ?(n_boot = 100) c =
+  let make ?(n_boot = 100) ?map_file c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
     and boot_rows = n_boot * extra_boot_factor in
-    let taxid_word_counts = Matrix.create c.base.n_words n_taxids
+    let taxid_word_counts, fill_counts = match map_file with
+      | Some (fd, also_write) ->
+        BA2.map_file
+          fd
+          BA.float64
+          BA.c_layout
+          also_write
+          c.base.n_words
+          n_taxids,
+        also_write
+      | None -> Matrix.create c.base.n_words n_taxids, true
     and fill_boot_row vec =
       Random.enum_int c.base.n_words
       (* boot with 1/word_length of the words. this number of bootstrapped
@@ -174,7 +184,8 @@ module Classifier = struct
       boot_rows
       c.base.n_words
     and classify_vec = Gsl_vector.create ~init:0. n_taxids in
-    Preclassifier.to_taxid_word_counts c taxid_word_counts;
+    if fill_counts then
+      Preclassifier.to_taxid_word_counts c taxid_word_counts;
     BA2.fill boot_matrix 0;
     0 --^ boot_rows
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
@@ -265,7 +276,7 @@ module Classifier = struct
           (Tax_taxonomy.get_rank_name td
            |- dprintf "automatically determined best rank: %s\n")
 
-  let of_refpkg ?ref_aln ?n_boot word_length rank_idx rp =
+  let of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rp =
     let td = Refpkg.get_taxonomy rp
     and rank_tax_map = rank_tax_map_of_refpkg rp in
     let rank_idx =
@@ -277,17 +288,22 @@ module Classifier = struct
       |> Tax_id.TaxIdSet.enum
       |> Array.of_enum
       |> Preclassifier.make Bigarray.int word_length
-    (* a map from reference sequence names to chosen-rank tax_ids *)
-    and seq_tax_ids = IntMap.find rank_idx rank_tax_map
-    and filter m (k, seq) =
-      match StringMap.Exceptionless.find k m with
+    in
+    begin match map_file with
+    | Some (_, false) -> ()
+    | _ ->
+      (* a map from reference sequence names to chosen-rank tax_ids *)
+      let seq_tax_ids = IntMap.find rank_idx rank_tax_map
+      and filter m (k, seq) =
+        match StringMap.Exceptionless.find k m with
         | Some v -> Some (v, Alignment.ungap seq)
         | None -> None
-    in
-    Option.default (Refpkg.get_aln_fasta rp) ref_aln
-      |> Array.enum
-      |> Enum.filter_map (filter seq_tax_ids)
-      |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
-    make ?n_boot preclassif
+      in
+      Option.default (Refpkg.get_aln_fasta rp) ref_aln
+        |> Array.enum
+        |> Enum.filter_map (filter seq_tax_ids)
+        |> Enum.iter (uncurry (Preclassifier.add_seq preclassif))
+    end;
+    make ?map_file ?n_boot preclassif
 
 end
