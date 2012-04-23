@@ -555,13 +555,14 @@ object (self)
     and default_filter_rdp m = filter_best (fv bootstrap_cutoff) m
     and perform_rdp () =
       let name_map = Tax_id.TaxIdMap.enum td.Tax_taxonomy.tax_name_map
-        |> Enum.map (curry identity |> flip |> uncurry |- second Tax_id.to_string)
+        |> Enum.map (swap |- first Guppy_to_rdp.fix_tax_name)
         |> StringMap.of_enum
       and pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, 1.);"
       and pc_st = Sqlite3.prepare db
         "INSERT INTO placement_nbc VALUES (?, ?, ?)"
-      and best_classif_map = ref StringMap.empty in
+      and best_classif_map = ref StringMap.empty
+      and split_line = Str.regexp "[\t;]" |> Str.split in
 
       let process origin name rows =
         let place_id = new_place_id "rdp" in
@@ -572,44 +573,42 @@ object (self)
             Sql.D.TEXT origin;
           |];
         List.iter
-          (Array.map (fun x -> Sql.D.TEXT x)
-           |- Array.append [| Sql.D.INT place_id |]
-           |- Sql.bind_step_reset db pc_st)
+          (fun (tid, boot) ->
+            Sql.bind_step_reset db pc_st
+              [|
+                Sql.D.INT place_id;
+                Sql.D.TEXT (Tax_id.to_string tid);
+                Sql.D.FLOAT boot;
+              |])
           rows;
 
-        List.fold_left
-          (fun accum arr ->
-            TIAMR.add_by
-              (Tax_id.of_string arr.(0))
-              (float_of_string arr.(1))
-              accum)
-          TIAMR.empty
-          rows
-        |> partition_by_rank td
+        List.enum rows
+        |> Enum.map
+            (fun (ti, boot) ->
+              Tax_taxonomy.get_tax_rank td ti, TIAMR.singleton ti boot)
+        |> IntMap.of_enum
         |> classification place_id
         |> flip (StringMap.add name) !best_classif_map
         |> (:=) best_classif_map
 
       and classify line =
-        (* past participle of 'to split' *)
-        let splut = String.nsplit line "\t" |> Array.of_list in
-        splut.(0), List.fold_left
-          (fun accum idx ->
-            [|
+        match split_line line with
+        | name :: taxonomy ->
+          name,
+          List.map
+            (fun s ->
+              let tax_name, boot = Scanf.sscanf s "%s@(%g)" (curry identity) in
               (try
-                 StringMap.find splut.(idx) name_map
+                 StringMap.find tax_name name_map
                with Not_found ->
-                 failwith (splut.(idx)^" not found in refpkg's taxonomy"));
-              splut.(idx + 2);
-            |] :: accum)
-          []
-          [8; 11; 14; 17; 20]
-
+                 failwith (tax_name ^ " not found in refpkg's taxonomy")),
+              boot)
+            taxonomy
+        | _ -> failwith (Printf.sprintf "malformed line: %S" line)
       in
       fv rdp_results
         |> List.enum
-        |> Enum.map
-            (identity &&& (File.lines_of |- Enum.map classify))
+        |> Enum.map (identity &&& (File.lines_of |- Enum.map classify))
         |> Enum.iter (fun (a, bcl) -> Enum.iter (process a |> uncurry) bcl);
 
       !best_classif_map
