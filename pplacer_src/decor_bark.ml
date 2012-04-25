@@ -26,8 +26,8 @@ class decor_bark arg =
         (fun ff () -> super#ppr_inners ff) ()
         (Ppr.ppr_list Decor.ppr) decor
 
-    method to_xml =
-      super#to_xml
+    method to_xml is_leaf =
+      super#to_xml is_leaf
       @ List.flatten (List.map Decor.to_xml (List.sort compare decor))
 
     method set_decor decor_list =

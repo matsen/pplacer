@@ -2,8 +2,15 @@
 ===========
 
  * Closed GH-225: Added `rppr vorotree`.
+ * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
+ * Closed GH-237: Added a multiplicity column to `guppy diplac`.
+ * Closed GH-240: Added a `-o` flag for pplacer.
  * Closed GH-241: On the NBC classifier of `guppy classify`: renamed
    `--target-rank` to `--nbc-rank`; added `--nbc-rank auto`.
+ * Closed GH-243: Updated `rppr reroot` so it can run on reference packages
+   which have unannotated sequences.
+ * Closed GH-244: Updated `rppr infer` to handle sequences which could not be
+   reasonably placed anywhere on the tree.
  * Closed GH-248: Added premasking by default to the NBC classifier of `guppy
    classify`; correspondingly added `--no-pre-mask`.
 
@@ -53,6 +60,7 @@
  * Closed GH-220: Added error messages for some exceptions; fixed
    `guppy rarefact`.
  * Closed GH-222: Added a -c flag to `guppy bary`.
+ * Closed GH-236: Fixed support for numeric leaf names when writing out XML.
 
 
 1.1.alpha11

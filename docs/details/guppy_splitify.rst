@@ -5,6 +5,8 @@ Specifically, it is the amount of mass on the distal (non-root) side of edge :ma
 The matrix is indexed such that the first numerical column is edge labeled 0 in the reference tree.
 The ``splitify`` subcommand simply writes out this matrix.
 
+Specifying ``--rep-edges x`` will only take representatives from collections of neighboring edges whose Euclidean distance between splitified columns is less than ``x``.
+
 The ``--kappa`` option enables a componentwise transformation :math:`\varphi_\kappa` on the entries of this matrix.
 
 .. math::
