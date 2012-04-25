@@ -1,3 +1,4 @@
+import collections
 import subprocess
 import argparse
 import tempfile
@@ -59,6 +60,7 @@ def main():
     log.info('classified into %d bins', len(all_bins))
     log.debug('bins: %r', all_bins)
     bin_outputs = {}
+    bin_counts = collections.Counter()
     for bin in all_bins:
         bin_outputs[bin] = open(os.path.join(workdir, bin + '.fasta'), 'w')
 
@@ -67,12 +69,14 @@ def main():
         if bin is None:
             continue
         SeqIO.write([seq], bin_outputs[bin], 'fasta')
+        bin_counts[bin] += 1
 
     for fobj in bin_outputs.itervalues():
         fobj.close()
 
     for e, bin in enumerate(all_bins):
-        log.info('classifying bin %s (%d/%d)', bin, e + 1, len(all_bins))
+        log.info('classifying bin %s (%d/%d; %d seqs)',
+                 bin, e + 1, len(all_bins), bin_counts[bin])
         unaligned = os.path.join(workdir, bin + '.fasta')
         aligned = os.path.join(workdir, bin + '-aligned.sto')
         placed = os.path.join(workdir, bin + '.jplace')
