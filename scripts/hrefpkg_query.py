@@ -4,6 +4,7 @@ import tempfile
 import logging
 import os.path
 import sqlite3
+import atexit
 import shutil
 
 from taxtastic.refpkg import Refpkg
@@ -23,9 +24,14 @@ def main():
     parser.add_argument('--guppy', default='guppy')
     parser.add_argument('--rppr', default='rppr')
     parser.add_argument('--refpkg-align', default='refpkg_align.py')
+    parser.add_argument('--disable-cleanup', default=False, action='store_true')
 
     args = parser.parse_args()
     workdir = tempfile.mkdtemp()
+    if not args.disable_cleanup:
+        @atexit.register
+        def cleanup_workdir():
+            shutil.rmtree(workdir, ignore_errors=True)
 
     classif_db = os.path.join(workdir, 'classifications.sqlite')
     index_refpkg = os.path.join(args.hrefpkg, 'index.refpkg')
