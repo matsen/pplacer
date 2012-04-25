@@ -14,6 +14,7 @@
    reasonably placed anywhere on the tree.
  * Closed GH-247: Added `guppy unifrac`.
  * Closed GH-249: Added `guppy rarefy`.
+ * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
 
 
 1.1.alpha12
