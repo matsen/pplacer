@@ -89,6 +89,33 @@ def main():
         subprocess.check_call(
             [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed])
 
+    log.info('cleaning up `multiclass` table')
+    conn.rollback()
+    curs = conn.cursor()
+    curs.execute("""
+        CREATE TEMPORARY TABLE classified AS
+          SELECT name,
+                 COUNT(DISTINCT run_id) n_runs
+            FROM multiclass
+                 JOIN placements USING (placement_id)
+           GROUP BY name
+          HAVING n_runs > 1
+    """)
+    curs.execute("SELECT name FROM classified WHERE n_runs > 2")
+    too_many_classifications = [name for name, in curs]
+    if too_many_classifications:
+        raise ValueError("some sequences got classified more than twice",
+                         too_many_classifications)
+    curs.execute("""
+        DELETE FROM multiclass
+         WHERE (SELECT run_id
+                  FROM placements p
+                 WHERE p.placement_id = multiclass.placement_id) = 1
+           AND name IN (SELECT name
+                          FROM classified)
+    """)
+    conn.commit()
+
     shutil.copy(classif_db, args.classification_db)
 
 main()
