@@ -317,6 +317,19 @@ object (self)
         |> map_tiamrim nbc
         |> filter_best bootstrap_cutoff
 
+  method private merge_hybrid5 td pp nbc =
+    let nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
+    match IntMap.split nbc_rank pp.tiamrim with
+    | pp_above, Some pp_best, _ ->
+      if IntMap.cardinal pp_above <= 1
+        && on_lineage
+          td
+          (best_classification nbc_best)
+          (best_classification pp_best)
+      then pp
+      else nbc
+    | _ -> nbc
+
   method private nbc_classifier rp rank_idx infile =
     let query_aln = Alignment.upper_aln_of_any_file infile
     and n_boot = fv n_boot
@@ -696,6 +709,11 @@ object (self)
       | "hybrid4" ->
         StringMap.merge
           (self#merge_hybrid4 td |> merge_fn)
+          (perform_pplacer ())
+          (perform_nbc ())
+      | "hybrid5" ->
+        StringMap.merge
+          (self#merge_hybrid5 td |> merge_fn)
           (perform_pplacer ())
           (perform_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
