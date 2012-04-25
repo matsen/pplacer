@@ -320,7 +320,7 @@ object (self)
   method private merge_hybrid5 td pp nbc =
     let nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
     match IntMap.split nbc_rank pp.tiamrim with
-    | pp_above, Some pp_best, _ ->
+    | _, Some pp_best, pp_above ->
       if IntMap.cardinal pp_above <= 1
         && on_lineage
           td
