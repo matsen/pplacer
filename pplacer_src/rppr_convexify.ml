@@ -46,6 +46,8 @@ object (self)
     (Needs_argument ("", "If specified, the path to write a CSV file of alternate colors per-sequence to."))
   val check_all_ranks = flag "--check-all-ranks"
     (Plain (false, "When determining alternate colors, check all ranks instead of the least recent uncut rank."))
+  val all_alternates = flag "--all-alternates"
+    (Plain (false, "When determining alternate colors, ignore the taxononomy and show all alternates."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
   val use_naive = flag "--naive"
@@ -73,6 +75,7 @@ object (self)
     string_flag cut_seqs_file;
     string_flag alternates_file;
     toggle_flag check_all_ranks;
+    toggle_flag all_alternates;
     int_flag badness_cutoff;
     delimited_list_flag limit_ranks;
     string_flag timing;
@@ -127,6 +130,7 @@ object (self)
 
   method private alternate_colors fname =
     let rp = self#get_rp
+    and all_alternates = fv all_alternates
     and check_all_ranks = fv check_all_ranks in
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
@@ -168,7 +172,7 @@ object (self)
                       | true when check_all_ranks -> aux rest
                       | x -> x
               in
-              if aux (List.rev lineage) then
+              if all_alternates || aux (List.rev lineage) then
                 [data.rankname; seqname; tax_name c_ti] :: accum
               else
                 accum)
