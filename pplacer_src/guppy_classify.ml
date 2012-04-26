@@ -714,8 +714,8 @@ object (self)
       | "hybrid5" ->
         StringMap.merge
           (self#merge_hybrid5 td |> merge_fn)
-          (perform_pplacer ())
-          (perform_nbc ())
+          (default_pplacer ())
+          (default_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
     and mc_st = Sqlite3.prepare db
       "INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)"
