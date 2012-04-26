@@ -361,19 +361,17 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
     prefs figs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
-  let n_done = ref 0 in
-  let queries = List.length query_list in
-  let show_query query_name =
-    incr n_done;
-    dprintf "working on %s (%d/%d)...\n" query_name (!n_done) queries;
-    flush_all ()
-  in
+  let show_query = progress_displayer
+    "working on %s (%d/%d)..."
+    (List.length query_list)
+  and n_done = ref 0 in
   let progressfunc msg =
     if String.rcontains_from msg 0 '>' then begin
+      incr n_done;
       let query_name = String.sub msg 1 ((String.length msg) - 1) in
       show_query query_name
     end else
-      dprintf "%s\n" msg
+      dprintf "\n%s\n" msg
   in
   let q = Queue.create () in
   List.iter

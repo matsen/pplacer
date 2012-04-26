@@ -116,6 +116,29 @@ let dprint ?(l = 1) ?(flush = true) s =
 let align_with_space =
   List.map (Tuple3.map3 ((^) " ")) |- Arg.align
 
+let progress_displayer ?(update_interval = 0.3) fmt total =
+  let shown = ref 0
+  and last_length = ref 0
+  and last_time = ref 0. in
+  if Unix.isatty Unix.stdout then begin fun name ->
+    incr shown;
+    let shown = !shown
+    and time = Unix.gettimeofday () in
+    if time -. !last_time > update_interval || shown = total then begin
+      let msg = Printf.sprintf fmt name shown total in
+      let msg_len = String.length msg in
+      let padding = String.make (!last_length - msg_len |> max 0) ' ' in
+      dprintf "\r%s%s" msg padding;
+      last_length := msg_len;
+      last_time := time;
+    end;
+    if shown = total then dprint "\n";
+  end else begin fun name ->
+    incr shown;
+    Printf.sprintf fmt name !shown total |> dprintf "%s\n";
+  end
+
+
 let get_dir_contents ?pred dir_name =
   let dirh = Unix.opendir dir_name in
   Enum.from
