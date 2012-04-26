@@ -25,6 +25,10 @@ let entry_of_str = function
   | "NA" -> None
   | s -> Some s
 
+(* Csv uses a non-tail-recursive List.map. the bastards. *)
+let associate header data =
+  List.map (List.combine header) data
+
 (* requires "seqname" and "tax_id" columns, "accession"
  * "tax_name","isType","ok","i","outlier","selected","label" *)
 let of_csv csv =
@@ -52,5 +56,5 @@ let of_csv csv =
       | Not_found -> failwith ("seq_name and/or tax_id fields missing in seqinfo"))
     StringMap.empty
     (match Csv.input_all csv with
-    | header :: data -> Csv.associate header data
+    | header :: data -> associate header data
     | [] -> invalid_arg ("empty refdata in seqinfo"))
