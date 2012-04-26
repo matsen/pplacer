@@ -55,7 +55,7 @@ object (self)
   method progress_received = progressfunc
 end
 
-let premask seq_type ref_align query_list =
+let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
   let base_map = match seq_type with
     | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
     | Alignment.Protein_seq -> Prot_models.prot_map
@@ -87,10 +87,15 @@ let premask seq_type ref_align query_list =
     |> curry Enum.combine (Array.enum ref_mask)
     |> Enum.exists (uncurry (&&))
   in
-  (try
-     let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-     failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
-   with Not_found -> ());
+  let query_list = List.filter
+    (fun (name, seq) ->
+      let overlaps = overlaps_mask seq in
+      if not discard_nonoverlapped && not overlaps then
+        failwith
+          (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." name);
+      overlaps)
+    query_list
+  in
   (* Mask out sites that are either all gap in the reference alignment or
    * all gap in the query alignment. *)
   let mask = Array.map2
@@ -203,7 +208,11 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       query_list, ref_align, n_sites, None
     else begin
       dprint "Pre-masking sequences... ";
-      premask (Model.seq_type model) ref_align query_list
+      premask
+        ~discard_nonoverlapped:(Prefs.discard_nonoverlapped prefs)
+        (Model.seq_type model)
+        ref_align
+        query_list
     end
   in
 
