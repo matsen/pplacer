@@ -85,7 +85,8 @@ def main():
             [args.refpkg_align, 'align', '--output-format', 'stockholm',
              refpkg, unaligned, aligned])
         subprocess.check_call(
-            [args.pplacer, '-c', refpkg, aligned, '-o', placed])
+            [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
+             aligned, '-o', placed])
         subprocess.check_call(
             [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed])
 
