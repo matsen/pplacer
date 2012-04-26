@@ -25,8 +25,9 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
             begin
               try
                 Data (f x)
-              with
-                | exn -> Exception exn
+              with exn ->
+                Printexc.print_backtrace stderr;
+                Exception exn
             end;
           aux ()
         | None -> Legacy.close_in rd; Legacy.close_out wr
