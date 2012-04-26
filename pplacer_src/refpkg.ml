@@ -89,9 +89,14 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     lazy
       (match ref_align with
       | Some a -> a
-      | None ->
+      | None when StringMap.mem "aln_fasta" m ->
         get "aln_fasta"
           |> Fasta.of_refpkg_contents
+          |> Array.of_list
+          |> Alignment.uppercase
+      | None ->
+        get "aln_sto"
+          |> Stockholm.of_refpkg_contents
           |> Array.of_list
           |> Alignment.uppercase)
   in
