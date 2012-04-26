@@ -67,7 +67,9 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
   in
   if not ignore_version then begin
     if StringMap.mem "format_version" m then begin
-      let format_version = StringMap.find "format_version" m in
+      let format_version = StringMap.find "format_version" m
+        |> Refpkg_parse.as_metadata
+      in
       if not (List.mem format_version refpkg_versions) then begin
         Printf.printf
           "This reference package's format is version %s, which is not supported.\n"
@@ -88,18 +90,23 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
       (match ref_align with
       | Some a -> a
       | None ->
-          Alignment.uppercase (Array.of_list (Fasta.of_file (get "aln_fasta")))
-      )
+        get "aln_fasta"
+          |> Fasta.of_refpkg_contents
+          |> Array.of_list
+          |> Alignment.uppercase)
   in
   let lref_tree =
     lazy
       (match ref_tree with
         | Some t -> t
-        | None -> Newick_gtree.of_file (get "tree"))
+        | None -> get "tree" |> Newick_gtree.of_refpkg_contents)
   and lmodel = lazy
     (let aln = Lazy.force lfasta_aln in
      if StringMap.mem "phylo_model" m then
-       let j = StringMap.find "phylo_model" m |> Json.of_file |> Jsontype.obj in
+       let j = StringMap.find "phylo_model" m
+         |> Refpkg_parse.json_of_contents
+         |> Jsontype.obj
+       in
        match Hashtbl.find j "ras_model" |> Jsontype.string with
          | "gamma" ->
            (module Gmix_model.Model: Glvm.Model),
@@ -114,10 +121,15 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
             We suggest using a reference package. If you already are, then \
             please use the latest version of taxtastic.";
        (module Gmix_model.Model: Glvm.Model),
-       Gmix_model.init_of_stats_fname prefs (get "tree_stats") aln
+       Gmix_model.init_of_stats_fname
+         prefs
+         (get "tree_stats" |> Refpkg_parse.as_file_path)
+         aln
      end)
-  and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
-  and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
+  and ltaxonomy = lazy
+    (get "taxonomy" |> Refpkg_parse.csv_of_contents |> Tax_taxonomy.of_ncbi_file)
+  and lseqinfom = lazy
+    (get "seq_info" |> Refpkg_parse.csv_of_contents |> Tax_seqinfo.of_csv)
   in
   let lmrcam =
     lazy (Tax_map.mrcam_of_data
@@ -135,10 +147,10 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     aln_profile = ();
     taxonomy    = ltaxonomy;
     seqinfom    = lseqinfom;
-    name        = (get "name");
+    name        = (get "name" |> Refpkg_parse.as_metadata);
     mrcam       = lmrcam;
     uptree_map  = luptree_map;
-    item_path_fn = get;
+    item_path_fn = get |- Refpkg_parse.as_file_path;
   }
 
 let of_path ?ref_tree path =

@@ -438,13 +438,15 @@ object (self)
           name
           (classification place_id boot_map)
           accum
+      and progress_handler = progress_displayer
+        "classifying %s (%d/%d)..."
+        (List.length query_list)
       in
 
       Multiprocessing.map
         ~children
-        ~progress_handler:(dprintf "%s\n")
-        (tap (fst |- dprintf "classifying %s...\n")
-         |- second bootstrap)
+        ~progress_handler
+        (tap (fst |- print_endline) |- second bootstrap)
         query_list
       |> List.fold_left (uncurry classify |> flip) StringMap.empty
     and perform_nbc () =
