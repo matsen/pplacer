@@ -39,13 +39,14 @@ def main():
     index_refpkg = os.path.join(args.hrefpkg, 'index.refpkg')
     index = Refpkg(index_refpkg)
     index_rank = index.metadata('index_rank')
+    index_counts = os.path.join(args.hrefpkg, 'index.counts')
     log.info('performing initial classification at %s', index_rank)
     subprocess.check_call(
         [args.rppr, 'prep_db', '--sqlite', classif_db, '-c', index_refpkg])
     subprocess.check_call(
         [args.guppy, 'classify', '--sqlite', classif_db, '-c', index_refpkg,
-         '--classifier', 'nbc', '--nbc-rank', index_rank,
-         '--no-pre-mask', '--nbc-sequences', args.query_seqs])
+         '--classifier', 'nbc', '--nbc-rank', index_rank, '--no-pre-mask',
+         '--nbc-sequences', args.query_seqs, '--nbc-counts', index_counts])
 
     conn = sqlite3.connect(classif_db)
     curs = conn.cursor()
