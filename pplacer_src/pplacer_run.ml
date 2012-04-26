@@ -371,7 +371,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       let query_name = String.sub msg 1 ((String.length msg) - 1) in
       show_query query_name
     end else
-      dprintf "\n%s\n" msg
+      dprintf "%s\n" msg
   in
   let q = Queue.create () in
   List.iter

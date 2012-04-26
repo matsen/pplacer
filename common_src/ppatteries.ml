@@ -128,7 +128,7 @@ let progress_displayer ?(update_interval = 0.3) fmt total =
       let msg = Printf.sprintf fmt name shown total in
       let msg_len = String.length msg in
       let padding = String.make (!last_length - msg_len |> max 0) ' ' in
-      dprintf "\r%s%s" msg padding;
+      dprintf "%s%s\r" msg padding;
       last_length := msg_len;
       last_time := time;
     end;
