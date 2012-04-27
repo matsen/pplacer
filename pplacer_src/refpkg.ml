@@ -127,9 +127,13 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
          aln
      end)
   and ltaxonomy = lazy
-    (get "taxonomy" |> Refpkg_parse.csv_of_contents |> Tax_taxonomy.of_ncbi_file)
+    (get "taxonomy"
+     |> Refpkg_parse.csv_of_contents
+     |> with_dispose ~dispose:Csv.close_in Tax_taxonomy.of_ncbi_file)
   and lseqinfom = lazy
-    (get "seq_info" |> Refpkg_parse.csv_of_contents |> Tax_seqinfo.of_csv)
+    (get "seq_info"
+     |> Refpkg_parse.csv_of_contents
+     |> with_dispose ~dispose:Csv.close_in Tax_seqinfo.of_csv)
   in
   let lmrcam =
     lazy (Tax_map.mrcam_of_data
