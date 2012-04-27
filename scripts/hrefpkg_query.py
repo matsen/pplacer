@@ -87,7 +87,7 @@ def main():
 
     for seq in SeqIO.parse(args.query_seqs, 'fasta'):
         bin = seq_bins.get(seq.id)
-        if bin is None:
+        if bin is None or bin not in bin_outputs:
             continue
         SeqIO.write([seq], bin_outputs[bin], 'fasta')
         bin_counts[bin] += 1
