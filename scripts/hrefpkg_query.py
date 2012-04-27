@@ -14,6 +14,10 @@ from Bio import SeqIO
 
 log = logging.getLogger(__name__)
 
+def logging_check_call(cmd, *a, **kw):
+    log.info(' '.join(cmd))
+    return subprocess.check_call(cmd, *a, **kw)
+
 def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -51,9 +55,9 @@ def main():
     index_rank = index.metadata('index_rank')
     index_counts = os.path.join(args.hrefpkg, 'index.counts')
     log.info('performing initial classification at %s', index_rank)
-    subprocess.check_call(
+    logging_check_call(
         [args.rppr, 'prep_db', '--sqlite', classif_db, '-c', index_refpkg])
-    subprocess.check_call(
+    logging_check_call(
         [args.guppy, 'classify', '--sqlite', classif_db, '-c', index_refpkg,
          '--classifier', 'nbc', '--nbc-rank', index_rank, '--no-pre-mask',
          '--nbc-sequences', args.query_seqs, '--nbc-counts', index_counts,
@@ -94,13 +98,13 @@ def main():
         aligned = os.path.join(workdir, bin + '-aligned.sto')
         placed = os.path.join(workdir, bin + '.jplace')
         refpkg = os.path.join(args.hrefpkg, bin + '.refpkg')
-        subprocess.check_call(
+        logging_check_call(
             [args.refpkg_align, 'align', '--output-format', 'stockholm',
              refpkg, unaligned, aligned] + mpi_args)
-        subprocess.check_call(
+        logging_check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
              '-j', str(args.ncores), aligned, '-o', placed])
-        subprocess.check_call(
+        logging_check_call(
             [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed,
              '-j', str(args.ncores)])
 
