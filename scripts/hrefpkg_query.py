@@ -22,13 +22,23 @@ def main():
     parser.add_argument('hrefpkg')
     parser.add_argument('query_seqs')
     parser.add_argument('classification_db')
+    parser.add_argument('-j', '--ncores', default=1, type=int)
     parser.add_argument('--pplacer', default='pplacer')
     parser.add_argument('--guppy', default='guppy')
     parser.add_argument('--rppr', default='rppr')
     parser.add_argument('--refpkg-align', default='refpkg_align.py')
     parser.add_argument('--disable-cleanup', default=False, action='store_true')
+    parser.add_argument('--use-mpi', default=False, action='store_true')
 
     args = parser.parse_args()
+
+    if args.ncores < 0:
+        args.error('ncores must be >= 0')
+
+    mpi_args = []
+    if args.use_mpi and args.ncores > 0:
+        mpi_args = ['--use-mpi', '--mpi-arguments', '-np %d' % (args.ncores,)]
+
     workdir = tempfile.mkdtemp()
     if not args.disable_cleanup:
         @atexit.register
@@ -46,7 +56,8 @@ def main():
     subprocess.check_call(
         [args.guppy, 'classify', '--sqlite', classif_db, '-c', index_refpkg,
          '--classifier', 'nbc', '--nbc-rank', index_rank, '--no-pre-mask',
-         '--nbc-sequences', args.query_seqs, '--nbc-counts', index_counts])
+         '--nbc-sequences', args.query_seqs, '--nbc-counts', index_counts,
+         '-j', str(args.ncores)])
 
     conn = sqlite3.connect(classif_db)
     curs = conn.cursor()
@@ -85,12 +96,13 @@ def main():
         refpkg = os.path.join(args.hrefpkg, bin + '.refpkg')
         subprocess.check_call(
             [args.refpkg_align, 'align', '--output-format', 'stockholm',
-             refpkg, unaligned, aligned])
+             refpkg, unaligned, aligned] + mpi_args)
         subprocess.check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
-             aligned, '-o', placed])
+             '-j', str(args.ncores), aligned, '-o', placed])
         subprocess.check_call(
-            [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed])
+            [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed,
+             '-j', str(args.ncores)])
 
     log.info('cleaning up `multiclass` table')
     conn.rollback()
