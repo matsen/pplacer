@@ -8,6 +8,7 @@ import os.path
 import sqlite3
 import atexit
 import shutil
+import csv
 
 from taxtastic.refpkg import Refpkg
 from Bio import SeqIO
@@ -63,6 +64,9 @@ def main():
          '--nbc-sequences', args.query_seqs, '--nbc-counts', index_counts,
          '-j', str(args.ncores)])
 
+    with open(os.path.join(args.hrefpkg, 'index.csv'), 'rU') as fobj:
+        refpkg_map = dict(csv.reader(fobj))
+
     conn = sqlite3.connect(classif_db)
     curs = conn.cursor()
     curs.execute("""
@@ -73,7 +77,7 @@ def main():
                AND rank = want_rank
     """, (index_rank,))
     seq_bins = dict(curs)
-    all_bins = set(seq_bins.itervalues())
+    all_bins = set(seq_bins.itervalues()) & set(refpkg_map)
     log.info('classified into %d bins', len(all_bins))
     log.debug('bins: %r', all_bins)
     bin_outputs = {}
@@ -97,7 +101,7 @@ def main():
         unaligned = os.path.join(workdir, bin + '.fasta')
         aligned = os.path.join(workdir, bin + '-aligned.sto')
         placed = os.path.join(workdir, bin + '.jplace')
-        refpkg = os.path.join(args.hrefpkg, bin + '.refpkg')
+        refpkg = os.path.join(args.hrefpkg, refpkg_map[bin])
         logging_check_call(
             [args.refpkg_align, 'align', '--output-format', 'stockholm',
              refpkg, unaligned, aligned] + mpi_args)
