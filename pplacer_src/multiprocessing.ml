@@ -127,10 +127,8 @@ class virtual ['a] process child_func =
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
           (range 256)
       end;
-      (* Make writing to stdout or stderr instead write to the progress
-       * channel. *)
+      (* Make writing to stdout instead write to the progress channel. *)
       Unix.dup2 progress_wr Unix.stdout;
-      Unix.dup2 progress_wr Unix.stderr;
       Unix.close progress_wr;
       let rd = Unix.in_channel_of_descr child_rd
       and wr = Unix.out_channel_of_descr parent_wr in
