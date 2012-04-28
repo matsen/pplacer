@@ -5,4 +5,4 @@
 <tests.{top,native}>: pkg_oUnit
 <**/*.ml>: warn_Z, annot
 <*/*.annot>: precious
-<**/*.{ml,mli,byte,native,top,p.native,d.byte}>: c_pplacer, pkg_batteries, pkg_threads, pkg_unix, pkg_bigarray, pkg_gsl, pkg_csv, pkg_xmlm, pkg_str, pkg_sqlite3
+<**/*.{ml,mli,byte,native,top,p.native,d.byte}>: c_pplacer, pkg_batteries, pkg_threads, pkg_unix, pkg_bigarray, pkg_gsl, pkg_csv, pkg_xmlm, pkg_str, pkg_sqlite3, pkg_zip

@@ -662,13 +662,14 @@ let run_file prefs query_fname =
 
   (* string map which represents the elements of the reference package; these
    * may be actually a reference package or specified on the command line. *)
+  let file_path = Refpkg_parse.file_path in
   let rp_strmap =
     List.fold_right
     (* only set if the option string is non empty.
      * override the contents of the reference package. *)
       (fun (k,v) m ->
         if v = "" then m
-        else StringMap.add k (ref_dir_complete^v) m)
+        else StringMap.add k (ref_dir_complete^v |> file_path) m)
       [
         "tree", Prefs.tree_fname prefs;
         "aln_fasta", Prefs.ref_align_fname prefs;
@@ -677,7 +678,9 @@ let run_file prefs query_fname =
       (match Prefs.refpkg_path prefs with
         | "" ->
             StringMap.add "name"
-              (safe_chop_extension (Prefs.ref_align_fname prefs))
+              (Prefs.ref_align_fname prefs
+               |> safe_chop_extension
+               |> Refpkg_parse.metadata)
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
@@ -687,7 +690,12 @@ let run_file prefs query_fname =
     else
       failwith "the reference package provided does not contain a tree";
 
-  let ref_tree = StringMap.find "tree" rp_strmap |> Newick_gtree.of_file in
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
+  let ref_tree = Refpkg.get_ref_tree rp in
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_map = Newick_gtree.leaf_label_map ref_tree in
   let ref_name_set = IntMap.values ref_name_map |> StringSet.of_enum in
@@ -708,12 +716,7 @@ let run_file prefs query_fname =
     StringSet.empty
     (Option.default [||] ref_align)
   in ();
-  let rp = Refpkg.of_strmap
-    ?ref_align
-    ~ref_tree
-    ~ignore_version:(Prefs.refpkg_path prefs = "")
-    prefs
-    rp_strmap
+  let rp = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
   and query_bname = Filename.basename (Filename.chop_extension query_fname)
   and from_input_alignment = Option.is_some ref_align in
   let jplace_name = match Prefs.out_file prefs with
