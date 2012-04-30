@@ -8,6 +8,7 @@ import os.path
 import sqlite3
 import atexit
 import shutil
+import errno
 import csv
 
 from taxtastic.refpkg import Refpkg
@@ -18,6 +19,13 @@ log = logging.getLogger(__name__)
 def logging_check_call(cmd, *a, **kw):
     log.info(' '.join(cmd))
     return subprocess.check_call(cmd, *a, **kw)
+
+def silently_unlink(path):
+    try:
+        os.unlink(path)
+    except OSError, e:
+        if e.errno != errno.ENOENT:
+            raise
 
 def main():
     logging.basicConfig(
@@ -32,6 +40,7 @@ def main():
     parser.add_argument('--guppy', default='guppy')
     parser.add_argument('--rppr', default='rppr')
     parser.add_argument('--refpkg-align', default='refpkg_align.py')
+    parser.add_argument('--workdir')
     parser.add_argument('--disable-cleanup', default=False, action='store_true')
     parser.add_argument('--use-mpi', default=False, action='store_true')
 
@@ -44,7 +53,16 @@ def main():
     if args.use_mpi and args.ncores > 0:
         mpi_args = ['--use-mpi', '--mpi-arguments', '-np %d' % (args.ncores,)]
 
-    workdir = tempfile.mkdtemp()
+    if args.workdir is None:
+        workdir = tempfile.mkdtemp()
+    else:
+        workdir = args.workdir
+        try:
+            os.makedirs(workdir)
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+
     if not args.disable_cleanup:
         @atexit.register
         def cleanup_workdir():
@@ -56,6 +74,7 @@ def main():
     index_rank = index.metadata('index_rank')
     index_counts = os.path.join(args.hrefpkg, 'index.counts')
     log.info('performing initial classification at %s', index_rank)
+    silently_unlink(classif_db)
     logging_check_call(
         [args.rppr, 'prep_db', '--sqlite', classif_db, '-c', index_refpkg])
     logging_check_call(
