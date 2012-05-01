@@ -25,8 +25,9 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
             begin
               try
                 Data (f x)
-              with
-                | exn -> Exception exn
+              with exn ->
+                Printexc.print_backtrace stderr;
+                Exception exn
             end;
           aux ()
         | None -> Legacy.close_in rd; Legacy.close_out wr
@@ -55,7 +56,7 @@ object (self)
   method progress_received = progressfunc
 end
 
-let premask seq_type ref_align query_list =
+let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
   let base_map = match seq_type with
     | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
     | Alignment.Protein_seq -> Prot_models.prot_map
@@ -87,10 +88,15 @@ let premask seq_type ref_align query_list =
     |> curry Enum.combine (Array.enum ref_mask)
     |> Enum.exists (uncurry (&&))
   in
-  (try
-     let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-     failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
-   with Not_found -> ());
+  let query_list = List.filter
+    (fun (name, seq) ->
+      let overlaps = overlaps_mask seq in
+      if not discard_nonoverlapped && not overlaps then
+        failwith
+          (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." name);
+      overlaps)
+    query_list
+  in
   (* Mask out sites that are either all gap in the reference alignment or
    * all gap in the query alignment. *)
   let mask = Array.map2
@@ -203,7 +209,11 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       query_list, ref_align, n_sites, None
     else begin
       dprint "Pre-masking sequences... ";
-      premask (Model.seq_type model) ref_align query_list
+      premask
+        ~discard_nonoverlapped:(Prefs.discard_nonoverlapped prefs)
+        (Model.seq_type model)
+        ref_align
+        query_list
     end
   in
 
@@ -361,15 +371,13 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
     prefs figs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
-  let n_done = ref 0 in
-  let queries = List.length query_list in
-  let show_query query_name =
-    incr n_done;
-    dprintf "working on %s (%d/%d)...\n" query_name (!n_done) queries;
-    flush_all ()
-  in
+  let show_query = progress_displayer
+    "working on %s (%d/%d)..."
+    (List.length query_list)
+  and n_done = ref 0 in
   let progressfunc msg =
     if String.rcontains_from msg 0 '>' then begin
+      incr n_done;
       let query_name = String.sub msg 1 ((String.length msg) - 1) in
       show_query query_name
     end else
@@ -665,13 +673,14 @@ let run_file prefs query_fname =
 
   (* string map which represents the elements of the reference package; these
    * may be actually a reference package or specified on the command line. *)
+  let file_path = Refpkg_parse.file_path in
   let rp_strmap =
     List.fold_right
     (* only set if the option string is non empty.
      * override the contents of the reference package. *)
       (fun (k,v) m ->
         if v = "" then m
-        else StringMap.add k (ref_dir_complete^v) m)
+        else StringMap.add k (ref_dir_complete^v |> file_path) m)
       [
         "tree", Prefs.tree_fname prefs;
         "aln_fasta", Prefs.ref_align_fname prefs;
@@ -680,7 +689,9 @@ let run_file prefs query_fname =
       (match Prefs.refpkg_path prefs with
         | "" ->
             StringMap.add "name"
-              (safe_chop_extension (Prefs.ref_align_fname prefs))
+              (Prefs.ref_align_fname prefs
+               |> safe_chop_extension
+               |> Refpkg_parse.metadata)
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
@@ -690,7 +701,12 @@ let run_file prefs query_fname =
     else
       failwith "the reference package provided does not contain a tree";
 
-  let ref_tree = StringMap.find "tree" rp_strmap |> Newick_gtree.of_file in
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
+  let ref_tree = Refpkg.get_ref_tree rp in
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_map = Newick_gtree.leaf_label_map ref_tree in
   let ref_name_set = IntMap.values ref_name_map |> StringSet.of_enum in
@@ -711,17 +727,15 @@ let run_file prefs query_fname =
     StringSet.empty
     (Option.default [||] ref_align)
   in ();
-  let rp = Refpkg.of_strmap
-    ?ref_align
-    ~ref_tree
-    ~ignore_version:(Prefs.refpkg_path prefs = "")
-    prefs
-    rp_strmap
+  let rp = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
   and query_bname = Filename.basename (Filename.chop_extension query_fname)
   and from_input_alignment = Option.is_some ref_align in
+  let jplace_name = match Prefs.out_file prefs with
+    | "" -> ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+    | x -> x in
   let placerun_cb pr =
     Placerun_io.to_json_file
-      ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+      jplace_name
       pr
   and query_list = Array.to_list query_align
   and n_groups = Prefs.groups prefs in

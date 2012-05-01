@@ -288,10 +288,12 @@ module Classifier = struct
       |> Tax_id.TaxIdSet.enum
       |> Array.of_enum
       |> Preclassifier.make Bigarray.int word_length
-    in
+    and rp_name = Refpkg.get_name rp in
     begin match map_file with
-    | Some (_, false) -> ()
+    | Some (_, false) ->
+      dprintf "using stored reference counts for refpkg %s.\n" rp_name
     | _ ->
+      dprintf "counting sequences from refpkg %s.\n" rp_name;
       (* a map from reference sequence names to chosen-rank tax_ids *)
       let seq_tax_ids = IntMap.find rank_idx rank_tax_map
       and filter m (k, seq) =
@@ -299,8 +301,14 @@ module Classifier = struct
         | Some v -> Some (v, Alignment.ungap seq)
         | None -> None
       in
-      Option.default (Refpkg.get_aln_fasta rp) ref_aln
-        |> Array.enum
+      let ref_aln = Option.default (Refpkg.get_aln_fasta rp) ref_aln in
+      let progress_fn =
+        progress_displayer
+          "counting reference sequence %s (%d/%d)..."
+          (Array.length ref_aln)
+      in
+      Array.enum ref_aln
+        |> Enum.map (tap (fst |- progress_fn))
         |> Enum.filter_map (filter seq_tax_ids)
         |> Enum.iter (uncurry (Preclassifier.add_seq preclassif))
     end;

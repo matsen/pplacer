@@ -12,6 +12,7 @@ type prefs =
     stats_fname : string ref;
     ref_dir : string ref;
     out_dir : string ref;
+    out_file : string ref;
     (* tree calc *)
     start_pend : float ref;
     max_pend : float ref;
@@ -55,6 +56,7 @@ type prefs =
     mrca_class : bool ref;
     groups : int ref;
     always_refine : bool ref;
+    discard_nonoverlapped : bool ref;
   }
 
 
@@ -68,6 +70,7 @@ let defaults () =
     stats_fname = ref "";
     ref_dir = ref ""; (* empty is the correct default; it gets some special handling *)
     out_dir = ref ".";
+    out_file = ref "";
     (* tree calc *)
     start_pend = ref 0.1;
     max_pend = ref 2.;
@@ -111,6 +114,7 @@ let defaults () =
     mrca_class = ref false;
     groups = ref 0;
     always_refine = ref false;
+    discard_nonoverlapped = ref false;
   }
 
 
@@ -151,6 +155,7 @@ let write_masked      p = !(p.write_masked)
 let only_write_best   p = !(p.only_write_best)
 let ref_dir           p = !(p.ref_dir)
 let out_dir           p = !(p.out_dir)
+let out_file          p = !(p.out_file)
 let pretend           p = !(p.pretend)
 let check_like        p = !(p.check_like)
 let children          p = !(p.children)
@@ -166,6 +171,7 @@ let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
 let groups            p = !(p.groups)
 let always_refine     p = !(p.always_refine)
+let discard_nonoverlapped p = !(p.discard_nonoverlapped)
 
 
 (* arguments and preferences *)
@@ -242,6 +248,8 @@ spec_with_default "--verbosity" (fun o -> Arg.Set_int o) Ppatteries.verbosity
 "Set verbosity level. 0 is silent, and 2 is quite a lot. Default is %d.";
 "--out-dir", Arg.Set_string prefs.out_dir,
 "Specify the directory to write place files to.";
+"-o", Arg.Set_string prefs.out_file,
+"Specify the output file name";
 "--pretend", Arg.Set prefs.pretend,
 "Only check out the files then report. Do not run the analysis.";
 "--check-like", Arg.Set prefs.check_like,
@@ -270,6 +278,8 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Split query alignment into the specified number of groups.";
 "--always-refine", Arg.Set prefs.always_refine,
 "Always refine the model before placing.";
+"--discard-nonoverlapped", Arg.Set prefs.discard_nonoverlapped,
+"When pre-masking, silently discard sequences which don't overlap the mask.";
 "--version", Arg.Set prefs.version,
 "Write out the version number and exit.";
   ]

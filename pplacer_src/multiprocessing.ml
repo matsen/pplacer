@@ -127,18 +127,17 @@ class virtual ['a] process child_func =
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
           (range 256)
       end;
-      (* Make writing to stdout or stderr instead write to the progress
-       * channel. *)
+      (* Make writing to stdout instead write to the progress channel. *)
       Unix.dup2 progress_wr Unix.stdout;
-      Unix.dup2 progress_wr Unix.stderr;
       Unix.close progress_wr;
       let rd = Unix.in_channel_of_descr child_rd
       and wr = Unix.out_channel_of_descr parent_wr in
       begin
         try
           child_func rd wr
-        with
-          | exn -> marshal wr (Fatal_exception exn)
+        with exn ->
+          Printexc.print_backtrace stderr;
+          marshal wr (Fatal_exception exn)
       end;
       (* The child should only execute its function and not return control to
        * where the parent spawned it. *)
@@ -231,8 +230,9 @@ class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
             begin
               try
                 Data (f x)
-              with
-                | exn -> Exception exn
+              with exn ->
+                Printexc.print_backtrace stderr;
+                Exception exn
             end;
           aux ()
         | None -> close_in rd; close_out wr
@@ -322,8 +322,9 @@ class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
     let res =
       try
         aux initial
-      with
-        | exn -> Exception exn
+      with exn ->
+        Printexc.print_backtrace stderr;
+        Exception exn
     in
     marshal wr res;
     close_in rd;
