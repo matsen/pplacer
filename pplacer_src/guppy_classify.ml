@@ -622,7 +622,7 @@ object (self)
                  StringMap.find tax_name name_map
                with Not_found ->
                  failwith (tax_name ^ " not found in refpkg's taxonomy")),
-              boot)
+              boot /. 100.)
             taxonomy
         | _ -> failwith (Printf.sprintf "malformed line: %S" line)
       in
