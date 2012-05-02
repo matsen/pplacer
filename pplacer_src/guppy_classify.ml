@@ -201,6 +201,9 @@ object (self)
     (Plain (false, "Don't pre-mask the sequences for NBC classification."))
   val nbc_counts = flag "--nbc-counts"
     (Needs_argument ("", "If specified, read/write counts for NBC classification to the given file."))
+  val nbc_as_rdp = flag "--nbc-as-rdp"
+    (Plain (false, "Do NBC classification like RDP: find the lineage of the full-sequence classification, \
+                    then bootstrap to find support for it."))
 
   val rdp_results = flag "--rdp-results"
     (Needs_argument ("rdp results", "The RDP results file for use with the RDP classifier. \
@@ -230,6 +233,7 @@ object (self)
     int_flag children;
     toggle_flag no_pre_mask;
     string_flag nbc_counts;
+    toggle_flag nbc_as_rdp;
     delimited_list_flag rdp_results;
     delimited_list_flag blast_results;
  ]
@@ -398,9 +402,23 @@ object (self)
             failwith (Printf.sprintf "invalid rank %s" nbc_rank)
       in
       let classif, query_list = self#nbc_classifier rp rank_idx infile in
-      let bootstrap = Alignment.ungap
-        |- Nbc.Classifier.bootstrap classif
-        |- partition_by_rank td
+      let rdp_filter =
+        if fv nbc_as_rdp then fun seq ->
+          let on_lineage = Nbc.Classifier.classify classif seq
+            |> Tax_taxonomy.get_lineage td
+            |> flip List.mem
+          in
+          TIAMR.filteri (fun tid _ -> on_lineage tid)
+            |- junction TIAMR.is_empty (const None) some
+            |> const
+            |> IntMap.filter_map
+        else const identity
+      in
+      let bootstrap seq =
+        Alignment.ungap seq
+          |> Nbc.Classifier.bootstrap classif
+          |> partition_by_rank td
+          |> rdp_filter seq
       and pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, 1);"
       and pc_st = Sqlite3.prepare db
