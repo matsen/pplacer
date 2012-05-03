@@ -404,7 +404,7 @@ object (self)
       let classif, query_list = self#nbc_classifier rp rank_idx infile in
       let rdp_filter =
         if fv nbc_as_rdp then fun seq ->
-          let on_lineage = Nbc.Classifier.classify classif seq
+          let on_lineage = Nbc.Classifier.classify classif ~like_rdp:true seq
             |> Tax_taxonomy.get_lineage td
             |> flip List.mem
           in

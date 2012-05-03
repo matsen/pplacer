@@ -200,27 +200,30 @@ module Classifier = struct
     Gsl_vector.max_index dest |> Array.get cf.pc.tax_ids
 
   (* fill a vector with counts for a sequence *)
-  let count_seq cf seq =
+  let count_seq cf ?(like_rdp = false) seq =
     let open Preclassifier in
     let vec = BA1.create BA.int16_unsigned BA.c_layout cf.pc.n_words in
+    let counter_fn =
+      if like_rdp then
+        fun i -> vec.{i} <- 1
+      else
+        fun i -> vec.{i} <- succ vec.{i}
+    in
     BA1.fill vec 0;
-    gen_count_by_seq
-      cf.pc.word_length
-      (fun i -> vec.{i} <- succ vec.{i})
-      seq;
+    gen_count_by_seq cf.pc.word_length counter_fn seq;
     vec
 
   (* classify a sequence, returning a tax_id *)
-  let classify cf seq =
-    count_seq cf seq |> classify_vec cf
+  let classify cf ?like_rdp seq =
+    count_seq cf ?like_rdp seq |> classify_vec cf
 
   (* bootstrap a sequence, returning a map from tax_ids to a float on the range
    * (0, 1] representing the percentage of bootstrappings done that produced a
    * particular tax_id. *)
-  let bootstrap cf seq =
+  let bootstrap cf ?like_rdp seq =
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
-    let seq_word_counts = count_seq cf seq in
+    let seq_word_counts = count_seq cf ?like_rdp seq in
     let boot_rows = BA2.dim1 cf.boot_matrix in
     let n_boot = boot_rows / extra_boot_factor in
     if n_boot = 0 then
