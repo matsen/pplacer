@@ -5,8 +5,12 @@ open Guppy_cmdobjs
 let gap_regexp = Str.regexp "-"
 let tax_name_regexp = Str.regexp "[ ;()]"
 
-let fix_tax_name name =
-  Str.global_replace tax_name_regexp "_" name
+let get_mothur_name td tid =
+  let name = Tax_taxonomy.get_tax_name td tid in
+  Printf.sprintf
+    "%s_%s"
+    (Tax_id.to_string tid)
+    (Str.global_replace tax_name_regexp "_" name)
 
 class cmd () =
 object (self)
@@ -66,8 +70,7 @@ object (self)
           Printf.fprintf out_ch "%s\t" name;
           List.iter
             (fst
-             |- Tax_taxonomy.get_tax_name tax
-             |- fix_tax_name
+             |- get_mothur_name tax
              |- Printf.fprintf out_ch "%s;")
             (List.rev tax_pairs);
           Printf.fprintf out_ch "\n";

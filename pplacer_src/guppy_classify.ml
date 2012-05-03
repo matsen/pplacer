@@ -574,8 +574,8 @@ object (self)
 
     and default_filter_rdp m = filter_best (fv bootstrap_cutoff) m
     and perform_rdp () =
-      let name_map = Tax_id.TaxIdMap.enum td.Tax_taxonomy.tax_name_map
-        |> Enum.map (swap |- first Guppy_to_rdp.fix_tax_name)
+      let name_map = Tax_id.TaxIdMap.keys td.Tax_taxonomy.tax_name_map
+        |> Enum.map (Guppy_to_rdp.get_mothur_name td &&& identity)
         |> StringMap.of_enum
       and pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, 1.);"
