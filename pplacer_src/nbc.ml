@@ -86,6 +86,7 @@ module Preclassifier = struct
     base: base;
     freq_table: (int, 'a, BA.c_layout) BA2.t;
     taxid_counts: int array;
+    word_counts: int array;
     seq_count: int ref;
   }
 
@@ -101,9 +102,11 @@ module Preclassifier = struct
     and n_taxids = Array.length tax_ids in
     let freq_table = BA2.create kind BA.c_layout n_taxids n_words
     and taxid_counts = Array.make n_taxids 0
+    and word_counts = Array.make n_words 0
     and seq_count = ref 0 in
     BA2.fill freq_table 0;
-    {base = {word_length; n_words; tax_ids}; taxid_counts; freq_table; seq_count}
+    {base = {word_length; n_words; tax_ids}; word_counts; taxid_counts;
+     freq_table; seq_count}
 
   (* find the index of a tax_id in the tax_ids array *)
   let tax_id_idx c tid =
@@ -113,26 +116,29 @@ module Preclassifier = struct
 
   (* add a sequence to the counts for a particular tax_id *)
   let add_seq c tax_id seq =
-    let i = tax_id_idx c tax_id in
+    let i = tax_id_idx c tax_id
+    and word_seen = Array.make c.base.n_words false in
     incr c.seq_count;
     c.taxid_counts.(i) <- c.taxid_counts.(i) + 1;
     gen_count_by_seq
       c.base.word_length
-      (fun j -> c.freq_table.{i, j} <- succ c.freq_table.{i, j})
-      seq
+      (fun j -> word_seen.(j) <- true)
+      seq;
+    Array.iteri
+      (fun j seen ->
+        if seen then begin
+          c.freq_table.{i, j} <- succ c.freq_table.{i, j};
+          c.word_counts.(j) <- succ c.word_counts.(j)
+        end)
+      word_seen
 
   let to_taxid_word_counts c dest =
-    let n = float_of_int (succ !(c.seq_count))
-    and n_taxids = Array.length c.base.tax_ids in
+    let n = float_of_int (succ !(c.seq_count)) in
     let prior_counts = Array.init
       c.base.n_words
       (fun j ->
         (* w_j is the prior for seeing word j *)
-        let w_j = 0 --^ n_taxids
-          |> Enum.map (fun i -> c.freq_table.{i, j})
-          |> Enum.sum
-          |> float_of_int
-        in
+        let w_j = float_of_int c.word_counts.(j) in
         (* (n(w_j) + 0.5) / (N + 1) *)
         (w_j +. 0.5) /. n)
     in
