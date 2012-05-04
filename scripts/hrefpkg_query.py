@@ -44,6 +44,7 @@ def main():
     parser.add_argument('--workdir')
     parser.add_argument('--disable-cleanup', default=False, action='store_true')
     parser.add_argument('--use-mpi', default=False, action='store_true')
+    parser.add_argument('--cmscores', type=argparse.FileType('w'))
 
     args = parser.parse_args()
 
@@ -117,6 +118,19 @@ def main():
     for fobj in bin_outputs.itervalues():
         fobj.close()
 
+    # This is a bit nasty but I think it's Good Enough. We can change it if we
+    # encounter problems or need to be more portable.
+    if args.cmscores is not None:
+        cmscores_proc = subprocess.Popen(
+            ['romp', 'cmscores', '/dev/stdin'],
+            stdin=subprocess.PIPE, stdout=args.cmscores)
+        cmscores_args = [
+            '--alignment-method', 'INFERNAL',
+            '--stdout', '/dev/fd/%d' % (cmscores_proc.stdin.fileno(),)]
+    else:
+        cmscores_proc = None
+        cmscores_args = []
+
     for e, bin in enumerate(all_bins):
         log.info('classifying bin %s (%d/%d; %d seqs)',
                  bin, e + 1, len(all_bins), bin_counts[bin])
@@ -126,13 +140,16 @@ def main():
         refpkg = os.path.join(args.hrefpkg, refpkg_map[bin])
         logging_check_call(
             [args.refpkg_align, 'align', '--output-format', 'stockholm',
-             refpkg, unaligned, aligned] + mpi_args)
+             refpkg, unaligned, aligned] + mpi_args + cmscores_args)
         logging_check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
              '-j', str(args.ncores), aligned, '-o', placed])
         logging_check_call(
             [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed,
              '-j', str(args.ncores)])
+
+    if cmscores_proc is not None:
+        cmscores_proc.communicate()
 
     log.info('cleaning up `multiclass` table')
     conn.rollback()
