@@ -36,6 +36,7 @@ def main():
     parser.add_argument('query_seqs')
     parser.add_argument('classification_db')
     parser.add_argument('-j', '--ncores', default=1, type=int)
+    parser.add_argument('-r', '--classification-rank')
     parser.add_argument('--pplacer', default='pplacer')
     parser.add_argument('--guppy', default='guppy')
     parser.add_argument('--rppr', default='rppr')
@@ -72,20 +73,22 @@ def main():
     index_refpkg = os.path.join(args.hrefpkg, 'index.refpkg')
     index = Refpkg(index_refpkg)
     index_rank = index.metadata('index_rank')
-    index_counts = os.path.join(args.hrefpkg, 'index.counts')
-    log.info('performing initial classification at %s', index_rank)
+    classif_rank = args.classification_rank or index_rank
+    index_counts = os.path.join(args.hrefpkg, 'index-%s.counts' % (classif_rank,))
+    log.info('performing initial classification at %s', classif_rank)
     silently_unlink(classif_db)
     logging_check_call(
         [args.rppr, 'prep_db', '--sqlite', classif_db, '-c', index_refpkg])
     logging_check_call(
         [args.guppy, 'classify', '--sqlite', classif_db, '-c', index_refpkg,
-         '--classifier', 'nbc', '--nbc-rank', index_rank, '--no-pre-mask',
+         '--classifier', 'nbc', '--nbc-rank', classif_rank, '--no-pre-mask',
          '--nbc-sequences', args.query_seqs, '--nbc-counts', index_counts,
          '-j', str(args.ncores)])
 
     with open(os.path.join(args.hrefpkg, 'index.csv'), 'rU') as fobj:
         refpkg_map = dict(csv.reader(fobj))
 
+    log.info('determining bins at %s', index_rank)
     conn = sqlite3.connect(classif_db)
     curs = conn.cursor()
     curs.execute("""
