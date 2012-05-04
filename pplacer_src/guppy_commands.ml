@@ -18,6 +18,7 @@ let command_list () =
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
       "error", (fun () -> new Guppy_error.cmd ());
       "fpd", (fun () -> new Guppy_fpd.cmd ());
+      "unifrac", (fun () -> new Guppy_unifrac.cmd ());
     ];
 
     "classification", [
@@ -38,6 +39,9 @@ let command_list () =
       "mft", (fun () -> new Guppy_mft.cmd ());
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());
+      "trim", (fun () -> new Guppy_trim.cmd ());
       "ograph", (fun () -> new Guppy_ograph.cmd ());
+      "check", (fun () -> new Guppy_check.cmd ());
+      "rarefy", (fun () -> new Guppy_rarefy.cmd ());
     ];
   ]

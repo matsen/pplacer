@@ -29,17 +29,7 @@ object (self)
         | "" -> identity
         | transform ->
           List.map (Mass_map.transform_of_str transform |> Placerun.transform))
-    |> if not (fv unitize) then identity else
-        List.map
-          (fun pr ->
-            let tot_mass = Placerun.get_pqueries pr
-              |> Pquery.total_multiplicity
-            in
-            Placerun.get_pqueries pr
-              |> List.map
-                  (fun pq ->
-                    Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
-              |> Placerun.set_pqueries pr)
+    |> if not (fv unitize) then identity else List.map Placerun.unitize
     in
     match self#out_file_or_dir () with
       | Directory (dir, prefix) ->

@@ -156,10 +156,20 @@ object(self)
     | None -> ()
     | Some rp -> Refpkg.check_tree_approx rp name t
 
+  method private check_rpo_tree_subset name t =
+    match self#get_rpo with
+      | None -> ()
+      | Some rp -> Refpkg.check_tree_subset rp name t
+
+  method private check_placerun pr =
+    (if Placerun.get_transm_opt pr |> Option.is_some
+     then self#check_rpo_tree_subset
+     else self#check_rpo_tree)
+      (Placerun.get_name pr)
+      (Placerun.get_ref_tree pr)
+
   method private check_placerunl =
-    List.iter
-      (fun pr ->
-        self#check_rpo_tree (Placerun.get_name pr) (Placerun.get_ref_tree pr))
+    List.iter self#check_placerun
 
   (* This checks to make sure that the placerun given has a reference tree that
    * matches the reference package tree, if it exists. *)
@@ -168,9 +178,14 @@ object(self)
     match self#get_rpo with
       | None -> (None, alt_tree)
       | Some rp ->
-        Refpkg.pr_check_tree_approx rp pr;
-        if Refpkg.tax_equipped rp then (Some rp, Refpkg.get_tax_ref_tree rp)
-        else (None, alt_tree)
+        self#check_placerun pr;
+        if Refpkg.tax_equipped rp then begin
+          Some rp,
+          let alt_gt = Placerun.get_transm_opt pr
+            |> Option.map (const pr.Placerun.ref_tree)
+          in
+          Refpkg.get_tax_ref_tree ?alt_gt rp
+        end else (None, alt_tree)
 
   method private get_decor_ref_tree =
     let rp = self#get_rp in
@@ -521,9 +536,14 @@ object (self)
     (Formatted (1., "Specify the exponent for scaling between weighted and unweighted splitification. default: %g"))
   val rep_edges = flag "--rep-edges"
     (Needs_argument ("", "Cluster neighboring edges that have splitified euclidean distance less than the argument."))
+  val epsilon = flag "--epsilon"
+    (Formatted (1e-5, "The epsilon to use to determine if a split matrix's column \
+                       is constant for filtering. default: %g"))
+
   method specl = [
     float_flag kappa;
     float_flag rep_edges;
+    float_flag epsilon;
   ]
 
   method private splitify_transform =
@@ -551,6 +571,11 @@ object (self)
          splitify_fn
          (below_mass_map (Mass_map.By_edge.of_pre preim) t))
 
+  method private filter_fal orig_length fal edges =
+    List.map (Array.filteri (fun i _ -> IntSet.mem i edges)) fal,
+    Enum.combine (Enum.range 0, IntSet.enum edges) |> IntMap.of_enum,
+    orig_length
+
   method private filter_rep_edges prl fal =
     let orig_length = Array.length (List.hd fal) in
     match fvo rep_edges with
@@ -562,10 +587,24 @@ object (self)
       orig_length
     | Some max_edge_d ->
       let gt = Mokaphy_common.list_get_same_tree prl in
-      let edges = find_rep_edges max_edge_d fal gt in
-      List.map (Array.filteri (fun i _ -> IntSet.mem i edges)) fal,
-      Enum.combine (Enum.range 0, IntSet.enum edges) |> IntMap.of_enum,
-      orig_length
+      find_rep_edges max_edge_d fal gt
+      |> self#filter_fal orig_length fal
+
+  method private filter_constant_columns fal =
+    let width = Array.length (List.hd fal) in
+    let minarr = Array.make width infinity
+    and maxarr = Array.make width neg_infinity
+    and epsilon = fv epsilon in
+    List.iter
+      (fun arr ->
+        Array.modifyi (Array.get arr |- min) minarr;
+        Array.modifyi (Array.get arr |- max) maxarr)
+      fal;
+    0 --^ width
+      |> Enum.filter
+          (fun i -> not (approx_equal ~epsilon minarr.(i) maxarr.(i)))
+      |> IntSet.of_enum
+      |> self#filter_fal width fal
 
 end
 

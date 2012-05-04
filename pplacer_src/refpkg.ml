@@ -167,20 +167,30 @@ let of_path ?ref_tree path =
 
 (* *** ACCESSORIES *** *)
 
-(* mrca tax decor, that is *)
-let get_tax_decor_map rp =
-  let td = get_taxonomy rp in
+let tax_decor_map_of_mrcam td mrcam =
   IntMap.filter_map
     (fun _ -> function
       | Tax_id.NoTax -> None
       | ti -> Some (Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)))
-    (get_mrcam rp)
+    mrcam
+
+let tax_ref_tree_of_gtree td mrcam gt =
+  Decor_gtree.add_decor_by_map
+    (Decor_gtree.of_newick_gtree gt)
+    (IntMap.map (fun x -> [x]) (tax_decor_map_of_mrcam td mrcam))
+
+(* mrca tax decor, that is *)
+let get_tax_decor_map rp =
+  tax_decor_map_of_mrcam (get_taxonomy rp) (get_mrcam rp)
 
 (* tax ref tree is the usual ref tree with but with taxonomic annotation *)
-let get_tax_ref_tree rp =
-  Decor_gtree.add_decor_by_map
-    (Decor_gtree.of_newick_gtree (get_ref_tree rp))
-    (IntMap.map (fun x -> [x]) (get_tax_decor_map rp))
+let get_tax_ref_tree ?alt_gt rp =
+  let td = get_taxonomy rp in
+  let mrcam, gt = match alt_gt with
+    | Some gt -> Tax_map.mrcam_of_data (get_seqinfom rp) td gt, gt
+    | None -> get_mrcam rp, get_ref_tree rp
+  in
+  tax_ref_tree_of_gtree td mrcam gt
 
 (* if the rp is equipped with a taxonomy *)
 let tax_equipped rp =
@@ -262,3 +272,18 @@ let pr_check_tree_approx rp pr =
     rp
     (pr.Placerun.name^" reference tree")
     (Placerun.get_ref_tree pr)
+
+let check_tree_subset rp name gt =
+  let leaves = Newick_gtree.leaf_label_map
+    |- IntMap.values
+    |- StringSet.of_enum
+  in
+  let ref_leaves = get_ref_tree rp |> leaves
+  and subset_leaves = leaves gt in
+  let non_overlapped = StringSet.diff subset_leaves ref_leaves in
+  if not (StringSet.is_empty non_overlapped) then
+    failwith
+      (Printf.sprintf "%s is not a subset of %s. mismatched leaves include: %s"
+         name
+         (get_name rp)
+         (StringSet.elements non_overlapped |> String.join ", " ))

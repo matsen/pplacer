@@ -50,16 +50,14 @@ object (self)
     let weighting, criterion = self#mass_opts
     and scale = fv scale
     and write_n = fv write_n
-    and refpkgo = self#get_rpo
+    and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
-    let prt = Mokaphy_common.list_get_same_tree prl in
-    let t = match refpkgo with
-    | None -> Decor_gtree.of_newick_gtree prt
-    | Some rp -> Refpkg.get_tax_ref_tree rp
-    in
-    let data, reduction_map, orig_length =
+    let data, rep_reduction_map, rep_orig_length =
       List.map (self#splitify_placerun weighting criterion) prl
         |> self#filter_rep_edges prl
+    in
+    let data, const_reduction_map, const_orig_length =
+      self#filter_constant_columns data
     in
     let n_unique_rows = List.length (List.sort_unique compare data) in
     if n_unique_rows <= 2 then
@@ -81,8 +79,11 @@ object (self)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl) in
-    let full_combol =
-      List.map (second (expand orig_length reduction_map)) combol
+    let full_combol = List.map
+      (second
+         (expand const_orig_length const_reduction_map
+          |- expand rep_orig_length rep_reduction_map))
+      combol
     in
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")
