@@ -15,6 +15,7 @@
  * Closed GH-247: Added `guppy unifrac`.
  * Closed GH-249: Added `guppy rarefy`.
  * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
+ * Closed GH-253: Added `--no-collapse` to `guppy diplac`.
 
 
 1.1.alpha12
