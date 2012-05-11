@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import collections
 import subprocess
+import itertools
 import argparse
 import tempfile
 import logging
@@ -27,6 +28,8 @@ def silently_unlink(path):
         if e.errno != errno.ENOENT:
             raise
 
+input_suffixes = {'align-each': 'fasta', 'merge-each': 'sto', 'none': 'sto'}
+
 def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -41,10 +44,13 @@ def main():
     parser.add_argument('--guppy', default='guppy')
     parser.add_argument('--rppr', default='rppr')
     parser.add_argument('--refpkg-align', default='refpkg_align.py')
+    parser.add_argument('--cmalign', default='cmalign')
     parser.add_argument('--workdir')
     parser.add_argument('--disable-cleanup', default=False, action='store_true')
     parser.add_argument('--use-mpi', default=False, action='store_true')
     parser.add_argument('--cmscores', type=argparse.FileType('w'))
+    parser.add_argument('--alignment', choices=['align-each', 'merge-each', 'none'],
+                        default='align-each')
 
     args = parser.parse_args()
 
@@ -105,15 +111,49 @@ def main():
     log.debug('bins: %r', all_bins)
     bin_outputs = {}
     bin_counts = collections.Counter()
-    for bin in all_bins:
-        bin_outputs[bin] = open(os.path.join(workdir, bin + '.fasta'), 'w')
 
-    for seq in SeqIO.parse(args.query_seqs, 'fasta'):
-        bin = seq_bins.get(seq.id)
-        if bin is None or bin not in bin_outputs:
-            continue
-        SeqIO.write([seq], bin_outputs[bin], 'fasta')
-        bin_counts[bin] += 1
+    input_suffix = input_suffixes[args.alignment]
+    def binfile(bin):
+        return os.path.join(workdir, '%s.%s' % (bin, input_suffix))
+
+    for bin in all_bins:
+        bin_outputs[bin] = open(binfile(bin), 'w')
+
+    if args.alignment == 'align-each':
+        for seq in SeqIO.parse(args.query_seqs, 'fasta'):
+            bin = seq_bins.get(seq.id)
+            if bin is None or bin not in bin_outputs:
+                continue
+            SeqIO.write([seq], bin_outputs[bin], 'fasta')
+            bin_counts[bin] += 1
+
+    # Gross ad-hoc stockholm parser. This is only necessary because biopython
+    # can't handle the metadata that cmalign adds to the file.
+    else:
+        def write_all(lines):
+            for line in lines:
+                for fobj in bin_outputs.itervalues():
+                    fobj.write(line)
+
+        # Copy the stockholm header,
+        write_all(itertools.islice(args.query_seqs, 3))
+
+        # then partition the sequences,
+        for line in args.query_seqs:
+            # (stopping if we reach the metadata at the end (hopefully it's at
+            # the end))
+            if line.startswith('#=GC'):
+                break
+            id, seq = line.split()
+            bin = seq_bins.get(id)
+            if bin is None or bin not in bin_outputs:
+                continue
+            bin_outputs[bin].write(line)
+            bin_counts[bin] += 1
+
+        # and then copy the footer.
+        write_all([line])
+        write_all(args.query_seqs)
 
     for fobj in bin_outputs.itervalues():
         fobj.close()
@@ -127,20 +167,35 @@ def main():
         cmscores_args = [
             '--alignment-method', 'INFERNAL',
             '--stdout', '/dev/fd/%d' % (cmscores_proc.stdin.fileno(),)]
+        cmscores_stdout = cmscores_proc.stdout
     else:
         cmscores_proc = None
         cmscores_args = []
+        cmscores_stdout = open(os.devnull, 'w')
 
     for e, bin in enumerate(all_bins):
         log.info('classifying bin %s (%d/%d; %d seqs)',
                  bin, e + 1, len(all_bins), bin_counts[bin])
-        unaligned = os.path.join(workdir, bin + '.fasta')
+        input = binfile(bin)
         aligned = os.path.join(workdir, bin + '-aligned.sto')
         placed = os.path.join(workdir, bin + '.jplace')
         refpkg = os.path.join(args.hrefpkg, refpkg_map[bin])
-        logging_check_call(
-            [args.refpkg_align, 'align', '--output-format', 'stockholm',
-             refpkg, unaligned, aligned] + mpi_args + cmscores_args)
+
+        if args.alignment == 'align-each':
+            logging_check_call(
+                [args.refpkg_align, 'align', '--output-format', 'stockholm',
+                 refpkg, input, aligned] + mpi_args + cmscores_args)
+        elif args.alignment == 'merge-each':
+            refpkg_obj = Refpkg(refpkg)
+            logging_check_call(
+                [args.cmalign, '--merge', '-o', aligned,
+                 refpkg_obj.resource_path('profile'),
+                 refpkg_obj.resource_path('aln_sto'),
+                 input],
+                stdout=cmscores_stdout)
+        elif args.alignment == 'none':
+            raise NotImplementedError('none')
+
         logging_check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
              '-j', str(args.ncores), aligned, '-o', placed])
