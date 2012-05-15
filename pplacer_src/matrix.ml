@@ -22,3 +22,11 @@ let ppr ff m =
     if i < last then Format.fprintf ff ";@ "
   done;
   Format.fprintf ff "}@]"
+
+let rect_transpose m =
+  let m' = create (dim2 m) (dim1 m) in
+  modifyij
+    (fun i j _ -> get m j i)
+    m';
+  m'
+
