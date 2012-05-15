@@ -44,5 +44,6 @@ let command_list () =
       "ograph", (fun () -> new Guppy_ograph.cmd ());
       "check", (fun () -> new Guppy_check.cmd ());
       "rarefy", (fun () -> new Guppy_rarefy.cmd ());
+      "to_csv", (fun () -> new Guppy_to_csv.cmd ());
     ];
   ]
