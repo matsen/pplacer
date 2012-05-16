@@ -1,6 +1,13 @@
 1.1.alpha13
 ===========
 
+ * Fixed a bug where pplacer would sometimes fail abruptly with a Child_error
+   of EBADF on close(2).
+
+
+1.1.alpha13rc1
+==============
+
  * Closed GH-216: Added `guppy trim` and `guppy check`.
  * Closed GH-225: Added `rppr vorotree`.
  * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
