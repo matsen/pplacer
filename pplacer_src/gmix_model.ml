@@ -249,6 +249,17 @@ struct
       ~n_states:(n_states model)
       ~n_rates:(n_rates model)
 
+  let mmap_glv_arrays model fd shared n_arrays n_glvs ~n_sites =
+    gen_mmap_glv_arrays
+      fd
+      shared
+      n_arrays
+      n_glvs
+      [|n_sites|]
+      [|n_rates model; n_sites; n_states model|]
+      (fun ega aga ->
+        {Glv.e = BA.array1_of_genarray ega; Glv.a = BA.array3_of_genarray aga})
+
   (* Make a glv out of a list of likelihood vectors. *)
   let lv_arr_to_glv model lv_arr =
     assert(lv_arr <> [||]);

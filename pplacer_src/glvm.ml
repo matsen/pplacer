@@ -38,6 +38,8 @@ sig
   end
 
   val make_glv: t -> n_sites:int -> Glv.t
+  val mmap_glv_arrays:
+    t -> Unix.file_descr -> bool -> int -> int -> n_sites:int -> Glv.t array array
   val lv_arr_to_glv: t -> Gsl_vector.vector array -> Glv.t
   val log_like3: t -> Gsl_vector.vector -> Glv.t -> Glv.t -> Glv.t -> float
   val site_log_like_arr3: t -> Glv.t -> Glv.t -> Glv.t -> float array

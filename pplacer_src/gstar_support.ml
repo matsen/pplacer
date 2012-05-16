@@ -4,6 +4,7 @@ module BA = Bigarray
 module BA1 = BA.Array1
 module BA2 = BA.Array2
 module BA3 = BA.Array3
+module GA = BA.Genarray
 
 let log_of_2 = log 2.
 
@@ -82,3 +83,19 @@ let seqtype_and_trans_statd_of_info
       else
         model_statd))
 
+let gen_mmap_glv_arrays fd shared n_arrays n_glvs eba_dims aba_dims glv_cb =
+  let dims = [|n_arrays; n_glvs|] in
+  let aba = Array.append dims aba_dims
+    |> GA.map_file fd BA.float64 BA.c_layout shared
+  in
+  let pos = GA.dims aba |> Array.enum |> Enum.fold ( * ) 8 |> Int64.of_int in
+  let eba = Array.append dims eba_dims
+    |> GA.map_file fd ~pos BA.int BA.c_layout shared
+  in
+  0 --^ n_arrays
+  |> Enum.map (fun i ->
+    0 --^ n_glvs
+    |> Enum.map (fun j ->
+      glv_cb (GA.slice_left eba [|i; j|]) (GA.slice_left aba [|i; j|]))
+    |> Array.of_enum)
+  |> Array.of_enum

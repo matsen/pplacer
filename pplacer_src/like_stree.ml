@@ -29,6 +29,15 @@ struct
       ~n_glvs:(1 + Gtree.n_edges tree)
       ~n_sites
 
+  let mmap_glv_arrays_for model fd shared tree n_arrays n_sites =
+    Model.mmap_glv_arrays
+      model
+      fd
+      shared
+      n_arrays
+      (1 + Gtree.n_edges tree)
+      ~n_sites
+
   let calc_distal_and_evolv_dist model tree like_aln_map
       ~distal_glv_arr ~evolv_dist_glv_arr =
     (* calc returns the evolv_dist for each subtree in a list *)

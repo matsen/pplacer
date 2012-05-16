@@ -264,9 +264,17 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   (* calculate like on ref tree *)
   dprint "Allocating memory for internal nodes... ";
   (* allocate our memory *)
-  let darr = Like_stree.glv_arr_for model ref_tree n_sites in
-  let parr = Glv_arr.mimic darr
-  and snodes = Glv_arr.mimic darr
+  let mmap_file = Prefs.mmap_file prefs in
+  let darr, parr, snodes =
+    if mmap_file = "" then
+      let darr = Like_stree.glv_arr_for model ref_tree n_sites in
+      darr, Glv_arr.mimic darr, Glv_arr.mimic darr
+    else
+      let fd = Unix.openfile mmap_file [Unix.O_RDWR; Unix.O_CREAT] 0o666 in
+      let arrays =
+        Like_stree.mmap_glv_arrays_for model fd true ref_tree 3 n_sites
+      in
+      arrays.(0), arrays.(1), arrays.(2)
   in
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   dprint "done.\n";
