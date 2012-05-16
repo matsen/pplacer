@@ -34,23 +34,44 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('hrefpkg')
-    parser.add_argument('query_seqs')
-    parser.add_argument('classification_db')
-    parser.add_argument('-j', '--ncores', default=1, type=int)
-    parser.add_argument('-r', '--classification-rank')
-    parser.add_argument('--pplacer', default='pplacer')
-    parser.add_argument('--guppy', default='guppy')
-    parser.add_argument('--rppr', default='rppr')
-    parser.add_argument('--refpkg-align', default='refpkg_align.py')
-    parser.add_argument('--cmalign', default='cmalign')
-    parser.add_argument('--workdir')
-    parser.add_argument('--disable-cleanup', default=False, action='store_true')
-    parser.add_argument('--use-mpi', default=False, action='store_true')
-    parser.add_argument('--cmscores', type=argparse.FileType('w'))
-    parser.add_argument('--alignment', choices=['align-each', 'merge-each', 'none'],
-                        default='align-each')
+    parser = argparse.ArgumentParser(
+        description="Classify query sequences using a hrefpkg.")
+    parser.add_argument('hrefpkg', help="hrefpkg to classify using")
+    parser.add_argument('query_seqs', help="input query sequences")
+    parser.add_argument('classification_db', help="output sqlite database")
+    parser.add_argument('-j', '--ncores', default=1, type=int, metavar='CORES',
+                        help="number of cores to tell commands to use")
+    parser.add_argument('-r', '--classification-rank', metavar='RANK',
+                        help="rank to perform the initial NBC classification at")
+    parser.add_argument('--workdir', metavar='DIR',
+                        help=("directory to write intermediate files to "
+                              "(default: a temporary directory)"))
+    parser.add_argument('--disable-cleanup', default=False, action='store_true',
+                        help="don't remove the work directory as the final step")
+    parser.add_argument('--use-mpi', default=False, action='store_true',
+                        help="run refpkg_align with MPI")
+    parser.add_argument(
+        '--alignment', choices=['align-each', 'merge-each', 'none'], default='align-each',
+        help=("respectively: align each input sequence; subset an input stockholm "
+              "alignment and merge each sequence to a reference alignment; only subset "
+              "an input stockholm alignment (default: align-each)"))
+    parser.add_argument(
+        '--cmscores', type=argparse.FileType('w'), metavar='FILE',
+        help="in align-each mode, write out a file containing the cmalign scores")
+
+    programs = parser.add_argument_group("external binaries")
+    programs.add_argument(
+        '--pplacer', default='pplacer', metavar='PROG', help="pplacer binary to call")
+    programs.add_argument(
+        '--guppy', default='guppy', metavar='PROG', help="guppy binary to call")
+    programs.add_argument(
+        '--rppr', default='rppr', metavar='PROG', help="rppr binary to call")
+    programs.add_argument(
+        '--refpkg-align', default='refpkg_align.py', metavar='PROG',
+        help="refpkg_align binary to call")
+    programs.add_argument(
+        '--cmalign', default='cmalign', metavar='PROG', help="cmalign binary to call")
+
 
     args = parser.parse_args()
 

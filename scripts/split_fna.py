@@ -15,12 +15,17 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('fna', type=argparse.FileType('r'), nargs='?',
-                        default=sys.stdin)
-    parser.add_argument('fasta', type=argparse.FileType('w'), nargs='?',
-                        default=sys.stdout)
-    parser.add_argument('specimen_map', type=argparse.FileType('w'), nargs='?')
+    parser = argparse.ArgumentParser(
+        description="Extract the original sequence names from an FNA file.")
+    parser.add_argument(
+        'fna', type=argparse.FileType('r'), nargs='?', default=sys.stdin,
+        help="input FNA file (default: stdin)")
+    parser.add_argument(
+        'fasta', type=argparse.FileType('w'), nargs='?', default=sys.stdout,
+        help="output FASTA file (default: stdout)")
+    parser.add_argument(
+        'specimen_map', type=argparse.FileType('w'), nargs='?',
+        help="if specified, output specimen map (default: don't write)")
 
     args = parser.parse_args()
 
