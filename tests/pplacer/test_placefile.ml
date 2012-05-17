@@ -9,7 +9,7 @@ let suite_of_prl name =
         let fname = Filename.temp_file "pr" ".jplace" in
         let finish () = Unix.unlink fname in begin
           try
-            Placerun_io.to_json_file "" fname pr;
+            Placerun_io.to_json_file fname pr;
             let roundtripped = Placerun_io.of_json_file fname in
             "not equal to roundtrip" @? placerun_equal pr roundtripped
           with

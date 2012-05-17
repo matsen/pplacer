@@ -9,17 +9,24 @@ type 'a placerun =
     ref_tree  :  'a Gtree.gtree;
     name      :  string;
     pqueries  :  Pquery.pquery list;
+    transm    :  (int * float) IntMap.t option;
   }
 
-let make ref_tree name pqueries = {ref_tree; name; pqueries}
+type 'a t = 'a placerun
+
+let make ?transm ref_tree name pqueries = {ref_tree; name; pqueries; transm}
 
 let get_ref_tree p = p.ref_tree
 let get_name p = p.name
 let get_pqueries p = p.pqueries
+let get_transm_opt p = p.transm
+let get_transm p = Option.get p.transm
 
 let set_ref_tree p ref_tree = {p with ref_tree}
 let set_name p name = {p with name}
 let set_pqueries p pqueries = {p with pqueries}
+let set_transm p tro = {p with transm = Some tro}
+let set_transm_opt p transm = {p with transm}
 
 let n_pqueries p = List.length p.pqueries
 let total_multiplicity p = Pquery.total_multiplicity p.pqueries
@@ -79,20 +86,34 @@ let filter_unplaced pr =
   { pr with pqueries = placed_l }
 
 let redup sequence_tbl pr =
+  let namlom_transform (n, m) =
+    if not (Hashtbl.mem sequence_tbl n) then
+      [n, m]
+    else (* ... *)
+    List.map
+      (second (( *.) m))
+      (Hashtbl.find_all sequence_tbl n)
+  in
   get_pqueries pr
     |> List.map
         (fun pq ->
-          try
-            Pquery.namel pq
-              |> List.map (Hashtbl.find sequence_tbl)
-              |> List.flatten
-              |> Pquery.set_namel pq
-         with
-           | Not_found -> pq)
+          Pquery.namlom pq
+            |> List.map namlom_transform
+            |> List.flatten
+            |> Pquery.set_namlom pq)
     |> set_pqueries pr
 
 let transform func pr =
   get_pqueries pr
     |> List.map
         (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
+    |> set_pqueries pr
+
+let unitize pr =
+  let tot_mass = get_pqueries pr
+    |> Pquery.total_multiplicity
+  in
+  get_pqueries pr
+    |> List.map
+        (fun pq -> Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
     |> set_pqueries pr

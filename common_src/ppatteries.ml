@@ -3,6 +3,7 @@
     functions. *)
 
 include MapsSets
+include AlgMap
 include Batteries
 
 let round x = int_of_float (floor (x +. 0.5))
@@ -62,10 +63,22 @@ let to_csv_out ch =
   (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
 let csv_out_channel ch = new IO.out_channel ch |> to_csv_out
 
+let to_csv_in ch = object
+  method input a b c =
+    try
+      ch#input a b c
+    with IO.No_more_input ->
+      raise End_of_file
+  method close_in = ch#close_in
+end
+let csv_in_channel ch = new IO.in_channel ch |> to_csv_in
+
+let some x = Some x
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
 let junction pred f g a = if pred a then f a else g a
+let fold_both f g a (x, y) = f a x, g a y
 let (|--) f g a b = g (f a b)
 let (|~) = (-|)
 let (||-) f g a = f a || g a
@@ -75,6 +88,19 @@ let (&&--) f g a b = f a b && g a b
 
 let approx_equal ?(epsilon = 1e-5) f1 f2 = abs_float (f1 -. f2) < epsilon
 let (=~) = approx_equal
+let approx_compare ?epsilon f1 f2 =
+  if approx_equal ?epsilon f1 f2 then 0 else compare f1 f2
+let (<~>) = approx_compare
+
+(* find the median of a sorted list. returns the left item if there are an even
+ * number of items in the list. *)
+let median l =
+  let rec aux = function
+    | e :: _, ([_] | [_; _]) -> e
+    | _ :: tl1, _ :: _ :: tl2 -> aux (tl1, tl2)
+    | _, _ -> invalid_arg "median"
+  in
+  aux (l, l)
 
 let verbosity = ref 1
 let dprintf ?(l = 1) ?(flush = true) fmt =
@@ -111,26 +137,52 @@ let combine_list_intmaps l =
    |> flip List.fold_left IntMap.empty)
     l
 
+(* ll_normalized_prob :
+ * ll_list is a list of log likelihoods. this function gives the normalized
+ * probabilities, i.e. exponentiate then our_like / (sum other_likes)
+ * have to do it this way to avoid underflow problems.
+ * *)
+let ll_normalized_prob ll_list =
+  List.map
+    (fun log_like ->
+      1. /.
+        (List.fold_left ( +. ) 0.
+          (List.map
+            (fun other_ll -> exp (other_ll -. log_like))
+            ll_list)))
+    ll_list
+
 (* parsing *)
 module Sparse = struct
   open Lexing
 
+  let update_fref file fref =
+    match !fref with
+      | None -> fref := Some file
+      | Some _ -> ()
+
+  let format_fref ?(prep = "of") fref =
+    Option.map_default (Printf.sprintf " %s %s" prep) "" !fref
+
   let location_of_position p = p.pos_lnum, p.pos_cnum - p.pos_bol
 
-  exception Parse_error of string * (int * int) * (int * int)
-  let parse_error_of_positions s p1 p2 =
-    Parse_error (s, location_of_position p1, location_of_position p2)
+  exception Parse_error of string * (int * int) * (int * int) * string option ref
+  let parse_error_of_positions ?file s p1 p2 =
+    Parse_error (s, location_of_position p1, location_of_position p2, ref file)
 
-  let format_error = function
-    | Parse_error (msg, (l1, c1), (l2, c2)) ->
-      Printf.sprintf "%s between %d:%d and %d:%d" msg l1 c1 l2 c2
-    | _ -> raise (Invalid_argument "format_error")
-
-  let error_wrap f =
-    try
-      f ()
-    with (Parse_error (_, _, _)) as e ->
-      failwith (format_error e)
+  let () =
+    Printexc.register_printer
+      (function
+        | Parse_error (msg, (l1, c1), (l2, c2), file) ->
+          Some (Printf.sprintf
+                  "%s between line %d character %d and line %d character %d%s"
+                  msg
+                  l1
+                  c1
+                  l2
+                  c2
+                  (format_fref file))
+        | _ -> None)
 
   let incr_lineno lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -139,16 +191,37 @@ module Sparse = struct
       pos_bol = pos.pos_cnum;
     }
 
-  let syntax_error tok msg =
-    raise (parse_error_of_positions msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
+  let parse_error ?file tok msg =
+    raise
+      (parse_error_of_positions ?file msg (Parsing.rhs_start_pos tok) (Parsing.rhs_end_pos tok))
 
   let try_map f x tok msg =
     try
       f x
     with _ ->
-      syntax_error tok msg
+      parse_error tok msg
 
-  exception Syntax_error of int * int
+  exception Tokenizer_error of int * int * string option ref
+  exception Syntax_error of string * string option ref
+
+  let syntax_error msg =
+    raise (Syntax_error (msg, ref None))
+
+  let () =
+    Printexc.register_printer
+      (function
+        | Tokenizer_error (line, col, file) ->
+          Some (Printf.sprintf
+                  "syntax error at line %d character %d%s"
+                  line
+                  col
+                  (format_fref file))
+        | Syntax_error (msg, file) ->
+          Some (Printf.sprintf
+                  "syntax error%s: %s"
+                  (format_fref ~prep:"in" file)
+                  msg)
+        | _ -> None)
 
   let rec first_match groups s =
     match groups with
@@ -186,16 +259,37 @@ module Sparse = struct
         in aux (Str.match_end ()) accum
       else
         let line, col = pos s en in
-        raise (Syntax_error (line, col))
+        raise (Tokenizer_error (line, col, ref None))
     in
     aux 0 []
       |> maybe_cons eof_token
       |> List.rev
       |> List.enum
 
+  let file_parse_wrap file f x =
+    try
+      f x
+    with
+      | Tokenizer_error (_, _, fref)
+      | Syntax_error (_, fref)
+      | Parse_error (_, _, _, fref) as e ->
+        update_fref file fref;
+        raise e
+
+  let wrap_of_fname_opt = function
+    | None -> identity
+    | Some fname -> file_parse_wrap fname
+
   let gen_parsers tokenize parse =
-    tokenize |- parse,
-    File.lines_of |- Enum.map tokenize |- Enum.flatten |- parse
+    let of_string ?fname s =
+      wrap_of_fname_opt fname (tokenize |- parse) s
+    and of_file fname =
+      file_parse_wrap
+        fname
+        (File.lines_of |- Enum.map tokenize |- Enum.flatten |- parse)
+        fname
+    in
+    of_string, of_file
 
 end
 
@@ -522,6 +616,10 @@ end
 module EnumFuns = struct
 
   let n_cartesian_product ll =
+    if List.is_empty ll then
+      invalid_arg "n_cartesian_product: list-list empty";
+    if List.exists List.is_empty ll then
+      invalid_arg "n_cartesian_procuct: some list empty";
     let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
     let n = Array.length pool in
     let indices = Array.make n 0
@@ -572,3 +670,9 @@ module EnumFuns = struct
       |> Enum.flatten
 
 end
+
+let exn_wrap f = Printexc.pass f ()
+
+let () =
+  Gsl_error.init ();
+  Random.self_init ();

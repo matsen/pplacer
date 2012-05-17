@@ -317,6 +317,7 @@ struct
 
   (* We don't do anything for model refinement. *)
   let refine _ _ _ _ _ _ = ()
+  let check _ _ = ()
   let mask_sites _ _ = ()
 
 end

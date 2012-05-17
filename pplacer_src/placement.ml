@@ -9,6 +9,12 @@ exception No_PP
 exception No_classif
 exception No_map_identity
 
+let () = Printexc.register_printer
+  (function
+    | No_PP -> Some "no posterior probability present"
+    | No_classif -> Some "no classification information present"
+    | _ -> None)
+
 let get_some except = function
   | Some pp -> pp
   | None -> raise except
@@ -25,6 +31,8 @@ type placement =
     classif: Tax_id.tax_id option;
     map_identity: (float * int) option;
   }
+
+type t = placement
 
 let location            p = p.location
 let ml_ratio            p = p.ml_ratio

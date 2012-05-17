@@ -32,8 +32,6 @@ let token_of_match s =
 
 let tokenize_fasta = Sparse.tokenize_string fasta_regexp token_of_match
 
-exception Parse_error of string
-
 type phase =
   | Beginning
   | Accumulating of (string * string) list * string * string list
@@ -49,8 +47,7 @@ let parse tokens =
         | Accumulating (res, name, seql), Name n ->
           Accumulating (combine res name seql, n, [])
 
-        | Beginning, Sequence _ -> raise (Parse_error "sequence before name")
-    )
+        | Beginning, Sequence _ -> Sparse.syntax_error "sequence before name")
     Beginning
     tokens
   in match res with
@@ -58,3 +55,4 @@ let parse tokens =
     | Beginning -> []
 
 let of_string, of_file = Sparse.gen_parsers tokenize_fasta parse
+let of_refpkg_contents = Refpkg_parse.of_file_or_string of_file of_string

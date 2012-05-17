@@ -6,8 +6,8 @@ let demulti_pquery_list pql =
     (List.map
       (fun pq ->
         List.map
-          (fun name -> Pquery.set_namel pq [name])
-          (Pquery.namel pq))
+          (fun namlom -> Pquery.set_namlom pq [namlom])
+          (Pquery.namlom pq))
       pql)
 
 let demulti_placerun out_name pr =
@@ -34,7 +34,6 @@ object (self)
       (fun pr ->
         let out_name = (prefix^(pr.Placerun.name)) in
         self#write_placefile
-          "guppy demulti"
           (out_name^".jplace")
           (demulti_placerun out_name pr))
       prl

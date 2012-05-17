@@ -32,6 +32,7 @@ type t =
     (* inferred *)
     mrcam       : Tax_id.tax_id IntMap.t Lazy.t;
     uptree_map  : uptree_map Lazy.t;
+    item_path_fn: string -> string;
   }
 
 
@@ -45,6 +46,10 @@ let get_seqinfom    rp = Lazy.force rp.seqinfom
 let get_name        rp = rp.name
 let get_mrcam       rp = Lazy.force rp.mrcam
 let get_uptree_map  rp = Lazy.force rp.uptree_map
+let get_item_path   rp = rp.item_path_fn
+
+let set_ref_tree gt rp = {rp with ref_tree = lazy gt}
+let set_aln_fasta aln rp = {rp with aln_fasta = lazy aln}
 
 let refpkg_versions = ["1.1"]
 
@@ -62,7 +67,9 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
   in
   if not ignore_version then begin
     if StringMap.mem "format_version" m then begin
-      let format_version = StringMap.find "format_version" m in
+      let format_version = StringMap.find "format_version" m
+        |> Refpkg_parse.as_metadata
+      in
       if not (List.mem format_version refpkg_versions) then begin
         Printf.printf
           "This reference package's format is version %s, which is not supported.\n"
@@ -83,18 +90,23 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
       (match ref_align with
       | Some a -> a
       | None ->
-          Alignment.uppercase (Array.of_list (Fasta.of_file (get "aln_fasta")))
-      )
+        get "aln_fasta"
+          |> Fasta.of_refpkg_contents
+          |> Array.of_list
+          |> Alignment.uppercase)
   in
   let lref_tree =
     lazy
       (match ref_tree with
         | Some t -> t
-        | None -> Newick_gtree.of_file (get "tree"))
+        | None -> get "tree" |> Newick_gtree.of_refpkg_contents)
   and lmodel = lazy
     (let aln = Lazy.force lfasta_aln in
      if StringMap.mem "phylo_model" m then
-       let j = StringMap.find "phylo_model" m |> Json.of_file |> Jsontype.obj in
+       let j = StringMap.find "phylo_model" m
+         |> Refpkg_parse.json_of_contents
+         |> Jsontype.obj
+       in
        match Hashtbl.find j "ras_model" |> Jsontype.string with
          | "gamma" ->
            (module Gmix_model.Model: Glvm.Model),
@@ -109,10 +121,19 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
             We suggest using a reference package. If you already are, then \
             please use the latest version of taxtastic.";
        (module Gmix_model.Model: Glvm.Model),
-       Gmix_model.init_of_stats_fname prefs (get "tree_stats") aln
+       Gmix_model.init_of_stats_fname
+         prefs
+         (get "tree_stats" |> Refpkg_parse.as_file_path)
+         aln
      end)
-  and ltaxonomy = lazy (Tax_taxonomy.of_ncbi_file (get "taxonomy"))
-  and lseqinfom = lazy (Tax_seqinfo.of_csv (get "seq_info"))
+  and ltaxonomy = lazy
+    (get "taxonomy"
+     |> Refpkg_parse.csv_of_contents
+     |> with_dispose ~dispose:Csv.close_in Tax_taxonomy.of_ncbi_file)
+  and lseqinfom = lazy
+    (get "seq_info"
+     |> Refpkg_parse.csv_of_contents
+     |> with_dispose ~dispose:Csv.close_in Tax_seqinfo.of_csv)
   in
   let lmrcam =
     lazy (Tax_map.mrcam_of_data
@@ -130,9 +151,10 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     aln_profile = ();
     taxonomy    = ltaxonomy;
     seqinfom    = lseqinfom;
-    name        = (get "name");
+    name        = (get "name" |> Refpkg_parse.as_metadata);
     mrcam       = lmrcam;
     uptree_map  = luptree_map;
+    item_path_fn = get |- Refpkg_parse.as_file_path;
   }
 
 let of_path ?ref_tree path =
@@ -140,18 +162,30 @@ let of_path ?ref_tree path =
 
 (* *** ACCESSORIES *** *)
 
+let tax_decor_map_of_mrcam td mrcam =
+  IntMap.filter_map
+    (fun _ -> function
+      | Tax_id.NoTax -> None
+      | ti -> Some (Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)))
+    mrcam
+
+let tax_ref_tree_of_gtree td mrcam gt =
+  Decor_gtree.add_decor_by_map
+    (Decor_gtree.of_newick_gtree gt)
+    (IntMap.map (fun x -> [x]) (tax_decor_map_of_mrcam td mrcam))
+
 (* mrca tax decor, that is *)
 let get_tax_decor_map rp =
-  let td = get_taxonomy rp in
-  IntMap.map
-    (fun ti -> Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti))
-    (get_mrcam rp)
+  tax_decor_map_of_mrcam (get_taxonomy rp) (get_mrcam rp)
 
 (* tax ref tree is the usual ref tree with but with taxonomic annotation *)
-let get_tax_ref_tree rp =
-  Decor_gtree.add_decor_by_map
-    (Decor_gtree.of_newick_gtree (get_ref_tree rp))
-    (IntMap.map (fun x -> [x]) (get_tax_decor_map rp))
+let get_tax_ref_tree ?alt_gt rp =
+  let td = get_taxonomy rp in
+  let mrcam, gt = match alt_gt with
+    | Some gt -> Tax_map.mrcam_of_data (get_seqinfom rp) td gt, gt
+    | None -> get_mrcam rp, get_ref_tree rp
+  in
+  tax_ref_tree_of_gtree td mrcam gt
 
 (* if the rp is equipped with a taxonomy *)
 let tax_equipped rp =
@@ -233,3 +267,18 @@ let pr_check_tree_approx rp pr =
     rp
     (pr.Placerun.name^" reference tree")
     (Placerun.get_ref_tree pr)
+
+let check_tree_subset rp name gt =
+  let leaves = Newick_gtree.leaf_label_map
+    |- IntMap.values
+    |- StringSet.of_enum
+  in
+  let ref_leaves = get_ref_tree rp |> leaves
+  and subset_leaves = leaves gt in
+  let non_overlapped = StringSet.diff subset_leaves ref_leaves in
+  if not (StringSet.is_empty non_overlapped) then
+    failwith
+      (Printf.sprintf "%s is not a subset of %s. mismatched leaves include: %s"
+         name
+         (get_name rp)
+         (StringSet.elements non_overlapped |> String.join ", " ))

@@ -1,11 +1,113 @@
+1.1.alpha13
+===========
+
+ * Fixed a bug where pplacer would sometimes fail abruptly with a Child_error
+   of EBADF on close(2).
+
+
+1.1.alpha13rc1
+==============
+
+ * Closed GH-216: Added `guppy trim` and `guppy check`.
+ * Closed GH-225: Added `rppr vorotree`.
+ * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
+ * Closed GH-237: Added a multiplicity column to `guppy diplac`.
+ * Closed GH-238: Added `--epsilon` for splitify commands to filter constant
+   edges out of the resulting splitify matrices.
+ * Closed GH-239: Added the `pam` algorithm to voronoi commands; cleaned up
+   voronoi full algorithm and implementation.
+ * Closed GH-240: Added a `-o` flag for pplacer.
+ * Closed GH-242: Renamed ECLD to ADCL; added --max-adcl to voronoi commands.
+ * Closed GH-243: Updated `rppr reroot` so it can run on reference packages
+   which have unannotated sequences.
+ * Closed GH-244: Updated `rppr infer` to handle sequences which could not be
+   reasonably placed anywhere on the tree.
+ * Closed GH-245: Updated code to allow refpkgs to be passed as .zip files as
+   well as directories.
+ * Closed GH-246: Added --always-include to voronoi commands.
+ * Closed GH-247: Added `guppy unifrac`.
+ * Closed GH-249: Added `guppy rarefy`.
+ * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
+ * Closed GH-253: Added `--no-collapse` to `guppy diplac`.
+ * Closed GH-255: Added `guppy to_csv`.
+
+
+1.1.alpha12
+===========
+
+ * Added `guppy to_rdp` and `guppy classify_rdp`.
+ * Closed GH-113: Updated the `best_classification` and `multiclass` SQL views;
+   correspondingly changed the flags to `rppr prep_db`; added the
+   `placement_evidence` table for bayes classification.
+ * Closed GH-183: Added documentation for more functions.
+ * Closed GH-189: Added `guppy pentropy`.
+ * Closed GH-191: Added -m to `guppy redup`; bumped the jplace format version
+   to 3 with the ability to give each name for a pquery a different mass.
+ * Closed GH-192: Added `rppr infer`.
+ * Closed GH-193: Added `rppr reclass`.
+ * Closed GH-194: Added a `mass` column to `placement_names` to parallel new
+   features in the jplace format.
+ * Closed GH-195: Added a --groups flag to pplacer for placing metagenomic
+   sequences onto trees built from very wide alignments.
+ * Closed GH-196: Added code to pplacer to better handle errors raised when
+   calling fork(2).
+ * Closed GH-198: Added progress reporting code to `guppy compress`.
+ * Closed GH-199: Renamed `guppy pentropy` to `guppy entropy`; added quadratic
+   entropy calculation.
+ * Closed GH-200: Added --discard-below to `guppy {islands,compress}`.
+ * Closed GH-201: Added a setup.py file to the scripts directory.
+ * Closed GH-202: Added `rppr prepsim`; added --include-pendant to
+   `guppy diplac`.
+ * Closed GH-204: Added more columns to `rppr reclass`.
+ * Closed GH-205: Added `guppy error`.
+ * Closed GH-206: Updated some pplacer documentation.
+ * Closed GH-207: Added CSV output to `guppy edpl`.
+ * Closed GH-208: Fixed the -o flag to reflect the actual file written to for
+   `guppy {sing,tog,edpl}`.
+ * Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
+   alignment had a different number of sites from the refpkg; added
+   --always-refine to pplacer.
+ * Closed GH-210: Merged `guppy {pd,wpd,entropy}` into `guppy fpd`.
+ * Closed GH-212: Changed parsing error messages to be more specific.
+ * Closed GH-213: Added PyNAST support to refpkg_align.py.
+ * Closed GH-214: Added `guppy ograph`.
+ * Closed GH-218: Added --split-csv to `guppy merge`.
+ * Closed GH-219: Fixed some guppy commands which needed a zero root branch
+   length.
+ * Closed GH-220: Added error messages for some exceptions; fixed
+   `guppy rarefact`.
+ * Closed GH-222: Added a -c flag to `guppy bary`.
+ * Closed GH-236: Fixed support for numeric leaf names when writing out XML.
+
+
 1.1.alpha11
 ===========
 
  * Fixed a bug with parsing MAP identity from a jplace file.
+ * Fixed a bug that occurred sometimes when running `rppr convexify` on a tree
+   where not every leaf had a corresponding tax_id at a particular rank.
+ * Fixed a bug with fasttree placements which caused failure when the site
+   categories had to be calculated (ie. when using a combined reference + query
+   alignment)
+ * Changed versions to be parsed only out of git tags.
+ * Closed GH-42: Added --edpl flag to `guppy fat` for EDPL coloring in fat
+   trees.
+ * Closed GH-146: Added an --unweighted flag to `guppy pca`.
+ * Closed GH-168: Changed guppy and rppr to list the subcommands in --help;
+   reformatted the options flags to be more readable.
+ * Closed GH-169: Fixed all commands that work on reference packages to use the
+   -c flag to specify the reference package.
+ * Closed GH-176: Fixed `rppr reroot` to handle cases where not all tax_ids are
+   specified under the rank the rerooting is happening at.
  * Closed GH-177: Added --mass-gt and --mass-le flags to `guppy filter`.
  * Closed GH-178: Fixed `guppy compress` to add a zero root branch length.
  * Closed GH-179: Changed the JSON emitter to be able to represent a wider
    range of floats.
+ * Closed GH-182: Changed 'weighted' to 'spread' and 'unweighted' to 'point'
+   across all the guppy and rppr commands.
+ * Closed GH-184: Added a placement_median_identites table for guppy classify.
+ * Closed GH-188: Added support for a reference package to be able to specify
+   that some reference sequences are unclassified.
 
 
 1.1.alpha10

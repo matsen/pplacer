@@ -177,7 +177,4 @@ let onto_decor_gtree dt = function
         Decor_gtree.color_clades_above ~color edges dt)
       dt
       fl
-    |> Gtree.get_bark_map
-    |> IntMap.filter (fun b -> b#get_decor |> List.length < 2)
-    |> Gtree.set_bark_map dt
-
+    |> Decor_gtree.consolidate_colors Decor_gtree.keep_only_one

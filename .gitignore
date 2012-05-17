@@ -11,7 +11,7 @@ tags
 top_tests
 bin
 common_src/install_common_pprs.txt
-common_src/git_version.ml
+common_src/version.ml
 makefile
 docs/generated_rst/
 docs/_build/doctrees/

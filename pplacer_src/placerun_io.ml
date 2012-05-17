@@ -52,12 +52,28 @@ let to_legacy_file invocation out_fname placerun =
     placerun;
   close_out ch
 
-let to_json_file invocation out_fname placerun =
-  let ret = Hashtbl.create 8
+let json_versions = [1; 2; 3]
+let current_json_version = 3
+
+let to_json_file ?invocation out_fname placerun =
+  let invocation = match invocation with
+    | Some s -> s
+    | None -> Array.to_list Sys.argv |> String.concat " "
+  and ret = Hashtbl.create 8
   and meta = Hashtbl.create 16
   and ref_tree = Placerun.get_ref_tree placerun
   and pqueries = Placerun.get_pqueries placerun in
   Hashtbl.add meta "invocation" (Jsontype.String invocation);
+  begin match Placerun.get_transm_opt placerun with
+    | None -> ()
+    | Some transm ->
+      IntMap.enum transm
+      |> Enum.map (fun (k, (v1, v2)) ->
+        Jsontype.Array [Jsontype.Int k; Jsontype.Int v1; Jsontype.Float v2])
+      |> List.of_enum
+      |> (fun l -> Jsontype.Array l)
+      |> Hashtbl.add meta "transm"
+  end;
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
   let json_state = ref None in
@@ -74,7 +90,7 @@ let to_json_file invocation out_fname placerun =
     end
   )));
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_node_numbers:true ref_tree));
-  Hashtbl.add ret "version" (Jsontype.Int 2);
+  Hashtbl.add ret "version" (Jsontype.Int current_json_version);
   Json.to_file out_fname (Jsontype.Object ret)
 
 (* ***** READING ***** *)
@@ -154,7 +170,16 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 exception Invalid_placerun of string
 
-let json_versions = [1; 2]
+let transm_of_json j =
+  Jsontype.array j
+  |> List.enum
+  |> Enum.map
+      (function
+        | Jsontype.Array [k; v1; v2] ->
+          Jsontype.int k, (Jsontype.int v1, Jsontype.float v2)
+        | _ -> failwith "malformed transm in jplace file")
+  |> IntMap.of_enum
+
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
   if not (Hashtbl.mem json "version") then
@@ -165,40 +190,26 @@ let of_json_file fname =
 
   let ref_tree = Hashtbl.find json "tree"
     |> Jsontype.string
-    |> Newick_gtree.of_string ~legacy_format:(version = 1)
+    |> Newick_gtree.of_string
+        ~fname:(Printf.sprintf "the tree in %s" fname)
+        ~legacy_format:(version = 1)
   and fields = Hashtbl.find json "fields"
     |> Jsontype.array
     |> List.map
         (Jsontype.string
          |- (function "marginal_prob" when version = 1 -> "marginal_like" | x -> x))
+  and meta = Hashtbl.find json "metadata" |> Jsontype.obj in
+  let pql = List.map
+    (Pquery_io.of_json fields)
+    (Jsontype.array (Hashtbl.find json "placements"))
+  and transm = Hashtbl.Exceptionless.find meta "transm"
+    |> Option.map transm_of_json
   in
-  let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   Placerun.make
+    ?transm
     ref_tree
     (Filename.chop_extension (Filename.basename fname))
     pql
-
-(* *** CSV CSV CSV CSV CSV CSV CSV CSV *** *)
-
-let csv_col_names =
-  [
-    "name";
-    "hit";
-    "location";
-    "ml_ratio";
-    "post_prob";
-    "log_like";
-    "marginal_prob";
-    "distal_bl";
-    "pendant_bl";
-    "classif";
-  ]
-
-let to_csv_strl pr =
-  List.flatten (List.map Pquery_io.to_csv_strl pr.Placerun.pqueries)
-
-let to_csv_file out_fname pr =
-  Csv.save out_fname (csv_col_names::(to_csv_strl pr))
 
 let ppr_placerun ff pr =
   Format.fprintf ff "Placerun %s" pr.Placerun.name
@@ -209,6 +220,7 @@ let split_file s =
     failwith "csv file provided with no jplace to split";
   Str.matched_group 1 s, Str.matched_group 2 s
 
+(* load in a .place or .jplace file. *)
 let of_any_file fname =
   if Filename.check_suffix fname ".place" then
     of_file fname
@@ -218,6 +230,9 @@ let of_any_file fname =
   else
     failwith ("unfamiliar suffix on " ^ fname)
 
+(* take a (filename -> placerun) function, some file, and a csv file, then
+ * split the resulting placerun into a placerun list according to the csv
+ * file. *)
 let of_split_file ?(getfunc = of_any_file) fname =
   let to_split, to_split_with = split_file fname in
   let to_split' = getfunc to_split
@@ -231,37 +246,29 @@ let of_split_file ?(getfunc = of_any_file) fname =
   in
   let split_pqueries = List.fold_left
     (fun accum pq ->
-      if Pquery.has_single_mult pq then
-        match begin
-          try
-            Some (StringMap.find (Pquery.name pq) split_map)
-          with Not_found -> None
-        end with
-          | Some group -> StringMap.add_listly group pq accum
-          | None -> accum
-      else
-        let groups = List.fold_left
-          (fun accum name ->
-            match begin
-              try
-                Some (StringMap.find name split_map)
-              with Not_found -> None
-            end with
-              | Some group -> StringMap.add_listly group name accum
-              | None -> accum)
-          StringMap.empty
-          (Pquery.namel pq)
-        in
-        StringMap.fold
-          (Pquery.set_namel pq |- flip StringMap.add_listly |> flip)
-          groups
-          accum)
+      let groups = List.fold_left
+        (fun accum ((name, _) as namlom) ->
+          match begin
+            try
+              Some (StringMap.find name split_map)
+            with Not_found -> None
+          end with
+            | Some group -> StringMap.add_listly group namlom accum
+            | None -> accum)
+        StringMap.empty
+        (Pquery.namlom pq)
+      in
+      StringMap.fold
+        (Pquery.set_namlom pq |- flip StringMap.add_listly |> flip)
+        groups
+        accum)
     StringMap.empty
     (Placerun.get_pqueries to_split')
   in
   StringMap.fold
     (fun name pqueries accum ->
       Placerun.make
+        ?transm:(Placerun.get_transm_opt to_split')
         (Placerun.get_ref_tree to_split')
         name
         pqueries

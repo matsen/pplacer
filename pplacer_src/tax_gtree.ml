@@ -31,19 +31,18 @@ let tax_tips_of_tax_list td til =
 let build_topdown_tree td tips =
   (* rooto is the root of the tree, if its been found *)
   let rec add_ancestry rooto tt ti =
-    if Tax_taxonomy.has_ancestor td ti then begin
-      let anc = Tax_taxonomy.get_ancestor td ti in
-      let tt' = TaxIdMap.add_listly anc ti tt in
-      (* if anc was already in tt then we don't have to add its lineage *)
-      if TaxIdMap.mem anc tt then (rooto, tt')
-      else add_ancestry rooto tt' anc
-    end
-    else match rooto with
-    | Some root ->
+    match Tax_taxonomy.get_ancestor_opt td ti, rooto with
+      | Some anc, _ ->
+        let tt' = TaxIdMap.add_listly anc ti tt in
+        (* if anc was already in tt then we don't have to add its lineage *)
+        if TaxIdMap.mem anc tt then (rooto, tt')
+        else add_ancestry rooto tt' anc
+      | None, Some root ->
         if root = ti then (rooto, tt) else raise (Multiple_roots (root, ti))
-    | None -> (Some ti, tt)
+      | None, None -> (Some ti, tt)
   in
   let rec aux rooto tt = function
+    | NoTax :: l -> aux rooto tt l
     | ti::l ->
         assert(not(TaxIdMap.mem ti tt)); (* should be nonredundant list *)
         let (rooto', tt') = add_ancestry rooto tt ti in
@@ -84,6 +83,7 @@ let decor_gtree_of_topdown_tree bl_of_rank td root tt =
         new Decor_bark.decor_bark
           (`Of_bl_node_edge_label_decor
             (Some (bl_of_taxid ti), None, None,
+             (* this is okay because NoTax has been excluded earlier *)
             [Decor.Taxinfo (ti, Tax_taxonomy.get_tax_name td ti)]))
   in
   (Gtree.gtree

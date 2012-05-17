@@ -36,7 +36,11 @@ object (self)
             (Printf.sprintf
               "%d entries in %s, and %d edges in reference tree"
               (Array.length a) name n_edges);
-        (Some name, self#heat_tree_of_float_arr t a))
+        (Some name,
+         try
+           self#heat_tree_of_float_arr t a
+         with Invalid_abs_tot ->
+           failwith (Printf.sprintf "bad abs_tot on %s" name)))
       (named_arr_list_of_csv fname)
 
   method action = function

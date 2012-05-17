@@ -116,6 +116,10 @@ val phi_recurse: ?strict:bool -> ?nu_f:nu_f ->
 
 *)
 
+val prune_tree: cdtree -> IntSet.t * stree
+(** Prune a tree down to just the leaves that are represented in the color map,
+    also providing the leaves which were cut. *)
+
 val solve: ?strict:bool -> ?nu_f:nu_f -> cdtree -> phi * int
 (** Solve a tree, returning the solved phi and the omega of the best
     solution. *)
@@ -132,6 +136,10 @@ val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
     node numbers to a list of the values of the map at each of the subtrees of
     that internal node. *)
 
+val build_rank_tax_map:
+  Tax_taxonomy.t -> ('a -> int option) -> ('a * Tax_id.t) Enum.t ->
+  Tax_id.t IntMap.t IntMap.t
+
 val rank_tax_map_of_refpkg: Refpkg.t -> Tax_id.tax_id IntMap.t IntMap.t
 (** Build a map from leaves to tax_ids for each rank of the taxonomy in a
     reference package. *)
@@ -142,5 +150,7 @@ val alternate_colors: cdtree -> cset IntMap.t
 
 module Naive: sig
   val solve: cdtree -> IntSet.t
+  (** Solve a tree using the naive algorithm. Returns a set of the leaves to
+      keep from the tree. *)
 end
 

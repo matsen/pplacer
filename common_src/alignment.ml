@@ -223,3 +223,18 @@ let identity s1 s2 =
   denom
 
 let informative = function '?' | '-' -> false | _ -> true
+
+let span s =
+  let first = ref None
+  and last = ref None in
+  String.iteri
+    (fun i c ->
+      if informative c then begin
+        if Option.is_none !first then
+          first := Some i;
+        last := Some i
+      end)
+    s;
+  match !first, !last with
+    | Some f, Some l -> f, l
+    | _, _ -> failwith "sequence contains no informative characters"

@@ -46,6 +46,8 @@ object (self)
     (Needs_argument ("", "If specified, the path to write a CSV file of alternate colors per-sequence to."))
   val check_all_ranks = flag "--check-all-ranks"
     (Plain (false, "When determining alternate colors, check all ranks instead of the least recent uncut rank."))
+  val all_alternates = flag "--all-alternates"
+    (Plain (false, "When determining alternate colors, ignore the taxononomy and show all alternates."))
   val badness_cutoff = flag "--cutoff"
     (Formatted (12, "Any trees with a maximum badness over this value are skipped. Default: %d."))
   val use_naive = flag "--naive"
@@ -73,8 +75,9 @@ object (self)
     string_flag cut_seqs_file;
     string_flag alternates_file;
     toggle_flag check_all_ranks;
+    toggle_flag all_alternates;
     int_flag badness_cutoff;
-    string_list_flag limit_ranks;
+    delimited_list_flag limit_ranks;
     string_flag timing;
     toggle_flag strict;
     toggle_flag use_naive;
@@ -116,6 +119,7 @@ object (self)
           [data.rankname;
            seqname;
            Tax_id.to_string ti;
+           (* below is okay because cut_leaves will never include a NoTax. *)
            Tax_taxonomy.get_tax_name td ti;
            string_of_int (Tax_id.TaxIdMap.find ti taxcounts)]
           :: accum)
@@ -126,9 +130,12 @@ object (self)
 
   method private alternate_colors fname =
     let rp = self#get_rp
+    and all_alternates = fv all_alternates
     and check_all_ranks = fv check_all_ranks in
     let td = Refpkg.get_taxonomy rp
     and gt = Refpkg.get_ref_tree rp in
+    (* below is also okay; this is only used on things coming from
+     * alternate_colors, which won't have NoTax fed into it. *)
     let tax_name = Tax_taxonomy.get_tax_name td in
     let foldf alternates data =
       let taxmap' = IntMap.filteri
@@ -165,7 +172,7 @@ object (self)
                       | true when check_all_ranks -> aux rest
                       | x -> x
               in
-              if aux (List.rev lineage) then
+              if all_alternates || aux (List.rev lineage) then
                 [data.rankname; seqname; tax_name c_ti] :: accum
               else
                 accum)
@@ -193,9 +200,6 @@ object (self)
       | [] -> None
       | ranks -> Some
         (List.enum ranks
-         |> Enum.map (flip String.nsplit ",")
-         |> Enum.map List.enum
-         |> Enum.flatten
          |> Enum.map (fun rk -> Array.findi ((=) rk) td.Tax_taxonomy.rank_names)
          |> IntSet.of_enum)
     and cutoff = fv badness_cutoff in
@@ -227,14 +231,17 @@ object (self)
               let delta = (Sys.time ()) -. start in
               not_cut, IntSet.cardinal not_cut, delta
             else
+              let extra, st' = prune_tree (taxmap, st) in
               let start = Sys.time () in
               let phi, omega = solve
                 ~strict:(fv strict)
                 ?nu_f
-                (taxmap, st)
+                (taxmap, st')
               in
               let delta = (Sys.time ()) -. start in
-              nodeset_of_phi_and_tree phi st, omega, delta
+              nodeset_of_phi_and_tree phi st' |> IntSet.union extra,
+              omega + IntSet.cardinal extra,
+              delta
           in
           dprintf "  solved omega: %d\n" omega;
           let cut_leaves = IntSet.diff leaves not_cut in
@@ -279,11 +286,12 @@ object (self)
     in
     let colormap = fv input_colors
       |> Csv.load |> List.enum
-      |> Enum.map
+      |> Enum.filter_map
           (function
             | [a; _] when not (StringMap.mem a namemap) ->
               failwith (Printf.sprintf "leaf '%s' not found on tree" a)
-            | [a; b] -> StringMap.find a namemap, Tax_id.of_string b
+            | [_; "-"] -> None
+            | [a; b] -> Some (StringMap.find a namemap, Tax_id.of_string b)
             | _ -> failwith "malformed colors csv file")
       |> IntMap.of_enum
     and st = gt.Gtree.stree
@@ -303,8 +311,10 @@ object (self)
           let not_cut = Naive.solve (colormap, st) in
           not_cut, IntSet.cardinal not_cut
         else
-          let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st) in
-          nodeset_of_phi_and_tree phi st, omega
+          let extra, st' = prune_tree (colormap, st) in
+          let phi, omega = solve ~strict:(fv strict) ?nu_f (colormap, st') in
+          nodeset_of_phi_and_tree phi st' |> IntSet.union extra,
+          omega + IntSet.cardinal extra
       in
       dprintf "solved omega: %d\n" omega;
       let cut_leaves = IntSet.diff leaves not_cut in

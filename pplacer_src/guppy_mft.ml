@@ -45,17 +45,7 @@ object (self)
             |> StringMap.of_pairlist
             |> Copy_number.of_criterion_map Placement.ml_ratio
             |> List.map)
-    |> if not (fv unitize) then identity else
-        List.map
-          (fun pr ->
-            let tot_mass = Placerun.get_pqueries pr
-              |> Pquery.total_multiplicity
-            in
-            Placerun.get_pqueries pr
-              |> List.map
-                  (fun pq ->
-                    Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
-              |> Placerun.set_pqueries pr)
+    |> if not (fv unitize) then identity else List.map Placerun.unitize
     in
     match self#out_file_or_dir () with
       | Directory (dir, prefix) ->
@@ -65,14 +55,14 @@ object (self)
               dir
               (prefix ^ pr.Placerun.name ^ ".jplace")
             in
-            self#write_placefile "guppy mft" fname pr)
+            self#write_placefile fname pr)
           prl
       | File fname ->
         prl
           |> List.map Placerun.get_pqueries
           |> List.flatten
           |> Placerun.make (Mokaphy_common.list_get_same_tree prl) ""
-          |> self#write_placefile "guppy mft" fname
+          |> self#write_placefile fname
       | Unspecified -> ()
 
 end

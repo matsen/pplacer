@@ -32,10 +32,10 @@ test: tests.native
 	./tests.native
 
 %.runtop: %.top
-	ledit -x -h .toplevel_history ./$*.top
+	rlwrap ./$*.top
 
 runcaml:
-	ledit -x -h .toplevel_history ocaml
+	rlwrap ocaml
 
 tags:
 	taggage `find . -name "*.ml" | grep -v "_build"`

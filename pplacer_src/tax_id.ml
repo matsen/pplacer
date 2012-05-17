@@ -17,12 +17,16 @@ let of_stro = function
   | None -> NoTax
 
 let of_string = function
-  | "none" -> NoTax
+  | s when s = none_str -> NoTax
   | s -> TaxStr s
 
 let to_string = function
   | TaxStr s -> s
   | NoTax -> none_str
+
+let to_stro = function
+  | TaxStr s -> Some s
+  | NoTax -> None
 
 let of_json = function
   | Jsontype.String s -> TaxStr s
@@ -32,6 +36,10 @@ let of_json = function
 let to_json = function
   | TaxStr s -> Jsontype.String s
   | NoTax -> Jsontype.Null
+
+let to_sql = function
+  | TaxStr s -> Sql.D.TEXT s
+  | NoTax -> Sql.D.NULL
 
 let of_old_string id_str =
   if id_str = none_str then NoTax
@@ -53,6 +61,8 @@ let to_xml = function
   | TaxStr s -> [Myxml.tag "id" ~attrs:[("provider", "ncbi_taxonomy")] s]
   | NoTax -> []
 
+let print ch x =
+  Option.print String.print ch (to_stro x)
 
 (* *** Maps and Sets *** *)
 module OrderedTaxId = struct

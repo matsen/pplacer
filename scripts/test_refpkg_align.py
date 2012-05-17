@@ -3,6 +3,8 @@ Unit tests for alignment module
 """
 
 from cStringIO import StringIO
+import os
+import os.path
 import unittest
 
 from Bio.Seq import Seq
@@ -126,43 +128,17 @@ class SubprocessMixIn(object):
     def latest_command(self):
         return refpkg_align.subprocess.commands[-1]
 
-class InfernalAlignerTestCase(SubprocessMixIn, unittest.TestCase):
-    """
-    Some simple tests
-    """
+class TempFileTestCase(unittest.TestCase):
+    def test_close(self):
+        with refpkg_align._temp_file() as tf:
+            self.assertFalse(tf.closed)
+            tf.close()
+            self.assertTrue(os.path.isfile(tf.name))
+        self.assertFalse(os.path.exists(tf.name))
 
-    def setUp(self):
-        super(InfernalAlignerTestCase, self).setUp()
-        self.instance = refpkg_align.InfernalAligner(MockRefpkg(), '--test')
-
-    def test_query_align(self):
-        self.instance._query_align('infile', 'outfile')
-        self.assertEqual(['cmalign', '--test', '-o', 'outfile',
-            'resource-profile', 'infile'], self.latest_command)
-
-    def test_merge(self):
-        self.instance._merge('infile', 'outfile')
-        expected = ['cmalign', '--merge', '--test', '-o', 'outfile',
-                'resource-profile', 'resource-aln_sto', 'infile']
-
-        self.assertEqual(expected, self.latest_command)
-
-class Hmmer3AlignerTestCase(SubprocessMixIn, unittest.TestCase):
-
-    def setUp(self):
-        super(Hmmer3AlignerTestCase, self).setUp()
-        self.instance = refpkg_align.Hmmer3Aligner(MockRefpkg(), '--test')
-
-    # need some tests
-
-    def test_run_align(self):
-        self.instance.run_align('infile', 'outfile')
-        self.assertEqual(['hmmalign', '-o', 'outfile', '--test',
-            'resource-profile', 'infile'], self.latest_command)
-
-    def test_search(self):
-        self.instance.search('infile', 'outfile', '--test1 A -h')
-        self.assertEqual(['hmmsearch', '--test1', 'A', '-h', '-A', 'outfile',
-                           'resource-profile', 'infile'],
-                           self.latest_command)
+    def test_remove_ok(self):
+        """Test that the file can be removed without error"""
+        with refpkg_align._temp_file() as tf:
+            tf.close()
+            os.unlink(tf.name)
 

@@ -46,21 +46,6 @@ type result =
   | Timing of string * float
   | Evaluated_best of string * int * int * int
 
-(* ll_normalized_prob :
- * ll_list is a list of log likelihoods. this function gives the normalized
- * probabilities, i.e. exponentiate then our_like / (sum other_likes)
- * have to do it this way to avoid underflow problems.
- * *)
-let ll_normalized_prob ll_list =
-  List.map
-    (fun log_like ->
-      1. /.
-        (List.fold_left ( +. ) 0.
-          (List.map
-            (fun other_ll -> exp (other_ll -. log_like))
-            ll_list)))
-    ll_list
-
   (* Prefs.prefs -> *)
   (* Ppatteries.IntMap.key list -> *)
   (* prior -> *)
@@ -110,9 +95,11 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
   in
   let full_query_evolv = Glv.mimic full_query_orig in
   (* *** the main query loop *** *)
-  let process_query (query_name, query_seq) =
-    Printf.printf ">%s\n" query_name;
-    flush_all ();
+  let process_query ?show_query (query_name, query_seq) =
+    begin match show_query with
+      | Some fn -> fn query_name
+      | None -> Printf.printf ">%s\n" query_name; flush_all ()
+    end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
     (* prepare the query glv *)
@@ -375,7 +362,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         else results, sorted_ml_placements
       in
       Pquery (Pquery.make_ml_sorted
-        ~namel:[query_name]
+        ~namlom:[query_name, 1.]
         ~seq:query_seq
         placements) :: results
     end

@@ -1,0 +1,9 @@
+cddcore.o
+cddio.o
+cddlib.o
+cddlp.o
+cddmp.o
+cddproj.o
+setoper.o
+pplacer_cdd.o
+caml_cdd.o

@@ -24,9 +24,12 @@ let rec emit_tag out {name; attrs; contents; children} =
 
 let rec emit_stree out bark_map stree =
   out (`El_start (phyns "clade", []));
-  let top = Stree.top_id stree in
+  let top, is_leaf = match stree with
+    | Stree.Leaf i -> i, true
+    | Stree.Node (i, _) -> i, false
+  in
   IntMap.Exceptionless.find top bark_map
-    |> Option.may (fun b -> List.iter (emit_tag out) b#to_xml);
+    |> Option.may (fun b -> List.iter (emit_tag out) (b#to_xml is_leaf));
   begin match stree with
     | Stree.Node (_, subtrees) -> List.iter (emit_stree out bark_map) subtrees
     | _ -> ()

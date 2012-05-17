@@ -16,9 +16,10 @@ object (self)
   val safe = flag "--unsafe"
     (Plain (true, "Don't perform internal checks."))
   val never_prune_from = flag "--never-prune-from"
-    (Plain ("", "Provide a file containing taxa that will not be pruned."))
+    (Plain ("", "Provide a file containing sequence names that will not be pruned."))
   val never_prune_regex_from = flag "--never-prune-regex-from"
-    (Plain ("", "Provide a file containing regular expressions; taxa matching one of these will not be pruned."))
+    (Plain ("",
+            "Provide a file containing regular expressions; sequence names matching one of these will not be pruned."))
 
   method specl = super_tabular#specl @ [
     float_flag cutoff;
@@ -29,7 +30,7 @@ object (self)
     string_flag never_prune_regex_from;
   ]
 
-  method desc = "prune the tree to maximize PD"
+  method desc = "prunes the tree to maximize PD"
   method usage = "usage: pdprune [options] tree"
 
   method action = function

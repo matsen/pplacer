@@ -62,10 +62,14 @@ class newick_bark arg =
     method set_edge_label_opt xo = {< edge_label = xo >}
     method set_edge_label x = {< edge_label = Some x >}
 
-    method get_confidence_name_opt =
-      match maybe_float node_label with
-        | None -> maybe_float edge_label, node_label
-        | c -> c, None
+    method get_confidence_name_opt is_leaf =
+      match maybe_float edge_label with
+        | None when is_leaf -> None, node_label
+        | None -> begin match maybe_float node_label with
+          | None -> None, node_label
+          | c -> c, None
+        end
+        | c -> c, node_label
 
     method to_newick_string node_number =
       Printf.sprintf "%s%s%s%s"
@@ -82,8 +86,8 @@ class newick_bark arg =
     method ppr ff =
       Format.fprintf ff "@[{%a}@]" (fun ff () -> self#ppr_inners ff) ()
 
-    method to_xml = begin
-      let confidence, name = self#get_confidence_name_opt in
+    method to_xml is_leaf = begin
+      let confidence, name = self#get_confidence_name_opt is_leaf in
       []
       |> maybe_map_cons (Myxml.tag "name") name
       |> maybe_map_cons (Printf.sprintf "%g" |- Myxml.tag "branch_length") bl
@@ -101,6 +105,8 @@ class newick_bark arg =
       >}
 
   end
+
+type t = newick_bark
 
 let empty = new newick_bark `Empty
 

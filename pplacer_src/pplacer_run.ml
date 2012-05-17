@@ -55,96 +55,10 @@ object (self)
   method progress_received = progressfunc
 end
 
-let run_file prefs query_fname =
+let run_placements prefs rp query_list from_input_alignment placerun_name placerun_cb =
   let timings = ref StringMap.empty in
-
-  dprintf
-    "Running pplacer %s analysis on %s...\n"
-    Version.version
-    query_fname;
-  let ref_dir_complete =
-    match Prefs.ref_dir prefs with
-      | "" -> ""
-      | s -> begin
-        Check.directory s;
-        if s.[(String.length s)-1] = '/' then s
-        else s^"/"
-      end
-  in
-
-  (* string map which represents the elements of the reference package; these
-   * may be actually a reference package or specified on the command line. *)
-  let rp_strmap =
-    List.fold_right
-    (* only set if the option string is non empty.
-     * override the contents of the reference package. *)
-      (fun (k,v) m ->
-        if v = "" then m
-        else StringMap.add k (ref_dir_complete^v) m)
-      [
-        "tree", Prefs.tree_fname prefs;
-        "aln_fasta", Prefs.ref_align_fname prefs;
-        "tree_stats", Prefs.stats_fname prefs;
-      ]
-      (match Prefs.refpkg_path prefs with
-        | "" ->
-            StringMap.add "name"
-              (safe_chop_extension (Prefs.ref_align_fname prefs))
-              StringMap.empty
-        | path -> Refpkg_parse.strmap_of_path path)
-  in
-  if not (StringMap.mem "tree" rp_strmap) then
-    if Prefs.refpkg_path prefs = "" then
-      failwith "please specify a reference tree with -t or -c"
-    else
-      failwith "the reference package provided does not contain a tree";
-
-  let orig_ref_tree = StringMap.find "tree" rp_strmap |> Newick_gtree.of_file in
-  let ref_tree = Like_stree.add_zero_root_bl orig_ref_tree in
-  (* *** split the sequences into a ref_aln and a query_list *** *)
-  let ref_name_map = Newick_gtree.leaf_label_map ref_tree in
-  let ref_name_set = IntMap.values ref_name_map |> StringSet.of_enum in
-  if IntMap.cardinal ref_name_map <> StringSet.cardinal ref_name_set then
-    failwith("Repeated names in reference tree!");
-  let seq_list = Alignment.upper_list_of_any_file query_fname in
-  let ref_list, query_list =
-    List.partition
-      (fun (name,_) -> StringSet.mem name ref_name_set)
-      seq_list
-  in
-  let ref_align =
-    if ref_list = [] then begin
-      dprint
-        "Didn't find any reference sequences in given alignment file. \
-         Using supplied reference alignment.\n";
-      None
-    end
-    else begin
-      dprint
-        "Found reference sequences in given alignment file. \
-         Using those for reference alignment.\n";
-      let _ = List.fold_left
-        (fun seen (seq, _) ->
-          if StringSet.mem seq seen then
-            failwith
-              (Printf.sprintf
-                 "duplicate reference sequence '%s' in query file %s"
-                 seq
-                 query_fname);
-          StringSet.add seq seen)
-        StringSet.empty
-        ref_list
-      in ();
-      Some (Array.of_list ref_list |> Alignment.uppercase)
-    end
-  in
-  let rp = Refpkg.of_strmap
-    ?ref_align
-    ~ignore_version:(Prefs.refpkg_path prefs = "")
-    prefs
-    rp_strmap
-  and from_input_alignment = Option.is_some ref_align in
-
+  let orig_ref_tree = Refpkg.get_ref_tree rp in
+  let ref_tree = Newick_gtree.add_zero_root_bl orig_ref_tree in
   let ref_align =
     try
       Refpkg.get_aln_fasta rp
@@ -214,19 +128,21 @@ let run_file prefs query_fname =
               failwith (Printf.sprintf "%c is not a known base in %s" c name))
           seq
       in
+      (* Turn an alignment enum into a bool array mask which represents if any
+       * site seen in the alignment was informative. *)
       let mask_of_enum enum =
-        Enum.fold
+        let mask = Array.copy initial_mask in
+        Enum.iter
           (tap check_seq
            |- snd
-           |- String.enum
-           |- Enum.map Alignment.informative
-           |- Array.of_enum
-           |- Array.map2 (||)
-           |> flip)
-          initial_mask
-          enum
+           |- String.iteri
+               (fun i c -> if Alignment.informative c then mask.(i) <- true))
+          enum;
+        mask
       in
       let ref_mask = Array.enum ref_align |> mask_of_enum in
+      (* This function takes a sequence string and returns if it overlaps any
+       * informative column of the reference sequence. *)
       let overlaps_mask s = String.enum s
         |> Enum.map Alignment.informative
         |> curry Enum.combine (Array.enum ref_mask)
@@ -234,8 +150,10 @@ let run_file prefs query_fname =
       in
       (try
          let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequence." seq)
+         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
        with Not_found -> ());
+      (* Mask out sites that are either all gap in the reference alignment or
+       * all gap in the query alignment. *)
       let mask = Array.map2
         (&&)
         ref_mask
@@ -309,7 +227,9 @@ let run_file prefs query_fname =
   let query_list = Hashtbl.fold
     (fun seq namel accum ->
       let hd = List.hd namel in
-      Hashtbl.add redup_tbl hd namel;
+      List.iter
+        (Hashtbl.add redup_tbl hd)
+        (Pquery.uniform_namel namel);
       (hd, seq) :: accum)
     seq_tbl
     []
@@ -352,9 +272,11 @@ let run_file prefs query_fname =
   dprint "done.\n";
 
   Option.may (Model.mask_sites model) mask;
-  (* Refine the model if it's not coming directly from the reference package. *)
-  if from_input_alignment then
+  (* Refine the model if it's not coming directly from the reference package or
+   * if the user wants it. *)
+  if from_input_alignment || Prefs.always_refine prefs then
     Model.refine model n_sites ref_tree like_aln_map darr parr;
+  Model.check model ref_align;
   if !verbosity >= 2 then Model.write stdout model;
 
   dprint "Caching likelihood information on reference tree... ";
@@ -416,8 +338,6 @@ let run_file prefs query_fname =
   end;
 
   (* *** analyze query sequences *** *)
-  let query_bname =
-    Filename.basename (Filename.chop_extension query_fname) in
   let prior =
     if Prefs.uniform_prior prefs then Core.Uniform_prior
     else if Prefs.informative_prior prefs then
@@ -452,6 +372,9 @@ let run_file prefs query_fname =
     (fun (name, seq) -> Queue.push (name, (String.uppercase seq)) q)
     query_list;
 
+  (* functions called respectively: when a result is received from a child
+   * process, to determine if a sequence should be send to a child process, and
+   * when all child processes have finished. *)
   let gotfunc, cachefunc, donefunc = if Prefs.fantasy prefs <> 0. then begin
     (* fantasy baseball *)
     let fantasy_mat =
@@ -473,9 +396,7 @@ let run_file prefs query_fname =
       incr n_done;
       res
     and donefunc () =
-      Fantasy.results_to_file
-        (Filename.basename (Filename.chop_extension query_fname))
-        fantasy_mat (!n_fantasies);
+      Fantasy.results_to_file placerun_name fantasy_mat (!n_fantasies);
       Fantasy.print_optimum fantasy_mat (Prefs.fantasy prefs) (!n_fantasies);
     in gotfunc, cachefunc, donefunc
 
@@ -483,8 +404,8 @@ let run_file prefs query_fname =
     (* not fantasy baseball *)
     let map_fasta_file = Prefs.map_fasta prefs in
     let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
-    (* XXX AG explain how these two functions are used. Clearly some sort of
-     * finalization. Perhaps a section at the beginning? *)
+    (* similar to gotfunc/donefunc, but called respectively when a pquery is
+     * received and after all pqueries have been received. *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
       (* start: build the Maximum A Posteriori sequences *)
       let mrcam = Refpkg.get_mrcam rp
@@ -548,7 +469,10 @@ let run_file prefs query_fname =
         let map_fasta = IntMap.fold
           (fun i mrca accum ->
             if not (IntMap.mem i seq_map) then accum else
-              let tax_name = Tax_taxonomy.get_tax_name td mrca in
+              let tax_name = match mrca with
+                | Tax_id.NoTax -> "none"
+                | _ -> Tax_taxonomy.get_tax_name td mrca
+              in
               List.rev_append
                 (IntMap.find i seq_map)
                 (((Printf.sprintf "%d_%s"
@@ -592,12 +516,10 @@ let run_file prefs query_fname =
     and cachefunc _ = false
     and donefunc () =
       pquery_donefunc ();
-      Placerun.make orig_ref_tree query_bname (!queries)
+      Placerun.make orig_ref_tree placerun_name (!queries)
         |> Placerun.redup redup_tbl
         |> classify
-        |> Placerun_io.to_json_file
-            (Array.to_list Sys.argv |> String.concat " ")
-            ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+        |> placerun_cb
     in
     gotfunc, cachefunc, donefunc
 
@@ -670,16 +592,159 @@ let run_file prefs query_fname =
   in
   flush_all ();
   1 -- Prefs.children prefs
-    |> Enum.map
-      (fun _ -> new pplacer_process partial gotfunc nextfunc progressfunc)
+    |> Enum.filter_map
+      (fun _ ->
+        try
+          Some (new pplacer_process partial gotfunc nextfunc progressfunc)
+        with Unix.Unix_error (e, "fork", _) ->
+          dprintf "error (%s) when trying to fork\n" (Unix.error_message e);
+          None)
     |> List.of_enum
-    |> event_loop;
+    |> (function
+        | [] ->
+          dprint
+            "couldn't fork any children; falling back to a single process.\n";
+          let rec aux () =
+            match begin
+              try
+                Some (nextfunc ())
+              with Finished -> None
+            end with
+              | None -> ()
+              | Some query ->
+                partial ~show_query query |> List.iter gotfunc; aux ()
+          in
+          aux ()
+        | children -> event_loop children);
   donefunc ();
   if Prefs.timing prefs then begin
     Printf.printf "\ntiming data:\n";
     StringMap.iter
       (fun name values ->
-        Printf.printf "  %s: %0.4fs\n" name (List.fold_left (+.) 0.0 values))
+        Printf.printf "  %s: %0.4fs\n" name (List.fsum values))
       (!timings)
+  end
+
+let partition_queries ref_name_set aln =
+  let ref_aln, query_aln =
+    Array.partition
+      (fun (name,_) -> StringSet.mem name ref_name_set)
+      aln
+  in
+  query_aln,
+  if Array.length ref_aln = 0 then begin
+    dprint
+      "Didn't find any reference sequences in given alignment file. \
+         Using supplied reference alignment.\n";
+    None
+  end
+  else begin
+    dprint
+      "Found reference sequences in given alignment file. \
+         Using those for reference alignment.\n";
+    Some ref_aln
+  end
+
+let run_file prefs query_fname =
+  dprintf
+    "Running pplacer %s analysis on %s...\n"
+    Version.version
+    query_fname;
+  let ref_dir_complete =
+    match Prefs.ref_dir prefs with
+      | "" -> ""
+      | s -> begin
+        Check.directory s;
+        if s.[(String.length s)-1] = '/' then s
+        else s^"/"
+      end
+  in
+
+  (* string map which represents the elements of the reference package; these
+   * may be actually a reference package or specified on the command line. *)
+  let file_path = Refpkg_parse.file_path in
+  let rp_strmap =
+    List.fold_right
+    (* only set if the option string is non empty.
+     * override the contents of the reference package. *)
+      (fun (k,v) m ->
+        if v = "" then m
+        else StringMap.add k (ref_dir_complete^v |> file_path) m)
+      [
+        "tree", Prefs.tree_fname prefs;
+        "aln_fasta", Prefs.ref_align_fname prefs;
+        "tree_stats", Prefs.stats_fname prefs;
+      ]
+      (match Prefs.refpkg_path prefs with
+        | "" ->
+            StringMap.add "name"
+              (Prefs.ref_align_fname prefs
+               |> safe_chop_extension
+               |> Refpkg_parse.metadata)
+              StringMap.empty
+        | path -> Refpkg_parse.strmap_of_path path)
+  in
+  if not (StringMap.mem "tree" rp_strmap) then
+    if Prefs.refpkg_path prefs = "" then
+      failwith "please specify a reference tree with -t or -c"
+    else
+      failwith "the reference package provided does not contain a tree";
+
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
+  let ref_tree = Refpkg.get_ref_tree rp in
+  (* *** split the sequences into a ref_aln and a query_list *** *)
+  let ref_name_map = Newick_gtree.leaf_label_map ref_tree in
+  let ref_name_set = IntMap.values ref_name_map |> StringSet.of_enum in
+  if IntMap.cardinal ref_name_map <> StringSet.cardinal ref_name_set then
+    failwith("Repeated names in reference tree!");
+  let query_align, ref_align = Alignment.upper_aln_of_any_file query_fname
+    |> partition_queries ref_name_set
+  in
+  let _ = Array.fold_left
+    (fun seen (seq, _) ->
+      if StringSet.mem seq seen then
+        failwith
+          (Printf.sprintf
+             "duplicate reference sequence '%s' in query file %s"
+             seq
+             query_fname);
+      StringSet.add seq seen)
+    StringSet.empty
+    (Option.default [||] ref_align)
+  in ();
+  let rp = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
+  and query_bname = Filename.basename (Filename.chop_extension query_fname)
+  and from_input_alignment = Option.is_some ref_align in
+  let jplace_name = match Prefs.out_file prefs with
+    | "" -> ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+    | x -> x in
+  let placerun_cb pr =
+    Placerun_io.to_json_file
+      jplace_name
+      pr
+  and query_list = Array.to_list query_align
+  and n_groups = Prefs.groups prefs in
+  if n_groups > 1 then begin
+    dprintf "Splitting query alignment into %d groups... " n_groups;
+    let groups = Seq_group.group n_groups query_list in
+    let prl = RefList.empty () in
+    dprint "done.\n";
+    Array.iteri
+      (fun i ql ->
+        dprintf "Running sequence group %d of %d.\n" (succ i) n_groups;
+        if not (List.is_empty ql) then
+          run_placements
+            prefs rp ql from_input_alignment query_bname (RefList.push prl))
+      groups;
+    RefList.to_list prl
+      |> List.reduce (Placerun.combine query_bname)
+      |> placerun_cb
+  end else begin
+    run_placements
+      prefs rp query_list from_input_alignment query_bname placerun_cb
   end
 

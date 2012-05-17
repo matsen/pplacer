@@ -1,3 +1,4 @@
+open Ppatteries
 open OUnit
 
 let suite = "all tests" >::: [
@@ -8,5 +9,6 @@ let suite = "all tests" >::: [
 ]
 
 let _ =
+  verbosity := 0;
   run_test_tt_main suite
 

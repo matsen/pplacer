@@ -55,12 +55,6 @@ struct
 
   let build ref_align = function
     | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
-      let n_sites = ref_align.(0) |> snd |> String.length in
-      if n_sites <> Array.length site_categories then
-        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
-          n_sites
-          (Array.length site_categories)
-        |> failwith;
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions emperical_freqs ref_align
@@ -357,13 +351,11 @@ struct
   let refine model n_sites ref_tree like_aln_map util_glv_arr_1 util_glv_arr_2 =
     dprint "Optimizing site categories... ";
     model.site_categories <- Array.make n_sites 0;
-    let n_categories = Array.length model.site_categories in
     let best_log_lks = Array.make n_sites (-. infinity)
     and best_log_lk_cats = Array.make n_sites (-1)
-    and rates = rates model
-    in
-    let log_rates = Array.map log rates
-    in
+    and rates = rates model in
+    let n_rates = Array.length rates
+    and log_rates = Array.map log rates in
     (* For every category, we make an "attempt". Here we record those attempts
      * that are actually best. *)
     let record_best_log_lks attempt cat =
@@ -377,8 +369,8 @@ struct
         attempt
     in
     let cat_array = Array.make n_sites (-1) in
-    (* Try all of the categories. *)
-    for cat=0 to n_categories-1 do
+    (* Try all of the rate categories. *)
+    for cat=0 to n_rates-1 do
       dprintf "%d " (cat+1);
       Array.fill cat_array 0 n_sites cat;
       set_site_categories model cat_array;
@@ -390,14 +382,25 @@ struct
     set_site_categories model best_log_lk_cats;
     dprint "done.\n"
 
+  let check model ref_align =
+    let n_sites = ref_align.(0) |> snd |> String.length in
+      if n_sites <> Array.length model.site_categories then
+        Printf.sprintf "mismatch: %d sites in site_categories and %d sites in reference alignment"
+          n_sites
+          (Array.length model.site_categories)
+        |> failwith
+
   let mask_sites model mask =
-    if Array.length model.site_categories <> Array.length mask then
-      invalid_arg "mask_sites";
-    model.site_categories <-
-      (Enum.combine (Array.enum model.site_categories, Array.enum mask)
-       |> Enum.filter_map (function x, true -> Some x | _, false -> None)
-       |> Array.of_enum);
-    setup_occupied_rates model
+    (* We don't care about the case when they're not equal; either the
+     * refinement will already repopulate the site_categories or the mask is
+     * invalid and `check` will raise an error. *)
+    if Array.length model.site_categories = Array.length mask then begin
+      model.site_categories <-
+        (Enum.combine (Array.enum model.site_categories, Array.enum mask)
+         |> Enum.filter_map (function x, true -> Some x | _, false -> None)
+         |> Array.of_enum);
+      setup_occupied_rates model
+    end
 
 end
 and Like_stree: sig

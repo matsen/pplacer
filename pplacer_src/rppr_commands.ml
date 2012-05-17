@@ -9,5 +9,9 @@ let command_list () =
       "pdprune", (fun () -> new Rppr_pdprune.cmd ());
       "info", (fun () -> new Rppr_info.cmd ());
       "reroot", (fun () -> new Rppr_reroot.cmd ());
+      "infer", (fun () -> new Rppr_infer.cmd ());
+      "reclass", (fun () -> new Rppr_reclass.cmd ());
+      "prepsim", (fun () -> new Rppr_prepsim.cmd ());
+      "vorotree", (fun () -> new Rppr_vorotree.cmd ());
     ];
   ]
