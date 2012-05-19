@@ -26,25 +26,25 @@ object (self)
     let gt = Refpkg.get_ref_tree rp
     and td = Refpkg.get_taxonomy rp in
     let st = gt.Gtree.stree in
+    let top_id = Stree.top_id st in
     if fv taxonomic then begin
       rank_tax_map_of_refpkg rp
         |> IntMap.enum
         |> Enum.map
             (fun (rank, taxmap) ->
-              let _, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
-              let cutsetim = IntMap.add (Stree.top_id st) ColorSet.empty cutsetim in
-              let all_colors, unconvex_colors = IntMap.fold
-                (fun _ colors (all, unconvex) ->
-                  ColorSet.union all colors,
+              let sizemim, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
+              let cutsetim = IntMap.add top_id ColorSet.empty cutsetim in
+              let unconvex_colors = IntMap.fold
+                (fun _ colors unconvex ->
                   if ColorSet.cardinal colors < 2 then unconvex else
                     ColorSet.union unconvex colors)
                 cutsetim
-                (ColorSet.empty, ColorSet.empty)
+                ColorSet.empty
               and max_bad, tot_bad = badness cutsetim in
               (Tax_taxonomy.get_rank_name td rank) ::
                 (List.map
                    string_of_int
-                   [ColorSet.cardinal all_colors;
+                   [ColorMap.cardinal (IntMap.find top_id sizemim);
                     ColorSet.cardinal unconvex_colors;
                     max_bad;
                     tot_bad]))
