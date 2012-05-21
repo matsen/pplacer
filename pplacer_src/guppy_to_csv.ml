@@ -9,6 +9,10 @@ object (self)
   inherit tabular_cmd ~default_to_csv:true () as super_tabular
   inherit mass_cmd () as super_mass
 
+  method specl =
+    super_tabular#specl
+  @ super_mass#specl
+
   method desc =
 "turns a placefile into a csv file"
   method usage = "usage: to_csv [options] placefile[s]"
