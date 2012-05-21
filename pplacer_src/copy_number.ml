@@ -17,6 +17,8 @@ let copy_maps_of_gt_map gt leaf_copy_map =
         IntMap.empty
         subtrees
       in
+      (* Change the tree, extending the branch lengths according to Felstenstein
+       * 1985 p.10. *)
       if i <> top then begin
         let bll = List.map (top_id |- bl) subtrees in
         (/.)
@@ -30,9 +32,11 @@ let copy_maps_of_gt_map gt leaf_copy_map =
         i
         ((/.)
            (List.map
+            (* Divide the entry in accum by the corresponding bl *)
               (top_id |- (flip IntMap.find accum &&& bl) |- uncurry (/.))
               subtrees
             |> List.fsum)
+           (* Take the sum of the inverses of the branch lengths *)
            (List.map
               (top_id |- bl |- (/.) 1.)
               subtrees
