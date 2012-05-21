@@ -156,25 +156,26 @@ def main():
                 for fobj in bin_outputs.itervalues():
                     fobj.write(line)
 
-        # Copy the stockholm header,
-        write_all(itertools.islice(args.query_seqs, 3))
+        with open(args.query_seqs, 'r') as fobj:
+            # Copy the stockholm header,
+            write_all(itertools.islice(fobj, 3))
 
-        # then partition the sequences,
-        for line in args.query_seqs:
-            # (stopping if we reach the metadata at the end (hopefully it's at
-            # the end))
-            if line.startswith('#=GC'):
-                break
-            id, seq = line.split()
-            bin = seq_bins.get(id)
-            if bin is None or bin not in bin_outputs:
-                continue
-            bin_outputs[bin].write(line)
-            bin_counts[bin] += 1
+            # then partition the sequences,
+            for line in fobj:
+                # (stopping if we reach the metadata at the end (hopefully it's at
+                # the end))
+                if line.startswith('#=GC'):
+                    break
+                id, seq = line.split()
+                bin = seq_bins.get(id)
+                if bin is None or bin not in bin_outputs:
+                    continue
+                bin_outputs[bin].write(line)
+                bin_counts[bin] += 1
 
-        # and then copy the footer.
-        write_all([line])
-        write_all(args.query_seqs)
+            # and then copy the footer.
+            write_all([line])
+            write_all(fobj)
 
     for fobj in bin_outputs.itervalues():
         fobj.close()
@@ -209,10 +210,9 @@ def main():
         elif args.alignment == 'merge-each':
             refpkg_obj = Refpkg(refpkg)
             logging_check_call(
-                [args.cmalign, '--merge', '-o', aligned,
-                 refpkg_obj.resource_path('profile'),
-                 refpkg_obj.resource_path('aln_sto'),
-                 input],
+                [args.cmalign, '--merge', '-o', aligned, '-1', '--hbanded',
+                 '--sub', '--dna', refpkg_obj.resource_path('profile'),
+                 refpkg_obj.resource_path('aln_sto'), input],
                 stdout=cmscores_stdout)
         elif args.alignment == 'none':
             raise NotImplementedError('none')
