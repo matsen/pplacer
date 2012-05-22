@@ -1,4 +1,8 @@
-"""Create table `multiclass_concat` and add names for concatenated taxids to placements database."""
+#!/usr/bin/python
+"""
+In a classification database, create a view `multiclass_concat` and add names
+for concatenated taxids to the taxa table.
+"""
 
 import itertools
 import argparse

@@ -183,3 +183,74 @@ parameter and updates it in place, after making a backup copy.
 ``deduplicate_sequences.py`` deduplicates a sequence file and produces a dedup
 file suitable for use with ``guppy redup -m``. See the
 :ref:`redup <guppy_redup>` documentation for details.
+
+``hrefpkg_query.py``
+====================
+
+``hrefpkg_query.py`` classifies sequences using a hrefpkg. The output is a
+sqlite database with the same schema as created by :ref:`rppr prep_db
+<rppr_prep_db>`.
+
+::
+
+    usage: hrefpkg_query.py [options] hrefpkg query_seqs classification_db
+
+    positional arguments:
+      hrefpkg               hrefpkg to classify using
+      query_seqs            input query sequences
+      classification_db     output sqlite database
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -j CORES, --ncores CORES
+                            number of cores to tell commands to use
+      -r RANK, --classification-rank RANK
+                            rank to perform the initial NBC classification at
+      --workdir DIR         directory to write intermediate files to (default: a
+                            temporary directory)
+      --disable-cleanup     don't remove the work directory as the final step
+      --use-mpi             run refpkg_align with MPI
+      --alignment {align-each,merge-each,none}
+                            respectively: align each input sequence; subset an
+                            input stockholm alignment and merge each sequence to a
+                            reference alignment; only subset an input stockholm
+                            alignment (default: align-each)
+      --cmscores FILE       in align-each mode, write out a file containing the
+                            cmalign scores
+
+    external binaries:
+      --pplacer PROG        pplacer binary to call
+      --guppy PROG          guppy binary to call
+      --rppr PROG           rppr binary to call
+      --refpkg-align PROG   refpkg_align binary to call
+      --cmalign PROG        cmalign binary to call
+
+..
+
+``multiclass_concat.py``
+========================
+
+``multiclass_concat.py`` takes a database which has been classified using
+:ref:`guppy classify <guppy_classify>` and creates a view
+``multiclass_concat``. This view has the same schema as ``multiclass``, with
+the addition of an ``id_count`` column. However, instead of getting multiple
+rows when a sequence has multiple classifications at a rank, the ``tax_id``
+column will be all of the tax_ids concatenated together, delimited by ``,``.
+
+To ensure that it's still easy to join ``multiclass_concat`` to the ``taxa``
+table, rows are inserted into the ``taxa`` table for each concatenated tax_id
+present in the ``multiclass_concat`` table which have a ``tax_name`` created by
+concatenating the names of all the constituent tax_ids.
+
+::
+
+    usage: multiclass_concat.py [options] database
+
+    positional arguments:
+      database    sqlite database (output of `rppr prep_db` after `guppy
+                  classify`)
+
+    optional arguments:
+      -h, --help  show this help message and exit
+
+..
