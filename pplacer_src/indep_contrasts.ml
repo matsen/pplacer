@@ -94,13 +94,13 @@ let build_distal_map gt leaf_values =
 
 (* Now build a proximal_map using this distal map.
  * This will be a recursion as follows: say we are at an internal node such that
- * pd is the distal pair coming from the previous step of the recursion, and bd
+ * pp is the proximal pair coming from the previous step of the recursion, and bp
  * is the branch length connecting this internal node to the proximal part of
- * the tree. Now, say (p1, b1), ..., (pk, bk) are below us.
+ * the tree. Now, say (p1, b1), ..., (pk, bk) are the distal pairs below us.
  *
  * ASCII art, with v and ^ representing subtrees:
  *
- *    pd
+ *    pp
  *     v
  *     |
  *    /|\
@@ -109,7 +109,7 @@ let build_distal_map gt leaf_values =
  * p1 pi  pk
  *
  proximal p for edge i will skip i and add d at the end:
- * join_subsoln_list [p1, b1; ...; p(i-1), b(i-1); p(i+1), b(i+1); ...; pk, bk; pd, bd]
+ * join_subsoln_list [p1, b1; ...; p(i-1), b(i-1); p(i+1), b(i+1); ...; pk, bk; pp, bp]
  *)
 let build_proximal_map gt distal_map =
   let bl = Gtree.get_bl gt in
