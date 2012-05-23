@@ -156,11 +156,17 @@ let of_criterion_map criterion leaf_copy_map pr =
   in
   List.map
     (fun pq ->
+      pq,
       List.map
         ((criterion &&& copy_of_placement) |- uncurry ( *.))
         (Pquery.place_list pq)
-      |> List.fsum
-      |> (/.) (Pquery.multiplicity pq)
-      |> Pquery.set_mass pq)
+      |> List.fsum)
     (Placerun.get_pqueries pr)
-  |> Placerun.set_pqueries pr
+
+let scale_placerun criterion leaf_copy_map pr =
+  of_criterion_map criterion leaf_copy_map pr
+    |> List.map (fun (pq, x) ->
+      Pquery.namlom pq
+        |> List.map (fun (n, m) -> n, m /. x)
+        |> Pquery.set_namlom pq)
+    |> Placerun.set_pqueries pr
