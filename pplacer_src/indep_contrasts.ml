@@ -44,8 +44,11 @@ let bl_sum p bl =
 
 (* px is a pair, as above, and bx is a branch length.*)
 let join_two_subsolns pi bi pj bj =
-  if bi =~ 0. then pi
-  else if bj =~ 0. then pj
+  let no_bl b = Option.map (snd |- (+.) b |- approx_equal 0.)
+    |- Option.default false
+  in
+  if no_bl bi pi then pi
+  else if no_bl bj pj then pj
   else combo (bl_sum pi bi) (bl_sum pj bj)
 
 (* l is a list of pairs (p1, b1), ..., (pk, bk) that come up from a
