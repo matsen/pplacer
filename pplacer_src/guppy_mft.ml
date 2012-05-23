@@ -43,7 +43,7 @@ object (self)
                   | [a; b] -> a, float_of_string b
                   | _ -> failwith "malformed copy number csv file")
             |> StringMap.of_pairlist
-            |> Copy_number.of_criterion_map Placement.ml_ratio
+            |> Indep_contrasts.of_criterion_map Placement.ml_ratio
             |> List.map)
     |> if not (fv unitize) then identity else List.map Placerun.unitize
     in

@@ -18,9 +18,12 @@
  * (note that we don't add in the distal branch length $v_k$ in his notation):
  *)
 
+open Ppatteries
+module IME = IntMap.Exceptionless
+
 let actual_combo (xi, vbli) (xj, vblj) =
-  ((xi /. vbli +. xj /. vblj) /. (1. /. vbli +. 1. /. vblj),
-    (vbli *. vblj) /. (vbli +. vblj))
+  (xi /. vbli +. xj /. vblj) /. (1. /. vbli +. 1. /. vblj),
+  (vbli *. vblj) /. (vbli +. vblj)
 
 (* Adding these beasts is like usual: *)
 let actual_sum (xi, vbli) (xj, vblj) = (xi +. xj, vbli +. vblj)
@@ -36,9 +39,12 @@ let binary_opt_extend f oa ob = match (oa, ob) with
 let combo = binary_opt_extend actual_combo
 let sum = binary_opt_extend actual_sum
 
+let bl_sum p bl =
+  sum p (Some (0., bl))
+
 (* px is a pair, as above, and bx is a branch length.*)
 let join_two_subsolns pi bi pj bj =
-  combo (sum pi (0., bi)) (sum pj (0., bj))
+  combo (bl_sum pi bi) (bl_sum pj bj)
 
 (* l is a list of pairs (p1, b1), ..., (pk, bk) that come up from a
  * multifurcation. Note that we simply consider a multifurcation to be an
@@ -57,6 +63,9 @@ let join_two_subsolns pi bi pj bj =
  * next step because of the zero branch length. In general, it's just a fold.
  *   *)
 let join_subsoln_list l =
+  List.enum l
+    |> Enum.map (uncurry bl_sum)
+    |> Enum.reduce combo
   (* this will just be a fold *)
 
 (* So, to get all of the distal p's, just do a DF recursion across the tree.
@@ -64,9 +73,24 @@ let join_subsoln_list l =
  * number) is None, whereas if there is something x given then the base case is
  * Some (x,0). At every internal node, do a join_subsoln_list.
  *)
-let build_distal_map t leaf_values =
-  (* build a map of all internal nodes to the corresponding p's by a recursion
-   * across the tree*)
+
+let build_distal_map gt leaf_values =
+  let bl = Gtree.get_bl gt in
+  let open Stree in
+  let rec aux = function
+    | Leaf i ->
+      begin match IME.find i leaf_values with
+      | Some x -> (Some (x, 0.), bl i), IntMap.singleton i (x, 0.)
+      | None -> (None, bl i), IntMap.empty
+      end
+    | Node (i, subtrees) ->
+      let sol, map = List.map aux subtrees
+        |> List.split
+        |> join_subsoln_list *** List.reduce IntMap.union
+      in
+      (sol, bl i), IntMap.add i (Option.get sol) map
+  in
+  Gtree.get_stree gt |> aux |> snd
 
 (* Now build a proximal_map using this distal map.
  * This will be a recursion as follows: say we are at an internal node such that
@@ -87,6 +111,56 @@ let build_distal_map t leaf_values =
  proximal p for edge i will skip i and add d at the end:
  * join_subsoln_list [p1, b1; ...; p(i-1), b(i-1); p(i+1), b(i+1); ...; pk, bk; pd, bd]
  *)
-let build_proximal_map t distal_map =
-  (* A recursion assigning things as we head down the tree (versus up the tree
-   * like build_distal_map) *)
+let build_proximal_map gt distal_map =
+  let bl = Gtree.get_bl gt in
+  let open Stree in
+  let top = Gtree.top_id gt in
+  let rec aux accum = function
+    | [] -> accum
+    | Leaf _ :: rest -> aux accum rest
+    | Node (i, subtrees) :: rest ->
+      let prox_edge = if i = top then None else Some (IME.find i accum, bl i) in
+      let accum' = List.fold_left
+        (fun accum t ->
+          let j = top_id t in
+          let sol = List.remove subtrees t
+            |> List.map (top_id |- (flip IME.find distal_map &&& bl))
+            |> maybe_cons prox_edge
+            |> join_subsoln_list
+          in
+          IntMap.add j (Option.get sol) accum)
+        accum
+        subtrees
+      in
+      aux accum' (List.append rest subtrees)
+  in
+  aux IntMap.empty [Gtree.get_stree gt]
+
+let of_criterion_map criterion leaf_copy_map pr =
+  let gt = Placerun.get_ref_tree pr in
+  let dist_cm = Newick_gtree.label_to_leaf_map gt leaf_copy_map
+    |> build_distal_map gt
+  in
+  let prox_cm = build_proximal_map gt dist_cm in
+  let copy_of_placement p =
+    let loc = Placement.location p
+    and length = Placement.distal_bl p in
+    let bl = Gtree.get_bl gt loc in
+    join_two_subsolns
+      (IME.find loc dist_cm)
+      length
+      (IME.find loc prox_cm)
+      (bl -. length)
+    |> Option.get
+    |> fst
+  in
+  List.map
+    (fun pq ->
+      List.map
+        ((criterion &&& copy_of_placement) |- uncurry ( *.))
+        (Pquery.place_list pq)
+      |> List.fsum
+      |> (/.) (Pquery.multiplicity pq)
+      |> Pquery.set_mass pq)
+    (Placerun.get_pqueries pr)
+  |> Placerun.set_pqueries pr
