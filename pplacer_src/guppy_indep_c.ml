@@ -9,20 +9,20 @@ object (self)
   inherit mass_cmd ~point_choice_allowed:false () as super_mass
   inherit tabular_cmd () as super_tabular
 
-  val copy_number = flag "--leaf-values"
-    (Needs_argument ("leav values", "Name of CSV file giving values for the leaves of the tree."))
+  val leaf_values = flag "--leaf-values"
+    (Needs_argument ("leaf values", "Name of CSV file giving values for the leaves of the tree."))
 
   method specl =
     super_mass#specl
   @ super_tabular#specl
-  @ [string_flag copy_number]
+  @ [string_flag leaf_values]
 
   method desc =
 "calculates the independent contrasts of pqueries"
   method usage = "usage: indep_c [options] placefile[s]"
 
   method private placefile_action prl =
-    let leaf_copy_map = fv copy_number
+    let leaf_copy_map = fv leaf_values
       |> Csv.load
       |> List.map
           (function

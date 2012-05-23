@@ -13,7 +13,7 @@ object (self)
   val transform = flag "--transform"
     (Plain ("", "A transform to apply to the read multiplicities before calculating. \
     Options are 'log', 'unit', 'asinh', and 'no_trans'. Default is no transform."))
-  val copy_number = flag "--leaf-values"
+  val leaf_values = flag "--leaf-values"
     (Needs_argument ("", "Name of CSV file giving values for the leaves of the tree to use in independent contrasts."))
 
   method specl =
@@ -21,7 +21,7 @@ object (self)
   @ [
     toggle_flag unitize;
     string_flag transform;
-    string_flag copy_number;
+    string_flag leaf_values;
   ]
 
   method desc = "Multi-Filter and Transform placefiles"
@@ -33,7 +33,7 @@ object (self)
         | "" -> identity
         | transform ->
           List.map (Mass_map.transform_of_str transform |> Placerun.transform))
-    |> (match fvo copy_number with
+    |> (match fvo leaf_values with
         | None -> identity
         | Some infile ->
           Csv.load infile
