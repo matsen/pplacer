@@ -12,6 +12,7 @@ The pplacer binary actually does phylogenetic placement and produces place files
    generated_rst/guppy
    generated_rst/rppr
    scripts
+   glossary
 
 
 .. raw:: html
