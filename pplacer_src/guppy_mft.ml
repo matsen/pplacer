@@ -13,9 +13,8 @@ object (self)
   val transform = flag "--transform"
     (Plain ("", "A transform to apply to the read multiplicities before calculating. \
     Options are 'log', 'unit', 'asinh', and 'no_trans'. Default is no transform."))
-  val copy_number = flag "--copy-number"
-    (Needs_argument ("", "Rescale placements by the copy number, given a CSV file mapping from the names of the \
-                          leaves on the reference tree to their copy numbers."))
+  val copy_number = flag "--leaf-values"
+    (Needs_argument ("", "Name of CSV file giving values for the leaves of the tree to use in independent contrasts."))
 
   method specl =
     super_output#specl
