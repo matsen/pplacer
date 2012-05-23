@@ -44,8 +44,9 @@ let bl_sum p bl =
 
 (* px is a pair, as above, and bx is a branch length.*)
 let join_two_subsolns pi bi pj bj =
-  let no_bl b = Option.map (snd |- (+.) b |- approx_equal 0.)
-    |- Option.default false
+  let no_bl b = function
+    | Some (_, vb) -> b +. vb =~ 0.
+    | None -> false
   in
   if no_bl bi pi then pi
   else if no_bl bj pj then pj
