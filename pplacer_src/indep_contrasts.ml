@@ -44,7 +44,9 @@ let bl_sum p bl =
 
 (* px is a pair, as above, and bx is a branch length.*)
 let join_two_subsolns pi bi pj bj =
-  combo (bl_sum pi bi) (bl_sum pj bj)
+  if bi =~ 0. then pi
+  else if bj =~ 0. then pj
+  else combo (bl_sum pi bi) (bl_sum pj bj)
 
 (* l is a list of pairs (p1, b1), ..., (pk, bk) that come up from a
  * multifurcation. Note that we simply consider a multifurcation to be an
@@ -66,7 +68,6 @@ let join_subsoln_list l =
   List.enum l
     |> Enum.map (uncurry bl_sum)
     |> Enum.reduce combo
-  (* this will just be a fold *)
 
 (* So, to get all of the distal p's, just do a DF recursion across the tree.
  * The base case for something that is not labeled with a character (e.g. a copy
