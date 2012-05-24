@@ -16,10 +16,10 @@ def main():
         level=logging.INFO, format="%(levelname)s: %(message)s")
 
     parser = argparse.ArgumentParser(
-        description="Extract the original sequence names from an FNA file.")
+        description="Extract the original sequence names from a QIIME FASTA file.")
     parser.add_argument(
-        'fna', type=argparse.FileType('r'), nargs='?', default=sys.stdin,
-        help="input FNA file (default: stdin)")
+        'qiime', type=argparse.FileType('r'), nargs='?', default=sys.stdin,
+        help="input QIIME file (default: stdin)")
     parser.add_argument(
         'fasta', type=argparse.FileType('w'), nargs='?', default=sys.stdout,
         help="output FASTA file (default: stdout)")
@@ -33,7 +33,7 @@ def main():
     if args.specimen_map is not None:
         specimen_writer = csv.writer(args.specimen_map)
 
-    for seq in SeqIO.parse(args.fna, 'fasta'):
+    for seq in SeqIO.parse(args.qiime, 'fasta'):
         match = description_regexp.match(seq.description)
         if not match:
             log.warning("sequence %r had a strange description", seq.id)

@@ -254,3 +254,31 @@ concatenating the names of all the constituent tax_ids.
       -h, --help  show this help message and exit
 
 ..
+
+``split_qiime.py``
+==================
+
+``split_qiime.py`` takes sequences in `QIIME's preprocessed FASTA format`_ and
+generates a FASTA file which contains the original sequence names. Optionally,
+a specimen map can also be written out which maps from the original sequence
+names to their specimens as listed in the QIIME file.
+
+For example, an incoming sequence identified by ``>PC.634_1 FLP3FBN01ELBSX``
+will be written out as ``>FLP3FBN01ELBSX`` with an entry in the specimen_map of
+``FLP3FBN01ELBSX,PC.634``.
+
+::
+
+    usage: split_qiime.py [-h] [qiime] [fasta] [specimen_map]
+
+    Extract the original sequence names from a QIIME FASTA file.
+
+    positional arguments:
+      qiime         input QIIME file (default: stdin)
+      fasta         output FASTA file (default: stdout)
+      specimen_map  if specified, output specimen map (default: don't write)
+
+    optional arguments:
+      -h, --help    show this help message and exit
+
+.. _QIIME's preprocessed FASTA format: http://qiime.org/tutorials/tutorial.html#assign-samples-to-multiplex-reads
