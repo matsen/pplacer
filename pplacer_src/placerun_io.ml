@@ -198,11 +198,12 @@ let of_json_file fname =
     |> List.map
         (Jsontype.string
          |- (function "marginal_prob" when version = 1 -> "marginal_like" | x -> x))
-  and meta = Hashtbl.find json "metadata" |> Jsontype.obj in
+  and meta = Hashtbl.find_option json "metadata" |> Option.map Jsontype.obj in
   let pql = List.map
     (Pquery_io.of_json fields)
     (Jsontype.array (Hashtbl.find json "placements"))
-  and transm = Hashtbl.Exceptionless.find meta "transm"
+  and transm = meta
+    |> Option.bind (flip Hashtbl.find_option "transm")
     |> Option.map transm_of_json
   in
   Placerun.make
