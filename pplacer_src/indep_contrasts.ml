@@ -25,9 +25,6 @@ let actual_combo (xi, vbli) (xj, vblj) =
   (xi /. vbli +. xj /. vblj) /. (1. /. vbli +. 1. /. vblj),
   (vbli *. vblj) /. (vbli +. vblj)
 
-(* Adding these beasts is like usual: *)
-let actual_sum (xi, vbli) (xj, vblj) = (xi +. xj, vbli +. vblj)
-
 (* There is also the case of missing values. If a value is missing we can simply
  * ignore it. *)
 let binary_opt_extend f oa ob = match (oa, ob) with
@@ -37,10 +34,11 @@ let binary_opt_extend f oa ob = match (oa, ob) with
   | (None, None) -> None
 
 let combo = binary_opt_extend actual_combo
-let sum = binary_opt_extend actual_sum
 
-let bl_sum p bl =
-  sum p (Some (0., bl))
+(* Having extra branch length leaves None as None. *)
+let bl_sum p bl = match p with
+  | Some (x, bvl) -> Some (x, bvl +. bl)
+  | None -> None
 
 (* px is a pair, as above, and bx is a branch length.*)
 let join_two_subsolns pi bi pj bj =
@@ -64,7 +62,7 @@ let join_two_subsolns pi bi pj bj =
  *
  * We don't have to extend the join of p1 and p2 with any branch length before
  * combining with p3, so this ends up just being
- * combo (combo (sum p1 (0., b1)) (sum p2 (0., b2))) (sum p3 (0., b3))
+ * combo (combo (bl_sum p1 b1) (bl_sum p2 b2)) (bl_sum p3 b3)
  * noting that we didn't have to add anything to the internal combo before the
  * next step because of the zero branch length. In general, it's just a fold.
  *   *)
