@@ -1,4 +1,4 @@
-This is an implementation of the "independent contrasts" method of `(Felsenstein, 1985)`_
+This is an implementation of the "independent contrasts" method of `(Felsenstein, 1985)`_.
 
 Assume we have the following pair of placements on a simple tree::
 
@@ -18,14 +18,13 @@ And that ``ic.csv`` is a (possibly partial) list of tip values as follows::
   D,1
 
 Then, a run of ``indep_c`` will give you the maximum likelihood values of
-values at the tips assuming that the value changes by diffusion::
+values at the tips assuming that the value changes by Brownian motion::
 
-  rhino2 ~/ic » eguppy indep_c --leaf-values ic.csv ex.jplace
+  rhino2 ~/ic » guppy indep_c --leaf-values ic.csv ex.jplace
   sequence         x
      read1   2.60377
      read2  0.490566
 
-Note that guppy mft has the xxx option to divide the placement weights by these inferred values.
-
+Note that :doc:`guppy_mft` has the ``--leaf-values`` option to divide the placement weights by these inferred values.
 
 .. _(Felsenstein, 1985): http://www.jstor.org/discover/10.2307/2461605
