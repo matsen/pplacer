@@ -4,7 +4,7 @@ open OUnit
 
 (*open Minimization*)
 
-let test_rot_mat_orth angles =
+let test_rot_mat_orth angles () =
   let orig = rot_mat angles in
   let dim = fst (Gsl_matrix.dims orig) in
   let trans = Gsl_matrix.create dim dim in
@@ -60,19 +60,17 @@ let mat_for_3d_som = farrarr_of_string
 
 let dummy_vars = farr_of_string "0.5 0.25 0.15 0.1"
 
-let test_som_2d =
+let test_som_2d () =
   let _, vects = som_rotation mat_for_2d_som 2 dummy_vars in
   "2d som incorrect" @? farrarr_approx_equal minimized_trans vects
 
-let test_som_3d =
+let test_som_3d () =
   let _, vects = som_rotation mat_for_3d_som 3 dummy_vars in
   "3d som incorrect" @? farrarr_approx_equal minimized_trans vects
 
 let suite = [
-  "orth test 1" >:: (fun _ -> test_rot_mat_orth rot_angles.(0));
-  "orth test 2" >:: (fun _ -> test_rot_mat_orth rot_angles.(1));
-  "2d som test" >:: (fun _ -> test_som_2d);
-  "3d_som_test" >:: (fun _ -> test_som_3d);
+  "orth test 1" >:: test_rot_mat_orth rot_angles.(0);
+  "orth test 2" >:: test_rot_mat_orth rot_angles.(1);
+  "2d som test" >:: test_som_2d;
+  "3d_som_test" >:: test_som_3d;
 ]
-
-
