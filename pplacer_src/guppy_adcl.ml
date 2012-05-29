@@ -26,8 +26,8 @@ object (self)
     toggle_flag no_collapse;
   ] @ super_tabular#specl
 
-  method desc = "finds the most DIstant PLACements from the leaves"
-  method usage = "usage: diplac [options] placefile"
+  method desc = "calculates ADCL for each pquery in a placefile"
+  method usage = "usage: adcl [options] placefile"
 
   method private dist dist_fn p =
     dist_fn p
@@ -67,7 +67,7 @@ object (self)
 
     | l ->
       List.length l
-      |> Printf.sprintf "diplac takes exactly one placefile (%d given)"
+      |> Printf.sprintf "adcl takes exactly one placefile (%d given)"
       |> failwith
 
 end

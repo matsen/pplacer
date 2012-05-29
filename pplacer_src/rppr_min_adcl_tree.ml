@@ -16,8 +16,8 @@ object (self)
     super_voronoi#specl
     @ [delimited_list_flag query_seqs]
 
-  method desc = "finds a good collection of sequences to cut from ref tree"
-  method usage = "usage: vorotree [options] newick.tre"
+  method desc = "finds a good collection of sequences to cut from a tree"
+  method usage = "usage: min_adcl_tree [options] newick.tre"
 
   method action = function
     | [tree] ->
@@ -51,7 +51,7 @@ object (self)
 
     | l ->
       List.length l
-      |> Printf.sprintf "vorotree takes exactly one tree (%d given)"
+      |> Printf.sprintf "min_adcl_tree takes exactly one tree (%d given)"
       |> failwith
 
 end
