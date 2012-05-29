@@ -87,11 +87,12 @@ let build_distal_map gt leaf_values =
       | None -> (None, bl i), IntMap.empty
       end
     | Node (i, subtrees) ->
-      let sol, map = List.map aux subtrees
+      match List.map aux subtrees
         |> List.split
         |> join_subsoln_list *** List.reduce IntMap.union
-      in
-      (sol, bl i), IntMap.add i (Option.get sol) map
+      with
+      | Some sol, map -> (Some sol, bl i), IntMap.add i sol map
+      | None, map -> (None, bl i), map
   in
   Gtree.get_stree gt |> aux |> snd
 
