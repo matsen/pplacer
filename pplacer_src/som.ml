@@ -1,3 +1,4 @@
+open Ppatteries
 
 (* YIKES!!! *)
 let rot_mat angles  =
@@ -61,11 +62,21 @@ let min_overlap trans_part dims =
   | 3 ->
       let obj_fun = overlap trans_part dims
       and start = [|0.; 0.; 0.|]
-      and lower = Array.make 3 (-. Gsl_math.pi_4)
-      and upper = Array.make 3 (Gsl_math.pi_4)
+      and lower = Array.make 3 (-. Gsl_math.pi_2)
+      and upper = Array.make 3 (Gsl_math.pi_2)
       in
       Minimization.multimin obj_fun start lower upper tolerance
   | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
+
+(* In situations where the roation takes the variances out of order, this
+ * reorders both the vars and the trans vectors *)
+let reordered_by_vars vars trans =
+  let reordered_vars = Array.copy vars
+  and inv_compare x y = -1 * (compare x y) in
+  let orig_var_i x = Array.findi (fun y -> y = x) vars in
+  Array.sort inv_compare reordered_vars;
+  (reordered_vars, Array.map (fun var -> trans.(orig_var_i var)) reordered_vars)
+
 
 (* Returns a tuple of the roated trans (as an array of arrays), the rotated
  * vars, and the optimal theta value(s) *)
@@ -74,5 +85,6 @@ let som_rotation trans dims vars =
   let trans_part = Gsl_matrix.of_arrays (Array.sub trans 0 3) in
   let min = min_overlap trans_part dims in
   Array.blit (Gsl_matrix.to_arrays (rotate_trans trans_part min)) 0 rotated_trans 0 3;
-  (rotate_vars vars min, rotated_trans)
+  reordered_by_vars (rotate_vars vars min) rotated_trans
+
 
