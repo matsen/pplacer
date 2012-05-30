@@ -26,6 +26,9 @@
  * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
  * Closed GH-253: Added `--no-collapse` to `guppy diplac`.
  * Closed GH-255: Added `guppy to_csv`.
+ * Closed GH-257: Renamed `rppr voronoi` to `rppr min_adcl`, `rppr vorotree` to
+   `rppr min_adcl_tree`, and `guppy diplac` to `guppy adcl`. Added `--seed` to
+   `rppr min_adcl` and `rppr min_adcl_tree`.
 
 
 1.1.alpha12
