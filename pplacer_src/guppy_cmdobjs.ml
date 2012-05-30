@@ -122,15 +122,18 @@ object (self)
 end
 
 class rng_cmd () =
-object
+object (self)
   val seed = flag "--seed"
     (Formatted (1, "Set the random seed, an integer > 0. Default is %d."))
   method specl = [ int_flag seed; ]
 
+  method private set_default_seed =
+    Gsl_rng.set_default_seed (Nativeint.of_int (fv seed))
+
   method private rng =
-    let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
-    Gsl_rng.set rng (Nativeint.of_int (fv seed));
-    rng
+    self#set_default_seed;
+    Gsl_rng.make Gsl_rng.KNUTHRAN2002
+
 end
 
 
@@ -612,6 +615,7 @@ class voronoi_cmd () =
 object (self)
   inherit tabular_cmd ~default_to_csv:true () as super_tabular
   inherit numbered_tree_cmd () as super_numbered_tree
+  inherit rng_cmd () as super_rng
 
   val verbose = flag "-v"
     (Plain (false, "If specified, write progress output to stderr."))
@@ -636,6 +640,7 @@ object (self)
   method specl =
     super_tabular#specl
   @ super_numbered_tree#specl
+  @ super_rng#specl
   @ [
     toggle_flag verbose;
     string_flag trimmed_tree_file;
@@ -672,6 +677,9 @@ object (self)
       and verbose = fv verbose
       and n_leaves = fvo leaf_cutoff
       and max_adcl = fvo adcl_cutoff in
+      (* setting the default seed will affect C code, so this sets PAM's seed
+       * even though PAM gets a Gsl_rng.t through C. *)
+      self#set_default_seed;
       Voronoi.Full.csv_log :=
         fvo soln_log
           |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);

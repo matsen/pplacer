@@ -36,7 +36,7 @@ let command_list () =
       "filter", (fun () -> new Guppy_filter.cmd ());
       "info", (fun () -> new Guppy_info.cmd ());
       "redup", (fun () -> new Guppy_redup.cmd ());
-      "diplac", (fun () -> new Guppy_diplac.cmd ());
+      "adcl", (fun () -> new Guppy_adcl.cmd ());
       "mft", (fun () -> new Guppy_mft.cmd ());
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());
