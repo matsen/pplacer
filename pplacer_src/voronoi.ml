@@ -589,6 +589,19 @@ let combine_solutions ?(verbose = false) ?n_leaves ?max_adcl solsl =
   |> Enum.map List.enum
   |> Enum.flatten
 
+(* combine across the solutions, but only combine two at a time. trying to do a
+ * full cartesian product on trees with a lot of multifurcation, even at a
+ * single node, is _very_ slow. *)
+let combine_solutions_pairly ?verbose ?n_leaves ?max_adcl ~cull_fn solsl =
+  let combine = combine_solutions ?verbose ?n_leaves ?max_adcl in
+  List.fold_left
+    (fun prev l -> match prev with
+    | None -> Some (List.enum l)
+    | Some enum -> Some (combine [List.of_enum enum; l] |> cull_fn))
+    None
+    solsl
+  |> Option.get
+
 let soln_to_info mark {leaf_set; cl_dist; prox_mass; wk_subtot; interval} =
   let fmt = Printf.sprintf "%g" in
   [Option.map_default fmt "-" mark;
@@ -644,8 +657,7 @@ let solve ?(verbose = false) ?n_leaves ?max_adcl gt mass =
         i,
         mass_below,
         List.map List.of_enum subsols
-          |> combine_solutions ~verbose ?n_leaves ?max_adcl
-          |> cull_fn
+          |> combine_solutions_pairly ~verbose ?n_leaves ?max_adcl ~cull_fn
 
     in
     let solutions = Enum.map (tap (csvrow i)) solutions in
