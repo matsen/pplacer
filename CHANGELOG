@@ -18,6 +18,7 @@
  * Closed GH-248: Added premasking by default to the NBC classifier of `guppy
    classify`; correspondingly added `--no-pre-mask`.
  * Closed GH-249: Added `guppy rarefy`.
+ * Closed GH-251: Added the hybrid5 classifier.
  * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
 
 
