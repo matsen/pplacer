@@ -134,7 +134,14 @@ object (self)
     in
     write_results vals vects prefix;
     if not (som = 0) then
-      let (rot_vals, rot_vects) = Som.som_rotation vects som vals in
-      write_results rot_vals rot_vects (prefix^".som")
+      try
+        let (rot_vals, rot_vects) = Som.som_rotation vects som vals in
+        write_results rot_vals rot_vects (prefix^".som")
+      with
+      | Som.MinimizationError ->
+          Printf.eprintf "There was a problem with the minimization routine. \
+          Please either try --som 2 or --som 0\n"
+      | e ->
+          raise e
 
 end

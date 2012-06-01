@@ -1,5 +1,7 @@
 open Ppatteries
 
+exception MinimizationError
+
 (* YIKES!!! *)
 let rot_mat angles  =
   let c i = cos angles.(i)
@@ -57,16 +59,33 @@ let min_overlap trans_part dims =
   match dims with
   | 2 ->
       let obj_fun theta = overlap trans_part dims [|0.0; 0.0; theta|] in
-      let min = Minimization.brent obj_fun 0.0 (-. Gsl_math.pi_4) Gsl_math.pi_4 tolerance in
+      let min = Minimization.brent
+        ~start_finder:Minimization.robust_start_finder
+        obj_fun
+        0.0
+        (-. Gsl_math.pi_4)
+        Gsl_math.pi_4 tolerance
+      in
       [|0.; 0.; min|]
   | 3 ->
       let obj_fun = overlap trans_part dims
       and start = [|0.; 0.; 0.|]
-      and lower = Array.make 3 (-. Gsl_math.pi_2)
-      and upper = Array.make 3 (Gsl_math.pi_2)
-      in
-      Minimization.multimin obj_fun start lower upper tolerance
-  | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
+      and lower = Array.make 3 (-. Gsl_math.pi)
+      and upper = Array.make 3 (Gsl_math.pi)
+      in begin
+        try
+          Minimization.multimin obj_fun start lower upper tolerance
+        with
+        | Minimization.ExceededMaxIter ->
+            Printf.eprintf "MaxIterations exceeded in minimization routine";
+            raise MinimizationError
+        | Minimization.InvalidStartValues (left, start, right) ->
+            Printf.eprintf "Invalid Brent Starting values: %g < %g < %g not \
+            true\n"
+                left start right;
+            raise MinimizationError
+      end
+  | _ -> failwith "Can only rotate in 2 or 3 dimensionss\n"
 
 (* In situations where the roation takes the variances out of order, this
  * reorders both the vars and the trans vectors *)
