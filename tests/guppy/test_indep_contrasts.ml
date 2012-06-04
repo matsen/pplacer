@@ -5,8 +5,8 @@ open Test_util
 let leaf_values = StringMap.of_pairlist ["A", 1.; "B", 2.; "C", 3.; "D", 4.]
 let holed_leaf_values = StringMap.of_pairlist ["A", 3.; "D", 1.]
 
-let test_of_values_and_expected values expected () =
-  placerun_of_dir "misc" "test_indep_contrasts"
+let test_of_values_and_expected ?(placefile = "test_indep_contrasts") values expected () =
+  placerun_of_dir "misc" placefile
     |> Indep_contrasts.of_criterion_map Placement.ml_ratio values
     |> List.map
         (fun (pq, x) -> List.map (curry identity x) (Pquery.namel pq))
@@ -37,6 +37,24 @@ let suite = [
 
   "test_of_criterion_map_with_holes" >:: begin
     test_of_values_and_expected
+      holed_leaf_values
+      [
+        "A", 2.8;
+        "B", 2.6;
+        "C", 1.2;
+        "D", 1.2;
+        "E", 2.6;
+        "F", 2.2;
+        "G", 2.2;
+        "H", 2.2;
+        "I", 2.3;
+        "J", 2.445;
+      ]
+  end;
+
+  "test_of_larger_criterion_map_with_holes" >:: begin
+    test_of_values_and_expected
+      ~placefile:"test_indep_contrasts_holed_subtree"
       holed_leaf_values
       [
         "A", 2.8;
