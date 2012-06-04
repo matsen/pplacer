@@ -94,7 +94,13 @@ let build_distal_map gt leaf_values =
       | Some sol, map -> (Some sol, bl i), IntMap.add i sol map
       | None, map -> (None, bl i), map
   in
-  Gtree.get_stree gt |> aux |> snd
+  Gtree.get_stree gt
+    |> aux
+    |> snd
+    |> tap
+        (fun m ->
+          if IntMap.is_empty m then
+            invalid_arg "no relevant leaf values given; check your leaf names")
 
 (* Now build a proximal_map using this distal map.
  * This will be a recursion as follows: say we are at an internal node such that
