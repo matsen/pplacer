@@ -261,12 +261,12 @@ Making reference trees
 ----------------------
 
 FastTree
-========
+````````
 
 We save the log file so it can get parsed and become part of the reference package.
 
 Nucleotide alignments
----------------------
+'''''''''''''''''''''
 
 FastTree should be used in the following way when making nucleotide reference trees for use with pplacer::
 
@@ -275,7 +275,7 @@ FastTree should be used in the following way when making nucleotide reference tr
 In particular, do not use the ``-gamma`` option, but do use the ``-gtr`` option.
 
 Amino Acid alignments
----------------------
+'''''''''''''''''''''
 
 FastTree should be used in the following way when making amino acid reference trees for use with pplacer::
 
@@ -285,7 +285,7 @@ Again, ``-gamma`` should not be used.
 
 
 phyml and RAxML
-===============
+```````````````
 
 PHYML_ and RAxML_ are two nice packages for making ML trees that are supported for use with pplacer.
 Pplacer only knows about the GTR, WAG, LG, and JTT models, so use those to build your trees.
