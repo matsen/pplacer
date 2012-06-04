@@ -27,7 +27,7 @@ object (self)
       |> List.flatten
       |> Mass_islands.of_pql
           ~discard_below:(fv discard_below)
-          ~criterion:self#criterion
+          self#criterion
       |> List.iteri
           (fun e (_, pql) ->
             Placerun.make gt (string_of_int e) pql

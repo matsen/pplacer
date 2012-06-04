@@ -3,8 +3,10 @@ open Guppy_cmdobjs
 open Ppatteries
 
 let of_pql criterion pql =
-  let names = List.map Pquery.name pql |> Array.of_list in
-  let name_map = Enum.combine (Array.enum names, Enum.range 0)
+  let pqa = Array.of_list pql in
+  let name_map =
+    Enum.combine
+      (Array.enum pqa |> Enum.map Pquery.name, Enum.range 0)
     |> StringMap.of_enum
   in
   let count = StringMap.cardinal name_map in
@@ -19,7 +21,13 @@ let of_pql criterion pql =
       insert i (j, v);
       insert j (i, v));
   Mcl.mcl arrays
-    |> Array.map (Array.map (Array.get names))
+    |> Array.map (Array.map (Array.get pqa))
+
+let islands_of_pql criterion pql =
+  of_pql criterion pql
+    |> Array.enum
+    |> Enum.map (fun pqa -> IntSet.empty, Array.to_list pqa)
+    |> List.of_enum
 
 class cmd () =
 object (self)
@@ -42,7 +50,8 @@ object (self)
       |> Array.enum
       |> Enum.mapi
           (fun e arr ->
-            Array.enum arr |> Enum.map (fun v -> [v; string_of_int e]))
+            Array.enum arr
+            |> Enum.map (fun pq -> [Pquery.name pq; string_of_int e]))
       |> Enum.flatten
       |> List.of_enum
       |> List.cons ["pquery"; "cluster"]

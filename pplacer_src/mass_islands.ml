@@ -29,7 +29,7 @@ open Ppatteries
 
 (* Output is a list of IntSet.t, Pquery.t list pairs which represent (E, P) as
  * described above. *)
-let of_pql ?(discard_below = 0.) ?(criterion = const 0.) pql =
+let of_pql ?(discard_below = 0.) criterion pql =
   List.fold_left
     (fun accum pq ->
       let pq_edges = Pquery.place_list pq
