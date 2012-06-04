@@ -63,7 +63,10 @@ let placement_equal p1 p2 =
 
 let pquery_equal pq1 pq2 =
   let open Pquery in
-  pq1.namlom = pq2.namlom
+  List.for_all2
+    (fun (n1, m1) (n2, m2) -> n1 = n2 && m1 =~ m2)
+    pq1.namlom
+    pq2.namlom
   && List.for_all2 placement_equal pq1.place_list pq2.place_list
 
 let placerun_equal pr1 pr2 =

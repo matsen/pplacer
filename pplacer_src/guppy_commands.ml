@@ -19,6 +19,7 @@ let command_list () =
       "error", (fun () -> new Guppy_error.cmd ());
       "fpd", (fun () -> new Guppy_fpd.cmd ());
       "unifrac", (fun () -> new Guppy_unifrac.cmd ());
+      "indep_c", (fun () -> new Guppy_indep_c.cmd ());
     ];
 
     "classification", [
