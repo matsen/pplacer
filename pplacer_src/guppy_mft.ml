@@ -13,11 +13,15 @@ object (self)
   val transform = flag "--transform"
     (Plain ("", "A transform to apply to the read multiplicities before calculating. \
     Options are 'log', 'unit', 'asinh', and 'no_trans'. Default is no transform."))
+  val leaf_values = flag "--leaf-values"
+    (Needs_argument ("", "Name of CSV file giving values for the leaves of the tree to use in independent contrasts."))
 
-  method specl = super_output#specl
+  method specl =
+    super_output#specl
   @ [
     toggle_flag unitize;
     string_flag transform;
+    string_flag leaf_values;
   ]
 
   method desc = "Multi-Filter and Transform placefiles"
@@ -29,6 +33,17 @@ object (self)
         | "" -> identity
         | transform ->
           List.map (Mass_map.transform_of_str transform |> Placerun.transform))
+    |> (match fvo leaf_values with
+        | None -> identity
+        | Some infile ->
+          Csv.load infile
+            |> List.map
+                (function
+                  | [a; b] -> a, float_of_string b
+                  | _ -> failwith "malformed copy number csv file")
+            |> StringMap.of_pairlist
+            |> Indep_contrasts.scale_placerun Placement.ml_ratio
+            |> List.map)
     |> if not (fv unitize) then identity else List.map Placerun.unitize
     in
     match self#out_file_or_dir () with

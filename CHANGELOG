@@ -1,3 +1,9 @@
+1.1.alpha14
+===========
+
+ * Closed GH-181: Added `guppy indep_c`; added `--leaf-values` to `guppy mft`.
+
+
 1.1.alpha13
 ===========
 
