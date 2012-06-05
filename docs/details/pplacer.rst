@@ -446,8 +446,9 @@ Memory usage
 
 The amount of memory pplacer needs will vary depending on the reference package
 and input alignment and is directly proportional to the number of sites after
-pre-masking. :ref:`As mentioned in the FAQ <faq>`, placing on a GTRGAMMA RAxML
-tree will use about four times as much memory as placing on a FastTree tree.
+pre-masking and the number of nodes on the reference tree. :ref:`As mentioned
+in the FAQ <faq>`, placing on a GTRGAMMA RAxML tree will use about four times
+as much memory as placing on a FastTree tree.
 
 To see how much memory would be used for by the part of pplacer which uses the
 most memory (i.e. internal nodes), pass the ``--pretend`` flag and it will be
