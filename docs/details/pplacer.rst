@@ -439,6 +439,37 @@ it infers site categories. You can force this behavior by using the
 ``--always-refine`` flag.
 
 
+.. _memory usage:
+
+Memory usage
+------------
+
+The amount of memory pplacer needs will vary depending on the reference package
+and input alignment and is directly proportional to the number of sites after
+pre-masking. :ref:`As mentioned in the FAQ <faq>`, placing on a GTRGAMMA RAxML
+tree will use about four times as much memory as placing on a FastTree tree.
+
+To see how much memory would be used for by the part of pplacer which uses the
+most memory (i.e. internal nodes), pass the ``--pretend`` flag and it will be
+displayed. pplacer will use more memory than this value, but for most analyses,
+this will be by far the biggest allocation.
+
+In cases when there isn't enough memory for pplacer to use for internal nodes,
+or it's otherwise disadvantageous to use physical memory, it's possible to
+instead tell pplacer to |mmap|_ a file instead. This will, very roughly,
+perform disk IO instead of using physical memory.
+
+You will see that pplacer will use the same amount of *address space*, but less
+*physical memory*. In terms of ``top(1)`` on linux, ``VIRT`` will stay the same
+bug ``RES`` will decrease. The speed of pplacer will also become at least
+partially dependent on the speed of the drive where the mmap file is located;
+with an SSD you might not see any difference from using physical memory, while
+with a spinning metal drive there might be some slowdown. Placing the file on
+an NFS mount is likely not ideal for this reason.
+
+The implementation and underlying behavior of mmap may vary between platforms
+(the link above is only for linux out of convenience), but pplacer will always
+call |mmap|_ with ``PROT_READ | PROT_WRITE`` and ``MAP_SHARED``.
 
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
@@ -450,3 +481,5 @@ it infers site categories. You can force this behavior by using the
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
+.. |mmap| replace:: ``mmap(2)``
+.. _mmap: http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html
