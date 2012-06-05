@@ -74,3 +74,53 @@ let of_placerun:
   in
   2 -- k_max
     |> Enum.map (identity &&& count)
+
+let mass_induced_tree gt mass =
+  let edge = ref 0
+  and bark_map = ref IntMap.empty
+  and mass_counts = ref IntMap.empty in
+  let next_edge mass_count bl =
+    let x = !edge in
+    incr edge;
+    bark_map := Newick_bark.map_set_bl x bl !bark_map;
+    if mass_count > 0 then
+      mass_counts := IntMap.add x mass_count !mass_counts;
+    x
+  in
+  let open Stree in
+  let rec aux t =
+    let i, below = match t with
+      | Leaf i -> i, None
+      | Node (i, subtrees) -> i, Some (List.map aux subtrees)
+    in
+    let ml = IntMap.get i [] mass
+      |> List.map (fun {I.distal_bl} -> distal_bl)
+      |> List.cons 0.
+      |> List.group approx_compare
+      |> List.map
+          (function
+           | hd :: tl when hd =~ 0. -> hd, List.length tl
+           | hd :: tl -> hd, List.length tl + 1
+           | [] -> invalid_arg "ml")
+    and bl = Gtree.get_bl gt i in
+    let rec snips tree pl =
+      let j, tl = match pl with
+        | (p1, c1) :: ((p2, _) :: _ as tl) -> next_edge c1 (p2 -. p1), tl
+        | [p, c] -> next_edge c (bl -. p), []
+        | [] -> invalid_arg "snips"
+      in
+      let tree' = Some
+        [match tree with
+         | None -> leaf j
+         | Some subtrees -> node j subtrees]
+      in
+      match tl with
+      | [] -> tree'
+      | tl -> snips tree' tl
+    in
+    snips below ml
+    |> Option.get
+    |> List.hd
+  in
+  let st' = aux (Gtree.get_stree gt) in
+  !mass_counts, Gtree.gtree st' !bark_map
