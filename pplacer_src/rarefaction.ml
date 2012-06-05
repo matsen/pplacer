@@ -124,3 +124,58 @@ let mass_induced_tree gt mass =
   in
   let st' = aux (Gtree.get_stree gt) in
   !mass_counts, Gtree.gtree st' !bark_map
+
+let distal_proximal_maps st marks_map =
+  let open Stree in
+  let rec aux = function
+    | Leaf i -> IntMap.singleton i (IntMap.get i 0 marks_map)
+    | Node (i, subtrees) ->
+      let distal_marks = List.map aux subtrees |> List.reduce IntMap.union in
+      let marks = List.enum subtrees
+        |> Enum.map (top_id |- flip IntMap.find distal_marks)
+        |> Enum.sum
+        |> (+) (IntMap.get i 0 marks_map)
+      in
+      IntMap.add i marks distal_marks
+  in
+  let distal_map = aux st in
+  let total_marks = IntMap.values marks_map |> Enum.sum in
+  let proximal_map = IntMap.map ((-) total_marks) distal_map in
+  distal_map, proximal_map
+
+let distal_edges_map st =
+  let open Stree in
+  let rec aux = function
+    | Leaf i -> IntMap.singleton i (IntSet.singleton i)
+    | Node (i, subtrees) ->
+      let distal_edges = List.map aux subtrees |> List.reduce IntMap.union in
+      let subtree_edges = List.map top_id subtrees in
+      let edges = List.enum subtree_edges
+        |> Enum.map (flip IntMap.find distal_edges)
+        |> Enum.reduce IntSet.union
+        |> IntSet.union (IntSet.of_list subtree_edges)
+      in
+      IntMap.add i edges distal_edges
+  in
+  aux st
+
+let variance_of_placerun criterion pr =
+  let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
+  and mass = I.of_placerun
+    Mass_map.Point
+    criterion
+    pr
+  in
+  let n = Placerun.get_pqueries pr |> List.length in
+  let k_max = n in
+  let marks_map, gt' = mass_induced_tree gt mass in
+  let st' = Gtree.get_stree gt' in
+  let distal_marks, proximal_marks = distal_proximal_maps st' marks_map in
+  let distal_edges = distal_edges_map st' in
+  (* is i proximal to j? *)
+  let is_proximal i j = IntSet.mem j (IntMap.find i distal_edges) in
+  let o i j =
+    if is_proximal i j then IntMap.find i proximal_marks
+    else if is_proximal
+    match classify_edges i j with
+    |
