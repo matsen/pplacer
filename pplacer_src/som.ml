@@ -93,21 +93,48 @@ let min_overlap trans_part dims =
 
 (* In situations where the roation takes the variances out of order, this
  * reorders both the vars and the trans vectors *)
-let reordered_by_vars vars trans =
+let reordered_by_vars vars trans dims =
   let reordered_vars = Array.copy vars
   and inv_compare x y = -1 * (compare x y) in
   let orig_var_i x = Array.findi (fun y -> y = x) vars in
   Array.sort inv_compare reordered_vars;
-  (reordered_vars, Array.map (fun var -> trans.(orig_var_i var)) reordered_vars)
+  let reordered_trans = Array.map
+    (fun var -> trans.(orig_var_i var))
+    (Array.sub reordered_vars 0 dims)
+  in
+  (reordered_vars, reordered_trans)
 
+(* A vector v has the same variance as -v; we would like whichever most
+ * closely matches the original trans. This makes it easier to compare the
+ * original to the SOM trans *)
+let optimize_directions orig_trans new_trans =
+  let flip vec = Array.map (fun x -> -1. *. x) vec in
+  let flipper i vec =
+    let flipped = flip vec in
+    if Pca.dot vec orig_trans.(i) > Pca.dot flipped orig_trans.(i) then
+      vec
+    else
+      flipped
+  in
+  Array.mapi flipper new_trans
 
 (* Returns a tuple of the roated trans (as an array of arrays), the rotated
  * vars, and the optimal theta value(s) *)
 let som_rotation trans dims vars =
-  let rotated_trans = Array.copy trans in
+  let som_trans = Array.copy trans in
   let trans_part = Gsl_matrix.of_arrays (Array.sub trans 0 3) in
+  (* Where all the real work is - find min(s) *)
   let min = min_overlap trans_part dims in
-  Array.blit (Gsl_matrix.to_arrays (rotate_trans trans_part min)) 0 rotated_trans 0 3;
-  reordered_by_vars (rotate_vars vars min) rotated_trans
+  let rotated_trans = Gsl_matrix.to_arrays (rotate_trans trans_part min)
+  and rotated_vars = rotate_vars vars min in
+  let reordered_vars, reordered_trans = reordered_by_vars
+    rotated_vars
+    rotated_trans
+    dims
+  in
+  let flipped_trans = optimize_directions trans reordered_trans in
+  Array.blit flipped_trans 0 som_trans 0 dims;
+  (reordered_vars, som_trans)
+
 
 
