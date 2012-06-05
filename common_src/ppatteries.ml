@@ -676,3 +676,13 @@ let exn_wrap f = Printexc.pass f ()
 let () =
   Gsl_error.init ();
   Random.self_init ();
+  Printexc.register_printer
+    (function
+     | Unix.Unix_error (errno, fn, param) ->
+       let op = if param = "" then "" else Printf.sprintf " on %S" param in
+       Some
+         (Printf.sprintf "error %S from %s%s"
+            (Unix.error_message errno)
+            fn
+            op)
+     | _ -> None)

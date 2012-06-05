@@ -1,4 +1,4 @@
-.. faq_:
+.. _faq:
 
 FAQ
 ===
@@ -31,3 +31,10 @@ If your reads are short and in a fixed region, the memory used by pplacer v1.1 a
 You can also make it use less memory (and run faster) by cutting down the size of your reference tree.
 
 Additionally, if you are placing metagenomic reads onto a very wide alignment (such as a concatenation) read about the ``--groups`` feature in the documentation.
+
+If all else fails, there is also a flag ``--mmap-file`` to pplacer. If this
+flag is passed, pplacer will use an mmapped file instead of making large
+allocations.
+
+Details about mmap are covered in more detail in the :ref:`pplacer details section
+<memory usage>`.
