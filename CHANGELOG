@@ -2,6 +2,8 @@
 ===========
 
  * Closed GH-181: Added `guppy indep_c`; added `--leaf-values` to `guppy mft`.
+ * Closed GH-256: Added `--mmap-file` to pplacer; changed `--pretend` in
+   pplacer to show the amount of memory which would be allocated.
 
 
 1.1.alpha13
