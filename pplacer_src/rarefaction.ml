@@ -24,6 +24,27 @@ let count_along_mass gt mass cb =
     (fun () -> ref 0)
     (Gtree.get_stree gt)
 
+let k_maps_of_placerun: int -> Newick_bark.t Placerun.t -> float IntMap.t IntMap.t
+= fun k_max pr ->
+  let n = Placerun.get_pqueries pr |> List.length in
+  let n' = float_of_int n
+  and base_k_map = 0 -- n
+    |> Enum.map (identity &&& const 1.)
+    |> IntMap.of_enum
+    |> IntMap.singleton 0
+  in
+  Enum.fold
+    (fun k_maps k ->
+      let prev_map = IntMap.find k k_maps
+      and diff = n' -. float_of_int k in
+      let q_k r = (diff -. float_of_int r) /. diff *. IntMap.find r prev_map in
+      0 -- n
+        |> Enum.map (identity &&& q_k)
+        |> IntMap.of_enum
+        |> flip (IntMap.add (k + 1)) k_maps)
+    base_k_map
+    (0 --^ k_max)
+
 (* Compute the rarefaction curve of a placerun, given a placement criterion and
  * optionally the highest X value for the curve. *)
 let of_placerun:
@@ -36,27 +57,11 @@ let of_placerun:
     pr
   in
   let n = Placerun.get_pqueries pr |> List.length in
-  let n' = float_of_int n
-  and k_max = match k_max with
+  let k_max = match k_max with
     | Some k when k < n -> k
     | _ -> n
-  and base_k_map = 0 -- n
-    |> Enum.map (identity &&& const 1.)
-    |> IntMap.of_enum
-    |> IntMap.singleton 0
   in
-  let k_maps = Enum.fold
-    (fun k_maps k ->
-      let prev_map = IntMap.find k k_maps
-      and diff = n' -. float_of_int k in
-      let q_k r = (diff -. float_of_int r) /. diff *. IntMap.find r prev_map in
-      0 -- n
-        |> Enum.map (identity &&& q_k)
-        |> IntMap.of_enum
-        |> flip (IntMap.add (k + 1)) k_maps)
-    base_k_map
-    (0 --^ k_max)
-  in
+  let k_maps = k_maps_of_placerun k_max pr in
   let count k =
     let q_k = IntMap.find k k_maps |> flip IntMap.find in
     count_along_mass
