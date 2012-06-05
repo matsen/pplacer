@@ -1,3 +1,5 @@
+open Ppatteries
+
 exception ExceededMaxIter
 exception FindStartFailure
 (* (left, start, right)*)
@@ -5,7 +7,9 @@ exception InvalidStartValues of float * float * float
 exception FoundMin of float
 exception FoundStart of float
 
+
 let maxIter = 100
+
 
 (* A little bit of prep work for our start_finders - DRY *)
 let start_finder_prep f left raw_start right =
@@ -43,20 +47,31 @@ let bisection_start_finder f raw_start left right tolerance =
 
 (* This start finder tries to avoid the assumptions inherent in the
  * bisection_start_finder by searching uniformly throughout the the bounding
- * interval
+ * interval, jumping back and forth on either side of the raw_start
  *)
 let robust_start_finder f raw_start left right _ =
   try
     let _, miny = start_finder_prep f left raw_start right in
     if f raw_start < miny then raise (FoundStart raw_start)
     else
+      (* This chunk of code jumps back and forth on either side of the raw_start
+       * by a constant increment to try and find a suitable start that is as
+       * close as possible to the raw start. This is helpfor for preserving the
+       * sign of coefficients in SOM *)
       let finder samples =
-        for i=1 to samples do
-          let incr_ratio = (float i) /. (float samples +. 1.) in
-          let start = left +. (incr_ratio *. (right -. left)) in
-          let new_val = f start in
-          if new_val < miny then raise (FoundStart start)
-        done
+        let incr_ratio i = (right -. left) *. (float i) /. (float samples +. 1.)
+        (* jump back and forth between negative and positive integers *)
+        and jump_indices = Enum.init (2 * samples) (fun i -> (Int.pow (-1) i) * ((i+2)/2))
+        and check_start x =
+          if (f x) < miny then raise (FoundStart x)
+        in
+        (* map those integers to their input values, and filter to make sure in
+         * left right*)
+        let jump_enum = Enum.filter
+          (fun x -> left < x & x < right)
+          (Enum.map (fun i -> raw_start +. (incr_ratio i)) jump_indices)
+        in
+        Enum.iter check_start jump_enum
       in
       List.iter finder [10; 100];
     raise FindStartFailure
@@ -87,8 +102,7 @@ let brent ?(start_finder=bisection_start_finder) f raw_start left right toleranc
     in
     run 1
   with
-  | FoundMin minLoc ->
-      minLoc
+  | FoundMin minLoc -> minLoc
 
 
 (* No max iteration checking going on here yet... *)

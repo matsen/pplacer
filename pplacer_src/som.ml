@@ -84,6 +84,10 @@ let min_overlap trans_part dims =
             true\n"
                 left start right;
             raise MinimizationError
+        | Minimization.FindStartFailure ->
+            Printf.eprintf "Was unable to find acceptable start values for \
+            minimziation\n";
+            raise MinimizationError
       end
   | _ -> failwith "Can only rotate in 2 or 3 dimensionss\n"
 
