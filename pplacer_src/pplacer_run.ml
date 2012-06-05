@@ -248,6 +248,10 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   (* pretending *)
   if Prefs.pretend prefs then begin
     dprint "everything looks OK.\n";
+    dprintf "%0.2f MB would be allocated for internal nodes.\n"
+      (Like_stree.size_of_glv_arrays_for model ref_tree 3 n_sites
+       |> float_of_int
+       |> flip (/.) (1024. *. 1024.));
     exit 0;
   end;
   dprint "Determining figs... ";

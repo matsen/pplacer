@@ -282,6 +282,9 @@ struct
       (fun ega aga ->
         {Glv.e = BA.array1_of_genarray ega; Glv.a = BA.array2_of_genarray aga})
 
+  let size_of_glv_arrays model n_arrays n_glvs ~n_sites =
+    gen_size_of_glv_arrays (n_states model) n_sites n_arrays n_glvs
+
   (* Make a glv out of a list of likelihood vectors. *)
   let lv_arr_to_glv _ lv_arr =
     assert(lv_arr <> [||]);

@@ -99,3 +99,10 @@ let gen_mmap_glv_arrays fd shared n_arrays n_glvs eba_dims aba_dims glv_cb =
       glv_cb (GA.slice_left eba [|i; j|]) (GA.slice_left aba [|i; j|]))
     |> Array.of_enum)
   |> Array.of_enum
+
+let gen_size_of_glv_arrays eba_base aba_base n_arrays n_glvs =
+  (* int and nativeint _should_ be the same size *)
+  let int_bytes = Nativeint.size / 8 in
+  let aba_elements = aba_base * n_arrays * n_glvs in
+  let eba_elements = aba_elements * eba_base in
+  (aba_elements * 8) + (eba_elements * int_bytes)
