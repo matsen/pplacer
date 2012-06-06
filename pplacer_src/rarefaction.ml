@@ -182,23 +182,18 @@ let variance_of_placerun criterion pr =
   (* is i proximal to j? *)
   let _is_proximal i j = IntSet.mem j (IntMap.find i distal_edges) in
   let is_proximal = auto_cache _is_proximal in
+  let d i = IntMap.find i distal_marks
+  and c i = IntMap.find i proximal_marks in
   let _o i j =
-    if is_proximal i j then IntMap.find i proximal_marks
-    else if is_proximal j i then IntMap.find i distal_marks
-    else IntMap.find i distal_marks
+    if is_proximal i j then c i else d i
   and _s i j =
-    if is_proximal i j then IntMap.find i distal_marks
-    else if is_proximal j i then IntMap.find i proximal_marks
-    else IntMap.find i proximal_marks
+    if is_proximal i j then d i else c i
   and _q k x = IntMap.find k k_maps |> IntMap.find x in
   let o = auto_cache _o and s = auto_cache _s and q = auto_cache _q in
-  let cov k i j =
+  let cov_without_root k i j =
     let q_k = q k in
     if i = j then
-      let cov = 1.
-        -. q_k (IntMap.find i distal_marks)
-        -. q_k (IntMap.find i proximal_marks)
-      in
+      let cov = 1. -. q_k (d i) -. q_k (c i) in
       cov -. cov ** 2.
     else
       q_k (o i j + o j i) -. q_k (o i j) *. q_k (o j i)
@@ -206,11 +201,11 @@ let variance_of_placerun criterion pr =
         +. (1. -. q_k (o j i)) *. q_k (s i j)
         -. q_k (s i j) *. q_k (s j i)
   in
-  let cov_times_bl k i j =
-    cov k i j *. bl i *. bl j
-  in
   let n_edges = Stree.top_id st' in
-  let var k =
+  let var cov_fn k =
+    let cov_times_bl k i j =
+      cov_fn k i j *. bl i *. bl j
+    in
     let diag = 0 --^ n_edges
       |> Enum.map (fun i -> cov_times_bl k i i)
       |> Enum.fold (+.) 0.
@@ -221,4 +216,4 @@ let variance_of_placerun criterion pr =
       |> (+.) diag
   in
   2 -- k_max
-    |> Enum.map (identity &&& var)
+    |> Enum.map (identity &&& var cov_without_root)
