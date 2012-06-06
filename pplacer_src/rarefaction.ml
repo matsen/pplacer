@@ -200,6 +200,18 @@ let variance_of_placerun criterion pr =
         +. (1. -. q_k (o i j)) *. q_k (s j i)
         +. (1. -. q_k (o j i)) *. q_k (s i j)
         -. q_k (s i j) *. q_k (s j i)
+  and cov_with_root k i j =
+    let q_k = q k in
+    if i = j then
+      let cov = 1. -. q_k (d i) in
+      cov -. cov ** 2.
+    else
+      let union =
+        if is_proximal i j then d i
+        else if is_proximal j i then d j
+        else d i + d j
+      in
+      q_k union -. q_k (d i) *. q_k (d j)
   in
   let n_edges = Stree.top_id st' in
   let var cov_fn k =
@@ -216,4 +228,4 @@ let variance_of_placerun criterion pr =
       |> (+.) diag
   in
   2 -- k_max
-    |> Enum.map (identity &&& var cov_without_root)
+    |> Enum.map (fun k -> k, var cov_without_root k, var cov_with_root k)

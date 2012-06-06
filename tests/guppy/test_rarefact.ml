@@ -38,11 +38,14 @@ let suite = [
   "test_hand_variance" >:: begin fun () ->
     placerun_of_dir "misc" "test_rarefaction"
       |> Rarefaction.variance_of_placerun Placement.ml_ratio
-      |> check_map_approx_equal
-          "unequal (%d(%g) and %d(%g))"
+      |> Enum.iter2
+          (fun (a1, b1, c1) (a2, b2, c2) ->
+            (Printf.sprintf "unequal (%d(%g, %g) and %d(%g, %g))"
+               a1 b1 c1 a2 b2 c2)
+            @? (a1 = a2 && b1 =~ b2 && c1 =~ c2))
           (List.enum [
-            2, 1.55556;
-            3, 0.;
+            2, 1.55556, 0.66667;
+            3, 0., 0.;
           ])
   end;
 
