@@ -19,11 +19,15 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let criterion = self#criterion in
-      Rarefaction.variance_of_placerun criterion pr
-        |> Enum.map (fun (a, b) -> [string_of_int a; Printf.sprintf "%g" b])
-        |> List.of_enum
-        |> List.cons ["k"; "r"]
-        |> self#write_ll_tab
+      let fmt = Printf.sprintf "%g" in
+      Enum.combine
+        (Rarefaction.of_placerun criterion pr,
+         Rarefaction.variance_of_placerun criterion pr)
+      |> Enum.map
+          (fun ((a, b), (_, c)) -> [string_of_int a; fmt b; fmt c])
+      |> List.of_enum
+      |> List.cons ["k"; "mean"; "variance"]
+      |> self#write_ll_tab
 
     | l ->
       List.length l
