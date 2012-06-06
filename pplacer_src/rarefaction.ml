@@ -146,7 +146,7 @@ let distal_proximal_maps st marks_map =
 let distal_edges_map st =
   let open Stree in
   let rec aux = function
-    | Leaf i -> IntMap.singleton i (IntSet.singleton i)
+    | Leaf i -> IntMap.singleton i IntSet.empty
     | Node (i, subtrees) ->
       let distal_edges = List.map aux subtrees |> List.reduce IntMap.union in
       let subtree_edges = List.map top_id subtrees in
@@ -159,6 +159,11 @@ let distal_edges_map st =
   in
   aux st
 
+exception What of (int * int * int * int)
+
+let auto_cache ?(count = 1024 * 1024) f =
+  curry (Cache.make_ht ~gen:(uncurry f) count).Cache.get
+
 let variance_of_placerun criterion pr =
   let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
   and mass = I.of_placerun
@@ -168,14 +173,47 @@ let variance_of_placerun criterion pr =
   in
   let n = Placerun.get_pqueries pr |> List.length in
   let k_max = n in
+  let k_maps = k_maps_of_placerun k_max pr in
   let marks_map, gt' = mass_induced_tree gt mass in
+  let bl = Gtree.get_bl gt' in
   let st' = Gtree.get_stree gt' in
   let distal_marks, proximal_marks = distal_proximal_maps st' marks_map in
   let distal_edges = distal_edges_map st' in
   (* is i proximal to j? *)
-  let is_proximal i j = IntSet.mem j (IntMap.find i distal_edges) in
-  let o i j =
+  let _is_proximal i j = IntSet.mem j (IntMap.find i distal_edges) in
+  let is_proximal = auto_cache _is_proximal in
+  let _o i j =
     if is_proximal i j then IntMap.find i proximal_marks
-    else if is_proximal
-    match classify_edges i j with
-    |
+    else if is_proximal j i then IntMap.find i distal_marks
+    else IntMap.find i distal_marks
+  and _s i j =
+    if is_proximal i j then IntMap.find i distal_marks
+    else if is_proximal j i then IntMap.find i proximal_marks
+    else IntMap.find i proximal_marks
+  and _q k x = IntMap.find k k_maps |> IntMap.find x in
+  let o = auto_cache _o and s = auto_cache _s and q = auto_cache _q in
+  let cov k i j =
+    let q_k = q k in
+    let union = if i = j then o i j else o i j + o j i in
+    q_k union -. q_k (o i j) *. q_k (o j i)
+      +. (1. -. q_k (o i j)) *. q_k (s j i)
+      +. (1. -. q_k (o j i)) *. q_k (o j i)
+      -. q_k (s i j) *. q_k (s j i)
+  in
+  let cov_times_bl k i j =
+    cov k i j *. bl i *. bl j
+  in
+  let n_edges = Stree.top_id st' in
+  let var k =
+    dprintf "%d\n" k;
+    let diag = 0 --^ n_edges
+      |> Enum.map (fun i -> cov_times_bl k i i)
+      |> Enum.fold (+.) 0.
+    in
+    Uptri.init n_edges (cov_times_bl k)
+      |> Uptri.fold_left (+.) 0.
+      |> ( *.) 2.
+      |> (+.) diag
+  in
+  2 -- k_max
+    |> Enum.map (identity &&& var)

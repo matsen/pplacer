@@ -19,7 +19,7 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let criterion = self#criterion in
-      Rarefaction.of_placerun criterion pr
+      Rarefaction.variance_of_placerun criterion pr
         |> Enum.map (fun (a, b) -> [string_of_int a; Printf.sprintf "%g" b])
         |> List.of_enum
         |> List.cons ["k"; "r"]
