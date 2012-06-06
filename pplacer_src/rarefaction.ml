@@ -205,7 +205,9 @@ let variance_of_placerun criterion pr =
   in
   let n_edges = Stree.top_id st' in
   let var k =
-    dprintf "%d\n" k;
+    Uptri.init n_edges (cov k)
+      |> Uptri.ppr_lowtri Format.std_formatter Format.pp_print_float;
+
     let diag = 0 --^ n_edges
       |> Enum.map (fun i -> cov_times_bl k i i)
       |> Enum.fold (+.) 0.
