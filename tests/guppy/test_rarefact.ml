@@ -24,4 +24,26 @@ let suite = [
           ])
   end;
 
+  "test_hand_mean" >:: begin fun () ->
+    placerun_of_dir "misc" "test_rarefaction"
+      |> Rarefaction.of_placerun Placement.ml_ratio
+      |> check_map_approx_equal
+          "unequal (%d(%g) and %d(%g))"
+          (List.enum [
+            2, 4.66667;
+            3, 7.;
+          ])
+  end;
+
+  "test_hand_variance" >:: begin fun () ->
+    placerun_of_dir "misc" "test_rarefaction"
+      |> Rarefaction.variance_of_placerun Placement.ml_ratio
+      |> check_map_approx_equal
+          "unequal (%d(%g) and %d(%g))"
+          (List.enum [
+            2, 1.55556;
+            3, 0.;
+          ])
+  end;
+
 ]
