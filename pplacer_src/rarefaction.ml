@@ -194,23 +194,23 @@ let variance_of_placerun criterion pr =
   let o = auto_cache _o and s = auto_cache _s and q = auto_cache _q in
   let cov k i j =
     let q_k = q k in
-    let union = if i = j then o i j else o i j + o j i in
-    q_k union -. q_k (o i j) *. q_k (o j i)
-      +. (1. -. q_k (o i j)) *. q_k (s j i)
-      +. (1. -. q_k (o j i)) *. q_k (s i j)
-      -. q_k (s i j) *. q_k (s j i)
+    if i = j then
+      let cov = 1.
+        -. q_k (IntMap.find i distal_marks)
+        -. q_k (IntMap.find i proximal_marks)
+      in
+      cov -. cov ** 2.
+    else
+      q_k (o i j + o j i) -. q_k (o i j) *. q_k (o j i)
+        +. (1. -. q_k (o i j)) *. q_k (s j i)
+        +. (1. -. q_k (o j i)) *. q_k (s i j)
+        -. q_k (s i j) *. q_k (s j i)
   in
   let cov_times_bl k i j =
     cov k i j *. bl i *. bl j
   in
   let n_edges = Stree.top_id st' in
   let var k =
-    Uptri.init n_edges (cov k)
-      |> Uptri.to_matrix (fun i -> cov k i i)
-      |> Array.map (Array.map (Printf.sprintf "%g"))
-      |> String_matrix.write_padded stdout;
-    print_newline ();
-
     let diag = 0 --^ n_edges
       |> Enum.map (fun i -> cov_times_bl k i i)
       |> Enum.fold (+.) 0.
