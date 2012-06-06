@@ -197,7 +197,7 @@ let variance_of_placerun criterion pr =
     let union = if i = j then o i j else o i j + o j i in
     q_k union -. q_k (o i j) *. q_k (o j i)
       +. (1. -. q_k (o i j)) *. q_k (s j i)
-      +. (1. -. q_k (o j i)) *. q_k (o j i)
+      +. (1. -. q_k (o j i)) *. q_k (s i j)
       -. q_k (s i j) *. q_k (s j i)
   in
   let cov_times_bl k i j =
@@ -206,7 +206,10 @@ let variance_of_placerun criterion pr =
   let n_edges = Stree.top_id st' in
   let var k =
     Uptri.init n_edges (cov k)
-      |> Uptri.ppr_lowtri Format.std_formatter Format.pp_print_float;
+      |> Uptri.to_matrix (fun i -> cov k i i)
+      |> Array.map (Array.map (Printf.sprintf "%g"))
+      |> String_matrix.write_padded stdout;
+    print_newline ();
 
     let diag = 0 --^ n_edges
       |> Enum.map (fun i -> cov_times_bl k i i)
