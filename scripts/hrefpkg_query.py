@@ -43,6 +43,8 @@ def main():
                         help="number of cores to tell commands to use")
     parser.add_argument('-r', '--classification-rank', metavar='RANK',
                         help="rank to perform the initial NBC classification at")
+    parser.add_argument('--classifier', default='pplacer',
+                        help="which classifier to use with guppy classify")
     parser.add_argument('--workdir', metavar='DIR',
                         help=("directory to write intermediate files to "
                               "(default: a temporary directory)"))
@@ -220,9 +222,15 @@ def main():
         logging_check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
              '-j', str(args.ncores), aligned, '-o', placed])
+
+        classifier_args = []
+        if args.classifier.startswith('hybrid'):
+            classifier_args = ['--no-pre-mask', '--nbc-sequences', input]
+
         logging_check_call(
             [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed,
-             '-j', str(args.ncores)])
+             '-j', str(args.ncores), '--classifier', args.classifier]
+            + classifier_args)
 
     if cmscores_proc is not None:
         cmscores_proc.communicate()
