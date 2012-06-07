@@ -127,8 +127,8 @@ object (self)
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
-          (["placerun"; "phylo_entropy"; "quadratic"; "pd"; "pd_with_root";
-            "awpd"]
+          (["placerun"; "phylo_entropy"; "quadratic"; "unrooted_pd";
+            "rooted_pd"; "awpd"]
            @ List.map (Printf.sprintf "awpd_%g") exponents)
       |> self#write_ll_tab
 

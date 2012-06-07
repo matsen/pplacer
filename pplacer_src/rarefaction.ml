@@ -48,7 +48,8 @@ let k_maps_of_placerun: int -> Newick_bark.t Placerun.t -> float IntMap.t IntMap
 (* Compute the rarefaction curve of a placerun, given a placement criterion and
  * optionally the highest X value for the curve. *)
 let of_placerun:
-    (Placement.t -> float) -> ?k_max:int -> Newick_bark.t Placerun.t -> (int * float) Enum.t
+    (Placement.t -> float) -> ?k_max:int -> Newick_bark.t Placerun.t
+      -> (int * float * float) Enum.t
 = fun criterion ?k_max pr ->
   let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
   and mass = I.of_placerun
@@ -64,16 +65,16 @@ let of_placerun:
   let k_maps = k_maps_of_placerun k_max pr in
   let count k =
     let q_k = IntMap.find k k_maps |> flip IntMap.find in
-    count_along_mass
-      gt
-      mass
+    let count_fn = count_along_mass gt mass in
+    count_fn
       (fun d bl ->
         let d = !d in
         let p = n - d in
-        (1. -. (q_k d) -. (q_k p)) *. bl)
+        (1. -. (q_k d) -. (q_k p)) *. bl),
+    count_fn (fun d bl -> (1. -. (q_k !d)) *. bl)
   in
   2 -- k_max
-    |> Enum.map (identity &&& count)
+    |> Enum.map (fun k -> let u, r = count k in k, u, r)
 
 let mass_induced_tree gt mass =
   let edge = ref 0
