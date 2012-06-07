@@ -24,12 +24,12 @@ object (self)
         (Rarefaction.of_placerun criterion pr,
          Rarefaction.variance_of_placerun criterion pr)
       |> Enum.map
-          (fun ((k, um, rm), (_, uv, rv)) ->
-            [string_of_int k; fmt um; fmt rm; fmt uv; fmt rv])
+          (fun ((k, um, rm, qm), (_, uv, rv)) ->
+            [string_of_int k; fmt um; fmt rm; fmt qm; fmt uv; fmt rv])
       |> List.of_enum
       |> List.cons
-          ["k"; "unrooted_mean"; "rooted_mean"; "unrooted_variance";
-           "rooted_variance"]
+          ["k"; "unrooted_mean"; "rooted_mean"; "quadratic_mean";
+           "unrooted_variance"; "rooted_variance"]
       |> self#write_ll_tab
 
     | l ->

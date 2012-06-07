@@ -49,7 +49,7 @@ let k_maps_of_placerun: int -> Newick_bark.t Placerun.t -> float IntMap.t IntMap
  * optionally the highest X value for the curve. *)
 let of_placerun:
     (Placement.t -> float) -> ?k_max:int -> Newick_bark.t Placerun.t
-      -> (int * float * float) Enum.t
+      -> (int * float * float * float) Enum.t
 = fun criterion ?k_max pr ->
   let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
   and mass = I.of_placerun
@@ -58,12 +58,14 @@ let of_placerun:
     pr
   in
   let n = Placerun.get_pqueries pr |> List.length in
+  let n' = float_of_int n in
   let k_max = match k_max with
     | Some k when k < n -> k
     | _ -> n
   in
   let k_maps = k_maps_of_placerun k_max pr in
   let count k =
+    let k' = float_of_int k in
     let q_k = IntMap.find k k_maps |> flip IntMap.find in
     let count_fn = count_along_mass gt mass in
     count_fn
@@ -71,10 +73,18 @@ let of_placerun:
         let d = !d in
         let p = n - d in
         (1. -. (q_k d) -. (q_k p)) *. bl),
-    count_fn (fun d bl -> (1. -. (q_k !d)) *. bl)
+    count_fn (fun d bl -> (1. -. (q_k !d)) *. bl),
+    count_fn
+      (fun d bl ->
+        let w = float_of_int !d /. n' in
+        let sigma_sq =
+          (k' *. w *. (n' -. w) *. (n' -. k'))
+            /. ((n' ** 2.) *. (n' -. 1.))
+        and mu = k' *. w /. n' in
+        bl *. (mu -. (mu ** 2.) -. sigma_sq))
   in
   2 -- k_max
-    |> Enum.map (fun k -> let u, r = count k in k, u, r)
+    |> Enum.map (fun k -> let u, r, q = count k in k, u, r, q)
 
 let mass_induced_tree gt mass =
   let edge = ref 0
