@@ -3,7 +3,9 @@
 By default, ``guppy fpd`` outputs a matrix containing in each row: * the
 placefile name, the phylogenetic entropy (``phylo_entropy``, `Allen 2009`_),
 the quadratic entropy (``quadratic``, `Rao 1982`_, `Warwick and Clark 1995`_)
-phylogenetic diversity (``pd``, `Faith 1992`_), and a new diversity metric
+phylogenetic diversity (``pd``, `Faith 1992`_), phylogenetic diversity which
+only requires distal mass (``pd_with_root``, this is as oppposed to ``pd``
+requiring both distal and proximal mass), and a new diversity metric
 generalizing PD to incorporate abundance: abundance-weighted phylogenetic
 diversity (``awpd``).
 
