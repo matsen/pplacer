@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 In a classification database, create a view `multiclass_concat` and add names
 for concatenated taxids to the taxa table.

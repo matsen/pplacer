@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 """
 Produce rectangular matrices representing various counts in a classification
 database.
