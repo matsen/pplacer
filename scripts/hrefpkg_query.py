@@ -10,6 +10,7 @@ import sqlite3
 import atexit
 import shutil
 import errno
+import shlex
 import csv
 
 from taxtastic.refpkg import Refpkg
@@ -45,6 +46,10 @@ def main():
                         help="rank to perform the initial NBC classification at")
     parser.add_argument('--classifier', default='pplacer',
                         help="which classifier to use with guppy classify")
+    parser.add_argument('--classification-args', default=[], type=shlex.split,
+                        help="additional arguments for guppy classification")
+    parser.add_argument('--post-prob', default=False, action='store_true',
+                        help="place with posterior probabilities")
     parser.add_argument('--workdir', metavar='DIR',
                         help=("directory to write intermediate files to "
                               "(default: a temporary directory)"))
@@ -219,17 +224,22 @@ def main():
         elif args.alignment == 'none':
             raise NotImplementedError('none')
 
+        classifier_args, pplacer_args = [], []
+        if args.classifier.startswith('hybrid'):
+            classifier_args.extend(['--no-pre-mask', '--nbc-sequences', input])
+        if args.post_prob:
+            classifier_args.append('--pp')
+            pplacer_args.append('-p')
+
         logging_check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
-             '-j', str(args.ncores), aligned, '-o', placed])
-
-        classifier_args = []
-        if args.classifier.startswith('hybrid'):
-            classifier_args = ['--no-pre-mask', '--nbc-sequences', input]
+             '-j', str(args.ncores), aligned, '-o', placed]
+            + pplacer_args)
 
         logging_check_call(
             [args.guppy, 'classify', '--sqlite', classif_db, '-c', refpkg, placed,
              '-j', str(args.ncores), '--classifier', args.classifier]
+            + args.classification_args
             + classifier_args)
 
     if cmscores_proc is not None:
