@@ -78,9 +78,8 @@ let of_placerun:
       (fun d bl ->
         let w = float_of_int !d /. n' in
         let sigma_sq =
-          (k' *. w *. (n' -. w) *. (n' -. k'))
-            /. ((n' ** 2.) *. (n' -. 1.))
-        and mu = k' *. w /. n' in
+          (k' *. w *. (1. -. w) *. (n' -. k')) /. (n' -. 1.)
+        and mu = k' *. w in
         bl *. (mu -. (mu ** 2.) -. sigma_sq))
   in
   2 -- k_max
