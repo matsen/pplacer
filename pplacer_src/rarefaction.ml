@@ -77,13 +77,13 @@ let of_placerun:
     count_fn
       (fun d bl ->
         let w = float_of_int !d /. n' in
-        let sigma_sq =
-          (k' *. w *. (1. -. w) *. (n' -. k')) /. (n' -. 1.)
-        and mu = k' *. w in
-        bl *. (mu -. (mu ** 2.) -. sigma_sq))
+        bl *. w *. (n' -. 1. -. k' *. w))
   in
   2 -- k_max
-    |> Enum.map (fun k -> let u, r, q = count k in k, u, r, q)
+    |> Enum.map (fun k ->
+      let u, r, q = count k in
+      let q' = q *. float_of_int k /. (n' ** 2.) in
+      k, u, r, q')
 
 let mass_induced_tree gt mass =
   let edge = ref 0
