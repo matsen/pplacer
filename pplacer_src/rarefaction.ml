@@ -65,7 +65,6 @@ let of_placerun:
   in
   let k_maps = k_maps_of_placerun k_max pr in
   let count k =
-    let k' = float_of_int k in
     let q_k = IntMap.find k k_maps |> flip IntMap.find in
     let count_fn = count_along_mass gt mass in
     count_fn
@@ -76,13 +75,14 @@ let of_placerun:
     count_fn (fun d bl -> (1. -. (q_k !d)) *. bl),
     count_fn
       (fun d bl ->
-        let w = float_of_int !d /. n' in
-        bl *. w *. (n' -. 1. -. k' *. w))
+        let d' = float_of_int !d in
+        bl *. d' *. (n' -. d'))
   in
   2 -- k_max
     |> Enum.map (fun k ->
       let u, r, q = count k in
-      let q' = q *. float_of_int k /. (n' ** 2.) in
+      let k' = float_of_int k in
+      let q' = q *. (k' -. 1.) /. (k' *. n' *. (n' -. 1.)) in
       k, u, r, q')
 
 let mass_induced_tree gt mass =
