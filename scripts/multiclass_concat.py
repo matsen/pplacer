@@ -41,10 +41,10 @@ def main():
     args = parser.parse_args()
     curs = args.database.cursor()
 
-    curs.execute('DROP VIEW IF EXISTS multiclass_concat')
+    curs.execute('DROP TABLE IF EXISTS multiclass_concat')
 
     curs.execute("""
-        CREATE VIEW multiclass_concat AS
+        CREATE TABLE multiclass_concat AS
         SELECT placement_id,
                name,
                want_rank,
@@ -57,6 +57,8 @@ def main():
                   name,
                   want_rank
     """)
+
+    curs.execute('CREATE INDEX multiclass_concat_name ON multiclass_concat (name)')
 
     # Get all of the constructed tax_ids and their constituent tax_names.
     curs.execute("""
