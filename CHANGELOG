@@ -20,6 +20,9 @@
  * Closed GH-249: Added `guppy rarefy`.
  * Closed GH-251: Added the hybrid5 classifier.
  * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
+ * Closed GH-262: Added `--as-mass` to `guppy redup`; updated
+   `sort_placefile.py` for the new placefile format; fixed pplacer to better
+   deal with internal edges on a tree with a branch length of 0.
 
 
 1.1.alpha12

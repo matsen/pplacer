@@ -85,14 +85,16 @@ let filter_unplaced pr =
       (get_name pr);
   { pr with pqueries = placed_l }
 
-let redup sequence_tbl pr =
+let redup ?(as_mass = false) sequence_tbl pr =
   let namlom_transform (n, m) =
     if not (Hashtbl.mem sequence_tbl n) then
       [n, m]
-    else (* ... *)
-    List.map
-      (second (( *.) m))
-      (Hashtbl.find_all sequence_tbl n)
+    else
+      let names = Hashtbl.find_all sequence_tbl n in
+      if as_mass then
+        [n, List.length names |> float_of_int |> ( *.) m]
+      else
+        List.map (second (( *.) m)) names
   in
   get_pqueries pr
     |> List.map
