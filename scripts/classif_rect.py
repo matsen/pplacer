@@ -19,6 +19,11 @@ def cursor_to_csv(curs, outfile, description=None):
     writer.writerows(curs)
 
 def by_taxon(args):
+    # a bit ugly. maybe in the future we'll use sqlalchemy.
+    specimen_join = ''
+    if args.specimen_map:
+        specimen_join = 'JOIN specimens USING (name)'
+
     log.info('tabulating by_taxon')
     curs = args.database.cursor()
     curs.execute("""
@@ -29,24 +34,19 @@ def by_taxon(args):
                COUNT(DISTINCT placement_id)       placements
           FROM multiclass_concat mc
                JOIN placement_names USING (name, placement_id)
+               %s
                LEFT JOIN taxa t USING (tax_id)
          WHERE want_rank = ?
          GROUP BY t.tax_id
          ORDER BY tally DESC
-    """, (args.want_rank,))
+    """ % (specimen_join,), (args.want_rank,))
 
     with args.by_taxon:
         cursor_to_csv(curs, args.by_taxon)
 
 def by_specimen(args):
-    log.info('populating specimens table from specimen map')
-    curs = args.database.cursor()
-    curs.execute("CREATE TEMPORARY TABLE specimens (name, specimen, PRIMARY KEY (name, specimen))")
-    with args.specimen_map:
-        reader = csv.reader(args.specimen_map)
-        curs.executemany("INSERT INTO specimens VALUES (?, ?)", reader)
-
     log.info('tabulating counts by specimen')
+    curs = args.database.cursor()
     curs.execute("""
         SELECT specimen,
                COALESCE(tax_name, "unclassified") tax_name,
@@ -108,6 +108,14 @@ def main():
     args = parser.parse_args()
     if args.by_specimen and not args.specimen_map:
         parser.error('specimen map is required for by-specimen output')
+
+    if args.specimen_map:
+        log.info('populating specimens table from specimen map')
+        curs = args.database.cursor()
+        curs.execute("CREATE TEMPORARY TABLE specimens (name, specimen, PRIMARY KEY (name, specimen))")
+        with args.specimen_map:
+            reader = csv.reader(args.specimen_map)
+            curs.executemany("INSERT INTO specimens VALUES (?, ?)", reader)
 
     by_taxon(args)
     if args.by_specimen:
