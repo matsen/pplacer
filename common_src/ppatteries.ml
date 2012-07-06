@@ -103,16 +103,16 @@ let median l =
   aux (l, l)
 
 let verbosity = ref 1
-let dprintf ?(l = 1) ?(flush = true) fmt =
+let dfprintf ?(l = 1) ?(flush = true) ch fmt =
   if !verbosity >= l then begin
-    finally (if flush then flush_all else identity) (Printf.printf fmt)
+    finally (if flush then flush_all else identity) (Printf.fprintf ch fmt)
   end else
     Printf.ifprintf IO.stdnull fmt
-let dprint ?(l = 1) ?(flush = true) s =
-  if !verbosity >= l then begin
-    print_string s;
-    if flush then flush_all ();
-  end
+let dprintf ?l ?flush = dfprintf ?l ?flush stdout
+let deprintf ?l ?flush = dfprintf ?l ?flush stderr
+let dfprint ?l ?flush ch s = dfprintf ?l ?flush ch "%s" s
+let dprint ?l ?flush = dfprint ?l ?flush stdout
+let deprint ?l ?flush = dfprint ?l ?flush stderr
 
 let align_with_space =
   List.map (Tuple3.map3 ((^) " ")) |- Arg.align
