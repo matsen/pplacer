@@ -46,20 +46,25 @@ let find_root rp gt =
       in
       let at = List.at subrks |- fst in
       (* if the two highest ranks are equal, we've found the root. *)
-      if List.length subrks < 2 || at 0 = at 1 then
+      if List.length subrks > 1 && at 0 = at 1 then
         raise (Found_root n);
-      (* otherwise, descend toward the node with the highest MRCA rank. *)
-      match List.at subrks 0 with
-        | _, Some node ->
+      (* otherwise, descend toward the node with the highest MRCA rank. this
+       * will never ascend the tree, as the entry representing "the tree above
+       * us" is None. *)
+      match subrks with
+        | (_, Some node) :: _ ->
           (* find the MRCA of everything above the selected node in the entire
            * tree by taking the MRCA of the previous MRCA and the other
            * subtrees (which will then be above us at the next node). *)
           let top_mrca = List.remove subtrees node
             |> List.filter_map node_mrca
             |> maybe_cons top_mrca
-            |> Tax_taxonomy.list_mrca td
+            |> junction
+                List.is_empty
+                (const None)
+                (Tax_taxonomy.list_mrca td |- some)
           in
-          aux ~top_mrca node
+          aux ?top_mrca node
         | _ -> raise (Found_root n)
   in
   try
