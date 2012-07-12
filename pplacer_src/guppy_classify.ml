@@ -684,7 +684,7 @@ object (self)
 
       and classify line =
         let splut = String.nsplit line "\t" |> Array.of_list in
-        splut.(0), splut.(1), float_of_string splut.(2)
+        splut.(0), splut.(1), float_of_string splut.(2) /. 100.
 
       in
       fv blast_results
