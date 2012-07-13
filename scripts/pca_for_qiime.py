@@ -22,4 +22,5 @@ def main():
         writer.writerow(first_line)
         writer.writerows(reader)
 
-main()
+if __name__ == '__main__':
+    main()
