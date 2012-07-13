@@ -23,10 +23,10 @@ let of_tree_and_biom combined_filename =
   let counts = match get "matrix_type" with
   | Jsontype.String "dense" ->
     get "data"
-    |> Jsontype.array
-    |> List.mapi (fun i l ->
-      Jsontype.array l |> List.mapi (fun j x -> i, j, Jsontype.int x))
-    |> List.flatten
+      |> Jsontype.array
+      |> List.mapi (fun i l ->
+        Jsontype.array l |> List.mapi (fun j x -> i, j, Jsontype.int x))
+      |> List.flatten
   | Jsontype.String "sparse" ->
     get "data"
       |> Jsontype.array
@@ -42,7 +42,7 @@ let of_tree_and_biom combined_filename =
     flip List.map ll (fun (row, _, count) ->
       let loc = StringMap.find rows.(row) leaf_map in
       Pquery.make_ml_sorted
-        ~namlom:["x", float_of_int count]
+        ~namlom:["pl_" ^ rows.(row), float_of_int count]
         ~seq:Pquery_io.no_seq_str
         [Placement.make_ml loc ~ml_ratio:1. ~log_like:0. ~dist_bl:0. ~pend_bl:0.
          |> Placement.add_pp ~post_prob:1. ~marginal_prob:1.])
