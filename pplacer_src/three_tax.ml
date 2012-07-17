@@ -186,7 +186,9 @@ struct
             cut_bl
         in
         try
-          if cut_bl =~ 0. then inner_integration () else outer_integration ()
+          if cut_bl =~ 0. then
+            (set_dist_bl tt (cut_bl /. 2.); inner_integration ())
+          else outer_integration ()
           |> log
           |> (+.) base_ll
         with
