@@ -134,31 +134,33 @@ let placement_of_str str =
 (* *** WRITING *** *)
 
 (* usual output *)
-let opt_to_str f = function
-  | Some x -> f x
-  | None -> "-"
-
 let string_of_8gfloat = Printf.sprintf "%8g"
 let string_of_gfloat = Printf.sprintf "%g"
 
-let to_strl_gen fint ffloat ffloato ftaxido place =
+let to_strl_gen fint ffloat ftaxid default place =
+  let map_ratio, map_overlap =
+    Option.map_default (Tuple2.mapn some some) (None, None) place.map_identity
+  (* eta expansion !! *)
+  and fopt f xo = Option.map_default f default xo in
   [
     fint place.location;
     ffloat place.ml_ratio;
-    ffloato place.post_prob;
+    fopt ffloat place.post_prob;
     ffloat place.log_like;
-    ffloato place.marginal_prob;
+    fopt ffloat place.marginal_prob;
     ffloat place.distal_bl;
     ffloat place.pendant_bl;
-    ftaxido place.classif;
+    fopt ftaxid place.classif;
+    fopt ffloat map_ratio;
+    fopt fint map_overlap;
   ]
 
 let to_strl =
   to_strl_gen
     string_of_int
     string_of_8gfloat
-    (opt_to_str string_of_8gfloat)
-    (opt_to_str Tax_id.to_string)
+    Tax_id.to_string
+    "-"
 
 let to_str place = String.concat "\t" (to_strl place)
 
@@ -255,14 +257,9 @@ let of_json fields a =
   }
 
 (* CSV *)
-let opt_to_csv_str f = function
-  | Some x -> f x
-  | None -> "NA"
-
 let to_csv_strl =
   to_strl_gen
     string_of_int
     string_of_gfloat
-    (opt_to_csv_str string_of_gfloat)
-    (opt_to_csv_str Tax_id.to_string)
-
+    Tax_id.to_string
+    "NA"
