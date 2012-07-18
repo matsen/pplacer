@@ -9,6 +9,8 @@
    min_adcl` with the PAM algorithm.
  * Closed GH-265: Fixed a bug that could cometimes cause `rppr reroot` to
    return a suboptimal rooting.
+ * Closed GH-266: Adding `map_ratio` and `map_overlap` columns to `guppy
+   to_csv`.
 
 
 1.1.alpha13
