@@ -13,6 +13,7 @@ let of_refpkg rp =
     |> Enum.map
         (fun (rank, taxmap) ->
           let sizemim, cutsetim = build_sizemim_and_cutsetim (taxmap, st) in
+          let top_sizem = IntMap.find top_id sizemim in
           let cutsetim = IntMap.add (Stree.top_id st) ColorSet.empty cutsetim in
           let unconvex_colors = IntMap.fold
             (fun _ colors unconvex ->
@@ -20,13 +21,11 @@ let of_refpkg rp =
                 ColorSet.union unconvex colors)
             cutsetim
             ColorSet.empty
-          and all_colors = IntMap.find top_id sizemim
-            |> ColorMap.keys
-            |> ColorSet.of_enum
+          and all_colors = ColorMap.keys top_sizem |> ColorSet.of_enum
           and rank_name = Tax_taxonomy.get_rank_name td rank in
           ColorSet.diff all_colors unconvex_colors
             |> ColorSet.enum
-            |> Enum.map (fun c -> [rank_name; Tax_id.to_string c]))
+            |> Enum.map (fun c -> rank_name, c, ColorMap.find c top_sizem))
     |> Enum.flatten
 
 
@@ -45,8 +44,9 @@ object (self)
 
   method action _ =
     of_refpkg self#get_rp
+      |> Enum.map (fun (a, b, c) -> [a; Tax_id.to_string b; string_of_int c])
       |> List.of_enum
-      |> List.cons ["rank"; "tax_id"]
+      |> List.cons ["rank"; "tax_id"; "leaf_count"]
       |> self#write_ll_tab
 
 end
