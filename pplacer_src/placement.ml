@@ -68,6 +68,27 @@ let add_pp p ~marginal_prob ~post_prob =
 let add_classif p c = {p with classif = Some c}
 let add_map_identity p i = {p with map_identity = Some i}
 
+let map_rejection_cutoffs = [
+  "species", 0.99;
+  "genus", 0.97;
+  "family", 0.95;
+  "order", 0.93;
+  "class", 0.0; (* catchall if nothing else matches *)
+]
+let reclassify_by_map ?(cutoffs = map_rejection_cutoffs) td = function
+  | {classif = Some ti; map_identity = Some (ratio, _)} as p ->
+    let cutoff_rank = List.find_map
+      (fun (rank, cutoff) -> if ratio > cutoff then Some rank else None)
+      cutoffs
+    in
+    let cutoff_index = Tax_taxonomy.get_rank_index td cutoff_rank in
+    let classif' = List.rfind
+      (fun lti -> Tax_taxonomy.get_tax_rank td lti <= cutoff_index)
+      (Tax_taxonomy.get_lineage td ti)
+    in
+    {p with classif = Some classif'}
+  | p -> p
+
 let sort_placecoll criterion pc =
   List.sort (comparing criterion |> flip) pc
 

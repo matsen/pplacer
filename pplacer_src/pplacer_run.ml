@@ -531,6 +531,12 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       else
         identity
     and queries = ref [] in
+    let classify = if not (Prefs.map_rejection prefs) then classify else
+      Refpkg.get_taxonomy rp
+        |> Placement.reclassify_by_map
+        |> Placerun.apply_to_each_placement
+        |~ classify
+    in
     let rec gotfunc = function
       | Core.Pquery pq when not (Pquery.is_placed pq) ->
         dprintf "warning: %d identical sequences (including %s) were \

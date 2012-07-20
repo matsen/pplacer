@@ -51,6 +51,7 @@ type prefs =
     map_fasta : string ref;
     map_cutoff : float ref;
     map_identity : bool ref;
+    map_rejection : bool ref;
     keep_at_most : int ref;
     keep_factor : float ref;
     mrca_class : bool ref;
@@ -110,6 +111,7 @@ let defaults () =
     map_fasta = ref "";
     map_cutoff = ref 0.8;
     map_identity = ref false;
+    map_rejection = ref false;
     keep_at_most = ref 7;
     keep_factor = ref 0.01;
     mrca_class = ref false;
@@ -168,6 +170,7 @@ let pre_masked_file   p = !(p.pre_masked_file)
 let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
 let map_identity      p = !(p.map_identity)
+let map_rejection     p = !(p.map_rejection)
 let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
@@ -271,6 +274,8 @@ spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
 "Specify cutoff for inclusion in MAP sequence file. Default is %g.";
 "--map-identity", Arg.Set prefs.map_identity,
 "Add the percent identity of the query sequence to the nearest MAP sequence to each placement.";
+"--map-rejection", Arg.Set prefs.map_rejection,
+"Restrict classification rank using MAP percent identity.";
 spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
 "The maximum number of placements we keep. Default is %d.";
 spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
