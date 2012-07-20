@@ -57,3 +57,41 @@ let mrca_map_seq_map locmap mrcam tree =
       aux accum' rest'
   in
   aux IntMap.empty [Stree.top_id tree, tree]
+
+let all_mrcas mrcam parent_map loc =
+  Enum.seq loc (flip IntMap.find parent_map) (flip IntMap.mem parent_map)
+    |> Enum.filter (flip IntMap.mem mrcam)
+
+let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
+  let mrcam = Refpkg.get_mrcam rp in
+  let gt = Refpkg.get_ref_tree rp in
+  let st = Gtree.get_stree gt in
+  let parent_map = Stree.parent_map st in
+  let all_mrcas = all_mrcas mrcam parent_map in
+  let ref_seqs_by_name = Option.default (Refpkg.get_aln_fasta rp) ref_align
+    |> Array.enum
+    |> Hashtbl.of_enum
+  in
+  let ref_seqs_by_leaf = Newick_gtree.leaf_label_map gt
+    |> IntMap.map (Hashtbl.find ref_seqs_by_name)
+  in
+  let mrca_divergence = flip IntMap.mapi map_seqs (fun i seq ->
+    let divergence = Alignment.identity seq |- fst |- (-.) 1. in
+    Stree.find i st
+      |> Stree.leaf_ids
+      |> List.map (flip IntMap.find ref_seqs_by_leaf |- divergence)
+      |> List.max)
+  in
+  fun pq ->
+    let divergence = Alignment.identity (Pquery.seq pq) |- fst |- (-.) 1. in
+    let reclass p =
+      let open Placement in
+      let classif' = all_mrcas p.location
+        |> Enum.find (fun mrca ->
+          let divergence_cutoff = IntMap.find mrca mrca_divergence *. 2. in
+          divergence (IntMap.find mrca map_seqs) < divergence_cutoff)
+        |> flip IntMap.find mrcam
+      in
+      {p with classif = Some classif'}
+    in
+    Pquery.apply_to_place_list (List.map reclass) pq

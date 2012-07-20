@@ -4,6 +4,9 @@ open Ppatteries
 (* *** classification *** *)
 let add_classif what how p = what p (how p)
 
+let classify_pq what how pq =
+  Pquery.apply_to_place_list (List.map (add_classif what how)) pq
+
 let classify_pr what how pr =
   Placerun.apply_to_each_placement (add_classif what how) pr
 

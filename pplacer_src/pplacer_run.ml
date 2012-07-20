@@ -430,8 +430,24 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
 
   end else begin
     (* not fantasy baseball *)
+    let classify_pq =
+      if Refpkg.tax_equipped rp then
+        Tax_classify.classify_pq
+          Placement.add_classif
+          (if Prefs.mrca_class prefs then
+             Tax_classify.mrca_classify
+               (Refpkg.get_mrcam rp)
+               (Refpkg.get_uptree_map rp)
+           else
+             Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
+      else
+        identity
+    in
     let map_fasta_file = Prefs.map_fasta prefs in
-    let do_map = map_fasta_file <> "" || Prefs.map_identity prefs in
+    let do_map = map_fasta_file <> ""
+      || Prefs.map_identity prefs
+      || Prefs.map_rejection prefs
+    in
     (* similar to gotfunc/donefunc, but called respectively when a pquery is
      * received and after all pqueries have been received. *)
     let pquery_gotfunc, pquery_donefunc = if do_map then begin
@@ -515,28 +531,18 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
           (Array.of_list (List.rev map_fasta))
           map_fasta_file
       in
+      let gotfunc =
+        if Prefs.map_rejection prefs then
+          gotfunc
+            |- Map_seq.reclassify_pquery_by_rejection ~ref_align rp map_map
+        else gotfunc
+      in
       gotfunc, donefunc
     (* end: build the Maximum A Posteriori sequences *)
     end else (identity, identity)
     in
 
-    let classify =
-      if Refpkg.tax_equipped rp then
-        if Prefs.mrca_class prefs then
-          Refpkg.mrca_classify rp
-        else
-         Tax_classify.classify_pr
-           Placement.add_classif
-           (Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
-      else
-        identity
-    and queries = ref [] in
-    let classify = if not (Prefs.map_rejection prefs) then classify else
-      Refpkg.get_taxonomy rp
-        |> Placement.reclassify_by_map
-        |> Placerun.apply_to_each_placement
-        |~ classify
-    in
+    let queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq when not (Pquery.is_placed pq) ->
         dprintf "warning: %d identical sequences (including %s) were \
@@ -544,7 +550,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
           (Pquery.namel pq |> List.length)
           (Pquery.name pq)
       | Core.Pquery pq ->
-        let pq = pquery_gotfunc pq in
+        let pq = classify_pq pq |> pquery_gotfunc in
         queries := pq :: (!queries)
       | _ -> failwith "expected pquery result"
     and cachefunc _ = false
@@ -552,7 +558,6 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       pquery_donefunc ();
       Placerun.make orig_ref_tree placerun_name (!queries)
         |> Placerun.redup redup_tbl
-        |> classify
         |> placerun_cb
     in
     gotfunc, cachefunc, donefunc
