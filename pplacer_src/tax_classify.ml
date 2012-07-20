@@ -4,13 +4,8 @@ open Ppatteries
 (* *** classification *** *)
 let add_classif what how p = what p (how p)
 
-let classify_pq what how pq =
-  { pq with Pquery.place_list =
-    List.map (add_classif what how) pq.Pquery.place_list }
-
 let classify_pr what how pr =
-  Placerun.set_pqueries pr
-    (List.map (classify_pq what how) (Placerun.get_pqueries pr))
+  Placerun.apply_to_each_placement (add_classif what how) pr
 
 (* Classify a placement at a given location.
  * Simply bounce up the tree until we hit an MRCA.
