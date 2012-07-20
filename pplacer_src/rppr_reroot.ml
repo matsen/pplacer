@@ -83,31 +83,40 @@ object (self)
   method desc = "reroots a given reference package in place"
   method usage = "usage: reroot -c my.refpkg"
 
+  method private rerooted_tree lbl =
+    let rp = self#get_rp in
+    let gt = Refpkg.get_ref_tree rp in
+    let st = gt.Gtree.stree
+    and td = Refpkg.get_taxonomy rp in
+    (* first, determine the highest rank that has more than one tax_id. *)
+    let rank_tax_map = Convex.rank_tax_map_of_refpkg rp in
+    let rank, taxmap =
+      try
+        Enum.find
+          (snd |- IntMap.values |- TaxIdSet.of_enum |- TaxIdSet.cardinal |- (<) 1)
+          (IntMap.enum rank_tax_map)
+      with Not_found ->
+        dprint "ref tree has <= 1 taxon; writing unmodified tree\n";
+        Return.return lbl gt
+    in
+    Tax_taxonomy.get_rank_name td rank
+      |> dprintf "rerooting at %s\n";
+    (* next, find the convex subset of leaves at that rank. *)
+    let phi, _ = Convex.solve (taxmap, st) in
+    let not_cut = Convex.nodeset_of_phi_and_tree phi st in
+    (* reroot after pruning the tree down to that convex subset of leaves. *)
+    Gtree.get_bark_map gt
+      |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
+      |> Gtree.set_bark_map gt
+      |> find_root rp
+      |> tap (dprintf "root found at node %d\n")
+      |> Gtree.reroot gt
+
   method action = function
     | [] ->
-      let rp = self#get_rp in
-      let gt = Refpkg.get_ref_tree rp in
-      let st = gt.Gtree.stree
-      and td = Refpkg.get_taxonomy rp in
-      (* first, determine the highest rank that has more than one tax_id. *)
-      let rank_tax_map = Convex.rank_tax_map_of_refpkg rp in
-      let rank, taxmap = Enum.find
-        (snd |- IntMap.values |- TaxIdSet.of_enum |- TaxIdSet.cardinal |- (<) 1)
-        (IntMap.enum rank_tax_map)
-      in
-      Tax_taxonomy.get_rank_name td rank
-        |> dprintf "rerooting at %s\n";
-      (* next, find the convex subset of leaves at that rank. *)
-      let phi, _ = Convex.solve (taxmap, st) in
-      let not_cut = Convex.nodeset_of_phi_and_tree phi st in
-      (* reroot after pruning the tree down to that convex subset of leaves. *)
-      Gtree.get_bark_map gt
-        |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
-        |> Gtree.set_bark_map gt
-        |> find_root rp
-        |> tap (dprintf "root found at node %d\n")
-        |> Gtree.reroot gt
-        |> flip Newick_gtree.to_file (self#single_file ())
+      Newick_gtree.to_file
+        (Return.label self#rerooted_tree)
+        (self#single_file ())
 
     | _ -> failwith "reroot doesn't take any positional arguments"
 
