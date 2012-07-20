@@ -29,7 +29,7 @@ let find_root rp gt =
         (Tax_taxonomy.list_mrca td |- some)
   in
   let rec aux: ?top_mrca:Tax_id.t -> stree -> unit = fun ?top_mrca -> function
-    | Leaf _ as n -> raise (Found_root n)
+    | Leaf _ -> failwith "tried to reroot at a leaf"
     | Node (_, subtrees) as n ->
       (* walk the tree, and at each node, find the MRCA of all of the leaves
        * below that node, then the rank of each MRCA. if we're not at the root
@@ -50,9 +50,9 @@ let find_root rp gt =
         raise (Found_root n);
       (* otherwise, descend toward the node with the highest MRCA rank. this
        * will never ascend the tree, as the entry representing "the tree above
-       * us" is None. *)
+       * us" is None. if the highest MRCA rank is a leaf, stop here. *)
       match subrks with
-        | (_, Some node) :: _ ->
+        | (_, Some (Node _ as node)) :: _ ->
           (* find the MRCA of everything above the selected node in the entire
            * tree by taking the MRCA of the previous MRCA and the other
            * subtrees (which will then be above us at the next node). *)
