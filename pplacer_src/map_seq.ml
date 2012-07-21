@@ -66,6 +66,7 @@ let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
   let mrcam = Refpkg.get_mrcam rp in
   let gt = Refpkg.get_ref_tree rp in
   let st = Gtree.get_stree gt in
+  let top_id = Stree.top_id st in
   let parent_map = Stree.parent_map st in
   let all_mrcas = all_mrcas mrcam parent_map in
   let ref_seqs_by_name = Option.default (Refpkg.get_aln_fasta rp) ref_align
@@ -87,9 +88,11 @@ let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
     let reclass p =
       let open Placement in
       let classif' = all_mrcas p.location
-        |> Enum.find (fun mrca ->
+        |> Enum.filter (fun mrca ->
           let divergence_cutoff = IntMap.find mrca mrca_divergence *. 2. in
           divergence (IntMap.find mrca map_seqs) < divergence_cutoff)
+        |> Enum.get
+        |> Option.default top_id
         |> flip IntMap.find mrcam
       in
       {p with classif = Some classif'}
