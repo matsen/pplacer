@@ -42,6 +42,8 @@ module IAMR = IntAlgMapR
 
 type t = (string * float * float option) array
 
+(* fill in the normally-sparse MRCA map so that every node in the tree maps to
+ * the appopriate MRCA, instead of just the nodes where the MRCAs occur. *)
 let all_mrcas rp =
   let mrcam = Refpkg.get_mrcam rp
   and utm = Refpkg.get_uptree_map rp in
@@ -57,8 +59,13 @@ let all_mrcas rp =
     |> Stree.node_ids
     |> List.fold_left (update |-- fst) mrcam
 
+(* from a reference package, pquery, and criterion, determine the evidence and
+ * bayes factor for each rank. the returned value is an array of rank names,
+ * evidences, and bayes factor values (if applicable). *)
 let of_refpkg rp mrca_class =
-  let post_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
+  (* a map from each tax_id in the MRCA map to the number of times that tax_id
+   * occurs in the tree. *)
+  let denom_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
     |> IntMap.values
     |> TaxIdMap.histogram_of_enum
     |> TaxIdMap.map float_of_int
@@ -73,7 +80,7 @@ let of_refpkg rp mrca_class =
         try
           IAMR.add_by
             (Tax_taxonomy.get_tax_rank td ti)
-            (criterion p /. TaxIdMap.find ti post_map)
+            (criterion p /. TaxIdMap.find ti denom_map)
             accum
         with Not_found ->
           Printf.sprintf
