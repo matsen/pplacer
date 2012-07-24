@@ -62,6 +62,7 @@ let all_mrcas mrcam parent_map loc =
   Enum.seq loc (flip IntMap.find parent_map) (flip IntMap.mem parent_map)
     |> Enum.filter (flip IntMap.mem mrcam)
 
+(* map_seqs is a map from node number to MAP sequence. *)
 let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
   let mrcam = Refpkg.get_mrcam rp in
   let gt = Refpkg.get_ref_tree rp in
@@ -73,9 +74,12 @@ let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
     |> Array.enum
     |> Hashtbl.of_enum
   in
+  (* Map from leaf number to reference sequence *)
   let ref_seqs_by_leaf = Newick_gtree.leaf_label_map gt
     |> IntMap.map (Hashtbl.find ref_seqs_by_name)
   in
+  (* mrca_divergence is a map from a node number i to the maximum divergence
+   * between the MAP sequence at i and the reference sequences below i.*)
   let mrca_divergence = flip IntMap.mapi map_seqs (fun i seq ->
     let divergence = Alignment.identity seq |- fst |- (-.) 1. in
     Stree.find i st
