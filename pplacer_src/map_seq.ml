@@ -63,7 +63,7 @@ let all_mrcas mrcam parent_map loc =
     |> Enum.filter (flip IntMap.mem mrcam)
 
 (* map_seqs is a map from node number to MAP sequence. *)
-let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
+let reclassify_pquery_by_rejection ?ref_align divergence_multiplier rp map_seqs =
   let mrcam = Refpkg.get_mrcam rp in
   let gt = Refpkg.get_ref_tree rp in
   let st = Gtree.get_stree gt in
@@ -93,7 +93,9 @@ let reclassify_pquery_by_rejection ?ref_align rp map_seqs =
       let open Placement in
       let classif' = all_mrcas p.location
         |> Enum.filter (fun mrca ->
-          let divergence_cutoff = IntMap.find mrca mrca_divergence *. 2. in
+          let divergence_cutoff = IntMap.find mrca mrca_divergence
+            *. divergence_multiplier
+          in
           divergence (IntMap.find mrca map_seqs) < divergence_cutoff)
         |> Enum.get
         |> Option.default top_id
