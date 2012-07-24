@@ -46,6 +46,8 @@ def main():
                         help="rank to perform the initial NBC classification at")
     parser.add_argument('--classifier', default='pplacer',
                         help="which classifier to use with guppy classify")
+    parser.add_argument('--pplacer-args', default=[], type=shlex.split,
+                        help="additional arguments for pplacer")
     parser.add_argument('--classification-args', default=[], type=shlex.split,
                         help="additional arguments for guppy classification")
     parser.add_argument('--post-prob', default=False, action='store_true',
@@ -229,11 +231,13 @@ def main():
             classifier_args.extend(['--no-pre-mask', '--nbc-sequences', input])
         if args.post_prob:
             classifier_args.append('--pp')
-            pplacer_args.append('-p')
+            pplacer_args.extend(
+                ['-p', '--inform-prior', '--prior-lower', '0.01'])
 
         logging_check_call(
             [args.pplacer, '--discard-nonoverlapped', '-c', refpkg,
              '-j', str(args.ncores), aligned, '-o', placed]
+            + args.pplacer_args
             + pplacer_args)
 
         logging_check_call(
