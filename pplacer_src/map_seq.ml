@@ -2,6 +2,7 @@
  * tree. For us, these internal locations will be mrcams. *)
 
 open Ppatteries
+module TIM = Tax_id.TaxIdMap
 
 (* Given
  * u1 and u2: utility Glvs
@@ -62,15 +63,12 @@ let all_mrcas mrcam parent_map loc =
   Enum.seq loc (flip IntMap.find parent_map) (flip IntMap.mem parent_map)
     |> Enum.filter (flip IntMap.mem mrcam)
 
-(* map_seqs is a map from node number to MAP sequence. *)
-let reclassify_pquery_by_rejection ?ref_align divergence_multiplier rp map_seqs =
-  let mrcam = Refpkg.get_mrcam rp in
-  let gt = Refpkg.get_ref_tree rp in
+(* max_divergence_map, given a reference alignment, tree, and MAP sequences,
+ * returns a map from a node number i to the maximum divergence between the MAP
+ * sequence at i and the reference sequences below i. *)
+let max_divergence_map ref_align gt map_seqs =
   let st = Gtree.get_stree gt in
-  let top_id = Stree.top_id st in
-  let parent_map = Stree.parent_map st in
-  let all_mrcas = all_mrcas mrcam parent_map in
-  let ref_seqs_by_name = Option.default (Refpkg.get_aln_fasta rp) ref_align
+  let ref_seqs_by_name = ref_align
     |> Array.enum
     |> Hashtbl.of_enum
   in
@@ -78,17 +76,27 @@ let reclassify_pquery_by_rejection ?ref_align divergence_multiplier rp map_seqs 
   let ref_seqs_by_leaf = Newick_gtree.leaf_label_map gt
     |> IntMap.map (Hashtbl.find ref_seqs_by_name)
   in
-  (* mrca_divergence is a map from a node number i to the maximum divergence
-   * between the MAP sequence at i and the reference sequences below i.*)
-  let mrca_divergence = flip IntMap.mapi map_seqs (fun i seq ->
-    let divergence = Alignment.identity seq |- fst |- (-.) 1. in
+  flip IntMap.mapi map_seqs (fun i seq ->
+    let divergence = Alignment.divergence seq in
     Stree.find i st
       |> Stree.leaf_ids
       |> List.map (flip IntMap.find ref_seqs_by_leaf |- divergence)
       |> List.max)
+
+(* map_seqs is a map from node number to MAP sequence. *)
+let reclassify_pquery_by_rejection ?ref_align divergence_multiplier rp map_seqs =
+  let parent_map = Refpkg.get_uptree_map rp in
+  let mrcam = Refpkg.get_mrcam rp in
+  let all_mrcas = all_mrcas mrcam parent_map in
+  let gt = Refpkg.get_ref_tree rp in
+  let top_id = Gtree.top_id gt in
+  let mrca_divergence = max_divergence_map
+    (Option.default (Refpkg.get_aln_fasta rp) ref_align)
+    gt
+    map_seqs
   in
   fun pq ->
-    let divergence = Alignment.identity (Pquery.seq pq) |- fst |- (-.) 1. in
+    let divergence = Alignment.divergence (Pquery.seq pq) in
     let reclass p =
       let open Placement in
       let classif' = all_mrcas p.location
@@ -102,5 +110,34 @@ let reclassify_pquery_by_rejection ?ref_align divergence_multiplier rp map_seqs 
         |> flip IntMap.find mrcam
       in
       {p with classif = Some classif'}
+    in
+    Pquery.apply_to_place_list (List.map reclass) pq
+
+let add_map_divergence_ratio ?ref_align rp map_seqs =
+  let mrcam = Refpkg.get_mrcam rp in
+  let node_divergence = max_divergence_map
+    (Option.default (Refpkg.get_aln_fasta rp) ref_align)
+    (Refpkg.get_ref_tree rp)
+    map_seqs
+  |> flip IntMap.find
+  in
+  let mrca_divergences = IntMap.enum mrcam
+    |> Enum.map
+        (fun (i, ti) -> ti, (IntMap.find i map_seqs, node_divergence i))
+    |> Enum.fold (uncurry TIM.add_listly |> flip) TIM.empty
+  in
+  fun pq ->
+    let divergence = Alignment.divergence (Pquery.seq pq) in
+    let open Placement in
+    let reclass = function
+      | {classif = Some ti} as p when TIM.mem ti mrca_divergences ->
+        let (_, max_dv), seq_dv = TIM.find ti mrca_divergences
+          |> List.enum
+          |> Enum.map (identity &&& (fst |- divergence))
+          |> Enum.arg_min snd
+        in
+        if max_dv =~ 0. then p
+        else {p with map_divergence_ratio = Some (seq_dv /. max_dv)}
+      | p -> p
     in
     Pquery.apply_to_place_list (List.map reclass) pq

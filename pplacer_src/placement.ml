@@ -8,6 +8,7 @@ open Stree
 exception No_PP
 exception No_classif
 exception No_map_identity
+exception No_map_divergence_ratio
 
 let () = Printexc.register_printer
   (function
@@ -30,6 +31,7 @@ type placement =
     pendant_bl: float;
     classif: Tax_id.tax_id option;
     map_identity: (float * int) option;
+    map_divergence_ratio: float option;
   }
 
 type t = placement
@@ -47,6 +49,9 @@ let classif_opt         p = p.classif
 let classif             p = get_some No_classif p.classif
 let map_identity_opt    p = p.map_identity
 let map_identity        p = get_some No_map_identity p.map_identity
+let map_divergence_ratio_opt p = p.map_divergence_ratio
+let map_divergence_ratio p =
+  get_some No_map_divergence_ratio p.map_divergence_ratio
 
 let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl = {
   location         =  loc;
@@ -58,6 +63,7 @@ let make_ml loc ~ml_ratio ~log_like ~dist_bl ~pend_bl = {
   post_prob        =  None;
   classif          =  None;
   map_identity     =  None;
+  map_divergence_ratio = None;
 }
 
 let add_pp p ~marginal_prob ~post_prob =
@@ -120,6 +126,7 @@ let placement_of_str str =
         pendant_bl       =  float_of_string      strs.(6);
         classif          =  None;
         map_identity     =  None;
+        map_divergence_ratio = None;
       }
     in
     if len = 7 then basic
@@ -153,6 +160,7 @@ let to_strl_gen fint ffloat ftaxid default place =
     fopt ftaxid place.classif;
     fopt ffloat map_ratio;
     fopt fint map_overlap;
+    fopt ffloat place.map_divergence_ratio;
   ]
 
 let to_strl =
@@ -188,6 +196,10 @@ let to_json p =
       |- StringMap.add "map_overlap" (Jsontype.Int d)
     | _ -> identity
   end
+  |> begin match p.map_divergence_ratio with
+    | Some f -> StringMap.add "map_divergence_ratio" (Jsontype.Float f)
+    | _ -> identity
+  end
 
 let of_json fields a =
   let a = Jsontype.array a in
@@ -216,6 +228,7 @@ let of_json fields a =
     post_prob = maybe_get Jsontype.float "post_prob";
     marginal_prob = maybe_get Jsontype.float "marginal_like";
     classif = maybe_get Tax_id.of_json "classification";
+    map_divergence_ratio = maybe_get Jsontype.float "map_divergence_ratio";
     map_identity =
       match maybe_get identity "map_ratio",
         maybe_get identity "map_overlap"

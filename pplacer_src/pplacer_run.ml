@@ -534,6 +534,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       let gotfunc =
         if Prefs.map_rejection prefs then
           gotfunc
+            |- Map_seq.add_map_divergence_ratio ~ref_align rp map_map
             |- Map_seq.reclassify_pquery_by_rejection
                  ~ref_align
                  (Prefs.map_rejection_multiplier prefs)

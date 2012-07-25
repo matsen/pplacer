@@ -35,7 +35,8 @@ object (self)
     |> List.cons
         ["origin"; "name"; "multiplicity"; "edge_num"; "like_weight_ratio";
          "post_prob"; "likelihood"; "marginal_like"; "distal_length";
-         "pendant_length"; "classification"; "map_ratio"; "map_overlap"]
+         "pendant_length"; "classification"; "map_ratio"; "map_overlap";
+         "map_divergence_ratio"]
     |> self#write_ll_tab
 
 end

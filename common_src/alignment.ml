@@ -222,6 +222,9 @@ let identity s1 s2 =
   (if denom = 0 then 0. else (float_of_int num) /. (float_of_int denom)),
   denom
 
+let divergence s1 s2 =
+  let id, _ = identity s1 s2 in 1. -. id
+
 let informative = function '?' | '-' -> false | _ -> true
 
 let ungap = String.filter informative
