@@ -52,7 +52,7 @@ type prefs =
     map_cutoff : float ref;
     map_identity : bool ref;
     map_rejection : bool ref;
-    map_rejection_multiplier : float ref;
+    map_rejection_cutoff : float ref;
     keep_at_most : int ref;
     keep_factor : float ref;
     mrca_class : bool ref;
@@ -113,7 +113,7 @@ let defaults () =
     map_cutoff = ref 0.8;
     map_identity = ref false;
     map_rejection = ref false;
-    map_rejection_multiplier = ref 2.;
+    map_rejection_cutoff = ref 2.;
     keep_at_most = ref 7;
     keep_factor = ref 0.01;
     mrca_class = ref false;
@@ -173,7 +173,7 @@ let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
 let map_identity      p = !(p.map_identity)
 let map_rejection     p = !(p.map_rejection)
-let map_rejection_multiplier p = !(p.map_rejection_multiplier)
+let map_rejection_cutoff p = !(p.map_rejection_cutoff)
 let keep_at_most      p = !(p.keep_at_most)
 let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
@@ -279,8 +279,8 @@ spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
 "Add the percent identity of the query sequence to the nearest MAP sequence to each placement.";
 "--map-rejection", Arg.Set prefs.map_rejection,
 "Restrict classification rank using MAP percent identity.";
-spec_with_default "--map-rejection-multiplier" (fun o -> Arg.Set_float o) prefs.map_rejection_multiplier
-"Multiplier to use for divergence cutoffs when doing MAP rejection. Default is %g.";
+spec_with_default "--map-rejection-cutoff" (fun o -> Arg.Set_float o) prefs.map_rejection_cutoff
+"Cutoff to use for divergence ratios when doing MAP rejection. Default is %g.";
 spec_with_default "--keep-at-most" (fun o -> Arg.Set_int o) prefs.keep_at_most
 "The maximum number of placements we keep. Default is %d.";
 spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor

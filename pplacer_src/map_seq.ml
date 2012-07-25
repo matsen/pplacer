@@ -141,3 +141,27 @@ let add_map_divergence_ratio ?ref_align rp map_seqs =
       | p -> p
     in
     Pquery.apply_to_place_list (List.map reclass) pq
+
+let apply_cutoff rp mrca_class cutoff =
+  let tax_map =
+    if mrca_class then Refpkg.get_mrcam rp
+    else Edge_painting.of_refpkg rp
+  and parent_map = Refpkg.get_uptree_map rp in
+  let taxa_above = all_mrcas tax_map parent_map in
+  fun pq ->
+    let open Placement in
+    let reclass = function
+      | {classif = Some ti; map_divergence_ratio = Some ratio} as p
+        when ratio > cutoff ->
+        begin match taxa_above p.location
+          |> Enum.map (flip IntMap.find tax_map)
+          |> Enum.filter ((<>) ti)
+          |> Enum.get
+        with
+        | Some ti' -> {p with classif = Some ti'}
+        | None -> p
+        end
+      | p -> p
+    in
+    Pquery.apply_to_place_list (List.map reclass) pq
+
