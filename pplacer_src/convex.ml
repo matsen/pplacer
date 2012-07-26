@@ -582,8 +582,8 @@ let rank_tax_map_of_refpkg rp =
     Array.iteri
       (fun rank rankname ->
         if not (IntMap.mem rank m) then
-          dprintf "warning: rank %s not represented in the lineage of any \
-                   sequence in reference package %s.\n"
+          deprintf "warning: rank %s not represented in the lineage of any \
+                    sequence in reference package %s.\n"
             rankname
             (Refpkg.get_name rp))
       td.Tax_taxonomy.rank_names)

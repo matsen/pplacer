@@ -31,6 +31,13 @@ let set_transm_opt p transm = {p with transm}
 let n_pqueries p = List.length p.pqueries
 let total_multiplicity p = Pquery.total_multiplicity p.pqueries
 
+let apply_to_pqueries f p = {p with pqueries = f p.pqueries}
+let apply_to_each_placement f =
+  List.map f
+    |> Pquery.apply_to_place_list
+    |> List.map
+    |> apply_to_pqueries
+
 let make_map_by_best_loc criterion pr =
   Pquery.make_map_by_best_loc criterion (get_pqueries pr)
 
@@ -96,26 +103,25 @@ let redup ?(as_mass = false) sequence_tbl pr =
       else
         List.map (second (( *.) m)) names
   in
-  get_pqueries pr
-    |> List.map
-        (fun pq ->
-          Pquery.namlom pq
-            |> List.map namlom_transform
-            |> List.flatten
-            |> Pquery.set_namlom pq)
-    |> set_pqueries pr
+  apply_to_pqueries
+    (List.map (fun pq ->
+      Pquery.namlom pq
+        |> List.map namlom_transform
+        |> List.flatten
+        |> Pquery.set_namlom pq))
+    pr
 
 let transform func pr =
-  get_pqueries pr
-    |> List.map
-        (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq)
-    |> set_pqueries pr
+  apply_to_pqueries
+    (List.map
+       (fun pq -> Pquery.multiplicity pq |> func |> Pquery.set_mass pq))
+    pr
 
 let unitize pr =
   let tot_mass = get_pqueries pr
     |> Pquery.total_multiplicity
   in
-  get_pqueries pr
-    |> List.map
-        (fun pq -> Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
-    |> set_pqueries pr
+  apply_to_pqueries
+    (List.map
+       (fun pq -> Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq))
+    pr
