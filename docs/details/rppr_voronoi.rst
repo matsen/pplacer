@@ -1,5 +1,5 @@
 
-``voronoi`` finds leaves of the reference tree that aren't "needed" for placement.
+``min_adcl`` finds leaves of the reference tree that aren't "needed" for placement.
 The definition requires some explaining, but we haven't even written the paper yet.
 Check back soon.
 

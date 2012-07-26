@@ -262,7 +262,11 @@ def infernal_align(refpkg, sequence_file, output_path, use_mask=True,
         cmd.extend((refpkg.resource_path('profile'),
                     refpkg.resource_path('aln_sto'), tf.name))
         log.info(' '.join(cmd))
-        subprocess.check_call(cmd, stdout=stdout)
+
+        # write the merge output to /dev/null: only the initial cmalign command
+        # produces useful output.
+        with open(os.devnull) as devnull:
+            subprocess.check_call(cmd, stdout=devnull)
         tf.close()
 
         if refpkg.has_mask and use_mask:

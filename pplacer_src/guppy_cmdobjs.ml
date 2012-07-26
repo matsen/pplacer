@@ -122,15 +122,18 @@ object (self)
 end
 
 class rng_cmd () =
-object
+object (self)
   val seed = flag "--seed"
     (Formatted (1, "Set the random seed, an integer > 0. Default is %d."))
   method specl = [ int_flag seed; ]
 
+  method private set_default_seed =
+    Gsl_rng.set_default_seed (Nativeint.of_int (fv seed))
+
   method private rng =
-    let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
-    Gsl_rng.set rng (Nativeint.of_int (fv seed));
-    rng
+    self#set_default_seed;
+    Gsl_rng.make Gsl_rng.KNUTHRAN2002
+
 end
 
 
@@ -612,32 +615,41 @@ class voronoi_cmd () =
 object (self)
   inherit tabular_cmd ~default_to_csv:true () as super_tabular
   inherit numbered_tree_cmd () as super_numbered_tree
+  inherit rng_cmd () as super_rng
 
   val verbose = flag "-v"
     (Plain (false, "If specified, write progress output to stderr."))
   val trimmed_tree_file = flag "-t"
     (Needs_argument ("trimmed tree file", "If specified, the path to write the trimmed tree to."))
   val leaf_cutoff = flag "--leaves"
-    (Needs_argument ("leaves", "The maximum number of leaves to keep in the tree."))
+    (Needs_argument ("", "The maximum number of leaves to keep in the tree."))
+  val adcl_cutoff = flag "--max-adcl"
+    (Needs_argument ("", "The maximum ADCL that a solution can have."))
   val algorithm = flag "--algorithm"
     (Formatted ("full",
-                "Which algorithm to use to prune leaves. Choices are 'greedy', 'full', and 'force'. Default %s."))
-  val all_eclds_file = flag "--all-eclds-file"
-    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ECLD."))
+                "Which algorithm to use to prune leaves. \
+                 Choices are 'greedy', 'full', 'force', and 'pam'. Default %s."))
+  val all_adcls_file = flag "--all-adcls-file"
+    (Needs_argument ("", "If specified, write out a csv file containing every intermediate computed ADCL."))
   val soln_log = flag "--log"
     (Needs_argument ("", "If specified with the full algorithm, write out a csv file containing solutions at \
                           every internal node."))
+  val always_include = flag "--always-include"
+    (Needs_argument ("", "If specified, the leaf names read from the provided file will not be trimmed."))
 
   method specl =
     super_tabular#specl
   @ super_numbered_tree#specl
+  @ super_rng#specl
   @ [
     toggle_flag verbose;
     string_flag trimmed_tree_file;
     int_flag leaf_cutoff;
+    float_flag adcl_cutoff;
     string_flag algorithm;
-    string_flag all_eclds_file;
+    string_flag all_adcls_file;
     string_flag soln_log;
+    string_flag always_include;
   ]
 
   method private perform_voronoi ?decor_tree gt mass_cb =
@@ -645,27 +657,84 @@ object (self)
         | "greedy" -> (module Voronoi.Greedy: Voronoi.Alg)
         | "full" -> (module Voronoi.Full: Voronoi.Alg)
         | "force" -> (module Voronoi.Forced: Voronoi.Alg)
+        | "pam" -> (module Voronoi.PAM: Voronoi.Alg)
         | x -> failwith (Printf.sprintf "unknown algorithm: %s" x)
+      and keep = match fvo always_include with
+        | None -> None
+        | Some fname ->
+          let name_map = Newick_gtree.leaf_label_map gt
+            |> IntMap.enum
+            |> Enum.map swap
+            |> StringMap.of_enum
+          in
+          File.lines_of fname
+            |> Enum.map
+                (fun name -> match StringMap.Exceptionless.find name name_map with
+                 | None -> failwith ("no leaf named " ^ name)
+                 | Some i -> i)
+            |> IntSet.of_enum
+            |> some
       and verbose = fv verbose
-      and leaf_cutoff = fv leaf_cutoff in
+      and n_leaves = fvo leaf_cutoff
+      and max_adcl = fvo adcl_cutoff in
+      (* setting the default seed will affect C code, so this sets PAM's seed
+       * even though PAM gets a Gsl_rng.t through C. *)
+      self#set_default_seed;
       Voronoi.Full.csv_log :=
         fvo soln_log
           |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
       let module Alg = (val alg: Voronoi.Alg) in
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
+
+      begin match Option.map IntSet.cardinal keep, n_leaves with
+        | Some n_include, Some leaf_cutoff when n_include > leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "More leaves specified via --always-include (%d) than --leaves (%d)"
+               n_include
+               leaf_cutoff)
+        | _ -> ()
+      end;
+      begin match Gtree.n_taxa gt, n_leaves with
+        | n_taxa, Some leaf_cutoff when n_taxa < leaf_cutoff ->
+          failwith
+            (Printf.sprintf
+               "Cannot prune %d leaves from a tree with %d taxa"
+               leaf_cutoff
+               n_taxa)
+        | _ -> ()
+      end;
+
       let solm = Alg.solve
-        ~strict:(fvo all_eclds_file |> Option.is_none)
+        ?n_leaves
+        ?max_adcl
+        ?keep
+        ~strict:(fvo all_adcls_file |> Option.is_none)
         ~verbose
         gt
         mass
-        leaf_cutoff
       in
-      let {Voronoi.leaves} = IntMap.find leaf_cutoff solm in
+      if IntMap.is_empty solm then
+        failwith "no solutions were found";
+      let leaves = match n_leaves with
+        | Some leaf_cutoff ->
+          if not (IntMap.mem leaf_cutoff solm) then
+            failwith
+              (Printf.sprintf
+                 "no solution with cardinality %d found; only solutions on the range [%d, %d]"
+                 leaf_cutoff
+                 (IntMap.min_binding solm |> fst)
+                 (IntMap.max_binding solm |> fst));
+          (IntMap.find leaf_cutoff solm).Voronoi.leaves
+        (* if there's no obvious cardinality to choose, pick the one which cuts
+         * the largest number of leaves. *)
+        | None -> (IntMap.min_binding solm |> snd).Voronoi.leaves
+      in
       let cut_leaves = gt
-        |> Gtree.leaf_ids
-        |> IntSet.of_list
-        |> flip IntSet.diff leaves
+          |> Gtree.leaf_ids
+          |> IntSet.of_list
+          |> flip IntSet.diff leaves
       in
 
       begin match fvo trimmed_tree_file with
@@ -675,10 +744,10 @@ object (self)
             |> Decor_gtree.color_clades_above cut_leaves
             |> self#maybe_numbered
             |> Phyloxml.gtree_to_file fname
-        | None -> ()
+      | None -> ()
       end;
 
-      begin match fvo all_eclds_file with
+      begin match fvo all_adcls_file with
         | Some fname ->
           IntMap.enum solm
             |> Enum.map
@@ -690,9 +759,9 @@ object (self)
       end;
 
       cut_leaves
-        |> IntSet.enum
-        |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
-        |> List.of_enum
-        |> self#write_ll_tab;
+          |> IntSet.enum
+          |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+          |> List.of_enum
+          |> self#write_ll_tab;
 
 end

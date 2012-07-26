@@ -78,6 +78,7 @@ let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
 let junction pred f g a = if pred a then f a else g a
+let fold_both f g a (x, y) = f a x, g a y
 let (|--) f g a b = g (f a b)
 let (|~) = (-|)
 let (||-) f g a = f a || g a
@@ -638,6 +639,10 @@ end
 module EnumFuns = struct
 
   let n_cartesian_product ll =
+    if List.is_empty ll then
+      invalid_arg "n_cartesian_product: list-list empty";
+    if List.exists List.is_empty ll then
+      invalid_arg "n_cartesian_procuct: some list empty";
     let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
     let n = Array.length pool in
     let indices = Array.make n 0
@@ -694,3 +699,13 @@ let exn_wrap f = Printexc.pass f ()
 let () =
   Gsl_error.init ();
   Random.self_init ();
+  Printexc.register_printer
+    (function
+     | Unix.Unix_error (errno, fn, param) ->
+       let op = if param = "" then "" else Printf.sprintf " on %S" param in
+       Some
+         (Printf.sprintf "error %S from %s%s"
+            (Unix.error_message errno)
+            fn
+            op)
+     | _ -> None)

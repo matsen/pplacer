@@ -56,6 +56,7 @@ type prefs =
     mrca_class : bool ref;
     groups : int ref;
     always_refine : bool ref;
+    mmap_file : string ref;
     discard_nonoverlapped : bool ref;
   }
 
@@ -114,6 +115,7 @@ let defaults () =
     mrca_class = ref false;
     groups = ref 0;
     always_refine = ref false;
+    mmap_file = ref "";
     discard_nonoverlapped = ref false;
   }
 
@@ -171,6 +173,7 @@ let keep_factor       p = !(p.keep_factor)
 let mrca_class        p = !(p.mrca_class)
 let groups            p = !(p.groups)
 let always_refine     p = !(p.always_refine)
+let mmap_file         p = !(p.mmap_file)
 let discard_nonoverlapped p = !(p.discard_nonoverlapped)
 
 
@@ -278,6 +281,8 @@ spec_with_default "--keep-factor" (fun o -> Arg.Set_float o) prefs.keep_factor
 "Split query alignment into the specified number of groups.";
 "--always-refine", Arg.Set prefs.always_refine,
 "Always refine the model before placing.";
+"--mmap-file", Arg.Set_string prefs.mmap_file,
+"Instead of doing large allocations, mmap the given file. It will be created if it doesn't exist.";
 "--discard-nonoverlapped", Arg.Set prefs.discard_nonoverlapped,
 "When pre-masking, silently discard sequences which don't overlap the mask.";
 "--version", Arg.Set prefs.version,

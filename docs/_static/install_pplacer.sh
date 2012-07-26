@@ -28,7 +28,7 @@ echo "GODI_BASEPKG_PCRE=yes" >> $PREFIX/etc/godi.conf
 ./bootstrap_stage2
 
 # build godi-available packages.
-godi_perform -build godi-ocamlgsl
+godi_perform -build godi-gsl
 godi_perform -build godi-sqlite3
 cd ..
 

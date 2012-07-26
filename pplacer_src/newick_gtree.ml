@@ -30,6 +30,20 @@ let node_label_map t =
 let leaf_label_map t =
   Gtree.leaf_ids t |> node_labels_of_ids t
 
+let label_to_leaf_map gt map =
+  let labels = leaf_label_map gt
+    |> IntMap.enum
+    |> Enum.map swap
+    |> StringMap.of_enum
+  in
+  StringMap.enum map
+    |> Enum.filter_map
+        (fun (label, x) ->
+          match StringMap.Exceptionless.find label labels with
+          | Some i -> Some (i, x)
+          | None -> None)
+    |> IntMap.of_enum
+
 let has_zero_bls t =
   List.fold_left
     (fun accum id -> accum || Gtree.get_bl t id = 0.)
@@ -210,4 +224,17 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
         subtrees
       |> first (if pruned then const None else node i |- some)
   in
-  aux None st |> first (Option.get |- Gtree.set_stree gt)
+  let gt', pql = aux None st |> first (Option.get |- Gtree.set_stree gt) in
+  let replace_root_placement =
+    let open Placement in
+    let top, location = match Gtree.get_stree gt' with
+      | Node (top, subtree :: _) -> top, top_id subtree
+      | _ -> failwith "trimmed tree's root is not a node with >1 subtree"
+    in
+    let distal_bl = Gtree.get_bl gt' location in
+    fun p -> if p.location = top then {p with location; distal_bl} else p
+  in
+  gt',
+  List.map
+    (Pquery.apply_to_place_list (List.map replace_root_placement))
+    pql

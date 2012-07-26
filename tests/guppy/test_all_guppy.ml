@@ -20,4 +20,5 @@ let suite = [
   "splitify" >::: Test_splitify.suite;
   "unifrac" >::: Test_unifrac.suite;
   "rarefy" >::: Test_rarefy.suite;
+  "indep_contrasts" >::: Test_indep_contrasts.suite;
 ]
