@@ -42,6 +42,8 @@ module IAMR = IntAlgMapR
 
 type t = (string * float * float option) array
 
+(* Fill in the normally-sparse MRCA map so that every node in the tree maps to
+ * the appopriate MRCA, instead of just the nodes where the MRCAs occur. *)
 let all_mrcas rp =
   let mrcam = Refpkg.get_mrcam rp
   and utm = Refpkg.get_uptree_map rp in
@@ -57,13 +59,22 @@ let all_mrcas rp =
     |> Stree.node_ids
     |> List.fold_left (update |-- fst) mrcam
 
+(* From a reference package, pquery, and criterion, determine the evidence and
+ * evidence ratio (like a Bayes factor) for each rank. The returned value is an
+ * array of rank names, evidences, and Bayes factor values (if applicable).
+ * Note that this actually takes (see fun below) rp mrca_class criterion pq.
+ * *)
 let of_refpkg rp mrca_class =
-  let post_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
+  (* A map from each tax_id in the MRCA map to the number of times that tax_id
+   * labels an edge in the tree. *)
+  let denom_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
     |> IntMap.values
     |> TaxIdMap.histogram_of_enum
     |> TaxIdMap.map float_of_int
   and td = Refpkg.get_taxonomy rp in
   fun criterion pq ->
+    (* Build up the evidence map, which maps from ranks to the average amount of
+     * mass per edge. *)
     let evidence_m = List.fold_left
       (fun accum p ->
         let ti = Placement.classif p in
@@ -73,7 +84,7 @@ let of_refpkg rp mrca_class =
         try
           IAMR.add_by
             (Tax_taxonomy.get_tax_rank td ti)
-            (criterion p /. TaxIdMap.find ti post_map)
+            (criterion p /. TaxIdMap.find ti denom_map)
             accum
         with Not_found ->
           Printf.sprintf
@@ -86,6 +97,8 @@ let of_refpkg rp mrca_class =
     in
     let evidence_of i = IAMR.soft_find i evidence_m
     and prev_represented = ref None in
+    (* Now go down the evidence map, calculating the Bayes factor-ish
+     * quanitities for neighboring pairs of occupied ranks. *)
     Array.mapi
       (fun i rankname ->
         let ev = evidence_of i in
