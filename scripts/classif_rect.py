@@ -84,6 +84,15 @@ def by_specimen(args):
     with args.by_specimen:
         writer = csv.DictWriter(args.by_specimen, cols, restval=0)
         writer.writerow(dict(zip(cols, cols)))  # ugh, DictWriter :(
+
+        if args.metadata_map:
+            for key in {k for data in args.metadata.itervalues() for k in data}:
+                d = {specimen: args.metadata.get(specimen, {}).get(key)
+                     for specimen in specimens}
+                d['tax_name'] = key
+                d['tax_id'] = d['rank'] = ''
+                writer.writerow(d)
+
         writer.writerows(results.itervalues())
 
 
@@ -104,6 +113,8 @@ def main():
         help='want_rank at which to tabulate results (default: %(default)s)')
     parser.add_argument('-m', '--specimen-map', type=argparse.FileType('r'), metavar='CSV',
         help='input CSV map from sequences to specimens')
+    parser.add_argument('--metadata-map', type=argparse.FileType('r'), metavar='CSV',
+        help='input CSV map including a specimen column and other metadata')
 
     args = parser.parse_args()
     if args.by_specimen and not args.specimen_map:
@@ -116,6 +127,12 @@ def main():
         with args.specimen_map:
             reader = csv.reader(args.specimen_map)
             curs.executemany("INSERT INTO specimens VALUES (?, ?)", reader)
+
+    if args.metadata_map:
+        log.info('reading metadata map')
+        with args.metadata_map:
+            reader = csv.DictReader(args.metadata_map)
+            args.metadata = {data['specimen']: data for data in reader}
 
     by_taxon(args)
     if args.by_specimen:
