@@ -157,6 +157,14 @@ let merge_fn f _ a b =
   | None, Some x -> Some x
   | Some a, Some b -> Some (f a b)
 
+let max_tiamrim_or_return_other lbl a b =
+  try
+    IntMap.max_binding a.tiamrim
+  with Invalid_argument _ -> Return.return lbl b
+
+let label3 f a b c =
+  Return.label (f a b c)
+
 (* UI-related *)
 
 class cmd () =
@@ -242,14 +250,9 @@ object (self)
     "outputs classification information in SQLite format"
   method usage = "usage: classify [options] placefile[s]"
 
-  method private merge_hybrid pp nbc =
-    let pp_rank, _ = IntMap.max_binding pp.tiamrim
-    and nbc_rank, _ = IntMap.max_binding nbc.tiamrim in
-    if nbc_rank >= pp_rank then nbc else pp
-
-  method private merge_hybrid2 td pp nbc =
-    let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
-    and nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
+  method private merge_hybrid2 td pp nbc lbl =
+    let pp_rank, pp_best = max_tiamrim_or_return_other lbl pp nbc
+    and nbc_rank, nbc_best = max_tiamrim_or_return_other lbl nbc pp in
     if pp_rank >= nbc_rank
       && on_lineage
         td
@@ -258,71 +261,8 @@ object (self)
     then pp
     else nbc
 
-  method private merge_hybrid3 td pp nbc =
-    let pp_rank, pp_best = IntMap.max_binding pp.tiamrim
-    and nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
-    if pp_rank >= nbc_rank
-      && on_lineage td (best_classification nbc_best) (mrca td pp_best)
-    then pp
-    else nbc
-
-  method private merge_hybrid4 td =
-    let bootstrap_cutoff = fv bootstrap_cutoff
-    and bootstrap_extension_cutoff = fv bootstrap_extension_cutoff
-    and bayes_cutoff = fv bayes_cutoff
-    and cutoff = fv cutoff
-    and multiclass_min = fv multiclass_min in
-    fun pp nbc ->
-      let factors = bayes_factors pp in
-      let pp_rank, _ = pp.tiamrim
-        |> IntMap.filter_map (fun i _ -> factors.(i) |> Tuple3.third)
-        |> IntMap.backwards
-        |> Enum.find (snd |- (<=) bayes_cutoff)
-      and nbc_rank, nbc_best = nbc.tiamrim
-        |> IntMap.filter_map
-            (tiamr
-             |- TIAMR.enum
-             |- Enum.arg_max snd
-             |- junction (snd |- (<=) bootstrap_cutoff) (fst |- some) (const None)
-             |> const)
-        |> IntMap.max_binding
-      in
-      let rec aux = function
-        | pp_rank when pp_rank <= nbc_rank -> None
-        | pp_rank when not (IntMap.mem pp_rank pp.tiamrim) ->
-          aux (pred pp_rank)
-        | pp_rank ->
-          let pp_best, _ = IntMap.find pp_rank pp.tiamrim
-            |> tiamr
-            |> TIAMR.enum
-            |> Enum.arg_max snd
-          in
-          let bootstrap_valid =
-            try
-              (IntMap.find pp_rank nbc.tiamrim |> tiamr |> TIAMR.get pp_best 0.)
-              >= bootstrap_extension_cutoff
-            (* this should only catch the IntMap.find call *)
-            with Not_found -> true
-          in
-          if pp_rank > nbc_rank
-            && on_lineage td nbc_best pp_best
-            && bootstrap_valid
-          then
-            filter_ranks_below pp_rank
-            |> map_tiamrim pp
-            |> filter_best ~multiclass_min cutoff
-            |> some
-          else aux (pred pp_rank)
-      in
-      match aux pp_rank with
-      | Some pp -> pp
-      | None ->
-        filter_ranks_below nbc_rank
-        |> map_tiamrim nbc
-        |> filter_best bootstrap_cutoff
-
-  method private merge_hybrid5 td pp nbc =
-    let nbc_rank, nbc_best = IntMap.max_binding nbc.tiamrim in
+  method private merge_hybrid5 td pp nbc lbl =
+    let nbc_rank, nbc_best = max_tiamrim_or_return_other lbl nbc pp in
     match IntMap.split nbc_rank pp.tiamrim with
     | _, Some pp_best, pp_above ->
       if IntMap.cardinal pp_above <= 1
@@ -710,29 +650,14 @@ object (self)
       | "nbc" -> default_nbc ()
       | "rdp" -> default_rdp ()
       | "blast" -> perform_blast ()
-      | "hybrid" ->
-        StringMap.merge
-          (merge_fn self#merge_hybrid)
-          (default_pplacer ())
-          (default_nbc ())
       | "hybrid2" ->
         StringMap.merge
-          (self#merge_hybrid2 td |> merge_fn)
+          (label3 self#merge_hybrid2 td |> merge_fn)
           (default_pplacer ())
           (default_nbc ())
-      | "hybrid3" ->
-        StringMap.merge
-          (self#merge_hybrid3 td |> merge_fn)
-          (default_pplacer ())
-          (default_nbc ())
-      | "hybrid4" ->
-        StringMap.merge
-          (self#merge_hybrid4 td |> merge_fn)
-          (perform_pplacer ())
-          (perform_nbc ())
       | "hybrid5" ->
         StringMap.merge
-          (self#merge_hybrid5 td |> merge_fn)
+          (label3 self#merge_hybrid5 td |> merge_fn)
           (default_pplacer ())
           (default_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
