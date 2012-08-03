@@ -88,7 +88,7 @@ Or compile it from source::
 
 Once GSL is installed, you should be able
 to download `this installation script`_ and just type
-``source install_pplacer.sh``.
+``sh install_pplacer.sh``.
 
 Now the binaries should be in the ``pplacer*/bin`` directory. Put them in your
 path and you are ready to go!
