@@ -9,6 +9,14 @@ type t = stree
 let node i tL = Node(i, tL)
 let leaf i = Leaf i
 
+let is_leaf = function
+  | Leaf _ -> true
+  | Node _ -> false
+
+let is_node = function
+  | Leaf _ -> false
+  | Node _ -> true
+
 let of_id i = function
   | Node(_, tL) -> Node(i, tL)
   | Leaf(_) -> Leaf(i)
