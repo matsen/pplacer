@@ -709,3 +709,36 @@ let () =
             fn
             op)
      | _ -> None)
+
+let memory_stats_ch =
+  match begin
+    try Some (Sys.getenv "PPLACER_MEMORY_STATS")
+    with Not_found -> None
+  end with
+  | None -> None
+  | Some statsfile ->
+    let ch = Legacy.open_out_gen
+      [Open_append; Open_creat; Open_trunc]
+      0o600
+      statsfile
+    in
+    let write = Csv.to_channel ch |> Csv.output_record in
+    let word_in_bytes = Sys.word_size / 8 in
+    let start = Unix.gettimeofday () in
+    let last_top = ref None in
+    write ["time"; "pid"; "top_heap_bytes"];
+    let check_stats () =
+      let stats = Gc.quick_stat () in
+      match !last_top with
+      | Some top when stats.Gc.top_heap_words <= top -> ()
+      | _ ->
+        write
+          [Printf.sprintf "%f" (Unix.gettimeofday () -. start);
+           string_of_int (Unix.getpid ());
+           string_of_int (stats.Gc.top_heap_words * word_in_bytes)];
+        Legacy.flush ch;
+        last_top := Some stats.Gc.top_heap_words
+    in
+    let _ = Gc.create_alarm check_stats in
+    at_exit check_stats;
+    Some ch

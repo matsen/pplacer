@@ -116,13 +116,18 @@ class virtual ['a] process child_func =
   (* Only these descriptors are used in the child. The parent has no use for
    * them, so it closes them. The child has no use for anything but them, so
    * it closes everything but them. *)
-  let child_only = [child_rd; parent_wr; progress_wr]
-  and _ = flush_all () in
+  let child_only = [child_rd; parent_wr; progress_wr] in
+  let () = flush_all () in
   let pid = match Unix.fork () with
     | 0 ->
       (* Do the actual closing of the irrelevant descriptors. *)
       begin
         let ignored = List.map fd_of_file_descr child_only in
+        let ignored = match Ppatteries.memory_stats_ch with
+          | None -> ignored
+          | Some ch ->
+            fd_of_file_descr (Unix.descr_of_out_channel ch) :: ignored
+        in
         List.iter
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
           (range 256)
