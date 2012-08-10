@@ -2,6 +2,15 @@ open Ppatteries
 
 type t = Newick_bark.newick_bark Gtree.gtree
 
+exception Lacking_confidence of int
+
+let get_confidence gt i =
+  let confidence_opt, _ = Gtree.get_stree gt
+    |> Stree.find i
+    |> Stree.is_leaf
+    |> (Gtree.get_bark gt i)#get_confidence_name_opt
+  in
+  Option.get_exn confidence_opt (Lacking_confidence i)
 
 (* use *)
 
