@@ -662,7 +662,7 @@ module EnumFuns = struct
       end;
       Array.to_list indices |> List.map (Array.get pool)
     in
-    Enum.from next
+    if n < r then Enum.empty () else Enum.from next
 
   let powerset l =
     1 -- List.length l
