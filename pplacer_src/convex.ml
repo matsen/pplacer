@@ -265,7 +265,7 @@ let _build_apartl strict cutsetl kappa (c, x) =
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
   (* The potential b's for our apartl. *)
   let potential_bs =
-    (* Because xopt never contains None, this is in fact testing c in x. Tf that
+    (* Because xopt never contains None, this is in fact testing c in x. If that
      * is true, b will only be c, since c is added to potential_bs later.
      * *)
     if COS.mem c xopt then
