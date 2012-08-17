@@ -14,6 +14,7 @@
  * Closed GH-266: Adding `map_ratio` and `map_overlap` columns to `guppy
    to_csv`.
  * Closed GH-267: Added a `leaf_count` column to `rppr convex_taxids`.
+ * Closed GH-274: Added `--weight-as-count` to `guppy rarefact`.
 
 
 1.1.alpha13

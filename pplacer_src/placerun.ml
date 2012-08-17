@@ -117,3 +117,11 @@ let unitize pr =
     |> List.map
         (fun pq -> Pquery.multiplicity pq /. tot_mass |> Pquery.set_mass pq)
     |> set_pqueries pr
+
+let duplicate_pqueries_by_count pr =
+  get_pqueries pr
+    |> List.enum
+    |> Enum.map Pquery.duplicate_by_count
+    |> Enum.flatten
+    |> List.of_enum
+    |> set_pqueries pr
