@@ -11,17 +11,26 @@ object (self)
 
   val variance = flag "--variance"
     (Plain (false, "Calculate variance of phylogenetic entropy."))
+  val weight_as_count = flag "--weight-as-count"
+    (Plain (false, "Interpret (integer) weights on pqueries as counts."))
 
   method specl =
     super_mass#specl
   @ super_tabular#specl
-  @ [toggle_flag variance]
+  @ [
+    toggle_flag variance;
+    toggle_flag weight_as_count;
+  ]
 
   method desc = "calculates phylogenetic rarefaction curves"
   method usage = "usage: rarefact [options] placefile"
 
   method private placefile_action = function
     | [pr] ->
+      let pr =
+        if fv weight_as_count then Placerun.duplicate_pqueries_by_count pr
+        else pr
+      in
       let criterion = self#criterion in
       let is_uniform_mass =
         Placerun.get_pqueries pr
