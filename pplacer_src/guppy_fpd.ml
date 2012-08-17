@@ -47,14 +47,17 @@ let total_along_mass ?(include_pendant = false) criterion pr cb =
  * we're either before or after the induced tree and the multiplier should
  * be 0. *)
 let bump_function r =
-  if r = 0. || approx_equal ~epsilon r 1. then 0. else 1.
+  if r =~ 0. || approx_equal ~epsilon r 1. then 0. else 1.
 
-let pd_of_placerun ?include_pendant criterion pr =
+let bump_with_root r =
+  if r =~ 0. then 0. else 1.
+
+let pd_of_placerun ?include_pendant ?(bump = bump_function) criterion pr =
   total_along_mass
     ?include_pendant
     criterion
     pr
-    (fun r bl -> bump_function r *. bl)
+    (fun r bl -> bump r *. bl)
 
 let reflect x =
   if approx_equal ~epsilon x 1. then 0.
@@ -113,17 +116,19 @@ object (self)
     and include_pendant = fv include_pendant in
     let awpd = awpd_of_placerun ~include_pendant criterion
     and pd = pd_of_placerun ~include_pendant criterion
+    and rpd = pd_of_placerun ~include_pendant ~bump:bump_with_root criterion
     and entropy = entropy_of_placerun ~include_pendant criterion in
     prl
       |> List.map
           (fun pr ->
             let pe, qe = entropy pr in
-            [pe; qe; pd pr; awpd 1. pr]
+            [pe; qe; pd pr; rpd pr; awpd 1. pr]
             |> (flip List.append (List.map (flip awpd pr) exponents))
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
-          (["placerun"; "phylo_entropy"; "quadratic"; "pd"; "awpd"]
+          (["placerun"; "phylo_entropy"; "quadratic"; "unrooted_pd";
+            "rooted_pd"; "awpd"]
            @ List.map (Printf.sprintf "awpd_%g") exponents)
       |> self#write_ll_tab
 

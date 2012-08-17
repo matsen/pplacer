@@ -4,11 +4,16 @@
  * Closed GH-181: Added `guppy indep_c`; added `--leaf-values` to `guppy mft`.
  * Closed GH-256: Added `--mmap-file` to pplacer; changed `--pretend` in
    pplacer to show the amount of memory which would be allocated.
+ * Closed GH-260: Added `rooted_pd` to `guppy fpd`; Added a `--variance` flag
+   to `guppy rarefact`.
  * Closed GH-261: Added `rppr convex_taxids`.
  * Closed GH-263: Fixed a bug that could sometimes cause failures in `rppr
    min_adcl` with the PAM algorithm.
  * Closed GH-265: Fixed a bug that could cometimes cause `rppr reroot` to
    return a suboptimal rooting.
+ * Closed GH-266: Adding `map_ratio` and `map_overlap` columns to `guppy
+   to_csv`.
+ * Closed GH-267: Added a `leaf_count` column to `rppr convex_taxids`.
 
 
 1.1.alpha13

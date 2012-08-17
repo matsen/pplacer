@@ -117,7 +117,7 @@ let parent_map t =
 let reroot tree root =
   if top_id tree = root then tree else
   let rec aux = function
-    | [] -> failwith "root not found"
+    | [] -> failwith "root not found (tried to reroot at leaf?)"
     | (Node (i, subtrees), path) :: _ when i = root ->
       (i, subtrees) :: path
     | (Leaf _, _) :: rest -> aux rest
