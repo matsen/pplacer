@@ -149,3 +149,15 @@ let renormalize_log_like =
   update (ml_ratio |- some) (fun ml_ratio p -> {p with ml_ratio})
   |- update post_prob_opt (fun pp p -> {p with post_prob = Some pp})
   |> apply_to_place_list
+
+let is_inty f = mod_float f 1. =~ 0.
+
+let duplicate_by_count pq =
+  namlom pq
+  |> List.enum
+  |> Enum.map
+      (fun (name, count) ->
+        if not (is_inty count) then
+          failwith "duplicate_by_count requires integer counts on pqueries";
+        Enum.repeat ~times:(round count) {pq with namlom = [name, 1.]})
+  |> Enum.flatten
