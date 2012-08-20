@@ -13,6 +13,8 @@ object (self)
     (Plain (false, "Calculate variance of phylogenetic entropy."))
   val weight_as_count = flag "--weight-as-count"
     (Plain (false, "Interpret (integer) weights on pqueries as counts."))
+  val k_max = flag "-k"
+    (Needs_argument ("k max", "The highest value of k to calculate."))
 
   method specl =
     super_mass#specl
@@ -20,6 +22,7 @@ object (self)
   @ [
     toggle_flag variance;
     toggle_flag weight_as_count;
+    int_flag k_max;
   ]
 
   method desc = "calculates phylogenetic rarefaction curves"
@@ -27,6 +30,7 @@ object (self)
 
   method private placefile_action = function
     | [pr] ->
+      let k_max = fvo k_max in
       let pr =
         if fv weight_as_count then Placerun.duplicate_pqueries_by_count pr
         else pr
@@ -47,14 +51,16 @@ object (self)
         deprint "warning: not all sequences have uniform weight; expectation \
                  of quadratic entropy can't be calculated\n"
       end;
-      Rarefaction.of_placerun criterion pr
+      Rarefaction.of_placerun criterion ?k_max pr
       |> Enum.map
           (fun (k, um, rm, qm) ->
             [string_of_int k; fmt um; fmt rm]
             @ (if is_uniform_mass then [fmt qm] else []))
       |> begin
         if fv variance then
-          curry Enum.combine (Rarefaction.variance_of_placerun criterion pr)
+          curry
+            Enum.combine
+            (Rarefaction.variance_of_placerun criterion ?k_max pr)
           |- Enum.map (fun ((_, uv, rv), sl) -> sl @ [fmt uv; fmt rv])
         else identity
       end
