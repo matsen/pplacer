@@ -256,6 +256,54 @@ let cset_of_coptset coptset =
     coptset
     CS.empty
 
+(* From a cutsetl, determine the possible assignments of b onto the edges below
+ * this node. Potential b values are determined for each pair of edges from the
+ * shared cut colors, which are then validated to ensure that an edge isn't
+ * assigned two colors. *)
+let find_b_assignments cutsetl =
+  let cutseta = Array.of_list cutsetl in
+  (* The final step (written first as an aux function) is to perform the
+   * aforementioned validation of each edge pair's b assignment. *)
+  let aux assignments lbl =
+    (* If no other b is assigned, an edge gets None. *)
+    let bs = Array.map (const None) cutseta in
+    let verify_update idx nv =
+      let ov = bs.(idx) in
+      (* If a color has been assigned to this edge and it's not the color that
+       * was already assigned, this is invalid, so bail out. *)
+      if ov <> None && ov <> nv then Return.return lbl None;
+      bs.(idx) <- nv
+    in
+    (* For each edge pair and color, try to assign both edges that color. *)
+    List.iter
+      (function
+       | _, _, None -> ()
+       | a, b, copt -> verify_update a copt; verify_update b copt)
+      assignments;
+    (* If there wasn't an invalid assignment, this is a valid list of b values
+     * for each edge. *)
+    Some (Array.to_list bs)
+  in
+  EnumFuns.combinations (Array.range cutseta |> List.of_enum) 2
+  |> Enum.map (function
+    | [a; b] ->
+      (* For each pair of edges, determine the shared cut colors. *)
+      CS.inter cutseta.(a) cutseta.(b)
+        |> CS.elements
+        |> List.map (fun x -> a, b, Some x)
+        |> List.cons (a, b, None)
+    | _ -> invalid_arg "find_bs")
+  |> List.of_enum
+  (* Take the cartesian product, giving a list of every possible assignment for
+   * every pair of edges. *)
+  |> List.n_cartesian_product
+  |> List.enum
+  (* Filter and transform the edge-pair assignments to edge assignments. *)
+  |> Enum.filter_map (fun assignments -> Return.label (aux assignments))
+  |> List.of_enum
+  (* Don't return duplicate assignments. *)
+  |> List.sort_unique compare
+
 (* As indicated by the underscore, this function is not designed to work as is.
  * Indeed, we need to preprocess with the case of c not being in any of the cut
  * sets under the internal node as defined in build_apartl below. *)

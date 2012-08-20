@@ -37,6 +37,8 @@ type phi = local_phi IntMap.t
  * top_id's of the subtree below. *)
 type nu_f = cset -> sizem list -> apart -> int
 
+val find_b_assignments: csetl -> color option list list
+
 (* QuestionMap should be a map from questions *)
 
 (* Basics. *)
