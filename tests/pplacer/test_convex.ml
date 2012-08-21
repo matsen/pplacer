@@ -24,7 +24,9 @@ let convex_suite = List.map
     let testfunc () =
       (Printf.sprintf "%d expected; got %d with early termination" omega early_omega) @? (omega = early_omega);
       (Printf.sprintf "%d expected; got %d without early termination" omega not_early_omega) @? (omega = not_early_omega);
-      (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
+      (* just testing naive with bifurcation for now *)
+      if Stree.outdegree st' <= 2 then
+        (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
     in
     s >:: testfunc)
   [
@@ -39,6 +41,10 @@ let convex_suite = List.map
     "(A,(A,(B,(C,(C,(A,C))))));", 6;
     "(A,(A,(B,(C,((A,C),(B,C))))));", 6;
     "((((((((A,B),B),C),),(,)),(,((D,C),),)),((A,A),)),E);", 15;
+    "(A,A,B,B);", 4;
+    "(A,A,A,B,B);", 5;
+    "((A,B),A,B,(A,B));", 4;
+    "(A,((A,B),A,B,(A,B)));", 5;
   ]
 
 let strict_suite = List.map
