@@ -269,17 +269,17 @@ let cset_of_coptset coptset =
  * this node. Potential b values are determined for each pair of edges from the
  * shared cut colors, which are then validated to ensure that an edge isn't
  * assigned two colors. *)
-let find_b_assignments ?default_color cutsetl =
+let find_b_assignments cutsetl =
   (* b assignments can only be usefully done with at least 2 edges. *)
   if List.length cutsetl < 2 then
-    [List.map (const default_color) cutsetl]
+    [List.map (const None) cutsetl]
   else (* ... *)
   let cutseta = Array.of_list cutsetl in
   (* The final step (written first as an aux function) is to perform the
    * aforementioned validation of each edge pair's b assignment. *)
   let aux assignments lbl =
     (* If no other b is assigned, an edge gets None. *)
-    let bs = Array.map (const default_color) cutseta in
+    let bs = Array.map (const None) cutseta in
     let verify_update idx nv =
       let ov = bs.(idx) in
       (* If a color has been assigned to this edge and it's not the color that
@@ -324,41 +324,38 @@ let _build_apartl strict cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
-  (* The potential b's for our apartl. *)
-  let potential_bs, default_color =
-    (* Because xopt never contains None, this is in fact testing c in x. If
-     * that is true, b will only be c, since c is added to potential_bs
-     * later. *)
-    if COS.mem c xopt then
-      COS.empty, c
-    else
-      COS.diff (coptset_of_cset (between cutsetl)) to_exclude, None
-  in
-  let potential_bs = COS.add c potential_bs |> cset_of_coptset in
   (* These are the colors that we need to put in the different subsets. *)
   let to_distribute = COS.union
     xopt
     (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
+  |> cset_of_coptset
+  |> CS.elements
   in
-  List.map (CS.inter potential_bs) cutsetl
-  |> find_b_assignments ?default_color
-  (* Iterate over the lists of b assignments: the color of each edge below
-   * this node. *)
-  |> List.enum
+  (* The potential b's for our apartl. *)
+  let b_assignments =
+    (* Because xopt never contains None, this is in fact testing c in x. If
+     * that is true, b can only be assigned c. *)
+    if COS.mem c xopt then
+      [List.map (const c) cutsetl]
+    else
+      (* Otherwise, assign b from the cut sets. *)
+      find_b_assignments cutsetl
+  in
+  (* Iterate over the lists of b assignments. Each assignment indicates the
+   * color of each edge below this node. *)
+  List.enum b_assignments
   |> Enum.map (fun blist ->
-    (* The colors are distributed in two steps. Note that any color except
-     * for b can only occur once in a given pi. Thus we first find the
-     * potential distributions of the to_distribute colors (except for b) into
-     * the cut sets below our internal node. We find these distributions one
-     * at a time, then take the union below. *)
-    let dist = List.map
-      (cutsetdist (List.combine blist cutsetl))
-      (CS.elements (cset_of_coptset to_distribute))
-    and startsl = List.map (const CS.empty) cutsetl in
-    (* Finish off the meat of the recursion by mapping with union over the
-     * cartesian product of the single-color distributions. *)
-    product dist
+    let startsl = List.map (const CS.empty) cutsetl in
+    (* The colors are distributed in a few steps. We first find the potential
+     * distributions for each color. cutsetdist does most of the work here. *)
+    List.map (cutsetdist (List.combine blist cutsetl)) to_distribute
+    (* Taking the cartesian product gives all of the possible distributions of
+     * all colors. *)
+    |> product
     |> List.enum
+    (* Then, each of the per-color distributions are unioned to find one
+     * distribution for all colors, which is then combined with the b
+     * assignments to form a pi. *)
     |> Enum.map (transposed_fold CS.union startsl |- List.combine blist))
   |> Enum.flatten
   |> List.of_enum
