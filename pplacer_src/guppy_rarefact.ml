@@ -29,15 +29,15 @@ object (self)
   method usage = "usage: rarefact [options] placefile"
 
   method private placefile_action = function
-    | [] -> failwith("No placefiles")
-    | placeruns ->
+    | [] -> failwith "rarefact takes more than one placefile (0 given)"
+    | prl ->
+      let k_max = fvo k_max in
+      let criterion = self#criterion in
       let aux pr =
-        let k_max = fvo k_max in
         let pr =
           if fv weight_as_count then Placerun.duplicate_pqueries_by_count pr
           else pr
         in
-        let criterion = self#criterion in
         let is_uniform_mass =
           Placerun.get_pqueries pr
           |> List.map (Pquery.namlom |- List.map snd)
@@ -49,11 +49,15 @@ object (self)
         and pr_name = Placerun.get_name pr in
         if not is_uniform_mass then begin
           if fv variance then
-            failwith "not all sequences have uniform weight; variance can't be \
-                      calculated";
-          Printf.printf "warning: not all sequences in %s have uniform weight; \
-                   expectation of quadratic entropy can't be calculated\n"
-                   pr_name;
+            failwith
+              (Printf.sprintf
+                 "not all sequences in %s have uniform weight; variance can't \
+                  be calculated"
+                 pr_name);
+          deprintf
+            "warning: not all sequences in %s have uniform weight; \
+             expectation of quadratic entropy can't be calculated\n"
+            pr_name;
         end;
         Rarefaction.of_placerun criterion ?k_max pr
         |> Enum.map
@@ -70,7 +74,7 @@ object (self)
         end
         |> List.of_enum
       in
-      List.map aux placeruns
+      List.map aux prl
       |> List.flatten
       |> List.cons
           (["placerun"; "k"; "unrooted_mean"; "rooted_mean"; "quadratic_mean"]
