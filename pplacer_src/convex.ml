@@ -325,17 +325,18 @@ let _build_apartl strict cutsetl kappa (c, x) =
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
   (* These are the colors that we need to put in the different subsets. *)
-  let to_distribute = COS.union
-    xopt
-    (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
-  |> cset_of_coptset
-  |> CS.elements
+  let to_distribute = match c with
+    | Some c' when strict -> [c']
+    | _ ->
+      COS.union xopt (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
+      |> cset_of_coptset
+      |> CS.elements
   in
   (* The potential b's for our apartl. *)
   let b_assignments =
     (* Because xopt never contains None, this is in fact testing c in x. If
      * that is true, b can only be assigned c. *)
-    if COS.mem c xopt then
+    if COS.mem c xopt || (strict && c <> None) then
       [List.map (const c) cutsetl]
     else
       (* Otherwise, assign b from the cut sets. *)
@@ -356,7 +357,12 @@ let _build_apartl strict cutsetl kappa (c, x) =
     (* Then, each of the per-color distributions are unioned to find one
      * distribution for all colors, which is then combined with the b
      * assignments to form a pi. *)
-    |> Enum.map (transposed_fold CS.union startsl |- List.combine blist))
+    |> Enum.filter_map (fun pre_csetl ->
+      let csetl = transposed_fold CS.union startsl pre_csetl in
+      if strict && not (List.for_all (CS.cardinal |- (>=) 1) csetl) then
+        None
+      else
+        Some (List.combine blist csetl)))
   |> Enum.flatten
   |> List.of_enum
 

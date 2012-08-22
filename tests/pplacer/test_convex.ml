@@ -69,6 +69,11 @@ let strict_suite = List.map
     "((A,(A,B)),(B,(B,A)))", 4;
     "(((A,B),(A,B)),(C,C))", 4;
     "(A,(A,(B,C)))", 3;
+    "(A,A,B)", 3;
+    "(A,A,B,B)", 4;
+    "(A,A,A,B,B)", 5;
+    "(A,A,(A,B),B)", 4;
+    "((A,B),(A,B),(A,B))", 3;
   ]
 
 let suite = [
