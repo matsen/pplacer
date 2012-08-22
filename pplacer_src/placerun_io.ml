@@ -280,6 +280,8 @@ let of_split_file ?(getfunc = of_any_file) fname =
 let maybe_of_split_file ?(getfunc = of_any_file) fname =
   if Filename.check_suffix fname ".csv" then
     of_split_file ~getfunc fname
+  else if Filename.check_suffix fname ".biom" then
+    Biom.of_tree_and_biom fname
   else
     [getfunc fname]
 
