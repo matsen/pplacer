@@ -326,6 +326,7 @@ let _build_apartl strict cutsetl kappa (c, x) =
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
   (* These are the colors that we need to put in the different subsets. *)
   let to_distribute = match c with
+    (* Having a c in strict convexity means we can only have c below. *)
     | Some c' when strict -> [c']
     | _ ->
       COS.union xopt (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
@@ -335,7 +336,8 @@ let _build_apartl strict cutsetl kappa (c, x) =
   (* The potential b's for our apartl. *)
   let b_assignments =
     (* Because xopt never contains None, this is in fact testing c in x. If
-     * that is true, b can only be assigned c. *)
+     * that is true, b can only be assigned c. This is also the case in strict
+     * convexity if there is any c. *)
     if COS.mem c xopt || (strict && c <> None) then
       [List.map (const c) cutsetl]
     else
@@ -359,6 +361,8 @@ let _build_apartl strict cutsetl kappa (c, x) =
      * assignments to form a pi. *)
     |> Enum.filter_map (fun pre_csetl ->
       let csetl = transposed_fold CS.union startsl pre_csetl in
+      (* However, in strict convexity, each x_i in a pi can only contain one
+       * color. *)
       if strict && not (List.for_all (CS.cardinal |- (>=) 1) csetl) then
         None
       else
