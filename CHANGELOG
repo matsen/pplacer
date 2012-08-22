@@ -2,6 +2,9 @@
 ===========
 
  * Closed GH-181: Added `guppy indep_c`; added `--leaf-values` to `guppy mft`.
+ * Closed GH-215: Added `pca_for_qiime.py` and `extract_taxonomy_from_biom.py`;
+   changed guppy and rppr to allow BIOM files to be passed as arguments where
+   placefiles are allowed.
  * Closed GH-256: Added `--mmap-file` to pplacer; changed `--pretend` in
    pplacer to show the amount of memory which would be allocated.
  * Closed GH-260: Added `rooted_pd` to `guppy fpd`; Added a `--variance` flag
@@ -15,6 +18,10 @@
    to_csv`.
  * Closed GH-267: Added a `leaf_count` column to `rppr convex_taxids`.
  * Closed GH-274: Added `--weight-as-count` to `guppy rarefact`.
+ * Closed GH-276: Added `-k` to `guppy rarefact`.
+ * Closed GH-277: Added `--weight-as-count` to `guppy rarefy`.
+ * Closed GH-278: Changed `guppy rarefact` to allow multiple placefiles to be
+   passed instead of just one.
 
 
 1.1.alpha13
