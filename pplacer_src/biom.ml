@@ -6,6 +6,14 @@ let split_file s =
     failwith "biom file provided with no tree";
   Str.matched_group 1 s, Str.matched_group 2 s
 
+exception No_leaf of string
+
+let () = Printexc.register_printer
+  (function
+    | No_leaf l ->
+      Some (Printf.sprintf "leaf %s in BIOM file not found on provided tree" l)
+    | _ -> None)
+
 let of_tree_and_biom combined_filename =
   let tree, biom = split_file combined_filename in
   let gt = Newick_gtree.of_file tree
@@ -40,7 +48,11 @@ let of_tree_and_biom combined_filename =
   List.group (comparing Tuple3.second) counts |> List.map (fun ll ->
     let sample = columns.(List.hd ll |> Tuple3.second) in
     flip List.map ll (fun (row, _, count) ->
-      let loc = StringMap.find rows.(row) leaf_map in
+      let loc =
+        try
+          StringMap.find rows.(row) leaf_map
+        with Not_found -> raise (No_leaf rows.(row))
+      in
       Pquery.make_ml_sorted
         ~namlom:["pl_" ^ rows.(row), float_of_int count]
         ~seq:Pquery_io.no_seq_str
