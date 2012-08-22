@@ -183,3 +183,24 @@ parameter and updates it in place, after making a backup copy.
 ``deduplicate_sequences.py`` deduplicates a sequence file and produces a dedup
 file suitable for use with ``guppy redup -m``. See the
 :ref:`redup <guppy_redup>` documentation for details.
+
+``pca_for_qiime.py``
+====================
+
+``pca_for_qiime.py`` converts the ``trans`` file output by ``guppy pca`` into
+the tab-delimited format expected by QIIME's plotting functions.
+
+::
+
+    usage: pca_for_qiime.py [-h] trans tsv
+
+``extract_taxonomy_from_biom.py``
+=================================
+
+``extract_taxonomy_from_biom.py`` extracts the taxonomy information from a BIOM
+file, producing seqinfo and taxonomy files which can then be placed into a
+reference package.
+
+::
+
+    usage: extract_taxonomy_from_biom.py [-h] biom taxtable seqinfo

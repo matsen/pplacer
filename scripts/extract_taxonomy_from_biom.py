@@ -3,9 +3,8 @@ import argparse
 import logging
 import json
 import csv
-import sys
 
-from taxtastic.taxtable import TaxNode
+#from taxtastic.taxtable import TaxNode
 
 log = logging.getLogger(__name__)
 
