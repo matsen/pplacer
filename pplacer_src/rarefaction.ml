@@ -174,7 +174,7 @@ exception What of (int * int * int * int)
 let auto_cache ?(count = 1024 * 1024) f =
   curry (Cache.make_ht ~gen:(uncurry f) count).Cache.get
 
-let variance_of_placerun criterion pr =
+let variance_of_placerun criterion ?k_max pr =
   let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl
   and mass = I.of_placerun
     Mass_map.Point
@@ -182,7 +182,10 @@ let variance_of_placerun criterion pr =
     pr
   in
   let n = Placerun.get_pqueries pr |> List.length in
-  let k_max = n in
+  let k_max = match k_max with
+    | Some k when k < n -> k
+    | _ -> n
+  in
   let k_maps = k_maps_of_placerun k_max pr in
   let marks_map, gt' = mass_induced_tree gt mass in
   let bl = Gtree.get_bl gt' in
