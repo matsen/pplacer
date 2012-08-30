@@ -431,7 +431,17 @@ object (self)
       and pe_st = Sqlite3.prepare db
         "INSERT INTO placement_evidence VALUES (?, ?, ?, ?)"
       and bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion
+      and classif_map =
+        if fv mrca_class then Refpkg.get_mrcam rp
+        else Edge_painting.of_refpkg rp
       and best_classif_map = ref StringMap.empty in
+      let lax_classif =
+        let root_taxon = IntMap.find
+          (Refpkg.get_ref_tree rp |> Gtree.top_id)
+          classif_map
+        in
+        Placement.classif_opt |- Option.default root_taxon
+      in
 
       let tax_identity_func = match fvo tax_identity with
         | None -> fun _ _ -> ()
@@ -493,7 +503,7 @@ object (self)
             Sql.D.FLOAT (Placement.log_like p);
             Sql.D.FLOAT (Placement.distal_bl p);
             Sql.D.FLOAT (Placement.pendant_bl p);
-            Placement.classif p |> Tax_id.to_sql;
+            lax_classif p |> Tax_id.to_sql;
             (match Placement.map_identity_opt p with
               | None -> Sql.D.NULL
               | Some (ratio, _) -> Sql.D.FLOAT ratio);
@@ -522,7 +532,7 @@ object (self)
         |> (:=) best_classif_map;
         tax_identity_func place_id pq;
       in
-      List.iter (placerun_classify Placement.classif criterion td classify) prl;
+      List.iter (placerun_classify lax_classif criterion td classify) prl;
       !best_classif_map
 
     and default_filter_rdp m = filter_best (fv bootstrap_cutoff) m

@@ -77,10 +77,10 @@ let of_refpkg rp mrca_class =
      * mass per edge. *)
     let evidence_m = List.fold_left
       (fun accum p ->
-        let ti = Placement.classif p in
-        match ti with
-          | Tax_id.NoTax -> accum
-          | _ -> (* ... *)
+        match Placement.classif_opt p with
+          | None
+          | Some Tax_id.NoTax -> accum
+          | Some ti -> (* ... *)
         try
           IAMR.add_by
             (Tax_taxonomy.get_tax_rank td ti)
