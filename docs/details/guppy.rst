@@ -194,7 +194,7 @@ guppy subcommand:
 .. _phyloxml: http://phyloxml.org/
 .. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/
 .. _Evans and Matsen: http://arxiv.org/abs/1005.1699
-.. _Matsen and Evans: http://matsen.fhcrc.org/papers/11MatsenEvansEdgeSquash.pdf
+.. _Matsen and Evans: http://arxiv.org/abs/1107.5095
 
 .. vim:set ai fo+=n fo-=l ft=rst:
 
