@@ -27,7 +27,6 @@ let of_refpkg: Refpkg.t -> Tax_id.t IntMap.t = fun rp ->
   let highest_rank, _ = IntMap.max_binding rankmap in
   node_ids st
     |> List.enum
-    |> Enum.filter ((<>) (top_id st))
     |> Enum.map
         (fun i ->
           let rec aux rank =

@@ -430,17 +430,13 @@ object (self)
         "INSERT INTO placement_positions VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
       and pe_st = Sqlite3.prepare db
         "INSERT INTO placement_evidence VALUES (?, ?, ?, ?)"
-      and bayes_factors = Bayes_factor.of_refpkg rp (fv mrca_class) criterion
-      and classif_map =
-        if fv mrca_class then Refpkg.get_mrcam rp
-        else Edge_painting.of_refpkg rp
+      and classif_map = Classif_map.of_refpkg_mrca_class rp (fv mrca_class)
       and best_classif_map = ref StringMap.empty in
       let lax_classif =
-        let root_taxon = IntMap.find
-          (Refpkg.get_ref_tree rp |> Gtree.top_id)
-          classif_map
-        in
+        let root_taxon = Classif_map.root_taxon classif_map in
         Placement.classif_opt |- Option.default root_taxon
+      and bayes_factors =
+        Bayes_factor.of_refpkg_and_classif_map rp classif_map criterion
       in
 
       let tax_identity_func = match fvo tax_identity with

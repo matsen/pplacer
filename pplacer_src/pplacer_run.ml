@@ -522,12 +522,10 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
 
     let classify =
       if Refpkg.tax_equipped rp then
-        if Prefs.mrca_class prefs then
-          Refpkg.mrca_classify rp
-        else
-         Tax_classify.classify_pr
-           Placement.add_classif
-           (Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
+        Prefs.mrca_class prefs
+          |> Classif_map.of_refpkg_mrca_class rp
+          |> Classif_map.classify
+          |> Tax_classify.classify_pr Placement.add_classif
       else
         identity
     and queries = ref [] in

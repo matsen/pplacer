@@ -42,32 +42,15 @@ module IAMR = IntAlgMapR
 
 type t = (string * float * float option) array
 
-(* Fill in the normally-sparse MRCA map so that every node in the tree maps to
- * the appopriate MRCA, instead of just the nodes where the MRCAs occur. *)
-let all_mrcas rp =
-  let mrcam = Refpkg.get_mrcam rp
-  and utm = Refpkg.get_uptree_map rp in
-  let rec update mrcam i =
-    match IntMap.Exceptionless.find i mrcam with
-      | Some x -> mrcam, x
-      | None ->
-        let mrcam', x = update mrcam (IntMap.find i utm) in
-        IntMap.add i x mrcam', x
-  in
-  Refpkg.get_ref_tree rp
-    |> Gtree.get_stree
-    |> Stree.node_ids
-    |> List.fold_left (update |-- fst) mrcam
-
 (* From a reference package, pquery, and criterion, determine the evidence and
  * evidence ratio (like a Bayes factor) for each rank. The returned value is an
  * array of rank names, evidences, and Bayes factor values (if applicable).
  * Note that this actually takes (see fun below) rp mrca_class criterion pq.
  * *)
-let of_refpkg rp mrca_class =
+let of_refpkg_and_classif_map rp cm =
   (* A map from each tax_id in the MRCA map to the number of times that tax_id
    * labels an edge in the tree. *)
-  let denom_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
+  let denom_map = Classif_map.map cm
     |> IntMap.values
     |> TaxIdMap.histogram_of_enum
     |> TaxIdMap.map float_of_int
