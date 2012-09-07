@@ -201,12 +201,12 @@ guppy subcommand:
 .. |pplacer| replace:: ``pplacer``
 .. |KR| replace:: Kantorovich-Rubinstein
 
-.. _kr: generated_rst/kr.html
-.. _pd: generated_rst/pd.html
-.. _squash: generated_rst/squash.html
-.. _pca: generated_rst/pca.html
-.. _kr_heat: generated_rst/kr_heat.html
-.. _bary: generated_rst/bary.html
+.. _kr: guppy_kr.html
+.. _pd: pd.html
+.. _squash: guppy_squash.html
+.. _pca: guppy_pca.html
+.. _kr_heat: guppy_kr_heat.html
+.. _bary: guppy_bary.html
 
 .. _pplacer: http://matsen.fhcrc.org/pplacer
 .. _this configuration file: http://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
