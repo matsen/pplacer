@@ -9,8 +9,6 @@ type t =
     ref_tree    : Newick_bark.newick_bark Gtree.gtree Delayed.t;
     model       : Glvm.t Delayed.t;
     aln_fasta   : Alignment.t Delayed.t;
-    aln_sto     : unit;
-    aln_profile : unit;
     taxonomy    : Tax_taxonomy.t Delayed.t;
     seqinfom    : Tax_seqinfo.seqinfo_map Delayed.t;
     name        : string;
@@ -131,8 +129,6 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
     ref_tree = Delayed.of_option ref_tree;
     model = Delayed.create ();
     aln_fasta = Delayed.of_option ref_align;
-    aln_sto = ();
-    aln_profile = ();
     taxonomy = Delayed.create ();
     seqinfom = Delayed.create ();
     name = get "name" |> Refpkg_parse.as_metadata;
