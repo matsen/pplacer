@@ -4,6 +4,7 @@
  * Fixed a bug where pplacer would sometimes fail abruptly with a Child_error
    of EBADF on close(2). [rc2]
  * Added missing `-o` and related flags to `guppy to_csv`. [rc3]
+ * Fixed minor errors in the documentation [r2]
  * Closed GH-216: Added `guppy trim` and `guppy check`.
  * Closed GH-225: Added `rppr vorotree`.
  * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
@@ -29,6 +30,8 @@
  * Closed GH-257: Renamed `rppr voronoi` to `rppr min_adcl`, `rppr vorotree` to
    `rppr min_adcl_tree`, and `guppy diplac` to `guppy adcl`. Added `--seed` to
    `rppr min_adcl` and `rppr min_adcl_tree`.
+ * Closed GH-280: Fixed a bug in which pplacer would fail if passed -t and
+   -s flags without also passing a -c or -r flag.
 
 
 1.1.alpha12
