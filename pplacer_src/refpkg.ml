@@ -2,54 +2,96 @@ open Ppatteries
 
 exception Missing_element of string
 
-(* uptree maps-- could be expanded later and go into a different file *)
-type uptree_map = int IntMap.t
-
-let utm_of_stree t =
-  let m = ref IntMap.empty in
-  let add_to_m i j = m := IntMap.check_add i j (!m) in
-  let rec aux = function
-    | Stree.Node (i, tL) ->
-        List.iter (fun s -> add_to_m (Stree.top_id s) i; aux s) tL
-    | Stree.Leaf _ -> ()
-  in
-  aux t;
-  !m
-
-
 (* Refpkg.t *)
 type t =
   {
     (* specified *)
-    ref_tree    : Newick_bark.newick_bark Gtree.gtree Lazy.t;
-    model       : Glvm.t Lazy.t;
-    aln_fasta   : Alignment.t Lazy.t;
+    ref_tree    : Newick_bark.newick_bark Gtree.gtree Delayed.t;
+    model       : Glvm.t Delayed.t;
+    aln_fasta   : Alignment.t Delayed.t;
     aln_sto     : unit;
     aln_profile : unit;
-    taxonomy    : Tax_taxonomy.t Lazy.t;
-    seqinfom    : Tax_seqinfo.seqinfo_map Lazy.t;
+    taxonomy    : Tax_taxonomy.t Delayed.t;
+    seqinfom    : Tax_seqinfo.seqinfo_map Delayed.t;
     name        : string;
     (* inferred *)
-    mrcam       : Tax_id.tax_id IntMap.t Lazy.t;
-    uptree_map  : uptree_map Lazy.t;
-    item_path_fn: string -> string;
+    mrcam       : Tax_id.tax_id IntMap.t Delayed.t;
+    uptree_map  : int IntMap.t Delayed.t;
+    get         : string -> Refpkg_parse.contents;
+    get_opt     : string -> Refpkg_parse.contents option;
+    prefs       : Prefs.prefs;
   }
 
 
 (* *** basics *** *)
 
-let get_ref_tree    rp = Lazy.force rp.ref_tree
-let get_model       rp = Lazy.force rp.model
-let get_aln_fasta   rp = Lazy.force rp.aln_fasta
-let get_taxonomy    rp = Lazy.force rp.taxonomy
-let get_seqinfom    rp = Lazy.force rp.seqinfom
-let get_name        rp = rp.name
-let get_mrcam       rp = Lazy.force rp.mrcam
-let get_uptree_map  rp = Lazy.force rp.uptree_map
-let get_item_path   rp = rp.item_path_fn
+let get_ref_tree rp =
+  Delayed.reify rp.ref_tree (fun () ->
+    rp.get "tree"
+      |> Newick_gtree.of_refpkg_contents)
 
-let set_ref_tree gt rp = {rp with ref_tree = lazy gt}
-let set_aln_fasta aln rp = {rp with aln_fasta = lazy aln}
+let get_aln_fasta rp =
+  Delayed.reify rp.aln_fasta (fun () ->
+    rp.get "aln_fasta"
+      |> Fasta.of_refpkg_contents
+      |> Array.of_list
+      |> Alignment.uppercase)
+
+let get_model rp =
+  Delayed.reify rp.model (fun () ->
+    let aln = get_aln_fasta rp in
+    match rp.get_opt "phylo_model" with
+    | Some v ->
+      let j = Refpkg_parse.json_of_contents v |> Jsontype.obj in
+      begin match Hashtbl.find j "ras_model" |> Jsontype.string with
+      | "gamma" ->
+        (module Gmix_model.Model: Glvm.Model),
+        Gmix_model.init_of_json j aln
+      | "Price-CAT" ->
+        (module Gcat_model.Model: Glvm.Model),
+        Gcat_model.init_of_json j aln
+      | x -> failwith ("invalid ras_model: " ^ x)
+      end
+    | None ->
+      print_endline
+        "Warning: using a statistics file directly is now deprecated. \
+         We suggest using a reference package. If you already are, then \
+         please use the latest version of taxtastic.";
+      (module Gmix_model.Model: Glvm.Model),
+      Gmix_model.init_of_stats_fname
+        rp.prefs
+        (rp.get "tree_stats" |> Refpkg_parse.as_file_path)
+        aln)
+
+let get_taxonomy rp =
+  Delayed.reify rp.taxonomy (fun () ->
+    rp.get "taxonomy"
+      |> Refpkg_parse.csv_of_contents
+      |> with_dispose ~dispose:Csv.close_in Tax_taxonomy.of_ncbi_file)
+
+let get_seqinfom rp =
+  Delayed.reify rp.seqinfom (fun () ->
+    rp.get "seq_info"
+      |> Refpkg_parse.csv_of_contents
+      |> with_dispose ~dispose:Csv.close_in Tax_seqinfo.of_csv)
+
+let get_name rp = rp.name
+
+let get_mrcam rp =
+  Delayed.reify rp.mrcam (fun () ->
+    Tax_map.mrcam_of_data
+      (get_seqinfom rp)
+      (get_taxonomy rp)
+      (get_ref_tree rp))
+
+let get_uptree_map rp =
+  Delayed.reify rp.uptree_map (fun () ->
+    get_ref_tree rp
+      |> Gtree.get_stree
+      |> Stree.parent_map)
+
+let set_ref_tree gt rp = {rp with ref_tree = Delayed.init gt}
+let set_aln_fasta aln rp = {rp with aln_fasta = Delayed.init aln}
 
 let refpkg_versions = ["1.1"]
 
@@ -85,76 +127,19 @@ let of_strmap ?ref_tree ?ref_align ?(ignore_version = false) prefs m =
       invalid_arg "of_strmap"
     end;
   end;
-  let lfasta_aln =
-    lazy
-      (match ref_align with
-      | Some a -> a
-      | None ->
-        get "aln_fasta"
-          |> Fasta.of_refpkg_contents
-          |> Array.of_list
-          |> Alignment.uppercase)
-  in
-  let lref_tree =
-    lazy
-      (match ref_tree with
-        | Some t -> t
-        | None -> get "tree" |> Newick_gtree.of_refpkg_contents)
-  and lmodel = lazy
-    (let aln = Lazy.force lfasta_aln in
-     if StringMap.mem "phylo_model" m then
-       let j = StringMap.find "phylo_model" m
-         |> Refpkg_parse.json_of_contents
-         |> Jsontype.obj
-       in
-       match Hashtbl.find j "ras_model" |> Jsontype.string with
-         | "gamma" ->
-           (module Gmix_model.Model: Glvm.Model),
-           Gmix_model.init_of_json j aln
-         | "Price-CAT" ->
-           (module Gcat_model.Model: Glvm.Model),
-           Gcat_model.init_of_json j aln
-         | x -> failwith ("invalid ras_model: " ^ x)
-     else begin
-       print_endline
-         "Warning: using a statistics file directly is now deprecated. \
-            We suggest using a reference package. If you already are, then \
-            please use the latest version of taxtastic.";
-       (module Gmix_model.Model: Glvm.Model),
-       Gmix_model.init_of_stats_fname
-         prefs
-         (get "tree_stats" |> Refpkg_parse.as_file_path)
-         aln
-     end)
-  and ltaxonomy = lazy
-    (get "taxonomy"
-     |> Refpkg_parse.csv_of_contents
-     |> with_dispose ~dispose:Csv.close_in Tax_taxonomy.of_ncbi_file)
-  and lseqinfom = lazy
-    (get "seq_info"
-     |> Refpkg_parse.csv_of_contents
-     |> with_dispose ~dispose:Csv.close_in Tax_seqinfo.of_csv)
-  in
-  let lmrcam =
-    lazy (Tax_map.mrcam_of_data
-           (Lazy.force lseqinfom)
-           (Lazy.force ltaxonomy)
-           (Lazy.force lref_tree))
-  and luptree_map =
-    lazy (utm_of_stree (Gtree.get_stree (Lazy.force lref_tree)))
-  in
   {
-    ref_tree    = lref_tree;
-    model       = lmodel;
-    aln_fasta   = lfasta_aln;
-    aln_sto     = ();
+    ref_tree = Delayed.of_option ref_tree;
+    model = Delayed.create ();
+    aln_fasta = Delayed.of_option ref_align;
+    aln_sto = ();
     aln_profile = ();
-    taxonomy    = ltaxonomy;
-    seqinfom    = lseqinfom;
-    name        = (get "name" |> Refpkg_parse.as_metadata);
-    mrcam       = lmrcam;
-    uptree_map  = luptree_map;
-    item_path_fn = get |- Refpkg_parse.as_file_path;
+    taxonomy = Delayed.create ();
+    seqinfom = Delayed.create ();
+    name = get "name" |> Refpkg_parse.as_metadata;
+    mrcam = Delayed.create ();
+    uptree_map = Delayed.create ();
+    get; get_opt = flip StringMap.Exceptionless.find m;
+    prefs;
   }
 
 let of_path ?ref_tree path =
