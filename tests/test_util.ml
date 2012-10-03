@@ -106,7 +106,7 @@ let array_f_equal f a1 a2 =
   try
     ArrayFuns.iter2 (fun x y -> if not (f x y) then raise Exit) a1 a2;
     true
-  with | Exit -> true
+  with Exit -> false
 
 let farr_approx_equal ?(epsilon = 1e-5) fa1 fa2 =
   array_f_equal (approx_equal ~epsilon) fa1 fa2
