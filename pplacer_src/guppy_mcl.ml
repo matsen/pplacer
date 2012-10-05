@@ -2,7 +2,7 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
-let of_pql criterion pql =
+let of_pql ?inflation criterion pql =
   let pqa = Array.of_list pql in
   let name_map =
     Enum.combine
@@ -20,11 +20,11 @@ let of_pql criterion pql =
       and j = StringMap.find n2 name_map in
       insert i (j, v);
       insert j (i, v));
-  Mcl.mcl arrays
+  Mcl.mcl ?inflation arrays
     |> Array.map (Array.map (Array.get pqa))
 
-let islands_of_pql criterion pql =
-  of_pql criterion pql
+let islands_of_pql ?inflation criterion pql =
+  of_pql ?inflation criterion pql
     |> Array.enum
     |> Enum.map (fun pqa -> IntSet.empty, Array.to_list pqa)
     |> List.of_enum
@@ -36,9 +36,13 @@ object (self)
   inherit tabular_cmd () as super_tabular
   inherit mass_cmd ~point_choice_allowed:false () as super_mass
 
+  val inflation = flag "--inflation"
+    (Needs_argument ("", "If specified, pass this as the inflation value to MCL."))
+
   method specl =
     super_tabular#specl
   @ super_mass#specl
+  @ [float_flag inflation]
 
   method desc = "cluster pqueries"
   method usage = "usage: mcl [options] placefile"
@@ -46,7 +50,7 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       Placerun.get_pqueries pr
-      |> of_pql self#criterion
+      |> of_pql ?inflation:(fvo inflation) self#criterion
       |> Array.enum
       |> Enum.mapi
           (fun e arr ->
