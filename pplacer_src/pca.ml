@@ -18,7 +18,7 @@ let power_eigen n_keep m =
 (* Alternative version that uses symmv rather than power iteration. *)
 let symmv_eigen n_keep m =
   let (evalv, evectm) = Gsl_eigen.symmv (`M (m)) in
-  Gsl_eigen.symmv_sort (evalv, evectm) Gsl_eigen.VAL_DESC;
+  Gsl_eigen.symmv_sort (evalv, evectm) Gsl_eigen.ABS_DESC;
   (* GSL makes nice column vectors *)
   Gsl_matrix.transpose_in_place evectm;
   let sub a = Array.sub a 0 n_keep in
