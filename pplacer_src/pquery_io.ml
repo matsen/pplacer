@@ -25,7 +25,7 @@ let to_csv_strl pq =
     (fun i p -> qname::(string_of_int i)::(Placement.to_csv_strl p))
     (Pquery.place_list pq)
 
-let to_json json_state pq =
+let to_json pq =
   let tbl = Hashtbl.create 4 in
   Hashtbl.add
     tbl
@@ -34,11 +34,15 @@ let to_json json_state pq =
        (List.map
           (fun (n, m) -> Jsontype.Array [Jsontype.String n; Jsontype.Float m])
           (Pquery.namlom pq)));
-  Hashtbl.add tbl "p" (Jsontype.Array (
-    List.map
-      (Placement.to_json json_state)
-      (Pquery.place_list pq)));
-  Jsontype.Object tbl
+  let maps = Pquery.place_list pq |> List.map Placement.to_json in
+  List.enum maps |> Enum.map StringMap.keys |> Enum.flatten |> StringSet.of_enum,
+  fun fields ->
+    flip List.map maps (fun m ->
+      Jsontype.Array
+        (List.map (fun k -> StringMap.get k Jsontype.Null m) fields))
+    |> (fun x -> Jsontype.Array x)
+    |> Hashtbl.add tbl "p";
+    Jsontype.Object tbl
 
 
 (* ***** READING ***** *)

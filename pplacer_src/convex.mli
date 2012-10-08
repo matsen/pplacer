@@ -136,6 +136,13 @@ val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
     node numbers to a list of the values of the map at each of the subtrees of
     that internal node. *)
 
+val gen_build_rank_tax_map:
+  'a ->
+  ('b -> Tax_id.tax_id -> 'a -> 'a) ->
+  Tax_taxonomy.t ->
+  ('c -> 'b option) ->
+  ('c * Tax_id.tax_id) Enum.t -> 'a IntMap.t
+
 val build_rank_tax_map:
   Tax_taxonomy.t -> ('a -> int option) -> ('a * Tax_id.t) Enum.t ->
   Tax_id.t IntMap.t IntMap.t

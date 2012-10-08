@@ -14,10 +14,13 @@ object (self)
     (Needs_argument ("dupfile", "The dedup file to use to restore duplicates."))
   val multi_dupfile = flag "-m"
     (Plain (false, "If specified, redup with counts instead of a name list."))
+  val as_mass = flag "--as-mass"
+    (Plain (false, "If specified, add mass instead of names to each pquery."))
 
   method specl = super_output#specl @ [
     string_flag dupfile;
     toggle_flag multi_dupfile;
+    toggle_flag as_mass;
   ]
 
   method desc = "restores duplicates to deduped placefiles"
@@ -49,7 +52,7 @@ object (self)
                   List.iter
                     (identity &&& const 1. |- Hashtbl.add sequence_tbl k)
                     vs);
-          Placerun.redup sequence_tbl pr
+          Placerun.redup ~as_mass:(fv as_mass) sequence_tbl pr
 
       in
       self#write_placefile

@@ -5,11 +5,20 @@
  * Closed GH-215: Added `pca_for_qiime.py` and `extract_taxonomy_from_biom.py`;
    changed guppy and rppr to allow BIOM files to be passed as arguments where
    placefiles are allowed.
+ * Closed GH-241: On the NBC classifier of `guppy classify`: renamed
+   `--target-rank` to `--nbc-rank`; added `--nbc-rank auto`.
+ * Closed GH-248: Added premasking by default to the NBC classifier of `guppy
+   classify`; correspondingly added `--no-pre-mask`.
+ * Closed GH-250: Completely revamped classification.
+ * Closed GH-251: Added the hybrid5 classifier.
  * Closed GH-256: Added `--mmap-file` to pplacer; changed `--pretend` in
    pplacer to show the amount of memory which would be allocated.
  * Closed GH-260: Added `rooted_pd` to `guppy fpd`; Added a `--variance` flag
    to `guppy rarefact`.
  * Closed GH-261: Added `rppr convex_taxids`.
+ * Closed GH-262: Added `--as-mass` to `guppy redup`; updated
+   `sort_placefile.py` for the new placefile format; fixed pplacer to better
+   deal with internal edges on a tree with a branch length of 0.
  * Closed GH-263: Fixed a bug that could sometimes cause failures in `rppr
    min_adcl` with the PAM algorithm.
  * Closed GH-265: Fixed a bug that could cometimes cause `rppr reroot` to
@@ -17,6 +26,7 @@
  * Closed GH-266: Adding `map_ratio` and `map_overlap` columns to `guppy
    to_csv`.
  * Closed GH-267: Added a `leaf_count` column to `rppr convex_taxids`.
+ * Closed GH-268: Merged various minor fixes.
  * Closed GH-274: Added `--weight-as-count` to `guppy rarefact`.
  * Closed GH-276: Added `-k` to `guppy rarefact`.
  * Closed GH-277: Added `--weight-as-count` to `guppy rarefy`.

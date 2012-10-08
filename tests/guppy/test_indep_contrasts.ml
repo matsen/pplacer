@@ -71,8 +71,9 @@ let suite = [
   end;
 
   "test_scale_placerun" >:: begin fun () ->
-    let printer = Pquery_io.to_json (ref None)
-      |- Json.to_string
+    let printer pq =
+      let fields, thunk = Pquery_io.to_json pq in
+      StringSet.elements fields |> thunk |> Json.to_string
     in
     placerun_of_dir "misc" "test_indep_contrasts"
       |> Indep_contrasts.scale_placerun Placement.ml_ratio leaf_values

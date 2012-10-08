@@ -167,12 +167,13 @@ type 'a flag = {
 let flag opt described = {value = ref None; opt; described}
 
 (* fv is short for flag value. It fetches the value. *)
-let fv f = match !(f.value) with
+let fv ?default f = match !(f.value) with
   | Some x -> x
-  | None -> let x = begin match f.described with
-      | Formatted (x, _) -> x
-      | Plain (x, _) -> x
-      | Needs_argument (name, _) -> raise (No_default (name, f.opt))
+  | None -> let x = begin match f.described, default with
+      | Formatted (x, _), _
+      | Plain (x, _), _
+      | Needs_argument _, Some x -> x
+      | Needs_argument (name, _), _ -> raise (No_default (name, f.opt))
   end in f.value := Some x; x
 
 let fvo f =
@@ -192,10 +193,12 @@ let string_flag = some_flag (fun f -> Arg.String (fun x -> f.value := Some x))
 let int_flag = some_flag (fun f -> Arg.Int (fun x -> f.value := Some x))
 let float_flag = some_flag (fun f -> Arg.Float (fun x -> f.value := Some x))
 let toggle_flag = some_flag (fun f -> Arg.Unit (fun () -> f.value := Some (not (fv f))))
-let string_list_flag = some_flag (fun f -> Arg.String (fun x -> f.value := Some (x :: fv f)))
+let string_list_flag =
+  some_flag (fun f -> Arg.String (fun x -> f.value := Some (x :: fv ~default:[] f)))
 let delimited_list_flag ?(delimiter = ",") f =
   some_flag
-    (fun f -> Arg.String (fun x -> f.value := Some (fv f @ String.nsplit x delimiter)))
+    (fun f -> Arg.String
+      (fun x -> f.value := Some (fv ~default:[] f @ String.nsplit x delimiter)))
     f
 
 class virtual subcommand () =

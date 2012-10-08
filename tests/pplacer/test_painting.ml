@@ -15,6 +15,7 @@ let suite = [
             3, "F";
             4, "F";
             5, "A";
+            6, "A";
           ]
         |> Enum.map (second Tax_id.of_string)
         |> IntMap.of_enum
@@ -33,6 +34,7 @@ let suite = [
             3, "F";
             4, "A";
             5, "B";
+            6, "A";
           ]
         |> Enum.map (second Tax_id.of_string)
         |> IntMap.of_enum

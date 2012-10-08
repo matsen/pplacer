@@ -200,7 +200,7 @@ object (self)
       | [] -> None
       | ranks -> Some
         (List.enum ranks
-         |> Enum.map (fun rk -> Array.findi ((=) rk) td.Tax_taxonomy.rank_names)
+         |> Enum.map (Tax_taxonomy.get_rank_index td)
          |> IntSet.of_enum)
     and cutoff = fv badness_cutoff in
     let leaves = leafset st in

@@ -170,34 +170,37 @@ struct
           max_n_exceptions;
         base_ll (* return the base LL *)
       end
-      else try
-             base_ll +.
-               log
-               ((Integration.value_integrate
-                   (fun dist_bl ->
-                     set_dist_bl tt dist_bl;
-                     Integration.value_integrate
-                       (fun pend_bl ->
-                         set_pend_bl tt pend_bl;
-                         (exp ((log_like tt) -. base_ll))
-                         *. (prior pend_bl))
-                       0. upper_limit ~abs_err ~rel_err)
-                   0. cut_bl ~abs_err ~rel_err)
-                /. cut_bl)
+      else
+        let inner_integration () =
+          Integration.value_integrate
+            (fun pend_bl ->
+              set_pend_bl tt pend_bl;
+              (exp ((log_like tt) -. base_ll)) *. (prior pend_bl))
+            0. upper_limit ~abs_err ~rel_err
+        in
+        let outer_integration () =
+          (/.)
+            (Integration.value_integrate
+               (fun dist_bl -> set_dist_bl tt dist_bl; inner_integration ())
+               0. cut_bl ~abs_err ~rel_err)
+            cut_bl
+        in
+        try
+          (if cut_bl =~ 0. then
+             (set_dist_bl tt (cut_bl /. 2.); inner_integration ())
+           else outer_integration ())
+          |> log
+          |> (+.) base_ll
         with
-          | Gsl_error.Gsl_exn(error_num, error_str) ->
-            if error_num = Gsl_error.ETOL then begin
-              (* Integration failed to reach tolerance with highest-order rule. Because
-               * these functions are smooth, the problem is too-wide integration bounds.
-               * We halve and try again. This is obviously pretty rough, but if we
-               * aren't reaching tolerance then the posterior surface is dropping off
-               * really fast compared to the size of the interval, so missing a little
-               * of it is not going to make a difference. *)
-              incr n_exceptions;
-              perform (upper_limit /. 2.)
-            end
-            else
-              raise (Gsl_error.Gsl_exn(error_num, error_str))
+          | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
+            (* Integration failed to reach tolerance with highest-order rule. Because
+             * these functions are smooth, the problem is too-wide integration bounds.
+             * We halve and try again. This is obviously pretty rough, but if we
+             * aren't reaching tolerance then the posterior surface is dropping off
+             * really fast compared to the size of the interval, so missing a little
+             * of it is not going to make a difference. *)
+            incr n_exceptions;
+            perform (upper_limit /. 2.)
     in
     perform (find_upper_limit max_pend prior base_ll tt)
 

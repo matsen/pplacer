@@ -30,10 +30,11 @@ let get_ref_tree rp =
 
 let get_aln_fasta rp =
   Delayed.reify rp.aln_fasta (fun () ->
-    rp.get "aln_fasta"
-      |> Fasta.of_refpkg_contents
-      |> Array.of_list
-      |> Alignment.uppercase)
+    let aln = match rp.get_opt "aln_fasta" with
+      | Some fa -> Fasta.of_refpkg_contents fa
+      | None -> rp.get "aln_sto" |> Stockholm.of_refpkg_contents
+    in
+    Alignment.uppercase (Array.of_list aln))
 
 let get_model rp =
   Delayed.reify rp.model (fun () ->
