@@ -12,7 +12,11 @@ object (self)
   val cutoff = flag "--cutoff"
     (Needs_argument ("cutoff", "The cutoff parameter for mass compression"))
   val discard_below = flag "--discard-below"
-    (Plain (0., "Ignore pquery locations with a mass less than the specified value."))
+    (Plain (0., "In island clustering, ignore pquery locations with a mass less than the specified value."))
+  val use_mcl = flag "--mcl"
+    (Plain (false, "Use MCL clustering instead of island clustering."))
+  val inflation = flag "--inflation"
+    (Needs_argument ("", "If specified, pass this as the inflation value to MCL."))
 
   method specl =
     super_mass#specl
@@ -20,6 +24,8 @@ object (self)
   @ [
     float_flag cutoff;
     float_flag discard_below;
+    toggle_flag use_mcl;
+    float_flag inflation;
   ]
 
   method desc = "compresses a placefile's pqueries"
@@ -28,9 +34,13 @@ object (self)
   method private placefile_action = function
     | [pr] ->
       let weighting, criterion = self#mass_opts in
+      let cluster_fn =
+        if fv use_mcl then Guppy_mcl.islands_of_pql ?inflation:(fvo inflation) else
+          Mass_islands.of_pql ~discard_below:(fv discard_below)
+      in
       Mass_compress.of_placerun
-        ~discard_below:(fv discard_below)
         ~c:(fv cutoff)
+        cluster_fn
         weighting
         criterion
         pr

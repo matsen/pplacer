@@ -20,6 +20,7 @@ let command_list () =
       "fpd", (fun () -> new Guppy_fpd.cmd ());
       "unifrac", (fun () -> new Guppy_unifrac.cmd ());
       "indep_c", (fun () -> new Guppy_indep_c.cmd ());
+      "mcl", (fun () -> new Guppy_mcl.cmd ());
     ];
 
     "classification", [

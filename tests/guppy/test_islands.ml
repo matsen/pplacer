@@ -16,7 +16,7 @@ let suite = [
   "test_islands" >:: begin fun () ->
     placerun_of_dir "misc" "test_islands"
       |> Placerun.get_pqueries
-      |> Mass_islands.of_pql
+      |> Mass_islands.of_pql (const 0.)
       |> reduce_and_check
           [
             [0; 1; 2], ["one"; "two"; "three"];
@@ -29,7 +29,7 @@ let suite = [
       |> Placerun.get_pqueries
       |> Mass_islands.of_pql
           ~discard_below:0.25
-          ~criterion:Placement.ml_ratio
+          Placement.ml_ratio
       |> reduce_and_check
           [
             [0; 2], ["one"; "three"];

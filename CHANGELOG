@@ -13,6 +13,7 @@
  * Closed GH-251: Added the hybrid5 classifier.
  * Closed GH-256: Added `--mmap-file` to pplacer; changed `--pretend` in
    pplacer to show the amount of memory which would be allocated.
+ * Closed GH-259: Added `guppy mcl` and a `--mcl` flag to `guppy compress`.
  * Closed GH-260: Added `rooted_pd` to `guppy fpd`; Added a `--variance` flag
    to `guppy rarefact`.
  * Closed GH-261: Added `rppr convex_taxids`.
@@ -32,6 +33,8 @@
  * Closed GH-277: Added `--weight-as-count` to `guppy rarefy`.
  * Closed GH-278: Changed `guppy rarefact` to allow multiple placefiles to be
    passed instead of just one.
+ * Closed GH-282: Added a `--inflation` flag to `guppy mcl` and `guppy
+   compress`.
 
 
 1.1.alpha13
