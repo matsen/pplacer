@@ -462,7 +462,7 @@ This will, very roughly, perform disk IO instead of using physical memory.
 
 You will see that pplacer will use the same amount of *address space*, but less
 *physical memory*. In terms of ``top(1)`` on linux, ``VIRT`` will stay the same
-bug ``RES`` will decrease. The speed of pplacer will also become at least
+but ``RES`` will decrease. The speed of pplacer will also become at least
 partially dependent on the speed of the drive where the mmap file is located;
 with an SSD you might not see any difference from using physical memory, while
 with a spinning metal drive there might be some slowdown. Placing the file on
