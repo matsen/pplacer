@@ -35,6 +35,8 @@
    passed instead of just one.
  * Closed GH-282: Added a `--inflation` flag to `guppy mcl` and `guppy
    compress`.
+ * Closed GH-286: Changed pplacer's `--mmap-file` to accept a path to either a
+   directory or a file.
 
 
 1.1.alpha13
