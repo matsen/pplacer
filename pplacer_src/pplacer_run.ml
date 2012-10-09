@@ -292,7 +292,17 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       let darr = Like_stree.glv_arr_for model ref_tree n_sites in
       darr, Glv_arr.mimic darr, Glv_arr.mimic darr
     else
-      let fd = Unix.openfile mmap_file [Unix.O_RDWR; Unix.O_CREAT] 0o666 in
+      let fd =
+        try
+          Unix.openfile mmap_file [Unix.O_RDWR; Unix.O_CREAT] 0o666
+        with Unix.Unix_error (Unix.EISDIR, _, _) ->
+          let filename =
+            Filename.temp_file ~temp_dir:mmap_file "pplacer" ".mmap"
+          in
+          let fd = Unix.openfile filename [Unix.O_RDWR; Unix.O_CREAT] 0o600 in
+          Unix.unlink filename;
+          fd
+      in
       let arrays =
         Like_stree.mmap_glv_arrays_for model fd true ref_tree 3 n_sites
       in
