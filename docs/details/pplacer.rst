@@ -457,8 +457,8 @@ this will be by far the biggest allocation.
 
 In cases when there isn't enough memory for pplacer to use for internal nodes,
 or it's otherwise disadvantageous to use physical memory, it's possible to
-instead tell pplacer to |mmap|_ a file instead. This will, very roughly,
-perform disk IO instead of using physical memory.
+instead tell pplacer to |mmap|_ a file instead using the ``--mmap-file`` flag.
+This will, very roughly, perform disk IO instead of using physical memory.
 
 You will see that pplacer will use the same amount of *address space*, but less
 *physical memory*. In terms of ``top(1)`` on linux, ``VIRT`` will stay the same
@@ -471,6 +471,12 @@ an NFS mount is likely not ideal for this reason.
 The implementation and underlying behavior of mmap may vary between platforms
 (the link above is only for linux out of convenience), but pplacer will always
 call |mmap|_ with ``PROT_READ | PROT_WRITE`` and ``MAP_SHARED``.
+
+It's also possible to pass a directory for the value of the ``--mmap-file``
+flag; this will create a temporary file in that directory, and then unlink it
+after opening it. The data will be written to the drive, but when the process
+exits, the last reference to that filesystem entry will be removed and it will
+get cleaned up.
 
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
