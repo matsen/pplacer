@@ -37,6 +37,8 @@
    compress`.
  * Closed GH-286: Changed pplacer's `--mmap-file` to accept a path to either a
    directory or a file.
+ * Closed GH-287: Added a more informative error message for the case of an
+   input alignment containing some, but not all reference sequence names.
 
 
 1.1.alpha13
