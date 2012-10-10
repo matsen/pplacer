@@ -659,11 +659,11 @@ let partition_queries ref_name_set aln =
          Using supplied reference alignment.\n";
     None
   end
+  else if Array.length ref_aln <> StringSet.cardinal ref_name_set then
+    failwith
+      "Some, but not all reference sequences found in provided alignment file. \
+         Are there overlaps between query and reference sequence IDs?";
   else begin
-    if Array.length ref_aln <> StringSet.cardinal ref_name_set then
-      failwith "Some, but not all reference sequences \
-                 found in alignment file. Are there overlaps between sequence IDs?";
-
     dprint
       "Found reference sequences in given alignment file. \
          Using those for reference alignment.\n";
@@ -772,4 +772,3 @@ let run_file prefs query_fname =
     run_placements
       prefs rp query_list from_input_alignment query_bname placerun_cb
   end
-
