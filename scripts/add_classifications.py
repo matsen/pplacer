@@ -49,8 +49,8 @@ def main():
         curs.execute('INSERT INTO placements (classifier, run_id) VALUES ("csv", ?)', (run_id,))
         placement_id = curs.lastrowid
         curs.execute(
-            'INSERT INTO placement_names (placement_id, name, origin, mass) VALUES (?, ?, ?, 1)',
-            (placement_id, row['seq'], args.classifications.name))
+            'INSERT INTO placement_names (placement_id, name, origin, mass) VALUES (?, ?, ?, ?)',
+            (placement_id, row['seq'], args.classifications.name, int(row.get('mass', 1))))
         curs.executemany('INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)',
                          multiclass_rows(placement_id, row['seq'], row['tax_id']))
 
