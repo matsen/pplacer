@@ -14,5 +14,6 @@ let command_list () =
       "prepsim", (fun () -> new Rppr_prepsim.cmd ());
       "min_adcl_tree", (fun () -> new Rppr_min_adcl_tree.cmd ());
       "convex_taxids", (fun () -> new Rppr_convex_taxids.cmd ());
+      "confusion", (fun () -> new Rppr_confusion.cmd ());
     ];
   ]

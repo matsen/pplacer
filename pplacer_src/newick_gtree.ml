@@ -2,6 +2,15 @@ open Ppatteries
 
 type t = Newick_bark.newick_bark Gtree.gtree
 
+exception Lacking_confidence of int
+
+let get_confidence gt i =
+  let confidence_opt, _ = Gtree.get_stree gt
+    |> Stree.find i
+    |> Stree.is_leaf
+    |> (Gtree.get_bark gt i)#get_confidence_name_opt
+  in
+  Option.get_exn confidence_opt (Lacking_confidence i)
 
 (* use *)
 
@@ -192,6 +201,13 @@ let consolidate gt =
   let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
   gt', IntMap.map (flip IntMap.find transm' |> first) transm
 
+(* Given a newick gtree and a criterion, prune leaves off of the tree if the
+ * criterion function returns true for that leaf's node number. Returns a gtree
+ * which is a subset of the original gtree and a list of pqueries. Each pruned
+ * leaf will be turned into a pquery with a single placement with a pendant
+ * branch length equal to the leaf's branch length. If every leaf below a node
+ * is pruned, that node will also be pruned and each placement below it will
+ * have its pendant branch length increased by the node's branch length. *)
 let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   let open Stree in
   let st = Gtree.get_stree gt
@@ -238,3 +254,28 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   List.map
     (Pquery.apply_to_place_list (List.map replace_root_placement))
     pql
+
+(* Given a newick gtree and a criterion, prune internal edges from the tree if
+ * the criterion function returns true for that edge's node number. Returns a
+ * gtree which is a subset of the original gtree. If an edge is pruned,
+ * everything below its corresponding node will be moved to the node above
+ * without any change in branch length.
+ *
+ * For example, pruning D from (A,(B,C)D) will produce (A,B,C). *)
+let prune_edges should_prune gt =
+  let open Stree in
+  let rec aux = function
+    | Leaf _ as l -> l
+    | Node (i, subtrees) ->
+      List.fold_left
+        (fun accum t -> match aux t with
+         | Node (i, subtrees) when should_prune i -> List.append subtrees accum
+         | x -> x :: accum)
+        []
+        subtrees
+      |> List.rev
+      |> node i
+  in
+  Gtree.get_stree gt
+    |> aux
+    |> Gtree.set_stree gt
