@@ -672,7 +672,7 @@ let partition_queries ref_name_set aln =
   else if Array.length ref_aln <> StringSet.cardinal ref_name_set then
     failwith
       "Some, but not all reference sequences found in provided alignment file. \
-         Are there overlaps between query and reference sequence IDs?";
+         Are there overlaps between query and reference sequence IDs?"
   else begin
     dprint
       "Found reference sequences in given alignment file. \
