@@ -21,7 +21,7 @@ let command_list () =
       "unifrac", (fun () -> new Guppy_unifrac.cmd ());
       "indep_c", (fun () -> new Guppy_indep_c.cmd ());
       "mcl", (fun () -> new Guppy_mcl.cmd ());
-    ];
+   ];
 
     "classification", [
       "classify", (fun () -> new Guppy_classify.cmd ());
@@ -46,5 +46,6 @@ let command_list () =
       "check", (fun () -> new Guppy_check.cmd ());
       "rarefy", (fun () -> new Guppy_rarefy.cmd ());
       "to_csv", (fun () -> new Guppy_to_csv.cmd ());
+      "placemat", (fun () -> new Guppy_placemat.cmd ());
     ];
   ]
