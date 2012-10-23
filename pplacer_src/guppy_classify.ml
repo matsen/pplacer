@@ -8,16 +8,19 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
-(* tiamr = Taxid Algebraic Map Real
- * tiamrim = tiamr IntMap; the integer key is the rank. *)
+(* TIAMR = Taxid Algebraic Map Real. These will store the confidence that we
+have in various taxonomic classifications. *)
 module TIAMR = AlgMapR (Tax_id.TaxIdMap)
 
+(* The lower case tiamr also associates a place_id with this classification. *)
 type tiamr = {
   tiamr: float TIAMR.t;
   place_id: int64;
 }
 
+(* A classification at every rank and perhaps a Bayes_factor *)
 type classification = {
+ (* tiamrim = tiamr IntMap; the integer key is the rank. *)
   tiamrim: tiamr IntMap.t;
   bayes_factors: Bayes_factor.t option;
 }
@@ -62,7 +65,8 @@ let tiamr_at_rank td rank tiamr =
   TIAMR.filteri (fun ti _ -> Tax_taxonomy.get_tax_rank td ti = rank) tiamr
   |> junction TIAMR.is_empty (const None) some
 
-(* From an bootstrap map, produce a full classification map. *)
+(* From a map from the edges to the confidence we have in their placements,
+produce a full classification map. *)
 let partition_by_rank td tiamr =
   let outmap = ref IntMap.empty
   and m = ref tiamr
@@ -102,7 +106,8 @@ let filter_best ?multiclass_min cutoff cf =
     | _, Some multiclass_min ->
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
       (* AG: I don't understand this quite. Why do we want to take the ones that
-       * are less than multiclass_min? *)
+       * are less than multiclass_min? Also, how does the comparison with an
+       * opt happen here? *)
       TIAMR.filter ((<=) multiclass_min) tiamr
       (* let junction pred f g a = if pred a then f a else g a
        * So if we are in total less than the cutoff, then we keep the tiamr. *)
@@ -116,7 +121,7 @@ let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
   let factors = bayes_factors cf in
   IntMap.backwards cf.tiamrim
   (* enum with keys in decreasing order, so here starting with lowest (away from
-   * root) rank. *)
+   * root, but highest number) rank. *)
   |> Enum.fold
       (fun (found_evidence, accum) (rank, value) ->
         (* If we have found evidence for a rank below, continue to accumulate
@@ -127,7 +132,7 @@ let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
           true, IntMap.add rank value accum
         | _ -> false, accum)
       (false, IntMap.empty)
-  |> snd (* get accum *)
+  |> snd (* Get accum, the map of ranks to tiamr's. *)
   |> (match multiclass_min with
     | None -> identity
     | Some multiclass_min ->
@@ -173,7 +178,9 @@ let merge_fn f _ a b =
   | None, Some x -> Some x
   | Some a, Some b -> Some (f a b)
 
-(* Get the maximum binding in a.tiamrim or return lbl b *)
+(* Get the maximum binding in a.tiamrim or return lbl b. When applied to a
+tiamrim this gives the most specific classification that the tiamrim has to
+offer. If a is empty just return lbl b. *)
 let max_tiamrim_or_return_other lbl a b =
   try
     IntMap.max_binding a.tiamrim
