@@ -1,7 +1,15 @@
+(* Notes:
+  *
+  * rank increases from zero, with zero being the "root".
+  *
+  *)
+
 open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
+(* tiamr = Taxid Algebraic Map Real
+ * tiamrim = tiamr IntMap; the integer key is the rank. *)
 module TIAMR = AlgMapR (Tax_id.TaxIdMap)
 
 type tiamr = {
@@ -30,8 +38,8 @@ let bayes_factors {bayes_factors} = Option.get bayes_factors
 let set_tiamrim cf tiamrim = {cf with tiamrim}
 let map_tiamrim cf f = {cf with tiamrim = f cf.tiamrim}
 
-(* if rank is less than the tax rank of ti, then move up the taxonomy until
- * the first time that the tax rank is less than or equal to rank *)
+(* If rank is less than the tax rank of ti, then move up the taxonomy until
+ * the first time that the tax rank is less than or equal to rank. *)
 let classify_at_rank td rank ti =
   let rec aux curr_ti =
     if rank >= Tax_taxonomy.get_tax_rank td curr_ti then
@@ -41,7 +49,7 @@ let classify_at_rank td rank ti =
   in
   aux ti
 
-(* apply f to all of the keys and add the results together *)
+(* Apply f to all of the keys and add the results together. *)
 let keymap_add_by f m =
   List.fold_right
     (fun (k,v) -> (TIAMR.add_by (f k) v))
@@ -93,7 +101,11 @@ let filter_best ?multiclass_min cutoff cf =
     | _, None -> None
     | _, Some multiclass_min ->
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
+      (* AG: I don't understand this quite. Why do we want to take the ones that
+       * are less than multiclass_min? *)
       TIAMR.filter ((<=) multiclass_min) tiamr
+      (* let junction pred f g a = if pred a then f a else g a
+       * So if we are in total less than the cutoff, then we keep the tiamr. *)
       |> junction
           (TIAMR.values |- Enum.fold (+.) 0. |- (<=) cutoff)
           (fun tiamr -> Some {tiamr; place_id})
@@ -103,15 +115,19 @@ let filter_best ?multiclass_min cutoff cf =
 let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
   let factors = bayes_factors cf in
   IntMap.backwards cf.tiamrim
+  (* enum with keys in decreasing order, so here starting with lowest (away from
+   * root) rank. *)
   |> Enum.fold
       (fun (found_evidence, accum) (rank, value) ->
+        (* If we have found evidence for a rank below, continue to accumulate
+         * all taxonomic classifications in ranks above. *)
         if found_evidence then true, IntMap.add rank value accum else (* ... *)
         match factors.(rank) with
         | _, _, Some evidence when evidence >= bayes_cutoff ->
           true, IntMap.add rank value accum
         | _ -> false, accum)
       (false, IntMap.empty)
-  |> snd
+  |> snd (* get accum *)
   |> (match multiclass_min with
     | None -> identity
     | Some multiclass_min ->
@@ -157,6 +173,7 @@ let merge_fn f _ a b =
   | None, Some x -> Some x
   | Some a, Some b -> Some (f a b)
 
+(* Get the maximum binding in a.tiamrim or return lbl b *)
 let max_tiamrim_or_return_other lbl a b =
   try
     IntMap.max_binding a.tiamrim
@@ -254,6 +271,7 @@ object (self)
     let pp_rank, pp_best = max_tiamrim_or_return_other lbl pp nbc
     and nbc_rank, nbc_best = max_tiamrim_or_return_other lbl nbc pp in
     if pp_rank >= nbc_rank
+      (* on_lineage td parent child *)
       && on_lineage
         td
         (best_classification nbc_best)
