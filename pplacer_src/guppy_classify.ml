@@ -102,11 +102,11 @@ let filter_best ?multiclass_min cutoff cf =
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
       (* AG: I don't understand this quite. Why do we want to take the ones that
        * are less than multiclass_min? *)
-      TIAMR.filter ((<=) multiclass_min) tiamr
+      TIAMR.filter (fun l -> l >= multiclass_min) tiamr
       (* let junction pred f g a = if pred a then f a else g a
        * So if we are in total less than the cutoff, then we keep the tiamr. *)
       |> junction
-          (TIAMR.values |- Enum.fold (+.) 0. |- (<=) cutoff)
+          (TIAMR.values |- Enum.fold (+.) 0. |- (fun s -> s >= cutoff))
           (fun tiamr -> Some {tiamr; place_id})
           (const None))
   |> map_tiamrim cf
@@ -132,7 +132,7 @@ let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
     | Some multiclass_min ->
       IntMap.filter_map
         (fun _ t ->
-          TIAMR.filter ((<=) multiclass_min) t.tiamr
+          TIAMR.filter (fun l -> l >= multiclass_min) t.tiamr
           |> junction TIAMR.is_empty (const None) (set_tiamr t |- some)))
   |> set_tiamrim cf
 
