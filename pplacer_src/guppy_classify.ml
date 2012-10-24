@@ -1,9 +1,3 @@
-(* Notes:
-  *
-  * rank increases from zero, with zero being the "root".
-  *
-  *)
-
 open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
@@ -20,7 +14,8 @@ type tiamr = {
 
 (* A classification at every rank and perhaps a Bayes_factor *)
 type classification = {
- (* tiamrim = tiamr IntMap; the integer key is the rank. *)
+ (* tiamrim = tiamr IntMap; the integer key is the rank.
+  Rank increases from zero, with zero being the "root". *)
   tiamrim: tiamr IntMap.t;
   bayes_factors: Bayes_factor.t option;
 }
@@ -106,8 +101,7 @@ let filter_best ?multiclass_min cutoff cf =
     | _, Some multiclass_min ->
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
       (* AG: I don't understand this quite. Why do we want to take the ones that
-       * are less than multiclass_min? Also, how does the comparison with an
-       * opt happen here? *)
+       * are less than multiclass_min? *)
       TIAMR.filter ((<=) multiclass_min) tiamr
       (* let junction pred f g a = if pred a then f a else g a
        * So if we are in total less than the cutoff, then we keep the tiamr. *)
@@ -159,6 +153,7 @@ let find_ranks_per_want_rank td cf =
 (*   | Some (_, cl) as x when not (List.is_empty cl) -> x *)
 (*   | _ -> None *)
 
+(* Is parent anywhere on the lineage of child? *)
 let on_lineage td parent child =
   Tax_taxonomy.get_lineage td child |> List.mem parent
 
