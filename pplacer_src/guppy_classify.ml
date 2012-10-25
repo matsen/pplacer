@@ -283,6 +283,18 @@ object (self)
     then pp
     else nbc
 
+  method private merge_fake_hybrid2 td pp nbc lbl =
+    let pp_rank, pp_best = max_tiamrim_or_return_other lbl pp nbc
+    and nbc_rank, nbc_best = max_tiamrim_or_return_other lbl nbc pp in
+    if false && pp_rank >= nbc_rank
+      (* on_lineage td parent child *)
+      && on_lineage
+        td
+        (best_classification nbc_best)
+        (best_classification pp_best)
+    then pp
+    else nbc
+
   method private merge_hybrid5 td pp nbc lbl =
     let nbc_rank, nbc_best = max_tiamrim_or_return_other lbl nbc pp in
     match IntMap.split nbc_rank pp.tiamrim with
@@ -682,6 +694,11 @@ object (self)
       | "hybrid2" ->
         StringMap.merge
           (label3 self#merge_hybrid2 td |> merge_fn)
+          (default_pplacer ())
+          (default_nbc ())
+      | "hybrid2f" ->
+        StringMap.merge
+          (label3 self#merge_fake_hybrid2 td |> merge_fn)
           (default_pplacer ())
           (default_nbc ())
       | "hybrid5" ->
