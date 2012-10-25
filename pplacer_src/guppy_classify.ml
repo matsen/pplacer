@@ -192,6 +192,7 @@ object (self)
   inherit refpkg_cmd ~required:true as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit sqlite_cmd () as super_sqlite
+  inherit rng_cmd () as super_rng
 
   val classifier = flag "--classifier"
     (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid', or 'rdp'. default: %s"))
@@ -243,6 +244,7 @@ object (self)
   method specl =
     super_refpkg#specl
   @ super_sqlite#specl
+  @ super_rng#specl
   @ [
     string_flag classifier;
     float_flag cutoff;
@@ -333,6 +335,7 @@ object (self)
       query_list
 
   method private placefile_action prl =
+    self#set_default_seed;
     let rp = self#get_rp in
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
@@ -705,4 +708,3 @@ object (self)
     Sql.close db
 
 end
-

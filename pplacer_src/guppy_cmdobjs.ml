@@ -128,7 +128,9 @@ object (self)
   method specl = [ int_flag seed; ]
 
   method private set_default_seed =
-    Gsl_rng.set_default_seed (Nativeint.of_int (fv seed))
+    let seed = fv seed in
+    Gsl_rng.set_default_seed (Nativeint.of_int seed);
+    Random.init seed
 
   method private rng =
     self#set_default_seed;
