@@ -75,6 +75,20 @@ let rank_tax_map_of_refpkg rp =
   |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
   |> Convex.gen_build_rank_tax_map StringMap.empty StringMap.add td some
 
+let random_winner_max_index vec =
+  0 --^ BA1.dim vec
+  |> flip Enum.fold None (fun accum idx ->
+    let x = vec.{idx} in
+    match accum with
+    | Some (_, prev_x, _) when x < prev_x -> accum
+    | Some (prev_winner, prev_x, count) when x = prev_x ->
+      let count' = succ count in
+      let winner = if Random.int count' = 0 then idx else prev_winner in
+      Some (winner, prev_x, count')
+    | _ -> Some (idx, x, 1))
+  |> Option.get
+  |> Tuple3.first
+
 (* the thing that accumulates reference sequences before classification *)
 module Preclassifier = struct
   type base = {
@@ -203,7 +217,7 @@ module Classifier = struct
     let dest = cf.classify_vec in
     Gsl_vector.set_zero dest;
     Linear.float_mat_int_vec_mul dest cf.taxid_word_counts vec;
-    Gsl_vector.max_index dest |> Array.get cf.pc.tax_ids
+    random_winner_max_index dest |> Array.get cf.pc.tax_ids
 
   (* fill a vector with counts for a sequence *)
   let count_seq cf ?(like_rdp = false) seq =

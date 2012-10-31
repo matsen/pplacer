@@ -7,6 +7,7 @@ val int_to_word: ?word_length:int -> int -> string
 val gen_count_by_seq: int -> (int -> unit) -> string -> unit
 
 val max_word_length: int
+val random_winner_max_index: ('a, 'b, 'c) Bigarray.Array1.t -> int
 
 module Preclassifier: sig
   type 'a t
