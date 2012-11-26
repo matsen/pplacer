@@ -46,7 +46,7 @@ def main():
             for node, want_ranks in full_lineage(taxtable.get_node(taxon)):
                 for want_rank in want_ranks:
                     ret[placement_id, seq, want_rank, node.rank, node.tax_id] += likelihood
-        for k, v in ret.iteritems():
+        for k, v in sorted(ret.items()):
             yield k + (v,)
 
     curs = args.classification_db.cursor()
