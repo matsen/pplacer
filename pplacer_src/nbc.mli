@@ -18,9 +18,10 @@ end
 
 module Classifier: sig
   type t
+  type rank = Rank of int | Auto_rank | All_ranks
   val make: ?n_boot:int -> ?map_file:(Unix.file_descr * bool) -> 'a Preclassifier.t -> t
   val classify: t -> ?like_rdp:bool -> string -> Tax_id.t
   val bootstrap: t -> ?like_rdp:bool -> string -> float Tax_id.TaxIdMap.t
   val of_refpkg:
-    ?ref_aln:Alignment.t -> ?n_boot:int -> ?map_file:(Unix.file_descr * bool) -> int -> int -> Refpkg.t -> t
+    ?ref_aln:Alignment.t -> ?n_boot:int -> ?map_file:(Unix.file_descr * bool) -> int -> rank -> Refpkg.t -> t
 end

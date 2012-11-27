@@ -161,6 +161,8 @@ module Classifier = struct
     classify_vec: Gsl_vector.vector;
   }
 
+  type rank = Rank of int | Auto_rank | All_ranks
+
   (* make a classifier from a preclassifier *)
   let make ?(n_boot = 100) ?map_file c =
     let open Preclassifier in
@@ -285,12 +287,7 @@ module Classifier = struct
           (Tax_taxonomy.get_rank_name td
            |- dprintf "automatically determined best rank: %s\n")
 
-  let of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rp =
-    let td = Refpkg.get_taxonomy rp
-    and rank_tax_map = rank_tax_map_of_refpkg rp in
-    let rank_idx =
-      if rank_idx = -1 then find_auto_rank td rank_tax_map else rank_idx
-    in
+  let _of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rank_tax_map rp =
     let preclassif = IntMap.find rank_idx rank_tax_map
       |> StringMap.values
       |> Tax_id.TaxIdSet.of_enum
@@ -322,5 +319,45 @@ module Classifier = struct
         |> Enum.iter (uncurry (Preclassifier.add_seq preclassif))
     end;
     make ?map_file ?n_boot preclassif
+
+  let _all_ranks_of_refpkg ?ref_aln ?n_boot word_length rp =
+    let td = Refpkg.get_taxonomy rp
+    and seqinfo = Refpkg.get_seqinfom rp in
+    let preclassif = Tax_id.TaxIdMap.keys td.Tax_taxonomy.tax_rank_map
+      |> Array.of_enum
+      |> Preclassifier.make Bigarray.int word_length
+    in
+    dprintf "counting sequences from refpkg %s.\n" (Refpkg.get_name rp);
+    let ref_aln = Option.default (Refpkg.get_aln_fasta rp) ref_aln in
+    let progress_fn =
+      progress_displayer
+        "counting reference sequence %s (%d/%d)..."
+        (Array.length ref_aln)
+    and expand_lineage (ti, seq) =
+      Tax_taxonomy.get_lineage td ti
+        |> List.enum
+        |> Enum.map (fun ti' -> ti', seq)
+    in
+    Array.enum ref_aln
+      |> Enum.map
+          (tap (fst |- progress_fn)
+           |- (Tax_seqinfo.tax_id_by_node_label seqinfo *** Alignment.ungap)
+           |- expand_lineage)
+      |> Enum.flatten
+      |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
+    make ?n_boot preclassif
+
+  let of_refpkg ?ref_aln ?n_boot ?map_file word_length rank rp =
+    let td = Refpkg.get_taxonomy rp
+    and rank_tax_map = rank_tax_map_of_refpkg rp in
+    match begin
+      match rank with
+      | Rank rank_idx -> Some rank_idx
+      | Auto_rank -> Some (find_auto_rank td rank_tax_map)
+      | All_ranks -> None
+    end with
+    | Some rank_idx ->
+      _of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rank_tax_map rp
+    | None -> _all_ranks_of_refpkg ?ref_aln ?n_boot word_length rp
 
 end

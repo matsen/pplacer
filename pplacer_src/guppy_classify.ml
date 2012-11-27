@@ -369,10 +369,11 @@ object (self)
       let nbc_rank = fv nbc_rank
       and children = fv children in
       let rank_idx = match nbc_rank with
-        | "auto" -> -1
+        | "auto" -> Nbc.Classifier.Auto_rank
+        | "all" -> Nbc.Classifier.All_ranks
         | _ ->
           try
-            Tax_taxonomy.get_rank_index td nbc_rank
+            Nbc.Classifier.Rank (Tax_taxonomy.get_rank_index td nbc_rank)
           with Not_found ->
             failwith (Printf.sprintf "invalid rank %s" nbc_rank)
       in
