@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import collections
 import itertools
 import argparse
 import logging
@@ -10,6 +11,9 @@ from taxtastic.taxtable import TaxNode
 from taxtastic.refpkg import Refpkg
 
 log = logging.getLogger(__name__)
+
+def group_by_name_and_mass(rows):
+    return itertools.groupby(rows, lambda row: (row['seqname'], int(row.get('mass', 1))))
 
 def main():
     logging.basicConfig(
@@ -35,24 +39,30 @@ def main():
             n_order = rank_order[n.rank]
             yield n, list(itertools.takewhile(lambda r: rank_order[r] >= n_order, rank_iter))
 
-    def multiclass_rows(placement_id, seq, taxon):
-        for node, want_ranks in full_lineage(taxtable.get_node(taxon)):
-            for want_rank in want_ranks:
-                yield (placement_id, seq, want_rank, node.rank, node.tax_id, 1)
+    def multiclass_rows(placement_id, seq, taxa):
+        ret = collections.defaultdict(float)
+        likelihood = 1. / len(taxa)
+        for taxon in taxa:
+            for node, want_ranks in full_lineage(taxtable.get_node(taxon)):
+                for want_rank in want_ranks:
+                    ret[placement_id, seq, want_rank, node.rank, node.tax_id] += likelihood
+        for k, v in sorted(ret.items()):
+            yield k + (v,)
 
     curs = args.classification_db.cursor()
     curs.execute('INSERT INTO runs (params) VALUES (?)', (' '.join(sys.argv),))
     run_id = curs.lastrowid
 
     log.info('inserting classifications')
-    for row in csv.DictReader(args.classifications):
+    for (name, mass), rows in group_by_name_and_mass(csv.DictReader(args.classifications)):
         curs.execute('INSERT INTO placements (classifier, run_id) VALUES ("csv", ?)', (run_id,))
         placement_id = curs.lastrowid
         curs.execute(
             'INSERT INTO placement_names (placement_id, name, origin, mass) VALUES (?, ?, ?, ?)',
-            (placement_id, row['seq'], args.classifications.name, int(row.get('mass', 1))))
+            (placement_id, name, args.classifications.name, mass))
+        taxa = [row['tax_id'] for row in rows]
         curs.executemany('INSERT INTO multiclass VALUES (?, ?, ?, ?, ?, ?)',
-                         multiclass_rows(placement_id, row['seq'], row['tax_id']))
+                         multiclass_rows(placement_id, name, taxa))
 
     log.info('cleaning up `multiclass` table')
     curs.execute("""

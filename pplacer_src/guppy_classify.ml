@@ -100,10 +100,9 @@ let filter_best ?multiclass_min cutoff cf =
     | _, None -> None
     | _, Some multiclass_min ->
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
-      (* AG: I don't understand this quite. Why do we want to take the ones that
-       * are less than multiclass_min? *)
+      (* Filter out the ones that are less than multiclass_min *)
       TIAMR.filter (fun l -> l >= multiclass_min) tiamr
-      (* let junction pred f g a = if pred a then f a else g a
+      (* `let junction pred f g a = if pred a then f a else g a`
        * So if we are in total less than the cutoff, then we keep the tiamr. *)
       |> junction
           (TIAMR.values |- Enum.fold (+.) 0. |- (fun s -> s >= cutoff))
@@ -382,10 +381,11 @@ object (self)
       let nbc_rank = fv nbc_rank
       and children = fv children in
       let rank_idx = match nbc_rank with
-        | "auto" -> -1
+        | "auto" -> Nbc.Classifier.Auto_rank
+        | "all" -> Nbc.Classifier.All_ranks
         | _ ->
           try
-            Tax_taxonomy.get_rank_index td nbc_rank
+            Nbc.Classifier.Rank (Tax_taxonomy.get_rank_index td nbc_rank)
           with Not_found ->
             failwith (Printf.sprintf "invalid rank %s" nbc_rank)
       in
