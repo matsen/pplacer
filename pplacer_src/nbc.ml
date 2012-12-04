@@ -197,7 +197,7 @@ module Classifier = struct
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
-  (* find the tax_id associated with a count vector *)
+  (* Find the tax_id associated with a count vector using the classifier cf. *)
   let classify_vec cf vec =
     let open Preclassifier in
     let dest = cf.classify_vec in
@@ -223,9 +223,13 @@ module Classifier = struct
   let classify cf ?like_rdp seq =
     count_seq cf ?like_rdp seq |> classify_vec cf
 
-  (* bootstrap a sequence, returning a map from tax_ids to a float on the range
+  (* Bootstrap a sequence, returning a map from tax_ids to a float on the range
    * (0, 1] representing the percentage of bootstrappings done that produced a
-   * particular tax_id. *)
+   * particular tax_id. As you can read about at the top of this file, we do
+   * bootstrapping a little differently than is traditional. We keep on
+   * sampling resamplings (that are effectively just determined once) until we
+   * get n_boot samples that are within the proper range. *)
+
   let bootstrap cf ?like_rdp seq =
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
@@ -241,6 +245,8 @@ module Classifier = struct
       cf.pc.n_words
     (* the expected number of occupied columns under bootstrapping *)
     and expected = (Linear.int_vec_tot seq_word_counts) / cf.pc.word_length
+    (* n_successes is the number of times we've gotten a re-sample that is
+      * within the proper range. *)
     and n_successes = ref 0 in
     let counts = 0 --^ boot_rows
     |> Enum.fold
