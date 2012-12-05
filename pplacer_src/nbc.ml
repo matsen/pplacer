@@ -75,7 +75,10 @@ let rank_tax_map_of_refpkg rp =
   |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
   |> Convex.gen_build_rank_tax_map StringMap.empty StringMap.add td some
 
-(* the thing that accumulates reference sequences before classification *)
+(* The preclassifier accumulates reference sequences before classification. When
+ * we add sequences to a preclassifier we update the various counts, which will
+ * allow us to generate the priors as well as allocate the correct size of
+ * taxid_word_counts matrix in the classifier.  *)
 module Preclassifier = struct
   type base = {
     word_length: int;
@@ -152,7 +155,10 @@ module Preclassifier = struct
 
 end
 
-(* the thing that does actual classification *)
+(* The classifier: the thing that actually holds the data for classification.
+ * The most important component is taxid_word_counts, which is indexed on the
+ * rows by the words and on the columns by the taxids.
+*)
 module Classifier = struct
   type t = {
     pc: Preclassifier.base;
