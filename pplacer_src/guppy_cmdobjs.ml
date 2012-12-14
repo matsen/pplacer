@@ -136,6 +136,9 @@ object (self)
     self#set_default_seed;
     Gsl_rng.make Gsl_rng.KNUTHRAN2002
 
+  method private random_state =
+    Random.State.make [| fv seed |]
+
 end
 
 

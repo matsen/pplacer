@@ -168,9 +168,10 @@ module Classifier = struct
   }
 
   (* make a classifier from a preclassifier *)
-  let make ?(n_boot = 100) ?map_file c =
+  let make ?(n_boot = 100) ?map_file ?rng c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
+    and rng = Option.default (Random.get_state ()) rng
     and boot_rows = n_boot * extra_boot_factor in
     let taxid_word_counts, fill_counts = match map_file with
       | Some (fd, also_write) ->
@@ -184,7 +185,7 @@ module Classifier = struct
         also_write
       | None -> Matrix.create c.base.n_words n_taxids, true
     and fill_boot_row vec =
-      Random.enum_int c.base.n_words
+      Random.State.enum_int rng c.base.n_words
       (* boot with 1/word_length of the words. this number of bootstrapped
        * columns is assumed below in the definition of `expected` in the
        * bootstrap function. *)
@@ -297,7 +298,7 @@ module Classifier = struct
           (Tax_taxonomy.get_rank_name td
            |- dprintf "automatically determined best rank: %s\n")
 
-  let of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rp =
+  let of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rp =
     let td = Refpkg.get_taxonomy rp
     and rank_tax_map = rank_tax_map_of_refpkg rp in
     let rank_idx =
@@ -333,6 +334,6 @@ module Classifier = struct
         |> Enum.filter_map (filter seq_tax_ids)
         |> Enum.iter (uncurry (Preclassifier.add_seq preclassif))
     end;
-    make ?map_file ?n_boot preclassif
+    make ?map_file ?n_boot ?rng preclassif
 
 end
