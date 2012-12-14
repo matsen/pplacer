@@ -310,7 +310,8 @@ object (self)
   method private nbc_classifier rp rank_idx infile =
     let query_aln = Alignment.upper_aln_of_any_file infile
     and n_boot = fv n_boot
-    and word_length = fv word_length in
+    and word_length = fv word_length
+    and rng = self#random_state in
     match fvo nbc_counts with
     | Some counts ->
       let map_file =
@@ -319,7 +320,7 @@ object (self)
         else
           Unix.openfile counts [Unix.O_RDWR; Unix.O_CREAT] 0o666, true
       in
-      Nbc.Classifier.of_refpkg ~n_boot ~map_file word_length rank_idx rp,
+      Nbc.Classifier.of_refpkg ~n_boot ~map_file ~rng word_length rank_idx rp,
       Array.to_list query_aln
     | None ->
       let ref_aln = Refpkg.get_aln_fasta rp in
@@ -342,7 +343,7 @@ object (self)
           Pplacer_run.premask Alignment.Nucleotide_seq ref_aln' query_list
         end
       in
-      Nbc.Classifier.of_refpkg ~ref_aln ~n_boot word_length rank_idx rp,
+      Nbc.Classifier.of_refpkg ~ref_aln ~n_boot ~rng word_length rank_idx rp,
       query_list
 
   method private placefile_action prl =

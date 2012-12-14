@@ -178,9 +178,10 @@ module Classifier = struct
   type rank = Rank of int | Auto_rank | All_ranks
 
   (* make a classifier from a preclassifier *)
-  let make ?(n_boot = 100) ?map_file c =
+  let make ?(n_boot = 100) ?map_file ?rng c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
+    and rng = Option.default (Random.get_state ()) rng
     and boot_rows = n_boot * extra_boot_factor in
     let taxid_word_counts, fill_counts = match map_file with
       | Some (fd, also_write) ->
@@ -194,7 +195,7 @@ module Classifier = struct
         also_write
       | None -> Matrix.create c.base.n_words n_taxids, true
     and fill_boot_row vec =
-      Random.enum_int c.base.n_words
+      Random.State.enum_int rng c.base.n_words
       (* boot with 1/word_length of the words. this number of bootstrapped
        * columns is assumed below in the definition of `expected` in the
        * bootstrap function. *)
@@ -301,7 +302,7 @@ module Classifier = struct
           (Tax_taxonomy.get_rank_name td
            |- dprintf "automatically determined best rank: %s\n")
 
-  let _of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rank_tax_map rp =
+  let _of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rank_tax_map rp =
     let preclassif = IntMap.find rank_idx rank_tax_map
       |> StringMap.values
       |> Tax_id.TaxIdSet.of_enum
@@ -332,9 +333,9 @@ module Classifier = struct
         |> Enum.filter_map (filter seq_tax_ids)
         |> Enum.iter (uncurry (Preclassifier.add_seq preclassif))
     end;
-    make ?map_file ?n_boot preclassif
+    make ?map_file ?n_boot ?rng preclassif
 
-  let _all_ranks_of_refpkg ?ref_aln ?n_boot word_length rp =
+  let _all_ranks_of_refpkg ?ref_aln ?n_boot ?rng word_length rp =
     let td = Refpkg.get_taxonomy rp
     and seqinfo = Refpkg.get_seqinfom rp in
     let preclassif = Tax_id.TaxIdMap.keys td.Tax_taxonomy.tax_rank_map
@@ -359,9 +360,9 @@ module Classifier = struct
            |- expand_lineage)
       |> Enum.flatten
       |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
-    make ?n_boot preclassif
+    make ?n_boot ?rng preclassif
 
-  let of_refpkg ?ref_aln ?n_boot ?map_file word_length rank rp =
+  let of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank rp =
     let td = Refpkg.get_taxonomy rp
     and rank_tax_map = rank_tax_map_of_refpkg rp in
     match begin
@@ -371,7 +372,7 @@ module Classifier = struct
       | All_ranks -> None
     end with
     | Some rank_idx ->
-      _of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rank_tax_map rp
-    | None -> _all_ranks_of_refpkg ?ref_aln ?n_boot word_length rp
+      _of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rank_tax_map rp
+    | None -> _all_ranks_of_refpkg ?ref_aln ?n_boot ?rng word_length rp
 
 end
