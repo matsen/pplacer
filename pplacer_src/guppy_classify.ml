@@ -437,14 +437,16 @@ object (self)
         |> List.fold_left StringMap.union StringMap.empty
 
     and default_filter_pplacer =
-      let multiclass_min = fv multiclass_min
+      let multiclass_min = match fv multiclass_min with
+        | v when v < 0.0 -> None
+        | v -> Some v
       and bayes_cutoff = fv bayes_cutoff
       and cutoff = fv cutoff in
       fun m ->
         if bayes_cutoff =~ 0. then
-          filter_best ~multiclass_min cutoff m
+          filter_best ?multiclass_min cutoff m
         else
-          filter_best_by_bayes ~multiclass_min bayes_cutoff m
+          filter_best_by_bayes ?multiclass_min bayes_cutoff m
     and perform_pplacer () =
       let pn_st = Sqlite3.prepare db
         "INSERT INTO placement_names VALUES (?, ?, ?, ?);"
