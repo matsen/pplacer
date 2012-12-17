@@ -216,6 +216,9 @@ let _ = dispatch begin function
       ["cdd_src/cdd.h"; "cdd_src/cddmp.h";
        "cdd_src/cddtypes.h"; "cdd_src/setoper.h"];
 
+    dep ["compile"; "c"]
+      ["lcfit_src/lcfit_tripod_c.h"];
+
     if not is_osx then
       flag ["link"; "ocaml"; "native"] (S[A"-cclib"; A"-lpthread"]);
 
@@ -232,11 +235,16 @@ let _ = dispatch begin function
     flag ["link"; "c_pam"]
       (S[A"-cclib"; A"-lpam"; A"-cclib"; A"-Lpam_src"]);
 
+    flag ["link"; "c_lcfit"]
+      (S[A"-cclib"; A"-llcfit"; A"-cclib"; A"-Llcfit_src"]);
+
     (* make libpplacercside when needed *)
     dep ["c_pplacer"] ["pplacer_src/libpplacercside.a"];
     dep ["c_cdd"] ["cdd_src/libcdd.a"];
     dep ["c_pam"] ["pam_src/libpam.a"];
     flag ["link"; "c_pam"] (S[A"-cclib"; A"-lgsl"]);
+    dep ["c_lcfit"] ["lcfit_src/liblcfit.a"];
+    flag ["link"; "c_lcfit"] (S[A"-cclib"; A"-lgsl"; A"-cclib"; A"-lgslcblas"]);
 
   | After_options ->
     setup_git_version ()
