@@ -37,7 +37,7 @@ wget $CDN/odb.ml
 ocaml odb.ml \
     --have-perms \
     --configure-flags-global "--datadir $PREFIX/share" \
-    ounit batteries csv xmlm zip mcl
+    oUnit batteries csv xmlm zip mcl
 
 # build pplacer.
 wget --no-check-certificate http://github.com/matsen/pplacer/tarball/master \
