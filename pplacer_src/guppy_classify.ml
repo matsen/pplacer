@@ -194,7 +194,7 @@ object (self)
   inherit rng_cmd () as super_rng
 
   val classifier = flag "--classifier"
-    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid', or 'rdp'. default: %s"))
+    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid2', 'hybrid5' or 'rdp'. default: %s"))
   val cutoff = flag "--cutoff"
     (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
   val bayes_cutoff = flag "--bayes-cutoff"
