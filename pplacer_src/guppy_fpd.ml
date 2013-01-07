@@ -87,6 +87,21 @@ let entropy_of_placerun ?include_pendant criterion pr =
   and quadro r bl = bl *. r *. (1. -. r) in
   ~-. (total phylo), total quadro
 
+(* Rooted qPD(T) and qD(T) from Chao et al. 2010 doi:10.1098/rstb.2010.0272 *)
+let chao_qpd_tmean_of_placerun ?include_pendant criterion exponent pr =
+  let t_mean_f r bl = (bump_with_root r) *. bl *. r in
+  let t_mean = total_along_mass ?include_pendant criterion pr t_mean_f in
+  let qpd r bl = (bump_with_root r) *. bl *. (r /. t_mean) ** exponent in
+  let r = total_along_mass ?include_pendant criterion pr qpd in
+  r ** (1. /. (1. -. exponent)), t_mean
+
+let chao_qpd_of_placerun ?include_pendant criterion exponent pr =
+  chao_qpd_tmean_of_placerun ?include_pendant criterion exponent pr |> fst
+
+let chao_qd_of_placerun ?include_pendant criterion exponent pr =
+  let (r, t_mean) = chao_qpd_tmean_of_placerun ?include_pendant criterion exponent pr in
+  r /. t_mean
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -98,12 +113,15 @@ object (self)
     (Plain ([], "A comma-separated list of additional exponents to use for calculating awpd."))
   val include_pendant = flag "--include-pendant"
     (Plain (false, "Consider pendant branch length in diversity calculations."))
+  val chao_d = flag "--chao-d"
+    (Plain ([], "A comma-separated list of additional exponents to use for calculating qD(T)."))
 
   method specl =
     super_mass#specl
     @ super_tabular#specl
     @ [
       delimited_list_flag kappa;
+      delimited_list_flag chao_d;
       toggle_flag include_pendant;
     ]
 
@@ -112,24 +130,29 @@ object (self)
 
   method private placefile_action prl =
     let exponents = fv kappa |> List.map float_of_string
+    and d_exponents = fv chao_d |> List.map float_of_string
     and criterion = self#criterion
     and include_pendant = fv include_pendant in
     let awpd = awpd_of_placerun ~include_pendant criterion
+    and qd = chao_qd_of_placerun ~include_pendant criterion
     and pd = pd_of_placerun ~include_pendant criterion
     and rpd = pd_of_placerun ~include_pendant ~bump:bump_with_root criterion
     and entropy = entropy_of_placerun ~include_pendant criterion in
     prl
       |> List.map
           (fun pr ->
-            let pe, qe = entropy pr in
+            let pe, qe = entropy pr
+            and qds = List.map (flip qd pr) d_exponents in
             [pe; qe; pd pr; rpd pr; awpd 1. pr]
             |> (flip List.append (List.map (flip awpd pr) exponents))
+            |> (flip List.append qds)
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
           (["placerun"; "phylo_entropy"; "quadratic"; "unrooted_pd";
             "rooted_pd"; "awpd"]
-           @ List.map (Printf.sprintf "awpd_%g") exponents)
+           @ List.map (Printf.sprintf "awpd_%g") exponents
+           @ List.map (Printf.sprintf "rooted_qd_%g") d_exponents)
       |> self#write_ll_tab
 
 end
