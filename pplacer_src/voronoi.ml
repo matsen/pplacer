@@ -407,7 +407,7 @@ let mark_map gt =
         i,
         List.map aux subtrees
           |> List.split
-          |> (List.reduce IntSet.union *** List.reduce IntMap.union)
+          |> (Tuple2.map (List.reduce IntSet.union) (List.reduce IntMap.union))
     in
     if i = top then
       leaves_below, markm
@@ -434,7 +434,7 @@ let mark_map gt =
               |> Enum.filter (fun d -> abs_float (d -. p) < bl)
               |> Enum.map (fun d -> (bl -. d +. p) /. 2.))
         |> Enum.flatten
-        |> Enum.filter (not -| approx_equal bl)
+        |> Enum.filter (not % approx_equal bl)
         |> List.of_enum
         |> List.sort_unique compare
         |> flip (IntMap.add i) markm
@@ -468,7 +468,7 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
          | _ -> ((b, m), sol) :: accum)
         []
     |> List.split
-    |> (Array.of_list *** Array.of_list)
+    |> Tuple2.map Array.of_list Array.of_list
   in
   if Array.length sola < 2 then begin
     if verbose then
@@ -497,7 +497,7 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
   end
 
 (* a polymorphic map for keys of int, bool *)
-let empty_solmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
+let empty_solmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.PMap.create
 let solmap_key = leaf_card &&& is_rmp
 
 (* cull solutions from an enum of solutions down to a list of strictly the
@@ -509,10 +509,10 @@ let cull mass_above (minleaf, maxleaf) ?(verbose = false) sols =
   Enum.fold
     (fun solm sol ->
       incr count;
-      Map.modify_def [] (solmap_key sol) (List.cons sol) solm)
+      Map.PMap.modify_def [] (solmap_key sol) (List.cons sol) solm)
     empty_solmap
     sols
-  |> Map.enum
+  |> Map.PMap.enum
   |> Enum.map
       (junction
          (fst |- snd)

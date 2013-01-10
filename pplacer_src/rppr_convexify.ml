@@ -138,7 +138,7 @@ object (self)
      * alternate_colors, which won't have NoTax fed into it. *)
     let tax_name = Tax_taxonomy.get_tax_name td in
     let foldf alternates data =
-      let taxmap' = IntMap.filteri
+      let taxmap' = IntMap.filter
         (fun k _ -> IntSet.mem k data.not_cut)
         data.taxmap
       in

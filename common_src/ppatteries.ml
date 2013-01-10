@@ -73,16 +73,23 @@ let to_csv_in ch = object
 end
 let csv_in_channel ch = new IO.in_channel ch |> to_csv_in
 
+let first = Tuple.Tuple2.map1
+let second = Tuple.Tuple2.map2
+
 let some x = Some x
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
 let junction pred f g a = if pred a then f a else g a
 let fold_both f g a (x, y) = f a x, g a y
+(* Replaced by '%>' in batteries 2.0 final.
+ * Maintained to preserve operator precedence in existing code *)
+let (|-) f g x = g (f x)
 let (|--) f g a b = g (f a b)
-let (|~) = (-|)
+let (|~) = (%)
 let (||-) f g a = f a || g a
 let (||--) f g a b = f a b || g a b
+let ( &&& ) f g = fun x -> (f x, g x) (* removed in batteries 2.0 final *)
 let (&&-) f g a = f a && g a
 let (&&--) f g a b = f a b && g a b
 
@@ -115,7 +122,7 @@ let dprint ?l ?flush = dfprint ?l ?flush stdout
 let deprint ?l ?flush = dfprint ?l ?flush stderr
 
 let align_with_space =
-  List.map (Tuple3.map3 ((^) " ")) |- Arg.align
+  List.map (Tuple3.map3 ((^) " ")) %> Arg.align
 
 let progress_displayer ?(update_interval = 0.3) fmt total =
   let shown = ref 0
@@ -305,11 +312,11 @@ module Sparse = struct
 
   let gen_parsers tokenize parse =
     let of_string ?fname s =
-      wrap_of_fname_opt fname (tokenize |- parse) s
+      wrap_of_fname_opt fname (tokenize %> parse) s
     and of_file fname =
       file_parse_wrap
         fname
-        (File.lines_of |- Enum.map tokenize |- Enum.flatten |- parse)
+        (File.lines_of %> Enum.map tokenize |- Enum.flatten |- parse)
         fname
     in
     of_string, of_file
@@ -466,7 +473,7 @@ module ListFuns = struct
      - : (int * int list) list = [(1, [2; 3]); (2, [1; 3]); (3, [1; 2])]
   *)
   let pull_each_out l =
-    ((List.remove |- ((&&&) identity)) &&& identity |- uncurry List.map) l
+    ((List.remove %> ((&&&) identity)) &&& identity |- uncurry List.map) l
 
   (* from a Pascal Cuoq post on stack overflow *)
   let rec sublist begini endi l =
@@ -646,7 +653,7 @@ module EnumFuns = struct
     let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
     let n = Array.length pool in
     let indices = Array.make n 0
-    and lengths = Array.map (Array.length |- (+) (-1)) pool in
+    and lengths = Array.map (Array.length %> (+) (-1)) pool in
     let rec update_indices = function
       | i when indices.(i) <> lengths.(i) ->
         indices.(i) <- indices.(i) + 1

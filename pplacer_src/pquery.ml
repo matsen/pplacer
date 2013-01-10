@@ -139,7 +139,7 @@ let renormalize_log_like =
     pl
     |> List.map (getter &&& identity)
     |> List.partition (fst |- Option.is_some)
-    |> Tuple2.mapn
+    |> Tuple2.map
         (List.split
          |- first (List.map Option.get |- ll_normalized_prob)
          |- uncurry (List.map2 setter))

@@ -33,7 +33,7 @@ let trim min_mass rewrite_discarded_mass weighting criterion gt pql =
       | Node (_, subtrees) ->
         match List.map (aux mass_above') subtrees
           |> List.split
-          |> (List.filter_map identity *** List.reduce IntMap.union)
+          |> (Tuple2.map (List.filter_map identity) (List.reduce IntMap.union))
         with
           | [], transm ->
             None,

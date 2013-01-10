@@ -96,7 +96,7 @@ object (self)
       |> flip IntSet.diff not_cut
     in
     let notax_colors = IntSet.fold (flip IntMap.add Tax_id.NoTax) cut colors in
-    let uncolored_colors = IntMap.filter ((<>) Tax_id.NoTax) notax_colors in
+    let uncolored_colors = IntMap.filterv ((<>) Tax_id.NoTax) notax_colors in
     let notax_sizemim, _ = build_sizemim_and_cutsetim (notax_colors, st) in
     let st' = Rppr_infer.prune_notax notax_sizemim st in
     let gt' = Gtree.set_stree gt st' in

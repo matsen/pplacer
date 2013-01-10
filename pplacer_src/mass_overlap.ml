@@ -22,7 +22,7 @@ let of_pql criterion pql =
   |> IntMap.iter (fun _ samr ->
     let names, weights = SAMR.enum samr
     |> Enum.uncombine
-    |> Tuple2.mapn Array.of_enum Array.of_enum
+    |> Tuple2.map Array.of_enum Array.of_enum
     in
     Uptri.init
       (Array.length names)

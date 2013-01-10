@@ -198,7 +198,7 @@ let of_json_file fname =
     (Pquery_io.of_json fields)
     (Jsontype.array (Hashtbl.find json "placements"))
   and transm = meta
-    |> Option.bind (flip Hashtbl.find_option "transm")
+    |> (flip Option.bind (flip Hashtbl.find_option "transm"))
     |> Option.map transm_of_json
   in
   Placerun.make

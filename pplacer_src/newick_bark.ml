@@ -29,7 +29,7 @@ let quote_label s =
     s
   in if !replaced then Printf.sprintf "'%s'" s' else s'
 
-let maybe_float = Option.bind (Result.catch float_of_string |- Result.to_option)
+let maybe_float = flip Option.bind (Result.catch float_of_string |- Result.to_option)
 
 class newick_bark arg =
 

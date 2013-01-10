@@ -106,7 +106,7 @@ object (self)
     let not_cut = Convex.nodeset_of_phi_and_tree phi st in
     (* reroot after pruning the tree down to that convex subset of leaves. *)
     Gtree.get_bark_map gt
-      |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
+      |> IntMap.filter (flip IntSet.mem not_cut |> const |> flip)
       |> Gtree.set_bark_map gt
       |> find_root rp
       |> tap (dprintf "root found at node %d\n")

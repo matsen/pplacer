@@ -57,7 +57,7 @@ let keymap_add_by f m =
 (* This is the equivalent to filtering by `rank = desired_rank` in the
  * old best_classifications view. *)
 let tiamr_at_rank td rank tiamr =
-  TIAMR.filteri (fun ti _ -> Tax_taxonomy.get_tax_rank td ti = rank) tiamr
+  TIAMR.filter (fun ti _ -> Tax_taxonomy.get_tax_rank td ti = rank) tiamr
   |> junction TIAMR.is_empty (const None) some
 
 (* From a map from the edges to the confidence we have in their placements,
@@ -101,7 +101,7 @@ let filter_best ?multiclass_min cutoff cf =
     | _, Some multiclass_min ->
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
       (* Filter out the ones that are less than multiclass_min *)
-      TIAMR.filter (fun l -> l >= multiclass_min) tiamr
+      TIAMR.filterv (fun l -> l >= multiclass_min) tiamr
       (* `let junction pred f g a = if pred a then f a else g a`
        * So if we are in total less than the cutoff, then we keep the tiamr. *)
       |> junction
@@ -131,7 +131,7 @@ let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
     | Some multiclass_min ->
       IntMap.filter_map
         (fun _ t ->
-          TIAMR.filter (fun l -> l >= multiclass_min) t.tiamr
+          TIAMR.filterv (fun l -> l >= multiclass_min) t.tiamr
           |> junction TIAMR.is_empty (const None) (set_tiamr t |- some)))
   |> set_tiamrim cf
 
@@ -384,7 +384,7 @@ object (self)
             |> Tax_taxonomy.get_lineage td
             |> flip List.mem
           in
-          TIAMR.filteri (fun tid _ -> on_lineage tid)
+          TIAMR.filter (fun tid _ -> on_lineage tid)
             |- junction TIAMR.is_empty (const None) some
             |> const
             |> IntMap.filter_map
