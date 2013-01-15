@@ -41,7 +41,7 @@
    input alignment containing some, but not all reference sequence names.
  * Closed GH-291: Added qD(T) alpha diversity measure from Chao et. al., 2010
    (doi:10.1098/rstb.2010.0272)
-
+ * Closed GH-293: Switched build system to use OPAM
 
 1.1.alpha13
 ===========
