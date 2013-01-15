@@ -9,7 +9,6 @@ Compiling pplacer from source
 
 Compiling ``pplacer`` requires a number of libraries and tools to be installed:
 
-* `git <http://www.git-scm.com/>`_
 * `GNU Scientific Library (GSL)`_
 * `libsqlite3 <http://www.sqlite.org>`_
 * make
@@ -25,7 +24,6 @@ On Debian/Ubuntu, these can be installed with:
     apt-get install -y \
       camlp4-extra \
       gawk \
-      git-core \
       libgsl0-dev \
       libsqlite3-dev \
       m4 \
@@ -47,7 +45,7 @@ Once OPAM is installed, it needs to be configured:
 .. code-block:: bash
 
     opam init
-    opam repo add pplacer-deps https://github.com/matsen/pplacer-opam-repository.git
+    opam repo add pplacer-deps http://matsen.github.com/pplacer-opam-repository
     opam update pplacer-deps
     eval `opam config env`
 
