@@ -7,7 +7,7 @@
 * [project webpage (with compiled binaries)](http://matsen.fhcrc.org/pplacer/)
 * [documentation](http://matsen.github.com/pplacer/)
 * [tutorial](http://fhcrc.github.com/microbiome-demo/)
-* [compilation instructions](http://matsen.github.com/pplacer/index.html#compiling-pplacer)
+* [compilation instructions](http://matsen.github.com/pplacer/compiling.rst)
 
 `pplacer` and `guppy` are free software under the GPL v3.
 
