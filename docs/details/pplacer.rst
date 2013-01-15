@@ -481,7 +481,7 @@ get cleaned up.
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
-.. _taxtastic: http://github.com/fhcrc/taxtastic/
+.. _taxtastic: https://github.com/fhcrc/taxtastic/
 .. _JSON: http://www.json.org/
 .. _PHYML: http://www.atgc-montpellier.fr/phyml/
 .. _RAxML: http://sco.h-its.org/exelixis/software.html
