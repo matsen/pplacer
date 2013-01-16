@@ -22,7 +22,7 @@ let suite = [
     List.fold_left
       (fun prev_edges (max_edge_d, edge_changes) ->
         let expected_edges = IntSet.of_list edge_changes
-          |> IntSet.sdiff prev_edges
+          |> IntSet.sym_diff prev_edges
         and got_edges = Guppy_cmdobjs.find_rep_edges max_edge_d fal gt in
         assert_equal ~printer ~cmp:IntSet.equal expected_edges got_edges;
         expected_edges)

@@ -73,8 +73,8 @@ let suite = [
     let colors = IntMap.filter_map
       (fun _ value ->
         value#get_node_label_opt
-          |> Option.bind
-              (function "X" -> None | x -> Some (Tax_id.of_string x)))
+          |> (flip Option.bind
+              (function "X" -> None | x -> Some (Tax_id.of_string x))))
       bm
     in
     let alt_colors = alternate_colors (colors, st) in
