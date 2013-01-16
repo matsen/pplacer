@@ -322,7 +322,7 @@ object (self)
           in
           let query_aln', ref_aln' =
             Pplacer_run.partition_queries ref_name_set query_aln
-              |> second (Option.default ref_aln)
+              |> Tuple.Tuple2.map2 (Option.default ref_aln)
           in
           let n_sites = Alignment.length ref_aln'
           and query_list = Array.to_list query_aln' in
@@ -427,7 +427,7 @@ object (self)
       Multiprocessing.map
         ~children
         ~progress_handler
-        (tap (fst |- print_endline) |- second bootstrap)
+        (tap (fst |- print_endline) |- Tuple.Tuple2.map2 bootstrap)
         query_list
       |> List.fold_left (uncurry classify |> flip) StringMap.empty
     and perform_nbc () =

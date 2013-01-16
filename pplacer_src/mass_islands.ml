@@ -55,7 +55,7 @@ let of_pql ?(discard_below = 0.) criterion pql =
             accum')
         (None, [])
         accum
-      |> first (Option.default (pq_edges, [pq]))
+      |> Tuple.Tuple2.map1 (Option.default (pq_edges, [pq]))
       |> uncurry List.cons)
     []
     pql

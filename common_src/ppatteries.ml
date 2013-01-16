@@ -73,8 +73,8 @@ let to_csv_in ch = object
 end
 let csv_in_channel ch = new IO.in_channel ch |> to_csv_in
 
-let first = Tuple.Tuple2.map1
-let second = Tuple.Tuple2.map2
+(*let first = Tuple.Tuple2.map1*)
+(*let second = Tuple.Tuple2.map2*)
 
 let some x = Some x
 let on f g a b = g (f a) (f b)

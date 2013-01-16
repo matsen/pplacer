@@ -80,7 +80,7 @@ object (self)
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl) in
     let full_combol = List.map
-      (second
+      (Tuple.Tuple2.map2
          (expand const_orig_length const_reduction_map
           |- expand rep_orig_length rep_reduction_map))
       combol

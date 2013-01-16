@@ -17,7 +17,7 @@ let ns_prefix = function
   | _ -> None
 
 let rec emit_tag out {name; attrs; contents; children} =
-  out (`El_start (phyns name, List.map (first phyns) attrs));
+  out (`El_start (phyns name, List.map (Tuple.Tuple2.map1 phyns) attrs));
   if contents <> "" then out (`Data contents);
   List.iter (emit_tag out) children;
   out `El_end

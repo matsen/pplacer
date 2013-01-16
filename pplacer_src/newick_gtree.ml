@@ -190,7 +190,7 @@ let consolidate gt =
   in
   let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
   let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
-  gt', IntMap.map (flip IntMap.find transm' |> first) transm
+  gt', IntMap.map (flip IntMap.find transm' |> Tuple.Tuple2.map1) transm
 
 let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   let open Stree in
@@ -199,7 +199,7 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   and name = Gtree.get_node_label gt in
   let rec aux attachment_opt = function
     | Leaf i when should_prune i ->
-      let loc, pend_bl = Option.get attachment_opt |> second ((+.) (bl i)) in
+      let loc, pend_bl = Option.get attachment_opt |> Tuple.Tuple2.map2 ((+.) (bl i)) in
       let pq = Pquery.make_ml_sorted
         ~namlom:[name i, 1.]
         ~seq:Pquery_io.no_seq_str
@@ -222,9 +222,9 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
           maybe_cons t_opt st_accum, List.append pql pql_accum)
         ([], [])
         subtrees
-      |> first (if pruned then const None else node i |- some)
+      |> Tuple.Tuple2.map1 (if pruned then const None else node i |- some)
   in
-  let gt', pql = aux None st |> first (Option.get |- Gtree.set_stree gt) in
+  let gt', pql = aux None st |> Tuple.Tuple2.map1 (Option.get |- Gtree.set_stree gt) in
   let replace_root_placement =
     let open Placement in
     let top, location = match Gtree.get_stree gt' with

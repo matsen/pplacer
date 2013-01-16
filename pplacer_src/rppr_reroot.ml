@@ -41,7 +41,7 @@ let find_root rp gt =
               | Some mrca -> Some (mrca, Some node)
               | None -> None)
         |> maybe_map_cons (None |> (curry identity |> flip)) top_mrca
-        |> List.map (Tax_taxonomy.get_tax_rank td |> first)
+        |> List.map (Tax_taxonomy.get_tax_rank td |> Tuple.Tuple2.map1)
         |> List.sort compare
       in
       let at = List.at subrks |- fst in

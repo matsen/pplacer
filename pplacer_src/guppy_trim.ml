@@ -37,11 +37,11 @@ let trim min_mass rewrite_discarded_mass weighting criterion gt pql =
         with
           | [], transm ->
             None,
-            IntMap.map (second ((+.) (bl i))) transm
+            IntMap.map (Tuple.Tuple2.map2 ((+.) (bl i))) transm
             |> IntMap.add i (None, bl i)
           | subtrees', transm ->
             Some (node i subtrees'),
-            IntMap.map (first (function None -> Some i | x -> x)) transm
+            IntMap.map (Tuple.Tuple2.map1 (function None -> Some i | x -> x)) transm
   in
   let st', pre_transm = Gtree.get_stree gt |> aux 0. in
   let pql =

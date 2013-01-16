@@ -95,7 +95,7 @@ let make_pp_sorted = make Placement.post_prob
 let uniform_namel namel = List.map (identity &&& const 1.) namel
 let set_mass pq m =
   let names = List.length pq.namlom |> float_of_int in
-  { pq with namlom = List.map (second (const (m /. names))) pq.namlom }
+  { pq with namlom = List.map (Tuple.Tuple2.map2 (const (m /. names))) pq.namlom }
 let set_namlom pq nm = { pq with namlom = nm }
 
 let apply_to_place_list f pq =
@@ -141,7 +141,7 @@ let renormalize_log_like =
     |> List.partition (fst |- Option.is_some)
     |> Tuple2.map
         (List.split
-         |- first (List.map Option.get |- ll_normalized_prob)
+         |- Tuple.Tuple2.map1 (List.map Option.get |- ll_normalized_prob)
          |- uncurry (List.map2 setter))
         (List.map snd)
     |> uncurry List.append

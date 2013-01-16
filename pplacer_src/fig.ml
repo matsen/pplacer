@@ -44,7 +44,7 @@ type fold_state = {
 (** add_edge_to_figs: int -> fig list -> fig list
     Given an edge and a list of figs, add the edge to each fig in the list. *)
 let add_edge_to_figs i fl =
-  List.map (IntSet.add i |> second) fl
+  List.map (IntSet.add i |> Tuple.Tuple2.map2) fl
 
 (** fold_figs: (int * fig_state) list -> fold_state
     Part of determining the figs on a tree: at each node, this is used to
@@ -121,7 +121,7 @@ let uniquifier () =
     yielded with its score. *)
 let _enum_by_score figl score_func strike_box =
   let uniquify = uniquifier () in
-  let fig_enum = List.map (first score_func) figl
+  let fig_enum = List.map (Tuple.Tuple2.map1 score_func) figl
     |> List.sort (comparing fst |> flip)
     |> List.enum
   in
