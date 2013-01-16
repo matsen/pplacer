@@ -2,7 +2,7 @@ csv.1.2.2
 ounit.1.1.2
 xmlm.1.1.1
 mcl.12-068
-batteries.2.0beta1
+batteries.2.0.0
 ocaml-gsl.0.6.3
 sqlite3-ocaml.1.6.3
 camlzip.1.05
