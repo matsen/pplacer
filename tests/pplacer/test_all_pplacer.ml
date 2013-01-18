@@ -12,4 +12,5 @@ let suite = [
   "painting" >::: Test_painting.suite;
   "newick_parser" >::: Test_newick_parser.suite;
   "ppatteries" >::: Test_ppatteries.suite;
+  "lcfit" >::: Test_lcfit.suite;
 ]

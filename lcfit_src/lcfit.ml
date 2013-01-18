@@ -31,5 +31,3 @@ let run_test() =
   let test_model = {n00=1500.;n01=300.;n10=300.;n11=300.;r=1.;b=0.5;t=0.390296;rx=1.;bx=0.5} in
   let scaled = rescale (0.1, 0.1, -4000.0) test_model in
   Printf.printf "%f -> %f\n" test_model.n00 scaled.n00
-
-let () = run_test()
