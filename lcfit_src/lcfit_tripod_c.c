@@ -256,7 +256,7 @@ lcfit_tripod_ll(const double c, const double tx, const tripod_bsm_t* m)
  * \param c  Proximal branch length
  * \param tx Pendant branch length
  * \param m  Model
- * \return The jacobian, length 9
+ * \return The jacobian, length 8
  */
 double*
 lcfit_tripod_jacobian(const double c, const double tx, const tripod_bsm_t* m)
@@ -452,7 +452,7 @@ lcfit_tripod_jacobian(const double c, const double tx, const tripod_bsm_t* m)
     R0_69 = R0_62 * R0_24;
     R0_71 = R0_62 * R0_8;
 
-    double *result = malloc(sizeof(double) * TRIPOD_BSM_NPARAM);
+    double *result = malloc(sizeof(double) * TRIPOD_BSM_NVARYING);
     assert(result != NULL && "failed malloc");
     result[0] = R0_65;
     result[1] = R0_66;
@@ -460,9 +460,13 @@ lcfit_tripod_jacobian(const double c, const double tx, const tripod_bsm_t* m)
     result[3] = R0_68;
     result[4] = R0_64;
     result[5] = R0_70;
-    result[6] = R0_72;
-    result[7] = R0_69;
-    result[8] = R0_71;
+    result[6] = R0_69;
+    result[7] = R0_71;
+
+    /* result[6] is df/dt; t is constant */
+    /*result[6] = R0_72;*/
+    /*result[7] = R0_69;*/
+    /*result[8] = R0_71;*/
     return result;
 }
 
