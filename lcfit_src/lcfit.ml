@@ -11,16 +11,16 @@ type tripod_bsm = {n00: float; n01: float; n10: float; n11: float;
                    bx:  float}
 
 (* Evaluate the log-likelihood of the BSM given c, tx, and the model *)
-external log_like: float -> float -> tripod_bsm -> float = "caml_lcfit_tripod_ll"
+external log_like: tripod_bsm -> float -> float -> float = "caml_lcfit_tripod_ll"
 
 (* Fit the BSM given vectors of (c, tx, log_like) and an initial estimate of the
    model *)
-external fit: float_vector -> float_vector -> float_vector ->
-  tripod_bsm -> tripod_bsm = "caml_lcfit_tripod_fit"
+external fit: tripod_bsm -> float_vector -> float_vector -> float_vector ->
+  tripod_bsm = "caml_lcfit_tripod_fit"
 
 (* Rescale m to intersect with (c, tx, ll) *)
 let rescale (c, tx, ll) m =
-  let est_ll = log_like c tx m in
+  let est_ll = log_like m c tx in
   let fac = ll /. est_ll in
   {m with n00=m.n00 *. fac;
     n01=m.n01 *. fac;

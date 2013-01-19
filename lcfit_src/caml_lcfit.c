@@ -35,9 +35,9 @@
       Double_field(model, 8) };
 
 CAMLprim value
-caml_lcfit_tripod_ll(value c_value, value tx_value, value model)
+caml_lcfit_tripod_ll(value model, value c_value, value tx_value)
 {
-    CAMLparam3(c_value, tx_value, model);
+    CAMLparam3(model, c_value, tx_value);
 
     double c = Double_val(c_value), tx = Double_val(tx_value);
 
@@ -50,9 +50,9 @@ caml_lcfit_tripod_ll(value c_value, value tx_value, value model)
 }
 
 CAMLprim value
-caml_lcfit_tripod_fit(value c_value, value tx_value, value l_value, value model)
+caml_lcfit_tripod_fit(value model, value c_value, value tx_value, value l_value)
 {
-    CAMLparam4(c_value, tx_value, l_value, model);
+    CAMLparam4(model, c_value, tx_value, l_value);
     size_t c_n  = Bigarray_val(c_value)->dim[0],
            tx_n = Bigarray_val(tx_value)->dim[0],
            l_n  = Bigarray_val(l_value)->dim[0];
