@@ -193,7 +193,7 @@ lcfit_tripod_ll(const double c, const double tx, const tripod_bsm_t* m)
     R0_7 = m->t;
     R0_8 = m->rx;
     R0_9 = m->bx;
-    R0_10 =tx;
+    R0_10 = tx;
     R0_11 = R0_5 + R0_6;
     R0_12 = R0_11 * R0_4;
     R0_13 = -R0_12;

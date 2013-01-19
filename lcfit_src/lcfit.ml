@@ -16,16 +16,16 @@ external log_like: float -> float -> tripod_bsm -> float = "caml_lcfit_tripod_ll
 (* Fit the BSM given vectors of (c, tx, log_like) and an initial estimate of the
    model *)
 external fit: float_vector -> float_vector -> float_vector ->
-    tripod_bsm -> tripod_bsm = "caml_lcfit_tripod_fit"
+  tripod_bsm -> tripod_bsm = "caml_lcfit_tripod_fit"
 
 (* Rescale m to intersect with (c, tx, ll) *)
 let rescale (c, tx, ll) m =
-    let est_ll = log_like c tx m in
-    let fac = ll /. est_ll in
-    {m with n00=m.n00 *. fac;
-            n01=m.n01 *. fac;
-            n10=m.n10 *. fac;
-            n11=m.n11 *. fac}
+  let est_ll = log_like c tx m in
+  let fac = ll /. est_ll in
+  {m with n00=m.n00 *. fac;
+    n01=m.n01 *. fac;
+    n10=m.n10 *. fac;
+    n11=m.n11 *. fac}
 
 let run_test() =
   let test_model = {n00=1500.;n01=300.;n10=300.;n11=300.;r=1.;b=0.5;t=0.390296;rx=1.;bx=0.5} in
