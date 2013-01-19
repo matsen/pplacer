@@ -316,7 +316,7 @@ module Sparse = struct
     and of_file fname =
       file_parse_wrap
         fname
-        (File.lines_of %> Enum.map tokenize |- Enum.flatten |- parse)
+        (File.lines_of %> Enum.map tokenize %> Enum.flatten %> parse)
         fname
     in
     of_string, of_file
@@ -472,8 +472,13 @@ module ListFuns = struct
      # pull_each_out [1;2;3];;
      - : (int * int list) list = [(1, [2; 3]); (2, [1; 3]); (3, [1; 2])]
   *)
-  let pull_each_out l =
-    ((List.remove %> ((&&&) identity)) &&& identity |- uncurry List.map) l
+  let pull_each_out init_list =
+    let rec aux all_pairs start = function
+      | x::l ->
+          aux ((x, List.rev_append start l)::all_pairs) (x::start) l
+      | [] -> all_pairs
+    in
+    List.rev (aux [] [] init_list)
 
   (* from a Pascal Cuoq post on stack overflow *)
   let rec sublist begini endi l =

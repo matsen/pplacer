@@ -82,7 +82,7 @@ object (self)
     let full_combol = List.map
       (Tuple.Tuple2.map2
          (expand const_orig_length const_reduction_map
-          |- expand rep_orig_length rep_reduction_map))
+          %> expand rep_orig_length rep_reduction_map))
       combol
     in
     Phyloxml.named_gtrees_to_file

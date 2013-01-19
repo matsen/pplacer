@@ -101,7 +101,7 @@ object (self)
       |> Newick_gtree.add_zero_root_bl
     and weighting, criterion = self#mass_opts in
     let pr, discarded_reads = prl
-    |> List.map (Placerun.unitize |- Placerun.get_pqueries)
+    |> List.map (Placerun.unitize %> Placerun.get_pqueries)
     |> List.flatten
     |> trim
         (fv min_path_mass)

@@ -34,7 +34,7 @@ object (self)
             let pr_name = Placerun.get_name pr in
             Placerun.get_pqueries pr
             |> List.enum
-            |> Enum.map (Pquery.namel |- List.enum)
+            |> Enum.map (Pquery.namel %> List.enum)
             |> Enum.flatten
             |> Enum.map (fun name -> [name; pr_name]))
           |> Enum.flatten

@@ -22,7 +22,7 @@ let of_refpkg: Refpkg.t -> Tax_id.t IntMap.t = fun rp ->
   (* rankmap is an edge-number-indexed map of rank-indexed maps of cutsetims for
    * the corresponding edge number and rank. *)
   let rankmap = rank_tax_map_of_refpkg rp
-    |> IntMap.map (flip (curry build_sizemim_and_cutsetim) st |- snd)
+    |> IntMap.map (flip (curry build_sizemim_and_cutsetim) st %> snd)
   in
   let highest_rank, _ = IntMap.max_binding rankmap in
   node_ids st

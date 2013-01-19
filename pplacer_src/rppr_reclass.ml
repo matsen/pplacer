@@ -29,7 +29,7 @@ let uninformative_nodes top_sizem sizemim st =
     | Node (i, subtrees) :: rest ->
       let accum' =
         if IntSet.mem i accum then
-          List.fold_left (top_id |- IntSet.add |> flip) accum subtrees
+          List.fold_left (top_id %> IntSet.add |> flip) accum subtrees
         else accum
       and rest' = List.append rest subtrees in
       aux accum' rest'

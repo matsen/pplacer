@@ -37,7 +37,7 @@ let force_namel = namel
 let multiplicity p = List.map snd p.namlom |> List.fsum
 
 let total_multiplicity =
-  List.fold_left (multiplicity |- (+.) |> flip) 0.
+  List.fold_left (multiplicity %> (+.) |> flip) 0.
 
 let opt_best_something thing criterion pq =
   match place_list pq with
@@ -138,15 +138,15 @@ let renormalize_log_like =
   let update getter setter pl =
     pl
     |> List.map (getter &&& identity)
-    |> List.partition (fst |- Option.is_some)
+    |> List.partition (fst %> Option.is_some)
     |> Tuple2.map
         (List.split
-         |- Tuple.Tuple2.map1 (List.map Option.get |- ll_normalized_prob)
-         |- uncurry (List.map2 setter))
+         %> Tuple.Tuple2.map1 (List.map Option.get %> ll_normalized_prob)
+         %> uncurry (List.map2 setter))
         (List.map snd)
     |> uncurry List.append
   in
-  update (ml_ratio |- some) (fun ml_ratio p -> {p with ml_ratio})
+  update (ml_ratio %> some) (fun ml_ratio p -> {p with ml_ratio})
   |- update post_prob_opt (fun pp p -> {p with post_prob = Some pp})
   |> apply_to_place_list
 

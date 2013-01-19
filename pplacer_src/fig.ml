@@ -127,8 +127,8 @@ let _enum_by_score figl score_func strike_box =
   in
   Enum.map
     (fun (score, edges) ->
-      Enum.take_while (fst |- approx_equal ~epsilon:strike_box score) fig_enum
-        |> Enum.fold (snd |- IntSet.union |> flip) edges
+      Enum.take_while (fst %> approx_equal ~epsilon:strike_box score) fig_enum
+        |> Enum.fold (snd %> IntSet.union |> flip) edges
         |> uniquify
         |> IntSet.elements
         |> List.map (score_func &&& identity)
@@ -154,7 +154,7 @@ let enum_all = function
   | Figs fl ->
     let uniquify = uniquifier () in
     List.enum fl
-      |> Enum.map (snd |- uniquify |- IntSet.enum)
+      |> Enum.map (snd %> uniquify %> IntSet.enum)
       |> Enum.flatten
 
 (** length: t -> int
