@@ -580,10 +580,6 @@ lcfit_tripod_fit_bsm(const size_t n_pts, const double* c, const double* tx, cons
     do {
         iter++;
         status = gsl_multifit_fdfsolver_iterate(s);
-        print_tripod_bsm(model, stderr);
-        tripod_bsm_t m;
-        tripod_bsm_of_vector(s->x, model->t, &m);
-        print_tripod_bsm(&m, stderr);
 
         if(status)
             break;
