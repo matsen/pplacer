@@ -188,7 +188,7 @@ static void pam_choose_random_partition(pam_partition p)
 void pam_partition_fprintf(FILE * stream, const pam_partition p)
 {
   size_t i, j;
-  fprintf(stream, "%lu x %lu; k= %lu; total cost= %f\n", p->M->size1,
+  fprintf(stream, "%zu x %zu; k= %zu; total cost= %f\n", p->M->size1,
           p->M->size2, p->k, pam_total_cost(p));
   for (i = 0; i < p->M->size1; i++) {
     fprintf(stream, "%d:\t", gsl_vector_uchar_get(p->in_set, i));
@@ -198,7 +198,7 @@ void pam_partition_fprintf(FILE * stream, const pam_partition p)
     fprintf(stream, "\n");
   }
   for (i = 0; i < p->cl_index->size; i++) {
-    fprintf(stream, "\t%lu", gsl_vector_ulong_get(p->cl_index, i));
+    fprintf(stream, "\t%zu", gsl_vector_ulong_get(p->cl_index, i));
   }
   fprintf(stream, "\n");
   for (i = 0; i < p->cl_dist->size; i++) {
@@ -393,7 +393,7 @@ static void pam_run(pam_partition p, size_t max_iters)
 
   do {
     if (PAM_VERBOSE)
-      fprintf(stderr, "Iteration %lu\n", iter);
+      fprintf(stderr, "Iteration %zu\n", iter);
 
     any_swaps = 0;
 
@@ -426,7 +426,7 @@ static void pam_run(pam_partition p, size_t max_iters)
         assert(!gsl_vector_uchar_get(p->in_set, n));
         assert(gsl_vector_uchar_get(p->in_set, m));
         if (PAM_VERBOSE)
-          fprintf(stderr, "SWAP: %lu->%lu [%f -> %f]\n", m, n,
+          fprintf(stderr, "SWAP: %zu->%zu [%f -> %f]\n", m, n,
                   current_cost, gsl_vector_get(cost, j));
         gsl_vector_uchar_swap_elements(p->in_set, m, n);
 
@@ -442,7 +442,7 @@ static void pam_run(pam_partition p, size_t max_iters)
   while (any_swaps && ++iter < max_iters);
 
   if (PAM_VERBOSE) {
-    fprintf(stderr, "Done in %lu iterations. Final config:\n", iter);
+    fprintf(stderr, "Done in %zu iterations. Final config:\n", iter);
     gsl_vector_uchar_fprintf(stderr, p->in_set, "%d");
     fprintf(stderr, "Final cost: %f\n", pam_total_cost(p));
   }
