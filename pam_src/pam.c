@@ -307,7 +307,7 @@ static double pam_swap_update_cost(pam_partition p, size_t m, size_t n,
   gsl_vector_uchar_swap_elements(p->in_set, m, n);
 
   result = pam_swap_cost(p, m, n);
-  assert(result == pam_total_cost(p));
+  assert(abs(result - pam_total_cost(p)) < 1e-5);
 
   /* Finally, restore state */
   gsl_vector_uchar_swap_elements(p->in_set, m, n);
