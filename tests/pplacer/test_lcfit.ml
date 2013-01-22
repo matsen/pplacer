@@ -8,16 +8,15 @@ module BA1 = Bigarray.Array1
 
 let m = {n00=1500.; n01=300.; n10=300.; n11=300.; r=1.; b=0.5; t=0.390296; rx=1.; bx=0.5}
 
+let assert_approx_equal ?(epsilon=1e-2) expected actual =
+  if not (approx_equal ~epsilon expected actual) then
+    assert_failure (Printf.sprintf "%f != %f" actual expected)
+
 let suite = [
-  "test_matches_mathematica" >:: begin fun() ->
+  "test_ll_matches_mathematica" >:: begin fun() ->
     let test_func (tx, c, l) =
       let actual = Lcfit.log_like m c tx in
-      if not (approx_equal ~epsilon:1e-2 actual l) then
-        assert_failure
-          (Printf.sprintf
-             "Log-likelihoods do not match: actual=%f expected=%f"
-             actual
-             l)
+      assert_approx_equal ~epsilon:1e-2 l actual
     in
     List.iter
       test_func
@@ -32,6 +31,25 @@ let suite = [
        (1.0, 0.2, -4575.06);
        (1.0, 0.3, -4574.47);
       ];
+  end;
+  "test_jacobian_matches_mathematica" >:: begin fun() ->
+    (* tx, c, jacobian *)
+    let data = [
+      (0.01, 0.1, [|-1.46370919482;-2.29250329026;-2.44488253075;-2.51486367522;-307.142409213;-439.512154795;-104.660686471;-205.217032297|]);
+      (0.01, 0.2, [|-1.46517311212;-2.36967270222;-2.36192885968;-2.51068727531;-309.943200566;-445.860652141;-106.91058354;-209.628595176|]);
+      (0.01, 0.3, [|-1.46339453633;-2.45334127174;-2.28529674788;-2.51576444531;-306.544196266;-438.132218135;-104.171269993;-204.257392143|]);
+      (0.1, 0.1, [|-1.49210087043;-2.29860423537;-2.43782395954;-2.43782395954;-312.871592946;-448.766389556;-131.752710474;-219.58785079|]);
+      (0.1, 0.2, [|-1.49347726004;-2.36933821283;-2.36226087947;-2.43428889779;-315.510674459;-453.872283142;-133.770176404;-222.950294007|]);
+      (0.1, 0.3, [|-1.49180500966;-2.44549728117;-2.29197572848;-2.43858610775;-312.307406821;-447.657588823;-131.314082186;-218.856803644|]);
+      (1.0, 0.1, [|-1.69234781952;-2.33792947697;-2.39445579297;-2.05444783337;-288.661591377;-416.66874539;-242.86447543;-161.909650287|]);
+      (1.0, 0.2, [|-1.69303124638;-2.36723302952;-2.36435561053;-2.05346701477;-289.982916415;-417.156469342;-242.814540389;-161.876360259|]);
+      (1.0, 0.3, [|-1.69220085218;-2.39743613186;-2.33512107292;-2.05465896661;-288.377773824;-416.563035891;-242.874274741;-161.916183161|])
+    ]
+    and assert_same_jacobian (tx, c, expected) =
+      let actual = Lcfit.jacobian m c tx in
+      Array.iter2 assert_approx_equal expected actual
+    in
+    List.iter assert_same_jacobian data
   end;
   "test_fit_success" >:: begin fun() ->
     let of_array = BA1.of_array BA.float64 BA.c_layout in

@@ -13,6 +13,9 @@ type tripod_bsm = {n00: float; n01: float; n10: float; n11: float;
 (* Evaluate the log-likelihood of the BSM given c, tx, and the model *)
 external log_like: tripod_bsm -> float -> float -> float = "caml_lcfit_tripod_ll"
 
+(* Evaluate the jacobian of the BSM given c, tx, and the model *)
+external jacobian: tripod_bsm -> float -> float -> float array = "caml_lcfit_tripod_jacobian"
+
 (* Fit the BSM given vectors of (c, tx, log_like) and an initial estimate of the
    model *)
 external fit: tripod_bsm -> float_vector -> float_vector -> float_vector ->
