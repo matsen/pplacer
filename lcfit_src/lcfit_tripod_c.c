@@ -10,37 +10,37 @@
 #include <gsl/gsl_vector.h>
 
 /**
- * \file pplacer_tripod_lcfit.c
+ * \file lcfit_tripod_c.c
  *
  * PPLACER SETUP:
  *   In pplacer-land, we have one fixed branch length t between y and z.
- *   c is the amount of branch length between y and the attachment of the pendant branch length x.
- *   tx is x's pendant branch length.
+ *   dist_bl is the amount of branch length between z and the attachment of the pendant branch length x.
+ *   pend_bl is x's pendant branch length.
  *   We assume that the fixed branch have a shared rate r and offset b.
  *
  * \verbatim
- *       y
- *       |
- *     c |    tx
- *       |---------- x
- *   t-c |
- *       |
- *       z
+ *             y
+ *             |
+ *   t-dist_bl |  pend_bl
+ *             |---------- x
+ *     dist_bl |
+ *             |
+ *             z
  * \endverbatim
  *
  * \c y taken as the 'reference' sequence, with all sites being in state \c 0.
  * The model is them parameterized by:
- *  * \c n00  Number of sites constant in x, y, and z
- *  * \c n01  Number of sites constant in y, z, mutated in x
- *  * \c n10  Number of sites constant in y, z, mutated in x
- *  * \c n11  Number of sites different from y at both x and z
- *  * \c r    Rate
- *  * \c b    Branch length offset
- *  * \c c    Proximal branch length
- *  * \c t    y-z distance
- *  * \c rx   Rate on pendant branch
- *  * \c bx   Branch length offset on pendant branch
- *  * \c tx   Pendant branch length
+ *  * \c n00     Number of sites constant in x, y, and z
+ *  * \c n01     Number of sites constant in y, z, mutated in x
+ *  * \c n10     Number of sites constant in y, z, mutated in x
+ *  * \c n11     Number of sites different from y at both x and z
+ *  * \c r       Rate
+ *  * \c b       Branch length offset
+ *  * \c dist_bl Distal branch length
+ *  * \c t       y-z distance
+ *  * \c rx      Rate on pendant branch
+ *  * \c bx      Branch length offset on pendant branch
+ *  * \c pend_bl Pendant branch length
  */
 
 /** Number of parameters in the BSM */
@@ -115,18 +115,18 @@ print_tripod_bsm(const tripod_bsm_t* m, FILE* out)
 }
 
 /**
- * Rescale model \c m to intersect with <c>(c, tx, ll)</c>
+ * Rescale model \c m to intersect with <c>(dist_bl, pend_bl, ll)</c>
  *
- * \param c proximal branch length
- * \param tx pendant branch length
- * \param ll Log-likelihood at (c, tx)
+ * \param dist_bl distal branch length
+ * \param pend_bl pendant branch length
+ * \param ll Log-likelihood at (dist_bl, pend_bl)
  * \param m Current model. <b>Model is rescaled</b>
  * \return The scaling factor
  */
 double
-lcfit_tripod_rescale(const double c, const double tx, const double ll, tripod_bsm_t* m)
+lcfit_tripod_rescale(const double dist_bl, const double pend_bl, const double ll, tripod_bsm_t* m)
 {
-    double scale_factor = ll / lcfit_tripod_ll(c, tx, m);
+    double scale_factor = ll / lcfit_tripod_ll(dist_bl, pend_bl, m);
     m->n00 *= scale_factor;
     m->n01 *= scale_factor;
     m->n10 *= scale_factor;
@@ -137,13 +137,13 @@ lcfit_tripod_rescale(const double c, const double tx, const double ll, tripod_bs
 /**
  * Calculate the log-likelihood of a tripod
  *
- * \param c  Proximal branch length
- * \param tx Pendant branch length
+ * \param dist_bl  Distal branch length
+ * \param pend_bl  Pendant branch length
  * \param m  Model
  * \return Log-likelihood under \c m
  */
 double
-lcfit_tripod_ll(const double c, const double tx, const tripod_bsm_t* m)
+lcfit_tripod_ll(const double dist_bl, const double pend_bl, const tripod_bsm_t* m)
 {
     static const int I0_0 = 1;
     static const double R0_30 = 0.5;
@@ -189,11 +189,11 @@ lcfit_tripod_ll(const double c, const double tx, const tripod_bsm_t* m)
     R0_3 = m->n11;
     R0_4 = m->r;
     R0_5 = m->b;
-    R0_6 = c;
+    R0_6 = dist_bl;
     R0_7 = m->t;
     R0_8 = m->rx;
     R0_9 = m->bx;
-    R0_10 = tx;
+    R0_10 = pend_bl;
     R0_11 = R0_5 + R0_6;
     R0_12 = R0_11 * R0_4;
     R0_13 = -R0_12;
@@ -253,13 +253,13 @@ lcfit_tripod_ll(const double c, const double tx, const tripod_bsm_t* m)
 /**
  *
  * Calculate the jacobian of a tripod
- * \param c  Proximal branch length
- * \param tx Pendant branch length
+ * \param dist_bl  Distal branch length
+ * \param pend_bl Pendant branch length
  * \param m  Model
  * \return The jacobian, length 8
  */
 double*
-lcfit_tripod_jacobian(const double c, const double tx, const tripod_bsm_t* m)
+lcfit_tripod_jacobian(const double dist_bl, const double pend_bl, const tripod_bsm_t* m)
 {
     static const int I0_0 = -2;
     static const int I0_1 = 2;
@@ -343,11 +343,11 @@ lcfit_tripod_jacobian(const double c, const double tx, const tripod_bsm_t* m)
     R0_3 = m->n11;
     R0_4 = m->r;
     R0_5 = m->b;
-    R0_6 = c;
+    R0_6 = dist_bl;
     R0_7 = m->t;
     R0_8 = m->rx;
     R0_9 = m->bx;
-    R0_10 = tx;
+    R0_10 = pend_bl;
     R0_11 = (double) I0_0;
     R0_11 = R0_11 * R0_5 * R0_4;
     R0_12 = R0_9 * R0_8;
@@ -475,8 +475,8 @@ lcfit_tripod_jacobian(const double c, const double tx, const tripod_bsm_t* m)
 /*************************/
 typedef struct {
     const size_t n;
-    const double* c;
-    const double* tx;
+    const double* dist_bl;
+    const double* pend_bl;
     const double* l;
     const double t;
 } tripod_data_to_fit;
@@ -489,13 +489,13 @@ expb_f(const gsl_vector* x, void* data, gsl_vector* f)
     assert(m != NULL && "failed malloc");
     const tripod_data_to_fit* d = (tripod_data_to_fit*)data;
     tripod_bsm_of_vector(x, d->t, m);
-    const double* c = d->c;
-    const double* tx = d->tx;
+    const double* dist_bl = d->dist_bl;
+    const double* pend_bl = d->pend_bl;
     const double* l = d->l;
     size_t i;
 
     for(i = 0; i < d->n; i++) {
-        const double residual = lcfit_tripod_ll(c[i], tx[i], m) - l[i];
+        const double residual = lcfit_tripod_ll(dist_bl[i], pend_bl[i], m) - l[i];
         gsl_vector_set(f, i, residual);
     }
 
@@ -512,14 +512,14 @@ expb_df(const gsl_vector* x, void* data, gsl_matrix* J)
     assert(m != NULL && "failed malloc");
     const tripod_data_to_fit* d = (tripod_data_to_fit*)data;
     tripod_bsm_of_vector(x, d->t, m);
-    const double* c = d->c;
-    const double* tx = d->tx;
+    const double* dist_bl = d->dist_bl;
+    const double* pend_bl = d->pend_bl;
 
     size_t i;
 
     double* dest = J->data;
     for(i = 0; i < d->n; i++) {
-        double* jac = lcfit_tripod_jacobian(c[i], tx[i], m);
+        double* jac = lcfit_tripod_jacobian(dist_bl[i], pend_bl[i], m);
         memcpy(dest, jac, sizeof(double) * TRIPOD_BSM_NVARYING);
         free(jac);
         dest += TRIPOD_BSM_NVARYING;
@@ -546,17 +546,17 @@ expb_fdf(const gsl_vector* x, void* data, gsl_vector* f, gsl_matrix* J)
 
 /** \brief Fit the BSM
  *
- *  \param n_pts Number of points in \c c \c tx, and \c l
- *  \param c     Proximal branch lengths sampled
- *  \param tx    Pendant branch lengths sampled
- *  \param l     Log-likelihoods evaluated at the (c, tx) points provided
- *  \param model <i>(modified)</i> Starting conditions for the model; updated with
- *               fit parameters.
+ *  \param n_pts   Number of points in \c dist_bl \c pend_bl, and \c l
+ *  \param dist_bl Distal branch lengths sampled
+ *  \param pend_bl Pendant branch lengths sampled
+ *  \param l       Log-likelihoods evaluated at the (c, pend_bl) points provided
+ *  \param model   <i>(modified)</i> Starting conditions for the model; updated with
+ *                 fit parameters.
  */
 int
-lcfit_tripod_fit_bsm(const size_t n_pts, const double* c, const double* tx, const double* l, tripod_bsm_t* model)
+lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pend_bl, const double* l, tripod_bsm_t* model)
 {
-    tripod_data_to_fit d = {n_pts, c, tx, l, model->t};
+    tripod_data_to_fit d = {n_pts, dist_bl, pend_bl, l, model->t};
 
     gsl_multifit_function_fdf fdf;
 
