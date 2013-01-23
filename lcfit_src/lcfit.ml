@@ -45,14 +45,19 @@ let default_model t =
 (* Evaluate log_like at the cartesian product of points sampled uniformly
  * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using `keep_top` of
  * these points *)
-let find_pts_fit_model ?(n_dist=5) ?(n_pend=5) ?(keep_top=20) cut_bl max_pend prior log_like =
-  let choose_pts n f = 1 -- n
+let find_points_fit_model ?(n_dist=5) ?(n_pend=5) ?(keep_top=20) cut_bl max_pend log_like =
+  let evenly_spaced n min max = 
+    let d = max -. min
+    and nf = (Float.of_int n) -. 1.0
+    in
+    assert(d > 0.);
+    0 -- (n - 1)
     |> map Float.of_int
-    |> map f
+    |> map (fun i -> min +. (d *. i) /. nf)
     |> List.of_enum
   in
-  let dist_bls = choose_pts n_dist (fun i -> i /. cut_bl)
-  and pend_bls = choose_pts n_pend (fun i -> i /. max_pend) 
+  let dist_bls = evenly_spaced n_dist 0.0 cut_bl
+  and pend_bls = evenly_spaced n_pend 0.0 max_pend
   in
   let pt_heap = List.cartesian_product dist_bls pend_bls
     |> List.map (fun (dist_bl, pend_bl) ->
@@ -68,7 +73,7 @@ let find_pts_fit_model ?(n_dist=5) ?(n_pend=5) ?(keep_top=20) cut_bl max_pend pr
   let init_model = default_model cut_bl |> rescale max_ll in
   fit init_model (Array.of_list pts)
 
-let calc_marg_prob model max_pend cut_bl prior base_ll upper_limit =
+let calc_marg_prob model cut_bl prior base_ll upper_limit =
   (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
   let max_n_exceptions = 10
   and n_exceptions = ref 0
@@ -79,16 +84,15 @@ let calc_marg_prob model max_pend cut_bl prior base_ll upper_limit =
   let rec perform upper_limit =
     if !n_exceptions >= max_n_exceptions then begin
       Printf.printf
-      "Warning: integration did not converge after changing bounds %d times\n"
+      "Lcfit: integration did not converge after changing bounds %d times\n"
       max_n_exceptions;
       0.
     end
     else
       let inner_integration dist_bl =
         Integration.value_integrate
-          (fun pend_bl -> 
-            (exp ((ll dist_bl pend_bl) -. base_ll)) *. (prior pend_bl)
-            ll dist_bl pend_bl)
+          (fun pend_bl ->
+            (exp ((ll dist_bl pend_bl) -. base_ll)) *. (prior pend_bl))
           0. upper_limit ~abs_err ~rel_err
       in
       let outer_integration () =

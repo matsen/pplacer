@@ -349,8 +349,36 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
                   (max_pend prefs)
                   tt)
               sorted_ml_placements
+          and lcfit_marg_prob placement =
+            tt_edges_from_placement placement;
+            let base_ll = Three_tax.log_like tt
+            and prior = prior_fun (Placement.location placement)
+            and mp = max_pend prefs
+            and cut_bl = Three_tax.get_cut_bl tt
+            and log_like dist_bl pend_bl =
+              Three_tax.set_dist_bl tt dist_bl;
+              Three_tax.set_pend_bl tt pend_bl;
+              Three_tax.log_like tt
+            in
+            try
+              let m =
+                Lcfit.find_points_fit_model cut_bl mp log_like
+              and upper_limit = Three_tax.find_upper_limit mp prior base_ll tt
+              in
+              Lcfit.calc_marg_prob
+                        m
+                        cut_bl
+                        prior
+                        base_ll
+                        upper_limit
+            with
+              | Failure _ -> Printf.fprintf stderr "%s"; base_ll
           in
+          let marginal_probs' = List.map lcfit_marg_prob sorted_ml_placements in
           (* add pp *)
+          List.iter2 (fun x y -> Printf.fprintf stderr "%f,%f\n" x y)
+            marginal_probs
+            marginal_probs';
           Timing ("PP calculation", (Sys.time ()) -. curr_time) :: results,
           ((ListFuns.map3
               (fun placement marginal_prob post_prob ->
