@@ -169,6 +169,7 @@ int lcfit_fit_bsm(const size_t n, const double* t, const double* l, bsm_t *m)
     if (iter == MAX_ITERS && !status)
         status = GSL_ENOPROG;
 
+    if (iter == 500) status = GSL_ENOPROG;
 #define FIT(i) gsl_vector_get(s->x, i)
 #define ERR(i) sqrt(gsl_matrix_get(covar,i,i))
 #ifdef LCFIT_DEBUG

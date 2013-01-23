@@ -121,7 +121,7 @@ caml_lcfit_tripod_fit(value model, value pts)
 
     tripod_bsm_t m = convert_tripod_model(model);
 
-    int return_code = lcfit_tripod_fit_bsm(n, dist_bl, pend_bl, ll, &m, 1e-3, 10000);
+    int return_code = lcfit_tripod_fit_bsm(n, dist_bl, pend_bl, ll, &m, 1e-3, 50000);
 
     free(dist_bl);
     free(pend_bl);

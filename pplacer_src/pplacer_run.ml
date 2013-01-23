@@ -627,10 +627,11 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     else x
   in
   begin match
-    Multiprocessing.try_fork
-      (Prefs.children prefs)
-      (new pplacer_process partial gotfunc nextfunc)
-      progressfunc
+    []
+    (*Multiprocessing.try_fork*)
+      (*(Prefs.children prefs)*)
+      (*(new pplacer_process partial gotfunc nextfunc)*)
+      (*progressfunc*)
   with
   | [] ->
     dprint "couldn't fork any children; falling back to a single process.\n";
@@ -645,7 +646,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
         partial ~show_query query |> List.iter gotfunc; aux ()
     in
     aux ()
-  | children -> event_loop children
+  (*| children -> event_loop children*)
   end;
   donefunc ();
   if Prefs.timing prefs then begin
