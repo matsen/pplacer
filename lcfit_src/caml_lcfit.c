@@ -53,31 +53,52 @@ caml_lcfit_tripod_ll(value model, value c_value, value tx_value)
     CAMLreturn(caml_copy_double(result));
 }
 
+/**
+ * model (tripod_bsm)
+ * pts   Array of 3-tuples, containing (distal_bl, pendant_bl, log_like)
+ *
+ * See: lcfit.ml
+ */
 CAMLprim value
-caml_lcfit_tripod_fit(value model, value c_value, value tx_value, value l_value)
+caml_lcfit_tripod_fit(value model, value pts)
 {
-    CAMLparam4(model, c_value, tx_value, l_value);
-    size_t c_n  = Bigarray_val(c_value)->dim[0],
-           tx_n = Bigarray_val(tx_value)->dim[0],
-           l_n  = Bigarray_val(l_value)->dim[0];
+    CAMLparam2(model, pts);
+    assert(Tag_val(pts) == 0 && "Input should be array-ish");
+
+    size_t n = Wosize_val(pts), i;
 
     /* Verify arguments */
-    if(c_n != tx_n || l_n != c_n) {
+    if(n < TRIPOD_BSM_NVARYING) {
         char err[200];
-        sprintf(err, "Dimensions of c (%zu), tx (%zu), and l (%zu) do not match",
-                c_n, tx_n, l_n);
+        sprintf(err, "Insufficient points to fit (%zu)", n);
         caml_invalid_argument(err);
     }
-
     check_model(model);
+
+    double *dist_bl = malloc(sizeof(double) * n),
+           *pend_bl = malloc(sizeof(double) * n),
+           *ll      = malloc(sizeof(double) * n);
+
+    for(i = 0; i < n; i++) {
+        // Check input
+        assert(Wosize_val(Field(pts, i)) == 3);
+        assert(Tag_val(Field(Field(pts, i), 0)) == Double_tag);
+        assert(Tag_val(Field(Field(pts, i), 1)) == Double_tag);
+        assert(Tag_val(Field(Field(pts, i), 2)) == Double_tag);
+
+        dist_bl[i] = Double_val(Field(Field(pts, i), 0));
+        pend_bl[i] = Double_val(Field(Field(pts, i), 1));
+        ll[i]      = Double_val(Field(Field(pts, i), 2));
+    }
 
     tripod_bsm_t m = convert_model(model);
 
-    int return_code = lcfit_tripod_fit_bsm(l_n,
-                                           Data_bigarray_val(c_value),
-                                           Data_bigarray_val(tx_value),
-                                           Data_bigarray_val(l_value),
-                                           &m);
+    int return_code = lcfit_tripod_fit_bsm(n, dist_bl, pend_bl, ll, &m);
+
+    free(dist_bl);
+    free(pend_bl);
+    free(ll);
+
     if(return_code) {
         char err[300];
         sprintf(err, "lcfit_tripod_fit_bsm returned %d (%s)", return_code, gsl_strerror(return_code));
@@ -87,7 +108,6 @@ caml_lcfit_tripod_fit(value model, value c_value, value tx_value, value l_value)
     CAMLlocal1(result);
     result = caml_alloc(TRIPOD_BSM_NPARAM * Double_wosize, Double_array_tag);
     double* m_arr = array_of_tripod_bsm(&m);
-    size_t i;
     for(i = 0; i < TRIPOD_BSM_NPARAM; i++)
         Store_double_field(result, i, m_arr[i]);
     free(m_arr);

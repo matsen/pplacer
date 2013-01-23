@@ -18,8 +18,7 @@ external jacobian: tripod_bsm -> float -> float -> float array = "caml_lcfit_tri
 
 (* Fit the BSM given vectors of (dist_bl, pend_bl, log_like) and an initial estimate of the
    model *)
-external fit: tripod_bsm -> float_vector -> float_vector -> float_vector ->
-  tripod_bsm = "caml_lcfit_tripod_fit"
+external fit: tripod_bsm -> (float * float * float) array -> tripod_bsm = "caml_lcfit_tripod_fit"
 
 (* Rescale m to intersect with (dist_bl, pend_bl, ll) *)
 let rescale (dist_bl, pend_bl, ll) m =
