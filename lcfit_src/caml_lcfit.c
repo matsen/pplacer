@@ -1,10 +1,14 @@
 #include <caml/alloc.h>
 #include <caml/bigarray.h>
+#include <caml/callback.h>
 #include <caml/custom.h>
 #include <caml/fail.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
 #include <gsl/gsl_errno.h>
+#include <gsl/gsl_matrix.h>
+#include <gsl/gsl_multifit.h>
+#include <gsl/gsl_vector.h>
 
 #include <assert.h>
 #include <stdio.h>
@@ -36,6 +40,21 @@ inline tripod_bsm_t convert_model(value model) {
                       Double_field(model, 7),
                       Double_field(model, 8) };
     return m;
+}
+
+/* Adapted from gsl-ocaml */
+/* Attempt to raise an instance of Lcfit.Lcfit_error */
+inline void lcfit_raise_exception(const char *msg, int gsl_errno)
+{
+    CAMLlocal2(exn_msg, exn_arg);
+    exn_msg = copy_string(msg);
+    exn_arg = alloc_small(2, 0);
+    Field(exn_arg, 0) = Val_int(gsl_errno);
+    Field(exn_arg, 1) = exn_msg;
+    if(caml_named_value("lcfit_err") != NULL)
+      raise_with_arg(*caml_named_value("lcfit_err"), exn_arg);
+    else
+      failwith("GSL error");
 }
 
 CAMLprim value
@@ -100,9 +119,7 @@ caml_lcfit_tripod_fit(value model, value pts)
     free(ll);
 
     if(return_code) {
-        char err[300];
-        sprintf(err, "lcfit_tripod_fit_bsm returned %d (%s)", return_code, gsl_strerror(return_code));
-        caml_failwith(err);
+        lcfit_raise_exception(gsl_strerror(return_code), return_code);
     }
 
     CAMLlocal1(result);

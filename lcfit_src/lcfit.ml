@@ -5,6 +5,9 @@ open Ppatteries
 module BA = Bigarray
 module BA1 = Bigarray.Array1
 
+exception Lcfit_err of (int * string)
+let _ = Callback.register_exception "lcfit_err" (Lcfit_err (0, "any string"))
+
 (* distal branch length, pendant branch length, log-likelihood *)
 type tripod_point = (float * float * float)
 
