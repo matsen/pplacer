@@ -597,4 +597,103 @@ lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pe
     return status;
 }
 
+/**
+ * Calculate the coefficients of the mutation parameters of the model, n00, n01, n10, and n11.
+ * That is:
+ *
+ * \f[
+ *   L(M, d, p) = n00 c00(M, d, p) + n01 c01(M, d, p) + n10 c10(M, d, p) + n11 c11(M, d, p)
+ * \f]
+ *
+ * \param m Model
+ * \param dist_bl Distal branch length
+ * \param pend_bl Pendant branch length
+ * \param result Output - double vector with length 4. Will be filled with <c>{c00,c01,c10,c11}</c>
+ */
+void
+lcfit_tripod_nxx_coeff(const tripod_bsm_t* m, const double dist_bl, const double pend_bl, double* result)
+{
+    const double e1 = exp(-(m->r*(m->b+dist_bl))),
+                 e2 = exp(-(m->r*(m->b - dist_bl + m->t))),
+                 e3 = exp(-(m->rx * (m->bx + pend_bl)));
+
+    #define LCFIT_COEFF(s1, s2, s3, s4, s5, s6) \
+            log(( \
+                ((1 s1 e1) * (1 s2 e2) * (1 s3 e3))/8 + \
+                ((1 s4 e1) * (1 s5 e2) * (1 s6 e3))/8) / 2)
+
+
+/*
+ *                      -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *                (1 - E            ) (1 - E                ) (1 - E               )
+ *Out[156]= {Log[(------------------------------------------------------------------ +
+ *                                                8
+ *
+ *               -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *         (1 + E            ) (1 + E                ) (1 + E               )
+ *>        ------------------------------------------------------------------) / 2],
+ *                                         8
+ */
+
+    /* n00 */
+    result[0] = log((
+            ((1 - e1) * (1 - e2) * (1 - e3))/8 +
+            ((1 + e1) * (1 + e2) * (1 + e3))/8) / 2);
+
+    assert(abs(result[0] - LCFIT_COEFF(-,-,-,+,+,+)) < 1e-5);
+
+/*                -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *          (1 - E            ) (1 + E                ) (1 - E               )
+ *>    Log[(------------------------------------------------------------------ +
+ *                                          8
+ *
+ *               -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *         (1 + E            ) (1 - E                ) (1 + E               )
+ *>        ------------------------------------------------------------------) / 2],
+ *                                         8
+ */
+    /* n01 */
+    result[1] = log((
+            ((1 - e1) * (1 + e2) * (1 - e3))/8 +
+            ((1 + e1) * (1 - e2) * (1 + e3))/8) / 2);
+
+    assert(abs(result[1] - LCFIT_COEFF(-,+,-,+,-,+)) < 1e-5);
+/*
+ *                -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *          (1 + E            ) (1 - E                ) (1 - E               )
+ *>    Log[(------------------------------------------------------------------ +
+ *                                          8
+ *
+ *               -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *         (1 - E            ) (1 + E                ) (1 + E               )
+ *>        ------------------------------------------------------------------) / 2],
+ *                                         8
+ */
+
+    /* n10 */
+    result[2] = log((
+            ((1 + e1) * (1 - e2) * (1 - e3))/8 +
+            ((1 - e1) * (1 + e2) * (1 + e3))/8) / 2);
+    assert(abs(result[2] - LCFIT_COEFF(+,-,-,-,+,+)) < 1e-5);
+
+/*
+ *                -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *          (1 + E            ) (1 + E                ) (1 - E               )
+ *>    Log[(------------------------------------------------------------------ +
+ *                                          8
+ *
+ *               -((b + c) r)        -(r (b - c + t))        -(rx (bx + tx))
+ *         (1 - E            ) (1 - E                ) (1 + E               )
+ *>        ------------------------------------------------------------------) / 2]}
+ *                                         8
+ */
+    /* n11 */
+    result[3] = log((
+            ((1 + e1) * (1 + e2) * (1 - e3))/8 +
+            ((1 - e1) * (1 - e2) * (1 + e3))/8) / 2);
+    assert(abs(result[3] - LCFIT_COEFF(+,+,-,-,-,+)) < 1e-5);
+    #undef LCFIT_COEFF
+}
+
+
 /* vim: set ts=4 sw=4 : */

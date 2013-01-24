@@ -26,6 +26,8 @@ external jacobian: tripod_bsm -> float -> float -> float array = "caml_lcfit_tri
    model *)
 external fit: tripod_bsm -> tripod_point array -> tripod_bsm = "caml_lcfit_tripod_fit"
 
+external least_squares_scale: tripod_bsm -> tripod_point array -> tripod_bsm = "caml_lcfit_least_squares_scaling"
+
 (* Heap ordered by log-likelihood *)
 module PointHeap = Heap.Make(struct
   type t = tripod_point
