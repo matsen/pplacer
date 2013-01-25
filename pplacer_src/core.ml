@@ -372,7 +372,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
                         base_ll
                         upper_limit
             with
-              | Failure _ -> Printf.fprintf stderr "%s"; base_ll
+              | Failure s -> Printf.fprintf stderr "%s\n" s; base_ll;
           in
           let marginal_probs' = List.map lcfit_marg_prob sorted_ml_placements in
           (* add pp *)

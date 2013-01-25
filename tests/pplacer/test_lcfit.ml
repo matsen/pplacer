@@ -83,4 +83,9 @@ let suite = [
     (* TODO: better fit test - this just checks for success. *)
     assert_bool (Printf.sprintf "Error out of range: %f" err) (err < 5.);
   end;
+  "test_est_rx" >:: begin fun() ->
+    let pt = (0.2,1.0,-1.69) in
+    let res = est_rx m pt in
+    assert_approx_equal 0.986757 res;
+  end;
 ]

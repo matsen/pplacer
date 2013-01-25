@@ -58,11 +58,11 @@ inline void lcfit_raise_exception(const char *msg, int gsl_errno)
 }
 
 CAMLprim value
-caml_lcfit_tripod_ll(value model, value c_value, value tx_value)
+caml_lcfit_tripod_ll(value model, value dist_bl_value, value pend_bl_value)
 {
-    CAMLparam3(model, c_value, tx_value);
+    CAMLparam3(model, dist_bl_value, pend_bl_value);
 
-    double c = Double_val(c_value), tx = Double_val(tx_value);
+    double c = Double_val(dist_bl_value), tx = Double_val(pend_bl_value);
 
     check_model(model);
 
@@ -133,14 +133,14 @@ caml_lcfit_tripod_fit(value model, value pts)
 }
 
 CAMLprim value
-caml_lcfit_tripod_jacobian(value model, value c_value, value tx_value)
+caml_lcfit_tripod_jacobian(value model, value dist_bl_value, value pend_bl_value)
 {
-    CAMLparam3(model, c_value, tx_value);
+    CAMLparam3(model, dist_bl_value, pend_bl_value);
 
     check_model(model);
     tripod_bsm_t m = convert_model(model);
 
-    double* jac = lcfit_tripod_jacobian(Double_val(c_value), Double_val(tx_value), &m);
+    double* jac = lcfit_tripod_jacobian(Double_val(dist_bl_value), Double_val(pend_bl_value), &m);
 
     CAMLlocal1(result);
     result = caml_alloc(TRIPOD_BSM_NVARYING * Double_wosize, Double_array_tag);
@@ -150,6 +150,27 @@ caml_lcfit_tripod_jacobian(value model, value c_value, value tx_value)
         Store_double_field(result, i, jac[i]);
     free(jac);
     CAMLreturn(result);
+}
+
+CAMLprim value
+caml_lcfit_tripod_est_rx(value model_value, value point_value)
+{
+    CAMLparam2(model_value, point_value);
+
+    check_model(model_value);
+    tripod_bsm_t m = convert_model(model_value);
+
+    /* Check input point */
+    assert(Wosize_val(point_value) == 3);
+    size_t i;
+    for(i = 0; i < 3; ++i)
+         assert(Tag_val(Field(point_value, i)) == Double_tag);
+
+    CAMLreturn(caml_copy_double(
+                lcfit_tripod_est_rx(Double_val(Field(point_value, 0)),
+                                               Double_val(Field(point_value, 1)),
+                                               Double_val(Field(point_value, 2)),
+                                               &m)));
 }
 
 /* vim: set ts=4 sw=4 : */

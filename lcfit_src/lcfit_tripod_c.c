@@ -695,5 +695,33 @@ lcfit_tripod_nxx_coeff(const tripod_bsm_t* m, const double dist_bl, const double
     #undef LCFIT_COEFF
 }
 
+/**
+ * Estimate `rx` such that m intersects with sampled point (dist_bl, pend_bl, l)
+ */
+double
+lcfit_tripod_est_rx(const double dist_bl,
+                    const double pend_bl,
+                    const double l,
+                    const tripod_bsm_t* m)
+{
+/*
+                        ll00    -((b + c) r) - r (b - c + t)
+                 1 - 8 E     + E
+           Log[-(-------------------------------------------)]
+                       -((b + c) r)    -(r (b - c + t))
+                      E             + E
+Out[88]= -(---------------------------------------------------)
+                                 bx + tx
+*/
+    /* Divide by n00? */
+    double log_num =   1 - 8 * exp(l) + exp(-((m->b + dist_bl) * m->r) - m->r * (m->b - dist_bl + m->t)),
+           log_denom = exp(-((m->b + dist_bl) * m->r)) + exp(-(m->r * (m->b - dist_bl + m->t))),
+           denom =     m->bx + pend_bl;
+
+    /*fprintf(stderr, "EST_RX: (%f,%f,%f)\n", log_num, log_denom, denom);*/
+    double res = -log(-log_num / log_denom) / denom;
+    /*return res / m->n00;*/
+    return res;
+}
 
 /* vim: set ts=4 sw=4 : */

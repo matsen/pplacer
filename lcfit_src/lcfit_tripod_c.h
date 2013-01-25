@@ -34,5 +34,8 @@ array_of_tripod_bsm(const tripod_bsm_t*);
 void
 lcfit_tripod_nxx_coeff(const tripod_bsm_t*, const double, const double, double*);
 
+double
+lcfit_tripod_est_rx(const double, const double, const double, const tripod_bsm_t*);
+
 /* vim: set ts=4 sw=4 : */
 #endif /* LCFIT_TRIPOD_H_ */

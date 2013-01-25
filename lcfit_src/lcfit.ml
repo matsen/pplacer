@@ -26,11 +26,7 @@ external jacobian: tripod_bsm -> float -> float -> float array = "caml_lcfit_tri
    model *)
 external fit: tripod_bsm -> tripod_point array -> tripod_bsm = "caml_lcfit_tripod_fit"
 
-(* Heap ordered by log-likelihood *)
-module PointHeap = Heap.Make(struct
-  type t = tripod_point
-  let compare (_,_,a) (_,_,b) = Float.compare a b
-end)
+external est_rx: tripod_bsm -> tripod_point -> float = "caml_lcfit_tripod_est_rx"
 
 (* Rescale m to intersect with (dist_bl, pend_bl, ll) *)
 let rescale (dist_bl, pend_bl, ll) m =
@@ -45,11 +41,11 @@ let rescale (dist_bl, pend_bl, ll) m =
 let default_model t =
   {n00=1500.;n01=300.;n10=300.;n11=300.;r=1.;b=0.5;t=t;rx=1.;bx=0.5}
 
-(* Evaluate log_like at the cartesian product of points sampled uniformly
+(* Evaluate log_like' at the cartesian product of points sampled uniformly
  * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using `keep_top` of
  * these points *)
-let find_points_fit_model ?(n_dist=5) ?(n_pend=5) ?(keep_top=20) cut_bl max_pend log_like =
-  let evenly_spaced n min max = 
+let find_points_fit_model ?(n_dist=10) ?(n_pend=10) ?(keep_top=50) cut_bl max_pend log_like' =
+  let evenly_spaced n min max =
     let d = max -. min
     and nf = (Float.of_int n) -. 1.0
     in
@@ -59,22 +55,17 @@ let find_points_fit_model ?(n_dist=5) ?(n_pend=5) ?(keep_top=20) cut_bl max_pend
     |> map (fun i -> min +. (d *. i) /. nf)
     |> List.of_enum
   in
-  let dist_bls = evenly_spaced n_dist 0.0 cut_bl
-  and pend_bls = evenly_spaced n_pend 0.0 max_pend
+  let dist_bls = if cut_bl =~ 0.  then [cut_bl] else evenly_spaced n_dist 1e-6 (cut_bl -. 1e-6)
+  and pend_bls = evenly_spaced n_pend 1e-6 max_pend
   in
-  let pt_heap = List.cartesian_product dist_bls pend_bls
+  let pts = List.cartesian_product dist_bls pend_bls
     |> List.map (fun (dist_bl, pend_bl) ->
-        (dist_bl, pend_bl, (log_like dist_bl pend_bl)))
-    |> PointHeap.of_list
+        (dist_bl, pend_bl, (log_like' dist_bl pend_bl)))
+    |> List.sort (fun (_,_,a) (_,_,b) -> Float.compare b a)
   in
-  let pts = pt_heap
-    |> PointHeap.enum
-    |> Enum.take keep_top
-    |> List.of_enum
-  in
-  let max_ll = PointHeap.enum pt_heap |> Enum.get |> Option.get in
+  let max_ll = List.hd pts in
   let init_model = default_model cut_bl |> rescale max_ll in
-  fit init_model (Array.of_list pts)
+  fit init_model (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
 
 let calc_marg_prob model cut_bl prior base_ll upper_limit =
   (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
@@ -106,7 +97,7 @@ let calc_marg_prob model cut_bl prior base_ll upper_limit =
           cut_bl
       in
       try
-        (if cut_bl =~ 0. 
+        (if cut_bl =~ 0.
          then inner_integration (cut_bl /. 2.)
          else outer_integration ())
         |> log
