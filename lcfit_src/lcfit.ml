@@ -37,6 +37,21 @@ let rescale (dist_bl, pend_bl, ll) m =
           n10=m.n10 *. fac;
           n11=m.n11 *. fac}
 
+(* Attempt to get rx on the correct order of magnitude for 
+ * (dist_bl, pend_bl, ll) *)
+let rescale_rx (dist_bl, pend_bl, ll) m =
+  let rec aux m =
+    let fit_ll = log_like m dist_bl pend_bl in
+    let m' =
+      if fit_ll < ll then {m with rx=m.rx *. 0.1}
+      else {m with rx=m.rx /. 10.}
+    in
+      if Float.abs (ll -. (log_like m' dist_bl pend_bl)) < Float.abs (ll -. fit_ll)
+      then aux m'
+      else m
+  in
+  aux m
+
 (* This seems to provide sensible defaults *)
 let default_model t =
   {n00=1500.;n01=300.;n10=300.;n11=300.;r=1.;b=0.5;t=t;rx=1.;bx=0.5}
@@ -65,7 +80,20 @@ let find_points_fit_model ?(n_dist=10) ?(n_pend=10) ?(keep_top=50) cut_bl max_pe
   in
   let max_ll = List.hd pts in
   let init_model = default_model cut_bl |> rescale max_ll in
-  fit init_model (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
+  (* See which direction to move rx *)
+  let pend_pt = pts
+    |> List.enum
+    |> Enum.filter (fun (d,p,l) -> d =~ (Tuple3.first max_ll) && p =~ max_pend)
+    |> Enum.get
+    |> Option.get
+  in
+  let m =
+    if (Tuple3.third max_ll) > (Tuple3.third pend_pt) then
+      {init_model with rx=1e-5}
+    else
+      rescale_rx pend_pt init_model
+  in
+  fit m (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
 
 let calc_marg_prob model cut_bl prior base_ll upper_limit =
   (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
