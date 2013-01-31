@@ -37,7 +37,7 @@ let rescale (dist_bl, pend_bl, ll) m =
           n10=m.n10 *. fac;
           n11=m.n11 *. fac}
 
-(* Attempt to get rx on the correct order of magnitude for 
+(* Attempt to get rx on the correct order of magnitude for
  * (dist_bl, pend_bl, ll) *)
 let rescale_rx (dist_bl, pend_bl, ll) m =
   let rec aux m =
@@ -93,7 +93,24 @@ let find_points_fit_model ?(n_dist=10) ?(n_pend=10) ?(keep_top=50) cut_bl max_pe
     else
       rescale_rx pend_pt init_model
   in
-  fit m (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
+  let rec choose_rx_fit m pts rxs =
+    match rxs with
+    | rx :: tail ->
+      try
+        fit
+          {m with rx=rx}
+          pts
+      with
+      | Lcfit_err(c, s) ->
+        match tail with
+        | [] -> raise (Lcfit_err (c, s))
+        | _ -> choose_rx_fit m pts tail
+        | _ -> failwith "No rxs"
+  in
+  choose_rx_fit
+    m
+    (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
+    [1e-5; 1e-4; 1e-3; 1e-2; 1e-1; 1e0; 1e1;]
 
 let calc_marg_prob model cut_bl prior base_ll upper_limit =
   (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
