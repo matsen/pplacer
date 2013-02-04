@@ -26,7 +26,8 @@ lcfit_tripod_ll(const double, const double, const tripod_bsm_t*);
 double*
 lcfit_tripod_jacobian(const double, const double, const tripod_bsm_t*);
 int
-lcfit_tripod_fit_bsm(const size_t, const double*, const double*, const double*, tripod_bsm_t*);
+lcfit_tripod_fit_bsm(const size_t, const double*, const double*, const double*, tripod_bsm_t*,
+                     const double, const size_t);
 
 double*
 array_of_tripod_bsm(const tripod_bsm_t*);

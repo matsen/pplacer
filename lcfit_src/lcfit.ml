@@ -83,7 +83,7 @@ let find_points_fit_model ?(n_dist=10) ?(n_pend=10) ?(keep_top=50) cut_bl max_pe
   (* See which direction to move rx *)
   let pend_pt = pts
     |> List.enum
-    |> Enum.filter (fun (d,p,l) -> d =~ (Tuple3.first max_ll) && p =~ max_pend)
+    |> Enum.filter (fun (d,p,_) -> d =~ (Tuple3.first max_ll) && p =~ max_pend)
     |> Enum.get
     |> Option.get
   in
@@ -96,16 +96,16 @@ let find_points_fit_model ?(n_dist=10) ?(n_pend=10) ?(keep_top=50) cut_bl max_pe
   let rec choose_rx_fit m pts rxs =
     match rxs with
     | rx :: tail ->
-      try
-        fit
-          {m with rx=rx}
-          pts
-      with
-      | Lcfit_err(c, s) ->
-        match tail with
-        | [] -> raise (Lcfit_err (c, s))
-        | _ -> choose_rx_fit m pts tail
-        | _ -> failwith "No rxs"
+      (try
+         fit
+           {m with rx=rx}
+           pts
+       with
+       | Lcfit_err(c, s) ->
+         match tail with
+         | [] -> raise (Lcfit_err (c, s))
+         | _ -> choose_rx_fit m pts tail)
+    | _ -> failwith "No rxs"
   in
   choose_rx_fit
     m

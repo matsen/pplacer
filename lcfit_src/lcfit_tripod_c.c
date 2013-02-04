@@ -546,15 +546,19 @@ expb_fdf(const gsl_vector* x, void* data, gsl_vector* f, gsl_matrix* J)
 
 /** \brief Fit the BSM
  *
- *  \param n_pts   Number of points in \c dist_bl \c pend_bl, and \c l
- *  \param dist_bl Distal branch lengths sampled
- *  \param pend_bl Pendant branch lengths sampled
- *  \param l       Log-likelihoods evaluated at the (c, pend_bl) points provided
- *  \param model   <i>(modified)</i> Starting conditions for the model; updated with
- *                 fit parameters.
+ *  \param n_pts    Number of points in \c dist_bl \c pend_bl, and \c l
+ *  \param dist_bl  Distal branch lengths sampled
+ *  \param pend_bl  Pendant branch lengths sampled
+ *  \param l        Log-likelihoods evaluated at the (c, pend_bl) points provided
+ *  \param model    <i>(modified)</i> Starting conditions for the model; updated with
+ *                  fit parameters.
+ *  \param tol      Model-fitting tolerance
+ *  \param max_iter Maximum number of iterations to run
+ *  \returns GSL status code; GSL_SUCCESS on success.
  */
 int
-lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pend_bl, const double* l, tripod_bsm_t* model)
+lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pend_bl, const double* l, tripod_bsm_t* model,
+                     const double tol, const size_t max_iter)
 {
     tripod_data_to_fit d = {n_pts, dist_bl, pend_bl, l, model->t};
 
@@ -584,9 +588,9 @@ lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pe
         if(status)
             break;
 
-        // TODO: Make tolerance constant
-        status = gsl_multifit_test_delta(s->dx, s->x, 1e-4, 1e-4);
-    } while(status == GSL_CONTINUE && iter < 500); // TODO: Max iters to constant
+        status = gsl_multifit_test_delta(s->dx, s->x, tol, tol);
+        /*status = gsl_multifit_test_gradient(s->dx, tol);*/
+    } while(status == GSL_CONTINUE && iter < max_iter);
 
     /* Copy results into model */
     tripod_bsm_of_vector(s->x, model->t, model);
