@@ -483,7 +483,7 @@ typedef struct {
 
 /** Compute residuals */
 int
-expb_f(const gsl_vector* x, void* data, gsl_vector* f)
+lcfit_tripod_f(const gsl_vector* x, void* data, gsl_vector* f)
 {
     tripod_bsm_t* m = malloc(sizeof(tripod_bsm_t));
     assert(m != NULL && "failed malloc");
@@ -506,7 +506,7 @@ expb_f(const gsl_vector* x, void* data, gsl_vector* f)
 
 /** Evaluate the Jacobian */
 int
-expb_df(const gsl_vector* x, void* data, gsl_matrix* J)
+lcfit_tripod_df(const gsl_vector* x, void* data, gsl_matrix* J)
 {
     tripod_bsm_t* m = malloc(sizeof(tripod_bsm_t));
     assert(m != NULL && "failed malloc");
@@ -532,10 +532,10 @@ expb_df(const gsl_vector* x, void* data, gsl_matrix* J)
 
 /** Residuals + Jacobian */
 int
-expb_fdf(const gsl_vector* x, void* data, gsl_vector* f, gsl_matrix* J)
+lcfit_tripod_fdf(const gsl_vector* x, void* data, gsl_vector* f, gsl_matrix* J)
 {
-    expb_f(x, data, f);
-    expb_df(x, data, J);
+    lcfit_tripod_f(x, data, f);
+    lcfit_tripod_df(x, data, J);
 
     return GSL_SUCCESS;
 }
@@ -543,6 +543,8 @@ expb_fdf(const gsl_vector* x, void* data, gsl_vector* f, gsl_matrix* J)
 /*****************************/
 /* End GSL fitting machinery */
 /*****************************/
+
+
 
 /** \brief Fit the BSM
  *
@@ -567,9 +569,9 @@ lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pe
     gsl_vector* mvec = gsl_vector_alloc(TRIPOD_BSM_NVARYING);
     vector_of_tripod_bsm(model, mvec);
 
-    fdf.f = &expb_f;
-    fdf.df = &expb_df;
-    fdf.fdf = &expb_fdf;
+    fdf.f = &lcfit_tripod_f;
+    fdf.df = &lcfit_tripod_df;
+    fdf.fdf = &lcfit_tripod_fdf;
     fdf.n = n_pts;
     fdf.p = TRIPOD_BSM_NVARYING;
     fdf.params = &d;
