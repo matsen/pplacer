@@ -354,23 +354,25 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
             let base_ll = Three_tax.log_like tt
             and prior = prior_fun (Placement.location placement)
             and mp = max_pend prefs
-            and cut_bl = Three_tax.get_cut_bl tt
+            and cut_bl = Three_tax.get_cut_bl tt in
+            let upper_limit = Three_tax.find_upper_limit mp prior base_ll tt
             and log_like dist_bl pend_bl =
               Three_tax.set_dist_bl tt dist_bl;
               Three_tax.set_pend_bl tt pend_bl;
               Three_tax.log_like tt
             in
             try
-              let m =
-                Lcfit.Tripod.find_points_fit_model cut_bl mp log_like
-              and upper_limit = Three_tax.find_upper_limit mp prior base_ll tt
-              in
-              Lcfit.Tripod.calc_marg_prob
-                        m
-                        cut_bl
-                        prior
-                        base_ll
-                        upper_limit
+              if cut_bl =~ 0. then
+                let m = Lcfit.Pair.find_points_fit_model (log_like cut_bl) in
+                Lcfit.Pair.calc_marg_prob m prior base_ll upper_limit
+                |> ( *. ) cut_bl
+              else
+                Lcfit.Tripod.calc_marg_prob
+                          (Lcfit.Tripod.find_points_fit_model cut_bl mp log_like)
+                          cut_bl
+                          prior
+                          base_ll
+                          upper_limit
             with
               | Failure s -> Printf.fprintf stderr "%s\n" s; base_ll;
           in

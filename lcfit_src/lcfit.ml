@@ -6,7 +6,7 @@ open Ppatteries
 exception Lcfit_err of (int * string)
 let _ = Callback.register_exception "lcfit_err" (Lcfit_err (0, "any string"))
 
-(* BSM for a pair of taxa *)
+(* BSM for a pair of taxa connected by a branch of length t *)
 module Pair = struct
   type bsm = {c: float; m: float; r: float; b: float}
   type point = (float * float)
@@ -32,8 +32,79 @@ module Pair = struct
     let fac = scale_factor t l m in
     {m with c=m.c*.fac;m=m.m*.fac}
 
+  let default_model =
+    {c=1500.;m=1000.;r=1.0; b=0.5}
+
+  type mononicity_class = Increasing | Decreasing | Non_monotonic | Unknown
+
+  (* Classify a set of points ordered by x-value *)
+  let rec monotonicity pts =
+    match pts with
+    | (t, ll) :: rest ->
+        (let f ((_, last_ll), maybe_inc, maybe_dec) (t, ll) =
+           if ll > last_ll then ((t, ll), maybe_inc, false)
+           else if ll < last_ll then ((t, ll), false, maybe_dec)
+           else ((t, ll), maybe_inc, maybe_dec)
+         in
+         let _, maybe_inc', maybe_dec' = List.fold_left f ((t, ll), true, true) rest
+         in
+         match (maybe_inc', maybe_dec') with
+          | (false, false) -> Non_monotonic
+          | (true, false) -> Increasing
+          | (false, true) -> Decreasing
+          | _ -> Unknown)
+    | [] -> failwith "Points required"
+
+  (* Given a likelihood function, select some points to run L-M on.
+   *
+   * Up to `max_pts` are added to the set until the points enclose an extremum.
+   *
+   * While the function is monotonically increasing, the maximum x-value is
+   * doubled.
+   *
+   * While the function is monotonically decreasing, the minimum y-value is
+   * halved.
+   *)
+  let select_points ?(max_points=8) log_like' pts =
+    let rec aux pts =
+      let n = DynArray.length pts
+      and xi = (DynArray.get pts) |- fst in
+      if n >= max_points then pts
+      else
+      let m = monotonicity (pts |> DynArray.enum |> List.of_enum) in
+      let x, idx = match m with
+        | Non_monotonic -> (((xi 1) +. (xi 2)) /. 2.0, 2)
+        | Increasing -> ((xi (n - 1)) *. 2., n)
+        | Decreasing -> ((xi 0) /. 10.0, 0)
+        | Unknown -> failwith "Unknown monotonicity"
+      in
+      if m = Non_monotonic then pts
+      else begin
+        DynArray.insert pts idx (x, log_like' x);
+        aux pts
+      end
+    in
+    aux pts
+
+  (* Choose points using `select_pts`, fit using top `pts_to_fit`. *)
+  let find_points_fit_model ?(pts_to_fit=4) ?(initial=[0.1; 0.5; 1.0;]) log_like' =
+    (* Select up to max_points to fit *)
+    let pts = List.enum initial
+        |> Enum.map (fun x -> (x, log_like' x))
+        |> DynArray.of_enum
+        |> select_points log_like'
+        |> DynArray.enum
+        |> List.of_enum
+        |> List.sort (fun (_, x) (_, y) -> compare y x)
+        |> List.enum
+        |> Enum.take pts_to_fit
+        |> List.of_enum
+    in
+    let max_pt = List.hd pts in
+    rescale max_pt default_model
+      |> (flip fit (Array.of_list pts))
+
   let calc_marg_prob model prior base_ll upper_limit =
-    (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
     let max_n_exceptions = 10
     and n_exceptions = ref 0
     and ll = log_like model
@@ -59,7 +130,8 @@ module Pair = struct
           | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
               incr n_exceptions;
               perform (upper_limit /. 2.)
-        in perform upper_limit
+    in
+    perform upper_limit
 end
 
 (* BSM for a tripod, with one branch length fixed (reference branch) *)
