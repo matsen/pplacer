@@ -362,10 +362,10 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
             in
             try
               let m =
-                Lcfit.find_points_fit_model cut_bl mp log_like
+                Lcfit.Tripod.find_points_fit_model cut_bl mp log_like
               and upper_limit = Three_tax.find_upper_limit mp prior base_ll tt
               in
-              Lcfit.calc_marg_prob
+              Lcfit.Tripod.calc_marg_prob
                         m
                         cut_bl
                         prior

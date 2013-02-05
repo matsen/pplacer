@@ -15,21 +15,30 @@
 #include <string.h>
 
 #include "lcfit_tripod_c.h"
+#include "lcfit_pair_c.h"
 
-inline void check_model(value model)
+/**********/
+/* Tripod */
+/**********/
+inline void check_model(value model, size_t exp_dim)
 {
-  if(Wosize_val(model) / Double_wosize != TRIPOD_BSM_NPARAM) { \
-    char err[200]; \
-      sprintf(err, "Invalid model dimension: %lu [expected %zu]", \
-          Wosize_val(model) / Double_wosize, \
-          TRIPOD_BSM_NPARAM); \
-      caml_invalid_argument(err); \
-  }
+    if(Wosize_val(model) / Double_wosize != exp_dim) {
+      char err[200];
+        sprintf(err, "Invalid model dimension: %lu [expected %zu]",
+            Wosize_val(model) / Double_wosize,
+            exp_dim);
+        caml_invalid_argument(err);
+    }
+}
+
+inline void check_tripod_model(value model)
+{
+    check_model(model, TRIPOD_BSM_NPARAM);
 }
 
 /* OCaml records containing only floats are stored as arrays of doubles.
  * http://caml.inria.fr/pub/docs/manual-ocaml-4.00/manual033.html#htoc262 */
-inline tripod_bsm_t convert_model(value model) {
+inline tripod_bsm_t convert_tripod_model(value model) {
     tripod_bsm_t m = {Double_field(model, 0),
                       Double_field(model, 1),
                       Double_field(model, 2),
@@ -64,9 +73,9 @@ caml_lcfit_tripod_ll(value model, value dist_bl_value, value pend_bl_value)
 
     double c = Double_val(dist_bl_value), tx = Double_val(pend_bl_value);
 
-    check_model(model);
+    check_tripod_model(model);
 
-    tripod_bsm_t m = convert_model(model);
+    tripod_bsm_t m = convert_tripod_model(model);
 
     double result = lcfit_tripod_ll(c, tx, &m);
     CAMLreturn(caml_copy_double(result));
@@ -92,7 +101,7 @@ caml_lcfit_tripod_fit(value model, value pts)
         sprintf(err, "Insufficient points to fit (%zu)", n);
         caml_invalid_argument(err);
     }
-    check_model(model);
+    check_tripod_model(model);
 
     double *dist_bl = malloc(sizeof(double) * n),
            *pend_bl = malloc(sizeof(double) * n),
@@ -110,7 +119,7 @@ caml_lcfit_tripod_fit(value model, value pts)
         ll[i]      = Double_val(Field(Field(pts, i), 2));
     }
 
-    tripod_bsm_t m = convert_model(model);
+    tripod_bsm_t m = convert_tripod_model(model);
 
     int return_code = lcfit_tripod_fit_bsm(n, dist_bl, pend_bl, ll, &m, 1e-4, 500);
 
@@ -137,8 +146,8 @@ caml_lcfit_tripod_jacobian(value model, value dist_bl_value, value pend_bl_value
 {
     CAMLparam3(model, dist_bl_value, pend_bl_value);
 
-    check_model(model);
-    tripod_bsm_t m = convert_model(model);
+    check_tripod_model(model);
+    tripod_bsm_t m = convert_tripod_model(model);
 
     double* jac = lcfit_tripod_jacobian(Double_val(dist_bl_value), Double_val(pend_bl_value), &m);
 
@@ -157,8 +166,8 @@ caml_lcfit_tripod_est_rx(value model_value, value point_value)
 {
     CAMLparam2(model_value, point_value);
 
-    check_model(model_value);
-    tripod_bsm_t m = convert_model(model_value);
+    check_tripod_model(model_value);
+    tripod_bsm_t m = convert_tripod_model(model_value);
 
     /* Check input point */
     assert(Wosize_val(point_value) == 3);
@@ -173,4 +182,70 @@ caml_lcfit_tripod_est_rx(value model_value, value point_value)
                                                &m)));
 }
 
+/********/
+/* Pair */
+/********/
+inline void check_pair_model(value model)
+{
+  return check_model(model, 4);
+}
+
+/*
+ * model (pair_bsm)
+ * pts   Array of 2-tuples, containing (t, log_like)
+ */
+CAMLprim value caml_lcfit_pair_fit(value model, value pts)
+{
+    CAMLparam2(pts, model);
+
+    assert(Tag_val(pts) == 0 && "Input should be array-ish");
+
+    size_t n = Wosize_val(pts), i;
+
+    /* Verify arguments */
+    if(n < 4) {
+        char err[200];
+        sprintf(err, "Insufficient points to fit (%zu)", n);
+        caml_invalid_argument(err);
+    }
+
+    check_pair_model(model);
+
+    double *t  = malloc(sizeof(double) * n),
+           *ll = malloc(sizeof(double) * n);
+
+    for(i = 0; i < n; i++) {
+        // Check input
+        assert(Wosize_val(Field(pts, i)) == 2);
+        assert(Tag_val(Field(Field(pts, i), 0)) == Double_tag);
+        assert(Tag_val(Field(Field(pts, i), 1)) == Double_tag);
+
+        t[i]  = Double_val(Field(Field(pts, i), 0));
+        ll[i] = Double_val(Field(Field(pts, i), 1));
+    }
+
+    check_pair_model(model);
+
+    bsm_t m = { Double_field(model, 0),
+                Double_field(model, 1),
+                Double_field(model, 2),
+                Double_field(model, 3) };
+
+    /* Run lcfit */
+    int return_code = lcfit_fit_bsm(n, t, ll, &m);
+    if(return_code) {
+        lcfit_raise_exception(gsl_strerror(return_code), return_code);
+    }
+
+    /* Store in output record */
+    CAMLlocal1(result);
+    result = caml_alloc(4 * Double_wosize, Double_array_tag);
+
+    Store_double_field(result, 0, m.c);
+    Store_double_field(result, 1, m.m);
+    Store_double_field(result, 2, m.r);
+    Store_double_field(result, 3, m.b);
+
+    CAMLreturn(result);
+}
 /* vim: set ts=4 sw=4 : */

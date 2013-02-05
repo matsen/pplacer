@@ -1,2 +1,3 @@
 caml_lcfit.o
 lcfit_tripod_c.o
+lcfit_pair_c.o

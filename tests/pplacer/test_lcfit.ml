@@ -1,21 +1,69 @@
 open OUnit
 open Test_util
 open Ppatteries
-open Lcfit
 
-module BA = Bigarray
-module BA1 = Bigarray.Array1
+module P = Lcfit.Pair
+module T = Lcfit.Tripod
 
-let m = {n00=1500.; n01=300.; n10=300.; n11=300.; r=1.; b=0.5; t=0.390296; rx=1.; bx=0.5}
+let m = {T.n00=1500.; T.n01=300.; T.n10=300.; T.n11=300.; T.r=1.; T.b=0.5;
+         T.t=0.390296; T.rx=1.; T.bx=0.5}
 
 let assert_approx_equal ?(epsilon=1e-2) expected actual =
   if not (approx_equal ~epsilon expected actual) then
     assert_failure (Printf.sprintf "%f != %f" actual expected)
 
-let suite = [
+let pair_tests = [
+  "test_pair_fit" >:: begin fun() ->
+    let points = [(0.1,-23753.3);
+                  (0.2,-23701.5);
+                  (0.5,-23648.7);
+                  (1.0,-23677.8);]
+    and init_model = {P.c=1100.0; P.m=800.0; P.r=2.0; P.b=0.5}
+    (* t, actual_ll, fit_ll from c++ interface *)
+    and exp_pts = [(0.04,-23804.9,-23798.2);
+                   (0.08,-23768.0,-23766.9);
+                   (0.12,-23740.3,-23740.8);
+                   (0.16,-23718.7,-23719.2);
+                   (0.20,-23701.5,-23701.5);
+                   (0.24,-23687.8,-23687.1);
+                   (0.28,-23676.8,-23675.7);
+                   (0.32,-23668.1,-23666.7);
+                   (0.36,-23661.3,-23659.9);
+                   (0.40,-23656.1,-23654.9);
+                   (0.44,-23652.2,-23651.5);
+                   (0.48,-23649.6,-23649.3);
+                   (0.52,-23648.1,-23648.4);
+                   (0.56,-23647.4,-23648.3);
+                   (0.60,-23647.5,-23649.1);
+                   (0.64,-23648.4,-23650.5);
+                   (0.68,-23649.9,-23652.4);
+                   (0.72,-23652.0,-23654.8);
+                   (0.76,-23654.5,-23657.5);
+                   (0.80,-23657.5,-23660.5);
+                   (0.84,-23660.9,-23663.8);
+                   (0.88,-23664.7,-23667.2);
+                   (0.92,-23668.8,-23670.6);
+                   (0.96,-23673.2,-23674.2);]
+    in
+    let scaled = P.rescale (0.5, -23648.7) init_model in
+    let fit = P.fit scaled (Array.of_list points) in
+    let log_like = P.log_like fit in
+    let f (t, actual, _) =
+      let fit_ll = log_like t in
+      Float.abs (fit_ll -. actual)
+    in
+    let err = List.enum exp_pts
+      |> map f
+      |> reduce (+.)
+    in
+    assert_bool (Printf.sprintf "Error out of range: %f" err) (err < 41.);
+  end;
+]
+
+let tripod_tests = [
   "test_ll_matches_mathematica" >:: begin fun() ->
     let test_func (tx, c, l) =
-      let actual = Lcfit.log_like m c tx in
+      let actual = T.log_like m c tx in
       assert_approx_equal ~epsilon:1e-2 l actual
     in
     List.iter
@@ -46,7 +94,7 @@ let suite = [
       (1.0, 0.3, [|-1.69220085218;-2.39743613186;-2.33512107292;-2.05465896661;-288.377773824;-416.563035891;-242.874274741;-161.916183161|])
     ]
     and assert_same_jacobian (tx, c, expected) =
-      let actual = Lcfit.jacobian m c tx in
+      let actual = T.jacobian m c tx in
       Array.iter2 assert_approx_equal expected actual
     in
     List.iter assert_same_jacobian data
@@ -72,9 +120,9 @@ let suite = [
                    (0.270001, 0.200001, -706.058159612);
                    (0.240001, 0.390001, -694.333672064);
                    (0.370001, 0.120001, -744.396900924)|]
-    and scaled = Lcfit.rescale (0.180001, 0.400001, -694.3129) m in
-    let fit_model = Lcfit.fit scaled to_fit in
-    let log_like = Lcfit.log_like fit_model in
+    and scaled = T.rescale (0.180001, 0.400001, -694.3129) m in
+    let fit_model = T.fit scaled to_fit in
+    let log_like = T.log_like fit_model in
     let err = to_fit
       |> Array.enum
       |> map (fun (c, tx, l) -> l -. (log_like c tx) |> abs_float)
@@ -85,7 +133,9 @@ let suite = [
   end;
   "test_est_rx" >:: begin fun() ->
     let pt = (0.2,1.0,-1.69) in
-    let res = est_rx m pt in
+    let res = T.est_rx m pt in
     assert_approx_equal 0.986757 res;
   end;
 ]
+
+let suite = pair_tests @ tripod_tests

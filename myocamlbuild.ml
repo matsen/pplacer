@@ -217,7 +217,7 @@ let _ = dispatch begin function
        "cdd_src/cddtypes.h"; "cdd_src/setoper.h"];
 
     dep ["compile"; "c"]
-      ["lcfit_src/lcfit_tripod_c.h"];
+      ["lcfit_src/lcfit_tripod_c.h";"lcfit_src/lcfit_pair_c.h"];
 
     if not is_osx then
       flag ["link"; "ocaml"; "native"] (S[A"-cclib"; A"-lpthread"]);
