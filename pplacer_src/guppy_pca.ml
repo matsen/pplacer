@@ -28,6 +28,8 @@ object (self)
     (Plain (false, "Use a complete eigendecomposition rather than power iteration."))
   val raw_eval = flag "--raw-eval"
     (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
+  val length = flag "--length"
+    (Plain (false, "Right multiply covariance matrix by branch length diagonal matrix."))
 
   method specl =
     super_output#specl
@@ -38,6 +40,8 @@ object (self)
       int_flag write_n;
       toggle_flag scale;
       toggle_flag symmv;
+      toggle_flag raw_eval;
+      toggle_flag length;
     ]
     @ super_splitify#specl
 
@@ -73,9 +77,19 @@ object (self)
       else
         write_n
     in
+    let right_mul_mat =
+        if (fv length) then
+            Some (Linear_utils.diag (
+                Linear_utils.vec_init
+                    (1 + Gtree.top_id t)
+                    (fun i ->
+                        try get_bl t i with
+                        | Gtree.Lacking_branchlength -> 0.)))
+        else None
+    in
     let (eval, evect) =
       Pca.gen_pca ~use_raw_eval:(fv raw_eval)
-                  ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
+                  ~scale ~symmv:(fv symmv) ~right_mul_mat write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl) in
