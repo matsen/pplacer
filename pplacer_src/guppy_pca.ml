@@ -77,19 +77,21 @@ object (self)
       else
         write_n
     in
-    let right_mul_mat =
-        if (fv length) then
-            Some (Linear_utils.diag (
-                Linear_utils.vec_init
-                    (1 + Gtree.top_id t)
-                    (fun i ->
-                        try get_bl t i with
-                        | Gtree.Lacking_branchlength -> 0.)))
-        else None
-    in
+    let faa = Array.of_list data in
     let (eval, evect) =
-      Pca.gen_pca ~use_raw_eval:(fv raw_eval)
-                  ~scale ~symmv:(fv symmv) ~right_mul_mat write_n (Array.of_list data)
+      if (fv length) then let open Linear_utils in begin
+        assert(1 + Gtree.top_id t = Array.length faa.(0));
+        let cov = Pca.covariance_matrix ~scale faa
+        and d = vec_init (1 + Gtree.top_id t) (fun i -> Gtree.get_bl t i)
+        in
+        let dm_root = diag (vec_map sqrt d) in
+        let dm_root_inv = diag (vec_map (fun x -> 1. /. (sqrt x)) d) in
+        let (l, u) = Pca.power_eigen write_n (alloc_mat_mat_mul dm_root (alloc_mat_mat_mul cov dm_root)) in (* NOTE could be optimized *)
+        (l, Gsl_matrix.to_arrays (alloc_mat_mat_mul (Gsl_matrix.of_arrays u) dm_root_inv))
+      end
+      else
+        Pca.gen_pca ~use_raw_eval:(fv raw_eval)
+                    ~scale ~symmv:(fv symmv) write_n faa
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl) in

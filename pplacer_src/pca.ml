@@ -63,13 +63,9 @@ let covariance_matrix ?scale faa =
  * eigenvalues are positive, so eigenvalue divided by the trace is the
  * "fraction" of the variance "explained" by that principal component.
  * *)
-let gen_pca ?(symmv=false) ?(use_raw_eval=false) ?scale ?right_mul_mat n_keep faa =
+let gen_pca ?(symmv=false) ?(use_raw_eval=false) ?scale n_keep faa =
   let eigen = if symmv then symmv_eigen else power_eigen in
-  let pre_cov = covariance_matrix ?scale faa in
-  let cov = match right_mul_mat with
-    | None -> pre_cov
-    | Some x -> Linear_utils.alloc_mat_mat_mul pre_cov x
-  in
+  let cov = covariance_matrix ?scale faa in
   let (raw_evals, evects) = eigen n_keep cov in
   if use_raw_eval then (raw_evals, evects)
   else
