@@ -80,10 +80,17 @@ object (self)
     let faa = Array.of_list data in
     let (eval, evect) =
       if (fv length) then let open Linear_utils in begin
-        assert(1 + Gtree.top_id t = Array.length faa.(0));
         let cov = Pca.covariance_matrix ~scale faa
-        and d = vec_init (1 + Gtree.top_id t) (fun i -> Gtree.get_bl t i)
+        and d = Gsl_vector.create ~init:0. (Array.length faa.(0))
         in
+        (* Put together a reduced branch length vector, such that the ith entry
+        represents the sum of the branch lengths that get collapsed to the ith
+        edge. *)
+        IntMap.iter
+          (fun red_i orig_i -> d.{red_i} <- d.{red_i} +. Gtree.get_bl t orig_i)
+          const_reduction_map;
+        (* ppr_gsl_vector Format.std_formatter d; *)
+        vec_iter (fun x -> assert(x > 0.)) d;
         let dm_root = diag (vec_map sqrt d) in
         let dm_root_inv = diag (vec_map (fun x -> 1. /. (sqrt x)) d) in
         let (l, u) = Pca.power_eigen write_n (alloc_mat_mat_mul dm_root (alloc_mat_mat_mul cov dm_root)) in (* NOTE could be optimized *)

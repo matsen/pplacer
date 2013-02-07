@@ -588,12 +588,15 @@ object (self)
     let orig_length = Array.length (List.hd fal) in
     match fvo rep_edges with
     | None ->
+      (* No filtering; return identity map etc. *)
       fal,
       0 --^ orig_length
         |> Enum.map (identity &&& identity)
         |> IntMap.of_enum,
       orig_length
     | Some max_edge_d ->
+      (* Perform filtering, such that edges that are within max_edge_d of each
+         other are collapsed.*)
       let gt = Mokaphy_common.list_get_same_tree prl in
       find_rep_edges max_edge_d fal gt
       |> self#filter_fal orig_length fal
