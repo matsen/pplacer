@@ -164,6 +164,7 @@ int lcfit_fit_bsm(const size_t n, const double* t, const double* l, bsm_t *m)
         status = gsl_multifit_test_delta(s->dx, s->x, 1e-4, 1e-4);
     } while(status == GSL_CONTINUE && iter < 500);
 
+    if (iter == 500) status = GSL_ENOPROG;
 #define FIT(i) gsl_vector_get(s->x, i)
 #define ERR(i) sqrt(gsl_matrix_get(covar,i,i))
 #ifdef VERBOSE

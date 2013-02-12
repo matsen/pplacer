@@ -100,7 +100,7 @@ tripod_bsm_of_vector(const gsl_vector *v, const double t, tripod_bsm_t* m)
 }
 
 void
-print_tripod_bsm(const tripod_bsm_t* m, FILE* out)
+lcfit_tripod_bsm_fprintf(FILE* out, const tripod_bsm_t* m)
 {
     fprintf(out, "{n00=%f,n01=%f,n10=%f,n11=%f,r=%f,b=%f,t=%f,rx=%f,bx=%f}\n",
             m->n00,
@@ -593,6 +593,10 @@ lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pe
         status = gsl_multifit_test_delta(s->dx, s->x, tol, tol);
         /*status = gsl_multifit_test_gradient(s->dx, tol);*/
     } while(status == GSL_CONTINUE && iter < max_iter);
+
+    /* Raise GSL_ENOPROG if reached maximum iteration count */
+    if(iter == max_iter && !status)
+        status = GSL_ENOPROG;
 
     /* Copy results into model */
     tripod_bsm_of_vector(s->x, model->t, model);

@@ -1,6 +1,7 @@
 #ifndef LCFIT_TRIPOD_H_
 #define LCFIT_TRIPOD_H_
 
+#include <stdio.h>
 #include <stdlib.h>
 
 extern const size_t TRIPOD_BSM_NPARAM;
@@ -37,6 +38,9 @@ lcfit_tripod_nxx_coeff(const tripod_bsm_t*, const double, const double, double*)
 
 double
 lcfit_tripod_est_rx(const double, const double, const double, const tripod_bsm_t*);
+
+void
+lcfit_tripod_bsm_fprintf(FILE*, const tripod_bsm_t*);
 
 /* vim: set ts=4 sw=4 : */
 #endif /* LCFIT_TRIPOD_H_ */

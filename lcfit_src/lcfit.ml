@@ -87,7 +87,7 @@ module Pair = struct
     aux pts
 
   (* Choose points using `select_pts`, fit using top `pts_to_fit`. *)
-  let find_points_fit_model ?(pts_to_fit=4) ?(initial=[0.1; 0.5; 1.0;]) log_like' =
+  let find_points_fit_model ?(pts_to_fit=4) ?(initial=[0.01; 0.1; 0.5; 1.0;]) log_like' =
     (* Select up to max_points to fit *)
     let pts = List.enum initial
         |> Enum.map (fun x -> (x, log_like' x))
