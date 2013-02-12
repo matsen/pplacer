@@ -11,6 +11,8 @@
 /** \brief Default initial conditions */
 const bsm_t DEFAULT_INIT = {1500.0, 1000.0, 1.0, 0.5};
 
+const size_t MAX_ITERS = 500;
+
 double lcfit_bsm_log_like(const double t, const bsm_t* m)
 {
     double expterm = exp(-m->r * (t + m->b));
@@ -162,9 +164,11 @@ int lcfit_fit_bsm(const size_t n, const double* t, const double* l, bsm_t *m)
             break;
 
         status = gsl_multifit_test_delta(s->dx, s->x, 1e-4, 1e-4);
-    } while(status == GSL_CONTINUE && iter < 500);
+    } while(status == GSL_CONTINUE && iter < MAX_ITERS);
 
-    if (iter == 500) status = GSL_ENOPROG;
+    if (iter == MAX_ITERS && !status)
+        status = GSL_ENOPROG;
+
 #define FIT(i) gsl_vector_get(s->x, i)
 #define ERR(i) sqrt(gsl_matrix_get(covar,i,i))
 #ifdef VERBOSE

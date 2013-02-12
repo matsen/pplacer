@@ -238,7 +238,7 @@ module Tripod = struct
     choose_rx_fit
       m
       (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
-      [1e-5; 1e-4; 1e-3; 1e-2; 1e-1; 1e0; 1e1;]
+    [0.5;]
 
   let calc_marg_prob model cut_bl prior base_ll upper_limit =
     (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
