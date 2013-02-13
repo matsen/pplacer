@@ -94,7 +94,7 @@ object (self)
         let dm_root = diag (vec_map sqrt d) in
         let dm_root_inv = diag (vec_map (fun x -> 1. /. (sqrt x)) d) in
         let (l, u) = Pca.power_eigen write_n (alloc_mat_mat_mul dm_root (alloc_mat_mat_mul cov dm_root)) in (* NOTE could be optimized *)
-        (l, Gsl_matrix.to_arrays (alloc_mat_mat_mul (Gsl_matrix.of_arrays u) dm_root_inv))
+        (l, Gsl_matrix.to_arrays (alloc_mat_mat_mul (Gsl_matrix.of_arrays u) dm_root))
       end
       else
         Pca.gen_pca ~use_raw_eval:(fv raw_eval)
