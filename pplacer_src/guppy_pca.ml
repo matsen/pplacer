@@ -92,8 +92,8 @@ object (self)
         (* ppr_gsl_vector Format.std_formatter d; *)
         vec_iter (fun x -> assert(x > 0.)) d;
         let dm_root = diag (vec_map sqrt d) in
-        let dm_root_inv = diag (vec_map (fun x -> 1. /. (sqrt x)) d) in
-        let (l, u) = Pca.power_eigen write_n (alloc_mat_mat_mul dm_root (alloc_mat_mat_mul cov dm_root)) in (* NOTE could be optimized *)
+        let m = alloc_mat_mat_mul dm_root (alloc_mat_mat_mul cov dm_root) in
+        let (l, u) = Pca.power_eigen write_n m in
         (l, Gsl_matrix.to_arrays (alloc_mat_mat_mul (Gsl_matrix.of_arrays u) dm_root))
       end
       else

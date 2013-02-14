@@ -26,36 +26,36 @@ let symmv_eigen n_keep m =
 
 let column aa j = Array.init (Array.length aa) (fun i -> aa.(i).(j))
 
-(* pass in an a by n array of arrays, and make the corresponding n by n
- * covariance matrix. this is the standard way, such that rows represent
- * observations and columns represent variables.
- * Assuming rectangularity, etc, and clearly not highly optimized.
+(* Pass in an n by p array of arrays, and make the corresponding p by p
+ * sample covariance matrix (i.e. such that divisor is n-1). Scale determines
+ * if entries should be divided by the product of the standard deviations to
+ * get a matrix of sample correlation coefficients.
  * *)
 let covariance_matrix ?scale faa =
-  let n = Array.length faa.(0) in
-  let m = Gsl_matrix.create n n
-  and col = Array.init n (column faa)
+  let x = Gsl_matrix.of_arrays faa
+  and inv k = 1./.(float_of_int k)
   in
-  let base_cov i j = Gsl_stats.covariance col.(i) col.(j) in
-  let f = match scale with
-    | None | Some false -> base_cov
+  let (n, p) = Gsl_matrix.dims x in
+  let h = Linear_utils.mat_init n n
+            (fun i j -> if i=j then 1.-.(inv n) else -.(inv n))
+  and a = Gsl_matrix.create n p
+  and cov = Gsl_matrix.create p p
+  in
+  Linear_utils.mat_mat_mul a h x;
+  Gsl_blas.syrk Gsl_blas.Upper Gsl_blas.Trans ~alpha:(inv (n-1)) ~a:a ~beta:0. ~c:cov;
+  let scale_f = match scale with
+    | None | Some false -> (fun x _ _ -> x)
     | Some true ->
-        let dia = Array.init n (fun i -> sqrt(base_cov i i)) in
-        (fun i j ->
-          let num = base_cov i j
-          and denom = dia.(i) *. dia.(j)
-          in
-          if denom = 0. then (assert (num = 0.); 0.)
-          else num /. denom)
+      let scalefact = Linear_utils.vec_init p (fun i -> 1./.sqrt(cov.{i,i})) in
+      (fun x i j -> x *. scalefact.{i} *. scalefact.{j})
   in
-  for i=0 to n-1 do
-    for j=i to n-1 do
-      let cov = f i j in
-      m.{i,j} <- cov;
-      m.{j,i} <- cov;
+  for i=0 to p-1 do
+    for j=i to p-1 do
+      cov.{i,j} <- scale_f cov.{i,j} i j;
+      cov.{j,i} <- cov.{i,j};
     done;
   done;
-  m
+  cov
 
 (* Return (evals, evects), where only the top n_keep are kept.
  * Optionally, scale the eigenvalues by the trace of the covariance matrix.
