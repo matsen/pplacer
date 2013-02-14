@@ -11,6 +11,7 @@
 let tolerance = 1e-12
 
 open Bigarray
+open Ppatteries
 
 
 (* *** Vector operations *** *)
@@ -208,7 +209,16 @@ let symm_eigs m =
 
 (* pretty printers *)
 let ppr_gsl_vector ff y =
-  Format.fprintf ff "@[{";
-  Ppr.ppr_list_inners Format.pp_print_float ff (
+  Legacy.Format.fprintf ff "@[{";
+  Ppr.ppr_list_inners Legacy.Format.pp_print_float ff (
     Array.to_list (Gsl_vector.to_array y));
-  Format.fprintf ff "}@]"
+  Legacy.Format.fprintf ff "}@]"
+
+let ppr_gsl_matrix ff m =
+  let nrows, _ = Gsl_matrix.dims m in
+  Legacy.Format.fprintf ff "@[{";
+  for i=0 to nrows-1 do
+    ppr_gsl_vector ff (Gsl_matrix.row m i);
+    if i < nrows-1 then Legacy.Format.fprintf ff ";@ "
+  done;
+  Legacy.Format.fprintf ff "}@]"
