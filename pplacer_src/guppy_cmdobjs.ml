@@ -566,8 +566,7 @@ object (self)
       fun x -> let y = splitify x in sgn y *. abs_float y ** kappa
 
   (* Take a placerun and turn it into a vector which is indexed by the edges of
-   * the tree.
-   * Later we may cut the edge mass in half; right now we don't do anything with it. *)
+   * the tree. *)
   method private splitify_placerun weighting criterion pr =
     let preim = Mass_map.Pre.of_placerun weighting criterion pr
     and t = Placerun.get_ref_tree pr
