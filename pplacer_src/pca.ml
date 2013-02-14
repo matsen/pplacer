@@ -8,12 +8,15 @@ let max_iter = 100000
 
 let dot = ArrayFuns.fold_left2 (fun s x1 x2 -> s +. (x1 *. x2)) 0.
 
-(* Returns array of values, and then array of vectors (i.e. left eigenmatrix if
-  * considered as a matrix). Just keep the top n_keep eigenpairs. *)
+(* Returns array of values, and then array of GSL vectors (i.e. left
+ * eigenmatrix if considered as a matrix). Just keep the top n_keep
+ * eigenpairs.
+ * Eigenvalues returned as a float array, and eigenvects as an array of GSL
+ * vectors. *)
 let power_eigen n_keep m =
-  let eiga = Power_iteration.top_eigs m tol max_iter n_keep in
-  (Array.map (fun e -> e.Power_iteration.l) eiga,
-   Array.map (fun e -> Gsl_vector.to_array (e.Power_iteration.v)) eiga)
+  let open Power_iteration in
+  let eiga = top_eigs m tol max_iter n_keep in
+  (Array.map (fun e -> e.l) eiga, Array.map (fun e -> e.v) eiga)
 
 (* Alternative version that uses symmv rather than power iteration. *)
 let symmv_eigen n_keep m =
@@ -21,16 +24,15 @@ let symmv_eigen n_keep m =
   Gsl_eigen.symmv_sort (evalv, evectm) Gsl_eigen.ABS_DESC;
   (* GSL makes nice column vectors *)
   Gsl_matrix.transpose_in_place evectm;
-  let sub a = Array.sub a 0 n_keep in
-  (sub (Gsl_vector.to_array evalv), sub (Gsl_matrix.to_arrays evectm))
-
-let column aa j = Array.init (Array.length aa) (fun i -> aa.(i).(j))
+  (Array.sub (Gsl_vector.to_array evalv) 0 n_keep,
+  Array.init n_keep (Gsl_matrix.row evectm))
 
 (* Pass in an n by p array of arrays, and make the corresponding p by p
  * sample covariance matrix (i.e. such that divisor is n-1). Scale determines
  * if entries should be divided by the product of the standard deviations to
  * get a matrix of sample correlation coefficients.
- * *)
+ * Eigenvalues returned as a float array, and eigenvects as an array of GSL
+ * vectors. *)
 let covariance_matrix ?scale faa =
   let x = Gsl_matrix.of_arrays faa
   and inv k = 1./.(float_of_int k)
@@ -62,14 +64,15 @@ let covariance_matrix ?scale faa =
  * Don't forget that the covariance matrix is positive definite, thus the
  * eigenvalues are positive, so eigenvalue divided by the trace is the
  * "fraction" of the variance "explained" by that principal component.
+ * Eigenvects returned as a float array array.
  * *)
 let gen_pca ?(symmv=false) ?(use_raw_eval=false) ?scale n_keep faa =
   let eigen = if symmv then symmv_eigen else power_eigen in
   let cov = covariance_matrix ?scale faa in
   let (raw_evals, evects) = eigen n_keep cov in
-  if use_raw_eval then (raw_evals, evects)
+  if use_raw_eval then (raw_evals, Array.map Gsl_vector.to_array evects)
   else
     (let tr = Linear_utils.trace cov in
     Array.map (fun eval -> assert(eval < tr); eval /. tr) raw_evals,
-    evects)
+    Array.map Gsl_vector.to_array evects)
 

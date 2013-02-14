@@ -10,6 +10,41 @@ let expand full_length m arr =
   Array.iteri (fun i v -> full.(IntMap.find i m) <- v) arr;
   full
 
+(* Multiplication of matrices by diagonal vectors on left and right sides. The
+ * examples below are based on:
+let vd = Gsl_vector.of_array [|1.; 2.; 3.;|];;
+let faa = [| [| 2.; 1.; 5.; |]; [| 2.; 4.; 0.; |] |];;
+*)
+
+(*
+let m = Gsl_matrix.of_arrays faa;;
+left_diag_mul_mat vd m;;
+- : Gsl_matrix.matrix = {{2.; 1.; 5.}; {4.; 8.; 0.}}
+*)
+let left_diag_mul_mat vd m =
+  for i=0 to (fst (Gsl_matrix.dims m))-1 do
+    Gsl_vector.scale (Gsl_matrix.row m i) vd.{i}
+  done
+
+(*
+let m = Gsl_matrix.of_arrays faa;;
+right_diag_mul_mat m vd;;
+- : Gsl_matrix.matrix = {{2.; 2.; 15.}; {2.; 8.; 0.}}
+*)
+let right_diag_mul_mat m vd =
+  for i=0 to (fst (Gsl_matrix.dims m))-1 do
+    Gsl_vector.mul (Gsl_matrix.row m i) vd
+  done
+
+(*
+let va = Array.map Gsl_vector.of_array faa;;
+right_diag_mul_va va vd;;
+- : Gsl_vector.vector array = [|{2.; 2.; 15.}; {2.; 8.; 0.}|]
+*)
+let right_diag_mul_va va vd =
+  Array.iter (fun v -> Gsl_vector.mul v vd) va
+
+
 class cmd () =
 object (self)
   inherit subcommand () as super
@@ -29,7 +64,7 @@ object (self)
   val raw_eval = flag "--raw-eval"
     (Plain (false, "Output the raw eigenvalue rather than the fraction of variance."))
   val length = flag "--length"
-    (Plain (false, "Right multiply covariance matrix by branch length diagonal matrix."))
+    (Plain (false, "'Length PCA'. Experimental."))
 
   method specl =
     super_output#specl
@@ -80,7 +115,7 @@ object (self)
     let faa = Array.of_list data in
     let (eval, evect) =
       if (fv length) then let open Linear_utils in begin
-        let cov = Pca.covariance_matrix ~scale faa
+        let m = Pca.covariance_matrix ~scale faa
         and d = Gsl_vector.create ~init:0. (Array.length faa.(0))
         in
         (* Put together a reduced branch length vector, such that the ith entry
@@ -91,10 +126,20 @@ object (self)
           const_reduction_map;
         (* ppr_gsl_vector Format.std_formatter d; *)
         vec_iter (fun x -> assert(x > 0.)) d;
-        let dm_root = diag (vec_map sqrt d) in
-        let m = alloc_mat_mat_mul dm_root (alloc_mat_mat_mul cov dm_root) in
-        let (l, u) = Pca.power_eigen write_n m in
-        (l, Gsl_matrix.to_arrays (alloc_mat_mat_mul (Gsl_matrix.of_arrays u) dm_root))
+        (* The trick for diagonalizing matrices of the form GD, where D is
+         * diagonal. See diagd.ml for notes. *)
+        let d_root = vec_map sqrt d in
+        left_diag_mul_mat d_root m;
+        right_diag_mul_mat m d_root;
+        let (l, u) =
+          (if (fv symmv) then Pca.symmv_eigen else Pca.power_eigen) write_n m
+        in
+        (* If we were just going for the eigenvects of GD then this would be a
+         * right multiplication of the inverse of the diagonal matrix d_root.
+         * However, according to length PCA we must multiply on the right by d,
+         * which ends up just being right multiplication by d_root. *)
+        right_diag_mul_va u d_root;
+        (l, Array.map Gsl_vector.to_array u)
       end
       else
         Pca.gen_pca ~use_raw_eval:(fv raw_eval)
