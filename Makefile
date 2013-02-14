@@ -4,6 +4,12 @@ DEBUG=pplacer.d guppy.d rppr.d
 all: $(RELEASE)
 debug: $(DEBUG)
 
+# For OPAM
+OCAML_TOPLEVEL_PATH = $$OCAML_TOPLEVEL_PATH
+ifneq ($(OCAML_TOPLEVEL_PATH),)
+	TOPLEVEL_FLAGS=-I ${OCAML_TOPLEVEL_PATH}
+endif
+
 $(RELEASE):
 	if [ ! -e bin ]; then mkdir bin; fi
 	make $@.native
@@ -32,7 +38,7 @@ test: tests.native
 	./tests.native
 
 %.runtop: %.top
-	rlwrap ./$*.top
+	rlwrap ./$*.top `find _build -name "*.cmi" | xargs -n1 dirname | sort -u | sed -e 's/^/-I /'` $(TOPLEVEL_FLAGS)
 
 runcaml:
 	rlwrap ocaml
