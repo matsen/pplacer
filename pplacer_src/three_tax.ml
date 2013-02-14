@@ -12,12 +12,16 @@ struct
   module Glv = Model.Glv
   module Glv_edge = Glv_edge.Make(Model)
 
+  type point = {dist_bl: float; pend_bl: float}
+  type cachetbl = (point, float) Hashtbl.t
+
   type three_tax = {
     model: Model.t;
     util_v: Gsl_vector.vector; (* should be as long as the number of sites *)
     prox: Glv_edge.t;      (* the proximal glv *)
     dist: Glv_edge.t;      (* the distal glv *)
     pend: Glv_edge.t;      (* the pendant, i.e. query glv *)
+    ll_cache: cachetbl;
   }
 
   let get_pend_bl tt = Glv_edge.get_bl tt.pend
@@ -25,15 +29,33 @@ struct
   let get_prox_bl tt = Glv_edge.get_bl tt.prox
   let get_cut_bl tt = (get_dist_bl tt) +. (get_prox_bl tt)
 
-  let make model util_v ~prox ~dist ~pend = {model; util_v; prox; dist; pend}
+  let get_cache tt = tt.ll_cache
+
+  let dump_cache ?(prefix="") f tt =
+    Hashtbl.iter
+      (fun {dist_bl=dist; pend_bl=pend} like ->
+        Printf.fprintf f "%s%f,%f,%f\n" prefix dist pend like)
+      tt.ll_cache
+
+  let make model util_v ~prox ~dist ~pend =
+    {model=model; util_v=util_v; prox=prox; dist=dist; pend=pend;
+     ll_cache=Hashtbl.create 128;}
 
   let log_like tt =
-    Model.log_like3
-      tt.model
-      tt.util_v
-      (Glv_edge.get_evolv tt.prox)
-      (Glv_edge.get_evolv tt.dist)
-      (Glv_edge.get_evolv tt.pend)
+    let k = {dist_bl=get_dist_bl tt;
+             pend_bl=get_pend_bl tt}
+    and cache = tt.ll_cache
+    in
+    match Hashtbl.find_option cache k with
+      | Some l -> l
+      | None ->
+          (Model.log_like3
+             tt.model
+             tt.util_v
+             (Glv_edge.get_evolv tt.prox)
+             (Glv_edge.get_evolv tt.dist)
+             (Glv_edge.get_evolv tt.pend)
+              |> tap (Hashtbl.add cache k))
 
   let set_pend_bl tt pend_bl =
     Glv_edge.set_bl tt.model tt.pend pend_bl
