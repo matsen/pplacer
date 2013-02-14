@@ -559,8 +559,13 @@ lcfit_tripod_fdf(const gsl_vector* x, void* data, gsl_vector* f, gsl_matrix* J)
  *  \returns GSL status code; GSL_SUCCESS on success.
  */
 int
-lcfit_tripod_fit_bsm(const size_t n_pts, const double* dist_bl, const double* pend_bl, const double* l, tripod_bsm_t* model,
-                     const double tol, const size_t max_iter)
+lcfit_tripod_fit_bsm(const size_t n_pts,
+                     const double* dist_bl,
+                     const double* pend_bl,
+                     const double* l,
+                     tripod_bsm_t* model,
+                     const double tol,
+                     const size_t max_iter)
 {
     tripod_data_to_fit d = {n_pts, dist_bl, pend_bl, l, model->t};
 
