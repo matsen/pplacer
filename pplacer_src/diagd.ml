@@ -10,8 +10,12 @@
  * \pi_i B_{ii} + \sum_{j \ne i} pi_j B_{ij} = 0, i.e.
  * B_{ii} = - (1/pi_i) \sum_{j \ne i} pi_j B_{ij}.
  *
- * From there the DB matrix is easily diagonalized; see Felsenstein p. 206 or
- * pplacer/scans/markov_process_db_diag.pdf.
+ * From there the DB matrix is easily diagonalized:
+ * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
+ * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
+ * Thus we want X = D^{1/2} U, and so
+ * X inverse transpose is D^{-1/2} U.
+ * See Felsenstein p. 206.
  *
  * For this module, x and lambdav are such that x diag(lambdav) x^{-1} is the
  * matrix being diagonalized.
@@ -110,13 +114,7 @@ let of_symmetric m =
 
 (* d = vector for diagonal, b = symmetric matrix which has been set up with
  * diagonal entries so that BD is a Q-transpose matrix (with zero column
- * totals). see top. *)
-(* See Felsenstein p.206.
- * Say that U \Lambda U^T = D^{1/2} B D^{1/2}.
- * Then DB = (D^{1/2} U) \Lambda (D^{1/2} U)^{-1}
- * Thus we want X = D^{1/2} U, and so
- * X inverse transpose is D^{-1/2} U.
- * *)
+ * totals). See top. *)
 let of_d_b d b =
   (* make sure that diagonal matrix is all positive *)
   if not (vec_nonneg d) then
