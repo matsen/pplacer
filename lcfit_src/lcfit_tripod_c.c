@@ -603,6 +603,13 @@ lcfit_tripod_fit_bsm(const size_t n_pts,
     if(iter == max_iter && !status)
         status = GSL_ENOPROG;
 
+#ifdef LCFIT_DEBUG
+    const double chi = gsl_blas_dnrm2(s->f),
+                 dof = n_pts - TRIPOD_BSM_NVARYING;
+    const double c = GSL_MAX_DBL(1, chi / sqrt(dof));
+    fprintf(stderr, "chisq/dof = %g\n",  pow(chi, 2.0) / dof);
+#endif
+
     /* Copy results into model */
     tripod_bsm_of_vector(s->x, model->t, model);
 

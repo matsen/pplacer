@@ -155,10 +155,10 @@ int lcfit_fit_bsm(const size_t n, const double* t, const double* l, bsm_t *m)
         iter++;
         status = gsl_multifit_fdfsolver_iterate(s);
 
-#ifdef VERBOSE
+#ifdef LCFIT_DEBUG
         printf("status = %s\n", gsl_strerror(status));
         print_state(iter, s);
-#endif /* VERBOSE */
+#endif /* LCFIT_DEBUG */
 
         if(status)
             break;
@@ -171,7 +171,7 @@ int lcfit_fit_bsm(const size_t n, const double* t, const double* l, bsm_t *m)
 
 #define FIT(i) gsl_vector_get(s->x, i)
 #define ERR(i) sqrt(gsl_matrix_get(covar,i,i))
-#ifdef VERBOSE
+#ifdef LCFIT_DEBUG
     gsl_matrix* covar = gsl_matrix_alloc(4, 4);
     gsl_multifit_covar(s->J, 0.0, covar);
     gsl_matrix_fprintf(stdout, covar, "%g");
@@ -180,10 +180,15 @@ int lcfit_fit_bsm(const size_t n, const double* t, const double* l, bsm_t *m)
     printf("c = %.5f +/- %.5f\n", FIT(0), ERR(0));
     printf("m = %.5f +/- %.5f\n", FIT(1), ERR(1));
     printf("r = %.5f +/- %.5f\n", FIT(2), ERR(2));
-    printf("r = %.5f +/- %.5f\n", FIT(3), ERR(3));
+    printf("b = %.5f +/- %.5f\n", FIT(3), ERR(3));
 
     printf("status = %s\n", gsl_strerror(status));
-#endif /* VERBOSE */
+
+    const double chi = gsl_blas_dnrm2(s->f),
+                 dof = n_pts - TRIPOD_BSM_NVARYING;
+    const double c = GSL_MAX_DBL(1, chi / sqrt(dof));
+    printf("chisq/dof = %g\n",  pow(chi, 2.0) / dof);
+#endif /* LCFIT_DEBUG */
 
     // Update fit
     m->c = FIT(0);
