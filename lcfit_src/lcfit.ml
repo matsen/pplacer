@@ -184,6 +184,26 @@ module Tripod = struct
   let default_model t =
     {n00=1500.;n01=300.;n10=300.;n11=300.;r=1.;b=0.5;t=t;rx=1.;bx=0.5}
 
+  (* Remove any points from `pts` within `min_dist` of an earlier point. *)
+  (* TODO: something smarter here? O(n^2) *)
+  let remove_near_neighbors ?(min_dist=1e-4) pts =
+    let sq = flip Float.pow 2.0 in
+    let sq_min = sq min_dist in
+    let any_close kept (x, y, _) =
+      List.enum kept
+        |> Enum.map (fun (x', y', _) -> (sq (x -. x')) +. (sq (y -. y')))
+        |> Enum.exists (fun i -> i < sq_min)
+    in
+    let rec aux kept = function
+      | [] -> kept
+      | pt :: rest ->
+          if any_close kept pt then
+            aux kept rest
+          else
+            aux (pt :: kept) rest
+    in
+    aux [] pts
+
   (* Evaluate log_like' at the cartesian product of points sampled uniformly
    * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using `keep_top` of
    * these points *)
