@@ -205,60 +205,38 @@ module Tripod = struct
     aux [] pts
 
   (* Evaluate log_like' at the cartesian product of points sampled uniformly
-   * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using `keep_top` of
-   * these points *)
-  let find_points_fit_model ?(n_dist=10) ?(n_pend=10) ?(keep_top=50) cut_bl max_pend log_like' =
-    let evenly_spaced n min max =
-      let d = max -. min
-      and nf = (Float.of_int n) -. 1.0
+   * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using these points
+   * and additional points in `pts` *)
+  let find_points_fit_model ?(max_pend=2.0) cut_bl log_like' pts =
+    let lattice n =
+      let tuple2_extend f (x, y) = (x, y, f x y) in
+      let seq min max =
+        let d = max -. min
+        and nf = (Float.of_int n) -. 1.0 in
+        assert(d > 0.);
+        0 -- (n - 1)
+        |> map Float.of_int
+        |> map (fun i -> min +. (d *.i) /. nf)
+        |> List.of_enum
       in
-      assert(d > 0.);
-      0 -- (n - 1)
-      |> map Float.of_int
-      |> map (fun i -> min +. (d *. i) /. nf)
-      |> List.of_enum
+      List.cartesian_product (seq 1e-5 (cut_bl -. 1e-5)) (seq 1e-5 max_pend)
+        |> List.map (tuple2_extend log_like')
+    and drop_low_ll ?(ll_diff=20.0) pts =
+      let max_ll = List.enum pts
+        |> Enum.map Tuple3.third
+        |> Enum.arg_max identity
+      in
+      List.filter (fun i -> (Tuple3.third i) >= max_ll -. ll_diff) pts
     in
-    let dist_bls = if cut_bl =~ 0.  then [cut_bl] else evenly_spaced n_dist 1e-6 (cut_bl -. 1e-6)
-    and pend_bls = evenly_spaced n_pend 1e-6 max_pend
-    in
-    let pts = List.cartesian_product dist_bls pend_bls
-      |> List.map (fun (dist_bl, pend_bl) ->
-          (dist_bl, pend_bl, (log_like' dist_bl pend_bl)))
-      |> List.sort (fun (_,_,a) (_,_,b) -> Float.compare b a)
+    let lattice_pts = lattice 10 in
+    let pts' = remove_near_neighbors pts
+      |> List.append lattice_pts
+      |> drop_low_ll
     in
     let max_ll = List.hd pts in
     let init_model = default_model cut_bl |> rescale max_ll in
-    (* See which direction to move rx *)
-    let pend_pt = pts
-      |> List.enum
-      |> Enum.filter (fun (d,p,_) -> d =~ (Tuple3.first max_ll) && p =~ max_pend)
-      |> Enum.get
-      |> Option.get
-    in
-    let m =
-      if (Tuple3.third max_ll) > (Tuple3.third pend_pt) then
-        {init_model with rx=1e-5}
-      else
-        rescale_rx pend_pt init_model
-    in
-    let rec choose_rx_fit m pts rxs =
-      match rxs with
-      | rx :: tail ->
-        (try
-           fit
-             {m with rx=rx}
-             pts
-         with
-         | Lcfit_err(c, s) ->
-           match tail with
-           | [] -> raise (Lcfit_err (c, s))
-           | _ -> choose_rx_fit m pts tail)
-      | _ -> failwith "No rxs"
-    in
-    choose_rx_fit
-      m
-      (pts |> List.enum |> Enum.take keep_top |> Array.of_enum)
-    [0.5;]
+    fit {init_model with rx=0.5} (Array.of_list pts')
+
 
   let calc_marg_prob model cut_bl prior base_ll upper_limit =
     (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
