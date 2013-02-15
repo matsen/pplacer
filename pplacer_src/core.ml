@@ -187,6 +187,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     in
     (* set tt edges to be for location loc with given pendant and distal branch lengths *)
     let set_tt_edges loc ~pendant ~distal =
+      Three_tax.set_edge tt loc;
       let cut_bl = Gtree.get_bl gtree loc in
       let set_edge edge glv_arr len =
         Glv.mask_into

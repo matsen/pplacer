@@ -13,7 +13,8 @@ struct
   module Glv_edge = Glv_edge.Make(Model)
 
   type point = {dist_bl: float; pend_bl: float}
-  type cachetbl = (point, float) Hashtbl.t
+  type edge_cache = (point, float) Hashtbl.t
+  type cachetbl = (int, edge_cache) Hashtbl.t
 
   type three_tax = {
     model: Model.t;
@@ -21,6 +22,11 @@ struct
     prox: Glv_edge.t;      (* the proximal glv *)
     dist: Glv_edge.t;      (* the distal glv *)
     pend: Glv_edge.t;      (* the pendant, i.e. query glv *)
+    mutable edge: int;
+    (* Log-likelihood cache.
+     *
+     * ll_cache is a hashtable of hashtables, mapping from:
+     *   edge_num -> {dist_bl, pend_bl} -> log_like *)
     ll_cache: cachetbl;
   }
 
@@ -30,23 +36,31 @@ struct
   let get_cut_bl tt = (get_dist_bl tt) +. (get_prox_bl tt)
 
   let get_cache tt = tt.ll_cache
+  let clear_cache tt = Hashtbl.clear tt.ll_cache
+  let set_edge tt loc = tt.edge <- loc
+  let get_edge tt = tt.edge
 
   let dump_cache ?(prefix="") f tt =
-    Hashtbl.iter
-      (fun {dist_bl=dist; pend_bl=pend} like ->
-        Printf.fprintf f "%s%f,%f,%f\n" prefix dist pend like)
-      tt.ll_cache
+    let p edge {dist_bl=dist; pend_bl=pend;} like =
+        Printf.fprintf f "%s%d,%f,%f,%f\n" prefix edge dist pend like
+    in
+    Hashtbl.iter (fun edge tbl -> Hashtbl.iter (p edge) tbl) tt.ll_cache
 
   let make model util_v ~prox ~dist ~pend =
     {model=model; util_v=util_v; prox=prox; dist=dist; pend=pend;
-     ll_cache=Hashtbl.create 128;}
+     ll_cache=Hashtbl.create 32; edge=(-1)}
 
   let log_like tt =
-    let k = {dist_bl=get_dist_bl tt;
-             pend_bl=get_pend_bl tt}
-    and cache = tt.ll_cache
+    let edge_cache = match Hashtbl.find_option tt.ll_cache tt.edge with
+    | Some c -> c
+    | None ->
+        let c = Hashtbl.create 1024 in
+        Hashtbl.add tt.ll_cache tt.edge c;
+        c
     in
-    match Hashtbl.find_option cache k with
+    let k = {dist_bl=get_dist_bl tt; pend_bl=get_pend_bl tt}
+    in
+    match Hashtbl.find_option edge_cache k with
       | Some l -> l
       | None ->
           (Model.log_like3
@@ -55,7 +69,7 @@ struct
              (Glv_edge.get_evolv tt.prox)
              (Glv_edge.get_evolv tt.dist)
              (Glv_edge.get_evolv tt.pend)
-              |> tap (Hashtbl.add cache k))
+              |> tap (Hashtbl.add edge_cache k))
 
   let set_pend_bl tt pend_bl =
     Glv_edge.set_bl tt.model tt.pend pend_bl
