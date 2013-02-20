@@ -87,7 +87,11 @@ module Pair = struct
     aux pts
 
   (* Choose points using `select_pts`, fit using top `pts_to_fit`. *)
-  let find_points_fit_model ?(pts_to_fit=4) ?(initial=[0.01; 0.1; 0.5; 1.0;]) log_like' =
+  let find_points_fit_model
+      ?(init_model=default_model)
+      ?(pts_to_fit=4)
+      ?(initial=[0.01; 0.1; 0.5; 1.0;])
+      log_like' =
     (* Select up to max_points to fit *)
     let pts = List.enum initial
         |> Enum.map (fun x -> (x, log_like' x))
@@ -101,8 +105,8 @@ module Pair = struct
         |> List.of_enum
     in
     let max_pt = List.hd pts in
-    rescale max_pt default_model
-      |> (flip fit (Array.of_list pts))
+    (rescale max_pt init_model
+       |> (flip fit (Array.of_list pts)), pts)
 
   let calc_marg_prob model prior base_ll upper_limit =
     let max_n_exceptions = 10
@@ -132,6 +136,66 @@ module Pair = struct
               perform (upper_limit /. 2.)
     in
     perform upper_limit
+end
+
+(* BSM for a tripod, fitting the two-taxon model for each distal branch length *)
+module TPair = struct
+  module P = Pair
+  let calc_marg_prob ~rel_err ~cut_bl ~max_pend prior base_ll log_like =
+    let abs_err = 0.
+    and max_n_exceptions = 10
+    and n_exceptions = ref 0
+    and model = ref P.default_model
+    and pts = ref [0.01; 0.1; 0.5; 1.0]
+    in
+    let rec perform upper_limit =
+      if !n_exceptions >= max_n_exceptions then begin
+        Printf.printf
+          "Warning: integration did not converge after changing bounds %d times\n"
+          max_n_exceptions;
+        base_ll
+      end
+      else
+        let inner_integration dist_bl =
+          let pmax = List.max !pts in
+          let init_pts = if pmax > upper_limit then
+              List.map (( *. ) (upper_limit /. pmax)) !pts
+            else
+              !pts
+          in
+          let model', pts' = P.find_points_fit_model
+            ~init_model:!model
+            ~initial:init_pts
+            (log_like dist_bl)
+          in
+          model := model';
+          (* pts := List.map fst pts'; *)
+          let log_like' = P.log_like model' in
+          let f p = (exp ((log_like' p) -. base_ll)) *. (prior p) in
+          Integration.value_integrate
+            f
+            0.
+            upper_limit
+            ~abs_err
+            ~rel_err
+        in
+        let outer_integration () =
+          (/.)
+            (Integration.value_integrate
+               inner_integration 0. cut_bl ~abs_err ~rel_err)
+            cut_bl
+        in
+        try
+          (if cut_bl =~ 0. then inner_integration (cut_bl /. 2.)
+           else outer_integration ())
+            |> log
+            |> (+.) base_ll
+        with
+          | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
+              incr n_exceptions;
+              perform (upper_limit /. 2.)
+    in
+    perform max_pend
 end
 
 (* BSM for a tripod, with one branch length fixed (reference branch) *)

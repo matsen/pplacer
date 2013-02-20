@@ -363,17 +363,13 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
               Three_tax.log_like tt
             in
             try
-              if cut_bl =~ 0. then
-                let m = Lcfit.Pair.find_points_fit_model (log_like cut_bl) in
-                Lcfit.Pair.calc_marg_prob m prior base_ll upper_limit
-                |> ( *. ) cut_bl
-              else
-                Lcfit.Tripod.calc_marg_prob
-                          (Lcfit.Tripod.find_points_fit_model cut_bl mp log_like)
-                          cut_bl
-                          prior
-                          base_ll
-                          upper_limit
+              Lcfit.TPair.calc_marg_prob 
+                ~rel_err:(pp_rel_err prefs)
+                ~cut_bl:cut_bl
+                ~max_pend:upper_limit
+                prior
+                base_ll
+                log_like
             with
               | Failure s -> Printf.fprintf stderr "%s\n" s; base_ll;
           in
