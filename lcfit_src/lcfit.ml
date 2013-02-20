@@ -175,7 +175,7 @@ end
 (* BSM for a tripod, fitting the two-taxon model for each distal branch length *)
 module TPair = struct
   module P = Pair
-  let calc_marg_prob ~rel_err ~cut_bl ~max_pend prior base_ll log_like =
+  let calc_marg_prob ~rel_err ~cut_bl ~upper_limit prior base_ll log_like =
     let abs_err = 0.
     and max_n_exceptions = 10
     and n_exceptions = ref 0
@@ -238,10 +238,16 @@ module TPair = struct
             |> (+.) base_ll
         with
           | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
-              incr n_exceptions;
-              perform (upper_limit /. 2.)
+            (* Integration failed to reach tolerance with highest-order rule. Because
+             * these functions are smooth, the problem is too-wide integration bounds.
+             * We halve and try again. This is obviously pretty rough, but if we
+             * aren't reaching tolerance then the posterior surface is dropping off
+             * really fast compared to the size of the interval, so missing a little
+             * of it is not going to make a difference. *)
+            incr n_exceptions;
+            perform (upper_limit /. 2.)
     in
-    perform max_pend
+    perform upper_limit
 end
 
 (* BSM for a tripod, with one branch length fixed (reference branch) *)

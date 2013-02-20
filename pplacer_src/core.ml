@@ -353,10 +353,10 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
               Three_tax.log_like tt
             in
             Lcfit.pq := loc;
-              Lcfit.TPair.calc_marg_prob 
+            let t, res = Lcfit.time (Lcfit.TPair.calc_marg_prob
                 ~rel_err:(pp_rel_err prefs)
-                ~cut_bl:cut_bl
-                ~max_pend:upper_limit
+                ~cut_bl
+                ~upper_limit
                 prior
                 base_ll
                 log_like
