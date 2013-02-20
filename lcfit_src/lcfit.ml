@@ -208,16 +208,16 @@ module TPair = struct
           model := model';
           (* pts := List.map fst pts'; *)
           let log_like' = P.log_like model' in
-            List.iter
-              (fun (p, actual) -> log_fit [!pquery_name;
-                                           "tpair";
-                                           Int.to_string !pq;
-                                           Float.to_string dist_bl;
-                                           Float.to_string p;
-                                           Float.to_string actual;
-                                           Float.to_string (log_like' p)])
-              pts';
-            let f p = (exp ((log_like' p) -. base_ll)) *. (prior p) in
+          List.iter
+            (fun (p, actual) -> log_fit [!pquery_name;
+                                         "tpair";
+                                         Int.to_string !pq;
+                                         Float.to_string dist_bl;
+                                         Float.to_string p;
+                                         Float.to_string actual;
+                                         Float.to_string (log_like' p)])
+            pts';
+          let f p = (exp ((log_like' p) -. base_ll)) *. (prior p) in
           Integration.value_integrate
             f
             0.
