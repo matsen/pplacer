@@ -6,6 +6,30 @@ open Ppatteries
 exception Lcfit_err of (int * string)
 let _ = Callback.register_exception "lcfit_err" (Lcfit_err (0, "any string"))
 
+(* Debug code *)
+let pq = ref 0
+let pquery_name = ref ""
+let timer = Unix.gettimeofday
+
+let time f x =
+  let t0 = timer () in
+  let ret = f x in
+  timer () -. t0, ret
+
+let log_time =
+  let timing_file = File.open_out "marg_like_timing.csv" in
+  let ch = csv_out_channel timing_file |> Csv.to_out_obj in
+  let f = Csv.output_record ch in
+  f ["pquery";"pos";"component";"subtype";"step";"time"];
+  f
+
+let log_fit =
+  let timing_file = File.open_out "marg_like_fit.csv" in
+  let ch = csv_out_channel timing_file |> Csv.to_out_obj in
+  let f = Csv.output_record ch in
+  f ["pquery";"type";"pos";"dist_bl";"pend_bl";"ll";"fit_ll"];
+  f
+
 (* BSM for a pair of taxa connected by a branch of length t *)
 module Pair = struct
   type bsm = {c: float; m: float; r: float; b: float}
@@ -40,20 +64,20 @@ module Pair = struct
   (* Classify a set of points ordered by x-value *)
   let rec monotonicity pts =
     match pts with
-    | (t, ll) :: rest ->
-        (let f ((_, last_ll), maybe_inc, maybe_dec) (t, ll) =
-           if ll > last_ll then ((t, ll), maybe_inc, false)
-           else if ll < last_ll then ((t, ll), false, maybe_dec)
-           else ((t, ll), maybe_inc, maybe_dec)
-         in
-         let _, maybe_inc', maybe_dec' = List.fold_left f ((t, ll), true, true) rest
-         in
-         match (maybe_inc', maybe_dec') with
-          | (false, false) -> Non_monotonic
-          | (true, false) -> Increasing
-          | (false, true) -> Decreasing
-          | _ -> Unknown)
-    | [] -> failwith "Points required"
+      | (t, ll) :: rest ->
+          (let f ((_, last_ll), maybe_inc, maybe_dec) (t, ll) =
+             if ll > last_ll then ((t, ll), maybe_inc, false)
+             else if ll < last_ll then ((t, ll), false, maybe_dec)
+             else ((t, ll), maybe_inc, maybe_dec)
+           in
+           let _, maybe_inc', maybe_dec' = List.fold_left f ((t, ll), true, true) rest
+           in
+           match (maybe_inc', maybe_dec') with
+             | (false, false) -> Non_monotonic
+             | (true, false) -> Increasing
+             | (false, true) -> Decreasing
+             | _ -> Unknown)
+      | [] -> failwith "Points required"
 
   (* Given a likelihood function, select some points to run L-M on.
    *
@@ -71,18 +95,18 @@ module Pair = struct
       and xi = (DynArray.get pts) |- fst in
       if n >= max_points then pts
       else
-      let m = monotonicity (pts |> DynArray.enum |> List.of_enum) in
-      let x, idx = match m with
-        | Non_monotonic -> (((xi 1) +. (xi 2)) /. 2.0, 2)
-        | Increasing -> ((xi (n - 1)) *. 2., n)
-        | Decreasing -> ((xi 0) /. 10.0, 0)
-        | Unknown -> failwith "Unknown monotonicity"
-      in
-      if m = Non_monotonic then pts
-      else begin
-        DynArray.insert pts idx (x, log_like' x);
-        aux pts
-      end
+        let m = monotonicity (pts |> DynArray.enum |> List.of_enum) in
+        let x, idx = match m with
+          | Non_monotonic -> (((xi 1) +. (xi 2)) /. 2.0, 2)
+          | Increasing -> ((xi (n - 1)) *. 2., n)
+          | Decreasing -> ((xi 0) /. 10.0, 0)
+          | Unknown -> failwith "Unknown monotonicity"
+        in
+        if m = Non_monotonic then pts
+        else begin
+          DynArray.insert pts idx (x, log_like' x);
+          aux pts
+        end
     in
     aux pts
 
@@ -94,19 +118,29 @@ module Pair = struct
       log_like' =
     (* Select up to max_points to fit *)
     let pts = List.enum initial
-        |> Enum.map (fun x -> (x, log_like' x))
-        |> DynArray.of_enum
-        |> select_points log_like'
-        |> DynArray.enum
-        |> List.of_enum
-        |> List.sort (fun (_, x) (_, y) -> compare y x)
-        |> List.enum
-        |> Enum.take pts_to_fit
-        |> List.of_enum
+      |> Enum.map (fun x -> (x, log_like' x))
+      |> DynArray.of_enum
+      |> select_points log_like'
+      |> DynArray.enum
+      |> List.of_enum
+      |> List.sort (fun (_, x) (_, y) -> compare y x)
+      |> List.enum
+      |> Enum.take pts_to_fit
+      |> List.of_enum
     in
     let max_pt = List.hd pts in
     (rescale max_pt init_model
        |> (flip fit (Array.of_list pts)), pts)
+      |> tap (* Log fits *)
+          (fun m ->
+            let log_like' = log_like m in
+            List.map
+              (fun (pend_bl, ll) -> [0.0; pend_bl; ll; log_like' pend_bl])
+              pts
+              |> List.enum
+              |> map (List.map Float.to_string)
+              |> map (List.append [!pquery_name;"pair";Int.to_string !pq])
+              |> Enum.iter log_fit)
 
   let calc_marg_prob model prior base_ll upper_limit =
     let max_n_exceptions = 10
@@ -118,8 +152,8 @@ module Pair = struct
     let rec perform upper_limit =
       if !n_exceptions >= max_n_exceptions then begin
         Printf.printf
-        "Lcfit: integration did not converge after changing bounds %d times\n"
-        max_n_exceptions;
+          "Lcfit: integration did not converge after changing bounds %d times\n"
+          max_n_exceptions;
         0.
       end
       else
@@ -128,8 +162,8 @@ module Pair = struct
             (fun t ->
               (exp ((ll t) -. base_ll)) *. (prior t))
             0. upper_limit ~abs_err ~rel_err
-          |> log
-          |> (+.) base_ll
+      |> log
+      |> (+.) base_ll
         with
           | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
               incr n_exceptions;
@@ -225,9 +259,9 @@ module Tripod = struct
     let est_ll = log_like m dist_bl pend_bl in
     let fac = ll /. est_ll in
     {m with n00=m.n00 *. fac;
-            n01=m.n01 *. fac;
-            n10=m.n10 *. fac;
-            n11=m.n11 *. fac}
+      n01=m.n01 *. fac;
+      n10=m.n10 *. fac;
+      n11=m.n11 *. fac}
 
   (* Attempt to get rx on the correct order of magnitude for
    * (dist_bl, pend_bl, ll) *)
@@ -238,9 +272,9 @@ module Tripod = struct
         if fit_ll < ll then {m with rx=m.rx *. 0.1}
         else {m with rx=m.rx /. 10.}
       in
-        if Float.abs (ll -. (log_like m' dist_bl pend_bl)) < Float.abs (ll -. fit_ll)
-        then aux m'
-        else m
+      if Float.abs (ll -. (log_like m' dist_bl pend_bl)) < Float.abs (ll -. fit_ll)
+      then aux m'
+      else m
     in
     aux m
 
@@ -255,8 +289,8 @@ module Tripod = struct
     let sq_min = sq min_dist in
     let any_close kept (x, y, _) =
       List.enum kept
-        |> Enum.map (fun (x', y', _) -> (sq (x -. x')) +. (sq (y -. y')))
-        |> Enum.exists (fun i -> i < sq_min)
+                                           |> Enum.map (fun (x', y', _) -> (sq (x -. x')) +. (sq (y -. y')))
+                                           |> Enum.exists (fun i -> i < sq_min)
     in
     let rec aux kept = function
       | [] -> kept
@@ -267,11 +301,16 @@ module Tripod = struct
             aux (pt :: kept) rest
     in
     aux [] pts
+      (*|> tap (fun r ->*)
+          (*dprintf "Pruned from %d to %d points.\n"*)
+            (*(List.length pts)*)
+            (*(List.length r))*)
 
   (* Evaluate log_like' at the cartesian product of points sampled uniformly
    * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using these points
    * and additional points in `pts` *)
   let find_points_fit_model ?(max_pend=2.0) cut_bl log_like' pts =
+    incr pq;
     let lattice n =
       let tuple2_extend f (x, y) = (x, y, f x y) in
       let seq min max =
@@ -279,13 +318,13 @@ module Tripod = struct
         and nf = (Float.of_int n) -. 1.0 in
         assert(d > 0.);
         0 -- (n - 1)
-        |> map Float.of_int
-        |> map (fun i -> min +. (d *.i) /. nf)
-        |> List.of_enum
+                                           |> map Float.of_int
+                                           |> map (fun i -> min +. (d *.i) /. nf)
+                                           |> List.of_enum
       in
       List.cartesian_product (seq 1e-5 (cut_bl -. 1e-5)) (seq 1e-5 max_pend)
-        |> List.map (tuple2_extend log_like')
-    and drop_low_ll ?(ll_diff=20.0) pts =
+                                           |> List.map (tuple2_extend log_like')
+    and drop_low_ll ?(ll_diff=5.0) pts =
       let max_ll = List.enum pts
         |> Enum.map Tuple3.third
         |> Enum.arg_max identity
@@ -293,53 +332,55 @@ module Tripod = struct
       List.filter (fun i -> (Tuple3.third i) >= max_ll -. ll_diff) pts
     in
     let lattice_pts = lattice 10 in
+    let lattice_pts = lattice 10 in
     let pts' = remove_near_neighbors pts
-      |> List.append lattice_pts
-      |> drop_low_ll
-    in
-    let max_ll = List.hd pts in
+                                           |> List.append lattice_pts
+                                           |> drop_low_ll
+    and max_ll = List.hd pts in
     let init_model = default_model cut_bl |> rescale max_ll in
-    fit {init_model with rx=0.5} (Array.of_list pts')
+    let fit_time, model = time (fit init_model) (Array.of_list pts') in
+      log_time [!pquery_name; Int.to_string !pq; "lcfit"; "tripod"; "fit_model"; Float.to_string fit_time];
+      model
+    (* End debugging *)
 
-
-  let calc_marg_prob model cut_bl prior base_ll upper_limit =
+    let calc_marg_prob model cut_bl prior base_ll upper_limit =
     (* Select some points to sample - uniformly from 0-cut_bl, 0-max_pend *)
-    let max_n_exceptions = 10
-    and n_exceptions = ref 0
-    and ll = log_like model
-    and abs_err = 0.
-    and rel_err = 1e-2
-    in
-    let rec perform upper_limit =
-      if !n_exceptions >= max_n_exceptions then begin
-        Printf.printf
-        "Lcfit: integration did not converge after changing bounds %d times\n"
-        max_n_exceptions;
-        0.
-      end
-      else
-        let inner_integration dist_bl =
-          Integration.value_integrate
-            (fun pend_bl ->
-              (exp ((ll dist_bl pend_bl) -. base_ll)) *. (prior pend_bl))
-            0. upper_limit ~abs_err ~rel_err
-        in
-        let outer_integration () =
-          (/.)
-            (Integration.value_integrate
-              inner_integration
-              0. cut_bl ~abs_err ~rel_err)
-            cut_bl
-        in
-        try
-          (if cut_bl =~ 0.
-           then inner_integration (cut_bl /. 2.)
-           else outer_integration ())
-          |> log
-          |> (+.) base_ll
-        with
-          | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
-              incr n_exceptions;
-              perform (upper_limit /. 2.)
-        in perform upper_limit
+      let max_n_exceptions = 10
+      and n_exceptions = ref 0
+      and ll = log_like model
+      and abs_err = 0.
+      and rel_err = 1e-2
+      in
+      let rec perform upper_limit =
+        if !n_exceptions >= max_n_exceptions then begin
+          Printf.printf
+            "Lcfit: integration did not converge after changing bounds %d times\n"
+            max_n_exceptions;
+          base_ll
+        end
+        else
+          let inner_integration dist_bl =
+            Integration.value_integrate
+              (fun pend_bl ->
+                (exp ((ll dist_bl pend_bl) -. base_ll)) *. (prior pend_bl))
+              0. upper_limit ~abs_err ~rel_err
+          in
+          let outer_integration () =
+            (/.)
+              (Integration.value_integrate
+                 inner_integration
+                 0. cut_bl ~abs_err ~rel_err)
+              cut_bl
+          in
+          try
+            (if cut_bl =~ 0.
+             then inner_integration (cut_bl /. 2.)
+             else outer_integration ())
+                                           |> log
+                                           |> (+.) base_ll
+          with
+            | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
+                incr n_exceptions;
+                perform (upper_limit /. 2.)
+      in perform upper_limit
 end

@@ -64,6 +64,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
   let module Glv_arr = Glv_arr.Make(Model) in
   let module Glv_edge = Glv_edge.Make(Model) in
   let module Three_tax = Three_tax.Make(Model) in
+  let marg_like_file = File.open_out "marg_like_comp.csv" in
   let keep_at_most = Prefs.keep_at_most prefs
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
@@ -337,47 +338,78 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       in
       let results, placements =
         if calc_pp prefs then begin
-          (* pp calculation *)
-          let curr_time = Sys.time () in
-          (* calculate marginal likes for those placements we will keep *)
-          let marginal_probs =
-            List.map
-              (fun placement ->
-                tt_edges_from_placement placement;
-                Three_tax.calc_marg_prob
-                  (prior_fun (Placement.location placement))
-                  (pp_rel_err prefs)
-                  (max_pend prefs)
-                  tt)
-              sorted_ml_placements
-          and lcfit_marg_prob placement =
+          Lcfit.pquery_name := query_name;
+          let lcfit_marg_prob placement =
+            let loc = Placement.location placement in
             tt_edges_from_placement placement;
             let base_ll = Three_tax.log_like tt
             and prior = prior_fun (Placement.location placement)
             and mp = max_pend prefs
             and cut_bl = Three_tax.get_cut_bl tt in
-            let upper_limit = Three_tax.find_upper_limit mp prior base_ll tt
-            and log_like dist_bl pend_bl =
+            (*let upper_limit = Three_tax.find_upper_limit mp prior base_ll tt*)
+            let log_like dist_bl pend_bl =
               Three_tax.set_dist_bl tt dist_bl;
               Three_tax.set_pend_bl tt pend_bl;
               Three_tax.log_like tt
             in
-            try
               Lcfit.TPair.calc_marg_prob 
                 ~rel_err:(pp_rel_err prefs)
                 ~cut_bl:cut_bl
                 ~max_pend:upper_limit
+                              "lcfit"; "pair"; "fit_model";
+                              Float.to_string t];
+              let t, res = Lcfit.time (Lcfit.Pair.calc_marg_prob m prior base_ll) mp in
+              Lcfit.log_time [query_name; Int.to_string loc;
+                              "lcfit"; "pair"; "calc_marg_prob";
+                              Float.to_string t];
+              res +. (log cut_bl)
+                |> Hashtbl.enum
+                |> Enum.map (fun ({Three_tax.dist_bl=dist; Three_tax.pend_bl=pend;}, l) -> (dist, pend, l))
+                |> List.of_enum
+                |> List.sort (fun (_,_,a) (_,_,b) -> Float.compare b a)
+              in
+              try
+                let t, m = Lcfit.time (Lcfit.Tripod.find_points_fit_model ~max_pend:mp cut_bl log_like) pts in
+                Lcfit.log_time [query_name; Int.to_string loc;
+                                "lcfit"; "tripod"; "fit_model";
+                                Float.to_string t];
+                let t, res = Lcfit.time (Lcfit.Tripod.calc_marg_prob
+                                           m
                 prior
                 base_ll
                 log_like
-            with
-              | Failure s -> Printf.fprintf stderr "%s\n" s; base_ll;
+                in
+                Lcfit.log_time [query_name; Int.to_string loc;
+                                "lcfit"; "tripod"; "calc_marg_prob";
+                                Float.to_string t];
+                res
+              with
+                | Lcfit.Lcfit_err(n, s) ->
+                    dprintf "%s %d: Tripod lcfit failed with: %s (%d)\n" query_name loc s n;
+                    Float.neg_infinity
           in
           let marginal_probs' = List.map lcfit_marg_prob sorted_ml_placements in
+          (* calculate marginal likes for those placements we will keep *)
+          let log_quadrature placement =
+            let loc = Placement.location placement in
+            tt_edges_from_placement placement;
+            let t, res = Lcfit.time (Three_tax.calc_marg_prob
+                  (prior_fun (Placement.location placement))
+                  (pp_rel_err prefs)
+                  (max_pend prefs))
+                  tt
+            in
+            Lcfit.log_time [query_name; Int.to_string loc;
+                            "quadrature"; "";
+                            "calc_marg_prob";
+                            Float.to_string t];
+            res
+          in
+          let marginal_probs = List.map log_quadrature sorted_ml_placements in
           (* add pp *)
-          List.iter2 (fun x y -> Printf.fprintf stderr "%f,%f\n" x y)
-            marginal_probs
-            marginal_probs';
+          List.iter2 (fun (ll1,pp1) (ll2,pp2) -> Printf.fprintf marg_like_file "%s,%f,%f,%f,%f\n" query_name ll1  pp1  ll2  pp2)
+            (List.map2 (fun a b -> (a,b)) marginal_probs (ll_normalized_prob marginal_probs))
+            (List.map2 (fun a b -> (a,b)) marginal_probs' (ll_normalized_prob marginal_probs'));
           Timing ("PP calculation", (Sys.time ()) -. curr_time) :: results,
           ((ListFuns.map3
               (fun placement marginal_prob post_prob ->
