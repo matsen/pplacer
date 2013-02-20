@@ -217,7 +217,7 @@ module TPair = struct
                                            Float.to_string actual;
                                            Float.to_string (log_like' p)])
               pts';
-            let f p = (exp ((log_like' p)) -. base_ll) *. (prior p) in
+            let f p = (exp ((log_like' p) -. base_ll)) *. (prior p) in
           Integration.value_integrate
             f
             0.
