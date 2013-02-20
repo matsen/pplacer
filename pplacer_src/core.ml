@@ -64,7 +64,6 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
   let module Glv_arr = Glv_arr.Make(Model) in
   let module Glv_edge = Glv_edge.Make(Model) in
   let module Three_tax = Three_tax.Make(Model) in
-  let marg_like_file = File.open_out "marg_like_comp.csv" in
   let keep_at_most = Prefs.keep_at_most prefs
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
@@ -353,14 +352,15 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
               Three_tax.log_like tt
             in
             Lcfit.pq := loc;
-            let t, res = Lcfit.time (Lcfit.TPair.calc_marg_prob
-                ~rel_err:(pp_rel_err prefs)
-                ~cut_bl
-                ~upper_limit
-                prior
-                base_ll)
-                log_like
-                in
+            let t, res = Lcfit.time
+              (Lcfit.TPair.calc_marg_prob
+                 ~rel_err:(pp_rel_err prefs)
+                 ~cut_bl
+                 ~upper_limit
+                 prior
+                 base_ll)
+              log_like
+            in
             Lcfit.log_time [query_name; Int.to_string loc; "lcfit"; "tpair"; "calc_marg_prob"; Float.to_string t];
             res
           in
@@ -383,7 +383,8 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
           in
           let marginal_probs = List.map log_quadrature sorted_ml_placements in
           (* add pp *)
-          List.iter2 (fun (ll1,pp1) (ll2,pp2) -> Printf.fprintf marg_like_file "%s,%f,%f,%f,%f\n" query_name ll1  pp1  ll2  pp2)
+          List.iter2 (fun (ll1,pp1) (ll2,pp2) ->
+            Lcfit.log_marg_like (List.map Float.to_string [ll1; pp1; ll2; pp2;] |> List.cons query_name))
             (List.map2 (fun a b -> (a,b)) marginal_probs (ll_normalized_prob marginal_probs))
             (List.map2 (fun a b -> (a,b)) marginal_probs' (ll_normalized_prob marginal_probs'));
           Timing ("PP calculation", (Sys.time ()) -. curr_time) :: results,

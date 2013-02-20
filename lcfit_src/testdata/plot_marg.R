@@ -4,17 +4,15 @@ library(ggplot2)
 library(gridExtra)
 library(plyr)
 
-d <- read.csv('marg_like_comp.csv', as.is=TRUE, header=FALSE,
-              col.names=c('name', 'quadrature_marginal_like', 'quadrature_pp',
-                          'lcfit_marginal_like', 'lcfit_pp'))
+d <- read.csv('marg_like_comp.csv', as.is=TRUE)
 
-d <- ddply(d, .(name), transform,
-  quadrature_rank=rank(quadrature_marginal_like),
-  lcfit_rank=rank(lcfit_marginal_like))
+d <- ddply(d, .(pquery), transform,
+  quadrature_rank=rank(quadrature_marg_like),
+  lcfit_rank=rank(lcfit_marg_like))
 
 theme_set(theme_bw(19))
 
-p1 <- ggplot(d, aes(x=quadrature_marginal_like, y=lcfit_marginal_like)) +
+p1 <- ggplot(d, aes(x=quadrature_marg_like, y=lcfit_marg_like)) +
   geom_abline(slope=1, color='grey') +
   geom_point(aes(color=quadrature_rank==lcfit_rank), alpha=0.6) +
   xlab('quadrature') +

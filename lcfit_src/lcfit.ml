@@ -17,18 +17,35 @@ let time f x =
   timer () -. t0, ret
 
 let log_time =
-  let timing_file = File.open_out "marg_like_timing.csv" in
-  let ch = csv_out_channel timing_file |> Csv.to_out_obj in
-  let f = Csv.output_record ch in
-  f ["pquery";"pos";"component";"subtype";"step";"time"];
-  f
+  try
+    let fname = Sys.getenv "LCFIT_TIMING" in
+    let timing_file = File.open_out fname in
+    let ch = csv_out_channel timing_file |> Csv.to_out_obj in
+    let f = Csv.output_record ch in
+    f ["pquery";"pos";"component";"subtype";"step";"time"];
+    f
+  with Not_found -> (fun _ -> ())
 
 let log_fit =
-  let timing_file = File.open_out "marg_like_fit.csv" in
-  let ch = csv_out_channel timing_file |> Csv.to_out_obj in
-  let f = Csv.output_record ch in
-  f ["pquery";"type";"pos";"dist_bl";"pend_bl";"ll";"fit_ll"];
-  f
+  try
+    let fname = Sys.getenv "LCFIT_FIT" in
+    let timing_file = File.open_out fname in
+    let ch = csv_out_channel timing_file |> Csv.to_out_obj in
+    let f = Csv.output_record ch in
+    f ["pquery";"type";"pos";"dist_bl";"pend_bl";"ll";"fit_ll"];
+    f
+  with Not_found -> (fun _ -> ())
+
+let log_marg_like =
+  try 
+    let fname = Sys.getenv "LCFIT_COMP" in
+    let timing_file = File.open_out fname in
+    let ch = csv_out_channel timing_file |> Csv.to_out_obj in
+    let f = Csv.output_record ch in
+    f ["pquery";"quadrature_marg_like";"quadrature_pp";"lcfit_marg_like";"lcfit_pp"];
+    f
+  with Not_found -> (fun _ -> ())
+
 
 (* BSM for a pair of taxa connected by a branch of length t *)
 module Pair = struct
