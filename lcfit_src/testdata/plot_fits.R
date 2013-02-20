@@ -13,7 +13,7 @@ melted <- melt(tdat, measure.vars=c('ll', 'fit_ll'))
 
 d_ply(melted, .(pquery, pos), function(piece) {
   message(paste(piece$pquery[1], piece$pos[1]))
-  if(piece$type[1] == 'pair') {
+  if(piece$type[1] == 'pair' || length(unique(piece$dist_bl)) == 1) {
     p <- ggplot(piece, aes(x=pend_bl, y=value, color=variable, shape=variable)) +
       geom_point(alpha=0.7) +
       xlab("Pendant BL") +

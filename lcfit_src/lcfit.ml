@@ -131,16 +131,16 @@ module Pair = struct
     let max_pt = List.hd pts in
     (rescale max_pt init_model
        |> (flip fit (Array.of_list pts)), pts)
-      |> tap (* Log fits *)
-          (fun m ->
-            let log_like' = log_like m in
-            List.map
-              (fun (pend_bl, ll) -> [0.0; pend_bl; ll; log_like' pend_bl])
-              pts
-              |> List.enum
-              |> map (List.map Float.to_string)
-              |> map (List.append [!pquery_name;"pair";Int.to_string !pq])
-              |> Enum.iter log_fit)
+      (*|> tap [> Log fits <]*)
+          (*(fun (m, _) ->*)
+            (*let log_like' = log_like m in*)
+            (*List.map*)
+              (*(fun (pend_bl, ll) -> [0.0; pend_bl; ll; log_like' pend_bl])*)
+              (*pts*)
+              (*|> List.enum*)
+              (*|> map (List.map Float.to_string)*)
+              (*|> map (List.append [!pquery_name;"pair";Int.to_string !pq])*)
+              (*|> Enum.iter log_fit)*)
 
   let calc_marg_prob model prior base_ll upper_limit =
     let max_n_exceptions = 10
@@ -185,8 +185,11 @@ module TPair = struct
     let rec perform upper_limit =
       if !n_exceptions >= max_n_exceptions then begin
         Printf.printf
-          "Warning: integration did not converge after changing bounds %d times\n"
+          "Lcfit: integration did not converge after changing bounds %d times\n"
           max_n_exceptions;
+        Printf.printf "cut_bl: %f; upper_limit: %f " cut_bl upper_limit;
+        List.print Float.print stdout !pts;
+        Printf.printf "\n";
         base_ll
       end
       else
@@ -205,7 +208,16 @@ module TPair = struct
           model := model';
           (* pts := List.map fst pts'; *)
           let log_like' = P.log_like model' in
-          let f p = (exp ((log_like' p) -. base_ll)) *. (prior p) in
+            List.iter
+              (fun (p, actual) -> log_fit [!pquery_name;
+                                           "tpair";
+                                           Int.to_string !pq;
+                                           Float.to_string dist_bl;
+                                           Float.to_string p;
+                                           Float.to_string actual;
+                                           Float.to_string (log_like' p)])
+              pts';
+            let f p = (exp ((log_like' p)) -. base_ll) *. (prior p) in
           Integration.value_integrate
             f
             0.
