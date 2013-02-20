@@ -358,7 +358,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
                 ~cut_bl
                 ~upper_limit
                 prior
-                base_ll
+                base_ll)
                 log_like
                 in
             Lcfit.log_time [query_name; Int.to_string loc; "lcfit"; "tpair"; "calc_marg_prob"; Float.to_string t];

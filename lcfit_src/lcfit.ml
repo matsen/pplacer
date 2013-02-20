@@ -328,7 +328,6 @@ module Tripod = struct
    * between [0,cut_bl] and [0,max_pend], fit the tripod_bsm using these points
    * and additional points in `pts` *)
   let find_points_fit_model ?(max_pend=2.0) cut_bl log_like' pts =
-    incr pq;
     let lattice n =
       let tuple2_extend f (x, y) = (x, y, f x y) in
       let seq min max =
