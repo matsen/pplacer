@@ -13,6 +13,11 @@ let assert_approx_equal ?(epsilon=1e-2) expected actual =
     assert_failure (Printf.sprintf "%f != %f" actual expected)
 
 let pair_tests = [
+  "test_monotonic" >:: begin fun() ->
+    assert_equal P.Increasing (P.monotonicity [(1.0, 2.0); (1.1, 3.0); (4.0, 6.0)]);
+    assert_equal P.Decreasing (P.monotonicity [(1.0, 2.0); (1.1, 1.0); (1.4, -8.0)]);
+    assert_equal P.Non_monotonic (P.monotonicity [(1.0, 1.0); (1.1, 3.0); (4.0, -8.0)]);
+  end;
   "test_pair_fit" >:: begin fun() ->
     let points = [(0.1,-23753.3);
                   (0.2,-23701.5);
