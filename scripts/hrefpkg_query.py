@@ -22,6 +22,10 @@ def logging_check_call(cmd, *a, **kw):
     log.info(' '.join(cmd))
     return subprocess.check_call(cmd, *a, **kw)
 
+def logging_call(cmd, *a, **kw):
+    log.info(' '.join(cmd))
+    return subprocess.call(cmd, *a, **kw)
+
 def silently_unlink(path):
     try:
         os.unlink(path)
@@ -46,10 +50,6 @@ def main():
                         help="rank to perform the initial NBC classification at")
     parser.add_argument('--classifier', default='pplacer',
                         help="which classifier to use with guppy classify")
-    parser.add_argument('--pplacer-args', default=[], type=shlex.split,
-                        help="additional arguments for pplacer")
-    parser.add_argument('--classification-args', default=[], type=shlex.split,
-                        help="additional arguments for guppy classification")
     parser.add_argument('--post-prob', default=False, action='store_true',
                         help="place with posterior probabilities")
     parser.add_argument('--workdir', metavar='DIR',
@@ -80,6 +80,14 @@ def main():
         help="refpkg_align binary to call")
     programs.add_argument(
         '--cmalign', default='cmalign', metavar='PROG', help="cmalign binary to call")
+
+    program_args = parser.add_argument_group("external arguments")
+    program_args.add_argument('--refpkg-align-args', default=[], type=shlex.split,
+                              help="additional arguments for refpkg_align")
+    program_args.add_argument('--pplacer-args', default=[], type=shlex.split,
+                              help="additional arguments for pplacer")
+    program_args.add_argument('--classification-args', default=[], type=shlex.split,
+                              help="additional arguments for guppy classification")
 
 
     args = parser.parse_args()
@@ -207,24 +215,34 @@ def main():
     for e, bin in enumerate(all_bins):
         log.info('classifying bin %s (%d/%d; %d seqs)',
                  bin, e + 1, len(all_bins), bin_counts[bin])
+        if not bin_counts[bin]:
+            log.info('no sequences; skipping')
+            continue
         input = binfile(bin)
         aligned = os.path.join(workdir, bin + '-aligned.sto')
         placed = os.path.join(workdir, bin + '.jplace')
         refpkg = os.path.join(args.hrefpkg, refpkg_map[bin])
 
-        if args.alignment == 'align-each':
-            logging_check_call(
-                [args.refpkg_align, 'align', '--output-format', 'stockholm',
-                 refpkg, input, aligned] + mpi_args + cmscores_args)
-        elif args.alignment == 'merge-each':
-            refpkg_obj = Refpkg(refpkg)
-            logging_check_call(
-                [args.cmalign, '--merge', '-o', aligned, '-1', '--hbanded',
-                 '--sub', '--dna', refpkg_obj.resource_path('profile'),
-                 refpkg_obj.resource_path('aln_sto'), input],
-                stdout=cmscores_stdout)
-        elif args.alignment == 'none':
-            raise NotImplementedError('none')
+        try:
+            if args.alignment == 'align-each':
+                logging_check_call(
+                    [args.refpkg_align, 'align', '--output-format', 'stockholm',
+                     refpkg, input, aligned]
+                    + mpi_args
+                    + cmscores_args
+                    + args.refpkg_align_args)
+            elif args.alignment == 'merge-each':
+                refpkg_obj = Refpkg(refpkg)
+                logging_check_call(
+                    [args.cmalign, '--merge', '-o', aligned, '-1', '--hbanded',
+                     '--sub', '--dna', refpkg_obj.resource_path('profile'),
+                     refpkg_obj.resource_path('aln_sto'), input],
+                    stdout=cmscores_stdout)
+            elif args.alignment == 'none':
+                raise NotImplementedError('none')
+        except subprocess.CalledProcessError:
+            logging.exception('alignment failed; skipping bin')
+            continue
 
         classifier_args, pplacer_args = [], []
         if args.classifier.startswith('hybrid'):
