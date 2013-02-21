@@ -23,8 +23,8 @@ module Classifier: sig
   type t
   type rank = Rank of int | Auto_rank | All_ranks
   val make: ?n_boot:int -> ?map_file:(Unix.file_descr * bool) -> ?rng:Random.State.t -> 'a Preclassifier.t -> t
-  val classify: t -> ?like_rdp:bool -> string -> Tax_id.t
-  val bootstrap: t -> ?like_rdp:bool -> string -> float Tax_id.TaxIdMap.t
+  val classify: t -> ?like_rdp:bool -> ?random_tie_break:bool -> string -> Tax_id.t
+  val bootstrap: t -> ?like_rdp:bool -> ?random_tie_break:bool -> string -> float Tax_id.TaxIdMap.t
   val of_refpkg:
     ?ref_aln:Alignment.t -> ?n_boot:int -> ?map_file:(Unix.file_descr * bool) -> ?rng:Random.State.t ->
     int -> rank -> Refpkg.t -> t

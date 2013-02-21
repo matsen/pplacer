@@ -239,6 +239,8 @@ object (self)
   val blast_results = flag "--blast-results"
     (Needs_argument ("BLAST results", "The BLAST results file for use with the BLAST classifier. \
                                        Can be specified multiple times for multiple inputs."))
+  val random_tie_break = flag "--random-tie-break"
+    (Plain (false, "Break NBC ties randomly."))
 
   method specl =
     super_refpkg#specl
@@ -264,6 +266,7 @@ object (self)
     toggle_flag nbc_as_rdp;
     delimited_list_flag rdp_results;
     delimited_list_flag blast_results;
+    toggle_flag random_tie_break;
  ]
 
   method desc =
@@ -393,7 +396,9 @@ object (self)
       let classif, query_list = self#nbc_classifier rp rank_idx infile in
       let rdp_filter =
         if fv nbc_as_rdp then fun seq ->
-          let on_lineage = Nbc.Classifier.classify classif ~like_rdp:true seq
+          let on_lineage =
+            Nbc.Classifier.classify classif ~like_rdp:true
+                                    ~random_tie_break:(fv random_tie_break) seq
             |> Tax_taxonomy.get_lineage td
             |> flip List.mem
           in
@@ -405,7 +410,8 @@ object (self)
       in
       let bootstrap seq =
         Alignment.ungap seq
-          |> Nbc.Classifier.bootstrap classif
+          |> Nbc.Classifier.bootstrap
+                            ~random_tie_break:(fv random_tie_break) classif
           |> partition_by_rank td
           |> rdp_filter seq
       and pn_st = Sqlite3.prepare db
