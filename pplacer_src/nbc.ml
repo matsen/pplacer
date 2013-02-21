@@ -170,8 +170,11 @@ end
 module Classifier = struct
   type t = {
     pc: Preclassifier.base;
+    (* The matrix used for NBC classification. *)
     taxid_word_counts: Matrix.matrix;
+    (* The matrix of randomly-generated bootstraps. *)
     boot_matrix: (int, BA.int16_unsigned_elt, BA.c_layout) BA2.t;
+    (* A vector to hold the results of a classification multiplication. *)
     classify_vec: Gsl_vector.vector;
   }
 
@@ -212,12 +215,14 @@ module Classifier = struct
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
   (* find the tax_id associated with a count vector *)
-  let classify_vec cf vec =
+  let classify_vec ?(random_tie_break = false) cf vec =
     let open Preclassifier in
     let dest = cf.classify_vec in
     Gsl_vector.set_zero dest;
     Linear.float_mat_int_vec_mul dest cf.taxid_word_counts vec;
-    random_winner_max_index dest |> Array.get cf.pc.tax_ids
+    (if random_tie_break then random_winner_max_index dest
+    else Gsl_vector.max_index dest)
+      |> Array.get cf.pc.tax_ids
 
   (* fill a vector with counts for a sequence *)
   let count_seq cf ?(like_rdp = false) seq =
@@ -234,20 +239,20 @@ module Classifier = struct
     vec
 
   (* classify a sequence, returning a tax_id *)
-  let classify cf ?like_rdp seq =
-    count_seq cf ?like_rdp seq |> classify_vec cf
+  let classify cf ?like_rdp ?random_tie_break seq =
+    count_seq cf ?like_rdp seq |> classify_vec ?random_tie_break cf
 
   (* bootstrap a sequence, returning a map from tax_ids to a float on the range
    * (0, 1] representing the percentage of bootstrappings done that produced a
    * particular tax_id. *)
-  let bootstrap cf ?like_rdp seq =
+  let bootstrap cf ?like_rdp ?random_tie_break seq =
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
     let seq_word_counts = count_seq cf ?like_rdp seq in
     let boot_rows = BA2.dim1 cf.boot_matrix in
     let n_boot = boot_rows / extra_boot_factor in
     if n_boot = 0 then
-      TIM.singleton (classify_vec cf seq_word_counts) 1.
+      TIM.singleton (classify_vec ?random_tie_break cf seq_word_counts) 1.
     else (* ... *)
     let booted_word_counts = BA1.create
       BA.int16_unsigned
@@ -268,7 +273,7 @@ module Classifier = struct
             then begin
               (* the number of occupied columns for this bootstrap resample is
                * within the desired range *)
-              let ti = classify_vec cf booted_word_counts in
+              let ti = classify_vec ?random_tie_break cf booted_word_counts in
               incr n_successes;
               TIM.modify_def 0 ti succ accum
               end
