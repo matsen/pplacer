@@ -219,7 +219,8 @@ object (self)
   val word_length = flag "--word-length"
     (Formatted (8, "The length of the words used for NBC classification. default: %d"))
   val nbc_rank = flag "--nbc-rank"
-    (Formatted ("genus", "The desired most specific rank for NBC classification. default: %s"))
+    (Formatted ("genus", "The desired most specific rank for NBC classification. \
+                            'all' puts each sequence in the classifier at every rank of its lineage. default: %s"))
   val n_boot = flag "--n-boot"
     (Formatted (100, "The number of times to bootstrap a sequence with the NBC classifier. 0 = no bootstrap. default: %d"))
   val children = flag "-j"
