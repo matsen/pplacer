@@ -111,7 +111,7 @@ struct
     close_out ch
 
   (* Find an appropriate upper limit for pendant branch length integration. If we
-   * come up with a resonable upper limit then we get better results than
+   * come up with a reasonable upper limit then we get better results than
    * integrating out to max_pend.
    * Note 1: this does change the pend_bl.
    * Note 2: this assumes that the likelihood function times the prior is
@@ -133,19 +133,26 @@ struct
       aux orig_pend_bl
     end
     else begin
-      (* Move right uses the current pend branch length and moves right in
-       * increments of the current branch length, stopping when the ll function
-       * drops 10 log units. *)
+      (* Perform a binary search to the right until the ll function
+       * drops approximately 10 ll units *)
       let log_prior x = log (prior x) in
-      let log_cutoff = -10. +. orig_ll +. (log_prior orig_pend_bl) in
-      let rec aux next_pend_bl =
-        set_pend_bl tt next_pend_bl;
-        if log_cutoff > (log_like tt) +. (log_prior next_pend_bl) then
-          next_pend_bl
-        else if next_pend_bl > max_pend then max_pend
-        else aux (orig_pend_bl +. next_pend_bl)
+      let target_ll = -10. +. orig_ll +. (log_prior orig_pend_bl) in
+      (* Function to minimize - absolute difference from target log likelihood *)
+      let f pend_bl =
+        set_pend_bl tt pend_bl;
+        let like = (log_like tt) +. (log_prior pend_bl) in
+        Float.abs (target_ll -. like)
       in
-      aux (get_pend_bl tt)
+      let start = orig_pend_bl +. ((max_pend -. orig_pend_bl) /. 2.) in
+      (* Minimize f with a large tolerance. We just want a rough
+       * estimate of point where the ll has dropped by a target amount
+       * - the exact location is unimportant *)
+      try
+        Minimization.brent ~max_iters:10 f start orig_pend_bl max_pend 0.02
+      with
+        (* Points may not enclose a minimum when close to max_pend -
+         * just integrate to max_pend *)
+        | Gsl_error.Gsl_exn(Gsl_error.EINVAL, _) -> max_pend
     end
 
   (* The idea here is to properly integrate log likelihood functions by removing
