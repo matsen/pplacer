@@ -143,7 +143,7 @@ struct
         let like = (log_like tt) +. (log_prior pend_bl) in
         Float.abs (target_ll -. like)
       in
-      let start = max_pend -. (orig_pend_bl /. 2.) in
+      let start = orig_pend_bl +. ((max_pend -. orig_pend_bl) /. 2.) in
       (* Minimize f with a large tolerance. We just want a rough
        * estimate of point where the ll has dropped by a target amount
        * - the exact location is unimportant *)
