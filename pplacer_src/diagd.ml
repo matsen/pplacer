@@ -108,6 +108,11 @@ let of_symmetric m =
   let (l, x) = symm_eigs m in
   make ~l ~x ~xit:x
 
+(* If pi_i is zero then we needn't worry about the ith row because it's
+ * going to get multiplied by D on the left, for which the ith row and column
+ * will be zero. This should only be used in that case. *)
+let safe_invert x = if x = 0. then 1. else 1. /. x
+
 (* d = vector for diagonal, b = symmetric matrix which has been set up with
  * diagonal entries so that BD is a Q-transpose matrix (with zero column
  * totals). see top. *)
@@ -122,7 +127,7 @@ let of_d_b d b =
   if not (vec_nonneg d) then
     failwith("negative element in the diagonal of a DB matrix!");
   let dm_root = diag (vec_map sqrt d) in
-  let dm_root_inv = diag (vec_map (fun x -> 1. /. (sqrt x)) d) in
+  let dm_root_inv = diag (vec_map safe_invert d) in
   let (l, u) = symm_eigs (mm dm_root (mm b dm_root)) in
   make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
@@ -141,7 +146,7 @@ let b_of_exchangeable_pair r pi =
           if k <> i then
             total := !total +. r.{k,i} *. pi.{k}
         done;
-        -. (!total /. pi.{i})))
+        -. (!total *. (safe_invert pi.{i}))))
 
 let of_exchangeable_pair m pi = of_d_b pi (b_of_exchangeable_pair m pi)
 
