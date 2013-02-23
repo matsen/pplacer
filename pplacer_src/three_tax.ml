@@ -142,6 +142,9 @@ struct
         set_pend_bl tt pend_bl;
         let like = (log_like tt) +. (log_prior pend_bl) in
         Float.abs (target_ll -. like)
+          (* If the likelihood is infinity (likely too high of an upper bound),
+           * return a very large number *)
+          |> (fun x -> if x = Float.infinity then 100000.0 else x)
       in
       let start = orig_pend_bl +. ((max_pend -. orig_pend_bl) /. 2.) in
       (* Minimize f with a large tolerance. We just want a rough
