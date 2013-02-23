@@ -541,10 +541,10 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     and queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq when not (Pquery.is_placed pq) ->
-        dprintf "warning: %d identical sequences (including %s) were \
-                 unplaced and omitted\n"
-          (Pquery.namel pq |> List.length)
-          (Pquery.name pq)
+          dprintf "warning: %d sequence(s) (including %s) were \
+                   not placed and will be omitted.\n"
+            (Pquery.namel pq |> List.length)
+            (Pquery.name pq);
       | Core.Pquery pq ->
         let pq = pquery_gotfunc pq in
         queries := pq :: (!queries)

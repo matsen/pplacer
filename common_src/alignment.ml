@@ -203,7 +203,12 @@ let emper_freq nstates like_map align =
       ) seq
   ) align;
   Linear_utils.l1_normalize total;
-  (* Format.fprintf Format.std_formatter "%a@." Linear_utils.ppr_gsl_vector total; *)
+  if !verbosity > 1 then
+    Format.fprintf
+      Format.std_formatter
+      "emper freqs: %a@."
+      Linear_utils.ppr_gsl_vector
+      total;
   total
 
 let identity s1 s2 =
