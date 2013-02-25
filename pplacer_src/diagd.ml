@@ -126,8 +126,9 @@ let of_d_b d b =
   (* make sure that diagonal matrix is all positive *)
   if not (vec_nonneg d) then
     failwith("negative element in the diagonal of a DB matrix!");
-  let dm_root = diag (vec_map sqrt d) in
-  let dm_root_inv = diag (vec_map safe_invert d) in
+  let d_root = vec_map sqrt d in
+  let dm_root = diag d_root in
+  let dm_root_inv = diag (vec_map safe_invert d_root) in
   let (l, u) = symm_eigs (mm dm_root (mm b dm_root)) in
   make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
