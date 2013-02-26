@@ -109,8 +109,8 @@ let of_symmetric m =
   make ~l ~x ~xit:x
 
 (* If pi_i is zero then we needn't worry about the ith row because it's
- * going to get multiplied by D on the left, for which the ith row and column
- * will be zero. This should only be used in that case. *)
+ * going to get multiplied by D=diag(pi) on the left, for which the ith row and
+ * column will be zero. This should only be used in that case. *)
 let safe_invert x = if x = 0. then 1. else 1. /. x
 
 (* d = vector for diagonal, b = symmetric matrix which has been set up with
@@ -129,12 +129,16 @@ let of_d_b d b =
   let d_root = vec_map sqrt d in
   let dm_root = diag d_root in
   let dm_root_inv = diag (vec_map safe_invert d_root) in
+  (* Here we multiply on the left by dm_root, justifying use of safe_invert. *)
   let (l, u) = symm_eigs (mm dm_root (mm b dm_root)) in
   make ~l ~x:(mm dm_root_inv u) ~xit:(mm dm_root u)
 
-(* here we set up the diagonal entries of the symmetric matrix so
+(* Here we set up the diagonal entries of the symmetric matrix so
  * that we get the column sum of the Q matrix is zero.
- * see top of code. *)
+ * See top of code.
+ * For this to make sense WRT safe_invert one needs to make sure that the
+ * resulting matrix gets multiplied on the left by something that zeroes out
+ * the ith row for every i that has a zero entry in pi. *)
 let b_of_exchangeable_pair r pi =
   let n = Gsl_vector.length pi in
   mat_init n n
@@ -149,6 +153,8 @@ let b_of_exchangeable_pair r pi =
         done;
         -. (!total *. (safe_invert pi.{i}))))
 
+(* Note that of_d_b multiplies m on the left by the square root of diag(pi),
+ * justifying use of safe_invert. *)
 let of_exchangeable_pair m pi = of_d_b pi (b_of_exchangeable_pair m pi)
 
 let find_rate dd pi =
@@ -173,4 +179,3 @@ let symm_q n =
 
 let symm_diagd n = of_symmetric (symm_q n)
 let binary_symm_diagd = symm_diagd 2
-
