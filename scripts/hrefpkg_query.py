@@ -227,8 +227,10 @@ def main():
             raise NotImplementedError('none')
 
         classifier_args, pplacer_args = [], []
-        if args.classifier.startswith('hybrid'):
-            classifier_args.extend(['--no-pre-mask', '--nbc-sequences', input])
+        if args.classifier.startswith('nbc') or args.classifier.startswith('hybrid'):
+            if '--no-pre-mask' not in classifier_args:
+                classifier_args.append('--no-pre-mask')
+            classifier_args.extend(['--nbc-sequences', input])
         if args.post_prob:
             classifier_args.append('--pp')
             pplacer_args.extend(
