@@ -340,6 +340,8 @@ module Classifier = struct
     end;
     make ?map_file ?n_boot ?rng preclassif
 
+  (* Take each sequence and put it in the classifier at every rank of its
+   * lineage. *)
   let _all_ranks_of_refpkg ?ref_aln ?n_boot ?rng word_length rp =
     let td = Refpkg.get_taxonomy rp
     and seqinfo = Refpkg.get_seqinfom rp in
