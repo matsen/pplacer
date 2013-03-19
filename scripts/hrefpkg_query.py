@@ -228,7 +228,7 @@ def main():
 
         classifier_args, pplacer_args = [], []
         if args.classifier.startswith('nbc') or args.classifier.startswith('hybrid'):
-            if '--no-pre-mask' not in classifier_args:
+            if '--no-pre-mask' not in args.classification_args:
                 classifier_args.append('--no-pre-mask')
             classifier_args.extend(['--nbc-sequences', input])
         if args.post_prob:
