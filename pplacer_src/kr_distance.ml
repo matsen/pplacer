@@ -152,6 +152,102 @@ let make_n_kr_map ml =
     ml
   |> snd
 
+(* We'll be using general_total_over_tree to do the heavy lifting. So "data"
+   (type 'a) is actually a "thing" that will contain the f_k vector "just
+   distal" of the proximal node of the edge, as well as an m_k vector
+   describing how much mass for each sample is below that same point. "r" (type
+   'b) will be the partial accumulator matrix A for that subtree.
+
+   helper functions:
+
+   curried_edge_total (int -> 'b -> 'a -> 'b * 'a) takes an edge id, the
+   previous partial accumulator matrix, the previous (f_k * m_k) tuple/thing,
+   and returns a tuple of the new partial accumulator matrix and tuple/thing.
+   in the KR distance functions, curried_edge_total is general_total_along_edge
+   or total_along_edge curried with the appropriate data; we can maybe do that,
+   too, or we can write something special.
+
+   check_final_data ('a -> unit) is just a sanity check for the final
+   tuple/thing data, and raises an exception if something is jacked.
+
+   r_list_sum ('b list -> 'b) takes a list of the partial accumulator matrices
+   and combines them, and so needs to be an element-by-element sum.
+
+   data_list_sum ('a list -> 'a) takes a list of the tuple/things and combines
+   them; how do, and why?
+
+   starter_r_factory (unit -> 'b) initializes the partial accumulator matrix at
+   a leaf, so this just needs to return an S x S zero matrix.
+
+   starter_data_factory (unit -> 'a) initializes the tuple/things, so this
+   needs to return a tuple/thing with the f_k vector with values initialized to
+   M_k (where M_k is the total mass on the tree for sample k) and the m_k
+   vector initialized to the zero vector (since all mass on the tree will be
+   proximal to x+ at the leaf).
+
+   arguments:
+
+   ref_tree is just the reference tree.
+
+   m is the "thing" describing the mass placements on the tree; I don't know
+   what this looks like, exactly.
+
+   return value:
+
+   ('b) Either the raw accumulator matrix A, or (1/S) * A = F'LF. Probably the
+   latter.
+
+   *****
+
+   data_to_r ('a -> float -> 'b) takes the "data so far" and a segment length,
+   then does something weird: |> merge_r subtotal. What the hell is this?
+   EDIT: from the Batteries Included docs, "The (|>) operator becomes like a
+   typed unix pipe, feeding the result on the left to the function on the
+   right. It reduces the need for unnecessary parentheses and puts the
+   computation in the order of actual evaluation." So, data_to_r takes the
+   "data so far" and the segment length, computes this segment's partial
+   accumulator, and adds it to the previous subtotal (?).
+
+   merge_r ('b -> 'b -> 'b) appears to just be how two objects of type 'b (in
+   this case, accumulator matrices) are combined together -- so it's just a
+   sum; we can curry total_along_edge instead of specifying this ourselves for
+   general_total_along_edge.
+
+   bl (float) is the branch length.
+
+   data_info_list (float * 'c) list is a list of (float * 'c) tuples, where the
+   float is the distal branch length, and 'c is some data (in our case, mass
+   placements).
+
+   update_data ('a -> 'c -> unit) takes a tuple/thing and a mass placement and
+   updates the tuple/thing in-place.
+
+   prev_subtot ('b) is the previous partial accumulator matrix from... where?
+   the last segment, or the previous edge? or c) other?
+
+   start_data ('a) is the tuple/thing at the beginning of the edge
+   traversal. this will need to be updated from the tuple/thing returned from
+   the last child edge, i.e., f_k -= 2*m_k, where m_k is the total mass for
+   sample_k below this edge for every branch *except* the one f_k came
+   from. confused? good!
+
+   return value:
+
+   ('b * 'a) a tuple of the partial accumulator matrix after traversing the
+   edge and the "data so far".
+*)
+
+(*
+let recur f_node f_leaf tree =
+  let rec aux = function
+  | Node(id, tL) -> f_node id (List.map aux tL)
+  | Leaf id -> f_leaf id
+  in
+  aux tree
+
+  recur returns whatever the f_node/f_leaf functions do, right?
+*)
+
 (* Z_p distance between two Indiv mass maps *)
 let dist ?(normalization=1.) ref_tree p m1 m2 =
   let starter_kr_v = [|0.; 0.|]
