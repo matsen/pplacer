@@ -331,13 +331,10 @@ let make_n_lpca_map sl =
       succ sample_id,
       (IntMap.fold
          (fun edge_id pl acc ->
-           IntMap.add
+           IntMap.modify_def
+             []
              edge_id
-             (List.merge
-                cmp_p
-                (* FIXME: this will bomb if the edge_id mapping isn't yet in acc *)
-                (IntMap.find edge_id acc)
-                (List.map (repkg_p sample_id) pl))
+             (List.merge cmp_p (List.map (repkg_p sample_id) pl))
              acc)
          s
          acc))
