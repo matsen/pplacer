@@ -238,15 +238,138 @@ let make_n_kr_map ml =
 *)
 
 (*
-let recur f_node f_leaf tree =
+  let recur f_node f_leaf tree =
   let rec aux = function
   | Node(id, tL) -> f_node id (List.map aux tL)
   | Leaf id -> f_leaf id
   in
   aux tree
 
-  recur returns whatever the f_node/f_leaf functions do, right?
+  recur returns whatever the f_node/f_leaf functions do
 *)
+
+(* lpca_make_map takes in a list of maps of placements for the samples, which
+   look like
+
+   edge_id -> Mass_map.Indiv.v list
+
+   where Mass_map.Indiv.v is a record of type
+
+   {distal_bl: float; mass: float}
+
+   lpca_make_map merges these maps into a single map of
+
+   edge_id -> (distal_bl * sample_id * mass) list
+
+   where the list is sorted is ascending order of distal_bl.
+
+   TODO: would it be better to make a record for the values rather than use a
+   tuple?
+*)
+
+(*
+let lpca_make_map ml =
+  (* we want a single map from the list of maps, so a fold is appropriate *)
+  List.fold_left
+    (fun (sample_id, acc) m ->
+      (* this inner function takes the item m from the list and adds it to the
+         accumulator a *)
+      succ sample_id,
+      IntMap.fold
+        (* this inner function adds the sample_id to the placement record ao and
+           adds it to the map bo *)
+        (fun k ao bo -> IntMap.add k (idify ao sample_id) bo)
+        m
+        acc)
+    (* this is the initial sample_id counter and accumulator for the fold *)
+    (0, IntMap.empty)
+    ml
+  |> snd (* throw away the sample_id; we only want to return the accumulator *)
+*)
+
+let lpca_agg_result l =
+  let rec aux x xs =
+    match xs with
+      | [] -> x
+      | y::ys ->
+        Gsl_matrix.add x y;
+        aux y ys
+  in match l with
+    | [] -> invalid_arg "lpca_agg_result: empty list"
+    | x::xs -> aux x xs
+
+(* intermediate edge result record *)
+type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; }
+
+let lpca_agg_data l =
+  let rec aux x xs =
+    match xs with
+      | [] -> failwith "lpca_agg_data: shouldn't happen"
+      | y::[] ->
+        Gsl_blas.axpy (-2.) x.mk y.fk;
+        Gsl_vector.add x.mk y.mk;
+        { fk = y.fk; mk = y.mk }
+      | y::ys ->
+        Gsl_vector.add x.mk y.mk;
+        aux y ys
+  in match l with
+    | [] -> invalid_arg "lpca_agg_data: empty list"
+    | x::xs -> aux x xs
+
+let lpca_tot_edge mass_map id result_0 data_0 =
+  (result_0, data_0)
+
+type lpca_placement = {distal_bl: float; sample_id: int; mass: float}
+
+(* TODO: make sure the lists are sorted properly *)
+let make_n_lpca_map sl =
+  let repkg_p sample_id {I.distal_bl; I.mass} = {distal_bl; sample_id; mass}
+  and cmp_p pa pb = compare pa.distal_bl pb.distal_bl
+  in
+  List.fold_left
+    (fun (sample_id, acc) s ->
+      succ sample_id,
+      (IntMap.fold
+         (fun edge_id pl acc ->
+           IntMap.add
+             edge_id
+             (List.merge
+                cmp_p
+                (* FIXME: this will bomb if the edge_id mapping isn't yet in acc *)
+                (IntMap.find edge_id acc)
+                (List.map (repkg_p sample_id) pl))
+             acc)
+         s
+         acc))
+    (0, IntMap.empty)
+    sl |> snd
+
+let lpca:
+    Mass_map.Indiv.v list IntMap.t list -> Stree.t -> 'result_t
+  = fun ml ref_tree ->
+    let n_samples = List.length ml in
+    (* FIXME: make sure Gsl_matrix.create zeroes the matrix, else do it
+       manually *)
+    let result_0 = Gsl_matrix.create n_samples n_samples
+    (* FIXME: fk and mk need to be initialized to the proper values *)
+    and data_0 = { fk = Gsl_vector.create n_samples; mk = Gsl_vector.create n_samples }
+    in
+    let tot_edge = lpca_tot_edge (make_n_lpca_map ml) in
+    let (result, data) =
+      Stree.recur
+        (fun id node_list -> (* internal nodes *)
+          tot_edge
+            id
+            (lpca_agg_result (List.map fst node_list))
+            (lpca_agg_data (List.map snd node_list)))
+        (fun id -> (* leaves *)
+          tot_edge
+            id
+            (Gsl_matrix.copy result_0)
+            (data_0)) (* FIXME: how do you copy a record? *)
+        ref_tree
+    in
+    result
 
 (* Z_p distance between two Indiv mass maps *)
 let dist ?(normalization=1.) ref_tree p m1 m2 =
