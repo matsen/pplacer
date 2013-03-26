@@ -13,6 +13,7 @@
 *)
 
 open Ppatteries
+open Linear_utils
 
 exception Invalid_place_loc of float
 exception Total_kr_not_zero of float
@@ -267,26 +268,6 @@ let make_n_kr_map ml =
    tuple?
 *)
 
-(*
-let lpca_make_map ml =
-  (* we want a single map from the list of maps, so a fold is appropriate *)
-  List.fold_left
-    (fun (sample_id, acc) m ->
-      (* this inner function takes the item m from the list and adds it to the
-         accumulator a *)
-      succ sample_id,
-      IntMap.fold
-        (* this inner function adds the sample_id to the placement record ao and
-           adds it to the map bo *)
-        (fun k ao bo -> IntMap.add k (idify ao sample_id) bo)
-        m
-        acc)
-    (* this is the initial sample_id counter and accumulator for the fold *)
-    (0, IntMap.empty)
-    ml
-  |> snd (* throw away the sample_id; we only want to return the accumulator *)
-*)
-
 let lpca_agg_result l =
   let rec aux x xs =
     match xs with
@@ -316,52 +297,102 @@ let lpca_agg_data l =
     | [] -> invalid_arg "lpca_agg_data: empty list"
     | x::xs -> aux x xs
 
-let lpca_tot_edge mass_map id result_0 data_0 =
-  (result_0, data_0)
+let vec_mean v =
+  (vec_fold_left (+.) 0. v) /. (float (Gsl_vector.length v))
+
+let vec_denorm v =
+  let v_bar = vec_mean v
+  in
+  vec_map (fun vi -> vi -. v_bar) v
+
+let vec_addi v i x =
+  Gsl_vector.set v i ((Gsl_vector.get v i) +. x)
+
+let vec_subi v i x =
+  Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
 
 type lpca_placement = {distal_bl: float; sample_id: int; mass: float}
 
-(* TODO: make sure the lists are sorted properly *)
+let lpca_tot_edge sm edge_id result data =
+  let pl = IntMap.find edge_id sm in
+  let rec aux pl prev_distal_bl result data =
+    match pl with
+      | p::ps ->
+        let len = p.distal_bl -. prev_distal_bl
+        in
+        Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:(vec_denorm data.fk) ~a:result;
+        vec_subi data.fk p.sample_id (2. *. p.mass);
+        vec_addi data.mk p.sample_id p.mass;
+        aux ps p.distal_bl result data
+      | [] ->
+        (result, data)
+  in
+  aux pl 0. result data
+
+(* f: int -> int -> 'acc_t -> 'p_t list *)
+let fold_samples_listwise f acc sl =
+  List.fold_left
+    (fun (sample_id, acc) s ->
+      succ sample_id,
+      IntMap.fold
+        (* f and fold's arguments are in different orders, otherwise we could
+           just curry this *)
+        (fun edge_id pl acc -> f sample_id edge_id acc pl)
+        s
+        acc)
+    (0, acc)
+    sl |> snd
+
+(* f: int -> int -> 'acc_t -> 'p_t *)
+let fold_samples f acc sl =
+  fold_samples_listwise
+    (fun sample_id edge_id acc pl -> List.fold_left (f sample_id edge_id) acc pl)
+    acc
+    sl
+
+(* TODO: make sure the incoming lists are sorted properly *)
 let make_n_lpca_map sl =
   let repkg_p sample_id {I.distal_bl; I.mass} = {distal_bl; sample_id; mass}
   and cmp_p pa pb = compare pa.distal_bl pb.distal_bl
   in
-  List.fold_left
-    (fun (sample_id, acc) s ->
-      succ sample_id,
-      (IntMap.fold
-         (fun edge_id pl acc ->
-           IntMap.modify_def
-             []
-             edge_id
-             (List.merge cmp_p (List.map (repkg_p sample_id) pl))
-             acc)
-         s
-         acc))
-    (0, IntMap.empty)
-    sl |> snd
+  fold_samples_listwise
+    (fun sample_id edge_id acc pl ->
+      IntMap.modify_def
+        []
+        edge_id
+        (List.merge cmp_p (List.map (repkg_p sample_id) pl))
+        acc)
+    IntMap.empty
+    sl
+
+let total_sample_mass sl =
+  let mmk = Gsl_vector.create ~init:0. (List.length sl)
+  in
+  fold_samples
+    (fun sample_id _ acc {I.distal_bl; I.mass} ->
+      Gsl_vector.set acc sample_id ((Gsl_vector.get acc sample_id) +. mass);
+      acc)
+    mmk
+    sl
 
 let lpca:
     Mass_map.Indiv.v list IntMap.t list -> Stree.t -> 'result_t
-  = fun ml ref_tree ->
-    let n_samples = List.length ml in
-    (* FIXME: make sure Gsl_matrix.create zeroes the matrix, else do it
-       manually *)
-    let result_0 = Gsl_matrix.create n_samples n_samples
-    (* FIXME: fk and mk need to be initialized to the proper values *)
-    and data_0 = { fk = Gsl_vector.create n_samples; mk = Gsl_vector.create n_samples }
+  = fun sl ref_tree ->
+    let n_samples = List.length sl in
+    let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
+    and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples }
     in
-    let tot_edge = lpca_tot_edge (make_n_lpca_map ml) in
-    let (result, data) =
+    let tot_edge = lpca_tot_edge (make_n_lpca_map sl) in
+    let (result, _) =
       Stree.recur
-        (fun id node_list -> (* internal nodes *)
+        (fun edge_id node_list -> (* internal nodes *)
           tot_edge
-            id
+            edge_id
             (lpca_agg_result (List.map fst node_list))
             (lpca_agg_data (List.map snd node_list)))
-        (fun id -> (* leaves *)
+        (fun edge_id -> (* leaves *)
           tot_edge
-            id
+            edge_id
             (Gsl_matrix.copy result_0)
             (data_0)) (* FIXME: how do you copy a record? *)
         ref_tree
