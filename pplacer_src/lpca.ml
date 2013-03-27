@@ -104,17 +104,20 @@ open Linear_utils
 
    where Mass_map.Indiv.v is a record of type
 
-   {distal_bl: float; mass: float}
+   { distal_bl: float; mass: float }
 
    lpca_make_map merges these maps into a single map of
 
    edge_id -> (distal_bl * sample_id * mass) list
 
    where the list is sorted is ascending order of distal_bl.
-
-   TODO: would it be better to make a record for the values rather than use a
-   tuple?
 *)
+
+(* intermediate edge result record *)
+type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector }
+
+(* repackaged placement record which includes the sample id *)
+type lpca_placement = { distal_bl: float; sample_id: int; mass: float }
 
 let lpca_agg_result l =
   let rec aux x xs =
@@ -126,9 +129,6 @@ let lpca_agg_result l =
   in match l with
     | [] -> invalid_arg "lpca_agg_result: empty list"
     | x::xs -> aux x xs
-
-(* intermediate edge result record *)
-type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; }
 
 let lpca_agg_data l =
   let rec aux x xs =
@@ -159,8 +159,6 @@ let vec_addi v i x =
 let vec_subi v i x =
   Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
 
-type lpca_placement = {distal_bl: float; sample_id: int; mass: float}
-
 let lpca_tot_edge sm edge_id result data =
   let pl =
     try
@@ -182,7 +180,7 @@ let lpca_tot_edge sm edge_id result data =
   in
   aux pl 0. result data
 
-(* f: int -> int -> 'acc_t -> 'p_t list *)
+(* f: int -> int -> 'acc_t -> 'p_t list -> 'acc_t *)
 let fold_samples_listwise f acc sl =
   List.fold_left
     (fun (sample_id, acc) s ->
@@ -196,16 +194,15 @@ let fold_samples_listwise f acc sl =
     (0, acc)
     sl |> snd
 
-(* f: int -> int -> 'acc_t -> 'p_t *)
+(* f: int -> int -> 'acc_t -> 'p_t -> 'acc_t *)
 let fold_samples f acc sl =
   fold_samples_listwise
     (fun sample_id edge_id acc pl -> List.fold_left (f sample_id edge_id) acc pl)
     acc
     sl
 
-(* TODO: make sure the incoming lists are sorted properly *)
 let make_n_lpca_map sl =
-  let repkg_p sample_id {Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass} = {distal_bl; sample_id; mass}
+  let repkg_p sample_id { Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass } = { distal_bl; sample_id; mass }
   and cmp_p pa pb = compare pa.distal_bl pb.distal_bl
   in
   fold_samples_listwise
@@ -218,11 +215,13 @@ let make_n_lpca_map sl =
     IntMap.empty
     sl
 
+(* TODO: the Mass_map module actually has functionality for doing this -- use
+   that instead and pass it to gen_lpca *)
 let total_sample_mass sl =
   let mmk = Gsl_vector.create ~init:0. (List.length sl)
   in
   fold_samples
-    (fun sample_id _ acc {Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass} ->
+    (fun sample_id _ acc { Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass } ->
       Gsl_vector.set acc sample_id ((Gsl_vector.get acc sample_id) +. mass);
       acc)
     mmk
