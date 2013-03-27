@@ -159,28 +159,30 @@ let vec_addi v i x =
 let vec_subi v i x =
   Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
 
-let lpca_tot_edge sm edge_id result data =
+let lpca_tot_edge sm edge_id bl result_0 data_0 =
   let pl =
     try
       IntMap.find edge_id sm
     with
       | Not_found -> []
   in
+  let update_acc len fk result =
+    assert(len >= 0.);
+    Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:(vec_denorm fk) ~a:result
+  in
   let rec aux pl prev_distal_bl result data =
     match pl with
       | p::ps ->
-        let len = p.distal_bl -. prev_distal_bl
-        in
-        assert(len >= 0.);
-        assert(0. < p.mass);
-        Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:(vec_denorm data.fk) ~a:result;
+        update_acc (p.distal_bl -. prev_distal_bl) data.fk result;
         vec_subi data.fk p.sample_id (2. *. p.mass);
         vec_addi data.mk p.sample_id p.mass;
         aux ps p.distal_bl result data
       | [] ->
+        (* assert(0. < p.mass); *)
+        update_acc (bl -. prev_distal_bl) data.fk result;
         (result, data)
   in
-  aux pl 0. result data
+  aux pl 0. result_0 data_0
 
 (* f: int -> int -> 'acc_t -> 'p_t list -> 'acc_t *)
 let fold_samples_listwise f acc sl =
@@ -240,13 +242,15 @@ let gen_lpca sl ref_tree =
       (fun edge_id node_list -> (* internal nodes *)
         tot_edge
           edge_id
+          (Gtree.get_bl ref_tree edge_id)
           (lpca_agg_result (List.map fst node_list))
           (lpca_agg_data (List.map snd node_list)))
       (fun edge_id -> (* leaves *)
         tot_edge
           edge_id
+          (Gtree.get_bl ref_tree edge_id)
           (Gsl_matrix.copy result_0)
           ({ fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
-      ref_tree
+      (Gtree.get_stree ref_tree)
   in
   result
