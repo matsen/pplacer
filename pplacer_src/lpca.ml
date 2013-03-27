@@ -228,26 +228,24 @@ let total_sample_mass sl =
     mmk
     sl
 
-let gen_lpca:
-    Mass_map.Indiv.v list IntMap.t list -> Stree.t -> 'result_t
-  = fun sl ref_tree ->
-    let n_samples = List.length sl in
-    let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
-    and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples }
-    in
-    let tot_edge = lpca_tot_edge (make_n_lpca_map sl) in
-    let (result, _) =
-      Stree.recur
-        (fun edge_id node_list -> (* internal nodes *)
-          tot_edge
-            edge_id
-            (lpca_agg_result (List.map fst node_list))
-            (lpca_agg_data (List.map snd node_list)))
-        (fun edge_id -> (* leaves *)
-          tot_edge
-            edge_id
-            (Gsl_matrix.copy result_0)
-            (data_0)) (* FIXME: how do you copy a record? *)
-        ref_tree
-    in
-    result
+let gen_lpca sl ref_tree =
+  let sm = make_n_lpca_map sl in
+  let tot_edge = lpca_tot_edge sm in
+  let n_samples = List.length sl in
+  let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
+  and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples } in
+  let (result, _) =
+    Stree.recur
+      (fun edge_id node_list -> (* internal nodes *)
+        tot_edge
+          edge_id
+          (lpca_agg_result (List.map fst node_list))
+          (lpca_agg_data (List.map snd node_list)))
+      (fun edge_id -> (* leaves *)
+        tot_edge
+          edge_id
+          (Gsl_matrix.copy result_0)
+          (data_0)) (* FIXME: how do you copy a record? *)
+      ref_tree
+  in
+  result

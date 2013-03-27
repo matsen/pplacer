@@ -47,7 +47,12 @@ object (self)
     and write_n = fv write_n
     and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
-    let sl = List.map (Mass_map.Indiv.of_placerun weighting criterion) prl in
+    let sl =
+      List.map
+        (fun pr ->
+          Mass_map.Indiv.sort (Mass_map.Indiv.of_placerun weighting criterion pr))
+        prl
+    in
     let result = Lpca.gen_lpca sl (Gtree.get_stree t) in
     Format.fprintf
       Format.std_formatter
