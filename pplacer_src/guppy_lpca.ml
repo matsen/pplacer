@@ -53,11 +53,8 @@ object (self)
           Mass_map.Indiv.sort (Mass_map.Indiv.of_placerun weighting criterion pr))
         prl
     in
-    let result = Lpca.gen_lpca sl (Gtree.get_stree t) in
-    Format.fprintf
-      Format.std_formatter
-      "thingy: %a@." (* I have no idea what this is doing *)
-      Linear_utils.ppr_gsl_matrix result
+    let result = Lpca.mat_print "F'LF" (Lpca.gen_lpca sl t) in
+    ()
 
 (*
   let data, rep_reduction_map, rep_orig_length =

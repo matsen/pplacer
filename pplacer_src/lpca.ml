@@ -113,6 +113,22 @@ open Linear_utils
    where the list is sorted is ascending order of distal_bl.
 *)
 
+let vec_print s v =
+  Format.fprintf
+    Format.std_formatter
+    "%s: %a@."
+    s
+    Linear_utils.ppr_gsl_vector v;
+  v
+
+let mat_print s m =
+  Format.fprintf
+    Format.std_formatter
+    "%s: %a@."
+    s
+    Linear_utils.ppr_gsl_matrix m;
+  m
+
 (* intermediate edge result record *)
 type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector }
 
