@@ -124,7 +124,7 @@ let lpca_agg_result l =
     match xs with
       | [] -> x
       | y::ys ->
-        Gsl_matrix.add x y;
+        Gsl_matrix.add y x;
         aux y ys
   in match l with
     | [] -> invalid_arg "lpca_agg_result: empty list"
@@ -136,10 +136,10 @@ let lpca_agg_data l =
       | [] -> failwith "lpca_agg_data: shouldn't happen"
       | y::[] ->
         Gsl_blas.axpy (-2.) x.mk y.fk;
-        Gsl_vector.add x.mk y.mk;
+        Gsl_vector.add y.mk x.mk;
         { fk = y.fk; mk = y.mk }
       | y::ys ->
-        Gsl_vector.add x.mk y.mk;
+        Gsl_vector.add y.mk x.mk;
         aux y ys
   in match l with
     | [] -> invalid_arg "lpca_agg_data: empty list"
@@ -171,6 +171,8 @@ let lpca_tot_edge sm edge_id result data =
       | p::ps ->
         let len = p.distal_bl -. prev_distal_bl
         in
+        assert(len >= 0.);
+        assert(0. < p.mass);
         Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:(vec_denorm data.fk) ~a:result;
         vec_subi data.fk p.sample_id (2. *. p.mass);
         vec_addi data.mk p.sample_id p.mass;
@@ -222,7 +224,7 @@ let total_sample_mass sl =
   in
   fold_samples
     (fun sample_id _ acc { Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass } ->
-      Gsl_vector.set acc sample_id ((Gsl_vector.get acc sample_id) +. mass);
+      vec_addi acc sample_id mass;
       acc)
     mmk
     sl
@@ -244,7 +246,7 @@ let gen_lpca sl ref_tree =
         tot_edge
           edge_id
           (Gsl_matrix.copy result_0)
-          (data_0)) (* FIXME: how do you copy a record? *)
+          ({ fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
       ref_tree
   in
   result
