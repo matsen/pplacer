@@ -129,6 +129,29 @@ let mat_print s m =
     Linear_utils.ppr_gsl_matrix m;
   m
 
+let vec_mean v =
+  (vec_fold_left (+.) 0. v) /. (float (Gsl_vector.length v))
+
+let vec_denorm v =
+  let v_bar = vec_mean v
+  in
+  vec_map (fun vi -> vi -. v_bar) v
+
+let vec_addi v i x =
+  Gsl_vector.set v i ((Gsl_vector.get v i) +. x)
+
+let vec_subi v i x =
+  Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
+
+let mat_rep_uptri m =
+  let n_rows, _ = Gsl_matrix.dims m in
+  for i=1 to n_rows-1 do
+    for j=0 to i-1 do
+      Gsl_matrix.set m i j (Gsl_matrix.get m j i)
+    done;
+  done;
+  m
+
 (* intermediate edge result record *)
 type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector }
 
@@ -160,20 +183,6 @@ let lpca_agg_data l =
   in match l with
     | [] -> invalid_arg "lpca_agg_data: empty list"
     | x::xs -> aux x xs
-
-let vec_mean v =
-  (vec_fold_left (+.) 0. v) /. (float (Gsl_vector.length v))
-
-let vec_denorm v =
-  let v_bar = vec_mean v
-  in
-  vec_map (fun vi -> vi -. v_bar) v
-
-let vec_addi v i x =
-  Gsl_vector.set v i ((Gsl_vector.get v i) +. x)
-
-let vec_subi v i x =
-  Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
 
 let lpca_tot_edge sm edge_id bl result_0 data_0 =
   let pl =
@@ -269,4 +278,4 @@ let gen_lpca sl ref_tree =
           ({ fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
       (Gtree.get_stree ref_tree)
   in
-  result
+  mat_rep_uptri result

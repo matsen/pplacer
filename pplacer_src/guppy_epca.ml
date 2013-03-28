@@ -1,6 +1,10 @@
 open Ppatteries
-open Subcommand
 open Guppy_cmdobjs
+
+let expand full_length m arr =
+  let full = Array.make full_length 0. in
+  Array.iteri (fun i v -> full.(IntMap.find i m) <- v) arr;
+  full
 
 class cmd () =
 object (self)
@@ -28,8 +32,8 @@ object (self)
   method private expand_combol combol (rep_reduction_map, rep_orig_length, const_reduction_map, const_orig_length) =
     List.map
       (second
-         (Guppy_pca.expand const_orig_length const_reduction_map
-             |- Guppy_pca.expand rep_orig_length rep_reduction_map))
+         (expand const_orig_length const_reduction_map
+             |- expand rep_orig_length rep_reduction_map))
       combol
 
 end
