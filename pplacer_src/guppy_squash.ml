@@ -102,6 +102,8 @@ object (self)
 
   val nboot = flag "--bootstrap"
     (Plain (0, "the number of bootstrap replicates to run"))
+  val children = flag "-j"
+    (Formatted (2, "The number of processes to spawn to do bootstrapping. default: %d"))
   val tax_cluster_mode = flag "--tax-cluster"
     (Plain ("", "Perform taxonomic clustering rather than phylogenetic.\
     Specify \"unit\" or \"inv\" for the two different modes."))
@@ -123,6 +125,7 @@ object (self)
     @ super_normalization#specl
     @ [
       int_flag nboot;
+      int_flag children;
       string_flag tax_cluster_mode;
       toggle_flag round;
       toggle_flag unitize;
@@ -191,19 +194,24 @@ object (self)
           IntMap.iter (wpt "tax" taxt) tax_blobim
     end
     else begin
-      let pad_width = find_zero_pad_width nboot in
-      let rng = self#rng in
+      let pad_width = find_zero_pad_width nboot
+      and rng = self#rng
+      and children = fv children
+      and boots = List.of_enum (1--nboot) in
       let boot_placerun = match unitize with
         | true -> Bootstrap.boot_placerun rng |- Placerun.unitize
         | false -> Bootstrap.boot_placerun rng
       in
-      for i=1 to nboot do
-        dprintf "running bootstrap %d of %d\n" i nboot;
+      let run_boot i =
         let boot_prl = List.map boot_placerun prl in
         let (_, cluster_t, _) = our_make_cluster refpkgo mode_str boot_prl in
         Newick_gtree.to_file
           cluster_t
-          (path ("cluster."^(zero_pad_int pad_width i)^".tre"))
-      done
+          (path ("cluster."^(zero_pad_int pad_width i)^".tre"));
+        dprintf "Finished bootstrap %s/%d\n" (zero_pad_int pad_width i) (List.length boots);
+      in
+      match children with
+      | 1 -> List.iter run_boot boots
+      | _ -> Multiprocessing.iter ~children run_boot boots
     end
 end
