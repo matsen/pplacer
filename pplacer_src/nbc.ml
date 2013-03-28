@@ -75,7 +75,10 @@ let rank_tax_map_of_refpkg rp =
   |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
   |> Convex.gen_build_rank_tax_map StringMap.empty StringMap.add td some
 
-(* the thing that accumulates reference sequences before classification *)
+(* The preclassifier accumulates reference sequences before classification. When
+ * we add sequences to a preclassifier we update the various counts, which will
+ * allow us to generate the priors as well as allocate the correct size of
+ * taxid_word_counts matrix in the classifier.  *)
 module Preclassifier = struct
   type base = {
     word_length: int;
@@ -152,7 +155,10 @@ module Preclassifier = struct
 
 end
 
-(* the thing that does actual classification *)
+(* The classifier: the thing that actually holds the data for classification.
+ * The most important component is taxid_word_counts, which is indexed on the
+ * rows by the words and on the columns by the taxids.
+*)
 module Classifier = struct
   type t = {
     pc: Preclassifier.base;
@@ -162,9 +168,10 @@ module Classifier = struct
   }
 
   (* make a classifier from a preclassifier *)
-  let make ?(n_boot = 100) ?map_file c =
+  let make ?(n_boot = 100) ?map_file ?rng c =
     let open Preclassifier in
     let n_taxids = Array.length c.base.tax_ids
+    and rng = Option.default (Random.get_state ()) rng
     and boot_rows = n_boot * extra_boot_factor in
     let taxid_word_counts, fill_counts = match map_file with
       | Some (fd, also_write) ->
@@ -178,7 +185,7 @@ module Classifier = struct
         also_write
       | None -> Matrix.create c.base.n_words n_taxids, true
     and fill_boot_row vec =
-      Random.enum_int c.base.n_words
+      Random.State.enum_int rng c.base.n_words
       (* boot with 1/word_length of the words. this number of bootstrapped
        * columns is assumed below in the definition of `expected` in the
        * bootstrap function. *)
@@ -197,7 +204,7 @@ module Classifier = struct
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
-  (* find the tax_id associated with a count vector *)
+  (* Find the tax_id associated with a count vector using the classifier cf. *)
   let classify_vec cf vec =
     let open Preclassifier in
     let dest = cf.classify_vec in
@@ -223,9 +230,13 @@ module Classifier = struct
   let classify cf ?like_rdp seq =
     count_seq cf ?like_rdp seq |> classify_vec cf
 
-  (* bootstrap a sequence, returning a map from tax_ids to a float on the range
+  (* Bootstrap a sequence, returning a map from tax_ids to a float on the range
    * (0, 1] representing the percentage of bootstrappings done that produced a
-   * particular tax_id. *)
+   * particular tax_id. As you can read about at the top of this file, we do
+   * bootstrapping a little differently than is traditional. We keep on
+   * sampling resamplings (that are effectively just determined once) until we
+   * get n_boot samples that are within the proper range. *)
+
   let bootstrap cf ?like_rdp seq =
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
@@ -241,6 +252,8 @@ module Classifier = struct
       cf.pc.n_words
     (* the expected number of occupied columns under bootstrapping *)
     and expected = (Linear.int_vec_tot seq_word_counts) / cf.pc.word_length
+    (* n_successes is the number of times we've gotten a re-sample that is
+      * within the proper range. *)
     and n_successes = ref 0 in
     let counts = 0 --^ boot_rows
     |> Enum.fold
@@ -285,7 +298,7 @@ module Classifier = struct
           (Tax_taxonomy.get_rank_name td
            |- dprintf "automatically determined best rank: %s\n")
 
-  let of_refpkg ?ref_aln ?n_boot ?map_file word_length rank_idx rp =
+  let of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rp =
     let td = Refpkg.get_taxonomy rp
     and rank_tax_map = rank_tax_map_of_refpkg rp in
     let rank_idx =
@@ -321,6 +334,6 @@ module Classifier = struct
         |> Enum.filter_map (filter seq_tax_ids)
         |> Enum.iter (uncurry (Preclassifier.add_seq preclassif))
     end;
-    make ?map_file ?n_boot preclassif
+    make ?map_file ?n_boot ?rng preclassif
 
 end

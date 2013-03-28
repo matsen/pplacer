@@ -128,11 +128,16 @@ object (self)
   method specl = [ int_flag seed; ]
 
   method private set_default_seed =
-    Gsl_rng.set_default_seed (Nativeint.of_int (fv seed))
+    let seed = fv seed in
+    Gsl_rng.set_default_seed (Nativeint.of_int seed);
+    Random.init seed
 
   method private rng =
     self#set_default_seed;
     Gsl_rng.make Gsl_rng.KNUTHRAN2002
+
+  method private random_state =
+    Random.State.make [| fv seed |]
 
 end
 

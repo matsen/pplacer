@@ -300,6 +300,8 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       let get_like (_, (like, _, _)) = like in
       let sorted_ml_results =
         List.sort (comparing get_like |> flip) ml_results in
+      if Float.is_nan (get_like (List.hd sorted_ml_results)) then
+        dprint "warning: encountered NAN for final likelihood.\n";
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =

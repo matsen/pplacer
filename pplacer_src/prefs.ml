@@ -202,7 +202,7 @@ let specl prefs =
   prefs.max_strikes := 20),
 "Calculate posterior probabilities.";
 "-m", Arg.Set_string prefs.model_name,
-"Substitution model. Protein: are LG, WAG, or JTT. Nucleotides: GTR.";
+"Substitution model. Protein: LG, WAG, or JTT. Nucleotides: GTR.";
 (* model *)
 "--model-freqs", Arg.Clear prefs.emperical_freqs,
 "Use model frequencies instead of reference alignment frequencies.";

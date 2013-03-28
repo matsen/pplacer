@@ -77,7 +77,9 @@ let to_json_file ?invocation out_fname placerun =
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
   let fields, thunks = List.map Pquery_io.to_json pqueries |> List.split in
-  let all_fields = List.reduce StringSet.union fields |> StringSet.elements in
+  let all_fields = List.fold_left StringSet.union StringSet.empty fields
+    |> StringSet.elements
+  in
   Jsontype.Array (List.map (flip identity all_fields) thunks)
     |> Hashtbl.add ret "placements";
   Jsontype.Array (List.map (fun s -> Jsontype.String s) all_fields)

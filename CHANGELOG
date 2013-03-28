@@ -39,7 +39,11 @@
    directory or a file.
  * Closed GH-287: Added a more informative error message for the case of an
    input alignment containing some, but not all reference sequence names.
-
+ * Closed GH-291: Added qD(T) alpha diversity measure from Chao et. al., 2010
+   (doi:10.1098/rstb.2010.0272)
+ * Closed GH-293: Switched build system to use OPAM
+ * Closed GH-294: Added `--unitize` option to `guppy squash`
+ * Closed GH-298: Faster upper-limit finding during integration
 
 1.1.alpha13
 ===========

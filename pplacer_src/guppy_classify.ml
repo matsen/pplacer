@@ -2,14 +2,20 @@ open Subcommand
 open Guppy_cmdobjs
 open Ppatteries
 
+(* TIAMR = Taxid Algebraic Map Real. These will store the confidence that we
+have in various taxonomic classifications. *)
 module TIAMR = AlgMapR (Tax_id.TaxIdMap)
 
+(* The lower case tiamr also associates a place_id with this classification. *)
 type tiamr = {
   tiamr: float TIAMR.t;
   place_id: int64;
 }
 
+(* A classification at every rank and perhaps a Bayes_factor *)
 type classification = {
+ (* tiamrim = tiamr IntMap; the integer key is the rank.
+  Rank increases from zero, with zero being the "root". *)
   tiamrim: tiamr IntMap.t;
   bayes_factors: Bayes_factor.t option;
 }
@@ -30,8 +36,8 @@ let bayes_factors {bayes_factors} = Option.get bayes_factors
 let set_tiamrim cf tiamrim = {cf with tiamrim}
 let map_tiamrim cf f = {cf with tiamrim = f cf.tiamrim}
 
-(* if rank is less than the tax rank of ti, then move up the taxonomy until
- * the first time that the tax rank is less than or equal to rank *)
+(* If rank is less than the tax rank of ti, then move up the taxonomy until
+ * the first time that the tax rank is less than or equal to rank. *)
 let classify_at_rank td rank ti =
   let rec aux curr_ti =
     if rank >= Tax_taxonomy.get_tax_rank td curr_ti then
@@ -41,7 +47,7 @@ let classify_at_rank td rank ti =
   in
   aux ti
 
-(* apply f to all of the keys and add the results together *)
+(* Apply f to all of the keys and add the results together. *)
 let keymap_add_by f m =
   List.fold_right
     (fun (k,v) -> (TIAMR.add_by (f k) v))
@@ -54,7 +60,8 @@ let tiamr_at_rank td rank tiamr =
   TIAMR.filteri (fun ti _ -> Tax_taxonomy.get_tax_rank td ti = rank) tiamr
   |> junction TIAMR.is_empty (const None) some
 
-(* From an bootstrap map, produce a full classification map. *)
+(* From a map from the edges to the confidence we have in their placements,
+produce a full classification map. *)
 let partition_by_rank td tiamr =
   let outmap = ref IntMap.empty
   and m = ref tiamr
@@ -93,9 +100,12 @@ let filter_best ?multiclass_min cutoff cf =
     | _, None -> None
     | _, Some multiclass_min ->
       (* Otherwise, if we're multiclassifying, see if it adds up. *)
-      TIAMR.filter ((<=) multiclass_min) tiamr
+      (* Filter out the ones that are less than multiclass_min *)
+      TIAMR.filter (fun l -> l >= multiclass_min) tiamr
+      (* `let junction pred f g a = if pred a then f a else g a`
+       * So if we are in total less than the cutoff, then we keep the tiamr. *)
       |> junction
-          (TIAMR.values |- Enum.fold (+.) 0. |- (<=) cutoff)
+          (TIAMR.values |- Enum.fold (+.) 0. |- (fun s -> s >= cutoff))
           (fun tiamr -> Some {tiamr; place_id})
           (const None))
   |> map_tiamrim cf
@@ -103,21 +113,25 @@ let filter_best ?multiclass_min cutoff cf =
 let filter_best_by_bayes ?multiclass_min bayes_cutoff cf =
   let factors = bayes_factors cf in
   IntMap.backwards cf.tiamrim
+  (* enum with keys in decreasing order, so here starting with lowest (away from
+   * root, but highest number) rank. *)
   |> Enum.fold
       (fun (found_evidence, accum) (rank, value) ->
+        (* If we have found evidence for a rank below, continue to accumulate
+         * all taxonomic classifications in ranks above. *)
         if found_evidence then true, IntMap.add rank value accum else (* ... *)
         match factors.(rank) with
         | _, _, Some evidence when evidence >= bayes_cutoff ->
           true, IntMap.add rank value accum
         | _ -> false, accum)
       (false, IntMap.empty)
-  |> snd
+  |> snd (* Get accum, the map of ranks to tiamr's. *)
   |> (match multiclass_min with
     | None -> identity
     | Some multiclass_min ->
       IntMap.filter_map
         (fun _ t ->
-          TIAMR.filter ((<=) multiclass_min) t.tiamr
+          TIAMR.filter (fun l -> l >= multiclass_min) t.tiamr
           |> junction TIAMR.is_empty (const None) (set_tiamr t |- some)))
   |> set_tiamrim cf
 
@@ -138,6 +152,7 @@ let find_ranks_per_want_rank td cf =
 (*   | Some (_, cl) as x when not (List.is_empty cl) -> x *)
 (*   | _ -> None *)
 
+(* Is parent anywhere on the lineage of child? *)
 let on_lineage td parent child =
   Tax_taxonomy.get_lineage td child |> List.mem parent
 
@@ -157,6 +172,9 @@ let merge_fn f _ a b =
   | None, Some x -> Some x
   | Some a, Some b -> Some (f a b)
 
+(* Get the maximum binding in a.tiamrim or return lbl b. When applied to a
+tiamrim this gives the most specific classification that the tiamrim has to
+offer. If a is empty just return lbl b. *)
 let max_tiamrim_or_return_other lbl a b =
   try
     IntMap.max_binding a.tiamrim
@@ -173,9 +191,10 @@ object (self)
   inherit refpkg_cmd ~required:true as super_refpkg
   inherit placefile_cmd () as super_placefile
   inherit sqlite_cmd () as super_sqlite
+  inherit rng_cmd () as super_rng
 
   val classifier = flag "--classifier"
-    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid', or 'rdp'. default: %s"))
+    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid2', 'hybrid5' or 'rdp'. default: %s"))
   val cutoff = flag "--cutoff"
     (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
   val bayes_cutoff = flag "--bayes-cutoff"
@@ -224,6 +243,7 @@ object (self)
   method specl =
     super_refpkg#specl
   @ super_sqlite#specl
+  @ super_rng#specl
   @ [
     string_flag classifier;
     float_flag cutoff;
@@ -254,6 +274,7 @@ object (self)
     let pp_rank, pp_best = max_tiamrim_or_return_other lbl pp nbc
     and nbc_rank, nbc_best = max_tiamrim_or_return_other lbl nbc pp in
     if pp_rank >= nbc_rank
+      (* on_lineage td parent child *)
       && on_lineage
         td
         (best_classification nbc_best)
@@ -277,7 +298,8 @@ object (self)
   method private nbc_classifier rp rank_idx infile =
     let query_aln = Alignment.upper_aln_of_any_file infile
     and n_boot = fv n_boot
-    and word_length = fv word_length in
+    and word_length = fv word_length
+    and rng = self#random_state in
     match fvo nbc_counts with
     | Some counts ->
       let map_file =
@@ -286,7 +308,7 @@ object (self)
         else
           Unix.openfile counts [Unix.O_RDWR; Unix.O_CREAT] 0o666, true
       in
-      Nbc.Classifier.of_refpkg ~n_boot ~map_file word_length rank_idx rp,
+      Nbc.Classifier.of_refpkg ~n_boot ~map_file ~rng word_length rank_idx rp,
       Array.to_list query_aln
     | None ->
       let ref_aln = Refpkg.get_aln_fasta rp in
@@ -309,10 +331,11 @@ object (self)
           Pplacer_run.premask Alignment.Nucleotide_seq ref_aln' query_list
         end
       in
-      Nbc.Classifier.of_refpkg ~ref_aln ~n_boot word_length rank_idx rp,
+      Nbc.Classifier.of_refpkg ~ref_aln ~n_boot ~rng word_length rank_idx rp,
       query_list
 
   method private placefile_action prl =
+    self#set_default_seed;
     let rp = self#get_rp in
     let criterion = if (fv use_pp) then Placement.post_prob else Placement.ml_ratio in
     let td = Refpkg.get_taxonomy rp in
@@ -685,4 +708,3 @@ object (self)
     Sql.close db
 
 end
-
