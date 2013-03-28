@@ -76,7 +76,7 @@ module QuestionMap = BetterMap (Map.Make(OrderedQuestion)) (PprQuestion)
 type 'a qmap = 'a QuestionMap.t
 
 type csetl = ColorSet.t list
-type apart = color option * csetl  (* apart = almost partition *)
+type apart = (color option * ColorSet.t) list  (* apart = almost partition *)
 type sizem = int ColorMap.t
 type colorm = color IntMap.t
 type cdtree = colorm * stree
@@ -203,34 +203,43 @@ let product lists =
   in
   aux [] [] lists
 
-(* Find the potential distributions of a color across a list of cut sets. That
- * is, we take the cartesian product of I_i for every i, where i is [{}] if the
- * color isn't in the ith cut set, and [{color}, {}] if it is. *)
-let cutsetdist cutsetl ?(allow_multiple = false) color =
-  (* We recur over the cut sets below our internal node.
-   * Base is just a list of empty sets of the correct length. *)
-  let rec aux base accum = function
-    | [] -> List.map List.rev accum
-    | cutset :: rest ->
-      let accum = List.fold_left
-        (fun accum x ->
-          let accum' = (CS.empty :: x) :: accum in
-          if allow_multiple && CS.mem color cutset then
-            (CS.singleton color :: x) :: accum'
-          else
-            accum')
+(* Find the potential distributions of a color across a list of b values and
+ * cut sets. Each resulting distribution will be a list of sets as long as the
+ * input cut set. *)
+let cutsetdist apart color =
+  let add_empty = List.cons CS.empty in
+  let add_color = List.cons (CS.singleton color) in
+  let rec aux base b_accum accum = function
+    (* Base case: return our accumulated distributions. *)
+    | [] -> List.map List.rev accum @ List.map List.rev b_accum
+    (* Color is not cut by this edge. *)
+    | (_, cutset) :: rest when not (CS.mem color cutset) ->
+      aux
+        (add_empty base)
+        (List.map add_empty b_accum)
+        (List.map add_empty accum)
+        rest
+    (* Relevant b; color is cut by this edge. *)
+    | (Some b, _) :: rest when b = color ->
+      let b_accum' = List.fold_left
+        (fun accum x -> add_empty x :: add_color x :: accum)
         []
-        accum
+        b_accum
       in
-      let accum =
-        if CS.mem color cutset then
-          (CS.singleton color :: base) :: accum
-        else
-          accum
-      in
-      aux (CS.empty :: base) accum rest
+      aux
+        (add_empty base)
+        (add_color base :: b_accum')
+        (List.map add_empty accum)
+        rest
+    (* No relevant b; color is cut by this edge. *)
+    | _ :: rest ->
+      aux
+        (add_empty base)
+        (List.map add_empty b_accum)
+        (add_color base :: List.map add_empty accum)
+        rest
   in
-  aux [] [] cutsetl
+  aux [] [] [] apart
 
 (* Transpose a list of lists, then fold a function along the new list of lists.
  * e.g. transposed_fold (+) [0; 0] [[1; 2]; [3; 4]] -> [4; 6] *)
@@ -256,6 +265,58 @@ let cset_of_coptset coptset =
     coptset
     CS.empty
 
+(* From a cutsetl, determine the possible assignments of b onto the edges below
+ * this node. Potential b values are determined for each pair of edges from the
+ * shared cut colors, which are then validated to ensure that an edge isn't
+ * assigned two colors. *)
+let find_b_assignments cutsetl =
+  (* b assignments can only be usefully done with at least 2 edges. *)
+  if List.length cutsetl < 2 then
+    [List.map (const None) cutsetl]
+  else (* ... *)
+  let cutseta = Array.of_list cutsetl in
+  (* The final step (written first as an aux function) is to perform the
+   * aforementioned validation of each edge pair's b assignment. *)
+  let aux assignments lbl =
+    (* If no other b is assigned, an edge gets None. *)
+    let bs = Array.map (const None) cutseta in
+    let verify_update idx nv =
+      let ov = bs.(idx) in
+      (* If a color has been assigned to this edge and it's not the color that
+       * was already assigned, this is invalid, so bail out. *)
+      if ov <> None && ov <> nv then Return.return lbl None;
+      bs.(idx) <- nv
+    in
+    (* For each edge pair and color, try to assign both edges that color. *)
+    List.iter
+      (function
+       | _, _, None -> ()
+       | a, b, copt -> verify_update a copt; verify_update b copt)
+      assignments;
+    (* If there wasn't an invalid assignment, this is a valid list of b values
+     * for each edge. *)
+    Some (Array.to_list bs)
+  in
+  EnumFuns.combinations (Array.range cutseta |> List.of_enum) 2
+  |> Enum.map (function
+    | [a; b] ->
+      (* For each pair of edges, determine the shared cut colors. *)
+      CS.inter cutseta.(a) cutseta.(b)
+        |> CS.elements
+        |> List.map (fun x -> a, b, Some x)
+        |> List.cons (a, b, None)
+    | _ -> invalid_arg "find_bs")
+  |> List.of_enum
+  (* Take the cartesian product, giving a list of every possible assignment for
+   * every pair of edges. *)
+  |> List.n_cartesian_product
+  |> List.enum
+  (* Filter and transform the edge-pair assignments to edge assignments. *)
+  |> Enum.filter_map (fun assignments -> Return.label (aux assignments))
+  |> List.of_enum
+  (* Don't return duplicate assignments. *)
+  |> List.sort_unique compare
+
 (* As indicated by the underscore, this function is not designed to work as is.
  * Indeed, we need to preprocess with the case of c not being in any of the cut
  * sets under the internal node as defined in build_apartl below. *)
@@ -263,71 +324,51 @@ let _build_apartl strict cutsetl kappa (c, x) =
   let xopt = coptset_of_cset x in
   (* Anything in kappa - x doesn't get distributed. *)
   let to_exclude = coptset_of_cset (CS.diff kappa x) in
-  (* The potential b's for our apartl. *)
-  let potential_bs =
-    (* Because xopt never contains None, this is in fact testing c in x. Tf that
-     * is true, b will only be c, since c is added to potential_bs later.
-     * *)
-    if COS.mem c xopt then
-      COS.empty
-    else
-      COS.add None (COS.diff (coptset_of_cset (between cutsetl)) to_exclude)
-  in
   (* These are the colors that we need to put in the different subsets. *)
-  let to_distribute = COS.union
-    xopt
-    (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
+  let to_distribute = match c with
+    (* Having a c in strict convexity means we can only have c below. *)
+    | Some c' when strict -> [c']
+    | _ ->
+      COS.union xopt (COS.diff (coptset_of_cset (all cutsetl)) to_exclude)
+      |> cset_of_coptset
+      |> CS.elements
   in
-  let apartl = COS.fold
-    (* Fold over the possible values of b: the color of the internal node. *)
-    (fun b accum ->
-      (* The colors are distributed in two steps. Note that any color except for
-       * b can only occur once in a given pi. Thus we first find the potential
-       * distributions of the to_distribute colors (except for b) into the
-       * cut sets below our internal node. We find these distributions one at a
-       * time, then take the union below. *)
-      let dist = List.map
-        (cutsetdist cutsetl)
-        (CS.elements (cset_of_coptset (COS.remove b to_distribute)))
-      in
-      (* Next make every distribution with {} with {b} if b is in the cut set *)
-      let dist = match b with
-        | Some b' -> cutsetdist cutsetl ~allow_multiple:true b' :: dist
-        | None -> dist
-      and startsl = List.rev_map (fun _ -> CS.empty) cutsetl in
-      (* Finish off the meat of the recursion by mapping with union over the
-       * cartesian product of the single-color distributions. *)
-      let pis = List.map
-        (transposed_fold CS.union startsl)
-        (product dist)
-      in
-      (* By the construction of the pis, between pi can only be empty or b.
-       * In the case of strict convexity, we require all pi to be just the set
-       * {b} if b is not None.
-       * In the usual case, we filter out those aparts such that b is not c or
-       * None. Recall (see the intro to convex.mli) that None represents any
-       * color that is not "forced" by convexity considerations. c is None when
-       * there is not an above color that is in x. b is None when c is None and
-       * there are no colors shared between the pi_i.
-       *)
-      let is_valid =
-        if strict then
-          let b' = COS.singleton b |> cset_of_coptset in
-          fun pi -> c = None || (b = c && CS.subset (all pi) b')
-        else
-          fun pi -> not (CS.is_empty (between pi)) || b = c || b = None
-      in
-      List.fold_left
-        (fun accum pi ->
-          if is_valid pi then (b, pi) :: accum
-          else accum)
-        accum
-        pis)
-    (* We add c to the list of things that can be colors of internal nodes. *)
-    (COS.add c potential_bs)
-    []
+  (* The potential b's for our apartl. *)
+  let b_assignments =
+    (* Because xopt never contains None, this is in fact testing c in x. If
+     * that is true, b can only be assigned c. This is also the case in strict
+     * convexity if there is any c. *)
+    if COS.mem c xopt || (strict && c <> None) then
+      [List.map (const c) cutsetl]
+    else
+      (* Otherwise, assign b from the cut sets. *)
+      find_b_assignments cutsetl
   in
-  apartl
+  (* Iterate over the lists of b assignments. Each assignment indicates the
+   * color of each edge below this node. *)
+  List.enum b_assignments
+  |> Enum.map (fun blist ->
+    let startsl = List.map (const CS.empty) cutsetl in
+    (* The colors are distributed in a few steps. We first find the potential
+     * distributions for each color. cutsetdist does most of the work here. *)
+    List.map (cutsetdist (List.combine blist cutsetl)) to_distribute
+    (* Taking the cartesian product gives all of the possible distributions of
+     * all colors. *)
+    |> product
+    |> List.enum
+    (* Then, each of the per-color distributions are unioned to find one
+     * distribution for all colors, which is then combined with the b
+     * assignments to form a pi. *)
+    |> Enum.filter_map (fun pre_csetl ->
+      let csetl = transposed_fold CS.union startsl pre_csetl in
+      (* However, in strict convexity, each x_i in a pi can only contain one
+       * color. *)
+      if strict && not (List.for_all (CS.cardinal |- (>=) 1) csetl) then
+        None
+      else
+        Some (List.combine blist csetl)))
+  |> Enum.flatten
+  |> List.of_enum
 
 let build_apartl_memo = Hashtbl.create 1024
 
@@ -352,13 +393,13 @@ let build_apartl ?(strict = false) cutsetl kappa (c, x) =
       Hashtbl.add build_apartl_memo (cutsetl, kappa, q) ret;
       ret
 
-let apart_nu kappa sizeml (b, pi) =
-  let kappa = match b with
-    | Some c -> ColorSet.remove c kappa
-    | None -> kappa
-  in
+let apart_nu kappa sizeml pi =
   List.fold_left2
-    (fun accum cutset sizem ->
+    (fun accum (b, cutset) sizem ->
+      let kappa = match b with
+        | Some c -> ColorSet.remove c kappa
+        | None -> kappa
+      in
       let to_ignore = ColorSet.diff kappa cutset in
       let is_ignored c = ColorSet.mem c to_ignore in
       ColorMap.fold
@@ -379,8 +420,6 @@ let add_phi node question answer phi =
   in
   IntMap.add node (QuestionMap.add question answer local_phi) phi
 
-let null_apart = None, []
-
 let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) phi =
   let i = top_id tree in
   match begin
@@ -397,7 +436,7 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
     | Leaf _ ->
       (* Could put in some checks here about the size of cutsetim. *)
       let omega = if x = IntMap.find i cutsetim then 1 else 0 in
-      phi, Some (omega, null_apart)
+      phi, Some (omega, [])
     | Node (_, subtrees) ->
       let cutsetl = List.map
         (fun subtree -> IntMap.find (top_id subtree) cutsetim)
@@ -411,10 +450,10 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
       in
       (* Recur over subtrees to calculate (omega, updated_phi) for the apart
        * (b, pi). *)
-      let apart_omega phi (b, pi) =
+      let apart_omega phi pi =
         List.fold_left2
           (fun (phi, subtotal) pi_i subtree ->
-            let phi, omega = phi_recurse subtree (b, pi_i) phi in
+            let phi, omega = phi_recurse subtree pi_i phi in
             phi, subtotal + omega)
           (phi, 0)
           pi
@@ -427,11 +466,8 @@ let rec phi_recurse ?strict ?nu_f cutsetim sizemlim tree ((_, x) as question) ph
             (IntMap.find i cutsetim)
             (IntMap.find i sizemlim)
           in
-          let nu_apartl = List.map
-            (fun apart -> apart_nu' apart, apart)
-            apartl
-          in
-          List.rev_map (fun (a, b) -> Some a, b) (List.sort compare nu_apartl)
+          List.map (fun apart -> Some (apart_nu' apart), apart) apartl
+          |> List.sort compare
       in
       let rec aux phi current_best = function
         | (nu_opt, apart) :: rest -> (
@@ -525,9 +561,9 @@ let nodeset_of_phi_and_tree phi tree =
       (* As above, if a question isn't found in the final phi, we should be
        * ignoring this node and all the nodes below it. *)
       if not (QuestionMap.mem question qmap) then aux accum rest else
-        let (b, pi), _ = QuestionMap.find question qmap in
+        let pi, _ = QuestionMap.find question qmap in
         let rest' = List.fold_left2
-          (fun rest pi_i subtree -> (subtree, (b, pi_i)) :: rest)
+          (fun rest pi_i subtree -> (subtree, pi_i) :: rest)
           rest
           pi
           subtrees

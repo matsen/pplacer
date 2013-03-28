@@ -27,7 +27,7 @@ module QuestionMap: MapsSets.M with type key = question
 type 'a qmap = 'a QuestionMap.t
 
 type csetl = cset list
-type apart = color option * csetl  (* apart = almost partition *)
+type apart = (color option * ColorSet.t) list  (* apart = almost partition *)
 type sizem = int cmap
 type colorm = color IntMap.t
 type cdtree = colorm * stree
@@ -36,6 +36,9 @@ type phi = local_phi IntMap.t
 (* Here the int list is the list of top_id's that are in parallel with the
  * top_id's of the subtree below. *)
 type nu_f = cset -> sizem list -> apart -> int
+
+val find_b_assignments: csetl -> color option list list
+val cutsetdist: apart -> color -> csetl list
 
 (* QuestionMap should be a map from questions *)
 
