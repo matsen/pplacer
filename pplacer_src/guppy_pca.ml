@@ -10,7 +10,7 @@ let expand full_length m arr =
   Array.iteri (fun i v -> full.(IntMap.find i m) <- v) arr;
   full
 
-class cmd () =
+class virtual pca_cmd () =
 object (self)
   inherit subcommand () as super
   inherit output_cmd ~show_fname:false ~prefix_required:true () as super_output
@@ -41,24 +41,18 @@ object (self)
     ]
     @ super_splitify#specl
 
-  method desc =
-"performs edge principal components"
-  method usage = "usage: pca [options] placefiles"
+  method private virtual prep_data : 'prl_t -> 'data_t * 'extra_t
+  method private virtual expand_combol : 'combol_t -> 'extra_t -> 'fullcombol_t
 
   method private placefile_action prl =
     self#check_placerunl prl;
-    let weighting, criterion = self#mass_opts
-    and scale = fv scale
+    let scale = fv scale
     and write_n = fv write_n
     and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
-    let data, rep_reduction_map, rep_orig_length =
-      List.map (self#splitify_placerun weighting criterion) prl
-        |> self#filter_rep_edges prl
-    in
-    let data, const_reduction_map, const_orig_length =
-      self#filter_constant_columns data
-    in
+
+    let (data, extra) = self#prep_data prl in
+
     let n_unique_rows = List.length (List.sort_unique compare data) in
     if n_unique_rows <= 2 then
       failwith(Printf.sprintf "You have only %d unique row(s) in your data \
@@ -75,31 +69,28 @@ object (self)
     in
     let (eval, evect) =
       Pca.gen_pca ~use_raw_eval:(fv raw_eval)
-                  ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
+        ~scale ~symmv:(fv symmv) write_n (Array.of_list data)
     in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
     and names = (List.map Placerun.get_name prl) in
-    let full_combol = List.map
-      (second
-         (expand const_orig_length const_reduction_map
-          |- expand rep_orig_length rep_reduction_map))
-      combol
-    in
+
+    let full_combol = self#expand_combol combol extra in
+
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")
       (List.map
-        (fun (eval, evect) ->
-          (Some (string_of_float eval),
-          super_heat#heat_tree_of_float_arr t evect |> self#maybe_numbered))
-        full_combol);
+         (fun (eval, evect) ->
+           (Some (string_of_float eval),
+            self#heat_tree_of_float_arr t evect |> self#maybe_numbered))
+         full_combol);
     save_named_fal
       (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
     save_named_fal
       (prefix^".trans")
       (List.combine
-        names
-        (List.map (fun d -> Array.map (Pca.dot d) evect) data));
+         names
+         (List.map (fun d -> Array.map (Pca.dot d) evect) data));
     save_named_fal
       (prefix^".edgediff")
       (List.combine names data);
