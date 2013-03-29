@@ -28,6 +28,7 @@
    to_csv`.
  * Closed GH-267: Added a `leaf_count` column to `rppr convex_taxids`.
  * Closed GH-268: Merged various minor fixes.
+ * Closed GH-273: Fix convexify for multifurcating trees
  * Closed GH-274: Added `--weight-as-count` to `guppy rarefact`.
  * Closed GH-276: Added `-k` to `guppy rarefact`.
  * Closed GH-277: Added `--weight-as-count` to `guppy rarefy`.
@@ -43,6 +44,7 @@
    (doi:10.1098/rstb.2010.0272)
  * Closed GH-293: Switched build system to use OPAM
  * Closed GH-294: Added `--unitize` option to `guppy squash`
+ * Closed GH-297: Support multiprocessing during squash cluster bootstrapping
  * Closed GH-298: Faster upper-limit finding during integration
 
 1.1.alpha13
