@@ -396,7 +396,7 @@ module Classifier = struct
       | All_ranks -> None
     end with
     | Some rank_idx ->
-      _of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rank_tax_map rp
+      _of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rp
     | None -> _all_ranks_of_refpkg ?ref_aln ?n_boot ?rng word_length rp
 
 end
