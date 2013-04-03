@@ -132,7 +132,7 @@ object (self)
           pqs
         else
           let namlom = List.filter
-            (fst |- fun name ->
+            (fst %> fun name ->
               if r_default_exclude then
                 (r_included name) && (not (r_excluded name))
               else

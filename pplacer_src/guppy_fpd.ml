@@ -7,7 +7,7 @@ let epsilon = 1e-10
 let merge a x = a := x +. !a
 (* float ref list -> float ref: sum a list of float refs, returning a new float
  * ref. *)
-let lmerge = List.fold_left ((!) |- (+.) |> flip) 0. |- ref
+let lmerge = List.fold_left ((!) %> (+.) |> flip) 0. %> ref
 
 module I = Mass_map.Indiv
 module P = Mass_map.Pre
@@ -20,7 +20,7 @@ let total_along_mass ?(include_pendant = false) criterion pr cb =
   let pre = P.of_placerun Mass_map.Point criterion pr in
   let mass = I.of_pre pre in
   let partial_total id = Kr_distance.total_along_edge
-    ((!) |- cb)
+    ((!) %> cb)
     (Gtree.get_bl gt id)
     (IntMap.get id [] mass |> List.map I.to_pair |> List.sort compare)
     merge

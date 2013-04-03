@@ -48,7 +48,7 @@ let mkdir path =
 - : (int list * int) list = [([0], 5); ([1], 4); ([2], 3)]
 *)
 let numberize l =
-  (flip List.cons [] |- curry identity |> List.mapi) l
+  (flip List.cons [] %> curry identity |> List.mapi) l
 
 (* Note that denom_f is a function that gives us a denominator to normalize by
  * when calculating branch lengths, i.e. the setting of the --normalize flag.

@@ -13,7 +13,7 @@ let suite = [
       |> Array.of_list
       |> Guppy_rarefy.rarefy sample
       |> List.map (Pquery.namlom |- List.sort (comparing fst))
-      |> List.sort (List.make_compare (comparing fst))
+      |> List.sort (List.compare (comparing fst))
       |> assert_equal [["A", 1.]; ["E", 1.]; ["G", 2.; "H", 1.]]
 
   end;

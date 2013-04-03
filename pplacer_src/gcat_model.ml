@@ -436,11 +436,11 @@ let init_of_json o ref_align =
   and opt_transitions = Hashtbl.Exceptionless.find o "subs_rates"
     |> Option.map
         (Jsontype.obj
-         |- (fun tbl ->
+         %> (fun tbl ->
            List.map
-             (Hashtbl.find tbl |- Jsontype.float)
+             (Hashtbl.find tbl %> Jsontype.float)
              ["ac"; "ag"; "at"; "cg"; "ct"; "gt"])
-         |- Array.of_list)
+         %> Array.of_list)
   and price_cat = Hashtbl.find o "Price-CAT" |> Jsontype.obj in
   let rates = Hashtbl.find price_cat "Rates"
     |> Jsontype.array

@@ -74,8 +74,8 @@ let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
     let mask = Array.copy initial_mask in
     Enum.iter
       (tap check_seq
-       |- snd
-       |- String.iteri
+       %> snd
+       %> String.iteri
            (fun i c -> if Alignment.informative c then mask.(i) <- true))
       enum;
     mask
@@ -373,7 +373,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     |> Array.append
         [|[|"node"; "tree_likelihood"; "slow_tree_like"; "supernode_like"|]|]
     |> String_matrix.pad
-    |> Array.iter (Array.iter (dprintf "%s  ") |- tap (fun () -> dprint "\n"))
+    |> Array.iter (Array.iter (dprintf "%s  ") %> tap (fun () -> dprint "\n"))
 
   end;
 

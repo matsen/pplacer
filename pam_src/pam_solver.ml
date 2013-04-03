@@ -42,6 +42,6 @@ let solve ?keep gt mass leaves =
   |> c_pam leaves keep_string
   in
   BA1.enum leaf_vec
-  |> Enum.map (Array.get leaf_arr |- rtrans)
+  |> Enum.map (Array.get leaf_arr %> rtrans)
   |> IntSet.of_enum,
   work /. total_mass

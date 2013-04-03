@@ -138,7 +138,7 @@ object (self)
      * alternate_colors, which won't have NoTax fed into it. *)
     let tax_name = Tax_taxonomy.get_tax_name td in
     let foldf alternates data =
-      let taxmap' = IntMap.filteri
+      let taxmap' = IntMap.filter
         (fun k _ -> IntSet.mem k data.not_cut)
         data.taxmap
       in
@@ -263,7 +263,7 @@ object (self)
         | None -> identity
         | Some ranks ->
           fst
-          |- flip IntSet.mem ranks
+          %> flip IntSet.mem ranks
           |> Enum.filter)
     in
     let reducers =
@@ -322,7 +322,7 @@ object (self)
         | Some fname ->
           cut_leaves
             |> IntSet.enum
-            |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+            |> Enum.map (Gtree.get_node_label gt %> flip List.cons [])
             |> List.of_enum
             |> Csv.save fname
         | None -> ()

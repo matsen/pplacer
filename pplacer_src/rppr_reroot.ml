@@ -26,7 +26,7 @@ let find_root rp gt =
     |> junction
         List.is_empty
         (const None)
-        (Tax_taxonomy.list_mrca td |- some)
+        (Tax_taxonomy.list_mrca td %> some)
   in
   let rec aux: ?top_mrca:Tax_id.t -> stree -> unit = fun ?top_mrca -> function
     | Leaf _ -> failwith "tried to reroot at a leaf"
@@ -41,10 +41,10 @@ let find_root rp gt =
               | Some mrca -> Some (mrca, Some node)
               | None -> None)
         |> maybe_map_cons (None |> (curry identity |> flip)) top_mrca
-        |> List.map (Tax_taxonomy.get_tax_rank td |> first)
+        |> List.map (Tax_taxonomy.get_tax_rank td |> Tuple.Tuple2.map1)
         |> List.sort compare
       in
-      let at = List.at subrks |- fst in
+      let at = List.at subrks %> fst in
       (* if the two highest ranks are equal, we've found the root. *)
       if List.length subrks > 1 && at 0 = at 1 then
         raise (Found_root n);
@@ -62,7 +62,7 @@ let find_root rp gt =
             |> junction
                 List.is_empty
                 (const None)
-                (Tax_taxonomy.list_mrca td |- some)
+                (Tax_taxonomy.list_mrca td %> some)
           in
           aux ?top_mrca node
         | _ -> raise (Found_root n)
@@ -93,7 +93,7 @@ object (self)
     let rank, taxmap =
       try
         Enum.find
-          (snd |- IntMap.values |- TaxIdSet.of_enum |- TaxIdSet.cardinal |- (<) 1)
+          (snd %> IntMap.values %> TaxIdSet.of_enum %> TaxIdSet.cardinal %> (<) 1)
           (IntMap.enum rank_tax_map)
       with Not_found ->
         dprint "ref tree has <= 1 taxon; writing unmodified tree\n";
@@ -106,7 +106,7 @@ object (self)
     let not_cut = Convex.nodeset_of_phi_and_tree phi st in
     (* reroot after pruning the tree down to that convex subset of leaves. *)
     Gtree.get_bark_map gt
-      |> IntMap.filteri (flip IntSet.mem not_cut |> const |> flip)
+      |> IntMap.filter (flip IntSet.mem not_cut |> const |> flip)
       |> Gtree.set_bark_map gt
       |> find_root rp
       |> tap (dprintf "root found at node %d\n")

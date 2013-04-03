@@ -39,7 +39,7 @@ object (self)
   method private maybe_filter_constant_columns =
     match fvo epsilon with
     | None -> identity
-    | Some _ -> self#filter_constant_columns |- Tuple3.first
+    | Some _ -> self#filter_constant_columns %> Tuple3.first
 
   method private placefile_action prl =
     let weighting, criterion = self#mass_opts in
