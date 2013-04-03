@@ -380,7 +380,7 @@ module Classifier = struct
     Array.enum ref_aln
       |> Enum.map
           (tap (fst |- progress_fn)
-           |- (Tax_seqinfo.tax_id_by_node_label seqinfo *** Alignment.ungap)
+           |- (Tuple2.map (Tax_seqinfo.tax_id_by_node_label seqinfo) (Alignment.ungap))
            |- expand_lineage)
       |> Enum.flatten
       |> Enum.iter (uncurry (Preclassifier.add_seq preclassif));
