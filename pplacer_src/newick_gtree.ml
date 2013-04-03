@@ -238,3 +238,23 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   List.map
     (Pquery.apply_to_place_list (List.map replace_root_placement))
     pql
+
+let expand_multifurcation_to_bifurcation ?(fresh_bark = const (Newick_bark.empty#set_bl 0.)) gt =
+  let open Stree in
+  let st = Gtree.get_stree gt
+  and bm = ref (Gtree.get_bark_map gt) in
+  let last_id = ref (max_id st) in
+  let next () =
+    incr last_id;
+    bm := IntMap.add !last_id (fresh_bark !last_id) !bm;
+    !last_id
+  in
+  let rec aux = function
+    | Node (i, top :: (_ :: _ :: _ as rest)) ->
+      node i [aux top; aux (node (next ()) rest)]
+    | Node (i, subtrees) ->
+      node i (List.map aux subtrees)
+    | Leaf _ as l -> l
+  in
+  let st' = aux st in
+  Gtree.gtree st' !bm

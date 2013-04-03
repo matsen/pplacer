@@ -209,7 +209,7 @@ guppy subcommand:
 .. _bary: guppy_bary.html
 
 .. _pplacer: http://matsen.fhcrc.org/pplacer
-.. _this configuration file: http://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
+.. _this configuration file: https://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
 .. _phyloxml: http://phyloxml.org/
 .. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/
 .. _Evans and Matsen: http://arxiv.org/abs/1005.1699

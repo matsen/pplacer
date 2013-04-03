@@ -75,6 +75,10 @@ let rank_tax_map_of_refpkg rp =
   |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
   |> Convex.gen_build_rank_tax_map StringMap.empty StringMap.add td some
 
+(* The preclassifier accumulates reference sequences before classification. When
+ * we add sequences to a preclassifier we update the various counts, which will
+ * allow us to generate the priors as well as allocate the correct size of
+ * taxid_word_counts matrix in the classifier.  *)
 let random_winner_max_index vec =
   0 --^ BA1.dim vec
   |> flip Enum.fold None (fun accum idx ->
@@ -166,7 +170,10 @@ module Preclassifier = struct
 
 end
 
-(* the thing that does actual classification *)
+(* The classifier: the thing that actually holds the data for classification.
+ * The most important component is taxid_word_counts, which is indexed on the
+ * rows by the words and on the columns by the taxids.
+*)
 module Classifier = struct
   type t = {
     pc: Preclassifier.base;
@@ -217,7 +224,7 @@ module Classifier = struct
       |> Enum.iter (fun i -> BA2.slice_left boot_matrix i |> fill_boot_row);
     {pc = c.base; taxid_word_counts; boot_matrix; classify_vec}
 
-  (* find the tax_id associated with a count vector *)
+  (* Find the tax_id associated with a count vector using the classifier cf. *)
   let classify_vec ?(random_tie_break = false) cf vec =
     let open Preclassifier in
     let dest = cf.classify_vec in
@@ -245,9 +252,12 @@ module Classifier = struct
   let classify cf ?like_rdp ?random_tie_break seq =
     count_seq cf ?like_rdp seq |> classify_vec ?random_tie_break cf
 
-  (* bootstrap a sequence, returning a map from tax_ids to a float on the range
+  (* Bootstrap a sequence, returning a map from tax_ids to a float on the range
    * (0, 1] representing the percentage of bootstrappings done that produced a
-   * particular tax_id. *)
+   * particular tax_id. As you can read about at the top of this file, we do
+   * bootstrapping a little differently than is traditional. We keep on
+   * sampling resamplings (that are effectively just determined once) until we
+   * get n_boot samples that are within the proper range. *)
   let bootstrap cf ?like_rdp ?random_tie_break seq =
     let open Preclassifier in
     let module TIM = Tax_id.TaxIdMap in
@@ -263,6 +273,8 @@ module Classifier = struct
       cf.pc.n_words
     (* the expected number of occupied columns under bootstrapping *)
     and expected = (Linear.int_vec_tot seq_word_counts) / cf.pc.word_length
+    (* n_successes is the number of times we've gotten a re-sample that is
+      * within the proper range. *)
     and n_successes = ref 0 in
     let counts = 0 --^ boot_rows
     |> Enum.fold
@@ -307,7 +319,12 @@ module Classifier = struct
           (Tax_taxonomy.get_rank_name td
            |- dprintf "automatically determined best rank: %s\n")
 
-  let _of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rank_tax_map rp =
+  let _of_refpkg ?ref_aln ?n_boot ?map_file ?rng word_length rank_idx rp =
+    let td = Refpkg.get_taxonomy rp
+    and rank_tax_map = rank_tax_map_of_refpkg rp in
+    let rank_idx =
+      if rank_idx = -1 then find_auto_rank td rank_tax_map else rank_idx
+    in
     let preclassif = IntMap.find rank_idx rank_tax_map
       |> StringMap.values
       |> Tax_id.TaxIdSet.of_enum

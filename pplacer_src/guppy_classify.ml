@@ -194,7 +194,7 @@ object (self)
   inherit rng_cmd () as super_rng
 
   val classifier = flag "--classifier"
-    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid', or 'rdp'. default: %s"))
+    (Formatted ("pplacer", "Which classifier to use, out of 'pplacer', 'nbc', 'hybrid2', 'hybrid5' or 'rdp'. default: %s"))
   val cutoff = flag "--cutoff"
     (Formatted (0.9, "The default value for the likelihood_cutoff param. Default: %0.2f"))
   val bayes_cutoff = flag "--bayes-cutoff"
@@ -228,7 +228,7 @@ object (self)
   val no_pre_mask = flag "--no-pre-mask"
     (Plain (false, "Don't pre-mask the sequences for NBC classification."))
   val nbc_counts = flag "--nbc-counts"
-    (Needs_argument ("", "If specified, read/write counts for NBC classification to the given file."))
+    (Needs_argument ("", "Read/write NBC k-mer counts to the given file. File cannot be NFS mounted."))
   val nbc_as_rdp = flag "--nbc-as-rdp"
     (Plain (false, "Do NBC classification like RDP: find the lineage of the full-sequence classification, \
                     then bootstrap to find support for it."))
