@@ -12,7 +12,7 @@ let rarefy sample pqa =
     |> Enum.flatten
     |> Array.of_enum
   in
-  let p = Array.map (snd |- snd) multi_arr in
+  let p = Array.map (snd %> snd) multi_arr in
   sample ~p
     |> Array.fold_lefti
         (fun accum j -> function
@@ -75,7 +75,7 @@ object (self)
     let sample = sample_fun self#rng ~n:(fv n_taken)
     and gt = Mokaphy_common.list_get_same_tree prl in
     List.map
-      (Placerun.get_pqueries |- Array.of_list |- rarefy sample)
+      (Placerun.get_pqueries %> Array.of_list %> rarefy sample)
       prl
     |> List.flatten
     |> Placerun.make gt ""

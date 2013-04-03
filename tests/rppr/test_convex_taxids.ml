@@ -5,7 +5,7 @@ open Ppatteries
 let printer sll =
   let ch = IO.output_string () in
   Printf.fprintf ch "%a"
-    (List.print (Tuple3.printn String.print String.print Int.print))
+    (List.print (Tuple3.print String.print String.print Int.print))
     sll;
   IO.close_out ch
 

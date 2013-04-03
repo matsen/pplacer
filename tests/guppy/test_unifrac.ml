@@ -14,7 +14,7 @@ let suite = [
       pres_of_dir Mass_map.Spread Placement.ml_ratio "simple"
         |> Hashtbl.enum
         |> Enum.uncombine
-        |> (Array.of_enum *** (List.of_enum |- List.split))
+        |> (Tuple2.map Array.of_enum (List.of_enum %> List.split))
     in
     let gt = Mokaphy_common.list_get_same_tree prl
       |> Newick_gtree.add_zero_root_bl

@@ -72,7 +72,7 @@ let rank_tax_map_of_refpkg rp =
   let td = Refpkg.get_taxonomy rp in
   Refpkg.get_seqinfom rp
   |> StringMap.enum
-  |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
+  |> Enum.map (Tuple.Tuple2.map2 (fun {Tax_seqinfo.tax_id} -> tax_id))
   |> Convex.gen_build_rank_tax_map StringMap.empty StringMap.add td some
 
 (* The preclassifier accumulates reference sequences before classification. When

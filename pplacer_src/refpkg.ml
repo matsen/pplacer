@@ -252,8 +252,8 @@ let pr_check_tree_approx rp pr =
 
 let check_tree_subset rp name gt =
   let leaves = Newick_gtree.leaf_label_map
-    |- IntMap.values
-    |- StringSet.of_enum
+    %> IntMap.values
+    %> StringSet.of_enum
   in
   let ref_leaves = get_ref_tree rp |> leaves
   and subset_leaves = leaves gt in

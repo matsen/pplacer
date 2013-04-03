@@ -17,7 +17,7 @@ let ns_prefix = function
   | _ -> None
 
 let rec emit_tag out {name; attrs; contents; children} =
-  out (`El_start (phyns name, List.map (first phyns) attrs));
+  out (`El_start (phyns name, List.map (Tuple.Tuple2.map1 phyns) attrs));
   if contents <> "" then out (`Data contents);
   List.iter (emit_tag out) children;
   out `El_end
@@ -38,7 +38,7 @@ let rec emit_stree out bark_map stree =
 
 let emit_gtree out (name, gtree) =
   out (`El_start (phyns "phylogeny", [phyns "rooted", "true"]));
-  Option.may (tag "name" |- emit_tag out) name;
+  Option.may (tag "name" %> emit_tag out) name;
   emit_stree out (Gtree.get_bark_map gtree) (Gtree.get_stree gtree);
   out `El_end
 

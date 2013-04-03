@@ -89,7 +89,7 @@ let build_distal_map gt leaf_values =
     | Node (i, subtrees) ->
       match List.map aux subtrees
         |> List.split
-        |> join_subsoln_list *** List.reduce IntMap.union
+        |> Tuple2.map join_subsoln_list (List.reduce IntMap.union)
       with
       | Some sol, map -> (Some sol, bl i), IntMap.add i sol map
       | None, map -> (None, bl i), map

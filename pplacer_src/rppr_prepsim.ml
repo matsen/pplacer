@@ -78,7 +78,7 @@ object (self)
       |> List.map (flip List.cons [])
       |> Csv.save (prefix ^ "cut.csv");
     let no_tax_aln, new_ref_aln = Refpkg.get_aln_fasta rp
-      |> Array.partition (fst |- flip StringSet.mem no_tax)
+      |> Array.partition (fst %> flip StringSet.mem no_tax)
     in
     Alignment.to_fasta no_tax_aln (prefix ^ "cut.fasta");
     Alignment.to_fasta new_ref_aln (prefix ^ "new_ref.fasta");

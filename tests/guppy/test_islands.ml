@@ -5,12 +5,12 @@ open Test_util
 let reduce_and_check expected =
   List.sort (on fst IntSet.compare)
   |- List.map
-      (second (List.map Pquery.namel |- List.flatten |- StringSet.of_list))
+      (Tuple.Tuple2.map2 (List.map Pquery.namel |- List.flatten |- StringSet.of_list))
   |- List.iter2
       (fun (is_e, ss_e) (is_a, ss_a) ->
         "not equal"
         @? (IntSet.equal is_e is_a && StringSet.equal ss_e ss_a))
-      (List.map (IntSet.of_list *** StringSet.of_list) expected)
+      (List.map (Tuple2.map IntSet.of_list StringSet.of_list) expected)
 
 let suite = [
   "test_islands" >:: begin fun () ->

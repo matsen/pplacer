@@ -172,7 +172,7 @@ let distal_edges_map st =
 exception What of (int * int * int * int)
 
 let auto_cache ?(count = 1024 * 1024) f =
-  curry (Cache.make_ht ~gen:(uncurry f) count).Cache.get
+  curry (Cache.make_ht ~gen:(uncurry f) ~init_size:count).Cache.get
 
 let variance_of_placerun criterion ?k_max pr =
   let gt = Placerun.get_ref_tree pr |> Newick_gtree.add_zero_root_bl

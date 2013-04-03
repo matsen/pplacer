@@ -519,7 +519,7 @@ class splitify_cmd () =
 
 let tolerance = 1e-3
 and splitify x = x -. (1. -. x)
-and sgn = flip compare 0. |- float_of_int
+and sgn = flip compare 0. %> float_of_int
 and arr_of_map default len m =
   Array.init len (fun i -> IntMap.get i default m) in
 
@@ -557,7 +557,7 @@ object (self)
   method private splitify_transform =
     let kappa = fv kappa in
     if kappa =~ 0. then
-      splitify |- sgn
+      splitify %> sgn
     else if kappa =~ 1. then
       splitify
     else if kappa < 0. then
@@ -605,8 +605,8 @@ object (self)
     and epsilon = fv epsilon in
     List.iter
       (fun arr ->
-        Array.modifyi (Array.get arr |- min) minarr;
-        Array.modifyi (Array.get arr |- max) maxarr)
+        Array.modifyi (Array.get arr %> min) minarr;
+        Array.modifyi (Array.get arr %> max) maxarr)
       fal;
     0 --^ width
       |> Enum.filter
@@ -687,7 +687,7 @@ object (self)
       self#set_default_seed;
       Voronoi.Full.csv_log :=
         fvo soln_log
-          |> Option.map (open_out |- csv_out_channel |- Csv.to_out_obj);
+          |> Option.map (open_out %> csv_out_channel %> Csv.to_out_obj);
       let module Alg = (val alg: Voronoi.Alg) in
       let diagram = Voronoi.of_gtree gt in
       let mass = mass_cb diagram in
@@ -765,7 +765,7 @@ object (self)
 
       cut_leaves
           |> IntSet.enum
-          |> Enum.map (Gtree.get_node_label gt |- flip List.cons [])
+          |> Enum.map (Gtree.get_node_label gt %> flip List.cons [])
           |> List.of_enum
           |> self#write_ll_tab;
 

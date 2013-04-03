@@ -29,7 +29,7 @@ let quote_label s =
     s
   in if !replaced then Printf.sprintf "'%s'" s' else s'
 
-let maybe_float = Option.bind (Result.catch float_of_string |- Result.to_option)
+let maybe_float = flip Option.bind (Result.catch float_of_string %> Result.to_option)
 
 class newick_bark arg =
 
@@ -76,7 +76,7 @@ class newick_bark arg =
         (Option.map_default quote_label "" node_label)
         (Option.map_default (Printf.sprintf ":%g") "" bl)
         (Option.map_default (Printf.sprintf "{%d}") "" node_number)
-        (Option.map_default (quote_label |- Printf.sprintf "[%s]") "" edge_label)
+        (Option.map_default (quote_label %> Printf.sprintf "[%s]") "" edge_label)
 
     method private ppr_inners ff =
       ppr_opt_node_labeld "bl" Format.pp_print_float ff bl;
@@ -90,10 +90,10 @@ class newick_bark arg =
       let confidence, name = self#get_confidence_name_opt is_leaf in
       []
       |> maybe_map_cons (Myxml.tag "name") name
-      |> maybe_map_cons (Printf.sprintf "%g" |- Myxml.tag "branch_length") bl
+      |> maybe_map_cons (Printf.sprintf "%g" %> Myxml.tag "branch_length") bl
       |> maybe_map_cons
           (Printf.sprintf "%g"
-           |- Myxml.tag "confidence" ~attrs:["type", "confidence"])
+           %> Myxml.tag "confidence" ~attrs:["type", "confidence"])
           confidence
       |> List.rev
     end

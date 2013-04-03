@@ -139,7 +139,7 @@ let string_of_gfloat = Printf.sprintf "%g"
 
 let to_strl_gen fint ffloat ftaxid default place =
   let map_ratio, map_overlap =
-    Option.map_default (Tuple2.mapn some some) (None, None) place.map_identity
+    Option.map_default (Tuple2.map some some) (None, None) place.map_identity
   (* eta expansion !! *)
   and fopt f xo = Option.map_default f default xo in
   [

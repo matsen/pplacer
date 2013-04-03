@@ -308,7 +308,7 @@ let leaf_work ?(p_exp = 1.) v indiv_map leaf =
 
 let adcl ?p_exp v indiv_map =
   IntSet.fold
-    (leaf_work ?p_exp v indiv_map |- (+.))
+    (leaf_work ?p_exp v indiv_map %> (+.))
     v.all_leaves
     0.
 
@@ -407,7 +407,7 @@ let mark_map gt =
         i,
         List.map aux subtrees
           |> List.split
-          |> (List.reduce IntSet.union *** List.reduce IntMap.union)
+          |> (Tuple2.map (List.reduce IntSet.union) (List.reduce IntMap.union))
     in
     if i = top then
       leaves_below, markm
@@ -434,7 +434,7 @@ let mark_map gt =
               |> Enum.filter (fun d -> abs_float (d -. p) < bl)
               |> Enum.map (fun d -> (bl -. d +. p) /. 2.))
         |> Enum.flatten
-        |> Enum.filter (not -| approx_equal bl)
+        |> Enum.filter (not % approx_equal bl)
         |> List.of_enum
         |> List.sort_unique compare
         |> flip (IntMap.add i) markm
@@ -449,7 +449,7 @@ let mark_map gt =
           |> flip (IntSet.mem |-- not)
           |~ fst)
      |> List.of_enum
-     |> List.fold_left (snd |- fold_both min max |> flip) (infinity, neg_infinity))
+     |> List.fold_left (snd %> fold_both min max |> flip) (infinity, neg_infinity))
     distm
 
 let slope = function
@@ -468,7 +468,7 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
          | _ -> ((b, m), sol) :: accum)
         []
     |> List.split
-    |> (Array.of_list *** Array.of_list)
+    |> Tuple2.map Array.of_list Array.of_list
   in
   if Array.length sola < 2 then begin
     if verbose then
@@ -497,7 +497,7 @@ let hull_cull ?(verbose = false) lower_bound upper_bound sols =
   end
 
 (* a polymorphic map for keys of int, bool *)
-let empty_solmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.create
+let empty_solmap = Tuple2.compare ~cmp1:(-) ~cmp2:Bool.compare |> Map.PMap.create
 let solmap_key = leaf_card &&& is_rmp
 
 (* cull solutions from an enum of solutions down to a list of strictly the
@@ -509,15 +509,15 @@ let cull mass_above (minleaf, maxleaf) ?(verbose = false) sols =
   Enum.fold
     (fun solm sol ->
       incr count;
-      Map.modify_def [] (solmap_key sol) (List.cons sol) solm)
+      Map.PMap.modify_def [] (solmap_key sol) (List.cons sol) solm)
     empty_solmap
     sols
-  |> Map.enum
+  |> Map.PMap.enum
   |> Enum.map
       (junction
-         (fst |- snd)
-         (snd |- hull_cull ~verbose minleaf maxleaf)
-         (snd |- hull_cull ~verbose 0. mass_above))
+         (fst %> snd)
+         (snd %> hull_cull ~verbose minleaf maxleaf)
+         (snd %> hull_cull ~verbose 0. mass_above))
   |> Enum.flatten
 
 (* given a mark map, a tree, and mass on the tree, remove redundant marks from
@@ -525,7 +525,7 @@ let cull mass_above (minleaf, maxleaf) ?(verbose = false) sols =
 let collapse_marks gt mass markm =
   let get_bl = Gtree.get_bl gt in
   let bubbles_from i =
-    List.enum |- flip Enum.append (get_bl i |> Enum.singleton)
+    List.enum %> flip Enum.append (get_bl i |> Enum.singleton)
   in
   IntMap.mapi
     (fun i marks ->
@@ -609,8 +609,8 @@ let soln_to_info mark {leaf_set; cl_dist; prox_mass; wk_subtot; interval} =
    fmt cl_dist;
    Option.map_default fmt "RMD" prox_mass;
    fmt wk_subtot;
-   Option.map_default (fst |- fmt) "-" interval;
-   Option.map_default (snd |- fmt) "-" interval]
+   Option.map_default (fst %> fmt) "-" interval;
+   Option.map_default (snd %> fmt) "-" interval]
 
 let soln_csv_opt = ref None
 let csvrow ?mark i sol = match !soln_csv_opt with
@@ -737,11 +737,11 @@ let force ?n_leaves ?max_adcl:_ ?keep:_ ?(strict = true) ?(verbose = false) gt m
     |> Enum.group IntSet.cardinal
     |> Enum.map
         (Enum.map (identity &&& leaves_adcl)
-         |- Enum.arg_min snd
-         |- (if verbose then
-               tap (fst |- IntSet.cardinal |- Printf.eprintf "solved %d\n%!")
+         %> Enum.arg_min snd
+         %> (if verbose then
+               tap (fst %> IntSet.cardinal %> Printf.eprintf "solved %d\n%!")
              else identity)
-         |- (fun (leaves, work) -> IntSet.cardinal leaves, {leaves; work}))
+         %> (fun (leaves, work) -> IntSet.cardinal leaves, {leaves; work}))
     |> IntMap.of_enum
 
 module type Alg = sig

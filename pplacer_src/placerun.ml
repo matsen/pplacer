@@ -101,7 +101,7 @@ let redup ?(as_mass = false) sequence_tbl pr =
       if as_mass then
         [n, List.length names |> float_of_int |> ( *.) m]
       else
-        List.map (second (( *.) m)) names
+        List.map (Tuple.Tuple2.map2(( *.) m)) names
   in
   apply_to_pqueries
     (List.map (fun pq ->

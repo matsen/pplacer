@@ -5,7 +5,7 @@ open Test_util
 let suite = [
   "test_median" >:: begin fun () ->
     List.iter
-      (first median |- uncurry assert_equal)
+      (Tuple.Tuple2.map1 median %> uncurry assert_equal)
       [
         [0], 0;
         [0; 1], 0;

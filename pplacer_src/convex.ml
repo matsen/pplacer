@@ -612,7 +612,7 @@ let rank_tax_map_of_refpkg rp =
   and td = Refpkg.get_taxonomy rp in
   Refpkg.get_seqinfom rp
   |> StringMap.enum
-  |> Enum.map (second (fun {Tax_seqinfo.tax_id} -> tax_id))
+  |> Enum.map (Tuple.Tuple2.map2 (fun {Tax_seqinfo.tax_id} -> tax_id))
   |> build_rank_tax_map td (flip StringMap.Exceptionless.find node_map)
   |> tap (fun m ->
     Array.iteri

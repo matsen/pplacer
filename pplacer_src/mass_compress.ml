@@ -88,7 +88,7 @@ let of_placerun ?(p = 1.) cluster_fn ~c weighting criterion pr =
       if IntMap.is_empty nodem then accum else (* ... *)
       (* As long as there are nodes in the graph, find the node with the most
        * edges and all of the adjacent nodes. *)
-      let w, xs = IntMap.enum nodem |> Enum.arg_max (snd |- IntSet.cardinal) in
+      let w, xs = IntMap.enum nodem |> Enum.arg_max (snd %> IntSet.cardinal) in
       let all_touched = IntSet.add w xs in
       (* The compressed pquery is the pquery corresponding to the originally
        * selected node with all of the mass from the pqueries corresponding to

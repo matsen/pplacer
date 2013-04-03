@@ -33,15 +33,15 @@ let trim min_mass rewrite_discarded_mass weighting criterion gt pql =
       | Node (_, subtrees) ->
         match List.map (aux mass_above') subtrees
           |> List.split
-          |> (List.filter_map identity *** List.reduce IntMap.union)
+          |> (Tuple2.map (List.filter_map identity) (List.reduce IntMap.union))
         with
           | [], transm ->
             None,
-            IntMap.map (second ((+.) (bl i))) transm
+            IntMap.map (Tuple.Tuple2.map2 ((+.) (bl i))) transm
             |> IntMap.add i (None, bl i)
           | subtrees', transm ->
             Some (node i subtrees'),
-            IntMap.map (first (function None -> Some i | x -> x)) transm
+            IntMap.map (Tuple.Tuple2.map1 (function None -> Some i | x -> x)) transm
   in
   let st', pre_transm = Gtree.get_stree gt |> aux 0. in
   let pql =
@@ -101,7 +101,7 @@ object (self)
       |> Newick_gtree.add_zero_root_bl
     and weighting, criterion = self#mass_opts in
     let pr, discarded_reads = prl
-    |> List.map (Placerun.unitize |- Placerun.get_pqueries)
+    |> List.map (Placerun.unitize %> Placerun.get_pqueries)
     |> List.flatten
     |> trim
         (fv min_path_mass)
