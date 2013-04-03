@@ -240,8 +240,8 @@ object (self)
   val blast_results = flag "--blast-results"
     (Needs_argument ("BLAST results", "The BLAST results file for use with the BLAST classifier. \
                                        Can be specified multiple times for multiple inputs."))
-  val random_tie_break = flag "--random-tie-break"
-    (Plain (false, "Break NBC ties randomly."))
+  val random_tie_break = flag "--no-random-tie-break"
+    (Plain (true, "Break NBC ties randomly."))
 
   method specl =
     super_refpkg#specl
