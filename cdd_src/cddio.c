@@ -4,8 +4,8 @@
 */
 
 /* cddlib : C-library of the double description method for
-   computing all vertices and extreme rays of the polyhedron 
-   P= {x :  b - A x >= 0}.  
+   computing all vertices and extreme rays of the polyhedron
+   P= {x :  b - A x >= 0}.
    Please read COPYING (GNU General Public Licence) and
    the manual cddlibman.tex for detail.
 */
@@ -24,24 +24,21 @@ void dd_SetLinearity(dd_MatrixPtr, char *);
 void dd_SetInputFile(FILE **f,dd_DataFileType inputfile,dd_ErrorType *Error)
 {
   int opened=0,stop,quit=0;
-  int i,dotpos=0,trial=0;
+  int i,trial=0;
   char ch;
   char *tempname;
-  
-  
+
+
   *Error=dd_NoError;
   while (!opened && !quit) {
     fprintf(stderr,"\n>> Input file: ");
-    scanf("%s",inputfile);
+    if(scanf("%s",inputfile));
     ch=getchar();
     stop=dd_FALSE;
     for (i=0; i<dd_filenamelen && !stop; i++){
       ch=inputfile[i];
       switch (ch) {
-        case '.': 
-          dotpos=i+1;
-          break;
-        case ';':  case ' ':  case '\0':  case '\n':  case '\t':     
+        case ';':  case ' ':  case '\0':  case '\n':  case '\t':
           stop=dd_TRUE;
           tempname=(char*)calloc(dd_filenamelen,sizeof(ch));
           strncpy(tempname,inputfile,i);
@@ -71,7 +68,7 @@ void dd_SetWriteFileName(dd_DataFileType inputfile, dd_DataFileType outfile, cha
   char *extension;
   dd_DataFileType ifilehead="";
   int i,dotpos;
-  
+
   switch (cflag) {
     case 'o':
       switch (rep) {
@@ -79,7 +76,7 @@ void dd_SetWriteFileName(dd_DataFileType inputfile, dd_DataFileType outfile, cha
           extension=".ine"; break;     /* output file for ine data */
         case dd_Inequality:
           extension=".ext"; break;     /* output file for ext data */
-        default: 
+        default:
           extension=".xxx";break;
       }
       break;
@@ -128,11 +125,11 @@ void dd_SetWriteFileName(dd_DataFileType inputfile, dd_DataFileType outfile, cha
   if (dotpos>1) strncpy(ifilehead, inputfile, dotpos);
   else strcpy(ifilehead,inputfile);
   if (strlen(inputfile)<=0) strcpy(ifilehead,"tempcdd");
-  strcpy(outfile,ifilehead); 
-  strcat(outfile,extension); 
+  strcpy(outfile,ifilehead);
+  strcat(outfile,extension);
   if (strcmp(inputfile, outfile)==0) {
-    strcpy(outfile,inputfile); 
-    strcat(outfile,extension); 
+    strcpy(outfile,inputfile);
+    strcat(outfile,extension);
   }
 /*  fprintf(stderr,"outfile name = %s\n",outfile);  */
 }
@@ -151,7 +148,7 @@ dd_NumberType dd_GetNumberType(char *line)
   else if (strncmp(line, "real", 4)==0) {
     nt = dd_Real;
   }
-  else { 
+  else {
     nt=dd_Unknown;
   }
   return nt;
@@ -176,7 +173,7 @@ void dd_ProcessCommandLine(FILE *f, dd_MatrixPtr M, char *line)
   if (strncmp(line, "partial_enum", 12)==0 ||
        strncmp(line, "equality", 8)==0  ||
        strncmp(line, "linearity", 9)==0 ) {
-    fgets(newline,dd_linelenmax,f);    
+    if(fgets(newline,dd_linelenmax,f));
     dd_SetLinearity(M,newline);
   }
   if (strncmp(line, "maximize", 8)==0 ||
@@ -187,7 +184,7 @@ void dd_ProcessCommandLine(FILE *f, dd_MatrixPtr M, char *line)
     if (M->numbtype==dd_Real) {
 #if !defined(GMPRATIONAL)
         double rvalue;
-        fscanf(f, "%lf", &rvalue);
+        if(fscanf(f, "%lf", &rvalue));
         dd_set_d(value, rvalue);
 #endif
       } else {
@@ -270,7 +267,7 @@ dd_MatrixPtr dd_MatrixAppend(dd_MatrixPtr M1, dd_MatrixPtr M2)
   dd_MatrixPtr M=NULL;
   dd_rowrange i, m,m1,m2;
   dd_colrange j, d,d1,d2;
-  
+
   m1=M1->rowsize;
   d1=M1->colsize;
   m2=M2->rowsize;
@@ -298,8 +295,8 @@ dd_MatrixPtr dd_MatrixAppend(dd_MatrixPtr M1, dd_MatrixPtr M2)
 }
 
 dd_MatrixPtr dd_MatrixNormalizedSortedCopy(dd_MatrixPtr M,dd_rowindex *newpos)  /* 094 */
-{ 
-  /* Sort the rows of Amatrix lexicographically, and return a link to this sorted copy. 
+{
+  /* Sort the rows of Amatrix lexicographically, and return a link to this sorted copy.
   The vector newpos is allocated, where newpos[i] returns the new row index
   of the original row i (i=1,...,M->rowsize). */
   dd_MatrixPtr Mcopy=NULL,Mnorm=NULL;
@@ -316,7 +313,7 @@ dd_MatrixPtr dd_MatrixNormalizedSortedCopy(dd_MatrixPtr M,dd_rowindex *newpos)  
     Mnorm=dd_MatrixNormalizedCopy(M);
     Mcopy=dd_CreateMatrix(m, d);
     for(i=1; i<=m; i++) roworder[i]=i;
-    
+
     dd_RandomPermutation(roworder, m, 123);
     dd_QuickSort(roworder,1,m,Mnorm->matrix,d);
 
@@ -336,8 +333,8 @@ dd_MatrixPtr dd_MatrixNormalizedSortedCopy(dd_MatrixPtr M,dd_rowindex *newpos)  
 }
 
 dd_MatrixPtr dd_MatrixUniqueCopy(dd_MatrixPtr M,dd_rowindex *newpos)
-{ 
-  /* Remove row duplicates, and return a link to this sorted copy. 
+{
+  /* Remove row duplicates, and return a link to this sorted copy.
      Linearity rows have priority over the other rows.
      It is better to call this after sorting with dd_MatrixNormalizedSortedCopy.
      The vector newpos is allocated, where *newpos[i] returns the new row index
@@ -375,8 +372,8 @@ dd_MatrixPtr dd_MatrixUniqueCopy(dd_MatrixPtr M,dd_rowindex *newpos)
 
 
 dd_MatrixPtr dd_MatrixNormalizedSortedUniqueCopy(dd_MatrixPtr M,dd_rowindex *newpos) /* 094 */
-{ 
-  /* Sort and remove row duplicates, and return a link to this sorted copy. 
+{
+  /* Sort and remove row duplicates, and return a link to this sorted copy.
      Linearity rows have priority over the other rows.
      It is better to call this after sorting with dd_MatrixNormalizedSortedCopy.
      The vector newpos is allocated, where *newpos[i] returns the new row index
@@ -391,8 +388,8 @@ dd_MatrixPtr dd_MatrixNormalizedSortedUniqueCopy(dd_MatrixPtr M,dd_rowindex *new
   /* if (newpos!=NULL) free(newpos); */
   m= M->rowsize;
   d= M->colsize;
-  *newpos=(long *)calloc(m+1,sizeof(long));  
-  newpos1r=(long *)calloc(m+1,sizeof(long));  
+  *newpos=(long *)calloc(m+1,sizeof(long));
+  newpos1r=(long *)calloc(m+1,sizeof(long));
   if (m>=0 && d>=0){
     M1=dd_MatrixNormalizedSortedCopy(M,&newpos1);
     for (i=1; i<=m;i++) newpos1r[newpos1[i]]=i;  /* reverse of newpos1 */
@@ -409,12 +406,12 @@ dd_MatrixPtr dd_MatrixNormalizedSortedUniqueCopy(dd_MatrixPtr M,dd_rowindex *new
     }
   dd_FreeMatrix(M1);free(newpos1);free(newpos2);free(newpos1r);
   }
-  
+
   return M2;
 }
 
 dd_MatrixPtr dd_MatrixSortedUniqueCopy(dd_MatrixPtr M,dd_rowindex *newpos)  /* 094 */
-{ 
+{
   /* Same as dd_MatrixNormalizedSortedUniqueCopy except that it returns a unnormalized origial data
      with original ordering.
   */
@@ -426,8 +423,8 @@ dd_MatrixPtr dd_MatrixSortedUniqueCopy(dd_MatrixPtr M,dd_rowindex *newpos)  /* 0
   /* if (newpos!=NULL) free(newpos); */
   m= M->rowsize;
   d= M->colsize;
-  *newpos=(long *)calloc(m+1,sizeof(long));  
-  newpos1r=(long *)calloc(m+1,sizeof(long));  
+  *newpos=(long *)calloc(m+1,sizeof(long));
+  newpos1r=(long *)calloc(m+1,sizeof(long));
   if (m>=0 && d>=0){
     M1=dd_MatrixNormalizedSortedCopy(M,&newpos1);
     for (i=1; i<=m;i++) newpos1r[newpos1[i]]=i;  /* reverse of newpos1 */
@@ -457,7 +454,7 @@ dd_MatrixPtr dd_MatrixSortedUniqueCopy(dd_MatrixPtr M,dd_rowindex *newpos)  /* 0
 
     free(newpos1);free(newpos2);free(newpos1r);
   }
-  
+
   return M2;
 }
 
@@ -472,7 +469,7 @@ int dd_MatrixAppendTo(dd_MatrixPtr *M1, dd_MatrixPtr M2)
   dd_rowrange i, m,m1,m2;
   dd_colrange j, d,d1,d2;
   dd_boolean success=0;
-  
+
   m1=(*M1)->rowsize;
   d1=(*M1)->colsize;
   m2=M2->rowsize;
@@ -507,7 +504,7 @@ int dd_MatrixRowRemove(dd_MatrixPtr *M, dd_rowrange r) /* 092 */
   dd_rowrange i,m;
   dd_colrange d;
   dd_boolean success=0;
-  
+
   m=(*M)->rowsize;
   d=(*M)->colsize;
 
@@ -534,7 +531,7 @@ int dd_MatrixRowRemove2(dd_MatrixPtr *M, dd_rowrange r, dd_rowindex *newpos) /* 
   dd_colrange d;
   dd_boolean success=0;
   dd_rowindex roworder;
-  
+
   m=(*M)->rowsize;
   d=(*M)->colsize;
 
@@ -564,7 +561,7 @@ dd_MatrixPtr dd_MatrixSubmatrix(dd_MatrixPtr M, dd_rowset delset) /* 092 */
   dd_MatrixPtr Msub=NULL;
   dd_rowrange i,isub=1, m,msub;
   dd_colrange d;
- 
+
   m= M->rowsize;
   d= M->colsize;
   msub=m;
@@ -595,7 +592,7 @@ dd_MatrixPtr dd_MatrixSubmatrix2(dd_MatrixPtr M, dd_rowset delset,dd_rowindex *n
   removed.  *newpos[i] returns the position of the original row i in the new matrix.
   It is -1 if and only if it is deleted.
   */
-  
+
   dd_MatrixPtr Msub=NULL;
   dd_rowrange i,isub=1, m,msub;
   dd_colrange d;
@@ -681,7 +678,7 @@ int dd_MatrixRowsRemove(dd_MatrixPtr *M, dd_rowset delset) /* 094 */
 {
   dd_MatrixPtr Msub=NULL;
   int success;
-  
+
   Msub=dd_MatrixSubmatrix(*M, delset);
   dd_FreeMatrix(*M);
   *M=Msub;
@@ -693,7 +690,7 @@ int dd_MatrixRowsRemove2(dd_MatrixPtr *M, dd_rowset delset,dd_rowindex *newpos) 
 {
   dd_MatrixPtr Msub=NULL;
   int success;
-  
+
   Msub=dd_MatrixSubmatrix2(*M, delset,newpos);
   dd_FreeMatrix(*M);
   *M=Msub;
@@ -706,12 +703,12 @@ int dd_MatrixShiftupLinearity(dd_MatrixPtr *M,dd_rowindex *newpos) /* 094 */
   dd_MatrixPtr Msub=NULL;
   int success;
   dd_rowset delset;
-  
+
   set_initialize(&delset,(*M)->rowsize);  /* emptyset */
   Msub=dd_MatrixSubmatrix2L(*M, delset,newpos);
   dd_FreeMatrix(*M);
   *M=Msub;
-  
+
   set_free(delset);
   success=1;
   return success;
@@ -725,7 +722,7 @@ dd_PolyhedraPtr dd_CreatePolyhedraData(dd_rowrange m, dd_colrange d)
   poly=(dd_PolyhedraPtr) malloc (sizeof(dd_PolyhedraType));
   poly->child       =NULL; /* this links the homogenized cone data */
   poly->m           =m;
-  poly->d           =d;  
+  poly->d           =d;
   poly->n           =-1;  /* the size of output is not known */
   poly->m_alloc     =m+2; /* the allocated row size of matrix A */
   poly->d_alloc     =d;   /* the allocated col size of matrix A */
@@ -736,14 +733,14 @@ dd_PolyhedraPtr dd_CreatePolyhedraData(dd_rowrange m, dd_colrange d)
   poly->representation       =dd_Inequality;
   poly->homogeneous =dd_FALSE;
 
-  poly->EqualityIndex=(int *)calloc(m+2, sizeof(int));  
-    /* size increased to m+2 in 092b because it is used by the child cone, 
+  poly->EqualityIndex=(int *)calloc(m+2, sizeof(int));
+    /* size increased to m+2 in 092b because it is used by the child cone,
        This is a bug fix suggested by Thao Dang. */
     /* ith component is 1 if it is equality, -1 if it is strict inequality, 0 otherwise. */
   for (i = 0; i <= m+1; i++) poly->EqualityIndex[i]=0;
 
   poly->IsEmpty                 = -1;  /* initially set to -1, neither TRUE nor FALSE, meaning unknown */
-  
+
   poly->NondegAssumed           = dd_FALSE;
   poly->InitBasisAtBottom       = dd_FALSE;
   poly->RestrictedEnumeration   = dd_FALSE;
@@ -802,7 +799,7 @@ dd_boolean dd_InitializeConeData(dd_rowrange m, dd_colrange d, dd_ConePtr *cone)
   (*cone)->count_int_good=0;
   (*cone)->count_int_bad=0;
   (*cone)->rseed=1;  /* random seed for random row permutation */
- 
+
   dd_InitializeBmatrix((*cone)->d_alloc, &((*cone)->B));
   dd_InitializeBmatrix((*cone)->d_alloc, &((*cone)->Bsave));
   dd_InitializeAmatrix((*cone)->m_alloc,(*cone)->d_alloc,&((*cone)->A));
@@ -824,7 +821,7 @@ dd_boolean dd_InitializeConeData(dd_rowrange m, dd_colrange d, dd_ConePtr *cone)
   (*cone)->starttime;
   (*cone)->endtime;
 */
-    
+
   return success;
 }
 
@@ -850,8 +847,8 @@ dd_ConePtr dd_ConeDataLoad(dd_PolyhedraPtr poly)
 
   for (i=1; i<=poly->m; i++)
     for (j=1; j<=cone->d; j++)
-      dd_set(cone->A[i-1][j-1],poly->A[i-1][j-1]);  
-  
+      dd_set(cone->A[i-1][j-1],poly->A[i-1][j-1]);
+
   if (poly->representation==dd_Inequality && !(poly->homogeneous)){
     dd_set(cone->A[m-1][0],dd_one);
     for (j=2; j<=d; j++) dd_set(cone->A[m-1][j-1],dd_purezero);
@@ -868,7 +865,7 @@ void dd_SetLinearity(dd_MatrixPtr M, char *line)
   const char ct[]=", ";  /* allows separators "," and " ". */
 
   next=strtok(line,ct);
-  eqsize=atol(next); 
+  eqsize=atol(next);
   while (i < eqsize && (next=strtok(NULL,ct))!=NULL) {
      var=atol(next);
      set_addelem(M->linset,var); i++;
@@ -886,7 +883,7 @@ dd_MatrixPtr dd_PolyFile2Matrix (FILE *f, dd_ErrorType *Error)
   dd_colrange d_input,j;
   dd_RepresentationType rep=dd_Inequality;
   mytype value;
-  dd_boolean found=dd_FALSE, newformat=dd_FALSE, successful=dd_FALSE, linearity=dd_FALSE;
+  dd_boolean found=dd_FALSE, linearity=dd_FALSE;
   char command[dd_linelenmax], comsave[dd_linelenmax], numbtype[dd_wordlenmax];
   dd_NumberType NT;
 #if !defined(GMPRATIONAL)
@@ -903,27 +900,27 @@ dd_MatrixPtr dd_PolyFile2Matrix (FILE *f, dd_ErrorType *Error)
     }
     else {
       if (strncmp(command, "V-representation", 16)==0) {
-        rep=dd_Generator; newformat=dd_TRUE;
+        rep=dd_Generator;
       }
       if (strncmp(command, "H-representation", 16)==0){
-        rep=dd_Inequality; newformat=dd_TRUE;
+        rep=dd_Inequality;
       }
-      if (strncmp(command, "partial_enum", 12)==0 || 
+      if (strncmp(command, "partial_enum", 12)==0 ||
           strncmp(command, "equality", 8)==0  ||
           strncmp(command, "linearity", 9)==0 ) {
         linearity=dd_TRUE;
-        fgets(comsave,dd_linelenmax,f);
+        if(fgets(comsave,dd_linelenmax,f));
       }
       if (strncmp(command, "begin", 5)==0) found=dd_TRUE;
     }
   }
-  fscanf(f, "%ld %ld %s", &m_input, &d_input, numbtype);
+  if(fscanf(f, "%ld %ld %s", &m_input, &d_input, numbtype));
   fprintf(stderr,"size = %ld x %ld\nNumber Type = %s\n", m_input, d_input, numbtype);
   NT=dd_GetNumberType(numbtype);
   if (NT==dd_Unknown) {
       (*Error)=dd_ImproperInputFormat;
       goto _L99;
-    } 
+    }
   M=dd_CreateMatrix(m_input, d_input);
   M->representation=rep;
   M->numbtype=NT;
@@ -935,7 +932,7 @@ dd_MatrixPtr dd_PolyFile2Matrix (FILE *f, dd_ErrorType *Error)
         *Error=dd_NoRealNumberSupport;
         goto _L99;
 #else
-        fscanf(f, "%lf", &rvalue);
+        if(fscanf(f, "%lf", &rvalue));
         dd_set_d(value, rvalue);
 #endif
       } else {
@@ -954,16 +951,15 @@ dd_MatrixPtr dd_PolyFile2Matrix (FILE *f, dd_ErrorType *Error)
      (*Error)=dd_ImproperInputFormat;
      goto _L99;
   }
-  
-  successful=dd_TRUE;
+
   if (linearity) {
     dd_SetLinearity(M,comsave);
   }
   while (!feof(f)) {
-    fscanf(f,"%s", command);
+    if(fscanf(f,"%s", command));
     dd_ProcessCommandLine(f, M, command);
-    fgets(command,dd_linelenmax,f); /* skip the CR/LF */
-  } 
+    if(fgets(command,dd_linelenmax,f)); /* skip the CR/LF */
+  }
 
 _L99: ;
   dd_clear(value);
@@ -998,7 +994,7 @@ dd_PolyhedraPtr dd_DDMatrix2Poly(dd_MatrixPtr M, dd_ErrorType *err)
   }  /*of i*/
   dd_DoubleDescription(poly,err);
 _L99:
-  return poly; 
+  return poly;
 }
 
 dd_PolyhedraPtr dd_DDMatrix2Poly2(dd_MatrixPtr M, dd_RowOrderType horder, dd_ErrorType *err)
@@ -1027,7 +1023,7 @@ dd_PolyhedraPtr dd_DDMatrix2Poly2(dd_MatrixPtr M, dd_RowOrderType horder, dd_Err
   }  /*of i*/
   dd_DoubleDescription2(poly, horder, err);
 _L99:
-  return poly; 
+  return poly;
 }
 
 void dd_MatrixIntegerFilter(dd_MatrixPtr M)
@@ -1045,7 +1041,7 @@ void dd_MatrixIntegerFilter(dd_MatrixPtr M)
   dd_clear(x);
 }
 
-void dd_CopyRay(mytype *a, dd_colrange d_origsize, dd_RayPtr RR, 
+void dd_CopyRay(mytype *a, dd_colrange d_origsize, dd_RayPtr RR,
   dd_RepresentationType rep, dd_colindex reducedcol)
 {
   long j,j1;
@@ -1055,11 +1051,11 @@ void dd_CopyRay(mytype *a, dd_colrange d_origsize, dd_RayPtr RR,
   for (j = 1; j <= d_origsize; j++){
     j1=reducedcol[j];
     if (j1>0){
-      dd_set(a[j-1],RR->Ray[j1-1]); 
+      dd_set(a[j-1],RR->Ray[j1-1]);
         /* the original column j is mapped to j1, and thus
            copy the corresponding component */
     } else {
-      dd_set(a[j-1],dd_purezero);  
+      dd_set(a[j-1],dd_purezero);
         /* original column is redundant and removed for computation */
     }
   }
@@ -1201,7 +1197,7 @@ void dd_WriteMatrix(FILE *f, dd_MatrixPtr M)
   linsize=set_card(M->linset);
   if (linsize>0) {
     fprintf(f, "linearity %ld ", linsize);
-    for (i=1; i<=M->rowsize; i++) 
+    for (i=1; i<=M->rowsize; i++)
       if (set_member(i, M->linset)) fprintf(f, " %ld", i);
     fprintf(f, "\n");
   }
@@ -1210,7 +1206,7 @@ void dd_WriteMatrix(FILE *f, dd_MatrixPtr M)
     if (M->objective==dd_LPmax)
       fprintf(f, "maximize\n");
     else
-      fprintf(f, "minimize\n");      
+      fprintf(f, "minimize\n");
     dd_WriteArow(f, M->rowvec, M->colsize);
   }
 _L99:;
@@ -1229,7 +1225,7 @@ void dd_WriteLP(FILE *f, dd_LPPtr lp)
     if (lp->objective==dd_LPmax)
       fprintf(f, "maximize\n");
     else
-      fprintf(f, "minimize\n");      
+      fprintf(f, "minimize\n");
     dd_WriteArow(f, lp->A[lp->objrow-1], lp->d);
   }
 _L99:;
@@ -1248,7 +1244,7 @@ void dd_WriteReal(FILE *f, mytype x)
   long ix1,ix2,ix;
   double ax;
 
-  ax=dd_get_d(x);  
+  ax=dd_get_d(x);
   ix1= (long) (fabs(ax) * 10000. + 0.5);
   ix2= (long) (fabs(ax) + 0.5);
   ix2= ix2*10000;
@@ -1319,7 +1315,7 @@ void dd_WriteAdjacency(FILE *f, dd_PolyhedraPtr poly)
 void dd_ComputeAinc(dd_PolyhedraPtr poly)
 {
 /* This generates the input incidence array poly->Ainc, and
-   two sets: poly->Ared, poly->Adom. 
+   two sets: poly->Ared, poly->Adom.
 */
   dd_bigrange k;
   dd_rowrange i,m1;
@@ -1333,7 +1329,7 @@ void dd_ComputeAinc(dd_PolyhedraPtr poly)
 
   M=dd_CopyOutput(poly);
   poly->n=M->rowsize;
-  m1=poly->m1;  
+  m1=poly->m1;
    /* this number is same as poly->m, except when
       poly is given by nonhomogeneous inequalty:
       !(poly->homogeneous) && poly->representation==Inequality,
@@ -1341,8 +1337,8 @@ void dd_ComputeAinc(dd_PolyhedraPtr poly)
    */
   poly->Ainc=(set_type*)calloc(m1, sizeof(set_type));
   for(i=1; i<=m1; i++) set_initialize(&(poly->Ainc[i-1]),poly->n);
-  set_initialize(&(poly->Ared), m1); 
-  set_initialize(&(poly->Adom), m1); 
+  set_initialize(&(poly->Ared), m1);
+  set_initialize(&(poly->Adom), m1);
 
   for (k=1; k<=poly->n; k++){
     for (i=1; i<=poly->m; i++){
@@ -1365,7 +1361,7 @@ void dd_ComputeAinc(dd_PolyhedraPtr poly)
   for (i=1; i<=m1; i++){
     if (set_card(poly->Ainc[i-1])==M->rowsize){
       set_addelem(poly->Adom, i);
-    }  
+    }
   }
   for (i=m1; i>=1; i--){
     if (set_card(poly->Ainc[i-1])==0){
@@ -1374,7 +1370,7 @@ void dd_ComputeAinc(dd_PolyhedraPtr poly)
     }else {
       redundant=dd_FALSE;
       for (k=1; k<=m1; k++) {
-        if (k!=i && !set_member(k, poly->Ared)  && !set_member(k, poly->Adom) && 
+        if (k!=i && !set_member(k, poly->Ared)  && !set_member(k, poly->Adom) &&
             set_subset(poly->Ainc[i-1], poly->Ainc[k-1])){
           if (!redundant){
             redundant=dd_TRUE;
@@ -1390,9 +1386,9 @@ _L99:;
   dd_clear(sum);  dd_clear(temp);
 }
 
-dd_boolean dd_InputAdjacentQ(dd_PolyhedraPtr poly, 
+dd_boolean dd_InputAdjacentQ(dd_PolyhedraPtr poly,
   dd_rowrange i1, dd_rowrange i2)
-/* Before calling this function, RedundantSet must be 
+/* Before calling this function, RedundantSet must be
    a set of row indices whose removal results in a minimal
    nonredundant system to represent the input polyhedron,
    DominantSet must be the set of row indices which are
@@ -1421,8 +1417,8 @@ dd_boolean dd_InputAdjacentQ(dd_PolyhedraPtr poly,
   }
   set_int(common, poly->Ainc[i1-1], poly->Ainc[i2-1]);
   i=0;
-  while (i<poly->m1 && adj==dd_TRUE){ 
-    i++; 
+  while (i<poly->m1 && adj==dd_TRUE){
+    i++;
     if (i!=i1 && i!=i2 && !set_member(i, poly->Ared) &&
         !set_member(i, poly->Adom) && set_subset(common,poly->Ainc[i-1])){
       adj=dd_FALSE;
@@ -1430,7 +1426,7 @@ dd_boolean dd_InputAdjacentQ(dd_PolyhedraPtr poly,
   }
 _L99:;
   return adj;
-} 
+}
 
 
 void dd_WriteInputIncidence(FILE *f, dd_PolyhedraPtr poly)
@@ -1491,14 +1487,14 @@ void dd_WriteProgramDescription(FILE *f)
 void dd_WriteTimes(FILE *f, time_t starttime, time_t endtime)
 {
   long ptime,ptime_sec,ptime_minu, ptime_hour;
-  
-/* 
-   ptime=difftime(endtime,starttime); 
-   This function is ANSI standard, but not available sometime 
+
+/*
+   ptime=difftime(endtime,starttime);
+   This function is ANSI standard, but not available sometime
 */
-  ptime=(endtime - starttime);     
- /* This is to replace the line above, but it may not give 
-    correct time in seconds */ 
+  ptime=(endtime - starttime);
+ /* This is to replace the line above, but it may not give
+    correct time in seconds */
   ptime_hour=ptime/3600;
   ptime_minu=(ptime-ptime_hour*3600)/60;
   ptime_sec=ptime%60;
@@ -1521,9 +1517,9 @@ void dd_WriteLPTimes(FILE *f, dd_LPPtr lp)
 void dd_WriteLPStats(FILE *f)
 {
   time_t currenttime;
-  
+
   time(&currenttime);
-  
+
   fprintf(f, "\n*--- Statistics of pivots ---\n");
 #if defined GMPRATIONAL
   fprintf(f, "* f0 = %ld (float basis finding pivots)\n",ddf_statBApivots);
@@ -1560,7 +1556,7 @@ void dd_WriteLPMode(FILE *f)
       break;
     default: break;
   }
-  
+
   fprintf(f, "* Redundancy cheking solver: ");
   switch (dd_choiceRedcheckAlgorithm) {
     case dd_DualSimplex:
@@ -1571,10 +1567,10 @@ void dd_WriteLPMode(FILE *f)
       break;
     default: break;
   }
-  
+
   fprintf(f, "* Lexicographic pivot: ");
-  if (dd_choiceLexicoPivotQ)  fprintf(f, " on\n"); 
-  else fprintf(f, " off\n"); 
+  if (dd_choiceLexicoPivotQ)  fprintf(f, " on\n");
+  else fprintf(f, " off\n");
 
 }
 
@@ -1627,10 +1623,10 @@ void dd_WriteCompletionStatus(FILE *f, dd_ConePtr cone)
 {
   if (cone->Iteration<cone->m && cone->CompStatus==dd_AllFound) {
     fprintf(f,"*Computation completed at Iteration %4ld.\n", cone->Iteration);
-  } 
+  }
   if (cone->CompStatus == dd_RegionEmpty) {
     fprintf(f,"*Computation completed at Iteration %4ld because the region found empty.\n",cone->Iteration);
-  }   
+  }
 }
 
 void dd_WritePolyFile(FILE *f, dd_PolyhedraPtr poly)
@@ -1715,11 +1711,11 @@ void dd_WriteErrorMessages(FILE *f, dd_ErrorType Error)
  case dd_LPCycling:
     fprintf(f, "*Error: Possibly an LP cycling occurs.  Use the Criss-Cross method.\n");
     break;
-    
+
  case dd_NumericallyInconsistent:
     fprintf(f, "*Error: Numerical inconsistency is found.  Use the GMP exact arithmetic.\n");
     break;
-    
+
   case dd_NoError:
     fprintf(f,"*No Error found.\n");
     break;
@@ -1776,9 +1772,9 @@ dd_SetFamilyPtr dd_CopyAdjacency(dd_PolyhedraPtr poly)
   F=dd_CreateSetFamily(n, n);
   if (n<=0) goto _L99;
   poly->child->LastRay->Next=NULL;
-  for (RayPtr1=poly->child->FirstRay, pos1=1;RayPtr1 != NULL; 
+  for (RayPtr1=poly->child->FirstRay, pos1=1;RayPtr1 != NULL;
 				RayPtr1 = RayPtr1->Next, pos1++){
-    for (RayPtr2=poly->child->FirstRay, pos2=1; RayPtr2 != NULL; 
+    for (RayPtr2=poly->child->FirstRay, pos2=1; RayPtr2 != NULL;
 					RayPtr2 = RayPtr2->Next, pos2++){
       if (RayPtr1!=RayPtr2){
         dd_CheckAdjacency(poly->child, &RayPtr1, &RayPtr2, &adj);
@@ -1834,7 +1830,7 @@ dd_MatrixPtr dd_CopyOutput(dd_PolyhedraPtr poly)
 
   dd_init(b);
   total=poly->child->LinearityDim + poly->child->FeasibleRayCount;
-  
+
   if (poly->child->d<=0 || poly->child->newcol[1]==0) total=total-1;
   if (poly->representation==dd_Inequality) outputrep=dd_Generator;
   if (total==0 && poly->homogeneous && poly->representation==dd_Inequality){
@@ -1854,12 +1850,12 @@ dd_MatrixPtr dd_CopyOutput(dd_PolyhedraPtr poly)
     RayPtr = RayPtr->Next;
   }
   for (j=2; j<=poly->d; j++){
-    if (poly->child->newcol[j]==0){ 
+    if (poly->child->newcol[j]==0){
        /* original column j is dependent on others and removed for the cone */
       dd_set(b,poly->child->Bsave[0][j-1]);
       if (outputrep==dd_Generator && dd_Positive(b)){
         dd_set(M->matrix[i][0],dd_one);  /* dd_Normalize */
-        for (j1=1; j1<poly->d; j1++) 
+        for (j1=1; j1<poly->d; j1++)
           dd_div(M->matrix[i][j1],(poly->child->Bsave[j1][j-1]),b);
       } else {
         for (j1=0; j1<poly->d; j1++)
@@ -1867,9 +1863,9 @@ dd_MatrixPtr dd_CopyOutput(dd_PolyhedraPtr poly)
       }
       set_addelem(M->linset, i+1);
       i++;
-    }     
+    }
   }
-  if (outputorigin){ 
+  if (outputorigin){
     /* output the origin for homogeneous H-polyhedron with no rays. */
     dd_set(M->matrix[0][0],dd_one);
     for (j=1; j<poly->d; j++){
@@ -1893,7 +1889,7 @@ dd_MatrixPtr dd_CopyInput(dd_PolyhedraPtr poly)
 
   M=dd_CreateMatrix(poly->m, poly->d);
   dd_CopyAmatrix(M->matrix, poly->A, poly->m, poly->d);
-  for (i=1; i<=poly->m; i++) 
+  for (i=1; i<=poly->m; i++)
     if (poly->EqualityIndex[i]==1) set_addelem(M->linset,i);
   dd_MatrixIntegerFilter(M);
   if (poly->representation==dd_Generator)
@@ -1932,7 +1928,7 @@ dd_MatrixPtr dd_CopyInequalities(dd_PolyhedraPtr poly)
 /****************************************************************************************/
 void dd_sread_rational_value (char *s, mytype value)
    /* reads a rational value from the specified string "s" and assigns it to "value"    */
-   
+
 {
    char     *numerator_s=NULL, *denominator_s=NULL, *position;
    int      sign = 1;
@@ -1942,7 +1938,7 @@ void dd_sread_rational_value (char *s, mytype value)
 #else
    double rvalue;
 #endif
-  
+
    /* determine the sign of the number */
    numerator_s = s;
    if (s [0] == '-')
@@ -1951,7 +1947,7 @@ void dd_sread_rational_value (char *s, mytype value)
    }
    else if (s [0] == '+')
       numerator_s++;
-      
+
    /* look for a sign '/' and eventually split the number in numerator and denominator */
    position = strchr (numerator_s, '/');
    if (position != NULL)
@@ -1961,17 +1957,17 @@ void dd_sread_rational_value (char *s, mytype value)
 
    /* determine the floating point values of numerator and denominator */
    numerator=atol (numerator_s);
-  
+
    if (position != NULL)
-   { 
-     denominator=atol (denominator_s);  
+   {
+     denominator=atol (denominator_s);
    }
    else denominator = 1;
 
-/* 
+/*
    fprintf(stderr,"\nrational_read: numerator %f\n",numerator);
    fprintf(stderr,"rational_read: denominator %f\n",denominator);
-   fprintf(stderr,"rational_read: sign %d\n",sign); 
+   fprintf(stderr,"rational_read: sign %d\n",sign);
 */
 
 #if defined GMPRATIONAL
@@ -1993,26 +1989,26 @@ void dd_sread_rational_value (char *s, mytype value)
    ddd_set_d(value, rvalue);
 #endif
    if (dd_debug) {
-     fprintf(stderr,"rational_read: "); 
+     fprintf(stderr,"rational_read: ");
      dd_WriteNumber(stderr,value); fprintf(stderr,"\n");
    }
 }
-   
+
 
 void dd_fread_rational_value (FILE *f, mytype value)
    /* reads a rational value from the specified file "f" and assigns it to "value"      */
-   
+
 {
    char     number_s [dd_wordlenmax];
    mytype rational_value;
-   
+
    dd_init(rational_value);
-   fscanf(f, "%s ", number_s);
+   if(fscanf(f, "%s ", number_s));
    dd_sread_rational_value (number_s, rational_value);
    dd_set(value,rational_value);
    dd_clear(rational_value);
 }
-   
+
 /****************************************************************************************/
 
 
