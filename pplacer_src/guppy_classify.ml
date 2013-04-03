@@ -240,8 +240,10 @@ object (self)
   val blast_results = flag "--blast-results"
     (Needs_argument ("BLAST results", "The BLAST results file for use with the BLAST classifier. \
                                        Can be specified multiple times for multiple inputs."))
+    (* Below note difference between flag name and string. Default is true,
+       toggle_flag turns it off if flag present. *)
   val random_tie_break = flag "--no-random-tie-break"
-    (Plain (true, "Break NBC ties randomly."))
+    (Plain (true, "Take the first NBC hit even if there are others that are equally good."))
 
   method specl =
     super_refpkg#specl
