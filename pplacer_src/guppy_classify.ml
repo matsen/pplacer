@@ -227,7 +227,7 @@ object (self)
   val no_pre_mask = flag "--no-pre-mask"
     (Plain (false, "Don't pre-mask the sequences for NBC classification."))
   val nbc_counts = flag "--nbc-counts"
-    (Needs_argument ("", "If specified, read/write counts for NBC classification to the given file."))
+    (Needs_argument ("", "Read/write NBC k-mer counts to the given file. File cannot be NFS mounted."))
   val nbc_as_rdp = flag "--nbc-as-rdp"
     (Plain (false, "Do NBC classification like RDP: find the lineage of the full-sequence classification, \
                     then bootstrap to find support for it."))
