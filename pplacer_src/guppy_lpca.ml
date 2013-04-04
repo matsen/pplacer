@@ -27,9 +27,10 @@ object (self)
     let data = Array.to_list (Gsl_matrix.to_arrays result) in
     (data, ())
 
-  (* TODO: this may be a good place to transform the eigs of F'LF back to GL,
-     and then average by edge so fat trees can be made *)
-  method private expand_combol combol _ =
-    combol
+  method private gen_pca ~use_raw_eval ~scale ~symmv write_n faa =
+    Pca.gen_pca ~use_raw_eval ~scale ~symmv write_n faa
 
+  method private post_pca (eval, evect) _ =
+    let combol = (List.combine (Array.to_list eval) (Array.to_list evect)) in
+    (combol, combol)
 end

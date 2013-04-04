@@ -37,7 +37,8 @@ object (self)
     @ super_splitify#specl
 
   method private virtual prep_data : 'prl_t -> 'data_t * 'extra_t
-  method private virtual expand_combol : 'combol_t -> 'extra_t -> 'fullcombol_t
+  method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> float array array -> 'eval_t * 'evect_t
+  method private virtual post_pca : 'eval_t * 'evect_t -> 'extra_t -> 'combol_t * 'fullcombol_t
 
   method private placefile_action prl =
     self#check_placerunl prl;
@@ -61,14 +62,13 @@ object (self)
       else
         write_n
     in
+    let faa = Array.of_list data in
     let (eval, evect) =
-      Pca.gen_pca ~use_raw_eval:(fv raw_eval)
-        ~scale:(fv scale) ~symmv:(fv symmv) write_n (Array.of_list data)
+      self#gen_pca ~use_raw_eval:(fv raw_eval)
+        ~scale:(fv scale) ~symmv:(fv symmv) write_n faa
     in
-    let combol = (List.combine (Array.to_list eval) (Array.to_list evect))
+    let (combol, full_combol) = self#post_pca (eval, evect) extra
     and names = (List.map Placerun.get_name prl) in
-
-    let full_combol = self#expand_combol combol extra in
 
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")

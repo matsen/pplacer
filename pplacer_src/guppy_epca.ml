@@ -29,11 +29,18 @@ object (self)
     in
     (data, (rep_reduction_map, rep_orig_length, const_reduction_map, const_orig_length))
 
-  method private expand_combol combol (rep_reduction_map, rep_orig_length, const_reduction_map, const_orig_length) =
-    List.map
-      (second
-         (expand const_orig_length const_reduction_map
-             |- expand rep_orig_length rep_reduction_map))
-      combol
+  method private gen_pca ~use_raw_eval ~scale ~symmv write_n faa =
+    Pca.gen_pca ~use_raw_eval ~scale ~symmv write_n faa
+
+  method private post_pca (eval, evect) (rep_reduction_map, rep_orig_length, const_reduction_map, const_orig_length) =
+    let combol = (List.combine (Array.to_list eval) (Array.to_list evect)) in
+    let full_combol =
+      List.map
+        (second
+           (expand const_orig_length const_reduction_map
+               |- expand rep_orig_length rep_reduction_map))
+        combol
+    in
+    (combol, full_combol)
 
 end
