@@ -36,13 +36,15 @@ object (self)
        http://caml.inria.fr/pub/docs/manual-ocaml-4.00/libref/Bigarray.Array2.html
        slicing and then vector copying.
        http://www.gnu.org/software/gsl/manual/html_node/Copying-vectors.html *)
-    let w = Gsl_matrix.of_arrays evect
-    and af = Lpca.mat_print "AF" (Gsl_matrix.of_arrays (Array.of_list (List.map Gsl_vector.to_array post_data.af)))
-    in
-    let n_edges, n_samples = Gsl_matrix.dims af in
-    let afw = Gsl_matrix.create n_edges n_samples in
-    Gsl_blas.gemm ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.NoTrans ~alpha:1. ~a:af ~b:w ~beta:0. ~c:afw;
-    let evect = Gsl_matrix.to_arrays afw in
+    let af = Gsl_matrix.of_arrays (Array.of_list (List.map Gsl_vector.to_array post_data.af))
+    and w' = Gsl_matrix.of_arrays evect in
+    let n_edges, _ = Gsl_matrix.dims af
+    and n_components, _ = Gsl_matrix.dims w' in
+    let afw = Gsl_matrix.create n_edges n_components in
+    Gsl_blas.gemm ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.Trans ~alpha:1. ~a:af ~b:w' ~beta:0. ~c:afw;
+    let afw' = Gsl_matrix.create n_components n_edges in
+    Gsl_matrix.transpose afw afw';
+    let evect = Gsl_matrix.to_arrays afw' in
     let combol = (List.combine (Array.to_list eval) (Array.to_list evect)) in
     (combol, combol)
 
