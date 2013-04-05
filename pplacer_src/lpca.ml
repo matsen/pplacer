@@ -153,7 +153,7 @@ let mat_rep_uptri m =
   m
 
 (* intermediate edge result record *)
-type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector }
+type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; mutable af: Gsl_vector.vector list }
 
 (* repackaged placement record which includes the sample id *)
 type lpca_placement = { distal_bl: float; sample_id: int; mass: float }
@@ -176,9 +176,12 @@ let lpca_agg_data l =
       | y::[] ->
         Gsl_blas.axpy (-2.) x.mk y.fk;
         Gsl_vector.add y.mk x.mk;
-        { fk = y.fk; mk = y.mk }
+        (* TODO: not 100% confident in the correctness of the order of af *)
+        y.af <- y.af @ x.af;
+        { fk = y.fk; mk = y.mk; af = List.rev y.af }
       | y::ys ->
         Gsl_vector.add y.mk x.mk;
+        y.af <- y.af @ x.af;
         aux y ys
   in match l with
     | [] -> invalid_arg "lpca_agg_data: empty list"
@@ -191,23 +194,34 @@ let lpca_tot_edge sm edge_id bl result_0 data_0 =
     with
       | Not_found -> []
   in
-  let update_acc len fk result =
+  let update_acc len fk' result =
     assert(len >= 0.);
-    Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:(vec_denorm fk) ~a:result
+    Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:result
   in
-  let rec aux pl prev_distal_bl result data =
+  let n_samples = Gsl_vector.length data_0.fk in
+  let af_e = Gsl_vector.create ~init:0. n_samples
+  in
+  let rec aux i pl prev_distal_bl result data =
+    let fk' = vec_denorm data.fk in
+    (* TODO: there's some duplication in the two cases that should be pulled
+       out *)
     match pl with
       | p::ps ->
-        update_acc (p.distal_bl -. prev_distal_bl) data.fk result;
+        update_acc (p.distal_bl -. prev_distal_bl) fk' result;
         vec_subi data.fk p.sample_id (2. *. p.mass);
         vec_addi data.mk p.sample_id p.mass;
-        aux ps p.distal_bl result data
+        Gsl_vector.add af_e fk';
+        aux (succ i) ps p.distal_bl result data
       | [] ->
         (* assert(0. < p.mass); *)
-        update_acc (bl -. prev_distal_bl) data.fk result;
+        update_acc (bl -. prev_distal_bl) fk' result;
+        Gsl_vector.add af_e fk';
+        Gsl_vector.scale af_e (1. /. (float (succ i)));
+        (* TODO: not 100% confident in the ordering here either *)
+        data.af <- af_e::data.af;
         (result, data)
   in
-  aux pl 0. result_0 data_0
+  aux 0 pl 0. result_0 data_0
 
 (* f: int -> int -> 'acc_t -> 'p_t list -> 'acc_t *)
 let fold_samples_listwise f acc sl =
@@ -261,8 +275,8 @@ let gen_lpca sl ref_tree =
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
   let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
-  and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples } in
-  let (result, _) =
+  and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples; af = [] } in
+  let result, data =
     Stree.recur
       (fun edge_id node_list -> (* internal nodes *)
         tot_edge
@@ -275,7 +289,7 @@ let gen_lpca sl ref_tree =
           edge_id
           (Gtree.get_bl ref_tree edge_id)
           (Gsl_matrix.copy result_0)
-          ({ fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
+          ({ data_0 with fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
       (Gtree.get_stree ref_tree)
   in
-  mat_rep_uptri result
+  (mat_rep_uptri result, data)
