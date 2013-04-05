@@ -153,39 +153,43 @@ let mat_rep_uptri m =
   m
 
 (* intermediate edge result record *)
-type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; mutable af: Gsl_vector.vector list }
+type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; af: Gsl_vector.vector IntMap.t }
 
 (* repackaged placement record which includes the sample id *)
 type lpca_placement = { distal_bl: float; sample_id: int; mass: float }
 
 let lpca_agg_result l =
-  let rec aux x xs =
-    match xs with
-      | [] -> x
-      | y::ys ->
-        Gsl_matrix.add y x;
-        aux y ys
-  in match l with
-    | [] -> invalid_arg "lpca_agg_result: empty list"
-    | x::xs -> aux x xs
+  let n_rows, n_cols = Gsl_matrix.dims (List.hd l) in
+  let a = Gsl_matrix.create ~init:0. n_rows n_cols in
+  List.fold_left (fun a xi -> Gsl_matrix.add a xi; a) a l
+
+let map_union m1 m2 =
+  IntMap.merge
+    (fun _ l r ->
+      match l, r with
+        | Some x, None
+        | None, Some x ->
+          Some x
+        | Some _, Some _ ->
+          invalid_arg "map_union: maps intersect"
+        | _ ->
+          invalid_arg "map_union: Something Bad happened")
+    m1 m2
 
 let lpca_agg_data l =
-  let rec aux x xs =
-    match xs with
-      | [] -> failwith "lpca_agg_data: shouldn't happen"
-      | y::[] ->
-        Gsl_blas.axpy (-2.) x.mk y.fk;
-        Gsl_vector.add y.mk x.mk;
-        (* TODO: not 100% confident in the correctness of the order of af *)
-        y.af <- y.af @ x.af;
-        { fk = y.fk; mk = y.mk; af = List.rev y.af }
-      | y::ys ->
-        Gsl_vector.add y.mk x.mk;
-        y.af <- y.af @ x.af;
-        aux y ys
-  in match l with
-    | [] -> invalid_arg "lpca_agg_data: empty list"
-    | x::xs -> aux x xs
+  match l with
+    | x::xs ->
+      (* Fold the total masses and af maps of every node but the first together *)
+      let a = List.fold_left
+        (fun a xi -> Gsl_vector.add a.mk xi.mk; { a with af = map_union a.af xi.af; })
+        { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk); }
+        xs
+      in
+      Gsl_blas.axpy (-2.) a.mk a.fk;
+      Gsl_vector.add a.mk x.mk;
+      a
+    | [] ->
+      invalid_arg "lpca_agg_data: empty list"
 
 let lpca_tot_edge sm edge_id bl result_0 data_0 =
   let pl =
@@ -213,13 +217,10 @@ let lpca_tot_edge sm edge_id bl result_0 data_0 =
         Gsl_vector.add af_e fk';
         aux (succ i) ps p.distal_bl result data
       | [] ->
-        (* assert(0. < p.mass); *)
         update_acc (bl -. prev_distal_bl) fk' result;
         Gsl_vector.add af_e fk';
         Gsl_vector.scale af_e (1. /. (float (succ i)));
-        (* TODO: not 100% confident in the ordering here either *)
-        data.af <- af_e::data.af;
-        (result, data)
+        (result, { data with af = IntMap.add edge_id af_e data.af })
   in
   aux 0 pl 0. result_0 data_0
 
@@ -275,7 +276,7 @@ let gen_lpca sl ref_tree =
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
   let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
-  and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples; af = [] } in
+  and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples; af = IntMap.empty } in
   let result, data =
     Stree.recur
       (fun edge_id node_list -> (* internal nodes *)

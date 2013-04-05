@@ -36,7 +36,7 @@ object (self)
        http://caml.inria.fr/pub/docs/manual-ocaml-4.00/libref/Bigarray.Array2.html
        slicing and then vector copying.
        http://www.gnu.org/software/gsl/manual/html_node/Copying-vectors.html *)
-    let af = Gsl_matrix.of_arrays (Array.of_list (List.map Gsl_vector.to_array post_data.af))
+    let af = Gsl_matrix.of_arrays (Array.of_list (List.map Gsl_vector.to_array (List.of_enum (IntMap.values post_data.af))))
     and w' = Gsl_matrix.of_arrays evect in
     let n_edges, _ = Gsl_matrix.dims af
     and n_components, _ = Gsl_matrix.dims w' in
