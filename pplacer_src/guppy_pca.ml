@@ -33,11 +33,12 @@ object (self)
       int_flag write_n;
       toggle_flag scale;
       toggle_flag symmv;
+      toggle_flag raw_eval;
     ]
     @ super_splitify#specl
 
   method private virtual prep_data : 'prl_t -> 'data_t * 'extra_t
-  method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> float array array -> 'eval_t * 'evect_t
+  method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> 'data_t -> 'extra_t -> 'tree_t -> 'eval_t * 'evect_t
   method private virtual post_pca : 'eval_t * 'evect_t -> 'extra_t -> 'combol_t * 'fullcombol_t
 
   method private placefile_action prl =
@@ -62,10 +63,9 @@ object (self)
       else
         write_n
     in
-    let faa = Array.of_list data in
     let (eval, evect) =
       self#gen_pca ~use_raw_eval:(fv raw_eval)
-        ~scale:(fv scale) ~symmv:(fv symmv) write_n faa
+        ~scale:(fv scale) ~symmv:(fv symmv) write_n data extra t
     in
     let (combol, full_combol) = self#post_pca (eval, evect) extra
     and names = (List.map Placerun.get_name prl) in

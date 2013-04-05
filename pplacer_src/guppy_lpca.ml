@@ -27,7 +27,8 @@ object (self)
     let data = Array.to_list (Gsl_matrix.to_arrays result) in
     (data, ())
 
-  method private gen_pca ~use_raw_eval ~scale ~symmv write_n faa =
+  method private gen_pca ~use_raw_eval ~scale ~symmv write_n data _ _ =
+    let faa = Array.of_list data in
     Pca.gen_pca ~use_raw_eval ~scale ~symmv write_n faa
 
   method private post_pca (eval, evect) _ =

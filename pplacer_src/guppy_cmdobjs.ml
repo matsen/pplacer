@@ -566,8 +566,7 @@ object (self)
       fun x -> let y = splitify x in sgn y *. abs_float y ** kappa
 
   (* Take a placerun and turn it into a vector which is indexed by the edges of
-   * the tree.
-   * Later we may cut the edge mass in half; right now we don't do anything with it. *)
+   * the tree. *)
   method private splitify_placerun weighting criterion pr =
     let preim = Mass_map.Pre.of_placerun weighting criterion pr
     and t = Placerun.get_ref_tree pr
@@ -588,12 +587,15 @@ object (self)
     let orig_length = Array.length (List.hd fal) in
     match fvo rep_edges with
     | None ->
+      (* No filtering; return identity map etc. *)
       fal,
       0 --^ orig_length
         |> Enum.map (identity &&& identity)
         |> IntMap.of_enum,
       orig_length
     | Some max_edge_d ->
+      (* Perform filtering, such that edges that are within max_edge_d of each
+         other are collapsed.*)
       let gt = Mokaphy_common.list_get_same_tree prl in
       find_rep_edges max_edge_d fal gt
       |> self#filter_fal orig_length fal
