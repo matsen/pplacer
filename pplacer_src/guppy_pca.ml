@@ -70,6 +70,16 @@ object (self)
     let (combol, full_combol) = self#post_pca (eval, evect) extra
     and names = (List.map Placerun.get_name prl) in
 
+(* FIXME: writing fat trees for LPCA sometimes bombs out with
+
+   Uncaught exception: Guppy_cmdobjs.Invalid_abs_tot
+   Fatal error: exception Guppy_cmdobjs.Invalid_abs_tot
+   Raised at file "pplacer_src/guppy_cmdobjs.ml", line 348, characters 32-47
+   Called from file "pplacer_src/guppy_cmdobjs.ml", line 425, characters 6-93
+   Called from file "pplacer_src/guppy_cmdobjs.ml", line 437, characters 44-75
+   Called from file "pplacer_src/guppy_pca.ml", line 78, characters 12-47
+*)
+(*
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")
       (List.map
@@ -77,6 +87,7 @@ object (self)
            (Some (string_of_float eval),
             self#heat_tree_of_float_arr t evect |> self#maybe_numbered))
          full_combol);
+*)
     save_named_fal
       (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);

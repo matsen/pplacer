@@ -133,8 +133,7 @@ let vec_mean v =
   (vec_fold_left (+.) 0. v) /. (float (Gsl_vector.length v))
 
 let vec_denorm v =
-  let v_bar = vec_mean v
-  in
+  let v_bar = vec_mean v in
   vec_map (fun vi -> vi -. v_bar) v
 
 let vec_addi v i x =
@@ -144,7 +143,7 @@ let vec_subi v i x =
   Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
 
 let mat_rep_uptri m =
-  let n_rows, _ = Gsl_matrix.dims m in
+  let (n_rows, _) = Gsl_matrix.dims m in
   for i=1 to n_rows-1 do
     for j=0 to i-1 do
       Gsl_matrix.set m i j (Gsl_matrix.get m j i)
@@ -159,9 +158,10 @@ type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; af: Gsl_vector.
 type lpca_placement = { distal_bl: float; sample_id: int; mass: float }
 
 let lpca_agg_result l =
-  let n_rows, n_cols = Gsl_matrix.dims (List.hd l) in
+  let (n_rows, n_cols) = Gsl_matrix.dims (List.hd l) in
   let a = Gsl_matrix.create ~init:0. n_rows n_cols in
-  List.fold_left (fun a xi -> Gsl_matrix.add a xi; a) a l
+  List.iter (Gsl_matrix.add a) l;
+  a
 
 let map_union m1 m2 =
   IntMap.merge
@@ -181,8 +181,8 @@ let lpca_agg_data l =
     | x::xs ->
       (* Fold the total masses and af maps of every node but the first together *)
       let a = List.fold_left
-        (fun a xi -> Gsl_vector.add a.mk xi.mk; { a with af = map_union a.af xi.af; })
-        { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk); }
+        (fun a xi -> Gsl_vector.add a.mk xi.mk; { a with af = map_union a.af xi.af })
+        { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk) }
         xs
       in
       Gsl_blas.axpy (-2.) a.mk a.fk;
@@ -198,26 +198,32 @@ let lpca_tot_edge sm edge_id bl result_0 data_0 =
     with
       | Not_found -> []
   in
-  let update_acc len fk' result =
-    assert(len >= 0.);
-    Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:result
-  in
   let n_samples = Gsl_vector.length data_0.fk in
-  let af_e = Gsl_vector.create ~init:0. n_samples
-  in
+  let af_e = Gsl_vector.create ~init:0. n_samples in
   let rec aux i pl prev_distal_bl result data =
     let fk' = vec_denorm data.fk in
     (* TODO: there's some duplication in the two cases that should be pulled
        out *)
     match pl with
       | p::ps ->
-        update_acc (p.distal_bl -. prev_distal_bl) fk' result;
+        let len = p.distal_bl -. prev_distal_bl in
+        (* Make sure we're processing the placements on the edge in the right
+           order, and that we're not processing zero-mass placements. *)
+        assert(p.distal_bl >= prev_distal_bl);
+        assert(p.distal_bl < bl);
+        assert(p.mass > 0.);
+        Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:result;
         vec_subi data.fk p.sample_id (2. *. p.mass);
         vec_addi data.mk p.sample_id p.mass;
         Gsl_vector.add af_e fk';
         aux (succ i) ps p.distal_bl result data
       | [] ->
-        update_acc (bl -. prev_distal_bl) fk' result;
+        let len = bl -. prev_distal_bl in
+        (* We should never be dealing with a zero-length edge, nor should we
+           have processed a placement exactly at the proximal node of the edge, so
+           len must always be greater than zero. *)
+        assert(len > 0.);
+        Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:result;
         Gsl_vector.add af_e fk';
         Gsl_vector.scale af_e (1. /. (float (succ i)));
         (result, { data with af = IntMap.add edge_id af_e data.af })
@@ -225,59 +231,46 @@ let lpca_tot_edge sm edge_id bl result_0 data_0 =
   aux 0 pl 0. result_0 data_0
 
 (* f: int -> int -> 'acc_t -> 'p_t list -> 'acc_t *)
-let fold_samples_listwise f acc sl =
+let fold_samples_listwise f a sl =
   List.fold_left
-    (fun (sample_id, acc) s ->
+    (fun (sample_id, a) s ->
       succ sample_id,
       IntMap.fold
-        (* f and fold's arguments are in different orders, otherwise we could
-           just curry this *)
-        (fun edge_id pl acc -> f sample_id edge_id acc pl)
-        s
-        acc)
-    (0, acc)
+        (fun edge_id pl a -> f sample_id edge_id a pl) s a)
+    (0, a)
     sl |> snd
-
-(* f: int -> int -> 'acc_t -> 'p_t -> 'acc_t *)
-let fold_samples f acc sl =
-  fold_samples_listwise
-    (fun sample_id edge_id acc pl -> List.fold_left (f sample_id edge_id) acc pl)
-    acc
-    sl
 
 let make_n_lpca_map sl =
   let repkg_p sample_id { Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass } = { distal_bl; sample_id; mass }
-  and cmp_p pa pb = compare pa.distal_bl pb.distal_bl
-  in
+  and cmp_p pa pb = compare pa.distal_bl pb.distal_bl in
+  (* TODO: check for placements where distal_bl = bl -- should those be moved to a parent edge? *)
   fold_samples_listwise
-    (fun sample_id edge_id acc pl ->
+    (fun sample_id edge_id a pl ->
       IntMap.modify_def
         []
         edge_id
-        (List.merge cmp_p (List.map (repkg_p sample_id) pl))
-        acc)
+        (List.merge cmp_p
+           (List.map (repkg_p sample_id)
+              (List.filter (fun { Mass_map.Indiv.mass } -> mass > 0.) pl)))
+        a)
     IntMap.empty
     sl
 
-(* TODO: the Mass_map module actually has functionality for doing this -- use
-   that instead and pass it to gen_lpca *)
 let total_sample_mass sl =
-  let mmk = Gsl_vector.create ~init:0. (List.length sl)
-  in
-  fold_samples
-    (fun sample_id _ acc { Mass_map.Indiv.distal_bl; Mass_map.Indiv.mass } ->
-      vec_addi acc sample_id mass;
-      acc)
-    mmk
-    sl
+  let mmk = Gsl_vector.create ~init:0. (List.length sl) in
+  List.iteri (fun i si -> Gsl_vector.set mmk i (Mass_map.Indiv.total_mass si)) sl;
+  mmk
 
+(* TODO: Does guppy always scale the total mass on the tree to 1.0? If so, we
+   don't need to bother computing the total mass for each sample. But what if
+   the total masses for each sample are actually different? *)
 let gen_lpca sl ref_tree =
   let sm = make_n_lpca_map sl in
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
   let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
   and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples; af = IntMap.empty } in
-  let result, data =
+  let (result, data) =
     Stree.recur
       (fun edge_id node_list -> (* internal nodes *)
         tot_edge
