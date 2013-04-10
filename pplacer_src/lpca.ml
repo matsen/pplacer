@@ -286,4 +286,9 @@ let gen_lpca sl ref_tree =
           ({ data_0 with fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
       (Gtree.get_stree ref_tree)
   in
-  (mat_rep_uptri result, data)
+  Gsl_matrix.scale result (1. /. (float n_samples));
+  (mat_rep_uptri result,
+   { data with af =
+       IntMap.map
+         (fun x -> Gsl_vector.scale x (1. /. sqrt (float n_samples)); x)
+         data.af })
