@@ -13,7 +13,6 @@ object (self)
   inherit heat_cmd () as super_heat
   inherit refpkg_cmd ~required:false as super_refpkg
   inherit placefile_cmd () as super_placefile
-  inherit splitify_cmd () as super_splitify
 
   val write_n = flag "--write-n"
     (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
@@ -35,20 +34,18 @@ object (self)
       toggle_flag symmv;
       toggle_flag raw_eval;
     ]
-    @ super_splitify#specl
 
-  method private virtual prep_data : 'prl_t -> 'data_t * 'extra_t
-  method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> 'data_t -> 'extra_t -> 'tree_t -> 'eval_t * 'evect_t
-  method private virtual post_pca : 'eval_t * 'evect_t -> 'extra_t -> 'combol_t * 'fullcombol_t
+  method private virtual prep_data : 'prl_t -> 'data_t
+  method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> 'data_t -> 'prl_t -> 'result_t
+  method private virtual post_pca : 'result_t -> 'data_t -> 'prl_t -> unit
 
   method private placefile_action prl =
     self#check_placerunl prl;
-    let write_n = fv write_n
-    and _, t = self#get_rpo_and_tree (List.hd prl)
-    and prefix = self#single_prefix ~requires_user_prefix:true () in
+    let data = self#prep_data prl in
+    let write_n = fv write_n in
 
-    let (data, extra) = self#prep_data prl in
-
+    (* TODO: figure out a good way to re-enable this code *)
+(*
     let n_unique_rows = List.length (List.sort_unique compare data) in
     if n_unique_rows <= 2 then
       failwith(Printf.sprintf "You have only %d unique row(s) in your data \
@@ -63,40 +60,11 @@ object (self)
       else
         write_n
     in
-    let (eval, evect) =
-      self#gen_pca ~use_raw_eval:(fv raw_eval)
-        ~scale:(fv scale) ~symmv:(fv symmv) write_n data extra t
-    in
-    let (combol, full_combol) = self#post_pca (eval, evect) extra
-    and names = (List.map Placerun.get_name prl) in
-
-(* FIXME: writing fat trees for LPCA sometimes bombs out with
-
-   Uncaught exception: Guppy_cmdobjs.Invalid_abs_tot
-   Fatal error: exception Guppy_cmdobjs.Invalid_abs_tot
-   Raised at file "pplacer_src/guppy_cmdobjs.ml", line 348, characters 32-47
-   Called from file "pplacer_src/guppy_cmdobjs.ml", line 425, characters 6-93
-   Called from file "pplacer_src/guppy_cmdobjs.ml", line 437, characters 44-75
-   Called from file "pplacer_src/guppy_pca.ml", line 78, characters 12-47
 *)
-    Phyloxml.named_gtrees_to_file
-      (prefix^".xml")
-      (List.map
-         (fun (eval, evect) ->
-           (Some (string_of_float eval),
-            self#heat_tree_of_float_arr t evect |> self#maybe_numbered))
-         full_combol);
-    save_named_fal
-      (prefix^".rot")
-      (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
-    save_named_fal
-      (prefix^".trans")
-      (List.combine
-         names
-         (List.map (fun d -> Array.map (Pca.dot d) evect) data));
-    save_named_fal
-      (prefix^".edgediff")
-      (List.combine names data);
-    ()
+    let result =
+      self#gen_pca ~use_raw_eval:(fv raw_eval)
+        ~scale:(fv scale) ~symmv:(fv symmv) write_n data prl
+    in
+    self#post_pca result data prl
 
 end

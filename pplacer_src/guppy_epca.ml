@@ -41,9 +41,18 @@ right_diag_mul_va va vd;;
 let right_diag_mul_va va vd =
   Array.iter (fun v -> Gsl_vector.mul v vd) va
 
+type epca_result = { eval: float array; evect: float array array }
+
+type epca_data = { edge_diff: float array list;
+                   rep_reduction_map: int IntMap.t;
+                   rep_orig_length: int;
+                   const_reduction_map: int IntMap.t;
+                   const_orig_length: int }
+
 class cmd () =
 object (self)
   inherit Guppy_pca.pca_cmd () as super_pca
+  inherit splitify_cmd () as super_splitify
 
   val length = flag "--length"
     (Plain (false, "'Length PCA'. Experimental."))
@@ -53,35 +62,35 @@ object (self)
     @ [
       toggle_flag length;
     ]
+    @ super_splitify#specl
 
   method desc =
     "performs edge principal components"
   method usage = "usage: epca [options] placefiles"
 
   method private prep_data prl =
-    let weighting, criterion = self#mass_opts
-    in
-    let data, rep_reduction_map, rep_orig_length =
+    let weighting, criterion = self#mass_opts in
+    let edge_diff, rep_reduction_map, rep_orig_length =
       List.map (self#splitify_placerun weighting criterion) prl
-                               |> self#filter_rep_edges prl
+                                    |> self#filter_rep_edges prl
     in
-    let data, const_reduction_map, const_orig_length =
-      self#filter_constant_columns data
+    let edge_diff, const_reduction_map, const_orig_length =
+      self#filter_constant_columns edge_diff
     in
-    (data, (rep_reduction_map, rep_orig_length, const_reduction_map, const_orig_length))
+    { edge_diff; rep_reduction_map; rep_orig_length; const_reduction_map; const_orig_length }
 
-  method private gen_pca ~use_raw_eval ~scale ~symmv write_n data (_, _, const_reduction_map, _) t =
-    let faa = Array.of_list data in
+  method private gen_pca ~use_raw_eval ~scale ~symmv write_n data prl =
+    let faa = Array.of_list data.edge_diff in
     if (fv length) then let open Linear_utils in begin
       let m = Pca.covariance_matrix ~scale faa
       and d = Gsl_vector.create ~init:0. (Array.length faa.(0))
-      in
+      and ref_tree = self#get_rpo_and_tree (List.hd prl) |> snd in
       (* Put together a reduced branch length vector, such that the ith entry
          represents the sum of the branch lengths that get collapsed to the ith
          edge. *)
       IntMap.iter
-        (fun red_i orig_i -> d.{red_i} <- d.{red_i} +. Gtree.get_bl t orig_i)
-        const_reduction_map;
+        (fun red_i orig_i -> d.{red_i} <- d.{red_i} +. (Gtree.get_bl ref_tree orig_i))
+        data.const_reduction_map;
       (* ppr_gsl_vector Format.std_formatter d; *)
       vec_iter (fun x -> assert(x > 0.)) d;
       (* The trick for diagonalizing matrices of the form GD, where D is
@@ -97,20 +106,40 @@ object (self)
        * However, according to length PCA we must multiply on the right by d,
        * which ends up just being right multiplication by d_root. *)
       right_diag_mul_va u d_root;
-      (l, Array.map Gsl_vector.to_array u)
+      { eval = l; evect = Array.map Gsl_vector.to_array u }
     end
     else
-      Pca.gen_pca ~use_raw_eval ~scale ~symmv write_n faa
+      let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv write_n faa in
+      { eval; evect }
 
-  method private post_pca (eval, evect) (rep_reduction_map, rep_orig_length, const_reduction_map, const_orig_length) =
-    let combol = (List.combine (Array.to_list eval) (Array.to_list evect)) in
+  method private post_pca result data prl =
+    let combol = (List.combine (Array.to_list result.eval) (Array.to_list result.evect)) in
     let full_combol =
       List.map
         (second
-           (expand const_orig_length const_reduction_map
-               |- expand rep_orig_length rep_reduction_map))
+           (expand data.const_orig_length data.const_reduction_map
+               |- expand data.rep_orig_length data.rep_reduction_map))
         combol
-    in
-    (combol, full_combol)
+    and prefix = self#single_prefix ~requires_user_prefix:true ()
+    and ref_tree = self#get_rpo_and_tree (List.hd prl) |> snd
+    and names = List.map Placerun.get_name prl in
+    Phyloxml.named_gtrees_to_file
+      (prefix^".xml")
+      (List.map
+         (fun (eval, evect) ->
+           (Some (string_of_float eval),
+            self#heat_tree_of_float_arr ref_tree evect |> self#maybe_numbered))
+         full_combol);
+    Guppy_pca.save_named_fal
+      (prefix^".rot")
+      (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
+    Guppy_pca.save_named_fal
+      (prefix^".trans")
+      (List.combine
+         names
+         (List.map (fun d -> Array.map (Pca.dot d) result.evect) data.edge_diff));
+    Guppy_pca.save_named_fal
+      (prefix^".edgediff")
+      (List.combine names data.edge_diff)
 
 end

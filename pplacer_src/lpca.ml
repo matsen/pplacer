@@ -139,8 +139,8 @@ let vec_denorm v =
 let vec_addi v i x =
   Gsl_vector.set v i ((Gsl_vector.get v i) +. x)
 
-let vec_subi v i x =
-  Gsl_vector.set v i ((Gsl_vector.get v i) -. x)
+let mat_addi m i j x =
+  Gsl_matrix.set m i j ((Gsl_matrix.get m i j) +. x)
 
 let mat_rep_uptri m =
   let (n_rows, _) = Gsl_matrix.dims m in
@@ -148,20 +148,19 @@ let mat_rep_uptri m =
     for j=0 to i-1 do
       Gsl_matrix.set m i j (Gsl_matrix.get m j i)
     done;
-  done;
-  m
+  done
+
+type lpca_result = { eval: float array; evect: float array array; edge_evect: float array array }
 
 (* intermediate edge result record *)
-type lpca_data = { fk: Gsl_vector.vector; mk: Gsl_vector.vector; af: Gsl_vector.vector IntMap.t }
+type lpca_data = { fk: Gsl_vector.vector;
+                   mk: Gsl_vector.vector;
+                   ufl: Gsl_matrix.matrix;
+                   af: Gsl_vector.vector IntMap.t;
+                   fplf: Gsl_matrix.matrix }
 
 (* repackaged placement record which includes the sample id *)
 type lpca_placement = { distal_bl: float; sample_id: int; mass: float }
-
-let lpca_agg_result l =
-  let (n_rows, n_cols) = Gsl_matrix.dims (List.hd l) in
-  let a = Gsl_matrix.create ~init:0. n_rows n_cols in
-  List.iter (Gsl_matrix.add a) l;
-  a
 
 let map_union m1 m2 =
   IntMap.merge
@@ -179,9 +178,12 @@ let map_union m1 m2 =
 let lpca_agg_data l =
   match l with
     | x::xs ->
-      (* Fold the total masses and af maps of every node but the first together *)
       let a = List.fold_left
-        (fun a xi -> Gsl_vector.add a.mk xi.mk; { a with af = map_union a.af xi.af })
+        (fun a xi ->
+          Gsl_vector.add a.mk xi.mk;
+          Gsl_matrix.add a.ufl xi.ufl;
+          Gsl_matrix.add a.fplf xi.fplf;
+          { a with af = map_union a.af xi.af })
         { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk) }
         xs
       in
@@ -191,7 +193,7 @@ let lpca_agg_data l =
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
 
-let lpca_tot_edge sm edge_id bl result_0 data_0 =
+let lpca_tot_edge sm edge_id bl data_0 =
   let pl =
     try
       IntMap.find edge_id sm
@@ -200,10 +202,20 @@ let lpca_tot_edge sm edge_id bl result_0 data_0 =
   in
   let n_samples = Gsl_vector.length data_0.fk in
   let af_e = Gsl_vector.create ~init:0. n_samples in
-  let rec aux i pl prev_distal_bl result data =
-    let fk' = vec_denorm data.fk in
-    (* TODO: there's some duplication in the two cases that should be pulled
-       out *)
+  let rec aux i pl prev_distal_bl data =
+    let update_data sample_id mass len =
+      let fk' = vec_denorm data.fk in
+      Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:data.fplf;
+      vec_addi data.fk sample_id ((-2.) *. mass);
+      vec_addi data.mk sample_id mass;
+      Gsl_vector.add af_e fk';
+      (* FIXME: this is terribly inefficient *)
+      for k=0 to n_samples-1 do
+        for j=0 to n_samples-1 do
+          mat_addi data.ufl k j ((Gsl_vector.get data.fk k) *. (Gsl_vector.get fk' j) *. len);
+        done;
+      done
+    in
     match pl with
       | p::ps ->
         let len = p.distal_bl -. prev_distal_bl in
@@ -212,23 +224,20 @@ let lpca_tot_edge sm edge_id bl result_0 data_0 =
         assert(p.distal_bl >= prev_distal_bl);
         assert(p.distal_bl < bl);
         assert(p.mass > 0.);
-        Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:result;
-        vec_subi data.fk p.sample_id (2. *. p.mass);
-        vec_addi data.mk p.sample_id p.mass;
-        Gsl_vector.add af_e fk';
-        aux (succ i) ps p.distal_bl result data
+        update_data p.sample_id p.mass len;
+        aux (succ i) ps p.distal_bl data
       | [] ->
         let len = bl -. prev_distal_bl in
         (* We should never be dealing with a zero-length edge, nor should we
            have processed a placement exactly at the proximal node of the edge, so
            len must always be greater than zero. *)
         assert(len > 0.);
-        Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:result;
-        Gsl_vector.add af_e fk';
+        (* TODO: make this smarter *)
+        update_data 0 0. len;
         Gsl_vector.scale af_e (1. /. (float (succ i)));
-        (result, { data with af = IntMap.add edge_id af_e data.af })
+        { data with af = IntMap.add edge_id af_e data.af }
   in
-  aux 0 pl 0. result_0 data_0
+  aux 0 pl 0. data_0
 
 (* f: int -> int -> 'acc_t -> 'p_t list -> 'acc_t *)
 let fold_samples_listwise f a sl =
@@ -264,31 +273,35 @@ let total_sample_mass sl =
 (* TODO: Does guppy always scale the total mass on the tree to 1.0? If so, we
    don't need to bother computing the total mass for each sample. But what if
    the total masses for each sample are actually different? *)
-let gen_fplf sl ref_tree =
+let gen_data sl ref_tree =
   let sm = make_n_lpca_map sl in
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
-  let result_0 = Gsl_matrix.create ~init:0. n_samples n_samples
-  and data_0 = { fk = total_sample_mass sl; mk = Gsl_vector.create ~init:0. n_samples; af = IntMap.empty } in
-  let (result, data) =
+  let data_0 = { fk = total_sample_mass sl;
+                 mk = Gsl_vector.create ~init:0. n_samples;
+                 ufl = Gsl_matrix.create ~init:0. n_samples n_samples;
+                 af = IntMap.empty;
+                 fplf = Gsl_matrix.create ~init:0. n_samples n_samples } in
+  let data =
     Stree.recur
-      (fun edge_id node_list -> (* internal nodes *)
+      (fun edge_id dl -> (* internal nodes *)
         tot_edge
           edge_id
           (Gtree.get_bl ref_tree edge_id)
-          (lpca_agg_result (List.map fst node_list))
-          (lpca_agg_data (List.map snd node_list)))
+          (lpca_agg_data dl))
       (fun edge_id -> (* leaves *)
         tot_edge
           edge_id
           (Gtree.get_bl ref_tree edge_id)
-          (Gsl_matrix.copy result_0)
-          ({ data_0 with fk = Gsl_vector.copy data_0.fk; mk = Gsl_vector.copy data_0.mk }))
+          { data_0 with fk = Gsl_vector.copy data_0.fk;
+                        mk = Gsl_vector.copy data_0.mk;
+                        ufl = Gsl_matrix.copy data_0.ufl;
+                        fplf = Gsl_matrix.copy data_0.fplf })
       (Gtree.get_stree ref_tree)
   in
-  Gsl_matrix.scale result (1. /. (float n_samples));
-  (mat_rep_uptri result,
-   { data with af =
-       IntMap.map
-         (fun x -> Gsl_vector.scale x (1. /. sqrt (float n_samples)); x)
-         data.af })
+  Gsl_matrix.scale data.fplf (1. /. (float n_samples));
+  mat_rep_uptri data.fplf;
+  IntMap.iter
+    (fun _ v -> Gsl_vector.scale v (1. /. sqrt (float n_samples)))
+    data.af;
+  data
