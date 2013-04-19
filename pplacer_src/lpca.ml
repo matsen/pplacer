@@ -264,7 +264,7 @@ let total_sample_mass sl =
 (* TODO: Does guppy always scale the total mass on the tree to 1.0? If so, we
    don't need to bother computing the total mass for each sample. But what if
    the total masses for each sample are actually different? *)
-let gen_lpca sl ref_tree =
+let gen_fplf sl ref_tree =
   let sm = make_n_lpca_map sl in
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in

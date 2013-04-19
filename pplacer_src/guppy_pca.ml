@@ -79,7 +79,6 @@ object (self)
    Called from file "pplacer_src/guppy_cmdobjs.ml", line 437, characters 44-75
    Called from file "pplacer_src/guppy_pca.ml", line 78, characters 12-47
 *)
-(*
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")
       (List.map
@@ -87,7 +86,6 @@ object (self)
            (Some (string_of_float eval),
             self#heat_tree_of_float_arr t evect |> self#maybe_numbered))
          full_combol);
-*)
     save_named_fal
       (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
