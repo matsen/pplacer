@@ -67,7 +67,7 @@ let reflect x =
     else y
   end
 
-let awpd_of_placerun ?include_pendant criterion exponent pr =
+let bwpd_of_placerun ?include_pendant criterion exponent pr =
   let f =
     if exponent < 0. || exponent > 1. then
       failwith("exponent must be between 0 and 1, inclusive")
@@ -110,7 +110,7 @@ object (self)
   inherit tabular_cmd () as super_tabular
 
   val kappa = flag "--kappa"
-    (Plain ([], "A comma-separated list of additional exponents to use for calculating awpd."))
+    (Plain ([], "A comma-separated list of additional exponents to use for calculating bwpd."))
   val include_pendant = flag "--include-pendant"
     (Plain (false, "Consider pendant branch length in diversity calculations."))
   val chao_d = flag "--chao-d"
@@ -133,7 +133,7 @@ object (self)
     and d_exponents = fv chao_d |> List.map float_of_string
     and criterion = self#criterion
     and include_pendant = fv include_pendant in
-    let awpd = awpd_of_placerun ~include_pendant criterion
+    let bwpd = bwpd_of_placerun ~include_pendant criterion
     and qd = chao_qd_of_placerun ~include_pendant criterion
     and pd = pd_of_placerun ~include_pendant criterion
     and rpd = pd_of_placerun ~include_pendant ~bump:bump_with_root criterion
@@ -143,15 +143,15 @@ object (self)
           (fun pr ->
             let pe, qe = entropy pr
             and qds = List.map (flip qd pr) d_exponents in
-            [pe; qe; pd pr; rpd pr; awpd 1. pr]
-            |> (flip List.append (List.map (flip awpd pr) exponents))
+            [pe; qe; pd pr; rpd pr; bwpd 1. pr]
+            |> (flip List.append (List.map (flip bwpd pr) exponents))
             |> (flip List.append qds)
             |> List.map (Printf.sprintf "%g")
             |> List.cons (Placerun.get_name pr))
       |> List.cons
           (["placerun"; "phylo_entropy"; "quadratic"; "unrooted_pd";
-            "rooted_pd"; "awpd"]
-           @ List.map (Printf.sprintf "awpd_%g") exponents
+            "rooted_pd"; "bwpd"]
+           @ List.map (Printf.sprintf "bwpd_%g") exponents
            @ List.map (Printf.sprintf "rooted_qd_%g") d_exponents)
       |> self#write_ll_tab
 
