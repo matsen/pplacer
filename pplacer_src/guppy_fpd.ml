@@ -109,7 +109,7 @@ object (self)
   inherit placefile_cmd () as super_placefile
   inherit tabular_cmd () as super_tabular
 
-  val kappa = flag "--kappa"
+  val theta = flag "--theta"
     (Plain ([], "A comma-separated list of additional exponents to use for calculating bwpd."))
   val include_pendant = flag "--include-pendant"
     (Plain (false, "Consider pendant branch length in diversity calculations."))
@@ -120,7 +120,7 @@ object (self)
     super_mass#specl
     @ super_tabular#specl
     @ [
-      delimited_list_flag kappa;
+      delimited_list_flag theta;
       delimited_list_flag chao_d;
       toggle_flag include_pendant;
     ]
@@ -129,7 +129,7 @@ object (self)
   method usage = "usage: fpd [options] placefile[s]"
 
   method private placefile_action prl =
-    let exponents = fv kappa |> List.map float_of_string
+    let exponents = fv theta |> List.map float_of_string
     and d_exponents = fv chao_d |> List.map float_of_string
     and criterion = self#criterion
     and include_pendant = fv include_pendant in

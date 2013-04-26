@@ -9,11 +9,11 @@ requiring both distal and proximal mass), and a new diversity metric
 generalizing PD to incorporate abundance: balance-weighted phylogenetic
 diversity (``bwpd``).
 
-When passed a ``--kappa`` flag and a comma-delimited list of values for
-``kappa``, a one-parameter family of functions is used to calculate a diversity
+When passed a ``--theta`` flag and a comma-delimited list of values for
+``theta``, a one-parameter family of functions is used to calculate a diversity
 measure that scales the incorporation of abundance from traditional
-phylogenetic diversity (at kappa = 0.0) to abundance-weighted phylogenetic
-diversity (at kappa = 1.0). A column labeled ``bwpd_[kappa]`` is added to the
+phylogenetic diversity (at theta = 0.0) to abundance-weighted phylogenetic
+diversity (at theta = 1.0). A column labeled ``bwpd_[theta]`` is added to the
 output for each.
 
 .. _`Rao 1982`: http://dx.doi.org/10.1016/0040-5809(82)90004-1
