@@ -46,6 +46,7 @@
  * Closed GH-294: Added `--unitize` option to `guppy squash`
  * Closed GH-297: Support multiprocessing during squash cluster bootstrapping
  * Closed GH-298: Faster upper-limit finding during integration
+ * Closed GH-307: Renamed `--kappa` to `--theta`, `awpd` to `bwpd` in `guppy fpd`
 
 1.1.alpha13
 ===========
