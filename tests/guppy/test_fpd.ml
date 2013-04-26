@@ -7,7 +7,7 @@ let test ?include_pendant exponent results () =
     |> List.cons (placerun_of_dir "multi" "test1and3")
     |> List.map
         (Placerun.get_name
-         &&& Guppy_fpd.awpd_of_placerun ?include_pendant Placement.ml_ratio exponent)
+         &&& Guppy_fpd.bwpd_of_placerun ?include_pendant Placement.ml_ratio exponent)
     |> List.sort compare
     |> List.enum
     |> check_map_approx_equal
