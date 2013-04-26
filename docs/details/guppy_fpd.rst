@@ -16,6 +16,11 @@ phylogenetic diversity (at theta = 0.0) to abundance-weighted phylogenetic
 diversity (at theta = 1.0). A column labeled ``bwpd_[theta]`` is added to the
 output for each.
 
+When passed a ``--chao-d`` flag and a comma-delimited list of values for ``q``,
+the ``qD(T)`` measure of `Chao 2010`_ is added to the output for each value of
+``q``.
+
+.. _`Chao 2010`: http://dx.doi.org/10.1098/rstb.2010.0272
 .. _`Rao 1982`: http://dx.doi.org/10.1016/0040-5809(82)90004-1
 .. _`Faith 1992`: http://dx.doi.org/10.1016/0006-3207(92)91201-3
 .. _`Warwick and Clark 1995`: http://dx.doi.org/10.3354/meps129301
