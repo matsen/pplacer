@@ -10,4 +10,6 @@ and variance of the phylogenetic diversity only requiring mass on the distal
 side of the edge (which normally requires mass proximal and distal to the
 edge).
 
-*Experimental.*
+For more details, see `Nipperess and Matsen`_.
+
+.. _Nipperess and Matsen: http://arxiv.org/abs/1208.6552

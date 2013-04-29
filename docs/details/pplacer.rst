@@ -65,8 +65,10 @@ Using this feature will not change the result except possibly for likelihood com
 JSON_ format specification
 --------------------------
 
-The new JSON format is very simple. Each document is a JSON object with a minimum of four keys: ``tree``, ``fields``,
-``placements``, and ``version``. Another key, ``metadata``, is optional. Other keys in the root object are ignored.
+The JSON format is described in detail in our paper on the `phylogenetic
+placement format`_. Each document is a JSON object with a minimum of four keys:
+``tree``, ``fields``, ``placements``, and ``version``. Another key,
+``metadata``, is optional. Other keys in the root object are ignored.
 
 ===================  =====
 Key                  Value
@@ -488,5 +490,6 @@ get cleaned up.
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
+.. _phylogenetic placement format: http://www.plosone.org/article/info:doi/10.1371/journal.pone.0031009
 .. |mmap| replace:: ``mmap(2)``
 .. _mmap: http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html

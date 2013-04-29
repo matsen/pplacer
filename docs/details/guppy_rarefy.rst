@@ -1,2 +1,1 @@
-
-Rarefaction *with replacement*, which is a natural consequence of allowing floating point multiplicities.
+Rarefaction *with replacement*, which is necessary because we allow floating point multiplicities.
