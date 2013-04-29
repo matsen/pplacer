@@ -1,6 +1,4 @@
-*Experimental.*
-
-By default, ``guppy fpd`` outputs a matrix containing in each row: * the
+By default, ``guppy fpd`` outputs a matrix containing in each row: the
 placefile name, the phylogenetic entropy (``phylo_entropy``, `Allen 2009`_),
 the quadratic entropy (``quadratic``, `Rao 1982`_, `Warwick and Clark 1995`_)
 phylogenetic diversity (``unrooted_pd``, `Faith 1992`_), phylogenetic diversity

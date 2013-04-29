@@ -24,8 +24,6 @@ There is a gentle introduction in `Matsen and Evans`_, and a more full treatment
 Here's a table to demonstrate the relation of |guppy| concepts to ones which may be more familiar to the reader:
 
 
-.. unweighted UniFrac        Phylogenetic diversity (pdfrac_)
-.. OTU alpha diversity       PD of the subtree spanned by the placements (pd_)
 
 ========================  =============
 familiar concept          guppy concept
@@ -33,6 +31,7 @@ familiar concept          guppy concept
 weighted UniFrac          |KR| distance (kr_)
 UPGMA using UniFrac       "squash" clustering (squash_)
 PCA using UniFrac         Edge PCA (pca_)
+OTU alpha diversity       Abundance-weighted phylogenetic diversity measures (fpd_)
 ========================  =============
 
 This table does not show equivalences, but rather a list of hints for further exploration.
@@ -43,7 +42,7 @@ The heat tree (kr_heat_) and barycenter (bary_) have no analogs in previous type
 Usage
 =====
 
-|guppy| does lots of different things-- it makes heat trees, makes matrices of Kantorovich-Rubinstein distances, does its own version of PCA, etc.
+|guppy| does lots of different things-- it makes heat trees, makes matrices of Kantorovich-Rubinstein distances, does edge PCA, etc.
 Each of these have their own options.
 Rather than make a suite of little programs, we have opted for an interface analogous to git and svn: namely, a collection of different actions wrapped up into a single interface.
 
@@ -123,6 +122,16 @@ the impact will be the same as running ::
 Braces can also be quoted by doubling (e.g. ``{{foo}}`` will become ``{foo}``).
 
 
+Pqueries versus placements
+--------------------------
+
+One of the key features of pplacer is that it is able to express uncertainty concerning placement in a reasonable manner.
+Specifically, if there is uncertainty in a given read's optimal placement, it returns a collection of placements that are weighted according to likelihood weight or posterior probability.
+This feature requires a bit of additional wording.
+We will use "pquery" to denote a "placed query (sequence)", i.e. the collection of weighted placements for a sequence.
+"Placement," on the other hand, signifies a single location on a tree along with its optimal pendant branch length.
+
+
 About multiplicities
 --------------------
 
@@ -177,7 +186,7 @@ phyloXML viewing notes
 |guppy| makes fattened and annotated trees to visualize the results of various analyses.
 We have chosen to use phyloXML as the format for these trees, as it has width and color tags for edges; if you see .xml files coming out of a guppy analysis that's what they are for.
 We like looking at these trees using the tree viewer archaeopteryx_.
-If you open archaeopteryx with the default settings, you will see *nothing interesting*, simply the reference tree.
+If you open archaeopteryx with the default settings, you will see *nothing interesting*: simply the reference tree.
 You need to click on the "Colorize Branches" and "Use branch-width" check boxes.
 If you don't see those check boxes, then use `this configuration file`_ (if you are going to copy and paste it click on "raw" first).
 
@@ -202,7 +211,7 @@ guppy subcommand:
 .. |KR| replace:: Kantorovich-Rubinstein
 
 .. _kr: guppy_kr.html
-.. _pd: pd.html
+.. _fpd: guppy_fpd.html
 .. _squash: guppy_squash.html
 .. _pca: guppy_pca.html
 .. _kr_heat: guppy_kr_heat.html
@@ -217,4 +226,3 @@ guppy subcommand:
 .. _BIOM file: http://biom-format.org/
 
 .. vim:set ai fo+=n fo-=l ft=rst:
-

@@ -57,7 +57,7 @@ If something is unclear in the manual and you can't find anything in past discus
 
 Acknowledgements
 ----------------
-The pplacer code and documentation is written and maintained by Erick Matsen and Aaron Gallagher.
+The pplacer code and documentation is written and maintained by the Matsen group at the Fred Hutchinson Cancer Research Center.
 Noah Hoffman has contributed many valuable ideas and bits of documentation.
 We are greatly indebted to our biological collaborators, including
 Ginger Armbrust,
