@@ -1,8 +1,14 @@
 open Ppatteries
 
+(* Code to perform Support Overlap Minimzation.
+ * - trans: the principal components
+ * - trans_part: the first three rows of trans
+*)
+
 exception MinimizationError
 
-(* YIKES!!! *)
+(* The upper right block is used for rotation because that makes doing both 2D
+ * and 3D rotation easier. *)
 let rot_mat angles  =
   let c i = cos angles.(i)
   and s i = sin angles.(i) in
@@ -15,10 +21,10 @@ let rot_mat angles  =
 (* This does the actual rotations and returns the rotated matrix. *)
 let rotate_trans trans_part angles =
   let result = Gsl_matrix.copy trans_part in
-  let mat_mult =
+  let trans_mat_mult =
     Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha: 1. ~beta: 0.0
   in
-  mat_mult ~a:(rot_mat angles) ~b:trans_part ~c:result;
+  trans_mat_mult ~a:(rot_mat angles) ~b:trans_part ~c:result;
   result
 
 (* Once we know the appropriate angles, we can rotate the vars into place. *)
@@ -45,19 +51,19 @@ let overlap trans_part dims angles =
   in
   let rec overlapper = function
   | [] -> 0.0
-  | (i, j)::ls' ->
+  | (i, j)::rest ->
       let mult = Gsl_vector.copy (row i) in
       Gsl_vector.mul mult (row j);
-      (Gsl_blas.asum mult) +. overlapper(ls')
+      Gsl_blas.asum mult +. overlapper rest
   in
   overlapper indices
 
-(* Performs overlap minimization using Brent *)
+(* Performs overlap minimization using Brent. *)
 let min_overlap trans_part dims =
   let tolerance = (overlap trans_part dims [|0.; 0.; 0.|]) *. (0.0001) in
   match dims with
   | 2 ->
-      let obj_fun theta = overlap trans_part dims [|0.0; 0.0; theta|] in
+      let obj_fun theta = overlap trans_part dims [|0.; 0.; theta|] in
       let min = Minimization.brent
         ~start_finder:Minimization.robust_start_finder
         obj_fun
