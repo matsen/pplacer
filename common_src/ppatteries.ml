@@ -73,15 +73,23 @@ let to_csv_in ch = object
 end
 let csv_in_channel ch = new IO.in_channel ch |> to_csv_in
 
+(*let first = Tuple.Tuple2.map1*)
+(*let second = Tuple.Tuple2.map2*)
+
 let some x = Some x
 let on f g a b = g (f a) (f b)
 let comparing f a b = compare (f a) (f b)
 let swap (a, b) = b, a
 let junction pred f g a = if pred a then f a else g a
+let fold_both f g a (x, y) = f a x, g a y
+(* Replaced by '%>' in batteries 2.0 final.
+ * Maintained to preserve operator precedence in existing code *)
+let (|-) f g x = g (f x)
 let (|--) f g a b = g (f a b)
-let (|~) = (-|)
+let (|~) = (%)
 let (||-) f g a = f a || g a
 let (||--) f g a b = f a b || g a b
+let ( &&& ) f g = fun x -> (f x, g x) (* removed in batteries 2.0 final *)
 let (&&-) f g a = f a && g a
 let (&&--) f g a b = f a b && g a b
 
@@ -102,19 +110,42 @@ let median l =
   aux (l, l)
 
 let verbosity = ref 1
-let dprintf ?(l = 1) ?(flush = true) fmt =
+let dfprintf ?(l = 1) ?(flush = true) ch fmt =
   if !verbosity >= l then begin
-    finally (if flush then flush_all else identity) (Printf.printf fmt)
+    finally (if flush then flush_all else identity) (Printf.fprintf ch fmt)
   end else
     Printf.ifprintf IO.stdnull fmt
-let dprint ?(l = 1) ?(flush = true) s =
-  if !verbosity >= l then begin
-    print_string s;
-    if flush then flush_all ();
-  end
+let dprintf ?l ?flush = dfprintf ?l ?flush stdout
+let deprintf ?l ?flush = dfprintf ?l ?flush stderr
+let dfprint ?l ?flush ch s = dfprintf ?l ?flush ch "%s" s
+let dprint ?l ?flush = dfprint ?l ?flush stdout
+let deprint ?l ?flush = dfprint ?l ?flush stderr
 
 let align_with_space =
-  List.map (Tuple3.map3 ((^) " ")) |- Arg.align
+  List.map (Tuple3.map3 ((^) " ")) %> Arg.align
+
+let progress_displayer ?(update_interval = 0.3) fmt total =
+  let shown = ref 0
+  and last_length = ref 0
+  and last_time = ref 0. in
+  if Unix.isatty Unix.stdout then begin fun name ->
+    incr shown;
+    let shown = !shown
+    and time = Unix.gettimeofday () in
+    if time -. !last_time > update_interval || shown = total then begin
+      let msg = Printf.sprintf fmt name shown total in
+      let msg_len = String.length msg in
+      let padding = String.make (!last_length - msg_len |> max 0) ' ' in
+      dprintf "%s%s\r" msg padding;
+      last_length := msg_len;
+      last_time := time;
+    end;
+    if shown = total then dprint "\n";
+  end else begin fun name ->
+    incr shown;
+    Printf.sprintf fmt name !shown total |> dprintf "%s\n";
+  end
+
 
 let get_dir_contents ?pred dir_name =
   let dirh = Unix.opendir dir_name in
@@ -135,6 +166,21 @@ let combine_list_intmaps l =
      (fun k -> IntMap.add_listly k |> flip |> List.fold_left |> flip)
    |> flip List.fold_left IntMap.empty)
     l
+
+(* ll_normalized_prob :
+ * ll_list is a list of log likelihoods. this function gives the normalized
+ * probabilities, i.e. exponentiate then our_like / (sum other_likes)
+ * have to do it this way to avoid underflow problems.
+ * *)
+let ll_normalized_prob ll_list =
+  List.map
+    (fun log_like ->
+      1. /.
+        (List.fold_left ( +. ) 0.
+          (List.map
+            (fun other_ll -> exp (other_ll -. log_like))
+            ll_list)))
+    ll_list
 
 (* parsing *)
 module Sparse = struct
@@ -266,11 +312,11 @@ module Sparse = struct
 
   let gen_parsers tokenize parse =
     let of_string ?fname s =
-      wrap_of_fname_opt fname (tokenize |- parse) s
+      wrap_of_fname_opt fname (tokenize %> parse) s
     and of_file fname =
       file_parse_wrap
         fname
-        (File.lines_of |- Enum.map tokenize |- Enum.flatten |- parse)
+        (File.lines_of %> Enum.map tokenize %> Enum.flatten %> parse)
         fname
     in
     of_string, of_file
@@ -426,8 +472,13 @@ module ListFuns = struct
      # pull_each_out [1;2;3];;
      - : (int * int list) list = [(1, [2; 3]); (2, [1; 3]); (3, [1; 2])]
   *)
-  let pull_each_out l =
-    ((List.remove |- ((&&&) identity)) &&& identity |- uncurry List.map) l
+  let pull_each_out init_list =
+    let rec aux all_pairs start = function
+      | x::l ->
+          aux ((x, List.rev_append start l)::all_pairs) (x::start) l
+      | [] -> all_pairs
+    in
+    List.rev (aux [] [] init_list)
 
   (* from a Pascal Cuoq post on stack overflow *)
   let rec sublist begini endi l =
@@ -600,10 +651,14 @@ end
 module EnumFuns = struct
 
   let n_cartesian_product ll =
+    if List.is_empty ll then
+      invalid_arg "n_cartesian_product: list-list empty";
+    if List.exists List.is_empty ll then
+      invalid_arg "n_cartesian_procuct: some list empty";
     let pool = List.enum ll |> Enum.map Array.of_list |> Array.of_enum in
     let n = Array.length pool in
     let indices = Array.make n 0
-    and lengths = Array.map (Array.length |- (+) (-1)) pool in
+    and lengths = Array.map (Array.length %> (+) (-1)) pool in
     let rec update_indices = function
       | i when indices.(i) <> lengths.(i) ->
         indices.(i) <- indices.(i) + 1
@@ -642,7 +697,7 @@ module EnumFuns = struct
       end;
       Array.to_list indices |> List.map (Array.get pool)
     in
-    Enum.from next
+    if n < r then Enum.empty () else Enum.from next
 
   let powerset l =
     1 -- List.length l
@@ -655,4 +710,46 @@ let exn_wrap f = Printexc.pass f ()
 
 let () =
   Gsl_error.init ();
-  Random.self_init ();
+  Printexc.register_printer
+    (function
+     | Unix.Unix_error (errno, fn, param) ->
+       let op = if param = "" then "" else Printf.sprintf " on %S" param in
+       Some
+         (Printf.sprintf "error %S from %s%s"
+            (Unix.error_message errno)
+            fn
+            op)
+     | _ -> None)
+
+let memory_stats_ch =
+  match begin
+    try Some (Sys.getenv "PPLACER_MEMORY_STATS")
+    with Not_found -> None
+  end with
+  | None -> None
+  | Some statsfile ->
+    let ch = Legacy.open_out_gen
+      [Open_append; Open_creat; Open_trunc]
+      0o600
+      statsfile
+    in
+    let write = Csv.to_channel ch |> Csv.output_record in
+    let word_in_bytes = Sys.word_size / 8 in
+    let start = Unix.gettimeofday () in
+    let last_top = ref None in
+    write ["time"; "pid"; "top_heap_bytes"];
+    let check_stats () =
+      let stats = Gc.quick_stat () in
+      match !last_top with
+      | Some top when stats.Gc.top_heap_words <= top -> ()
+      | _ ->
+        write
+          [Printf.sprintf "%f" (Unix.gettimeofday () -. start);
+           string_of_int (Unix.getpid ());
+           string_of_int (stats.Gc.top_heap_words * word_in_bytes)];
+        Legacy.flush ch;
+        last_top := Some stats.Gc.top_heap_words
+    in
+    let _ = Gc.create_alarm check_stats in
+    at_exit check_stats;
+    Some ch

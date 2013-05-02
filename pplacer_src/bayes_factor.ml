@@ -40,39 +40,34 @@ open Ppatteries
 module TaxIdMap = Tax_id.TaxIdMap
 module IAMR = IntAlgMapR
 
+type t = (string * float * float option) array
 
-let all_mrcas rp =
-  let mrcam = Refpkg.get_mrcam rp
-  and utm = Refpkg.get_uptree_map rp in
-  let rec update mrcam i =
-    match IntMap.Exceptionless.find i mrcam with
-      | Some x -> mrcam, x
-      | None ->
-        let mrcam', x = update mrcam (IntMap.find i utm) in
-        IntMap.add i x mrcam', x
-  in
-  Refpkg.get_ref_tree rp
-    |> Gtree.get_stree
-    |> Stree.node_ids
-    |> List.fold_left (update |-- fst) mrcam
-
-let of_refpkg rp mrca_class =
-  let post_map = (if mrca_class then all_mrcas else Edge_painting.of_refpkg) rp
+(* From a reference package, pquery, and criterion, determine the evidence and
+ * evidence ratio (like a Bayes factor) for each rank. The returned value is an
+ * array of rank names, evidences, and Bayes factor values (if applicable).
+ * Note that this actually takes (see fun below) rp mrca_class criterion pq.
+ * *)
+let of_refpkg_and_classif_map rp cm =
+  (* A map from each tax_id in the MRCA map to the number of times that tax_id
+   * labels an edge in the tree. *)
+  let denom_map = Classif_map.map cm
     |> IntMap.values
     |> TaxIdMap.histogram_of_enum
     |> TaxIdMap.map float_of_int
   and td = Refpkg.get_taxonomy rp in
   fun criterion pq ->
+    (* Build up the evidence map, which maps from ranks to the average amount of
+     * mass per edge. *)
     let evidence_m = List.fold_left
       (fun accum p ->
-        let ti = Placement.classif p in
-        match ti with
-          | Tax_id.NoTax -> accum
-          | _ -> (* ... *)
+        match Placement.classif_opt p with
+          | None
+          | Some Tax_id.NoTax -> accum
+          | Some ti -> (* ... *)
         try
           IAMR.add_by
             (Tax_taxonomy.get_tax_rank td ti)
-            (criterion p /. TaxIdMap.find ti post_map)
+            (criterion p /. TaxIdMap.find ti denom_map)
             accum
         with Not_found ->
           Printf.sprintf
@@ -85,6 +80,8 @@ let of_refpkg rp mrca_class =
     in
     let evidence_of i = IAMR.soft_find i evidence_m
     and prev_represented = ref None in
+    (* Now go down the evidence map, calculating the Bayes factor-ish
+     * quanitities for neighboring pairs of occupied ranks. *)
     Array.mapi
       (fun i rankname ->
         let ev = evidence_of i in

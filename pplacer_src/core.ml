@@ -46,21 +46,6 @@ type result =
   | Timing of string * float
   | Evaluated_best of string * int * int * int
 
-(* ll_normalized_prob :
- * ll_list is a list of log likelihoods. this function gives the normalized
- * probabilities, i.e. exponentiate then our_like / (sum other_likes)
- * have to do it this way to avoid underflow problems.
- * *)
-let ll_normalized_prob ll_list =
-  List.map
-    (fun log_like ->
-      1. /.
-        (List.fold_left ( +. ) 0.
-          (List.map
-            (fun other_ll -> exp (other_ll -. log_like))
-            ll_list)))
-    ll_list
-
   (* Prefs.prefs -> *)
   (* Ppatteries.IntMap.key list -> *)
   (* prior -> *)
@@ -315,6 +300,8 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       let get_like (_, (like, _, _)) = like in
       let sorted_ml_results =
         List.sort (comparing get_like |> flip) ml_results in
+      if Float.is_nan (get_like (List.hd sorted_ml_results)) then
+        dprint "warning: encountered NAN for final likelihood.\n";
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let keep_results, _ =

@@ -183,3 +183,123 @@ parameter and updates it in place, after making a backup copy.
 ``deduplicate_sequences.py`` deduplicates a sequence file and produces a dedup
 file suitable for use with ``guppy redup -m``. See the
 :ref:`redup <guppy_redup>` documentation for details.
+
+``pca_for_qiime.py``
+====================
+
+``pca_for_qiime.py`` converts the ``trans`` file output by ``guppy pca`` into
+the tab-delimited format expected by QIIME's plotting functions.
+
+::
+
+    usage: pca_for_qiime.py [-h] trans tsv
+
+``extract_taxonomy_from_biom.py``
+=================================
+
+``extract_taxonomy_from_biom.py`` extracts the taxonomy information from a BIOM
+file, producing seqinfo and taxonomy files which can then be placed into a
+reference package.
+
+::
+
+    usage: extract_taxonomy_from_biom.py [-h] biom taxtable seqinfo
+
+``hrefpkg_query.py``
+====================
+
+``hrefpkg_query.py`` classifies sequences using a hrefpkg. The output is a
+sqlite database with the same schema as created by :ref:`rppr prep_db
+<rppr_prep_db>`.
+
+::
+
+    usage: hrefpkg_query.py [options] hrefpkg query_seqs classification_db
+
+    positional arguments:
+      hrefpkg               hrefpkg to classify using
+      query_seqs            input query sequences
+      classification_db     output sqlite database
+
+    optional arguments:
+      -h, --help            show this help message and exit
+      -j CORES, --ncores CORES
+                            number of cores to tell commands to use
+      -r RANK, --classification-rank RANK
+                            rank to perform the initial NBC classification at
+      --workdir DIR         directory to write intermediate files to (default: a
+                            temporary directory)
+      --disable-cleanup     don't remove the work directory as the final step
+      --use-mpi             run refpkg_align with MPI
+      --alignment {align-each,merge-each,none}
+                            respectively: align each input sequence; subset an
+                            input stockholm alignment and merge each sequence to a
+                            reference alignment; only subset an input stockholm
+                            alignment (default: align-each)
+      --cmscores FILE       in align-each mode, write out a file containing the
+                            cmalign scores
+
+    external binaries:
+      --pplacer PROG        pplacer binary to call
+      --guppy PROG          guppy binary to call
+      --rppr PROG           rppr binary to call
+      --refpkg-align PROG   refpkg_align binary to call
+      --cmalign PROG        cmalign binary to call
+
+..
+
+``multiclass_concat.py``
+========================
+
+``multiclass_concat.py`` takes a database which has been classified using
+:ref:`guppy classify <guppy_classify>` and creates a view
+``multiclass_concat``. This view has the same schema as ``multiclass``, with
+the addition of an ``id_count`` column. However, instead of getting multiple
+rows when a sequence has multiple classifications at a rank, the ``tax_id``
+column will be all of the tax_ids concatenated together, delimited by ``,``.
+
+To ensure that it's still easy to join ``multiclass_concat`` to the ``taxa``
+table, rows are inserted into the ``taxa`` table for each concatenated tax_id
+present in the ``multiclass_concat`` table which have a ``tax_name`` created by
+concatenating the names of all the constituent tax_ids.
+
+::
+
+    usage: multiclass_concat.py [options] database
+
+    positional arguments:
+      database    sqlite database (output of `rppr prep_db` after `guppy
+                  classify`)
+
+    optional arguments:
+      -h, --help  show this help message and exit
+
+..
+
+``split_qiime.py``
+==================
+
+``split_qiime.py`` takes sequences in `QIIME's preprocessed FASTA format`_ and
+generates a FASTA file which contains the original sequence names. Optionally,
+a specimen map can also be written out which maps from the original sequence
+names to their specimens as listed in the QIIME file.
+
+For example, an incoming sequence identified by ``>PC.634_1 FLP3FBN01ELBSX``
+will be written out as ``>FLP3FBN01ELBSX`` with an entry in the specimen_map of
+``FLP3FBN01ELBSX,PC.634``.
+
+::
+
+    usage: split_qiime.py [-h] [qiime] [fasta] [specimen_map]
+
+    Extract the original sequence names from a QIIME FASTA file.
+
+    positional arguments:
+      qiime         input QIIME file (default: stdin)
+      fasta         output FASTA file (default: stdout)
+      specimen_map  if specified, output specimen map (default: don't write)
+
+    optional arguments:
+      -h, --help    show this help message and exit
+
+.. _QIIME's preprocessed FASTA format: http://qiime.org/tutorials/tutorial.html#assign-samples-to-multiplex-reads

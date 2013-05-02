@@ -64,21 +64,26 @@ let to_json_file ?invocation out_fname placerun =
   and ref_tree = Placerun.get_ref_tree placerun
   and pqueries = Placerun.get_pqueries placerun in
   Hashtbl.add meta "invocation" (Jsontype.String invocation);
+  begin match Placerun.get_transm_opt placerun with
+    | None -> ()
+    | Some transm ->
+      IntMap.enum transm
+      |> Enum.map (fun (k, (v1, v2)) ->
+        Jsontype.Array [Jsontype.Int k; Jsontype.Int v1; Jsontype.Float v2])
+      |> List.of_enum
+      |> (fun l -> Jsontype.Array l)
+      |> Hashtbl.add meta "transm"
+  end;
   Hashtbl.add ret "metadata" (Jsontype.Object meta);
 
-  let json_state = ref None in
-  Hashtbl.add ret "placements" (Jsontype.Array (List.map (Pquery_io.to_json json_state) pqueries));
-  Hashtbl.add ret "fields" (Jsontype.Array (List.map (fun s -> Jsontype.String s) (
-    ["edge_num"; "likelihood"; "like_weight_ratio"; "distal_length"; "pendant_length"]
-    @ begin match !json_state with
-      | None
-      | Some (false, false, false) -> []
-      | Some (has_post_prob, has_classif, has_map_identity) ->
-        begin if has_post_prob then ["post_prob"; "marginal_like"] else [] end
-        @ begin if has_classif then ["classification"] else [] end
-        @ begin if has_map_identity then ["map_ratio"; "map_overlap"] else [] end
-    end
-  )));
+  let fields, thunks = List.map Pquery_io.to_json pqueries |> List.split in
+  let all_fields = List.fold_left StringSet.union StringSet.empty fields
+    |> StringSet.elements
+  in
+  Jsontype.Array (List.map (flip identity all_fields) thunks)
+    |> Hashtbl.add ret "placements";
+  Jsontype.Array (List.map (fun s -> Jsontype.String s) all_fields)
+    |> Hashtbl.add ret "fields";
   Hashtbl.add ret "tree" (Jsontype.String (Newick_gtree.to_string ~with_node_numbers:true ref_tree));
   Hashtbl.add ret "version" (Jsontype.Int current_json_version);
   Json.to_file out_fname (Jsontype.Object ret)
@@ -160,6 +165,16 @@ let of_file ?load_seq:(load_seq=true) place_fname =
 
 exception Invalid_placerun of string
 
+let transm_of_json j =
+  Jsontype.array j
+  |> List.enum
+  |> Enum.map
+      (function
+        | Jsontype.Array [k; v1; v2] ->
+          Jsontype.int k, (Jsontype.int v1, Jsontype.float v2)
+        | _ -> failwith "malformed transm in jplace file")
+  |> IntMap.of_enum
+
 let of_json_file fname =
   let json = Jsontype.obj (Json.of_file fname) in
   if not (Hashtbl.mem json "version") then
@@ -178,9 +193,16 @@ let of_json_file fname =
     |> List.map
         (Jsontype.string
          |- (function "marginal_prob" when version = 1 -> "marginal_like" | x -> x))
+  and meta = Hashtbl.find_option json "metadata" |> Option.map Jsontype.obj in
+  let pql = List.map
+    (Pquery_io.of_json fields)
+    (Jsontype.array (Hashtbl.find json "placements"))
+  and transm = meta
+    |> (flip Option.bind (flip Hashtbl.find_option "transm"))
+    |> Option.map transm_of_json
   in
-  let pql = List.map (Pquery_io.of_json fields) (Jsontype.array (Hashtbl.find json "placements")) in
   Placerun.make
+    ?transm
     ref_tree
     (Filename.chop_extension (Filename.basename fname))
     pql
@@ -242,6 +264,7 @@ let of_split_file ?(getfunc = of_any_file) fname =
   StringMap.fold
     (fun name pqueries accum ->
       Placerun.make
+        ?transm:(Placerun.get_transm_opt to_split')
         (Placerun.get_ref_tree to_split')
         name
         pqueries
@@ -252,6 +275,8 @@ let of_split_file ?(getfunc = of_any_file) fname =
 let maybe_of_split_file ?(getfunc = of_any_file) fname =
   if Filename.check_suffix fname ".csv" then
     of_split_file ~getfunc fname
+  else if Filename.check_suffix fname ".biom" then
+    Biom.of_tree_and_biom fname
   else
     [getfunc fname]
 

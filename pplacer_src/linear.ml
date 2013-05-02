@@ -59,4 +59,20 @@ external ten_statd_pairwise_prod : Gsl_vector.vector -> Tensor.tensor -> Tensor.
  * *)
 external ten_bounded_logdot : Tensor.tensor -> Tensor.tensor -> int -> int -> Gsl_vector.vector -> float = "ten_bounded_logdot_c"
 
+(* vec_pairwise_prod dst x y *)
+external vec_pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> unit = "vec_pairwise_prod_c"
 
+type int_vector = (int, BA.int16_unsigned_elt, BA.c_layout) BA1.t
+
+(* int_vec_tot x
+ * The total of an integer vector. *)
+external int_vec_tot : int_vector -> int = "int_vec_tot_c"
+
+(* int_vec_pairwise_prod dst x y *)
+external int_vec_pairwise_prod : int_vector -> int_vector -> int_vector  -> unit = "int_vec_pairwise_prod_c"
+
+(* float_mat_int_vec_mul dest mat vec
+ * Left multiply the integer vector by the float matrix. This routine
+ * specializes in being fast when the integer is sparse.
+ * *)
+external float_mat_int_vec_mul : Gsl_vector.vector -> Gsl_matrix.matrix -> int_vector -> unit = "float_mat_int_vec_mul_c"

@@ -13,12 +13,14 @@
 */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 #include <caml/bigarray.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/custom.h>
+#include <caml/fail.h>
 
 
 /* *** Matrices, used for transformation. *** */
@@ -479,3 +481,67 @@ CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_va
   CAMLreturn(ml_ll_tot);
 }
 
+CAMLprim value vec_pairwise_prod_c(value dst_value, value x_value, value y_value)
+{
+  CAMLparam3(dst_value, x_value, y_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  int i;
+  for(i=0; i < Bigarray_val(x_value)->dim[0]; i++) {
+    dst[i] = x[i] * y[i];
+  }
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value int_vec_tot_c(value x_value)
+{
+  CAMLparam1(x_value);
+  uint16_t *x = Data_bigarray_val(x_value);
+  CAMLlocal1(ml_tot);
+  int i, tot = 0;
+  for(i=0; i < Bigarray_val(x_value)->dim[0]; i++)
+    tot += *x++;
+  ml_tot = Val_int(tot);
+  CAMLreturn(ml_tot);
+}
+
+CAMLprim value int_vec_pairwise_prod_c(value dst_value, value x_value, value y_value)
+{
+  CAMLparam3(dst_value, x_value, y_value);
+  uint16_t *dst = Data_bigarray_val(dst_value);
+  uint16_t *x = Data_bigarray_val(x_value);
+  uint16_t *y = Data_bigarray_val(y_value);
+  uint16_t *dst_end = dst + Bigarray_val(dst_value)->dim[0];
+  while (dst < dst_end)
+    *dst++ = *x++ * *y++;
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value float_mat_int_vec_mul_c(value dst_value, value mat_value, value vec_value)
+{
+  CAMLparam3(dst_value, mat_value, vec_value);
+  double *dst = Data_bigarray_val(dst_value);
+  double *mat = Data_bigarray_val(mat_value);
+  uint16_t vec_j, *vec = Data_bigarray_val(vec_value);
+  int j;
+  int n = Bigarray_val(mat_value)->dim[0], k = Bigarray_val(mat_value)->dim[1];
+  double *dst_start = dst, *dst_end = dst + k;
+
+  if (Bigarray_val(vec_value)->dim[0] != n)
+    caml_failwith("dim_0 vec != dim_0 mat");
+  if (Bigarray_val(dst_value)->dim[0] != k)
+    caml_failwith("dim_0 dst != dim_1 mat");
+
+  for (j = 0; j < n; ++j) {
+    /* skip a whole row if we are multiplying by zero */
+    if (!(vec_j = vec[j])) {
+      mat += k;
+      continue;
+    }
+    for (dst = dst_start; dst < dst_end;) {
+      *dst++ += *mat++ * vec_j;
+    }
+  }
+  CAMLreturn(Val_unit);
+}

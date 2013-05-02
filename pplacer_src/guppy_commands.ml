@@ -18,11 +18,13 @@ let command_list () =
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());
       "error", (fun () -> new Guppy_error.cmd ());
       "fpd", (fun () -> new Guppy_fpd.cmd ());
+      "unifrac", (fun () -> new Guppy_unifrac.cmd ());
+      "indep_c", (fun () -> new Guppy_indep_c.cmd ());
+      "mcl", (fun () -> new Guppy_mcl.cmd ());
     ];
 
     "classification", [
       "classify", (fun () -> new Guppy_classify.cmd ());
-      "classify_rdp", (fun () -> new Guppy_classify_rdp.cmd ());
       "to_rdp", (fun () -> new Guppy_to_rdp.cmd ());
     ];
 
@@ -35,10 +37,15 @@ let command_list () =
       "filter", (fun () -> new Guppy_filter.cmd ());
       "info", (fun () -> new Guppy_info.cmd ());
       "redup", (fun () -> new Guppy_redup.cmd ());
-      "diplac", (fun () -> new Guppy_diplac.cmd ());
+      "adcl", (fun () -> new Guppy_adcl.cmd ());
       "mft", (fun () -> new Guppy_mft.cmd ());
       "islands", (fun () -> new Guppy_islands.cmd ());
       "compress", (fun () -> new Guppy_compress.cmd ());
+      "trim", (fun () -> new Guppy_trim.cmd ());
       "ograph", (fun () -> new Guppy_ograph.cmd ());
+      "check", (fun () -> new Guppy_check.cmd ());
+      "rarefy", (fun () -> new Guppy_rarefy.cmd ());
+      "to_csv", (fun () -> new Guppy_to_csv.cmd ());
+      "placemat", (fun () -> new Guppy_placemat.cmd ());
     ];
   ]

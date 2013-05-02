@@ -134,88 +134,60 @@ let placement_of_str str =
 (* *** WRITING *** *)
 
 (* usual output *)
-let opt_to_str f = function
-  | Some x -> f x
-  | None -> "-"
-
 let string_of_8gfloat = Printf.sprintf "%8g"
 let string_of_gfloat = Printf.sprintf "%g"
 
-let to_strl_gen fint ffloat ffloato ftaxido place =
+let to_strl_gen fint ffloat ftaxid default place =
+  let map_ratio, map_overlap =
+    Option.map_default (Tuple2.map some some) (None, None) place.map_identity
+  (* eta expansion !! *)
+  and fopt f xo = Option.map_default f default xo in
   [
     fint place.location;
     ffloat place.ml_ratio;
-    ffloato place.post_prob;
+    fopt ffloat place.post_prob;
     ffloat place.log_like;
-    ffloato place.marginal_prob;
+    fopt ffloat place.marginal_prob;
     ffloat place.distal_bl;
     ffloat place.pendant_bl;
-    ftaxido place.classif;
+    fopt ftaxid place.classif;
+    fopt ffloat map_ratio;
+    fopt fint map_overlap;
   ]
 
 let to_strl =
   to_strl_gen
     string_of_int
     string_of_8gfloat
-    (opt_to_str string_of_8gfloat)
-    (opt_to_str Tax_id.to_string)
+    Tax_id.to_string
+    "-"
 
 let to_str place = String.concat "\t" (to_strl place)
 
-let to_json json_state place =
-  begin match !json_state with
-    | Some (has_post_prob, has_classif, has_map_identity) ->
-      begin match place.post_prob, place.marginal_prob, has_post_prob with
-        | Some _, Some _, true
-        | None, None, false -> ()
-        | _, _, _ -> failwith "not all placements have posterior probability"
-      end;
-      begin match place.classif, has_classif with
-        | Some _, true
-        | None, false -> ()
-        | _, _ -> failwith "not all placements are classified"
-      end;
-      begin match place.map_identity, has_map_identity with
-        | Some _, true
-        | None, false -> ()
-        | _, _ -> failwith "not all placement have MAP identity"
-      end;
-    | None ->
-      let t = begin match place.post_prob, place.marginal_prob with
-        | Some _, Some _ -> true
-        | None, None -> false
-        | _, _ ->
-          failwith "placement has posterior probability but not marginal probability ???"
-      end, begin match place.classif with
-        | Some _ -> true
-        | None -> false
-      end, begin match place.map_identity with
-        | Some _ -> true
-        | None -> false
-      end
-      in
-      json_state := Some t
-  end;
-  Jsontype.Array (
-    [
-      Jsontype.Int place.location;
-      Jsontype.Float place.log_like;
-      Jsontype.Float place.ml_ratio;
-      Jsontype.Float place.distal_bl;
-      Jsontype.Float place.pendant_bl;
-    ]
-    @ begin match place.post_prob, place.marginal_prob with
-      | Some a, Some b -> [Jsontype.Float a; Jsontype.Float b]
-      | _, _ -> []
-    end
-    @ begin match place.classif with
-      | Some c -> [Tax_id.to_json c]
-      | _ -> []
-    end
-    @ begin match place.map_identity with
-      | Some (f, d) -> [Jsontype.Float f; Jsontype.Int d]
-      | _ -> []
-    end)
+let to_json p =
+  StringMap.of_pairlist [
+    "edge_num", Jsontype.Int p.location;
+    "likelihood", Jsontype.Float p.log_like;
+    "like_weight_ratio", Jsontype.Float p.ml_ratio;
+    "distal_length", Jsontype.Float p.distal_bl;
+    "pendant_length", Jsontype.Float p.pendant_bl;
+  ]
+  |> begin match p.post_prob, p.marginal_prob with
+    | Some a, Some b ->
+      StringMap.add "post_prob" (Jsontype.Float a)
+      |- StringMap.add "marginal_like" (Jsontype.Float b)
+    | _, _ -> identity
+  end
+  |> begin match p.classif with
+    | Some c -> StringMap.add "classification" (Tax_id.to_json c)
+    | _ -> identity
+  end
+  |> begin match p.map_identity with
+    | Some (f, d) ->
+      StringMap.add "map_ratio" (Jsontype.Float f)
+      |- StringMap.add "map_overlap" (Jsontype.Int d)
+    | _ -> identity
+  end
 
 let of_json fields a =
   let a = Jsontype.array a in
@@ -227,10 +199,10 @@ let of_json fields a =
   in
   let get k = StringMap.find k map
   and maybe_get f k =
-    try
-      Some (f (StringMap.find k map))
-    with
-      | Not_found -> None
+    match StringMap.Exceptionless.find k map with
+    | Some Jsontype.Null -> None
+    | Some x -> Some (f x)
+    | None -> None
   and map_identity = function
     | Jsontype.Array [Jsontype.Float f; Jsontype.Int d] -> f, d
     | Jsontype.Array [Jsontype.Int f; Jsontype.Int d] -> float_of_int f, d
@@ -255,14 +227,9 @@ let of_json fields a =
   }
 
 (* CSV *)
-let opt_to_csv_str f = function
-  | Some x -> f x
-  | None -> "NA"
-
 let to_csv_strl =
   to_strl_gen
     string_of_int
     string_of_gfloat
-    (opt_to_csv_str string_of_gfloat)
-    (opt_to_csv_str Tax_id.to_string)
-
+    Tax_id.to_string
+    "NA"

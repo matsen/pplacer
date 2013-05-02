@@ -117,7 +117,7 @@ let parent_map t =
 let reroot tree root =
   if top_id tree = root then tree else
   let rec aux = function
-    | [] -> failwith "root not found"
+    | [] -> failwith "root not found (tried to reroot at leaf?)"
     | (Node (i, subtrees), path) :: _ when i = root ->
       (i, subtrees) :: path
     | (Leaf _, _) :: rest -> aux rest
@@ -139,11 +139,11 @@ let rec nodes_containing nodes = function
   | Leaf _ -> nodes
   | Node (i, subtrees) ->
     let nodes' = List.fold_left
-      (nodes_containing nodes |- IntSet.union |> flip)
+      (nodes_containing nodes %> IntSet.union |> flip)
       IntSet.empty
       subtrees
     in
-    if List.for_all (top_id |- flip IntSet.mem nodes') subtrees then
+    if List.for_all (top_id %> flip IntSet.mem nodes') subtrees then
       IntSet.add i nodes'
     else
       nodes'

@@ -9,7 +9,7 @@ module I = Mass_map.Indiv
 let test_suite_of_gtree_and_expected (gt_string, distr) =
   let gt = Newick_gtree.of_string gt_string in
   let v = of_gtree gt in
-  let ldistm' = IntMap.filteri
+  let ldistm' = IntMap.filter
     (fun k _ -> not (IntSet.mem k v.all_leaves))
     v.ldistm
   in
@@ -48,6 +48,10 @@ let snipl_equal l1 l2 =
       l1 = l2 && approx_equal s1 s2 && approx_equal f1 f2)
     l1
     l2
+
+let solutions_equal sol1 sol2 =
+  let open Voronoi in
+  IntSet.equal sol1.leaves sol2.leaves && sol1.work =~ sol2.work
 
 let suite = [
   "test_uncoloring" >:: begin fun () ->
@@ -126,7 +130,19 @@ let suite = [
       ]
   end;
 
-  (* XXX add tests for voronoi-based pruning *)
+  "test_full_wins_on_local_minima" >:: begin fun () ->
+    let pr = placerun_of_dir "misc" "test_voronoi" in
+    let mass = Mass_map.Indiv.of_placerun Mass_map.Point Placement.ml_ratio pr
+    and gt = Placerun.get_ref_tree pr in
+    let get_sols = IntMap.find 2 in
+    Gsl_rng.set_default_seed 0n;
+    (* yes, I know. the alternative is worse. I dare you to try it. *)
+    let full_sols = Voronoi.Full.solve ~n_leaves:2 gt mass |> get_sols
+    and pam_sols = Voronoi.PAM.solve ~n_leaves:2 gt mass |> get_sols
+    and forced_sols = Voronoi.Forced.solve ~n_leaves:2 gt mass |> get_sols in
+    assert_equal ~cmp:solutions_equal full_sols forced_sols;
+    assert_equal ~cmp:(solutions_equal |-- not) pam_sols forced_sols
+  end;
 
 ]
 

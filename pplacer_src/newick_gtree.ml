@@ -30,6 +30,20 @@ let node_label_map t =
 let leaf_label_map t =
   Gtree.leaf_ids t |> node_labels_of_ids t
 
+let label_to_leaf_map gt map =
+  let labels = leaf_label_map gt
+    |> IntMap.enum
+    |> Enum.map swap
+    |> StringMap.of_enum
+  in
+  StringMap.enum map
+    |> Enum.filter_map
+        (fun (label, x) ->
+          match StringMap.Exceptionless.find label labels with
+          | Some i -> Some (i, x)
+          | None -> None)
+    |> IntMap.of_enum
+
 let has_zero_bls t =
   List.fold_left
     (fun accum id -> accum || Gtree.get_bl t id = 0.)
@@ -122,6 +136,9 @@ let of_file ?legacy_format fname =
     | [s] -> of_string ?legacy_format ~fname s
     | _ -> failwith ("expected a single tree on a single line in "^fname)
 
+let of_refpkg_contents =
+  Refpkg_parse.of_file_or_string of_file (of_string ?legacy_format:None)
+
 let list_of_file fname =
   List.map (of_string ~fname) (File_parsing.string_list_of_file fname)
 
@@ -149,13 +166,7 @@ let consolidate gt =
   let bl = Gtree.get_bl gt in
   let open Stree in
   let rec aux parent = function
-    | Node (i, [t]) ->
-      let ibl = bl i in
-      aux
-        (Some
-           ((i, ibl)
-            :: (Option.map_default (List.map (second ((+.) ibl))) [] parent)))
-        t
+    | Node (i, [t]) -> aux (Some ((i, bl i) :: Option.default [] parent)) t
     | t ->
       let t', transm, barkm = match t with
         | Leaf _ -> t, IntMap.empty, IntMap.empty
@@ -170,19 +181,16 @@ let consolidate gt =
       in
       let i = top_id t' in
       let bark = Gtree.get_bark gt i in
-      t',
-      List.fold_left
-        (fun accum (j, l) -> IntMap.add j (i, l) accum)
-        (IntMap.add i (i, 0.) transm)
-        (Option.default [] parent),
-      IntMap.add
-        i
-        (bark#set_bl (bl i +. Option.map_default (List.last |- snd) 0. parent))
-        barkm
+      let transm', bl' = List.fold_left
+        (fun (tma, bla) (j, jbl) -> IntMap.add j (i, bla) tma, bla +. jbl)
+        (IntMap.add i (i, 0.) transm, bl i)
+        (Option.default [] parent)
+      in
+      t', transm', IntMap.add i (bark#set_bl bl') barkm
   in
   let stree, transm, bark_map = Gtree.get_stree gt |> aux None in
   let gt', transm' = Gtree.gtree stree bark_map |> Gtree.renumber in
-  gt', IntMap.map (flip IntMap.find transm' |> first) transm
+  gt', IntMap.map (flip IntMap.find transm' |> Tuple.Tuple2.map1) transm
 
 let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   let open Stree in
@@ -191,7 +199,7 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
   and name = Gtree.get_node_label gt in
   let rec aux attachment_opt = function
     | Leaf i when should_prune i ->
-      let loc, pend_bl = Option.get attachment_opt |> second ((+.) (bl i)) in
+      let loc, pend_bl = Option.get attachment_opt |> Tuple.Tuple2.map2 ((+.) (bl i)) in
       let pq = Pquery.make_ml_sorted
         ~namlom:[name i, 1.]
         ~seq:Pquery_io.no_seq_str
@@ -214,6 +222,39 @@ let prune_to_pql should_prune ?(placement_transform = const identity) gt =
           maybe_cons t_opt st_accum, List.append pql pql_accum)
         ([], [])
         subtrees
-      |> first (if pruned then const None else node i |- some)
+      |> Tuple.Tuple2.map1 (if pruned then const None else node i |- some)
   in
-  aux None st |> first (Option.get |- Gtree.set_stree gt)
+  let gt', pql = aux None st |> Tuple.Tuple2.map1 (Option.get |- Gtree.set_stree gt) in
+  let replace_root_placement =
+    let open Placement in
+    let top, location = match Gtree.get_stree gt' with
+      | Node (top, subtree :: _) -> top, top_id subtree
+      | _ -> failwith "trimmed tree's root is not a node with >1 subtree"
+    in
+    let distal_bl = Gtree.get_bl gt' location in
+    fun p -> if p.location = top then {p with location; distal_bl} else p
+  in
+  gt',
+  List.map
+    (Pquery.apply_to_place_list (List.map replace_root_placement))
+    pql
+
+let expand_multifurcation_to_bifurcation ?(fresh_bark = const (Newick_bark.empty#set_bl 0.)) gt =
+  let open Stree in
+  let st = Gtree.get_stree gt
+  and bm = ref (Gtree.get_bark_map gt) in
+  let last_id = ref (max_id st) in
+  let next () =
+    incr last_id;
+    bm := IntMap.add !last_id (fresh_bark !last_id) !bm;
+    !last_id
+  in
+  let rec aux = function
+    | Node (i, top :: (_ :: _ :: _ as rest)) ->
+      node i [aux top; aux (node (next ()) rest)]
+    | Node (i, subtrees) ->
+      node i (List.map aux subtrees)
+    | Leaf _ as l -> l
+  in
+  let st' = aux st in
+  Gtree.gtree st' !bm

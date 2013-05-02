@@ -3,6 +3,8 @@ Unit tests for alignment module
 """
 
 from cStringIO import StringIO
+import os
+import os.path
 import unittest
 
 from Bio.Seq import Seq
@@ -125,4 +127,18 @@ class SubprocessMixIn(object):
     @property
     def latest_command(self):
         return refpkg_align.subprocess.commands[-1]
+
+class TempFileTestCase(unittest.TestCase):
+    def test_close(self):
+        with refpkg_align._temp_file() as tf:
+            self.assertFalse(tf.closed)
+            tf.close()
+            self.assertTrue(os.path.isfile(tf.name))
+        self.assertFalse(os.path.exists(tf.name))
+
+    def test_remove_ok(self):
+        """Test that the file can be removed without error"""
+        with refpkg_align._temp_file() as tf:
+            tf.close()
+            os.unlink(tf.name)
 

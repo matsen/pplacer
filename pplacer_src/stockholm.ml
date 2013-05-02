@@ -82,3 +82,4 @@ let parse tokens =
     | _ -> Sparse.syntax_error "didn't reach footer by EOF"
 
 let of_string, of_file = Sparse.gen_parsers tokenize_stockholm parse
+let of_refpkg_contents = Refpkg_parse.of_file_or_string of_file of_string

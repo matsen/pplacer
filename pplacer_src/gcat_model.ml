@@ -271,6 +271,20 @@ struct
     Glv.make
       ~n_states:(n_states model)
 
+  let mmap_glv_arrays model fd shared n_arrays n_glvs ~n_sites =
+    gen_mmap_glv_arrays
+      fd
+      shared
+      n_arrays
+      n_glvs
+      [|n_sites|]
+      [|n_sites; n_states model|]
+      (fun ega aga ->
+        {Glv.e = BA.array1_of_genarray ega; Glv.a = BA.array2_of_genarray aga})
+
+  let size_of_glv_arrays model n_arrays n_glvs ~n_sites =
+    gen_size_of_glv_arrays (n_states model) n_sites n_arrays n_glvs
+
   (* Make a glv out of a list of likelihood vectors. *)
   let lv_arr_to_glv _ lv_arr =
     assert(lv_arr <> [||]);
@@ -422,11 +436,11 @@ let init_of_json o ref_align =
   and opt_transitions = Hashtbl.Exceptionless.find o "subs_rates"
     |> Option.map
         (Jsontype.obj
-         |- (fun tbl ->
+         %> (fun tbl ->
            List.map
-             (Hashtbl.find tbl |- Jsontype.float)
+             (Hashtbl.find tbl %> Jsontype.float)
              ["ac"; "ag"; "at"; "cg"; "ct"; "gt"])
-         |- Array.of_list)
+         %> Array.of_list)
   and price_cat = Hashtbl.find o "Price-CAT" |> Jsontype.obj in
   let rates = Hashtbl.find price_cat "Rates"
     |> Jsontype.array

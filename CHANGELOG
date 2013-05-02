@@ -1,7 +1,92 @@
+1.1.alpha14
+===========
+
+ * Closed GH-181: Added `guppy indep_c`; added `--leaf-values` to `guppy mft`.
+ * Closed GH-215: Added `pca_for_qiime.py` and `extract_taxonomy_from_biom.py`;
+   changed guppy and rppr to allow BIOM files to be passed as arguments where
+   placefiles are allowed.
+ * Closed GH-241: On the NBC classifier of `guppy classify`: renamed
+   `--target-rank` to `--nbc-rank`; added `--nbc-rank auto`.
+ * Closed GH-248: Added premasking by default to the NBC classifier of `guppy
+   classify`; correspondingly added `--no-pre-mask`.
+ * Closed GH-250: Completely revamped classification.
+ * Closed GH-251: Added the hybrid5 classifier.
+ * Closed GH-256: Added `--mmap-file` to pplacer; changed `--pretend` in
+   pplacer to show the amount of memory which would be allocated.
+ * Closed GH-259: Added `guppy mcl` and a `--mcl` flag to `guppy compress`.
+ * Closed GH-260: Added `rooted_pd` to `guppy fpd`; Added a `--variance` flag
+   to `guppy rarefact`.
+ * Closed GH-261: Added `rppr convex_taxids`.
+ * Closed GH-262: Added `--as-mass` to `guppy redup`; updated
+   `sort_placefile.py` for the new placefile format; fixed pplacer to better
+   deal with internal edges on a tree with a branch length of 0.
+ * Closed GH-263: Fixed a bug that could sometimes cause failures in `rppr
+   min_adcl` with the PAM algorithm.
+ * Closed GH-265: Fixed a bug that could cometimes cause `rppr reroot` to
+   return a suboptimal rooting.
+ * Closed GH-266: Adding `map_ratio` and `map_overlap` columns to `guppy
+   to_csv`.
+ * Closed GH-267: Added a `leaf_count` column to `rppr convex_taxids`.
+ * Closed GH-268: Merged various minor fixes.
+ * Closed GH-273: Fix convexify for multifurcating trees
+ * Closed GH-274: Added `--weight-as-count` to `guppy rarefact`.
+ * Closed GH-276: Added `-k` to `guppy rarefact`.
+ * Closed GH-277: Added `--weight-as-count` to `guppy rarefy`.
+ * Closed GH-278: Changed `guppy rarefact` to allow multiple placefiles to be
+   passed instead of just one.
+ * Closed GH-282: Added a `--inflation` flag to `guppy mcl` and `guppy
+   compress`.
+ * Closed GH-286: Changed pplacer's `--mmap-file` to accept a path to either a
+   directory or a file.
+ * Closed GH-287: Added a more informative error message for the case of an
+   input alignment containing some, but not all reference sequence names.
+ * Closed GH-288: Added `guppy placemat`
+ * Closed GH-290: Random tie breaking in NBC classifier
+ * Closed GH-291: Added qD(T) alpha diversity measure from Chao et. al., 2010
+   (doi:10.1098/rstb.2010.0272)
+ * Closed GH-293: Switched build system to use OPAM
+ * Closed GH-294: Added `--unitize` option to `guppy squash`
+ * Closed GH-297: Support multiprocessing during squash cluster bootstrapping
+ * Closed GH-298: Faster upper-limit finding during integration
+ * Closed GH-299: Fix NaN likelihoods for empirical frequencies + unseen state
+ * Closed GH-303: Updated Batteries dependency to version 2.0.0
+ * Closed GH-305: Eliminate compilation warnings from CDD
+ * Closed GH-307: Renamed `--kappa` to `--theta`, `awpd` to `bwpd` in `guppy fpd`
+
 1.1.alpha13
 ===========
 
+ * Fixed a bug where pplacer would sometimes fail abruptly with a Child_error
+   of EBADF on close(2). [rc2]
+ * Added missing `-o` and related flags to `guppy to_csv`. [rc3]
+ * Fixed minor errors in the documentation [r2]
+ * Closed GH-216: Added `guppy trim` and `guppy check`.
  * Closed GH-225: Added `rppr vorotree`.
+ * Closed GH-235: Added `--rep-edges` flag for the splitify subcommands.
+ * Closed GH-237: Added a multiplicity column to `guppy diplac`.
+ * Closed GH-238: Added `--epsilon` for splitify commands to filter constant
+   edges out of the resulting splitify matrices.
+ * Closed GH-239: Added the `pam` algorithm to voronoi commands; cleaned up
+   voronoi full algorithm and implementation.
+ * Closed GH-240: Added a `-o` flag for pplacer.
+ * Closed GH-242: Renamed ECLD to ADCL; added --max-adcl to voronoi commands.
+ * Closed GH-243: Updated `rppr reroot` so it can run on reference packages
+   which have unannotated sequences.
+ * Closed GH-244: Updated `rppr infer` to handle sequences which could not be
+   reasonably placed anywhere on the tree.
+ * Closed GH-245: Updated code to allow refpkgs to be passed as .zip files as
+   well as directories.
+ * Closed GH-246: Added --always-include to voronoi commands.
+ * Closed GH-247: Added `guppy unifrac`.
+ * Closed GH-249: Added `guppy rarefy`.
+ * Closed GH-252: Added `--all-alternates` to `rppr convexify`.
+ * Closed GH-253: Added `--no-collapse` to `guppy diplac`.
+ * Closed GH-255: Added `guppy to_csv`.
+ * Closed GH-257: Renamed `rppr voronoi` to `rppr min_adcl`, `rppr vorotree` to
+   `rppr min_adcl_tree`, and `guppy diplac` to `guppy adcl`. Added `--seed` to
+   `rppr min_adcl` and `rppr min_adcl_tree`.
+ * Closed GH-280: Fixed a bug in which pplacer would fail if passed -t and
+   -s flags without also passing a -c or -r flag.
 
 
 1.1.alpha12

@@ -25,12 +25,16 @@ let entry_of_str = function
   | "NA" -> None
   | s -> Some s
 
+(* Csv uses a non-tail-recursive List.map. the bastards. *)
+let associate header data =
+  List.map (List.combine header) data
+
 (* requires "seqname" and "tax_id" columns, "accession"
  * "tax_name","isType","ok","i","outlier","selected","label" *)
-let of_csv fname =
+let of_csv csv =
   let safe_assoc k l =
     try List.assoc k l with
-      | Not_found -> failwith ("couldn't find "^k^" column in "^fname)
+      | Not_found -> failwith ("couldn't find "^k^" column in seqinfo")
   in
   List.fold_left
     (fun sim al ->
@@ -49,8 +53,8 @@ let of_csv fname =
       | Failure "check_add" ->
           failwith
           (Printf.sprintf "Tax_refdata.of_csv: contradictory line for %s\n" seqname_str)
-      | Not_found -> failwith ("seq_name and/or tax_id fields missing in "^fname))
+      | Not_found -> failwith ("seq_name and/or tax_id fields missing in seqinfo"))
     StringMap.empty
-    (match Csv.load fname with
-    | header :: data -> Csv.associate header data
-    | [] -> invalid_arg ("empty refdata: "^fname))
+    (match Csv.input_all csv with
+    | header :: data -> associate header data
+    | [] -> invalid_arg ("empty refdata in seqinfo"))

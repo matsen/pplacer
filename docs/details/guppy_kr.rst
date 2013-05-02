@@ -17,4 +17,8 @@ for :math:`0 < p < \infty` we have the distances
 which can be used to vary the impact of mass relative to transport.
 A larger :math:`p` increases the impact of differences of mass, while a smaller :math:`p` emphasizes distance traveled.
 
-Note that the significance p-values calculated by ``-s`` or ``--normal`` are not corrected for multiple comparison.
+Note that the significance p-values calculated by ``-s`` or ``--gaussian`` are not corrected for multiple comparison.
+
+See `Evans and Matsen`_ for more details.
+
+.. _Evans and Matsen: http://arxiv.org/abs/1005.1699

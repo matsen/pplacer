@@ -25,8 +25,9 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
             begin
               try
                 Data (f x)
-              with
-                | exn -> Exception exn
+              with exn ->
+                Printexc.print_backtrace stderr;
+                Exception exn
             end;
           aux ()
         | None -> Legacy.close_in rd; Legacy.close_out wr
@@ -54,6 +55,114 @@ object (self)
 
   method progress_received = progressfunc
 end
+
+let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
+  let base_map = match seq_type with
+    | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
+    | Alignment.Protein_seq -> Prot_models.prot_map
+  and n_sites = Alignment.length ref_align in
+  let check_seq (name, seq) =
+    String.iter
+      (fun c ->
+        if not (CharMap.mem c base_map) then
+          failwith (Printf.sprintf "%c is not a known base in %s" c name))
+      seq
+  and initial_mask = Array.make n_sites false in
+  (* Turn an alignment enum into a bool array mask which represents if any
+   * site seen in the alignment was informative. *)
+  let mask_of_enum enum =
+    let mask = Array.copy initial_mask in
+    Enum.iter
+      (tap check_seq
+       %> snd
+       %> String.iteri
+           (fun i c -> if Alignment.informative c then mask.(i) <- true))
+      enum;
+    mask
+  in
+  let ref_mask = Array.enum ref_align |> mask_of_enum in
+  (* This function takes a sequence string and returns if it overlaps any
+   * informative column of the reference sequence. *)
+  let overlaps_mask s = String.enum s
+    |> Enum.map Alignment.informative
+    |> curry Enum.combine (Array.enum ref_mask)
+    |> Enum.exists (uncurry (&&))
+  in
+  let query_list = List.filter
+    (fun (name, seq) ->
+      let overlaps = overlaps_mask seq in
+      if not discard_nonoverlapped && not overlaps then
+        failwith
+          (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." name);
+      overlaps)
+    query_list
+  in
+  (* Mask out sites that are either all gap in the reference alignment or
+   * all gap in the query alignment. *)
+  let mask = Array.map2
+    (&&)
+    ref_mask
+    (List.enum query_list |> mask_of_enum)
+  in
+  let masklen = Array.fold_left
+    (fun accum -> function true -> accum + 1 | _ -> accum)
+    0
+    mask
+  in
+  let cut_from_mask (name, seq) =
+    let seq' = String.create masklen
+    and pos = ref 0 in
+    Array.iteri
+      (fun e not_masked ->
+        if not_masked then
+          (seq'.[!pos] <- seq.[e];
+           incr pos))
+      mask;
+    name, seq'
+  in
+  dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
+  let effective_length = match seq_type with
+    | Alignment.Nucleotide_seq -> masklen
+    | Alignment.Protein_seq -> 3*masklen
+  in
+  if effective_length = 0 then
+    (print_endline
+       "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
+     exit 1)
+  else if effective_length <= 10 then
+    dprintf
+      "WARNING: you have %d sites after pre-masking. \
+      That means there is very little information in these sequences for placement.\n"
+      masklen
+  else if effective_length <= 100 then
+    dprintf
+      "Note: you have %d sites after pre-masking. \
+      That means there is rather little information in these sequences for placement.\n"
+      masklen;
+  let query_list' = List.map cut_from_mask query_list
+  and ref_align' = Array.map cut_from_mask ref_align in
+  query_list', ref_align', masklen, Some mask
+
+let check_query n_sites query_list =
+  begin match begin
+    try
+      Some
+        (List.find
+           (fun (_, seq) -> (String.length seq) != n_sites)
+           query_list)
+    with
+      | Not_found -> None
+  end with
+    | Some (name, seq) ->
+      Printf.printf
+        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
+        name
+        (String.length seq)
+        n_sites;
+      exit 1;
+    | None -> ()
+  end
+
 
 let run_placements prefs rp query_list from_input_alignment placerun_name placerun_cb =
   let timings = ref StringMap.empty in
@@ -86,24 +195,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       seqmagick.\n";
 
   let n_sites = Alignment.length ref_align in
-  begin match begin
-    try
-      Some
-        (List.find
-           (fun (_, seq) -> (String.length seq) != n_sites)
-           query_list)
-    with
-      | Not_found -> None
-  end with
-    | Some (name, seq) ->
-      Printf.printf
-        "query %s is not the same length as the reference alignment (got %d; expected %d)\n"
-        name
-        (String.length seq)
-        n_sites;
-      exit 1;
-    | None -> ()
-  end;
+  check_query n_sites query_list;
 
   let m, i = Refpkg.get_model rp in
   let module Model = (val m: Glvm.Model) in
@@ -117,96 +209,22 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       query_list, ref_align, n_sites, None
     else begin
       dprint "Pre-masking sequences... ";
-      let base_map = match Model.seq_type model with
-        | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
-        | Alignment.Protein_seq -> Prot_models.prot_map
-      and initial_mask = Array.make n_sites false in
-      let check_seq (name, seq) =
-        String.iter
-          (fun c ->
-            if not (CharMap.mem c base_map) then
-              failwith (Printf.sprintf "%c is not a known base in %s" c name))
-          seq
-      in
-      (* Turn an alignment enum into a bool array mask which represents if any
-       * site seen in the alignment was informative. *)
-      let mask_of_enum enum =
-        let mask = Array.copy initial_mask in
-        Enum.iter
-          (tap check_seq
-           |- snd
-           |- String.iteri
-               (fun i c -> if Alignment.informative c then mask.(i) <- true))
-          enum;
-        mask
-      in
-      let ref_mask = Array.enum ref_align |> mask_of_enum in
-      (* This function takes a sequence string and returns if it overlaps any
-       * informative column of the reference sequence. *)
-      let overlaps_mask s = String.enum s
-        |> Enum.map Alignment.informative
-        |> curry Enum.combine (Array.enum ref_mask)
-        |> Enum.exists (uncurry (&&))
-      in
-      (try
-         let seq, _ = List.find (snd |- overlaps_mask |- not) query_list in
-         failwith (Printf.sprintf "Sequence %s doesn't overlap any reference sequences." seq)
-       with Not_found -> ());
-      (* Mask out sites that are either all gap in the reference alignment or
-       * all gap in the query alignment. *)
-      let mask = Array.map2
-        (&&)
-        ref_mask
-        (List.enum query_list |> mask_of_enum)
-      in
-      let masklen = Array.fold_left
-        (fun accum -> function true -> accum + 1 | _ -> accum)
-        0
-        mask
-      in
-      let cut_from_mask (name, seq) =
-        let seq' = String.create masklen
-        and pos = ref 0 in
-        Array.iteri
-          (fun e not_masked ->
-            if not_masked then
-              (seq'.[!pos] <- seq.[e];
-               incr pos))
-          mask;
-        name, seq'
-      in
-      dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
-      let effective_length = match Model.seq_type model with
-        | Alignment.Nucleotide_seq -> masklen
-        | Alignment.Protein_seq -> 3*masklen
-      in
-      if effective_length = 0 then
-        (print_endline
-           "Sequence length cut to 0 by pre-masking; can't proceed with no information.";
-         exit 1)
-      else if effective_length <= 10 then
-        dprintf
-          "WARNING: you have %d sites after pre-masking. \
-          That means there is very little information in these sequences for placement.\n"
-          masklen
-      else if effective_length <= 100 then
-        dprintf
-          "Note: you have %d sites after pre-masking. \
-          That means there is rather little information in these sequences for placement.\n"
-          masklen;
-      let query_list' = List.map cut_from_mask query_list
-      and ref_align' = Array.map cut_from_mask ref_align in
-      if (Prefs.pre_masked_file prefs) <> "" then begin
-        let ch = open_out (Prefs.pre_masked_file prefs) in
-        let write_line = Alignment.write_fasta_line ch in
-        Array.iter write_line ref_align';
-        List.iter write_line query_list';
-        close_out ch;
-        exit 0;
-      end;
-      query_list', ref_align', masklen, Some mask
+      premask
+        ~discard_nonoverlapped:(Prefs.discard_nonoverlapped prefs)
+        (Model.seq_type model)
+        ref_align
+        query_list
     end
   in
+
+  if Option.is_some mask && (Prefs.pre_masked_file prefs) <> "" then begin
+    let ch = open_out (Prefs.pre_masked_file prefs) in
+    let write_line = Alignment.write_fasta_line ch in
+    Array.iter write_line ref_align;
+    List.iter write_line query_list;
+    close_out ch;
+    exit 0;
+  end;
 
   (* *** deduplicate sequences *** *)
   (* seq_tbl maps from sequence to the names that correspond to that seq. *)
@@ -248,6 +266,10 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   (* pretending *)
   if Prefs.pretend prefs then begin
     dprint "everything looks OK.\n";
+    dprintf "%0.2f MB would be allocated for internal nodes.\n"
+      (Like_stree.size_of_glv_arrays_for model ref_tree 3 n_sites
+       |> float_of_int
+       |> flip (/.) (1024. *. 1024.));
     exit 0;
   end;
   dprint "Determining figs... ";
@@ -264,9 +286,27 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   (* calculate like on ref tree *)
   dprint "Allocating memory for internal nodes... ";
   (* allocate our memory *)
-  let darr = Like_stree.glv_arr_for model ref_tree n_sites in
-  let parr = Glv_arr.mimic darr
-  and snodes = Glv_arr.mimic darr
+  let mmap_file = Prefs.mmap_file prefs in
+  let darr, parr, snodes =
+    if mmap_file = "" then
+      let darr = Like_stree.glv_arr_for model ref_tree n_sites in
+      darr, Glv_arr.mimic darr, Glv_arr.mimic darr
+    else
+      let fd =
+        try
+          Unix.openfile mmap_file [Unix.O_RDWR; Unix.O_CREAT] 0o666
+        with Unix.Unix_error (Unix.EISDIR, _, _) ->
+          let filename =
+            Filename.temp_file ~temp_dir:mmap_file "pplacer" ".mmap"
+          in
+          let fd = Unix.openfile filename [Unix.O_RDWR; Unix.O_CREAT] 0o600 in
+          Unix.unlink filename;
+          fd
+      in
+      let arrays =
+        Like_stree.mmap_glv_arrays_for model fd true ref_tree 3 n_sites
+      in
+      arrays.(0), arrays.(1), arrays.(2)
   in
   let util_glv = Glv.mimic (Glv_arr.get_one snodes) in
   dprint "done.\n";
@@ -333,7 +373,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     |> Array.append
         [|[|"node"; "tree_likelihood"; "slow_tree_like"; "supernode_like"|]|]
     |> String_matrix.pad
-    |> Array.iter (Array.iter (dprintf "%s  ") |- tap (fun () -> dprint "\n"))
+    |> Array.iter (Array.iter (dprintf "%s  ") %> tap (fun () -> dprint "\n"))
 
   end;
 
@@ -353,15 +393,13 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     (module Model: Glvm.Model with type t = Model.t and type glv_t = Model.glv_t)
     prefs figs prior model ref_align ref_tree ~darr ~parr ~snodes
   in
-  let n_done = ref 0 in
-  let queries = List.length query_list in
-  let show_query query_name =
-    incr n_done;
-    dprintf "working on %s (%d/%d)...\n" query_name (!n_done) queries;
-    flush_all ()
-  in
+  let show_query = progress_displayer
+    "working on %s (%d/%d)..."
+    (List.length query_list)
+  and n_done = ref 0 in
   let progressfunc msg =
     if String.rcontains_from msg 0 '>' then begin
+      incr n_done;
       let query_name = String.sub msg 1 ((String.length msg) - 1) in
       show_query query_name
     end else
@@ -494,21 +532,19 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
 
     let classify =
       if Refpkg.tax_equipped rp then
-        if Prefs.mrca_class prefs then
-          Refpkg.mrca_classify rp
-        else
-         Tax_classify.classify_pr
-           Placement.add_classif
-           (Tax_classify.paint_classify (Edge_painting.of_refpkg rp))
+        Prefs.mrca_class prefs
+          |> Classif_map.of_refpkg_mrca_class rp
+          |> Classif_map.classify
+          |> Tax_classify.classify_pr Placement.add_classif
       else
         identity
     and queries = ref [] in
     let rec gotfunc = function
       | Core.Pquery pq when not (Pquery.is_placed pq) ->
-        dprintf "warning: %d identical sequences (including %s) were \
-                 unplaced and omitted\n"
-          (Pquery.namel pq |> List.length)
-          (Pquery.name pq)
+          dprintf "warning: %d sequence(s) (including %s) were \
+                   not placed and will be omitted.\n"
+            (Pquery.namel pq |> List.length)
+            (Pquery.name pq);
       | Core.Pquery pq ->
         let pq = pquery_gotfunc pq in
         queries := pq :: (!queries)
@@ -590,32 +626,27 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     if cachefunc x then nextfunc ()
     else x
   in
-  flush_all ();
-  1 -- Prefs.children prefs
-    |> Enum.filter_map
-      (fun _ ->
+  begin match
+    Multiprocessing.try_fork
+      (Prefs.children prefs)
+      (new pplacer_process partial gotfunc nextfunc)
+      progressfunc
+  with
+  | [] ->
+    dprint "couldn't fork any children; falling back to a single process.\n";
+    let rec aux () =
+      match begin
         try
-          Some (new pplacer_process partial gotfunc nextfunc progressfunc)
-        with Unix.Unix_error (e, "fork", _) ->
-          dprintf "error (%s) when trying to fork\n" (Unix.error_message e);
-          None)
-    |> List.of_enum
-    |> (function
-        | [] ->
-          dprint
-            "couldn't fork any children; falling back to a single process.\n";
-          let rec aux () =
-            match begin
-              try
-                Some (nextfunc ())
-              with Finished -> None
-            end with
-              | None -> ()
-              | Some query ->
-                partial ~show_query query |> List.iter gotfunc; aux ()
-          in
-          aux ()
-        | children -> event_loop children);
+          Some (nextfunc ())
+        with Finished -> None
+      end with
+      | None -> ()
+      | Some query ->
+        partial ~show_query query |> List.iter gotfunc; aux ()
+    in
+    aux ()
+  | children -> event_loop children
+  end;
   donefunc ();
   if Prefs.timing prefs then begin
     Printf.printf "\ntiming data:\n";
@@ -638,6 +669,10 @@ let partition_queries ref_name_set aln =
          Using supplied reference alignment.\n";
     None
   end
+  else if Array.length ref_aln <> StringSet.cardinal ref_name_set then
+    failwith
+      "Some, but not all reference sequences found in provided alignment file. \
+         Are there overlaps between query and reference sequence IDs?"
   else begin
     dprint
       "Found reference sequences in given alignment file. \
@@ -662,13 +697,14 @@ let run_file prefs query_fname =
 
   (* string map which represents the elements of the reference package; these
    * may be actually a reference package or specified on the command line. *)
+  let file_path = Refpkg_parse.file_path in
   let rp_strmap =
     List.fold_right
     (* only set if the option string is non empty.
      * override the contents of the reference package. *)
       (fun (k,v) m ->
         if v = "" then m
-        else StringMap.add k (ref_dir_complete^v) m)
+        else StringMap.add k (ref_dir_complete^v |> file_path) m)
       [
         "tree", Prefs.tree_fname prefs;
         "aln_fasta", Prefs.ref_align_fname prefs;
@@ -677,7 +713,9 @@ let run_file prefs query_fname =
       (match Prefs.refpkg_path prefs with
         | "" ->
             StringMap.add "name"
-              (safe_chop_extension (Prefs.ref_align_fname prefs))
+              (Prefs.ref_align_fname prefs
+               |> safe_chop_extension
+               |> Refpkg_parse.metadata)
               StringMap.empty
         | path -> Refpkg_parse.strmap_of_path path)
   in
@@ -687,7 +725,12 @@ let run_file prefs query_fname =
     else
       failwith "the reference package provided does not contain a tree";
 
-  let ref_tree = StringMap.find "tree" rp_strmap |> Newick_gtree.of_file in
+  let rp = Refpkg.of_strmap
+    ~ignore_version:(Prefs.refpkg_path prefs = "")
+    prefs
+    rp_strmap
+  in
+  let ref_tree = Refpkg.get_ref_tree rp in
   (* *** split the sequences into a ref_aln and a query_list *** *)
   let ref_name_map = Newick_gtree.leaf_label_map ref_tree in
   let ref_name_set = IntMap.values ref_name_map |> StringSet.of_enum in
@@ -708,17 +751,15 @@ let run_file prefs query_fname =
     StringSet.empty
     (Option.default [||] ref_align)
   in ();
-  let rp = Refpkg.of_strmap
-    ?ref_align
-    ~ref_tree
-    ~ignore_version:(Prefs.refpkg_path prefs = "")
-    prefs
-    rp_strmap
+  let rp = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
   and query_bname = Filename.basename (Filename.chop_extension query_fname)
   and from_input_alignment = Option.is_some ref_align in
+  let jplace_name = match Prefs.out_file prefs with
+    | "" -> ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+    | x -> x in
   let placerun_cb pr =
     Placerun_io.to_json_file
-      ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")
+      jplace_name
       pr
   and query_list = Array.to_list query_align
   and n_groups = Prefs.groups prefs in
@@ -741,4 +782,3 @@ let run_file prefs query_fname =
     run_placements
       prefs rp query_list from_input_alignment query_bname placerun_cb
   end
-

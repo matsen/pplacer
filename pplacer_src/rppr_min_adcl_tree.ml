@@ -16,12 +16,12 @@ object (self)
     super_voronoi#specl
     @ [delimited_list_flag query_seqs]
 
-  method desc = "finds a good collection of sequences to cut from ref tree"
-  method usage = "usage: vorotree [options] newick.tre"
+  method desc = "finds a good collection of sequences to cut from a tree"
+  method usage = "usage: min_adcl_tree [options] newick.tre"
 
   method action = function
     | [tree] ->
-      let gt = Newick_gtree.of_file tree
+      let gt = Newick_gtree.of_file tree |> Newick_gtree.add_zero_root_bl
       and queries = fv query_seqs |> StringSet.of_list in
       let should_prune = Newick_gtree.leaf_label_map gt
         |> IntMap.enum
@@ -51,7 +51,7 @@ object (self)
 
     | l ->
       List.length l
-      |> Printf.sprintf "vorotree takes exactly one tree (%d given)"
+      |> Printf.sprintf "min_adcl_tree takes exactly one tree (%d given)"
       |> failwith
 
 end

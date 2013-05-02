@@ -47,7 +47,7 @@ open Ppatteries
 
 *)
 
-let of_placerun ?(p = 1.) ?discard_below ~c weighting criterion pr =
+let of_placerun ?(p = 1.) cluster_fn ~c weighting criterion pr =
   let mass_of_pq pq =
     (* Recall that of_pquery_list normalizes out the mass, so that we get a
      * single unit of mass for each pquery. *)
@@ -57,7 +57,7 @@ let of_placerun ?(p = 1.) ?discard_below ~c weighting criterion pr =
   and length = ref 0 in
   Placerun.get_pqueries pr
   |> tap (fun _ -> dprint "Splitting pqueries into islands... ")
-  |> Mass_islands.of_pql ?discard_below ~criterion
+  |> cluster_fn criterion
   |> tap (fun l -> length := List.length l; dprint "done.\n")
   |> List.mapi (fun i (_, pql) ->
     dprintf "Compressing island %d/%d (%d pqueries)... "
@@ -88,7 +88,7 @@ let of_placerun ?(p = 1.) ?discard_below ~c weighting criterion pr =
       if IntMap.is_empty nodem then accum else (* ... *)
       (* As long as there are nodes in the graph, find the node with the most
        * edges and all of the adjacent nodes. *)
-      let w, xs = IntMap.enum nodem |> Enum.arg_max (snd |- IntSet.cardinal) in
+      let w, xs = IntMap.enum nodem |> Enum.arg_max (snd %> IntSet.cardinal) in
       let all_touched = IntSet.add w xs in
       (* The compressed pquery is the pquery corresponding to the originally
        * selected node with all of the mass from the pqueries corresponding to

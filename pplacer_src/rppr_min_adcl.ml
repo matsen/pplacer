@@ -23,8 +23,8 @@ object (self)
       float_flag leaf_mass;
     ]
 
-  method desc = "finds a good collection of sequences to cut from ref tree"
-  method usage = "usage: voronoi [options] placefile"
+  method desc = "finds a good collection of sequences to cut from a placefile's ref tree"
+  method usage = "usage: min_adcl [options] placefile"
 
   method private placefile_action = function
     | [pr] ->
@@ -58,7 +58,7 @@ object (self)
 
     | l ->
       List.length l
-      |> Printf.sprintf "voronoi takes exactly one placefile (%d given)"
+      |> Printf.sprintf "min_adcl takes exactly one placefile (%d given)"
       |> failwith
 
 end

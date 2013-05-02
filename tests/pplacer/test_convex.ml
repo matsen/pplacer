@@ -24,7 +24,9 @@ let convex_suite = List.map
     let testfunc () =
       (Printf.sprintf "%d expected; got %d with early termination" omega early_omega) @? (omega = early_omega);
       (Printf.sprintf "%d expected; got %d without early termination" omega not_early_omega) @? (omega = not_early_omega);
-      (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
+      (* just testing naive with bifurcation for now *)
+      if Stree.outdegree st' <= 2 then
+        (Printf.sprintf "%d expected; got %d naively" omega naive_omega) @? (omega = naive_omega);
     in
     s >:: testfunc)
   [
@@ -39,6 +41,10 @@ let convex_suite = List.map
     "(A,(A,(B,(C,(C,(A,C))))));", 6;
     "(A,(A,(B,(C,((A,C),(B,C))))));", 6;
     "((((((((A,B),B),C),),(,)),(,((D,C),),)),((A,A),)),E);", 15;
+    "(A,A,B,B);", 4;
+    "(A,A,A,B,B);", 5;
+    "((A,B),A,B,(A,B));", 4;
+    "(A,((A,B),A,B,(A,B)));", 5;
   ]
 
 let strict_suite = List.map
@@ -63,6 +69,11 @@ let strict_suite = List.map
     "((A,(A,B)),(B,(B,A)))", 4;
     "(((A,B),(A,B)),(C,C))", 4;
     "(A,(A,(B,C)))", 3;
+    "(A,A,B)", 3;
+    "(A,A,B,B)", 4;
+    "(A,A,A,B,B)", 5;
+    "(A,A,(A,B),B)", 4;
+    "((A,B),(A,B),(A,B))", 3;
   ]
 
 let suite = [
@@ -73,8 +84,8 @@ let suite = [
     let colors = IntMap.filter_map
       (fun _ value ->
         value#get_node_label_opt
-          |> Option.bind
-              (function "X" -> None | x -> Some (Tax_id.of_string x)))
+          |> (flip Option.bind
+              (function "X" -> None | x -> Some (Tax_id.of_string x))))
       bm
     in
     let alt_colors = alternate_colors (colors, st) in

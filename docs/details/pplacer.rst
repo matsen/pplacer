@@ -65,8 +65,10 @@ Using this feature will not change the result except possibly for likelihood com
 JSON_ format specification
 --------------------------
 
-The new JSON format is very simple. Each document is a JSON object with a minimum of four keys: ``tree``, ``fields``,
-``placements``, and ``version``. Another key, ``metadata``, is optional. Other keys in the root object are ignored.
+The JSON format is described in detail in our paper on the `phylogenetic
+placement format`_. Each document is a JSON object with a minimum of four keys:
+``tree``, ``fields``, ``placements``, and ``version``. Another key,
+``metadata``, is optional. Other keys in the root object are ignored.
 
 ===================  =====
 Key                  Value
@@ -261,12 +263,12 @@ Making reference trees
 ----------------------
 
 FastTree
-========
+````````
 
 We save the log file so it can get parsed and become part of the reference package.
 
 Nucleotide alignments
----------------------
+'''''''''''''''''''''
 
 FastTree should be used in the following way when making nucleotide reference trees for use with pplacer::
 
@@ -275,7 +277,7 @@ FastTree should be used in the following way when making nucleotide reference tr
 In particular, do not use the ``-gamma`` option, but do use the ``-gtr`` option.
 
 Amino Acid alignments
----------------------
+'''''''''''''''''''''
 
 FastTree should be used in the following way when making amino acid reference trees for use with pplacer::
 
@@ -285,7 +287,7 @@ Again, ``-gamma`` should not be used.
 
 
 phyml and RAxML
-===============
+```````````````
 
 PHYML_ and RAxML_ are two nice packages for making ML trees that are supported for use with pplacer.
 Pplacer only knows about the GTR, WAG, LG, and JTT models, so use those to build your trees.
@@ -439,14 +441,55 @@ it infers site categories. You can force this behavior by using the
 ``--always-refine`` flag.
 
 
+.. _memory usage:
+
+Memory usage
+------------
+
+The amount of memory pplacer needs will vary depending on the reference package
+and input alignment and is directly proportional to the number of sites after
+pre-masking and the number of nodes on the reference tree. :ref:`As mentioned
+in the FAQ <faq>`, placing on a GTRGAMMA RAxML tree will use about four times
+as much memory as placing on a FastTree tree.
+
+To see how much memory would be used for by the part of pplacer which uses the
+most memory (i.e. internal nodes), pass the ``--pretend`` flag and it will be
+displayed. pplacer will use more memory than this value, but for most analyses,
+this will be by far the biggest allocation.
+
+In cases when there isn't enough memory for pplacer to use for internal nodes,
+or it's otherwise disadvantageous to use physical memory, it's possible to
+instead tell pplacer to |mmap|_ a file instead using the ``--mmap-file`` flag.
+This will, very roughly, perform disk IO instead of using physical memory.
+
+You will see that pplacer will use the same amount of *address space*, but less
+*physical memory*. In terms of ``top(1)`` on linux, ``VIRT`` will stay the same
+but ``RES`` will decrease. The speed of pplacer will also become at least
+partially dependent on the speed of the drive where the mmap file is located;
+with an SSD you might not see any difference from using physical memory, while
+with a spinning metal drive there might be some slowdown. Placing the file on
+an NFS mount is likely not ideal for this reason.
+
+The implementation and underlying behavior of mmap may vary between platforms
+(the link above is only for linux out of convenience), but pplacer will always
+call |mmap|_ with ``PROT_READ | PROT_WRITE`` and ``MAP_SHARED``.
+
+It's also possible to pass a directory for the value of the ``--mmap-file``
+flag; this will create a temporary file in that directory, and then unlink it
+after opening it. The data will be written to the drive, but when the process
+exits, the last reference to that filesystem entry will be removed and it will
+get cleaned up.
 
 .. _Infernal: http://infernal.janelia.org/
 .. _HMMER: http://hmmer.janelia.org/
 .. _reference package database: http://microbiome.fhcrc.org/apps/refpkg/
-.. _taxtastic: http://github.com/fhcrc/taxtastic/
+.. _taxtastic: https://github.com/fhcrc/taxtastic/
 .. _JSON: http://www.json.org/
 .. _PHYML: http://www.atgc-montpellier.fr/phyml/
 .. _RAxML: http://sco.h-its.org/exelixis/software.html
 .. _geneious: http://www.geneious.com/
 .. _classify: guppy_classify.html
 .. _fat: guppy_fat.html
+.. _phylogenetic placement format: http://www.plosone.org/article/info:doi/10.1371/journal.pone.0031009
+.. |mmap| replace:: ``mmap(2)``
+.. _mmap: http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html

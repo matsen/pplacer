@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import logging
 import json
 import math
@@ -8,7 +9,9 @@ log = logging.getLogger(__name__)
 def parse_placements(j):
     fields = j['fields']
     for p in j['placements']:
-        if isinstance(p['n'], basestring):
+        if 'nm' in p:
+            name = p['nm'][0][0]
+        elif isinstance(p['n'], basestring):
             name = p['n']
         else:
             name = p['n'][0]

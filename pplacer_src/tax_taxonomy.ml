@@ -29,6 +29,9 @@ let get_rank_name td i =
   try td.rank_names.(i) with
   | Invalid_argument _ -> invalid_arg "Tax_taxonomy.get_rank_name"
 
+let get_rank_index td rk =
+  Array.findi ((=) rk) td.rank_names
+
 let get_n_ranks td = Array.length td.rank_names
 
 let get_tax_rank td ti =
@@ -139,12 +142,12 @@ let list_list_is_rectangular = function
     end
   | [] -> true
 
-let of_ncbi_file fname =
+let of_ncbi_file csv =
   let taxid_of_stro = of_stro
   and full_list =
-    List.map (List.map Tax_seqinfo.entry_of_str) (Csv.load fname) in
+    List.map (List.map Tax_seqinfo.entry_of_str) (Csv.input_all csv) in
   if not (list_list_is_rectangular full_list) then
-    invalid_arg ("Array not rectangular: "^fname);
+    invalid_arg "Taxonomy array not rectangular";
   match List.map tax_line_of_strol full_list with
   | names::lineage_data ->
       let (tax_tree, tax_rank_map) =
@@ -172,7 +175,7 @@ let of_ncbi_file fname =
             lineage_data
             TaxIdMap.empty
       }
-  | _ -> invalid_arg ("empty taxonomy: "^fname)
+  | _ -> invalid_arg "empty taxonomy"
 
 (* *** writing *** *)
 let ppr_tax_tree = TaxIdMap.ppr_gen Tax_id.ppr

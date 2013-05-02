@@ -9,7 +9,7 @@ let suite = [
       ~cmp2:(Option.compare ~cmp:String.compare)
     |-- (=) 0
     and printer x = IO.output_string ()
-    |> tap (flip (Tuple2.printn (Option.print Float.print) (Option.print String.print)) x)
+    |> tap (flip (Tuple2.print (Option.print Float.print) (Option.print String.print)) x)
     |> IO.close_out
     and make_bark ?n ?e () =
       new Newick_bark.newick_bark (`Of_bl_node_edge_label (None, n, e))

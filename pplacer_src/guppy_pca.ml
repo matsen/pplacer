@@ -55,13 +55,8 @@ object (self)
     and scale = fv scale
     and write_n = fv write_n
     and som = fv som
-    and refpkgo = self#get_rpo
+    and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
-    let prt = Mokaphy_common.list_get_same_tree prl in
-    let t = match refpkgo with
-    | None -> Decor_gtree.of_newick_gtree prt
-    | Some rp -> Refpkg.get_tax_ref_tree rp
-    in
     let data, rep_reduction_map, rep_orig_length =
       List.map (self#splitify_placerun weighting criterion) prl
         |> self#filter_rep_edges prl
@@ -98,9 +93,9 @@ object (self)
       let combol = (List.combine (Array.to_list vals) (Array.to_list vects))
       and names = (List.map Placerun.get_name prl) in
       let full_combol = List.map
-        (second
+        (Tuple.Tuple2.map2
            (expand const_orig_length const_reduction_map
-            |- expand rep_orig_length rep_reduction_map))
+            %> expand rep_orig_length rep_reduction_map))
         combol
       in
       Phyloxml.named_gtrees_to_file
@@ -123,7 +118,6 @@ object (self)
         (List.combine names data)
     in
 
-    (* And now for the magic *)
     (* Don't forget to get it to do the selections when needed *)
     let (vals, vects) = Pca.gen_pca
       ~use_raw_eval:(fv raw_eval)

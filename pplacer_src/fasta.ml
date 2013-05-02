@@ -55,3 +55,4 @@ let parse tokens =
     | Beginning -> []
 
 let of_string, of_file = Sparse.gen_parsers tokenize_fasta parse
+let of_refpkg_contents = Refpkg_parse.of_file_or_string of_file of_string

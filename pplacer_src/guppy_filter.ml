@@ -132,7 +132,7 @@ object (self)
           pqs
         else
           let namlom = List.filter
-            (fst |- fun name ->
+            (fst %> fun name ->
               if r_default_exclude then
                 (r_included name) && (not (r_excluded name))
               else
@@ -144,17 +144,9 @@ object (self)
           else
             (Pquery.set_namlom pq namlom) :: pqs
       in
-      let filtered = List.map
-        (fun pr ->
-          Placerun.set_pqueries
-            pr
-            (List.fold_left fold_pq [] (Placerun.get_pqueries pr)))
+      List.map
+        (Placerun.apply_to_pqueries (List.fold_left fold_pq []))
         prl
-      in
-      let combined = List.fold_left
-        (Placerun.combine "")
-        (List.hd filtered)
-        (List.tl filtered)
-      in
-      self#write_placefile fname combined
+      |> List.reduce (Placerun.combine "")
+      |> self#write_placefile fname
 end

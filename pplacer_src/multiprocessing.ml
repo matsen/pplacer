@@ -116,29 +116,33 @@ class virtual ['a] process child_func =
   (* Only these descriptors are used in the child. The parent has no use for
    * them, so it closes them. The child has no use for anything but them, so
    * it closes everything but them. *)
-  let child_only = [child_rd; parent_wr; progress_wr]
-  in
+  let child_only = [child_rd; parent_wr; progress_wr] in
+  let () = flush_all () in
   let pid = match Unix.fork () with
     | 0 ->
       (* Do the actual closing of the irrelevant descriptors. *)
       begin
         let ignored = List.map fd_of_file_descr child_only in
+        let ignored = match Ppatteries.memory_stats_ch with
+          | None -> ignored
+          | Some ch ->
+            fd_of_file_descr (Unix.descr_of_out_channel ch) :: ignored
+        in
         List.iter
           (fun fd -> if not (List.mem fd ignored) then quiet_close fd)
           (range 256)
       end;
-      (* Make writing to stdout or stderr instead write to the progress
-       * channel. *)
+      (* Make writing to stdout instead write to the progress channel. *)
       Unix.dup2 progress_wr Unix.stdout;
-      Unix.dup2 progress_wr Unix.stderr;
       Unix.close progress_wr;
       let rd = Unix.in_channel_of_descr child_rd
       and wr = Unix.out_channel_of_descr parent_wr in
       begin
         try
           child_func rd wr
-        with
-          | exn -> marshal wr (Fatal_exception exn)
+        with exn ->
+          Printexc.print_backtrace stderr;
+          marshal wr (Fatal_exception exn)
       end;
       (* The child should only execute its function and not return control to
        * where the parent spawned it. *)
@@ -231,8 +235,9 @@ class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
             begin
               try
                 Data (f x)
-              with
-                | exn -> Exception exn
+              with exn ->
+                Printexc.print_backtrace stderr;
+                Exception exn
             end;
           aux ()
         | None -> close_in rd; close_out wr
@@ -272,22 +277,32 @@ let queue_of_list l =
   List.iter (fun x -> Queue.push x q) l;
   q
 
+let try_fork n f x =
+  List.fold_left
+    (fun accum _ ->
+      try
+        f x :: accum
+      with Unix.Unix_error (e, "fork", _) ->
+        Ppatteries.dprintf
+          "error (%s) when trying to fork\n"
+          (Unix.error_message e);
+        accum)
+    []
+    (range n)
+
 let map ?(children = 4) ?progress_handler f l =
   let q = queue_of_list l in
-  let children =
-    List.map
-      (fun _ -> new map_process ?progress_handler f q)
-      (range children) in
-  event_loop children;
-  List.flatten (List.map (fun c -> c#ret) children)
+  match try_fork children (new map_process ?progress_handler f) q with
+  | [] -> List.map f l
+  | children ->
+    event_loop children;
+    List.flatten (List.map (fun c -> c#ret) children)
 
 let iter ?(children = 4) ?progress_handler f l =
   let q = queue_of_list l in
-  let children =
-    List.map
-      (fun _ -> new map_process ?progress_handler f q)
-      (range children) in
-  event_loop children
+  match try_fork children (new map_process ?progress_handler f) q with
+  | [] -> List.iter f l
+  | children -> event_loop children
 
 class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
   (f: 'a -> 'b -> 'b) (q: 'a Queue.t) (initial: 'b) =
@@ -312,8 +327,9 @@ class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
     let res =
       try
         aux initial
-      with
-        | exn -> Exception exn
+      with exn ->
+        Printexc.print_backtrace stderr;
+        Exception exn
     in
     marshal wr res;
     close_in rd;
@@ -349,10 +365,8 @@ end
 
 let fold ?(children = 4) ?progress_handler f l initial =
   let q = queue_of_list l in
-  let children =
-    List.map
-      (fun _ -> new fold_process ?progress_handler f q initial)
-      (range children)
-  in
-  event_loop children;
-  List.map (fun c -> c#ret) children
+  match try_fork children (new fold_process ?progress_handler f q) initial with
+  | [] -> [List.fold_left (Ppatteries.flip f) initial l]
+  | children ->
+    event_loop children;
+    List.map (fun c -> c#ret) children

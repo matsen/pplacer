@@ -37,7 +37,7 @@ let force_namel = namel
 let multiplicity p = List.map snd p.namlom |> List.fsum
 
 let total_multiplicity =
-  List.fold_left (multiplicity |- (+.) |> flip) 0.
+  List.fold_left (multiplicity %> (+.) |> flip) 0.
 
 let opt_best_something thing criterion pq =
   match place_list pq with
@@ -93,7 +93,9 @@ let make_ml_sorted = make Placement.ml_ratio
 let make_pp_sorted = make Placement.post_prob
 
 let uniform_namel namel = List.map (identity &&& const 1.) namel
-let set_mass pq m = { pq with namlom = [name pq, m] }
+let set_mass pq m =
+  let names = List.length pq.namlom |> float_of_int in
+  { pq with namlom = List.map (Tuple.Tuple2.map2 (const (m /. names))) pq.namlom }
 let set_namlom pq nm = { pq with namlom = nm }
 
 let apply_to_place_list f pq =
@@ -123,12 +125,39 @@ let merge pql = List.reduce merge_two pql
  * according to the translation map. *)
 let translate_pql transm pql =
   List.map
-    (fun pq ->
-      let open Placement in
-      pq.place_list
-        |> List.map
-            (fun p ->
-              let location, bl_boost = IntMap.find p.location transm in
-              {p with location; distal_bl = p.distal_bl +. bl_boost})
-        |> (fun place_list -> {pq with place_list}))
+    (let open Placement in
+     apply_to_place_list
+       (List.map
+          (fun p ->
+            let location, bl_boost = IntMap.find p.location transm in
+            {p with location; distal_bl = p.distal_bl +. bl_boost})))
     pql
+
+let renormalize_log_like =
+  let open Placement in
+  let update getter setter pl =
+    pl
+    |> List.map (getter &&& identity)
+    |> List.partition (fst %> Option.is_some)
+    |> Tuple2.map
+        (List.split
+         %> Tuple.Tuple2.map1 (List.map Option.get %> ll_normalized_prob)
+         %> uncurry (List.map2 setter))
+        (List.map snd)
+    |> uncurry List.append
+  in
+  update (ml_ratio %> some) (fun ml_ratio p -> {p with ml_ratio})
+  |- update post_prob_opt (fun pp p -> {p with post_prob = Some pp})
+  |> apply_to_place_list
+
+let is_inty f = mod_float f 1. =~ 0.
+
+let duplicate_by_count pq =
+  namlom pq
+  |> List.enum
+  |> Enum.map
+      (fun (name, count) ->
+        if not (is_inty count) then
+          failwith "duplicate_by_count requires integer counts on pqueries";
+        Enum.repeat ~times:(round count) {pq with namlom = [name, 1.]})
+  |> Enum.flatten

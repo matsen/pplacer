@@ -27,7 +27,7 @@ module QuestionMap: MapsSets.M with type key = question
 type 'a qmap = 'a QuestionMap.t
 
 type csetl = cset list
-type apart = color option * csetl  (* apart = almost partition *)
+type apart = (color option * ColorSet.t) list  (* apart = almost partition *)
 type sizem = int cmap
 type colorm = color IntMap.t
 type cdtree = colorm * stree
@@ -36,6 +36,9 @@ type phi = local_phi IntMap.t
 (* Here the int list is the list of top_id's that are in parallel with the
  * top_id's of the subtree below. *)
 type nu_f = cset -> sizem list -> apart -> int
+
+val find_b_assignments: csetl -> color option list list
+val cutsetdist: apart -> color -> csetl list
 
 (* QuestionMap should be a map from questions *)
 
@@ -135,6 +138,13 @@ val maplist_of_map_and_tree: 'a IntMap.t -> stree -> 'a list IntMap.t
 (** From a tree and a map from node numbers to 'a, build a map from internal
     node numbers to a list of the values of the map at each of the subtrees of
     that internal node. *)
+
+val gen_build_rank_tax_map:
+  'a ->
+  ('b -> Tax_id.tax_id -> 'a -> 'a) ->
+  Tax_taxonomy.t ->
+  ('c -> 'b option) ->
+  ('c * Tax_id.tax_id) Enum.t -> 'a IntMap.t
 
 val build_rank_tax_map:
   Tax_taxonomy.t -> ('a -> int option) -> ('a * Tax_id.t) Enum.t ->
