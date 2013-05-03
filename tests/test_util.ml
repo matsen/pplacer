@@ -41,6 +41,8 @@ let farrarr_of_string s =
   Array.of_list (List.map farr_of_string (Str.split (Str.regexp "\n") s))
 
 let vec_of_string s = Gsl_vector.of_array (farr_of_string s)
+let vec_of_string s = Gsl_vector.of_array (farr_of_string s)
+let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
 let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
 
 

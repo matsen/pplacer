@@ -1,22 +1,62 @@
 open Ppatteries
 
-(* Code to perform Support Overlap Minimzation.
- * - trans: the principal components
- * - trans_part: the first three rows of trans
+(*
+Code to perform Support Overlap Minimzation.
+- trans: the principal components
+- trans_part: the first three rows of trans
+
+Rotation matrix in terms of Euler angles [|phi; theta; psi|]
+http://mathworld.wolfram.com/EulerAngles.html
 *)
 
 exception MinimizationError
 
-(* The upper right block is used for rotation because that makes doing both 2D
- * and 3D rotation easier. *)
+(* http://mathworld.wolfram.com/EulerAngles.html
+
+In[93]:= MatrixForm[Flatten[Table[{i,j},{i,0,2},{j,0,2}],1]]
+
+Out[93]//MatrixForm= 0   0
+                     0   1
+                     0   2
+                     1   0
+                     1   1
+                     1   2
+                     2   0
+                     2   1
+                     2   2
+
+In[94]:= MatrixForm[Flatten[toMatrix[ofEulerAngles[phi,theta,psi]],1]]
+
+Out[94]//MatrixForm= Cos[phi] Cos[psi] - Cos[theta] Sin[phi] Sin[psi]
+                     Cos[psi] Sin[phi] + Cos[phi] Cos[theta] Sin[psi]
+                     Sin[psi] Sin[theta]
+                     -(Cos[psi] Cos[theta] Sin[phi]) - Cos[phi] Sin[psi]
+                     Cos[phi] Cos[psi] Cos[theta] - Sin[phi] Sin[psi]
+                     Cos[psi] Sin[theta]
+                     Sin[phi] Sin[theta]
+                     -(Cos[phi] Sin[theta])
+                     Cos[theta]
+*)
+
 let rot_mat angles  =
-  let c i = cos angles.(i)
-  and s i = sin angles.(i) in
-  Gsl_matrix.of_arrays [|
-    [| (c 1)*.(c 2);  (-1.)*.(c 0)*.(s 2)+.(s 0)*.(s 1)*.(c 2);         (s 0)*.(s 2)+.(c 0)*.(s 1)*.(c 2)|];
-    [| (c 1)*.(s 2);         (c 0)*.(c 2)+.(s 0)*.(s 1)*.(s 2);  (-1.)*.(s 0)*.(c 2)+.(c 0)*.(s 1)*.(s 2)|];
-    [| (-1.)*.(s 1);         (s 0)*.(c 1)                     ;         (c 0)*.(c 1)                     |]
-  |]
+  let m = Gsl_matrix.create 3 3
+  and cos_phi   = cos angles.(0)
+  and sin_phi   = sin angles.(0)
+  and cos_theta = cos angles.(1)
+  and sin_theta = sin angles.(1)
+  and cos_psi   = cos angles.(2)
+  and sin_psi   = sin angles.(2)
+  in
+  m.{0,0} <- cos_phi*.cos_psi -. cos_theta*.sin_phi*.sin_psi;
+  m.{0,1} <- cos_psi*.sin_phi +. cos_phi*.cos_theta*.sin_psi;
+  m.{0,2} <-  sin_psi*.sin_theta;
+  m.{1,0} <- -.(cos_psi*.cos_theta*.sin_phi) -. cos_phi*.sin_psi;
+  m.{1,1} <-  cos_phi*.cos_psi*.cos_theta -. sin_phi*.sin_psi;
+  m.{1,2} <-  cos_psi*.sin_theta;
+  m.{2,0} <-  sin_phi*.sin_theta;
+  m.{2,1} <-  -.cos_phi*.sin_theta;
+  m.{2,2} <-  cos_theta;
+  m
 
 (* This does the actual rotations and returns the rotated matrix. *)
 let rotate_trans trans_part angles =

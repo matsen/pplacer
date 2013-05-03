@@ -2,6 +2,15 @@ open Test_util
 open Som
 open OUnit
 
+
+let test_rot_mat () =
+  let mathematica = mat_of_string
+            "0.921649 0.383557 0.0587108
+            -0.387517 0.902113 0.189796
+            0.0198338 -0.197677 0.980067"
+  in
+  "rotation matrix does not agree with mathematica" @? mat_approx_equal mathematica (rot_mat [|0.1; 0.2; 0.3|])
+
 let is_inverse mat1 mat2 =
   let id = mat_of_string "1.0 0.0 0.0
                           0.0 1.0 0.0
@@ -84,6 +93,7 @@ let test_som_3d_var_order orig_vars () =
   "var order changed but shouldn't" @? (vars = var_copy)
 
 let suite = [
+  "rot_mat test" >:: test_rot_mat;
   "orth test 1" >:: test_rot_mat_orth rot_angles.(0);
   "orth test 2" >:: test_rot_mat_orth rot_angles.(1);
   "2d som test" >:: test_som_2d;
