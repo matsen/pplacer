@@ -1,5 +1,3 @@
-open Ppatteries
-
 (*
 Code to perform Support Overlap Minimzation.
 - trans: the principal components
@@ -8,6 +6,8 @@ Code to perform Support Overlap Minimzation.
 Rotation matrix in terms of Euler angles [|phi; theta; psi|]
 http://mathworld.wolfram.com/EulerAngles.html
 *)
+
+open Ppatteries
 
 exception MinimizationError
 
@@ -58,7 +58,13 @@ let rot_mat angles  =
   m.{2,2} <-  cos_theta;
   m
 
-(* This does the actual rotations and returns the rotated matrix. *)
+(*
+When we are doing PCA, we want to transform our samples from the usual basis in
+which they are expressed to the basis of k principal components. In the SOM
+case, we want to apply a rotation to the plane spanned by the principal
+component vectors. We can do this by multiplying the original kxp transormation
+on the left by a kxk rotation.
+*)
 let rotate_trans trans_part angles =
   let result = Gsl_matrix.copy trans_part in
   let trans_mat_mult =
@@ -103,11 +109,11 @@ let min_overlap trans_part dims =
   let tolerance = (overlap trans_part dims [|0.; 0.; 0.|]) *. (0.0001) in
   match dims with
   | 2 ->
-      let obj_fun theta = overlap trans_part dims [|0.; 0.; theta|] in
+      let obj_fun phi = overlap trans_part dims [|phi; 0.; 0.|] in
       let min = Minimization.brent
         ~start_finder:Minimization.robust_start_finder
         obj_fun
-        0.0
+        0.
         (-. Gsl_math.pi_4)
         Gsl_math.pi_4 tolerance
       in
@@ -140,9 +146,9 @@ let min_overlap trans_part dims =
  * reorders both the vars and the trans vectors. *)
 let reordered_by_vars vars trans dims =
   let reordered_vars = Array.copy vars
-  and inv_compare x y = -1 * (compare x y) in
-  let orig_var_i x = Array.findi (fun y -> y = x) vars in
-  Array.sort inv_compare reordered_vars;
+  and orig_var_i x = Array.findi (fun y -> y = x) vars
+  in
+  Array.sort (fun x y -> compare y x) reordered_vars;
   let reordered_trans = Array.map
     (fun var -> trans.(orig_var_i var))
     (Array.sub reordered_vars 0 dims)
@@ -164,7 +170,7 @@ let optimize_directions orig_trans new_trans =
   Array.mapi flipper new_trans
 
 (* Returns a tuple of the roated trans (as an array of arrays), the rotated
- * vars, and the optimal theta value(s). *)
+ * vars. *)
 let som_rotation trans dims vars =
   let som_trans = Array.copy trans in
   let trans_part = Gsl_matrix.of_arrays (Array.sub trans 0 3) in

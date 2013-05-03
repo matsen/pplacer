@@ -57,6 +57,7 @@ object (self)
     and som = fv som
     and _, t = self#get_rpo_and_tree (List.hd prl)
     and prefix = self#single_prefix ~requires_user_prefix:true () in
+    (* data is n x p, i.e. number of samples by number of variables. *)
     let data, rep_reduction_map, rep_orig_length =
       List.map (self#splitify_placerun weighting criterion) prl
         |> self#filter_rep_edges prl
@@ -85,8 +86,9 @@ object (self)
       than write-n, and must be either 0, 2 or 3.");
     let comp_n = max write_n 3 in
 
-    (* Once we have results, this will process and write out *)
-    let write_results vals vects pre =
+    (* Once we have eigenvalues and eigenvectors, this will project the data
+     * and write. *)
+    let write_results vals vects prefix =
       (* Only want to keep as many of the results as were asked for in --write-n*)
       let write_keep arr = Array.sub arr 0 write_n in
       let (vals, vects) = (write_keep vals, write_keep vects) in
@@ -99,26 +101,29 @@ object (self)
         combol
       in
       Phyloxml.named_gtrees_to_file
-        (pre^".xml")
+        (prefix^".xml")
         (List.map
           (fun (vals, vects) ->
             (Some (string_of_float vals),
             super_heat#heat_tree_of_float_arr t vects |> self#maybe_numbered))
           full_combol);
       save_named_fal
-        (pre^".trans")
+        (prefix^".trans")
         (List.map (fun (vals, vects) -> (string_of_float vals, vects)) combol);
+      (* Below:
+        Take the dot product of each data point with the principal component
+        vector. This is the same as multiplying on the right by the matrix
+        whose columns are the principal components. *)
       save_named_fal
-        (pre^".proj")
+        (prefix^".proj")
         (List.combine
           names
           (List.map (fun d -> Array.map (Pca.dot d) vects) data));
       save_named_fal
-        (pre^".edgediff")
+        (prefix^".edgediff")
         (List.combine names data)
     in
 
-    (* Don't forget to get it to do the selections when needed *)
     let (vals, vects) = Pca.gen_pca
       ~use_raw_eval:(fv raw_eval)
       ~scale
@@ -127,7 +132,7 @@ object (self)
       (Array.of_list data)
     in
     write_results vals vects prefix;
-    if not (som = 0) then
+    if som <> 0 then
       try
         let (rot_vals, rot_vects) = Som.som_rotation vects som vals in
         write_results rot_vals rot_vects (prefix^".som")
