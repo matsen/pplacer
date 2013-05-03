@@ -3,15 +3,15 @@ Code to perform Support Overlap Minimzation.
 - trans: the principal components
 - trans_part: the first three rows of trans
 
-Rotation matrix in terms of Euler angles [|phi; theta; psi|]
-http://mathworld.wolfram.com/EulerAngles.html
 *)
 
 open Ppatteries
 
 exception MinimizationError
 
-(* http://mathworld.wolfram.com/EulerAngles.html
+(*
+Rotation matrix in terms of Euler angles [|phi; theta; psi|]
+http://mathworld.wolfram.com/EulerAngles.html
 
 In[93]:= MatrixForm[Flatten[Table[{i,j},{i,0,2},{j,0,2}],1]]
 
@@ -37,7 +37,6 @@ Out[94]//MatrixForm= Cos[phi] Cos[psi] - Cos[theta] Sin[phi] Sin[psi]
                      -(Cos[phi] Sin[theta])
                      Cos[theta]
 *)
-
 let rot_mat angles  =
   let m = Gsl_matrix.create 3 3
   and cos_phi   = cos angles.(0)
@@ -68,7 +67,7 @@ on the left by a kxk rotation.
 let rotate_trans trans_part angles =
   let result = Gsl_matrix.copy trans_part in
   let trans_mat_mult =
-    Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha: 1. ~beta: 0.0
+    Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha:1. ~beta:0.
   in
   trans_mat_mult ~a:(rot_mat angles) ~b:trans_part ~c:result;
   result
@@ -159,7 +158,7 @@ let reordered_by_vars vars trans dims =
 (* A vector v has the same variance as -v; we would like whichever most
  * closely matches the original trans. This makes it easier to compare the
  * original to the SOM trans. *)
-let optimize_directions orig_trans new_trans =
+let flip_axes ~orig_trans ~new_trans =
   let flip vec = Array.map (fun x -> -1. *. x) vec in
   let flipper i vec =
     let flipped = flip vec in
@@ -173,18 +172,17 @@ let optimize_directions orig_trans new_trans =
 (* Returns a tuple of the roated trans (as an array of arrays), the rotated
  * vars. *)
 let som_rotation trans dims vars =
-  let som_trans = Array.copy trans in
   let trans_part = Gsl_matrix.of_arrays (Array.sub trans 0 3) in
   (* Where all the real work is - find min(s) *)
   let min = min_overlap trans_part dims in
-  let rotated_trans = Gsl_matrix.to_arrays (rotate_trans trans_part min)
-  and rotated_vars = rotate_vars vars min in
-  let reordered_vars, reordered_trans = reordered_by_vars
-    rotated_vars
-    rotated_trans
-    dims
+  let vars = rotate_vars vars min
+  and trans_part = Gsl_matrix.to_arrays (rotate_trans trans_part min)
   in
-  let flipped_trans = optimize_directions trans reordered_trans in
-  Array.blit flipped_trans 0 som_trans 0 dims;
-  (reordered_vars, som_trans)
+  let vars, trans_part = reordered_by_vars vars trans_part dims in
+  let flipped_trans = flip_axes ~orig_trans:trans ~new_trans:trans_part in
+  (* We want our final trans to be the same as the original but with the first
+   * dims dimensions rotated. *)
+  let final_trans = Array.copy trans in
+  Array.blit flipped_trans 0 final_trans 0 dims;
+  (vars, final_trans)
 
