@@ -100,6 +100,7 @@ let overlap trans_part dims angles =
   | (i, j)::rest ->
       let mult = Gsl_vector.copy (row i) in
       Gsl_vector.mul mult (row j);
+      (* asum because we want to take the absolute value dot product. *)
       Gsl_blas.asum mult +. overlapper rest
   in
   overlapper indices
@@ -117,7 +118,7 @@ let min_overlap trans_part dims =
         (-. Gsl_math.pi_4)
         Gsl_math.pi_4 tolerance
       in
-      [|0.; 0.; min|]
+      [|min; 0.; 0.|]
   | 3 ->
       let obj_fun = overlap trans_part dims
       and start = [|0.; 0.; 0.|]

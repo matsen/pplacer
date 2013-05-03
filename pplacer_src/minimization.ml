@@ -2,8 +2,7 @@ open Ppatteries
 
 exception ExceededMaxIter
 exception FindStartFailure
-(* (left, start, right)*)
-exception InvalidStartValues of float * float * float
+exception InvalidStartValues of float * float * float (* (left, start, right) *)
 exception FoundMin of float
 exception FoundStart of float
 
@@ -101,34 +100,43 @@ let brent ?(max_iters=100) ?(start_finder=bisection_start_finder) f raw_start le
   with
   | FoundMin minLoc -> minLoc
 
-
-(* No max iteration checking going on here yet... *)
-let multimin ?(max_iters=100) obj_fun start lower_bounds upper_bounds tolerance =
-  let dims = Array.init (Array.length start) (fun i -> i) in
-  let sub_iterator start' dim =
-    let start'' = Array.copy start' in
-    let input x =
-      Array.set start'' dim x;
-      start''
+(* Minimize an objective function of a number of variables.
+ * start: starting vector
+ * bounds: bounding vectors
+ * tolerance: tolerance
+*)
+let multimin ?(max_iters=100) obj_fun start
+             lower_bounds upper_bounds tolerance =
+  let dim = Array.length start in
+  assert(dim = Array.length lower_bounds);
+  assert(dim = Array.length upper_bounds);
+  let indices = Array.init dim (fun i -> i) in
+  (* Optimizes dimension i starting at start' *)
+  let opt_one_dim start' i =
+    let pos = Array.copy start' in
+    let obj_part x =
+      Array.set pos i x;
+      obj_fun pos
     in
-    let obj_part x = obj_fun (input x) in
-    let min = brent
-      ~start_finder:robust_start_finder
-      obj_part start'.(dim)
-      lower_bounds.(dim)
-      upper_bounds.(dim)
-      tolerance
-    in
-    input min
+    Array.set pos i
+        (brent
+          ~max_iters
+          ~start_finder:robust_start_finder
+          obj_part
+          start'.(i)
+          lower_bounds.(i)
+          upper_bounds.(i)
+          tolerance);
+    pos
   in
-  let iterator start' = (start', Array.fold_left sub_iterator start' dims) in
-  let rec run (input1, input2) step =
+  let opt_all_dims start' =
+    (start', Array.fold_left opt_one_dim start' indices)
+  in
+  let rec run (pos1, pos2) step =
     if (step > max_iters) then raise ExceededMaxIter
-    else if ((obj_fun input1) -. (obj_fun input2) > tolerance) then
-      run (iterator input2) (step+1)
+    else if ((obj_fun pos1) -. (obj_fun pos2) > tolerance) then
+      run (opt_all_dims pos2) (step+1)
     else
-      input2
+      pos2
   in
-  run (iterator start) 1
-
-
+  run (opt_all_dims start) 1
