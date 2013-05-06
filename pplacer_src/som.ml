@@ -2,7 +2,7 @@
 Code to perform Support Overlap Minimzation.
 - trans: the principal components
 - trans_part: the first three rows of trans
-
+- vars: variances
 *)
 
 open Ppatteries
@@ -72,16 +72,16 @@ let rotate_trans trans_part angles =
   trans_mat_mult ~a:(rot_mat angles) ~b:trans_part ~c:result;
   result
 
-(* Once we know the appropriate angles, we can rotate the vars into place. *)
+(* Once we know the appropriate angles, we can rotate the variances into place. *)
 let rotate_vars vars angles =
   let vars_part = Gsl_vector.of_array (Array.sub vars 0 3) in
-  let vars_result = Gsl_vector.create ~init:0.0 3 in
+  let vars_result = Gsl_vector.create ~init:0. 3 in
   let vars_rest = Array.sub vars 3 ((Array.length vars) - 3) in
   let rot = rot_mat angles in
   (* Square the elements of the rotation matrix. *)
   Gsl_matrix.mul_elements rot rot;
   (* Multiply its transpose by our vars to get the rotated vars. *)
-  Gsl_blas.gemv Gsl_blas.Trans ~alpha:1.0 ~beta:0.0 ~a:rot ~x:vars_part ~y:vars_result;
+  Gsl_blas.gemv Gsl_blas.Trans ~alpha:1. ~beta:0. ~a:rot ~x:vars_part ~y:vars_result;
   Array.append (Gsl_vector.to_array vars_result) vars_rest
 
 (* Measures the overlap between the tranform vector components when rotated
@@ -95,7 +95,7 @@ let overlap trans_part dims angles =
   | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
   in
   let rec overlapper = function
-  | [] -> 0.0
+  | [] -> 0.
   | (i, j)::rest ->
       let mult = Gsl_vector.copy (row i) in
       Gsl_vector.mul mult (row j);
