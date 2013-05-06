@@ -3,13 +3,8 @@ open Som
 open OUnit
 
 
-let test_rot_mat () =
-  let mathematica = mat_of_string
-            "0.921649 0.383557 0.0587108
-            -0.387517 0.902113 0.189796
-            0.0198338 -0.197677 0.980067"
-  in
-  "rotation matrix does not agree with mathematica" @? mat_approx_equal mathematica (rot_mat [|0.1; 0.2; 0.3|])
+let test_rot_mat mat angles () =
+  "rotation matrix does not agree with mathematica" @? mat_approx_equal mat (rot_mat angles)
 
 let is_inverse mat1 mat2 =
   let id = mat_of_string "1.0 0.0 0.0
@@ -70,10 +65,10 @@ let mat_for_2d_som = farrarr_of_string
  1.0       4.0        3.0  2.0 -8.0"
 
 let mat_for_3d_som = farrarr_of_string
-"0.8600893 0.1743487 -0.4794255  0.0  0.0
--0.4773022 0.6067681 -0.6356218  0.0  0.0
- 0.1800803 0.7755224  0.6050918  0.0  0.0
- 1.0       4.0        3.0        2.0 -8.0"
+"0.802033    -0.485969   -0.347242 0.0  0.0
+ 0.589636    0.736924    0.330563  0.0  0.0
+ 0.0952472   -0.469869   0.877583  0.0  0.0
+ 1.0         4.0         3.0       2.0 -8.0"
 
 let dummy_vars = farr_of_string "0.5 0.25 0.15 0.1"
 
@@ -83,6 +78,7 @@ let test_som_2d () =
 
 let test_som_3d () =
   let _, vects = som_rotation mat_for_3d_som 3 dummy_vars in
+  Ppr.print_float_array_array vects;
   "3d som incorrect" @? farrarr_approx_equal minimized_trans vects
 
 let test_som_3d_var_order orig_vars () =
@@ -93,7 +89,18 @@ let test_som_3d_var_order orig_vars () =
   "var order changed but shouldn't" @? (vars = var_copy)
 
 let suite = [
-  "rot_mat test" >:: test_rot_mat;
+  "rot_mat test 1" >:: test_rot_mat
+                          (mat_of_string
+                           "0.921649 0.383557 0.0587108
+                            -0.387517 0.902113 0.189796
+                            0.0198338 -0.197677 0.980067")
+                          [|0.1; 0.2; 0.3|];
+  "rot_mat test 2" >:: test_rot_mat
+                          (mat_of_string
+                           "0.802033    -0.485969   -0.347242
+                            0.589636    0.736924    0.330563
+                            0.0952472   -0.469869   0.877583")
+                           [|0.2; 0.5; -0.81|];
   "orth test 1" >:: test_rot_mat_orth rot_angles.(0);
   "orth test 2" >:: test_rot_mat_orth rot_angles.(1);
   "2d som test" >:: test_som_2d;
