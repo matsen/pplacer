@@ -56,11 +56,12 @@ let rot_mat angles  =
 
 (* When we are doing PCA, we want to transform our samples from the usual basis
  * in which they are expressed to the basis of k principal components. In the
- * SOM case, we want to apply a rotation to the plane spanned by the principal
- * component vectors. If expressed in the usual way for transformations
- * (vectors are columns of transformation matrix) then we would multiply on the
- * right. However, in this case it's easier if the eigenvectors are the _rows_
- * of the eigenvector matrix, so we multiply on the left by the transpose.
+ * SOM case, we want to apply a rotation to the (hyper) plane spanned by the
+ * principal component vectors. If expressed in the usual way for
+ * transformations (vectors are columns of transformation matrix) then we would
+ * multiply on the right. However, in this case it's easier if the eigenvectors
+ * are the _rows_ of the eigenvector matrix, so we multiply on the left by the
+ * transpose.
 *)
 let rotate_vects vects_part angles =
   let result = Gsl_matrix.copy vects_part in
@@ -126,7 +127,7 @@ let min_overlap vects_part dims =
       [|min; 0.; 0.|]
   | 3 ->
       let obj_fun = overlap vects_part dims
-      and start = [|0.; 0.; 0.|]
+      and start = [|0.1; 0.2; 0.31|]
       and lower = Array.make 3 (-. Gsl_math.pi)
       and upper = Array.make 3 (Gsl_math.pi)
       in begin
@@ -181,6 +182,8 @@ let som_rotation vects dims vals =
   let vects_part = Gsl_matrix.of_arrays (Array.sub vects 0 3) in
   (* Where all the real work is - find min(s) *)
   let min = min_overlap vects_part dims in
+  Ppr.print_float_array min;
+  print_endline "";
   let vals = rotate_vals vals min
   and vects_part = Gsl_matrix.to_arrays (rotate_vects vects_part min)
   in

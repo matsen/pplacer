@@ -1,10 +1,13 @@
+(*
+ * Routines to run principal component analysis.
+ *
+ * Note that we return a matrix such that the rows index the vectors, i.e. the _left_ eigenmatrix.
+ *)
+
 open Ppatteries
 
 let tol = 1e-15
 let max_iter = 100000
-
-
-(* *** general PCA stuff *** *)
 
 let dot = ArrayFuns.fold_left2 (fun s x1 x2 -> s +. (x1 *. x2)) 0.
 

@@ -48,27 +48,27 @@ let test_rot_mat_orth angles () =
 *)
 
 let rot_angles = [|
-  [| 1.2; -0.3; 3.56 |];
-  [| 0.; 2.1; -1.1 |]
 |]
 
 let minimized_trans = farrarr_of_string
 "1.0  0.0  0.0  0.0  0.0
  0.0  1.0  0.0  0.0  0.0
- 0.0  0.0  1.0  0.0  0.0
- 1.0  4.0  3.0  2.0 -8.0"
+ 0.0  0.0  1.0  0.0  0.0"
 
 let mat_for_2d_som = farrarr_of_string
 "0.9800666 0.1986693  0.0  0.0  0.0
 -0.1986693 0.9800666  0.0  0.0  0.0
- 0.0000000 0.0000000  1.0  0.0  0.0
- 1.0       4.0        3.0  2.0 -8.0"
+ 0.0000000 0.0000000  1.0  0.0  0.0"
 
 let mat_for_3d_som = farrarr_of_string
 "0.802033    -0.485969   -0.347242 0.0  0.0
  0.589636    0.736924    0.330563  0.0  0.0
- 0.0952472   -0.469869   0.877583  0.0  0.0
- 1.0         4.0         3.0       2.0 -8.0"
+ 0.0952472   -0.469869   0.877583  0.0  0.0"
+
+let mat_for_3d_som = farrarr_of_string
+"0.921649 0.383557 0.0587108 0.0 0.0
+ -0.387517 0.902113 0.189796 0.0 0.0
+ 0.0198338 -0.197677 0.980067 0.0 0.0"
 
 let dummy_vars = farr_of_string "0.5 0.25 0.15 0.1"
 
@@ -101,8 +101,8 @@ let suite = [
                             0.589636    0.736924    0.330563
                             0.0952472   -0.469869   0.877583")
                            [|0.2; 0.5; -0.81|];
-  "orth test 1" >:: test_rot_mat_orth rot_angles.(0);
-  "orth test 2" >:: test_rot_mat_orth rot_angles.(1);
+  "orth test 1" >:: test_rot_mat_orth [| 1.2; -0.3; 3.56 |];
+  "orth test 2" >:: test_rot_mat_orth [| 0.; 2.1; -1.1 |];
   "2d som test" >:: test_som_2d;
   "3d som test" >:: test_som_3d;
   "var order preservation" >:: test_som_3d_var_order dummy_vars;

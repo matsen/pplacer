@@ -86,7 +86,8 @@ let brent ?(max_iters=100) ?(start_finder=bisection_start_finder) f raw_start le
     let iterator =
         Gsl_min.make Gsl_min.BRENT f start left right in
     let rec run whichStep =
-      if whichStep > max_iters then raise ExceededMaxIter
+      if whichStep > max_iters then
+        Gsl_min.minimum iterator
       else begin
         Gsl_min.iterate iterator;
         let interLow, interHigh = Gsl_min.interval iterator in
@@ -112,7 +113,7 @@ let multimin ?(max_iters=100) obj_fun start
   assert(dim = Array.length upper_bounds);
   let indices = Array.init dim (fun i -> i) in
   (* Optimizes dimension i starting at start' *)
-  let opt_one_dim start' i =
+  let opt_one_dim max_iters start' i =
     let pos = Array.copy start' in
     let obj_part x =
       Array.set pos i x;
@@ -127,16 +128,21 @@ let multimin ?(max_iters=100) obj_fun start
           lower_bounds.(i)
           upper_bounds.(i)
           tolerance);
+    Printf.printf "After optimizing %d, we have %g\n" i (obj_fun pos);
     pos
   in
-  let opt_all_dims start' =
-    (start', Array.fold_left opt_one_dim start' indices)
+  let opt_all_dims max_iters start' =
+    (start', Array.fold_left (opt_one_dim max_iters) start' indices)
+  in
+  let schedule step =
+    if step < 10 then 10
+    else 100
   in
   let rec run (pos1, pos2) step =
     if (step > max_iters) then raise ExceededMaxIter
     else if ((obj_fun pos1) -. (obj_fun pos2) > tolerance) then
-      run (opt_all_dims pos2) (step+1)
+      run (opt_all_dims (schedule step) pos2) (step+1)
     else
       pos2
   in
-  run (opt_all_dims start) 1
+  run (opt_all_dims (schedule 1) start) 1
