@@ -79,7 +79,7 @@ let test_som_2d () =
 let test_som_3d () =
   let _, vects = som_rotation mat_for_3d_som 3 dummy_vars in
   Ppr.print_float_array_array vects;
-  "3d som incorrect" @? farrarr_approx_equal minimized_trans vects
+  "3d som incorrect" @? farrarr_approx_equal ~epsilon:1e-4 minimized_trans vects
 
 let test_som_3d_var_order orig_vars () =
   let vars, _ = som_rotation mat_for_3d_som 3 orig_vars

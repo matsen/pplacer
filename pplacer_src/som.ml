@@ -129,9 +129,10 @@ let min_overlap vects_part dims =
       and start = [|0.; 0.; 0.|]
       and lower = Array.make 3 (-. Gsl_math.pi)
       and upper = Array.make 3 (Gsl_math.pi)
-      in begin
+      in
+      let run_one_3d index_order =
         try
-          Minimization.multimin obj_fun start lower upper tolerance
+          Minimization.multimin ~index_order obj_fun start lower upper tolerance
         with
         | Minimization.ExceededMaxIter ->
             Printf.eprintf "MaxIterations exceeded in minimization routine";
@@ -145,8 +146,15 @@ let min_overlap vects_part dims =
             Printf.eprintf "Was unable to find acceptable start values for \
             minimziation\n";
             raise MinimizationError
-      end
-  | _ -> failwith "Can only rotate in 2 or 3 dimensionss\n"
+      in
+      List.reduce
+        (fun pos1 pos2 -> if obj_fun pos1 < obj_fun pos2 then pos1 else pos2)
+        (List.map
+            (fun index_order ->
+              try run_one_3d index_order with
+              | MinimizationError -> start)
+            [[|0;1;2|]; [|0;2;1|]; [|1;0;2|]; [|1;2;0|]; [|2;0;1|]; [|2;1;0|]])
+  | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
 
 (* In situations where the roation takes the variances out of order, this
  * reorders both the vals and the vects vectors. *)

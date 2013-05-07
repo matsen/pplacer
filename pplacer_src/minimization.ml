@@ -101,16 +101,20 @@ let brent ?(max_iters=100) ?(start_finder=bisection_start_finder) f raw_start le
   | FoundMin minLoc -> minLoc
 
 (* Minimize an objective function of a number of variables.
+ * index_order: order in which dimensions should be optimized
  * start: starting vector
  * bounds: bounding vectors
  * tolerance: tolerance
 *)
-let multimin ?(max_iters=100) obj_fun start
+let multimin ?index_order ?(max_iters=100) obj_fun start
              lower_bounds upper_bounds tolerance =
   let dim = Array.length start in
   assert(dim = Array.length lower_bounds);
   assert(dim = Array.length upper_bounds);
-  let indices = Array.init dim (fun i -> i) in
+  let indices = match index_order with
+    | Some a -> assert(dim = Array.length a); a
+    | None -> Array.init dim (fun i -> i)
+  in
   (* Optimizes dimension i starting at start' *)
   let opt_one_dim start' i =
     let pos = Array.copy start' in
