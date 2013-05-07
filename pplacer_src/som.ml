@@ -131,29 +131,29 @@ let min_overlap vects_part dims =
       and upper = Array.make 3 (Gsl_math.pi)
       in
       let run_one_3d index_order =
-        try
           Minimization.multimin ~index_order obj_fun start lower upper tolerance
+      in begin
+      match
+        List.reduce
+          (fun pos1o pos2o -> match (pos1o,pos2o) with
+            | (Some pos1, Some pos2) ->
+                if obj_fun pos1 < obj_fun pos2 then Some pos1 else Some pos2
+            | (Some pos1, None) -> Some pos1
+            | (None, Some pos2) -> Some pos2
+            | (None, None) -> None)
+          (List.map
+              (fun index_order ->
+                try Some (run_one_3d index_order) with
+                | Minimization.ExceededMaxIter
+                | Minimization.InvalidStartValues _ (* (left, start, right) *)
+                | Minimization.FindStartFailure -> None)
+              [[|0;1;2|]; [|0;2;1|]; [|1;0;2|]; [|1;2;0|]; [|2;0;1|]; [|2;1;0|]])
         with
-        | Minimization.ExceededMaxIter ->
-            Printf.eprintf "MaxIterations exceeded in minimization routine";
-            raise MinimizationError
-        | Minimization.InvalidStartValues (left, start, right) ->
-            Printf.eprintf "Invalid Brent Starting values: %g < %g < %g not \
-            true\n"
-                left start right;
-            raise MinimizationError
-        | Minimization.FindStartFailure ->
-            Printf.eprintf "Was unable to find acceptable start values for \
-            minimziation\n";
-            raise MinimizationError
-      in
-      List.reduce
-        (fun pos1 pos2 -> if obj_fun pos1 < obj_fun pos2 then pos1 else pos2)
-        (List.map
-            (fun index_order ->
-              try run_one_3d index_order with
-              | MinimizationError -> start)
-            [[|0;1;2|]; [|0;2;1|]; [|1;0;2|]; [|1;2;0|]; [|2;0;1|]; [|2;1;0|]])
+          | Some pos -> pos
+          | None -> raise MinimizationError
+          (* Sadly, there is little the user can do even if they know what the
+           * source of the error is. *)
+      end
   | _ -> failwith "Can only rotate in 2 or 3 dimensions\n"
 
 (* In situations where the roation takes the variances out of order, this

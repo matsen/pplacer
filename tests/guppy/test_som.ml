@@ -78,14 +78,12 @@ let test_som_2d () =
 
 let test_som_3d () =
   let _, vects = som_rotation mat_for_3d_som 3 dummy_vars in
-  Ppr.print_float_array_array vects;
   "3d som incorrect" @? farrarr_approx_equal ~epsilon:1e-4 minimized_trans vects
 
 let test_som_3d_var_order orig_vars () =
-  let vars, _ = som_rotation mat_for_3d_som 3 orig_vars
-  and inv_compare x y = -1 * (compare x y) in
+  let vars, _ = som_rotation mat_for_3d_som 3 orig_vars in
   let var_copy = Array.copy vars in
-  Array.sort inv_compare var_copy;
+  Array.sort (fun x y -> compare y x) var_copy;
   "var order changed but shouldn't" @? (vars = var_copy)
 
 let suite = [
