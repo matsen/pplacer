@@ -6,6 +6,10 @@ open Ppatteries
 
 exception MinimizationError
 
+
+let trans_a_mat_mul =
+  Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha:1. ~beta:0.
+
 (*
 Rotation matrix in terms of Euler angles [|phi; theta; psi|]
 http://mathworld.wolfram.com/EulerAngles.html
@@ -64,10 +68,7 @@ let rot_mat angles  =
 *)
 let rotate_vects vects_part angles =
   let result = Gsl_matrix.copy vects_part in
-  let trans_mat_mult =
-    Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha:1. ~beta:0.
-  in
-  trans_mat_mult ~a:(rot_mat angles) ~b:vects_part ~c:result;
+  trans_a_mat_mul ~a:(rot_mat angles) ~b:vects_part ~c:result;
   result
 
 (* We also need to "rotate" the variances, i.e. change them such that they
@@ -138,8 +139,8 @@ let min_overlap vects_part dims =
           (fun pos1o pos2o -> match (pos1o,pos2o) with
             | (Some pos1, Some pos2) ->
                 if obj_fun pos1 < obj_fun pos2 then Some pos1 else Some pos2
-            | (Some pos1, None) -> Some pos1
-            | (None, Some pos2) -> Some pos2
+            | (Some pos, None) -> Some pos
+            | (None, Some pos) -> Some pos
             | (None, None) -> None)
           (List.map
               (fun index_order ->
