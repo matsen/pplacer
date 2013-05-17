@@ -1,0 +1,50 @@
+
+toMatrix[transf_] := TransformationMatrix[transf][[1 ;; 3, 1 ;; 3]]
+
+ofEulerAngles[phi_,theta_,psi_] :=
+   RotationTransform[psi, {0, 0, -1}].
+       RotationTransform[theta, {-1, 0, 0}].
+       RotationTransform[phi, {0, 0, -1}]
+
+
+In[93]:= MatrixForm[Flatten[Table[{i,j},{i,0,2},{j,0,2}],1]]
+
+Out[93]//MatrixForm= 0   0
+                     0   1
+                     0   2
+                     1   0
+                     1   1
+                     1   2
+                     2   0
+                     2   1
+                     2   2
+
+In[94]:= MatrixForm[Flatten[toMatrix[ofEulerAngles[phi,theta,psi]],1]]
+
+Out[94]//MatrixForm= Cos[phi] Cos[psi] - Cos[theta] Sin[phi] Sin[psi]
+                     Cos[psi] Sin[phi] + Cos[phi] Cos[theta] Sin[psi]
+                     Sin[psi] Sin[theta]
+                     -(Cos[psi] Cos[theta] Sin[phi]) - Cos[phi] Sin[psi]
+                     Cos[phi] Cos[psi] Cos[theta] - Sin[phi] Sin[psi]
+                     Cos[psi] Sin[theta]
+                     Sin[phi] Sin[theta]
+                     -(Cos[phi] Sin[theta])
+                     Cos[theta]
+
+
+In[100]:= InputForm[Flatten[toMatrix[ofEulerAngles[phi,theta,psi]],1]]
+
+Out[100]//InputForm=
+{Cos[phi]*Cos[psi] - Cos[theta]*Sin[phi]*Sin[psi],
+ Cos[psi]*Sin[phi] + Cos[phi]*Cos[theta]*Sin[psi], Sin[psi]*Sin[theta],
+ -(Cos[psi]*Cos[theta]*Sin[phi]) - Cos[phi]*Sin[psi], Cos[phi]*Cos[psi]*Cos[theta] -
+  Sin[phi]*Sin[psi], Cos[psi]*Sin[theta], Sin[phi]*Sin[theta], -(Cos[phi]*Sin[theta]),
+ Cos[theta]}
+
+
+In[104]:=
+          toMatrix[ofEulerAngles[0.1,0.2,0.3]]
+
+Out[104]= {{0.921649, 0.383557, 0.0587108},
+            {-0.387517, 0.902113, 0.189796},
+            {0.0198338, -0.197677, 0.980067}}
