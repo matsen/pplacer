@@ -51,7 +51,9 @@
  * Closed GH-299: Fix NaN likelihoods for empirical frequencies + unseen state
  * Closed GH-303: Updated Batteries dependency to version 2.0.0
  * Closed GH-305: Eliminate compilation warnings from CDD
+ * Closed GH-306: Random tie breaking is default in NBC
  * Closed GH-307: Renamed `--kappa` to `--theta`, `awpd` to `bwpd` in `guppy fpd`
+ * Closed GH-309: Support overlap minimization (SOM) added to `guppy epca` (see also GH-221)
 
 1.1.alpha13
 ===========
