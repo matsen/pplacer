@@ -45,7 +45,7 @@ Pplacer does not output a Newick tree because it does not build phylogenetic tre
 It maps sequences into trees, with uncertainty, and thus its output format encodes those maps.
 You can read more about the pplacer/EPA output format and our motivations for it in the corresponding paper_.
 
-If you do need a newick tree, you can look at guppy's tog_ command, but be careful, as the output is not a real phylogenetic tree.
+If you do need a newick tree, you can look at guppy's :ref:`tog <guppy_tog>` command, but be careful, as the output is not a real phylogenetic tree.
 For example, two very similar query sequences that are both rather different than the reference sequences will end up on long parallel branches rather than in a subtree of size two.
 
 .. _paper: http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0031009
