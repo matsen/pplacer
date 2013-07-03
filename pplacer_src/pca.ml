@@ -69,10 +69,11 @@ let covariance_matrix ?scale faa =
 let gen_pca ?(symmv=false) ?(use_raw_eval=false) ?scale n_keep faa =
   let eigen = if symmv then symmv_eigen else power_eigen in
   let cov = covariance_matrix ?scale faa in
-  let (raw_evals, evects) = eigen n_keep cov in
-  if use_raw_eval then (raw_evals, Array.map Gsl_vector.to_array evects)
+  let (raw_evals, raw_evects) = eigen n_keep cov in
+  let evects = Array.map Gsl_vector.to_array raw_evects in
+  if use_raw_eval then (raw_evals, evects)
   else
     (let tr = Linear_utils.trace cov in
     Array.map (fun eval -> assert(eval < tr); eval /. tr) raw_evals,
-    Array.map Gsl_vector.to_array evects)
+    evects)
 

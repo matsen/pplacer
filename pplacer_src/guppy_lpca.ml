@@ -8,6 +8,21 @@ let norm_rows m =
     Linear_utils.l2_normalize (Gsl_matrix.row m i);
   done
 
+let singular_values m n =
+  let real c =
+    let open Gsl_complex in
+    c.re
+  in
+  let _, n_cols = Gsl_matrix.dims m in
+  let mm = Gsl_matrix.create n_cols n_cols in
+
+  Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha:1. ~a:m ~b:m ~beta:0. ~c:mm;
+
+  let eval_c = Gsl_eigen.nonsymm ~protect:false (`M(mm)) in
+  let eval = Array.map real (Gsl_vector_complex.to_array eval_c) in
+  Array.sort (flip compare) eval;
+  Array.sub (Array.map sqrt eval) 0 n
+
 class cmd () =
 object (self)
   inherit Guppy_pca.pca_cmd () as super_pca
@@ -42,10 +57,19 @@ object (self)
     Gsl_blas.gemm ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.Trans ~alpha:1. ~a:af ~b:w' ~beta:0. ~c:afw;
     let afw' = Gsl_matrix.create n_components n_edges in
     Gsl_matrix.transpose afw' afw;
-    (* No normalization of the edge-averaged eigenvectors, per Erick *)
-    (* norm_rows afw'; *)
-    let edge_evect = Gsl_matrix.to_arrays afw' in
-    { eval; evect; edge_evect }
+    norm_rows w';
+    norm_rows afw';
+    (* We want to compute U'Fw, where the columns of w are the eigenvectors of
+       F'LF (and therefore Fw are the eigenvectors of GL). For the sake of
+       computational efficiency, though, we're accumulating U'F as we traverse the
+       tree, and therefore can't normalize the transformed eigenvectors Fw before
+       projecting the sample data in U. Luckily we can find the scalars needed to
+       normalize the results as the singular values of U'F. *)
+    let sa = singular_values data.ufl n_components in
+    Array.iteri (fun i x -> Gsl_vector.scale (Gsl_matrix.row w' i) (1. /. x)) sa;
+    let norm_evect = Gsl_matrix.to_arrays w'
+    and edge_evect = Gsl_matrix.to_arrays afw' in
+    { eval; evect = norm_evect; edge_evect }
 
   method private post_pca result data prl =
     let combol = (List.combine (Array.to_list result.eval) (Array.to_list result.evect))
@@ -63,6 +87,9 @@ object (self)
     Guppy_pca.save_named_fal
       (prefix^".rot")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
+    Guppy_pca.save_named_fal
+      (prefix^".edgerot")
+      (List.map (fun (eval, evect) -> (string_of_float eval, evect)) edge_combol);
     Guppy_pca.save_named_fal
       (prefix^".trans")
       (List.combine

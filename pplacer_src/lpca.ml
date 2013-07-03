@@ -193,7 +193,7 @@ let lpca_agg_data l =
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
 
-let lpca_tot_edge sm edge_id bl data_0 =
+let lpca_tot_edge_nz sm edge_id bl data_0 =
   let pl =
     try
       IntMap.find edge_id sm
@@ -238,6 +238,9 @@ let lpca_tot_edge sm edge_id bl data_0 =
         { data with af = IntMap.add edge_id af_e data.af }
   in
   aux 0 pl 0. data_0
+
+let lpca_tot_edge sm edge_id bl data_0 =
+  if bl > 0. then (lpca_tot_edge_nz sm edge_id bl data_0) else data_0
 
 (* f: int -> int -> 'acc_t -> 'p_t list -> 'acc_t *)
 let fold_samples_listwise f a sl =
@@ -299,9 +302,13 @@ let gen_data sl ref_tree =
                         fplf = Gsl_matrix.copy data_0.fplf })
       (Gtree.get_stree ref_tree)
   in
-  Gsl_matrix.scale data.fplf (1. /. (float n_samples));
+  let inv_smo = 1. /. (float (n_samples - 1)) in
+  let inv_sqrt_smo = sqrt inv_smo in
+  Gsl_matrix.scale data.fplf inv_smo;
+  Gsl_matrix.scale data.ufl inv_sqrt_smo;
+
   mat_rep_uptri data.fplf;
   IntMap.iter
-    (fun _ v -> Gsl_vector.scale v (1. /. sqrt (float n_samples)))
+    (fun _ v -> Gsl_vector.scale v inv_sqrt_smo)
     data.af;
   data
