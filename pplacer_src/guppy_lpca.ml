@@ -8,27 +8,30 @@ let norm_rows m =
     Linear_utils.l2_normalize (Gsl_matrix.row m i);
   done
 
-let singular_values m n =
+let singular_values ~trans m n =
   let real c =
     let open Gsl_complex in
     c.re
   in
-  let _, n_cols = Gsl_matrix.dims m in
-  let mm = Gsl_matrix.create n_cols n_cols in
-
-  Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha:1. ~a:m ~b:m ~beta:0. ~c:mm;
-
+  let n_rows, n_cols = Gsl_matrix.dims m in
+  let n_mm, ta, tb =
+    if trans then (n_rows, Gsl_blas.NoTrans, Gsl_blas.Trans) else (n_cols, Gsl_blas.Trans, Gsl_blas.NoTrans)
+  in
+  let mm = Gsl_matrix.create n_mm n_mm in
+  Gsl_blas.gemm ~ta ~tb ~alpha:1. ~a:m ~b:m ~beta:0. ~c:mm;
   let eval_c = Gsl_eigen.nonsymm ~protect:false (`M(mm)) in
   let eval = Array.map real (Gsl_vector_complex.to_array eval_c) in
   Array.sort (flip compare) eval;
-  Array.sub (Array.map sqrt eval) 0 n
+  Array.map sqrt (Array.sub eval 0 n)
 
 class cmd () =
 object (self)
   inherit Guppy_pca.pca_cmd () as super_pca
+  inherit splitify_cmd () as super_splitify
 
   method specl =
     super_pca#specl
+    @ super_splitify#specl
 
   method desc =
     "performs length principal components"
@@ -44,7 +47,7 @@ object (self)
     and t = self#get_rpo_and_tree (List.hd prl) |> snd in
     Lpca.gen_data sl t
 
-  method private gen_pca ~use_raw_eval ~scale ~symmv n_components data _ =
+  method private gen_pca ~use_raw_eval ~scale ~symmv n_components data prl =
     let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv n_components (Gsl_matrix.to_arrays data.fplf) in
     (* TODO: Erick M.: If you really feel guilty you can do
        http://caml.inria.fr/pub/docs/manual-ocaml-4.00/libref/Bigarray.Array2.html
@@ -61,12 +64,16 @@ object (self)
     norm_rows afw';
     (* We want to compute U'Fw, where the columns of w are the eigenvectors of
        F'LF (and therefore Fw are the eigenvectors of GL). For the sake of
-       computational efficiency, though, we're accumulating U'F as we traverse the
-       tree, and therefore can't normalize the transformed eigenvectors Fw before
-       projecting the sample data in U. Luckily we can find the scalars needed to
-       normalize the results as the singular values of U'F. *)
-    let sa = singular_values data.ufl n_components in
-    Array.iteri (fun i x -> Gsl_vector.scale (Gsl_matrix.row w' i) (1. /. x)) sa;
+       computational efficiency, though, we're accumulating U'F as we traverse
+       the tree, and therefore can't normalize the transformed eigenvectors Fw
+       before projecting the sample data in U. Luckily we can find the scalars
+       needed to normalize the results as the ratio of the singular values of
+       U'F to those of U'. *)
+    let weighting, criterion = self#mass_opts in
+    let sufa = singular_values ~trans:false data.ufl n_components
+    and sua = singular_values ~trans:true (Gsl_matrix.of_arrays (Array.of_list (List.map (self#splitify_placerun_nx weighting criterion) prl))) n_components in
+    let sfa = Array.map2 (/.) sufa sua in
+    Array.iteri (fun i x -> Gsl_vector.scale (Gsl_matrix.row w' i) (1. /. x)) sfa;
     let norm_evect = Gsl_matrix.to_arrays w'
     and edge_evect = Gsl_matrix.to_arrays afw' in
     { eval; evect = norm_evect; edge_evect }
