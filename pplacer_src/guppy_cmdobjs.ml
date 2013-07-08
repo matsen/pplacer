@@ -518,7 +518,7 @@ let find_rep_edges max_edge_d fal gt =
 class splitify_cmd () =
 
 let tolerance = 1e-3
-and splitify x = x -. (1. -. x)
+and splitify x = (1. -. x) -. x
 and sgn = flip compare 0. |- float_of_int
 and arr_of_map default len m =
   Array.init len (fun i -> IntMap.get i default m) in
