@@ -537,6 +537,25 @@ let below_mass_map edgem t =
   in
   assert(abs_float(1. -. total) < tolerance);
   !m
+
+(* get the mass below the given edge, NOT excluding that edge *)
+and below_mass_map_nx edgem t =
+  let m = ref IntMap.empty in
+  let total =
+    Gtree.recur
+      (fun i below_massl ->
+        let below_tot = List.fold_left ( +. ) 0. below_massl in
+        let on_tot = (IntMap.get i 0. edgem) +. below_tot in
+        m := IntMap.check_add i on_tot (!m);
+        on_tot)
+      (fun i ->
+        let on_tot = IntMap.get i 0. edgem in
+        m := IntMap.add i on_tot (!m);
+        on_tot)
+      t
+  in
+  assert(abs_float(1. -. total) < tolerance);
+  !m
 in
 
 object (self)
@@ -577,6 +596,20 @@ object (self)
       (IntMap.map
          splitify_fn
          (below_mass_map (Mass_map.By_edge.of_pre preim) t))
+
+  (* Same as splitify_placerun, but without excluding mass on the "current"
+     edge. TODO: merge this implementation with splitify_placerun *)
+  method private splitify_placerun_nx weighting criterion pr =
+    let preim = Mass_map.Pre.of_placerun weighting criterion pr
+    and t = Placerun.get_ref_tree pr
+    and splitify_fn = self#splitify_transform in
+    arr_of_map
+      (splitify_fn 0.)
+      (*(1+(Gtree.top_id t))*)
+      (Gtree.top_id t)
+      (IntMap.map
+         splitify_fn
+         (below_mass_map_nx (Mass_map.By_edge.of_pre preim) t))
 
   method private filter_fal orig_length fal edges =
     List.map (Array.filteri (fun i _ -> IntSet.mem i edges)) fal,

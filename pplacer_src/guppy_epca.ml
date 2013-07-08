@@ -72,54 +72,12 @@ object (self)
     "performs edge principal components"
   method usage = "usage: epca [options] placefiles"
 
-  (* get the mass below the given edge, NOT excluding that edge *)
-  method private below_mass_map_no_exclude edgem t =
-    let tolerance = 1e-3 in
-    let m = ref IntMap.empty in
-    let total =
-      Gtree.recur
-        (fun i below_massl ->
-          let below_tot = List.fold_left ( +. ) 0. below_massl in
-          let on_tot = (IntMap.get i 0. edgem) +. below_tot in
-          m := IntMap.check_add i on_tot (!m);
-          on_tot)
-        (fun i ->
-          let on_tot = IntMap.get i 0. edgem in
-          m := IntMap.add i on_tot (!m);
-          on_tot)
-        t
-    in
-    assert(abs_float(1. -. total) < tolerance);
-    !m
-
-  method private splitify_placerun_no_exclude weighting criterion pr =
-    let preim = Mass_map.Pre.of_placerun weighting criterion pr
-    and t = Placerun.get_ref_tree pr
-    and splitify_fn x = (1. -. x) -. x
-    and arr_of_map default len m =
-      Array.init len (fun i -> IntMap.get i default m) in
-    let splitify_m =
-      IntMap.map
-        splitify_fn
-        (self#below_mass_map_no_exclude (Mass_map.By_edge.of_pre preim) t)
-    in
-    let a =
-      arr_of_map
-        (splitify_fn 0.)
-        (*(1+(Gtree.top_id t))*)
-        (Gtree.top_id t)
-        splitify_m in
-    a
-
   method private prep_data prl =
     let weighting, criterion = self#mass_opts in
-    let spr_fn exclude =
-      if exclude then self#splitify_placerun else self#splitify_placerun_no_exclude
-    in
     (* use the original exclusionary splitify only if we're not doing pmlpca *)
-    let edge_diff = List.map (spr_fn (not (fv length)) weighting criterion) prl in
-    { edge_diff }
-
+    let spr_fn =
+      if (fv length) then self#splitify_placerun_nx else self#splitify_placerun
+    in
 (*
     let edge_diff, rep_reduction_map, rep_orig_length =
       List.map (self#splitify_placerun weighting criterion) prl
@@ -130,6 +88,8 @@ object (self)
     in
     { edge_diff; rep_reduction_map; rep_orig_length; const_reduction_map; const_orig_length }
 *)
+    let edge_diff = List.map (spr_fn weighting criterion) prl in
+    { edge_diff }
 
   method private gen_pca ~use_raw_eval ~scale ~symmv write_n data prl =
     let faa = Array.of_list data.edge_diff in
@@ -182,7 +142,6 @@ object (self)
 
   method private post_pca result data prl =
     let combol = (List.combine (Array.to_list result.eval) (Array.to_list result.evect)) in
-    let full_combol = combol
 (*
     let full_combol =
       List.map
@@ -191,6 +150,7 @@ object (self)
                |- expand data.rep_orig_length data.rep_reduction_map))
         combol
 *)
+    let full_combol = combol
     and prefix = self#single_prefix ~requires_user_prefix:true ()
     and ref_tree = self#get_rpo_and_tree (List.hd prl) |> snd
     and names = List.map Placerun.get_name prl in
