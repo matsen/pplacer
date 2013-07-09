@@ -2,12 +2,17 @@ open Ppatteries
 open Guppy_cmdobjs
 open Lpca
 
+(* Normalize the rows of a matrix m to unit vectors. *)
 let norm_rows m =
   let n_rows, _ = Gsl_matrix.dims m in
   for i=0 to (n_rows-1) do
     Linear_utils.l2_normalize (Gsl_matrix.row m i);
   done
 
+(* Compute the n largest singular values of a matrix m (or its transpose) as
+   the square root of the eigenvalues of (m* m), where m* is the conjugate
+   transpose of m. We assume m is real-valued and therefore compute m* as m'
+   for simplicity. *)
 let singular_values ~trans m n =
   let real c =
     let open Gsl_complex in
