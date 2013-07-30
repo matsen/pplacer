@@ -16,8 +16,9 @@ Compiling ``pplacer`` requires a number of libraries and tools to be installed:
 * patch
 * m4
 * gawk
+* zlib
 
-On Debian/Ubuntu, these can be installed with:
+On Debian/Ubuntu 12.04, these can be installed with:
 
 .. code-block:: bash
 
@@ -26,11 +27,11 @@ On Debian/Ubuntu, these can be installed with:
       gawk \
       libgsl0-dev \
       libsqlite3-dev \
+      libz-dev \
       m4 \
       make \
       ocaml \
       patch
-
 
 OPAM
 ^^^^
