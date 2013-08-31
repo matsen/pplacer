@@ -14,6 +14,7 @@ let command_list () =
       "kr", (fun () -> new Guppy_kr.cmd ());
       "epca", (fun () -> new Guppy_epca.cmd ());
       "lpca", (fun () -> new Guppy_lpca.cmd ());
+      "pmlpca", (fun () -> new Guppy_pmlpca.cmd ());
       "splitify", (fun () -> new Guppy_splitify.cmd ());
       "edpl", (fun () -> new Guppy_edpl.cmd ());
       "rarefact", (fun () -> new Guppy_rarefact.cmd ());

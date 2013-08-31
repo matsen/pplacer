@@ -36,7 +36,7 @@ object (self)
 
   method specl =
     super_pca#specl
-    @ super_splitify#specl
+  @ super_splitify#specl
 
   method desc =
     "performs length principal components"
@@ -52,7 +52,7 @@ object (self)
     and t = self#get_rpo_and_tree (List.hd prl) |> snd in
     Lpca.gen_data sl t
 
-  method private gen_pca ~use_raw_eval ~scale ~symmv n_components data prl =
+  method private gen_pca ~use_raw_eval ~scale ~symmv n_components data _ =
     let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv n_components (Gsl_matrix.to_arrays data.fplf) in
     (* TODO: Erick M.: If you really feel guilty you can do
        http://caml.inria.fr/pub/docs/manual-ocaml-4.00/libref/Bigarray.Array2.html
@@ -74,11 +74,13 @@ object (self)
        before projecting the sample data in U. Luckily we can find the scalars
        needed to normalize the results as the ratio of the singular values of
        U'F to those of U'. *)
-    let weighting, criterion = self#mass_opts in
-    let sufa = singular_values ~trans:false data.ufl n_components
-    and sua = singular_values ~trans:true (Gsl_matrix.of_arrays (Array.of_list (List.map (self#splitify_placerun_nx weighting criterion) prl))) n_components in
-    let sfa = Array.map2 (/.) sufa sua in
-    Array.iteri (fun i x -> Gsl_vector.scale (Gsl_matrix.row w' i) (1. /. x)) sfa;
+    (*
+      let weighting, criterion = self#mass_opts in
+      let sufa = singular_values ~trans:false data.ufl n_components
+      and sua = singular_values ~trans:true (Gsl_matrix.of_arrays (Array.of_list (List.map (self#splitify_placerun_nx weighting criterion) prl))) n_components in
+      let sfa = Array.map2 (/.) sufa sua in
+      Array.iteri (fun i x -> Gsl_vector.scale (Gsl_matrix.row w' i) (1. /. x)) sfa;
+    *)
     let norm_evect = Gsl_matrix.to_arrays w'
     and edge_evect = Gsl_matrix.to_arrays afw' in
     { eval; evect = norm_evect; edge_evect }
