@@ -39,6 +39,10 @@ object (self)
     in
     { edge_diff; rep_reduction_map; rep_orig_length; const_reduction_map; const_orig_length }
 
+  method private check_data data write_n =
+    let fal = data.edge_diff in
+    self#check_uniqueness fal write_n
+
   method private gen_pca ~use_raw_eval ~scale ~symmv write_n data _ =
     let faa = Array.of_list data.edge_diff in
     let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv write_n faa in

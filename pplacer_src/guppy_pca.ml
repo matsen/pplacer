@@ -36,31 +36,25 @@ object (self)
     ]
 
   method private virtual prep_data : 'prl_t -> 'data_t
+  method private virtual check_data : 'data_t -> int -> int
   method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> 'data_t -> 'prl_t -> 'result_t
   method private virtual post_pca : 'result_t -> 'data_t -> 'prl_t -> unit
+
+  method private check_uniqueness fal write_n =
+    let n_unique_rows = List.length (List.sort_unique compare fal) in
+    if n_unique_rows <= 2 then
+      failwith (Printf.sprintf "You have only %d unique row(s) in your data \
+      after transformation. This is not enough to do PCA." n_unique_rows);
+    if n_unique_rows < write_n then
+      Printf.printf "You have only %d unique rows in your data after \
+          transformation. Restricting to this number of principal components.\n"
+        n_unique_rows;
+    min n_unique_rows write_n
 
   method private placefile_action prl =
     self#check_placerunl prl;
     let data = self#prep_data prl in
-    let write_n = fv write_n in
-
-    (* TODO: figure out a good way to re-enable this code *)
-(*
-    let n_unique_rows = List.length (List.sort_unique compare data) in
-    if n_unique_rows <= 2 then
-      failwith(Printf.sprintf "You have only %d unique row(s) in your data \
-      after transformation. This is not enough to do PCA." n_unique_rows);
-    let write_n =
-      if n_unique_rows < write_n then begin
-        Printf.printf "You have only %d unique rows in your data after \
-          transformation. Restricting to this number of principal components.\n"
-          n_unique_rows;
-        n_unique_rows
-      end
-      else
-        write_n
-    in
-*)
+    let write_n = self#check_data data (fv write_n) in
     let result =
       self#gen_pca ~use_raw_eval:(fv raw_eval)
         ~scale:(fv scale) ~symmv:(fv symmv) write_n data prl

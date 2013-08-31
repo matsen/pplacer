@@ -52,6 +52,10 @@ object (self)
     and t = self#get_rpo_and_tree (List.hd prl) |> snd in
     Lpca.gen_data sl t
 
+  method private check_data data write_n =
+    let fal = Array.to_list (Gsl_matrix.to_arrays data.fplf) in
+    self#check_uniqueness fal write_n
+
   method private gen_pca ~use_raw_eval ~scale ~symmv n_components data _ =
     let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv n_components (Gsl_matrix.to_arrays data.fplf) in
     (* TODO: Erick M.: If you really feel guilty you can do

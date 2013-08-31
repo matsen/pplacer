@@ -59,6 +59,10 @@ object (self)
     let edge_diff = List.map (self#splitify_placerun_nx weighting criterion) prl in
     { edge_diff }
 
+  method private check_data data write_n =
+    let fal = data.edge_diff in
+    self#check_uniqueness fal write_n
+
   method private gen_pca ~use_raw_eval ~scale ~symmv write_n data prl =
     let faa_z = Gsl_matrix.of_arrays (Array.of_list data.edge_diff) in
     let n_samples, n_edges = Gsl_matrix.dims faa_z in
