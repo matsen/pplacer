@@ -230,12 +230,12 @@ let _ = dispatch begin function
       (S[A"-cclib"; A"-lcdd"; A"-cclib"; A"-Lcdd_src"]);
 
     flag ["link"; "c_pam"]
-      (S[A"-cclib"; A"-lpam"; A"-cclib"; A"-Lpam_src"]);
+      (S[A"-cclib"; A"-lpplacer_pam"; A"-cclib"; A"-Lpam_src"]);
 
     (* make libpplacercside when needed *)
     dep ["c_pplacer"] ["pplacer_src/libpplacercside.a"];
     dep ["c_cdd"] ["cdd_src/libcdd.a"];
-    dep ["c_pam"] ["pam_src/libpam.a"];
+    dep ["c_pam"] ["pam_src/libpplacer_pam.a"];
     flag ["link"; "c_pam"] (S[A"-cclib"; A"-lgsl"]);
 
   | After_options ->
