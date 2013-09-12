@@ -1,3 +1,6 @@
+.. important::
+  ``rppr min_adcl_tree`` Prints the labels of the leaves that should be **removed** from the tree, not those that should be kept.
+
 ``min_adcl_tree`` chooses the set of *k* sequences *X* that minimize the average distance from each pruned sequence to the closest sequence in *X*.
 
 You can read more in the announcement_ or the paper_.
