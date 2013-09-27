@@ -10,17 +10,17 @@ let m = rand_symmetric 5;;
 let power_l, power_v = power_eigen 5 m;;
 let symmv_l, symmv_v = symmv_eigen 5 m;;
 
-let first_coord_pos_arr a =
-  if a.(0) < 0. then Array.map (fun x -> -. x) a
-  else a
+let first_coord_pos_vec v =
+  if v.{0} < 0. then Gsl_vector.scale v (-.1.)
 
-let first_coord_pos_arr_arr aa =
-  Array.map first_coord_pos_arr aa
+let first_coord_pos_arr_vec aa =
+  Array.iter first_coord_pos_vec aa
 
 let test_eigen l1 l2 v1 v2 =
+  first_coord_pos_arr_vec v1;
+  first_coord_pos_arr_vec v2;
   "eigenvalues not equal" @? (l1 =@ l2);
-  "eigenvectors not equal" @?
-    (first_coord_pos_arr_arr v1 =@@ first_coord_pos_arr_arr v2);
+  "eigenvectors not equal" @? (v1 =|@ v2);
   ()
 
 let suite = [

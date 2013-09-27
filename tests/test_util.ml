@@ -114,7 +114,10 @@ let farr_approx_equal ?(epsilon = 1e-5) fa1 fa2 =
 let farrarr_approx_equal ?(epsilon = 1e-5) faa1 faa2 =
   array_f_equal (farr_approx_equal ~epsilon) faa1 faa2
 
-exception Inequal of Jsontype.jsontype * Jsontype.jsontype
+let vecarr_approx_equal ?(epsilon = 1e-5) va1 va2 =
+  array_f_equal (vec_approx_equal ~epsilon) va1 va2
+
+exception Unequal of Jsontype.jsontype * Jsontype.jsontype
 let rec json_equal ?(epsilon = 1e-5) j1 j2 =
   if begin match j1, j2 with
     | Jsontype.Bool b1, Jsontype.Bool b2 -> b1 = b2
@@ -128,7 +131,7 @@ let rec json_equal ?(epsilon = 1e-5) j1 j2 =
       (Hashtbl.length o1) = (Hashtbl.length o2) && begin
         Hashtbl.iter
           (fun k v ->
-            if not (Hashtbl.mem o2 k) then raise (Inequal (j1, j2));
+            if not (Hashtbl.mem o2 k) then raise (Unequal (j1, j2));
             json_equal ~epsilon v (Hashtbl.find o2 k))
           o1;
         true
@@ -143,7 +146,7 @@ let rec json_equal ?(epsilon = 1e-5) j1 j2 =
       end
     | Jsontype.Null, Jsontype.Null -> true
     | _, _ -> false
-  end then () else raise (Inequal (j1, j2))
+  end then () else raise (Unequal (j1, j2))
 
 
 (* *** infixes for equalities *** *)
@@ -152,6 +155,7 @@ let ( =| ) = vec_approx_equal
 let ( =|| ) = mat_approx_equal
 let ( =@ ) = farr_approx_equal
 let ( =@@ ) = farrarr_approx_equal
+let ( =|@ ) = vecarr_approx_equal
 
 let check_map_approx_equal message = Enum.iter2
   (fun (k1, v1) (k2, v2) ->
