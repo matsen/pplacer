@@ -5,8 +5,10 @@ open Linear_utils
 let vec_mean v =
   (vec_fold_left (+.) 0. v) /. (float (Gsl_vector.length v))
 
-(* Compute the mean of a vector v and subtract it from each element. *)
-let vec_denorm v =
+(* Compute the mean of a vector v and subtract it from each element, i.e. apply
+ * a centering matrix: http://en.wikipedia.org/wiki/Centering_matrix
+ *)
+let vec_center v =
   let v_bar = vec_mean v in
   vec_map (fun vi -> vi -. v_bar) v
 
@@ -87,7 +89,7 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
   let af_e = Gsl_vector.create ~init:0. n_samples in
   let rec aux i pl prev_distal_bl data =
     let update_data sample_id mass len =
-      let fk' = vec_denorm data.fk in
+      let fk' = vec_center data.fk in
       Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:data.fplf;
       data.fk.{sample_id} <- data.fk.{sample_id} -. (2. *. mass);
       data.mk.{sample_id} <- data.mk.{sample_id} +. mass;
