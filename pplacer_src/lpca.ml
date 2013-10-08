@@ -25,12 +25,24 @@ type lpca_result = { eval: float array;
                      evect: float array array;
                      edge_evect: float array array }
 
-(* An intermediate edge result record. *)
+(* An intermediate edge result record. These have the following meanings in
+ * terms of the length_pca writeup. All vectors are indexed by the sample
+ * number, so for example fk.{i} is for the ith number. It's a little confusing
+ * because the subscript k refers to the sample number, but this way we can
+ * have a pretty close relationship between the code and the write-up.
+ *)
 type lpca_data = { fk: Gsl_vector.vector;
+                (* $f_k$, the difference of mass between the distal and
+                   proximal sides (WRT current position). *)
                    mk: Gsl_vector.vector;
+                (* $m_k$, the mass accumulator. *)
                    ufl: Gsl_matrix.matrix;
+                (* $uFL$ ... BC? *)
                    af: Gsl_vector.vector IntMap.t;
+                (* $AF$, which is an e x s matrix, here encoded as a map
+                 * (edges) to a vector indexed by sample number. *)
                    fplf: Gsl_matrix.matrix }
+                (* $F'LF$ *)
 
 (* A repackaged placement record which includes the sample id. *)
 type lpca_placement = { distal_bl: float;
@@ -63,15 +75,17 @@ let lpca_agg_data l =
     | x::xs ->
       let a = List.fold_left
         (fun a xi ->
-          Gsl_vector.add a.mk xi.mk;
+          Gsl_vector.add a.mk xi.mk; (* a.{m_k} += x.{m_k} *)
           Gsl_matrix.add a.ufl xi.ufl;
           Gsl_matrix.add a.fplf xi.fplf;
           { a with af = map_union a.af xi.af })
         { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk) }
+        (* Above: zero out the mass accumulator before folding. *)
         xs
       in
-      Gsl_blas.axpy (-2.) a.mk a.fk;
-      Gsl_vector.add a.mk x.mk;
+      Gsl_blas.axpy (-2.) a.mk a.fk; (* axpy is y := a*x + y.
+                           Here a.f_k += -2 a.m_k as we are going past $m_k$. *)
+      Gsl_vector.add a.mk x.mk; (* Add x's mass accumulator to a's mass accumulator BC?*)
       a
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
@@ -87,9 +101,12 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
   in
   let n_samples = Gsl_vector.length data_0.fk in
   let af_e = Gsl_vector.create ~init:0. n_samples in
+  (* In aux, i counts the number of "constant regions" along the edge. *)
   let rec aux i pl prev_distal_bl data =
     let update_data sample_id mass len =
       let fk' = vec_center data.fk in
+      (* syr is symmetric rank-1 update A = \alpha x x^T + A of the symmetric
+       * matrix A. *)
       Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:data.fplf;
       data.fk.{sample_id} <- data.fk.{sample_id} -. (2. *. mass);
       data.mk.{sample_id} <- data.mk.{sample_id} +. mass;
@@ -120,6 +137,7 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
         assert(len > 0.);
         update_data 0 0. len;
         Gsl_vector.scale af_e (1. /. (float (succ i)));
+        (* Above: multiplying on left by averaging matrix. *)
         { data with af = IntMap.add edge_id af_e data.af }
   in
   aux 0 pl 0. data_0
@@ -153,11 +171,12 @@ let make_n_lpca_map sl =
   fold_samples_listwise
     (fun sample_id edge_id a pl ->
       IntMap.modify_def
-        []
-        edge_id
+        [] (* If edge_id not a key of the map, insert []. *)
+        edge_id (* Key to modify. *)
         (List.merge cmp_p
            (List.map (repkg_p sample_id)
               (List.filter (fun { Mass_map.Indiv.mass } -> mass > 0.) pl)))
+           (* Function to apply to the value of edge_id in the map. *)
         a)
     IntMap.empty
     sl
@@ -194,7 +213,7 @@ let gen_data sl ref_tree =
                         fplf = Gsl_matrix.copy data_0.fplf })
       (Gtree.get_stree ref_tree)
   in
-  let inv_smo = 1. /. (float (n_samples - 1)) in
+  let inv_smo = 1. /. (float (n_samples - 1)) in (* Samples Minus One. *)
   let inv_sqrt_smo = sqrt inv_smo in
   Gsl_matrix.scale data.fplf inv_smo;
   Gsl_matrix.scale data.ufl inv_sqrt_smo;
