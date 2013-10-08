@@ -1,3 +1,18 @@
+(* The primary source for length PCA. The code is designed to be read in
+parallel with the length_pca tex document.
+
+A couple of "gotchas":
+- F is not a matrix of f's. Indeed F is a scaled and centered version of the
+matrix of f's:
+  F_{i,k} := \frac{1}{s^{1/2}} (f_k(x_i) - \bar f(x_i)),
+
+- The vectors are indexed a bit differently than in the tex document. In the
+code, fk is a vector indexed by the samples. The location x is typically
+implicit, so fk.{j} is $f_j(x)$. However, when x is not implicit it is indexed
+by i.
+
+*)
+
 open Ppatteries
 open Linear_utils
 
@@ -25,12 +40,8 @@ type lpca_result = { eval: float array;
                      evect: float array array;
                      edge_evect: float array array }
 
-(* An intermediate edge result record. These have the following meanings in
- * terms of the length_pca writeup. All vectors are indexed by the sample
- * number, so for example fk.{i} is for the ith number. It's a little confusing
- * because the subscript k refers to the sample number, but this way we can
- * have a pretty close relationship between the code and the write-up.
- *)
+(* An intermediate edge result record with the following meanings in terms of
+the length_pca writeup. *)
 type lpca_data = { fk: Gsl_vector.vector;
                 (* $f_k$, the proximal minus the distal mass
                  * (WRT current position). *)
@@ -84,18 +95,17 @@ let lpca_agg_data l =
         (* Above: zero out the mass accumulator before folding. *)
         xs
       in
-      Gsl_blas.axpy (-2.) a.mk a.fk; (* axpy is y := a*x + y.
-                           Here a.f_k += -2 a.m_k as we are going past $m_k$. *)
-      Gsl_vector.add a.mk x.mk; (* When we process the next edge proximal to
-                                   this one we'll need to know how much total
-                                   mass is distal to that edge, so we must add
-                                   x.mk to the accumulator a.mk at some
-                                   point. However, since we used the edge data
-                                   record x as the initial value of the
-                                   aggregation, we do this *after* we've
-                                   aggregated the $f_k$ values into a.fk, since
-                                   the mass on x was already considered when
-                                   computing x.fk. *)
+      Gsl_blas.axpy (-2.) a.mk a.fk;
+      (* axpy is y := a*x + y.
+       * Here a.f_k += -2 a.m_k as we are going past $m_k$. *)
+      Gsl_vector.add a.mk x.mk;
+      (* When we process the next edge proximal to this one we'll need to know
+         how much total mass is distal to that edge, so we must add x.mk to the
+         accumulator a.mk at some point. However, since we used the edge data
+         record x as the initial value of the aggregation, we do this *after*
+         we've aggregated the $f_k$ values into a.fk, since the mass on x was
+         already considered when computing x.fk.
+       *)
       a
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
