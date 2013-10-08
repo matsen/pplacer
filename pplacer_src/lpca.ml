@@ -32,8 +32,8 @@ type lpca_result = { eval: float array;
  * have a pretty close relationship between the code and the write-up.
  *)
 type lpca_data = { fk: Gsl_vector.vector;
-                (* $f_k$, the difference of mass between the distal and
-                   proximal sides (WRT current position). *)
+                (* $f_k$, the proximal minus the distal mass
+                 * (WRT current position). *)
                    mk: Gsl_vector.vector;
                 (* $m_k$, the mass accumulator. *)
                    ufl: Gsl_matrix.matrix;
@@ -191,7 +191,7 @@ let gen_data sl ref_tree =
   let sm = make_n_lpca_map sl in
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
-  let data_0 = { fk = Gsl_vector.create ~init:1. n_samples;
+  let data_0 = { fk = Gsl_vector.create ~init:1. n_samples; (* prox - distal *)
                  mk = Gsl_vector.create ~init:0. n_samples;
                  ufl = Gsl_matrix.create ~init:0. n_samples n_samples;
                  af = IntMap.empty;
