@@ -37,7 +37,8 @@ type lpca_data = { fk: Gsl_vector.vector;
                    mk: Gsl_vector.vector;
                 (* $m_k$, the mass accumulator. *)
                    ufl: Gsl_matrix.matrix;
-                (* $uFL$ ... BC? *)
+                (* $uFL$, an s x s accumulator matrix of partial inner products
+                 * later used in projecting a sample $u$ onto $Fw$. *)
                    af: Gsl_vector.vector IntMap.t;
                 (* $AF$, which is an e x s matrix, here encoded as a map
                  * (edges) to a vector indexed by sample number. *)
@@ -85,7 +86,16 @@ let lpca_agg_data l =
       in
       Gsl_blas.axpy (-2.) a.mk a.fk; (* axpy is y := a*x + y.
                            Here a.f_k += -2 a.m_k as we are going past $m_k$. *)
-      Gsl_vector.add a.mk x.mk; (* Add x's mass accumulator to a's mass accumulator BC?*)
+      Gsl_vector.add a.mk x.mk; (* When we process the next edge proximal to
+                                   this one we'll need to know how much total
+                                   mass is distal to that edge, so we must add
+                                   x.mk to the accumulator a.mk at some
+                                   point. However, since we used the edge data
+                                   record x as the initial value of the
+                                   aggregation, we do this *after* we've
+                                   aggregated the $f_k$ values into a.fk, since
+                                   the mass on x was already considered when
+                                   computing x.fk. *)
       a
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
@@ -100,6 +110,9 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
       | Not_found -> []
   in
   let n_samples = Gsl_vector.length data_0.fk in
+  (* af_e is an accumulator for this edge's row in the $\tilde{F} = AF$ matrix,
+     which is later used in computing edge-averaged eigenvectors as described in
+     the text. *)
   let af_e = Gsl_vector.create ~init:0. n_samples in
   (* In aux, i counts the number of "constant regions" along the edge. *)
   let rec aux i pl prev_distal_bl data =
