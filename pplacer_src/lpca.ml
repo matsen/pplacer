@@ -124,13 +124,8 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
       data.fk.{sample_id} <- data.fk.{sample_id} -. (2. *. mass);
       data.mk.{sample_id} <- data.mk.{sample_id} +. mass;
       Gsl_vector.add af_e fk';
-      (* FIXME: the nested for loops seem inefficient, is there a more clever
-         way? *)
-      for k=0 to n_samples-1 do
-        for j=0 to n_samples-1 do
-          data.ufl.{k,j} <- data.ufl.{k,j} +. (data.fk.{k} *. fk'.{j} *. len);
-        done;
-      done
+      (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. *)
+      Gsl_blas.dger ~alpha:len ~x:data.fk ~y:fk' ~a:data.ufl
     in
     match pl with
       | p::ps ->
