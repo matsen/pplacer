@@ -47,7 +47,7 @@ type lpca_data = { fk: Gsl_vector.vector;
                 (* $f_k$, the proximal minus the distal mass
                  * (WRT current position). *)
                    mk: Gsl_vector.vector;
-                (* $m_k$, the mass accumulator. *)
+                (* $m_k$, the mass distal to our position. *)
                    ufl: Gsl_matrix.matrix;
                 (* $uFL$, an s x s accumulator matrix of partial inner products
                  * later used in projecting a sample $u$ onto $Fw$. *)
@@ -90,31 +90,30 @@ let lpca_agg_data l =
       let a = List.fold_left
 (* NOTATION: I propose not using i here, as it is reserved for positions. *)
         (fun a xi ->
-          Gsl_vector.add a.mk xi.mk; (* a.{m_k} += x.{m_k} *)
+          Gsl_vector.add a.mk xi.mk; (* Total up distal mass. *)
           Gsl_matrix.add a.ufl xi.ufl;
           Gsl_matrix.add a.fplf xi.fplf;
           { a with af = map_union a.af xi.af })
         { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk) }
-        (* Above: zero out the mass accumulator before folding. *)
+        (* Above: zero out the mass accumulator before folding. We are going to
+           compute mk for this subtree directly as the sum of the mk's of the
+           subtrees. *)
         xs
       in
+      (* axpy is y := a*x + y, so the below means a.f_k += -2 a.m_k. *)
+      (* At this point a.mk has the mass of all of the subtrees except for x.
+         Thus the line below updates f_k to reflect going past all of those
+         subtrees. *)
       Gsl_blas.axpy (-2.) a.mk a.fk;
-      (* axpy is y := a*x + y.
-       * Here a.f_k += -2 a.m_k as we are going past $m_k$. *)
+      (* Finish our summation of the distal mass by adding on x's mass. *)
       Gsl_vector.add a.mk x.mk;
-      (* When we process the next edge proximal to this one we'll need to know
-         how much total mass is distal to that edge, so we must add x.mk to the
-         accumulator a.mk at some point. However, since we used the edge data
-         record x as the initial value of the aggregation, we do this *after*
-         we've aggregated the $f_k$ values into a.fk, since the mass on x was
-         already considered when computing x.fk.
-       *)
       a
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
 
-(* Process the placements along an edge of non-zero length, given the initial
-   values data_0 "just beyond" the distal node of the edge. *)
+(* Process the placements along an edge of non-zero length from distal to
+proximal, given the initial values data_0 "just beyond" the distal node of the
+edge. *)
 let lpca_tot_edge_nz sm edge_id bl data_0 =
   let pl =
     try
@@ -144,7 +143,8 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
       | p::ps ->
         let len = p.distal_bl -. prev_distal_bl in
         (* Make sure we're processing the placements on the edge in the right
-           order, and that we're not processing zero-mass placements. *)
+           order (i.e. distal to proximal), and that we're not processing
+           zero-mass placements. *)
         assert(p.distal_bl >= prev_distal_bl);
         assert(p.distal_bl < bl);
         assert(p.mass > 0.);
