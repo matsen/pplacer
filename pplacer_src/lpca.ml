@@ -131,12 +131,13 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
     let update_data sample_id mass len =
       let fk' = vec_center data.fk in
       (* syr is symmetric rank-1 update A = \alpha x x^T + A of the symmetric
-       * matrix A. *)
+       * matrix A. This is doing the summation in eq:piecewise_edge. *)
       Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:data.fplf;
       data.fk.{sample_id} <- data.fk.{sample_id} -. (2. *. mass);
       data.mk.{sample_id} <- data.mk.{sample_id} +. mass;
       Gsl_vector.add af_e fk';
-      (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. *)
+      (* dger is rank-1 update A = \alpha x y^T + A of the matrix A.
+       *)
       Gsl_blas.dger ~alpha:len ~x:data.fk ~y:fk' ~a:data.ufl
     in
     match pl with
