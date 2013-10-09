@@ -103,13 +103,13 @@ object (self)
             self#heat_tree_of_float_arr t evect |> self#maybe_numbered))
          edge_combol);
     Guppy_pca.save_named_fal
-      (prefix^".rot")
+      (prefix^".trans")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
     Guppy_pca.save_named_fal
-      (prefix^".edgerot")
+      (prefix^".edgetrans")
       (List.map (fun (eval, evect) -> (string_of_float eval, evect)) edge_combol);
     Guppy_pca.save_named_fal
-      (prefix^".trans")
+      (prefix^".proj")
       (List.combine
          names
          (List.map (fun d -> Array.map (Pca.dot d) result.evect) (Array.to_list (Gsl_matrix.to_arrays data.ufl))))
