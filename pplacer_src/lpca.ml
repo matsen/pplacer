@@ -10,8 +10,9 @@ matrix of f's:
 code, fk is a vector indexed by the samples. The location x is typically
 implicit, so fk.{j} is $f_j(x)$. However, when x is not implicit it is indexed
 by i.
-
 *)
+
+(* NOTATION: I think the above paragraph is confusing and propose changing fk to f, etc. *)
 
 open Ppatteries
 open Linear_utils
@@ -84,8 +85,10 @@ let map_union m1 m2 =
    that shouldn't happen. *)
 let lpca_agg_data l =
   match l with
+(* NOTATION: It's confusing that these are x, where we used x for locations in the tree in the tex, etc. *)
     | x::xs ->
       let a = List.fold_left
+(* NOTATION: I propose not using i here, as it is reserved for positions. *)
         (fun a xi ->
           Gsl_vector.add a.mk xi.mk; (* a.{m_k} += x.{m_k} *)
           Gsl_matrix.add a.ufl xi.ufl;
