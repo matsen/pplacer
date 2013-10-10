@@ -1,4 +1,5 @@
 open Ppatteries
+open Subcommand
 open Guppy_cmdobjs
 open Lpca
 
@@ -90,28 +91,61 @@ object (self)
     { eval; evect = norm_evect; edge_evect }
 
   method private post_pca result data prl =
-    let combol = (List.combine (Array.to_list result.eval) (Array.to_list result.evect))
-    and edge_combol = (List.combine (Array.to_list result.eval) (Array.to_list result.edge_evect)) in
-    let prefix = self#single_prefix ~requires_user_prefix:true ()
-    and names = (List.map Placerun.get_name prl)
-    and t = self#get_rpo_and_tree (List.hd prl) |> snd in
-    Phyloxml.named_gtrees_to_file
-      (prefix^".xml")
-      (List.map
-         (fun (eval, evect) ->
-           (Some (string_of_float eval),
-            self#heat_tree_of_float_arr t evect |> self#maybe_numbered))
-         edge_combol);
-    Guppy_pca.save_named_fal
-      (prefix^".trans")
-      (List.map (fun (eval, evect) -> (string_of_float eval, evect)) combol);
-    Guppy_pca.save_named_fal
-      (prefix^".edgetrans")
-      (List.map (fun (eval, evect) -> (string_of_float eval, evect)) edge_combol);
-    Guppy_pca.save_named_fal
-      (prefix^".proj")
-      (List.combine
-         names
-         (List.map (fun d -> Array.map (Pca.dot d) result.evect) (Array.to_list (Gsl_matrix.to_arrays data.ufl))))
+    let write_n = fv write_n
+    and som = fv som
+    and _, t = self#get_rpo_and_tree (List.hd prl)
+    and prefix = self#single_prefix ~requires_user_prefix:true () in
+    (* Various checks and so on... *)
+    if som > write_n || not (Array.exists (fun x -> x = som) [|0; 2; 3|]) then
+      failwith (Printf.sprintf "Number of components to rotate cannot be greater \
+      than write-n, and must be either 0, 2 or 3.");
+
+    (* Once we have eigenvalues and eigenvectors, this will project the data
+     * and write. *)
+    let write_results vals vects prefix =
+      (* Only want to keep as many of the results as were asked for in --write-n *)
+      let write_keep arr = Array.sub arr 0 write_n in
+      let (vals, vects) = (write_keep vals, write_keep vects) in
+      let combol = (List.combine (Array.to_list vals) (Array.to_list vects))
+      and names = (List.map Placerun.get_name prl) in
+      let edge_combol = (List.combine (Array.to_list result.eval) (Array.to_list result.edge_evect))
+      in
+      Phyloxml.named_gtrees_to_file
+        (prefix^".xml")
+        (List.map
+           (fun (vals, vects) ->
+             (Some (string_of_float vals),
+              self#heat_tree_of_float_arr t vects |> self#maybe_numbered))
+           edge_combol);
+      Guppy_pca.save_named_fal
+        (prefix^".trans")
+        (List.map (fun (vals, vects) -> (string_of_float vals, vects)) combol);
+      (*
+        Guppy_pca.save_named_fal
+        (prefix^".edgetrans")
+        (List.map (fun (eval, evect) -> (string_of_float eval, evect)) edge_combol)
+      *)
+      (* Below:
+         Take the dot product of each data point with the principal component
+         vector. This is the same as multiplying on the right by the matrix
+         whose columns are the principal components. *)
+      Guppy_pca.save_named_fal
+        (prefix^".proj")
+        (List.combine
+           names
+           (List.map (fun d -> Array.map (Pca.dot d) vects) (Array.to_list (Gsl_matrix.to_arrays data.ufl))))
+    in
+
+    write_results result.eval result.evect prefix;
+    if som <> 0 then
+      try
+        let (rot_vals, rot_vects) = Som.som_rotation result.evect som result.eval in
+        write_results rot_vals rot_vects (prefix^".som")
+      with
+        | Som.MinimizationError ->
+          Printf.eprintf "There was a problem with the minimization routine. \
+          Please either try --som 2 or --som 0\n"
+        | e ->
+          raise e
 
 end
