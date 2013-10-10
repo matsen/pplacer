@@ -44,8 +44,6 @@ type lpca_result = { eval: float array;
 type lpca_data = { f: Gsl_vector.vector;
                 (* $f_k$, the proximal minus the distal mass
                  * (WRT current position). *)
-                   mk: Gsl_vector.vector;
-                (* $m_k$, the mass distal to our position. *)
                    ufl: Gsl_matrix.matrix;
                 (* $uFL$, an s x s accumulator matrix of partial inner products
                  * later used in projecting a sample $u$ onto $Fw$. *)
@@ -76,33 +74,32 @@ let map_union m1 m2 =
     m1 m2
 
 (* Aggregate a list of intermediate results from subtrees. The first result is
-   used to initialize the accumulator to which the other results are added,
-   with the exception of the per-sample distal mass, which is only accumulated
-   *after* the current region's sample mass difference vector data.f is
-   updated. Raise an invalid argument error if we're passed an empty list, as
+   used to initialize the accumulator to which the other results are
+   added. Raise an invalid argument error if we're passed an empty list, as
    that shouldn't happen. *)
 let lpca_agg_data l =
+  (* Rearranging the definition of f_k(x) and noting that all the mass on the
+     tree for a given sample sums to one, we see that the amount of mass m
+     distal to a (massless) point x is (1 - f_k(x)) / 2. *)
+  let attached_mass b =
+    let m = Gsl_vector.copy b.f in
+    Gsl_vector.scale m (-1.);
+    Gsl_vector.add_constant m 1.;
+    Gsl_vector.scale m (1. /. 2.);
+    m
+  in
   match l with
     | b::bs ->
       let a = List.fold_left
         (fun a bj ->
-          Gsl_vector.add a.mk bj.mk; (* Total up distal mass. *)
+          (* axpy is y := a*x + y, so the below means a.f += -2 m, where m is
+             the amount of mass attached to subtree bj. *)
+          Gsl_blas.axpy (-2.) (attached_mass bj) a.f;
           Gsl_matrix.add a.ufl bj.ufl;
           Gsl_matrix.add a.fplf bj.fplf;
           { a with af = map_union a.af bj.af })
-        { b with mk = Gsl_vector.create ~init:0. (Gsl_vector.length b.mk) }
-        (* Above: zero out the mass accumulator before folding. We are going to
-           compute mk for this subtree directly as the sum of the mk's of the
-           subtrees. *)
-        bs
+        b bs
       in
-      (* axpy is y := a*x + y, so the below means a.f_k += -2 a.m_k. *)
-      (* At this point a.mk has the mass of all of the subtrees except for b.
-         Thus the line below updates f_k to reflect going past all of those
-         subtrees. *)
-      Gsl_blas.axpy (-2.) a.mk a.f;
-      (* Finish our summation of the distal mass by adding on b's mass. *)
-      Gsl_vector.add a.mk b.mk;
       a
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
@@ -130,7 +127,6 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
        * matrix A. This is doing the summation in eq:piecewise_edge. *)
       Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:f_cen ~a:data.fplf;
       data.f.{sample_id} <- data.f.{sample_id} -. (2. *. mass);
-      data.mk.{sample_id} <- data.mk.{sample_id} +. mass;
       Gsl_vector.add af_e f_cen;
       (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. *)
       Gsl_blas.dger ~alpha:len ~x:data.f ~y:f_cen ~a:data.ufl
@@ -209,7 +205,6 @@ let gen_data sl ref_tree =
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
   let data_0 = { f = Gsl_vector.create ~init:1. n_samples; (* prox - distal *)
-                 mk = Gsl_vector.create ~init:0. n_samples;
                  ufl = Gsl_matrix.create ~init:0. n_samples n_samples;
                  af = IntMap.empty;
                  fplf = Gsl_matrix.create ~init:0. n_samples n_samples } in
@@ -225,7 +220,6 @@ let gen_data sl ref_tree =
           edge_id
           (Gtree.get_bl ref_tree edge_id)
           { data_0 with f = Gsl_vector.copy data_0.f;
-                        mk = Gsl_vector.copy data_0.mk;
                         ufl = Gsl_matrix.copy data_0.ufl;
                         fplf = Gsl_matrix.copy data_0.fplf })
       (Gtree.get_stree ref_tree)
