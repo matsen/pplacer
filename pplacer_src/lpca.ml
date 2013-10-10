@@ -7,12 +7,10 @@ matrix of f's:
   F_{i,k} := \frac{1}{s^{1/2}} (f_k(x_i) - \bar f(x_i)),
 
 - The vectors are indexed a bit differently than in the tex document. In the
-code, fk is a vector indexed by the samples. The location x is typically
-implicit, so fk.{j} is $f_j(x)$. However, when x is not implicit it is indexed
+code, f is a vector indexed by the samples. The location x is typically
+implicit, so f.{j} is $f_j(x)$. However, when x is not implicit it is indexed
 by i.
 *)
-
-(* NOTATION: I think the above paragraph is confusing and propose changing fk to f, etc. *)
 
 open Ppatteries
 open Linear_utils
@@ -42,8 +40,8 @@ type lpca_result = { eval: float array;
                      edge_evect: float array array }
 
 (* An intermediate edge result record with the following meanings in terms of
-the length_pca writeup. *)
-type lpca_data = { fk: Gsl_vector.vector;
+   the length_pca writeup. *)
+type lpca_data = { f: Gsl_vector.vector;
                 (* $f_k$, the proximal minus the distal mass
                  * (WRT current position). *)
                    mk: Gsl_vector.vector;
@@ -80,40 +78,38 @@ let map_union m1 m2 =
 (* Aggregate a list of intermediate results from subtrees. The first result is
    used to initialize the accumulator to which the other results are added,
    with the exception of the per-sample distal mass, which is only accumulated
-   *after* the current region's sample mass difference vector data.fk is
+   *after* the current region's sample mass difference vector data.f is
    updated. Raise an invalid argument error if we're passed an empty list, as
    that shouldn't happen. *)
 let lpca_agg_data l =
   match l with
-(* NOTATION: It's confusing that these are x, where we used x for locations in the tree in the tex, etc. *)
-    | x::xs ->
+    | b::bs ->
       let a = List.fold_left
-(* NOTATION: I propose not using i here, as it is reserved for positions. *)
-        (fun a xi ->
-          Gsl_vector.add a.mk xi.mk; (* Total up distal mass. *)
-          Gsl_matrix.add a.ufl xi.ufl;
-          Gsl_matrix.add a.fplf xi.fplf;
-          { a with af = map_union a.af xi.af })
-        { x with mk = Gsl_vector.create ~init:0. (Gsl_vector.length x.mk) }
+        (fun a bj ->
+          Gsl_vector.add a.mk bj.mk; (* Total up distal mass. *)
+          Gsl_matrix.add a.ufl bj.ufl;
+          Gsl_matrix.add a.fplf bj.fplf;
+          { a with af = map_union a.af bj.af })
+        { b with mk = Gsl_vector.create ~init:0. (Gsl_vector.length b.mk) }
         (* Above: zero out the mass accumulator before folding. We are going to
            compute mk for this subtree directly as the sum of the mk's of the
            subtrees. *)
-        xs
+        bs
       in
       (* axpy is y := a*x + y, so the below means a.f_k += -2 a.m_k. *)
-      (* At this point a.mk has the mass of all of the subtrees except for x.
+      (* At this point a.mk has the mass of all of the subtrees except for b.
          Thus the line below updates f_k to reflect going past all of those
          subtrees. *)
-      Gsl_blas.axpy (-2.) a.mk a.fk;
-      (* Finish our summation of the distal mass by adding on x's mass. *)
-      Gsl_vector.add a.mk x.mk;
+      Gsl_blas.axpy (-2.) a.mk a.f;
+      (* Finish our summation of the distal mass by adding on b's mass. *)
+      Gsl_vector.add a.mk b.mk;
       a
     | [] ->
       invalid_arg "lpca_agg_data: empty list"
 
 (* Process the placements along an edge of non-zero length from distal to
-proximal, given the initial values data_0 "just beyond" the distal node of the
-edge. *)
+   proximal, given the initial values data_0 "just beyond" the distal node of the
+   edge. *)
 let lpca_tot_edge_nz sm edge_id bl data_0 =
   let pl =
     try
@@ -121,7 +117,7 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
     with
       | Not_found -> []
   in
-  let n_samples = Gsl_vector.length data_0.fk in
+  let n_samples = Gsl_vector.length data_0.f in
   (* af_e is an accumulator for this edge's row in the $\tilde{F} = AF$ matrix,
      which is later used in computing edge-averaged eigenvectors as described in
      the text. *)
@@ -129,16 +125,15 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
   (* In aux, i counts the number of "constant regions" along the edge. *)
   let rec aux i pl prev_distal_bl data =
     let update_data sample_id mass len =
-      let fk' = vec_center data.fk in
+      let f_cen = vec_center data.f in
       (* syr is symmetric rank-1 update A = \alpha x x^T + A of the symmetric
        * matrix A. This is doing the summation in eq:piecewise_edge. *)
-      Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:fk' ~a:data.fplf;
-      data.fk.{sample_id} <- data.fk.{sample_id} -. (2. *. mass);
+      Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:f_cen ~a:data.fplf;
+      data.f.{sample_id} <- data.f.{sample_id} -. (2. *. mass);
       data.mk.{sample_id} <- data.mk.{sample_id} +. mass;
-      Gsl_vector.add af_e fk';
-      (* dger is rank-1 update A = \alpha x y^T + A of the matrix A.
-       *)
-      Gsl_blas.dger ~alpha:len ~x:data.fk ~y:fk' ~a:data.ufl
+      Gsl_vector.add af_e f_cen;
+      (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. *)
+      Gsl_blas.dger ~alpha:len ~x:data.f ~y:f_cen ~a:data.ufl
     in
     match pl with
       | p::ps ->
@@ -198,7 +193,7 @@ let make_n_lpca_map sl =
         (List.merge cmp_p
            (List.map (repkg_p sample_id)
               (List.filter (fun { Mass_map.Indiv.mass } -> mass > 0.) pl)))
-           (* Function to apply to the value of edge_id in the map. *)
+        (* Function to apply to the value of edge_id in the map. *)
         a)
     IntMap.empty
     sl
@@ -213,7 +208,7 @@ let gen_data sl ref_tree =
   let sm = make_n_lpca_map sl in
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
-  let data_0 = { fk = Gsl_vector.create ~init:1. n_samples; (* prox - distal *)
+  let data_0 = { f = Gsl_vector.create ~init:1. n_samples; (* prox - distal *)
                  mk = Gsl_vector.create ~init:0. n_samples;
                  ufl = Gsl_matrix.create ~init:0. n_samples n_samples;
                  af = IntMap.empty;
@@ -229,7 +224,7 @@ let gen_data sl ref_tree =
         tot_edge
           edge_id
           (Gtree.get_bl ref_tree edge_id)
-          { data_0 with fk = Gsl_vector.copy data_0.fk;
+          { data_0 with f = Gsl_vector.copy data_0.f;
                         mk = Gsl_vector.copy data_0.mk;
                         ufl = Gsl_matrix.copy data_0.ufl;
                         fplf = Gsl_matrix.copy data_0.fplf })
