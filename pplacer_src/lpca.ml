@@ -80,7 +80,10 @@ let map_union m1 m2 =
 let lpca_agg_data l =
   (* Rearranging the definition of f_k(x) and noting that all the mass on the
      tree for a given sample sums to one, we see that the amount of mass m
-     distal to a (massless) point x is (1 - f_k(x)) / 2. *)
+     distal to a (massless) point x is (1 - f_k(x)) / 2. This relation does not
+     hold if there is a placement precisely at x, which is why we assert in
+     lpca_tot_edge_nz that no placements occurred precisely at the proximal
+     node of the edge. *)
   let attached_mass b =
     let m = Gsl_vector.copy b.f in
     Gsl_vector.scale m (-1.);
@@ -93,9 +96,12 @@ let lpca_agg_data l =
       let a = List.fold_left
         (fun a bj ->
           (* axpy is y := a*x + y, so the below means a.f += -2 m, where m is
-             the amount of mass attached to subtree bj. *)
+             the amount of mass attached to subtree bj. This accomplishes the
+             update described by eq:node_crossing, *)
           Gsl_blas.axpy (-2.) (attached_mass bj) a.f;
           Gsl_matrix.add a.ufl bj.ufl;
+          (* Add the sibling branch's contribution to F'LF, as in
+             eq:piecewise_edge. *)
           Gsl_matrix.add a.fplf bj.fplf;
           { a with af = map_union a.af bj.af })
         b bs
@@ -122,11 +128,18 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
   (* In aux, i counts the number of "constant regions" along the edge. *)
   let rec aux i pl prev_distal_bl data =
     let update_data sample_id mass len =
+      (* f_cen is a convenient alias for the vector
+         { f_1(x) - \bar{f}(x), ..., f_s(x) - \bar{f}(x) }
+         the elements of which are used frequently in the tex. *)
       let f_cen = vec_center data.f in
       (* syr is symmetric rank-1 update A = \alpha x x^T + A of the symmetric
-       * matrix A. This is doing the summation in eq:piecewise_edge. *)
+       * matrix A. The computation of the update term \sigma_i from eq:sigma_i
+       * is "hidden" in this call as the outer product f_cen * f_cen^T, which is
+       * then weighted by the region length and added to the F'LF accumulator,
+       * as in eq:fplf_update. *)
       Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:f_cen ~a:data.fplf;
       data.f.{sample_id} <- data.f.{sample_id} -. (2. *. mass);
+      (* Add this region's contribution to \tilde{F}, as in eq:f_tilde. *)
       Gsl_vector.add af_e f_cen;
       (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. *)
       Gsl_blas.dger ~alpha:len ~x:data.f ~y:f_cen ~a:data.ufl
