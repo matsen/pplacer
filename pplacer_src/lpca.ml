@@ -138,13 +138,14 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
        * then weighted by the region length and added to the F'LF accumulator,
        * as in eq:fplf_update. *)
       Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:f_cen ~a:data.fplf;
-      data.f.{sample_id} <- data.f.{sample_id} -. (2. *. mass);
       (* Add this region's contribution to \tilde{F}, as in eq:f_tilde. *)
       Gsl_vector.add af_e f_cen;
       (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. This is
          the update computation for the inner term of eq:ufl, but for all the
          samples at once. *)
       Gsl_blas.dger ~alpha:len ~x:data.f ~y:f_cen ~a:data.ufl;
+      (* Terminate this region and update f_k as we pass. *)
+      data.f.{sample_id} <- data.f.{sample_id} -. (2. *. mass)
     in
     match pl with
       | p::ps ->
