@@ -126,9 +126,9 @@ object (self)
         (List.map (fun (eval, evect) -> (string_of_float eval, evect)) edge_combol)
       *)
       (* Below:
-         Take the dot product of each data point with the principal component
-         vector. This is the same as multiplying on the right by the matrix
-         whose columns are the principal components. *)
+         Take the dot product of each aggregated inner term of eq:ufl with the
+         principal component vector. This is the same as multiplying on the
+         right by the matrix whose columns are the principal components. *)
       Guppy_pca.save_named_fal
         (prefix^".proj")
         (List.combine
