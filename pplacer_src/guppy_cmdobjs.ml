@@ -605,8 +605,7 @@ object (self)
     and splitify_fn = self#splitify_transform in
     arr_of_map
       (splitify_fn 0.)
-      (*(1+(Gtree.top_id t))*)
-      (Gtree.top_id t)
+      (1+(Gtree.top_id t))
       (IntMap.map
          splitify_fn
          (below_mass_map_nx (Mass_map.By_edge.of_pre preim) t))
