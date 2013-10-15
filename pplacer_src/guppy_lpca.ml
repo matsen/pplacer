@@ -59,17 +59,18 @@ object (self)
 
   method private gen_pca ~use_raw_eval ~scale ~symmv n_components data _ =
     let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv n_components (Gsl_matrix.to_arrays data.fplf) in
-    (* TODO: Erick M.: If you really feel guilty you can do
-       http://caml.inria.fr/pub/docs/manual-ocaml-4.00/libref/Bigarray.Array2.html
-       slicing and then vector copying.
-       http://www.gnu.org/software/gsl/manual/html_node/Copying-vectors.html *)
+    (* Populate the edge-averaged e x s matrix AF from its
+       IntMap encoding. See eq:f_tilde. *)
     let af = Gsl_matrix.of_arrays (Array.of_list (List.map Gsl_vector.to_array (List.of_enum (IntMap.values data.af))))
     and w' = Gsl_matrix.of_arrays evect in
     let n_edges, _ = Gsl_matrix.dims af in
     let afw = Gsl_matrix.create n_edges n_components in
+    (* Compute the edge-averaged eigenvectors. *)
     Gsl_blas.gemm ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.Trans ~alpha:1. ~a:af ~b:w' ~beta:0. ~c:afw;
     let afw' = Gsl_matrix.create n_components n_edges in
     Gsl_matrix.transpose afw' afw;
+    (* Normalize the eigenvectors and the edge-averaged eigenvectors to unit
+       length. *)
     norm_rows w';
     norm_rows afw';
     (* We want to compute U'Fw, where the columns of w are the eigenvectors of
