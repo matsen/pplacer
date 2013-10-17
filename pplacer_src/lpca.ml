@@ -46,12 +46,16 @@ type lpca_data = { f: Gsl_vector.vector;
                  * (WRT current position). *)
                    ufl: Gsl_matrix.matrix;
                 (* $uFL$, an s x s accumulator matrix of partial inner products
-                 * later used in projecting a sample $u$ onto $Fw$. *)
+                 * later used in projecting a sample $u$ onto $Fw$. See
+                 * eq:ufl. *)
                    af: Gsl_vector.vector IntMap.t;
                 (* $AF$, which is an e x s matrix, here encoded as a map
-                 * (edges) to a vector indexed by sample number. *)
+                 * (edges) to a vector indexed by sample number. See
+                 * eq:f_tilde. *)
                    fplf: Gsl_matrix.matrix }
-                (* $F'LF$ *)
+                (* $F'LF$, which is the "proxy" that we use to avoid computing
+                 * the eigenvectors of the full matrix GL. See prop:gl_fplf
+                 * and eq:fplf. *)
 
 (* A repackaged placement record which includes the sample id. *)
 type lpca_placement = { distal_bl: float;
@@ -83,7 +87,7 @@ let lpca_agg_data l =
      distal to a (massless) point x is (1 - f_k(x)) / 2. This relation does not
      hold if there is a placement precisely at x, which is why we assert in
      lpca_tot_edge_nz that no placements occurred precisely at the proximal
-     node of the edge. *)
+     node of the edge. Here b is used for the contribution of a branch. *)
   let attached_mass b =
     let m = Gsl_vector.copy b.f in
     Gsl_vector.scale m (-1.);
@@ -122,13 +126,13 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
   in
   let n_samples = Gsl_vector.length data_0.f in
   (* af_e is an accumulator for this edge's row in the $\tilde{F} = AF$ matrix,
-     which is later used in computing edge-averaged eigenvectors as described in
-     the text. *)
+     defined in eq:f_tilde and later used in computing edge-averaged
+     eigenvectors as described in the text. *)
   let af_e = Gsl_vector.create ~init:0. n_samples in
   (* In aux, i counts the number of "constant regions" along the edge. *)
   let rec aux i pl prev_distal_bl data =
     let update_data sample_id mass len =
-      (* f_cen is a convenient alias for the vector
+      (* f_cen is a convenient alias for the "centered" vector
          { f_1(x) - \bar{f}(x), ..., f_s(x) - \bar{f}(x) }
          the elements of which are used frequently in the tex. *)
       let f_cen = vec_center data.f in
@@ -165,8 +169,8 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
            so len must always be greater than zero. *)
         assert(len > 0.);
         update_data 0 0. len;
+        (* Multiplying on left by averaging matrix as just before eq:f_tilde. *)
         Gsl_vector.scale af_e (1. /. (float (succ i)));
-        (* Above: multiplying on left by averaging matrix. *)
         { data with af = IntMap.add edge_id af_e data.af }
   in
   aux 0 pl 0. data_0
