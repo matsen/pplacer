@@ -78,7 +78,7 @@ object (self)
     let faa = Gsl_matrix.to_arrays faa_z in
     let m = Pca.covariance_matrix ~scale faa
     and d = Gsl_vector.create ~init:0. n_edges
-    and ref_tree = self#get_rpo_and_tree (List.hd prl) |> snd in
+    and ref_tree = self#get_ref_tree prl in
     for i=0 to n_edges-1 do
       d.{i} <- (Gtree.get_bl ref_tree i);
     done;
@@ -100,7 +100,7 @@ object (self)
   method private post_pca result data prl =
     let combol = (List.combine (Array.to_list result.eval) (Array.to_list result.evect))
     and prefix = self#single_prefix ~requires_user_prefix:true ()
-    and ref_tree = self#get_rpo_and_tree (List.hd prl) |> snd
+    and ref_tree = self#get_ref_tree prl
     and names = List.map Placerun.get_name prl in
     Phyloxml.named_gtrees_to_file
       (prefix^".xml")

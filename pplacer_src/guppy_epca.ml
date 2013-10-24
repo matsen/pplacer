@@ -52,7 +52,7 @@ object (self)
   method private post_pca result data prl =
     let write_n = fv write_n
     and som = fv som
-    and _, t = self#get_rpo_and_tree (List.hd prl)
+    and t = self#get_ref_tree prl
     and prefix = self#single_prefix ~requires_user_prefix:true () in
     (* Various checks and so on... *)
     if som > write_n || not (Array.exists (fun x -> x = som) [|0; 2; 3|]) then

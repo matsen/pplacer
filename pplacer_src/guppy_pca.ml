@@ -44,6 +44,9 @@ object (self)
   method private virtual gen_pca : use_raw_eval:bool -> scale:bool -> symmv:bool -> int -> 'data_t -> 'prl_t -> 'result_t
   method private virtual post_pca : 'result_t -> 'data_t -> 'prl_t -> unit
 
+  method private get_ref_tree prl =
+    self#get_rpo_and_tree (List.hd prl) |> snd |> Decor_gtree.add_zero_root_bl
+
   method private check_uniqueness fal write_n =
     let n_unique_rows = List.length (List.sort_unique compare fal) in
     if n_unique_rows <= 2 then
