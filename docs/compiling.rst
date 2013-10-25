@@ -9,14 +9,14 @@ Compiling pplacer from source
 
 Compiling ``pplacer`` requires a number of libraries and tools to be installed:
 
-* `GNU Scientific Library (GSL)`_
-* `libsqlite3 <http://www.sqlite.org>`_
+* `GNU Scientific Library (GSL)`_ [*]_
+* `libsqlite3 <http://www.sqlite.org>`_ [*]_
 * make
 * `OCaml 3.12 <http://www.ocaml.org>`_
 * patch
 * m4
 * gawk
-* zlib
+* zlib [*]_
 
 On Debian/Ubuntu 12.04, these can be installed with:
 
@@ -72,3 +72,5 @@ path and you are ready to go!
 .. _GNU Scientific Library (GSL): http://www.gnu.org/s/gsl/
 .. _main pplacer site: http://matsen.fhcrc.org/pplacer/
 .. _OPAM: http://opam.ocamlpro.com
+
+.. [*] On Linux, static libraries are required: e.g. ``libgsl.a``.
