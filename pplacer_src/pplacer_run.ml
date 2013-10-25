@@ -56,7 +56,8 @@ object (self)
   method progress_received = progressfunc
 end
 
-let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
+let premask ?(discard_nonoverlapped = false) ?(weak = false)
+            seq_type ref_align query_list =
   let base_map = match seq_type with
     | Alignment.Nucleotide_seq -> Nuc_models.nuc_map
     | Alignment.Protein_seq -> Prot_models.prot_map
@@ -97,12 +98,14 @@ let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
       overlaps)
     query_list
   in
-  (* Mask out sites that are either all gap in the reference alignment or
-   * all gap in the query alignment. *)
-  let mask = Array.map2
-    (&&)
-    ref_mask
-    (List.enum query_list |> mask_of_enum)
+  let query_mask = List.enum query_list |> mask_of_enum in
+  (* The boolean vector indicates if the corresponding column is informative.
+   * Thus && keeps only sites that are informative in both the query and the
+   * reference sequences. The weak mask just keeps sites that are informative
+   * in the query sequences. *)
+  let mask =
+    if weak then query_mask
+    else Array.map2 (&&) query_mask ref_mask
   in
   let masklen = Array.fold_left
     (fun accum -> function true -> accum + 1 | _ -> accum)
@@ -211,6 +214,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       dprint "Pre-masking sequences... ";
       premask
         ~discard_nonoverlapped:(Prefs.discard_nonoverlapped prefs)
+        ~weak:(Prefs.weak_pre_mask prefs)
         (Model.seq_type model)
         ref_align
         query_list

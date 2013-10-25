@@ -47,6 +47,7 @@ type prefs =
     version : bool ref;
     timing : bool ref;
     no_pre_mask : bool ref;
+    weak_pre_mask : bool ref;
     pre_masked_file : string ref;
     map_fasta : string ref;
     map_cutoff : float ref;
@@ -106,6 +107,7 @@ let defaults () =
     version = ref false;
     timing = ref false;
     no_pre_mask = ref false;
+    weak_pre_mask = ref false;
     pre_masked_file = ref "";
     map_fasta = ref "";
     map_cutoff = ref 0.8;
@@ -164,6 +166,7 @@ let children          p = !(p.children)
 let version           p = !(p.version)
 let timing            p = !(p.timing)
 let no_pre_mask       p = !(p.no_pre_mask)
+let weak_pre_mask     p = !(p.weak_pre_mask)
 let pre_masked_file   p = !(p.pre_masked_file)
 let map_fasta         p = !(p.map_fasta)
 let map_cutoff        p = !(p.map_cutoff)
@@ -263,6 +266,8 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "Display timing information after the pplacer run finishes.";
 "--no-pre-mask", Arg.Set prefs.no_pre_mask,
 "Don't pre-mask sequences before placement.";
+"--weak-pre-mask", Arg.Set prefs.weak_pre_mask,
+"Only pre-mask columns that are uninformative in all query sequences.";
 "--write-pre-masked", Arg.Set_string prefs.pre_masked_file,
 "Write out the pre-masked sequences to the specified fasta file and exit.";
 "--map-mrca", Arg.Set_string prefs.map_fasta,
