@@ -353,7 +353,7 @@ let init_of_prefs ref_dir_complete prefs ref_align =
     | _ -> Parse_stats.parse_stats ref_dir_complete prefs
   in
   if Alignment.is_nuc_align ref_align && (Prefs.model_name prefs) <> "GTR" then
-    failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
+    dprint "WARNING: You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!\n";
   Glvm.Gmix_model
     ((Prefs.model_name prefs),
      (Prefs.emperical_freqs prefs),
@@ -369,7 +369,7 @@ let init_of_stats_fname prefs stats_fname ref_align =
 let init_of_json o ref_align =
   let model_name = Hashtbl.find o "subs_model" |> Jsontype.string in
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
-    failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
+    dprint "WARNING: You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!\n";
   if Hashtbl.find o "ras_model" |> Jsontype.string <> "gamma" then
     failwith "Whoops! This is supposed to be a gamma mixture model.";
   let gamma_o = Hashtbl.find o "gamma" in

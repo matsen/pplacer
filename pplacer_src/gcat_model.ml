@@ -431,7 +431,7 @@ module Glv_arr = Glv_arr.Make(Model)
 let init_of_json o ref_align =
   let model_name = Hashtbl.find o "subs_model" |> Jsontype.string in
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
-    failwith "You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!";
+    dprint "WARNING: You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!\n";
   let empirical_freqs = Hashtbl.find o "empirical_frequencies" |> Jsontype.bool
   and opt_transitions = Hashtbl.Exceptionless.find o "subs_rates"
     |> Option.map
