@@ -15,7 +15,8 @@ let r_x = mat_of_string
 7 2 3 1"
 
 let test_rep_uptri _ =
-  "r_x <> mat_rep_uptri x" @? mat_approx_equal r_x (mat_rep_uptri x)
+  mat_rep_uptri x;
+  "r_x <> mat_rep_uptri x" @? mat_approx_equal r_x x
 
 let suite = [
   "rep_uptri" >:: (fun _ -> test_rep_uptri ());
