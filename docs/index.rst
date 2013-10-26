@@ -3,6 +3,7 @@ pplacer documentation home
 
 The pplacer suite consists of three separate binaries: pplacer, guppy, and rppr.
 The pplacer binary actually does phylogenetic placement and produces place files, guppy does all of the downstream analysis of placements, and rppr does useful things having to do with reference packages.
+If this is your first time looking at this documentation we suggest looking at our `overview`_.
 
 Precompiled binaries for Mac OS X and Linux can be found on the `main pplacer site`_.
 
@@ -71,3 +72,4 @@ for their suggestions.
 .. _user group: http://groups.google.com/group/pplacer-users
 .. _tutorial: http://fhcrc.github.com/microbiome-demo/
 .. _main pplacer site: http://matsen.fhcrc.org/pplacer/
+.. _overview: http://matsen.github.io/pplacer/generated_rst/pplacer.html#details
