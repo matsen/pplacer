@@ -16,7 +16,7 @@ If you wish to override specific parts of the reference package, you can do so w
 A "reference package" is simply a collection of files including a reference tree, a reference alignment, and associated taxonomic information.
 We have the beginnings of a `reference package database`_ which we hope in the future to be a comprehensive resource for phylogenetic placement.
 It's just started, and we would love to have your submissions.
-For now most users will have to make a reference package using our taxtastic_ package to take advantage of the taxonomic annotation features of pplacer.
+For now most users will have to make a reference package using our taxtastic_ package.
 
 The ``aln.fasta`` is the alignment file.
 It should have the reference sequences which were used to make the reference tree, aligned with the query sequences to be placed on the reference tree.
@@ -24,14 +24,6 @@ The reference sequences must have identical names to those used in the reference
 It's possible to split the alignment into two files (the reference sequences and the query sequences); in that case you need to make sure that those alignments are in the same frame and have the same length.
 This splitting was obligatory in v1.0.
 The alignment can be in FASTA format (with a ``.fasta`` or ``.fa`` suffix) or Stockholm format (with a ``.sto`` or ``.sth`` suffix).
-
-Another way to run pplacer is without a reference package::
-
-  pplacer -t reference_tree -s statistics_file aln.fasta
-
-The ``statistics_file`` is a file describing the evolutionary model used to make the reference tree (described in the section on reference tree below).
-Running pplacer in this way will disable the taxonomic annotation features of pplacer v1.1.
-
 
 Migrating from pplacer v1.0
 ---------------------------
