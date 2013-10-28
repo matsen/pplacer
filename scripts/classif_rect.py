@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Produce rectangular matrices representing various counts in a classification
+Produce rectangular matrices representing various counts in a classifications
 database.
 """
 
@@ -19,10 +19,10 @@ def cursor_to_csv(curs, outfile, description=None):
     writer.writerows(curs)
 
 def by_taxon(args):
+    """This function queries for the tally and placement count totals for each taxon at the desired want_rank.
+    If a specimen map is specified, it only returns this data for those specimen/sequences in the map."""
     # a bit ugly. maybe in the future we'll use sqlalchemy.
-    specimen_join = ''
-    if args.specimen_map:
-        specimen_join = 'JOIN specimens USING (name)'
+    specimen_join = 'JOIN specimens USING (name)' if args.specimen_map else ''
 
     log.info('tabulating by_taxon')
     curs = args.database.cursor()
@@ -44,17 +44,54 @@ def by_taxon(args):
     with args.by_taxon:
         cursor_to_csv(curs, args.by_taxon)
 
+def by_taxon_average_frequencies(args, by_specimen_results, specimens):
+    """This function uses the by_specimen results to compute, for each taxon, the average frequency of the that
+    taxon across specimens."""
+
+    taxa_cols = ['tax_id', 'tax_name', 'rank']
+    n_specimens = len(specimens)
+    results = by_specimen_results.values()
+
+    cols = taxa_cols + ['average_frequency']
+    with args.by_taxon:
+        writer = csv.writer(args.by_taxon)
+        writer.writerow(cols)
+        for result in results:
+            row = [result[c] for c in taxa_cols]
+            tax_total = sum([result[s] for s in specimens if s in
+                result.keys()])
+            row.append(tax_total / n_specimens)
+            writer.writerow(row)
+
+
 def by_specimen(args):
-    log.info('tabulating counts by specimen')
+    log.info('tabulating total per specimen mass sums')
     curs = args.database.cursor()
+    curs.execute("""
+        CREATE TEMPORARY TABLE specimen_mass
+               (specimen, total_mass, PRIMARY KEY (specimen))""")
+
+    curs.execute("""
+        INSERT INTO specimen_mass
+        SELECT specimen, SUM(mass)
+          FROM specimens
+               JOIN multiclass_concat mc USING (name)
+               JOIN placement_names USING (name, placement_id)
+         WHERE want_rank = ?
+         GROUP BY specimen
+    """, (args.want_rank,))
+
+    log.info('tabulating counts by specimen')
     curs.execute("""
         SELECT specimen,
                COALESCE(tax_name, "unclassified") tax_name,
                COALESCE(t.tax_id, "none")         tax_id,
                COALESCE(t.rank, "root")           rank,
                SUM(mass)                          tally,
-               COUNT(DISTINCT placement_id)       placements
+               COUNT(DISTINCT placement_id)       placements,
+               SUM(mass) / sm.total_mass          frequency
           FROM specimens
+               JOIN specimen_mass sm USING (specimen)
                JOIN multiclass_concat mc USING (name)
                JOIN placement_names USING (name, placement_id)
                LEFT JOIN taxa t USING (tax_id)
@@ -72,18 +109,18 @@ def by_specimen(args):
 
     results = {}
     specimens = set()
-    for specimen, tax_name, tax_id, rank, tally, _ in rows:
+    for specimen, tax_name, tax_id, rank, tally, placements, frequency in rows:
         row = results.get(tax_id)
         if row is None:
             row = results[tax_id] = dict(tax_id=tax_id, tax_name=tax_name, rank=rank)
-        row[specimen] = tally
+        row[specimen] = frequency if args.frequencies else tally
         specimens.add(specimen)
 
     log.info('writing by_specimen')
     cols = ['tax_name', 'tax_id', 'rank'] + list(specimens)
     with args.by_specimen:
-        writer = csv.DictWriter(args.by_specimen, cols, restval=0)
-        writer.writerow(dict(zip(cols, cols)))  # ugh, DictWriter :(
+        writer = csv.DictWriter(args.by_specimen, fieldnames=cols, restval=0)
+        writer.writeheader()
 
         if args.metadata_map:
             for key in {k for data in args.metadata.itervalues() for k in data}:
@@ -94,6 +131,8 @@ def by_specimen(args):
                 writer.writerow(d)
 
         writer.writerows(results.itervalues())
+
+    return (results, specimens)
 
 
 def main():
@@ -110,15 +149,21 @@ def main():
     parser.add_argument('group_by_specimen', type=argparse.FileType('w'), nargs='?',
         help='optional output CSV file which groups results by specimen (requires specimen map)')
     parser.add_argument('-r', '--want-rank', default='species', metavar='RANK',
-        help='want_rank at which to tabulate results (default: %(default)s)')
+        help='want_rank at which results are to be tabulated (default: %(default)s)')
     parser.add_argument('-m', '--specimen-map', type=argparse.FileType('r'), metavar='CSV',
         help='input CSV map from sequences to specimens')
-    parser.add_argument('--metadata-map', type=argparse.FileType('r'), metavar='CSV',
-        help='input CSV map including a specimen column and other metadata')
+    parser.add_argument('-M', '--metadata-map', type=argparse.FileType('r'), metavar='CSV',
+        help="""input CSV map including a specimen column and other metadata; if specified gets merged in with
+        by specimen output.""")
+    parser.add_argument('-f', '--frequencies', default=False, action='store_true',
+        help="""If specified, by_taxon output has an average_frequency column instead of tally and
+        placements columns, and group_by_specimen output uses frequency intead of tally.""")
 
     args = parser.parse_args()
     if args.by_specimen and not args.specimen_map:
         parser.error('specimen map is required for by-specimen output')
+    if args.frequencies and not args.by_specimen:
+        parser.error('must compute by-specimen in order to compute frequencies')
 
     if args.specimen_map:
         log.info('populating specimens table from specimen map')
@@ -134,9 +179,13 @@ def main():
             reader = csv.DictReader(args.metadata_map)
             args.metadata = {data['specimen']: data for data in reader}
 
-    by_taxon(args)
     if args.by_specimen:
-        by_specimen(args)
+        by_specimen_results, specimens = by_specimen(args)
+    if args.frequencies:
+        by_taxon_average_frequencies(args, by_specimen_results, specimens)
+    else:
+        by_taxon(args)
+
 
 main()
 
