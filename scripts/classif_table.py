@@ -1,7 +1,25 @@
 #!/usr/bin/env python
 """
-Produce rectangular matrices representing various counts in a classifications
-database.
+Produce csv tables representing various counts in a classifications database.
+
+The output options available depend on whether a specimen map is specified.
+Without a specimen map, only by_taxon output is available. If a specimen map
+is provided, two further output formats are possible: by_specimen_long and
+by_specimen_wide.
+
+* by_specimen_long - Contains a separate row for each specimen taxa combination
+* by_specimen_wide - Rows are taxa, columns are specimens
+
+Collectively, three counts are found in these output files: tally, placements,
+frequency and average_frequency.
+
+* placements - Number of placements classified as a given taxa, not corrected
+    for placement/read duplicity.
+* tally - Placements count adjusted to reflect the total number of reads.
+* frequency - In by_specimen output, the frequency of reads matching a given
+    taxa for some specimen.
+* frequency_average - In by_taxon output, the average frequency of the taxa
+    across specimens (optional).
 """
 
 import argparse
@@ -48,6 +66,7 @@ def by_taxon_average_frequencies(args, by_specimen_results, specimens):
     """This function uses the by_specimen results to compute, for each taxon, the average frequency of the that
     taxon across specimens."""
 
+    log.info('tabulating by_taxon using by_specimen results for frequency')
     taxa_cols = ['tax_id', 'tax_name', 'rank']
     n_specimens = len(specimens)
     results = by_specimen_results.values()
@@ -102,10 +121,11 @@ def by_specimen(args):
 
     desc = curs.description
     rows = curs.fetchall()
-    if args.group_by_specimen:
-        log.info('writing group_by_specimen')
-        with args.group_by_specimen:
-            cursor_to_csv(rows, args.group_by_specimen, desc)
+    if args.by_specimen_tall:
+        # By specimen tall
+        log.info('writing by_specimen_tall')
+        with args.by_specimen_tall:
+            cursor_to_csv(rows, args.by_specimen_tall, desc)
 
     results = {}
     specimens = set()
@@ -116,10 +136,11 @@ def by_specimen(args):
         row[specimen] = frequency if args.frequencies else tally
         specimens.add(specimen)
 
-    log.info('writing by_specimen')
+    # By specimen wide
+    log.info('writing by_specimen_wide')
     cols = ['tax_name', 'tax_id', 'rank'] + list(specimens)
-    with args.by_specimen:
-        writer = csv.DictWriter(args.by_specimen, fieldnames=cols, restval=0)
+    with args.by_specimen_wide:
+        writer = csv.DictWriter(args.by_specimen_wide, fieldnames=cols, restval=0)
         writer.writeheader()
 
         if args.metadata_map:
@@ -139,15 +160,16 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__,
+            formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('database', type=sqlite3.connect,
         help='sqlite database (output of `rppr prep_db` after `guppy classify`)')
     parser.add_argument('by_taxon', type=argparse.FileType('w'),
         help='output CSV file which counts results by taxon')
-    parser.add_argument('by_specimen', type=argparse.FileType('w'), nargs='?',
-        help='optional output CSV file which counts results by specimen (requires specimen map)')
-    parser.add_argument('group_by_specimen', type=argparse.FileType('w'), nargs='?',
-        help='optional output CSV file which groups results by specimen (requires specimen map)')
+    parser.add_argument('by_specimen_wide', type=argparse.FileType('w'), nargs='?',
+        help='optional output CSV file with count results by specimen and taxa (requires specimen map)')
+    parser.add_argument('by_specimen_tall', type=argparse.FileType('w'), nargs='?',
+        help='optional output CSV file with rows as taxa and columns as specimens (requires specimen map)')
     parser.add_argument('-r', '--want-rank', default='species', metavar='RANK',
         help='want_rank at which results are to be tabulated (default: %(default)s)')
     parser.add_argument('-m', '--specimen-map', type=argparse.FileType('r'), metavar='CSV',
@@ -157,12 +179,12 @@ def main():
         by specimen output.""")
     parser.add_argument('-f', '--frequencies', default=False, action='store_true',
         help="""If specified, by_taxon output has an average_frequency column instead of tally and
-        placements columns, and group_by_specimen output uses frequency intead of tally.""")
+        placements columns, and by_specimen_tall output uses frequency intead of tally.""")
 
     args = parser.parse_args()
-    if args.by_specimen and not args.specimen_map:
-        parser.error('specimen map is required for by-specimen output')
-    if args.frequencies and not args.by_specimen:
+    if args.by_specimen_wide and not args.specimen_map:
+        parser.error('specimen map is required for by_specimen output')
+    if args.frequencies and not args.by_specimen_wide:
         parser.error('must compute by-specimen in order to compute frequencies')
 
     if args.specimen_map:
@@ -179,7 +201,7 @@ def main():
             reader = csv.DictReader(args.metadata_map)
             args.metadata = {data['specimen']: data for data in reader}
 
-    if args.by_specimen:
+    if args.by_specimen_wide:
         by_specimen_results, specimens = by_specimen(args)
     if args.frequencies:
         by_taxon_average_frequencies(args, by_specimen_results, specimens)
