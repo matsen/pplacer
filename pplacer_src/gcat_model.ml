@@ -429,24 +429,24 @@ module Glv_edge = Glv_edge.Make(Model)
 module Glv_arr = Glv_arr.Make(Model)
 
 let init_of_json o ref_align =
-  let model_name = Hashtbl.find o "subs_model" |> Jsontype.string in
+  let model_name = safe_hashtbl_find o "subs_model" |> Jsontype.string in
   if Alignment.is_nuc_align ref_align && model_name <> "GTR" then
     dprint "WARNING: You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!\n";
-  let empirical_freqs = Hashtbl.find o "empirical_frequencies" |> Jsontype.bool
+  let empirical_freqs = safe_hashtbl_find o "empirical_frequencies" |> Jsontype.bool
   and opt_transitions = Hashtbl.Exceptionless.find o "subs_rates"
     |> Option.map
         (Jsontype.obj
          %> (fun tbl ->
            List.map
-             (Hashtbl.find tbl %> Jsontype.float)
+             (safe_hashtbl_find tbl %> Jsontype.float)
              ["ac"; "ag"; "at"; "cg"; "ct"; "gt"])
          %> Array.of_list)
-  and price_cat = Hashtbl.find o "Price-CAT" |> Jsontype.obj in
-  let rates = Hashtbl.find price_cat "Rates"
+  and price_cat = safe_hashtbl_find o "Price-CAT" |> Jsontype.obj in
+  let rates = safe_hashtbl_find price_cat "Rates"
     |> Jsontype.array
     |> List.map Jsontype.float
     |> Array.of_list
-  and site_categories = Hashtbl.find price_cat "SiteCategories"
+  and site_categories = safe_hashtbl_find price_cat "SiteCategories"
     |> Jsontype.array
     |> List.map Jsontype.int
     |> Array.of_list

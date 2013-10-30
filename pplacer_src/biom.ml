@@ -6,6 +6,10 @@ let split_file s =
     failwith "biom file provided with no tree";
   Str.matched_group 1 s, Str.matched_group 2 s
 
+let safe_hashtbl_find h k =
+  try Hashtbl.find h k with
+  | Not_found -> failwith ("'"^k ^"' not found in the BIOM file!")
+
 exception No_leaf of string
 
 let () = Printexc.register_printer
@@ -41,7 +45,8 @@ let of_tree_and_biom combined_filename =
       |> List.map
           (Jsontype.array |- List.enum |- map Jsontype.int |- Tuple3.of_enum)
   | _ -> failwith "OTU matrix must be either sparse or dense"
-  and parse_id obj = Hashtbl.find (Jsontype.obj obj) "id" |> Jsontype.string in
+  and parse_id obj =
+        safe_hashtbl_find (Jsontype.obj obj) "id" |> Jsontype.string in
   let parse_ids = get |- Jsontype.array |- List.map parse_id |- Array.of_list in
   let rows = parse_ids "rows"
   and columns = parse_ids "columns" in
