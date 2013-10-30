@@ -1,3 +1,9 @@
+1.1.alpha15 (in development)
+============================
+
+ * Closed GH-315: support ``rppr info`` on reference packages lacking a taxonomy
+ * Closed GH-316: pplacer warns rather than fails when an alignment looks like nucleotides
+
 1.1.alpha14
 ===========
 
