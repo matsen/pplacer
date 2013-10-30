@@ -288,7 +288,7 @@ If you are fond of another model and can convince me that I should implement it,
 Both of these packages implement gamma rate variation among sites, which accomodates that some regions evolve more quickly than others.
 That's generally a good thing, but if you have millions of query sequences, you might have to run pplacer with fewer rate parameters to make it faster.
 
-I run RAxML like so, on similar alignments (the "F" suffix on PROTGAMMAWAGF means to use the emperical amino acid frequencies)::
+I run RAxML like so, on similar alignments (the "F" suffix on PROTGAMMAWAGF means to use the empirical amino acid frequencies)::
 
   raxmlHPC -m GTRGAMMA -n test -s nucleotides.phy
   raxmlHPC -m PROTGAMMAWAGF -n test -s amino_acids.phy

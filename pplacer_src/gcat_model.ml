@@ -54,10 +54,10 @@ struct
     Array.iter (fun v -> model.occupied_rates.(v) <- true) model.site_categories
 
   let build ref_align = function
-    | Glvm.Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) ->
+    | Glvm.Gcat_model (model_name, empirical_freqs, transitions, rates, site_categories) ->
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
-          model_name transitions emperical_freqs ref_align
+          model_name transitions empirical_freqs ref_align
       in
       let occupied_rates = Array.make (Array.length rates) false
       and n_states = Alignment.nstates_of_seq_type seq_type in
