@@ -36,10 +36,9 @@ On Debian/Ubuntu 12.04, these can be installed with:
 OPAM
 ^^^^
 
-``pplacer`` uses `OPAM`_ for installing OCaml dependencies.
-Binaries are provided for 64-bit Linux machines. For other architectures, see
-the `OPAM installation instructions
-<http://opam.ocamlpro.com/doc/Advanced_Install.html>`_.
+``pplacer`` uses the `OPAM`_ package manager for installing OCaml dependencies.
+See the the `official instructions
+<http://opam.ocaml.org/doc/Quick_Install.html>`_ for installation details.
 
 Once OPAM is installed, it needs to be configured:
 
@@ -71,6 +70,6 @@ path and you are ready to go!
 
 .. _GNU Scientific Library (GSL): http://www.gnu.org/s/gsl/
 .. _main pplacer site: http://matsen.fhcrc.org/pplacer/
-.. _OPAM: http://opam.ocamlpro.com
+.. _OPAM: http://opam.ocaml.org
 
 .. [*] On Linux, static libraries are required: e.g. ``libgsl.a``.
