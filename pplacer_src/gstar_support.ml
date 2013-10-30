@@ -8,6 +8,10 @@ module GA = BA.Genarray
 
 let log_of_2 = log 2.
 
+let safe_hashtbl_find h k =
+  try Hashtbl.find h k with
+  | Not_found -> failwith ("'"^k ^"' not found in the model!")
+
 (* integer big arrays *)
 let iba1_create = BA1.create BA.int BA.c_layout
 let iba1_mimic a = iba1_create (BA1.dim a)
