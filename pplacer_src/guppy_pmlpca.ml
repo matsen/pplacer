@@ -64,6 +64,7 @@ object (self)
     self#check_uniqueness fal write_n
 
   method private gen_pca ~use_raw_eval ~scale ~symmv write_n data prl =
+    let _ = use_raw_eval in
     let faa_z = Gsl_matrix.of_arrays (Array.of_list data.edge_diff) in
     let n_samples, n_edges = Gsl_matrix.dims faa_z in
     let tmp = Gsl_matrix.create n_edges n_samples in
