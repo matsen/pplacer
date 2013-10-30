@@ -30,6 +30,7 @@ Thus, the following functionality is stable:
 * Kantorovich-Rubenstein distances
 * edge principal components and squash clustering
 * taxonomic/phylogenetic discordance analysis
+* taxon subsetting by minimizing the average distance to the closest leaf
 
 We suggest that you wait to do any serious analysis using features not described on this list.
 In particular, the taxonomic classification functionality is not stable and is still being validated.
