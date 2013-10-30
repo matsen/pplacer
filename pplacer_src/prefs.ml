@@ -33,7 +33,7 @@ type prefs =
     fantasy : float ref;
     fantasy_frac : float ref;
     (* model *)
-    emperical_freqs : bool ref;
+    empirical_freqs : bool ref;
     model_name : string ref;
     gamma_n_cat : int ref;
     gamma_alpha : float ref;
@@ -92,7 +92,7 @@ let defaults () =
     fantasy = ref 0.;
     fantasy_frac = ref 0.1;
     (* model *)
-    emperical_freqs = ref true;
+    empirical_freqs = ref true;
     model_name = ref "LG";
     gamma_n_cat = ref 1;
     gamma_alpha = ref 1.;
@@ -149,7 +149,7 @@ let strike_box        p = !(p.strike_box)
 let max_pitches       p = !(p.max_pitches)
 let fantasy           p = !(p.fantasy)
 let fantasy_frac      p = !(p.fantasy_frac)
-let emperical_freqs   p = !(p.emperical_freqs)
+let empirical_freqs   p = !(p.empirical_freqs)
 let model_name        p = !(p.model_name)
 let gamma_n_cat       p = !(p.gamma_n_cat)
 let gamma_alpha       p = !(p.gamma_alpha)
@@ -204,7 +204,7 @@ let specl prefs =
 "-m", Arg.Set_string prefs.model_name,
 "Substitution model. Protein: LG, WAG, or JTT. Nucleotides: GTR.";
 (* model *)
-"--model-freqs", Arg.Clear prefs.emperical_freqs,
+"--model-freqs", Arg.Clear prefs.empirical_freqs,
 "Use model frequencies instead of reference alignment frequencies.";
 "--gamma-cats", Arg.Set_int prefs.gamma_n_cat,
 "Number of categories for discrete gamma model.";

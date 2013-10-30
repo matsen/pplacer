@@ -1,9 +1,9 @@
 open Ppatteries
 
 type init_params =
-  (* Gmix_model (model_name, emperical_freqs, opt_transitions, rates) *)
+  (* Gmix_model (model_name, empirical_freqs, opt_transitions, rates) *)
   | Gmix_model of string * bool * float array option * float array
-  (* Gcat_model (model_name, emperical_freqs, transitions, rates, site_categories) *)
+  (* Gcat_model (model_name, empirical_freqs, transitions, rates, site_categories) *)
   | Gcat_model of string * bool * float array option * float array * int array
 
 module type Model =

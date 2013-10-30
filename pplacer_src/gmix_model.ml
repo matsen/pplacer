@@ -24,10 +24,10 @@ struct
   let n_rates model = Array.length (rates model)
 
   let build ref_align = function
-    | Glvm.Gmix_model (model_name, emperical_freqs, transitions, rates) ->
+    | Glvm.Gmix_model (model_name, empirical_freqs, transitions, rates) ->
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
-          model_name transitions emperical_freqs ref_align
+          model_name transitions empirical_freqs ref_align
       in
       let n_states = Alignment.nstates_of_seq_type seq_type in
       {
@@ -356,7 +356,7 @@ let init_of_prefs ref_dir_complete prefs ref_align =
     dprint "WARNING: You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!\n";
   Glvm.Gmix_model
     ((Prefs.model_name prefs),
-     (Prefs.emperical_freqs prefs),
+     (Prefs.empirical_freqs prefs),
      opt_transitions,
      (Gamma.discrete_gamma
         (Prefs.gamma_n_cat prefs) (Prefs.gamma_alpha prefs)))

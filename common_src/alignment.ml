@@ -181,7 +181,7 @@ let like_aln_of_align seq_type align =
     align
 
 
-(* getting emperical frequencies from alignments
+(* getting empirical frequencies from alignments
  *)
 let emper_freq nstates like_map align =
   let no_missing_normed =

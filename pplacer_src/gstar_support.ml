@@ -65,7 +65,7 @@ let tensor_mul tensor ~dst ~src =
   done
 
 let seqtype_and_trans_statd_of_info
-      model_name transitions emperical_freqs ref_align =
+      model_name transitions empirical_freqs ref_align =
   if model_name = "GTR" then
     (Alignment.Nucleotide_seq,
      match transitions with
@@ -78,7 +78,7 @@ let seqtype_and_trans_statd_of_info
      let model_trans, model_statd =
        Prot_models.trans_and_statd_of_model_name model_name in
      (model_trans,
-      if emperical_freqs then
+      if empirical_freqs then
         Alignment.emper_freq 20 Prot_models.prot_map ref_align
       else
         model_statd))
