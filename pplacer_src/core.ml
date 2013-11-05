@@ -145,7 +145,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       Alignment.to_fasta
         (Alignment.mask_align mask_arr
            (Alignment.stack [|query_name, query_seq|] ref_align))
-        (query_name^".mask.fasta");
+        ((out_dir prefs)^"/"^query_name^".mask.fasta");
     (* Make the edges for our three-taxon tree that will be used for the second
      * stage of optimization. We will breaking interface by changing
      * them in place later, but it would be silly to have setting functions for
