@@ -138,8 +138,12 @@ struct
         site_mask_arr;
       assert(!dst_i = dst_n_sites)
 
-    (* this is used when we have a pre-allocated GLV and want to fill it with a
-     * same-length lv array. zero pulled exponents as well. *)
+    (* This is used when we have a pre-allocated GLV and want to fill it with a
+     * same-length lv array. Zero pulled exponents as well. "Constant rate"
+     * to the fact that the glvs at the internal nodes have different lvs for
+     * each rate. For this one we have them all set to the same lvs, which
+     * makes sense when, say, we are at a leaf.
+     *)
     let prep_constant_rate_glv_from_lv_arr g lv_arr =
       assert(lv_arr <> [||]);
       assert(get_n_sites g = Array.length lv_arr);
@@ -149,7 +153,7 @@ struct
         (fun ~rate:_ ~site ~state ->
           lv_arr.(site).{state})
 
-    (* *** pulling exponent *** *)
+    (* *** Pulling exponents. *** *)
 
     (* pull out the exponent if it's below min_allowed_twoexp and return it. this
      * process is a bit complicated by the fact that we are partitioned by rate, as
@@ -267,8 +271,9 @@ struct
       n_arrays
       n_glvs
 
-  (* Make a glv out of a list of likelihood vectors. *)
-  let lv_arr_to_glv model lv_arr =
+  (* Make a glv out of a list of likelihood vectors. For comments, see
+   * prep_constant_rate_glv_from_lv_arr. *)
+  let make_constant_rate_glv_from_lv_arr model lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
       ~n_rates:(n_rates model)

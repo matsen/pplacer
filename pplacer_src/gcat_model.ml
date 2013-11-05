@@ -171,8 +171,7 @@ struct
         site_mask_arr;
       assert(!dst_i = dst_n_sites)
 
-    (* this is used when we have a pre-allocated GLV and want to fill it with a
-     * same-length lv array. zero pulled exponents as well. *)
+    (* For comments, see Gmix_model.prep_constant_rate_glv_from_lv_arr. *)
     let prep_constant_rate_glv_from_lv_arr g lv_arr =
       assert(lv_arr <> [||]);
       assert(get_n_sites g = Array.length lv_arr);
@@ -285,8 +284,9 @@ struct
   let size_of_glv_arrays model n_arrays n_glvs ~n_sites =
     gen_size_of_glv_arrays (n_states model) n_sites n_arrays n_glvs
 
-  (* Make a glv out of a list of likelihood vectors. *)
-  let lv_arr_to_glv _ lv_arr =
+  (* Make a glv out of a list of likelihood vectors. For comments, see
+   * Gmix_model.prep_constant_rate_glv_from_lv_arr. *)
+  let make_constant_rate_glv_from_lv_arr _ lv_arr =
     assert(lv_arr <> [||]);
     let g = Glv.make
       ~n_sites:(Array.length lv_arr)
