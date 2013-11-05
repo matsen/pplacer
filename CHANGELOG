@@ -3,6 +3,8 @@
 
  * Closed GH-315: support ``rppr info`` on reference packages lacking a taxonomy
  * Closed GH-316: pplacer warns rather than fails when an alignment looks like nucleotides
+ * Closed GH-317: ``pplacer --write-masked-out`` respects ``--out-dir``
+ * Closed GH-319: ``pplacer --write-pre-masked`` no longer exits after writing mask.
 
 1.1.alpha14
 ===========
