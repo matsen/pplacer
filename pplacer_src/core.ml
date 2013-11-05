@@ -1,4 +1,7 @@
 (* Here we actually do the work.
+ * The optimization is split into two stages-- the first "rough" stage and the
+ * second stage where branches and locations are more thoroughly optimized.
+ * See http://www.biomedcentral.com/1471-2105/11/538/#sec5
 *)
 
 open Ppatteries
@@ -6,7 +9,7 @@ open Prefs
 
 let max_iter = 200
 
-(* the second stage tolerance for branch length optimization. modify in online
+(* The second stage tolerance for branch length optimization. Modify in online
  * help if changed here. *)
 let final_tolerance = 1e-5
 
@@ -57,7 +60,7 @@ type result =
   (* snodes:Glv.glv array -> string * string -> result list *)
 
 (* pplacer_core :
- * actually try the placements, etc. return placement records *)
+ * Actually try the placements, etc. Return placement records. *)
 let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree ~(darr: b array) ~(parr: b array) ~(snodes: b array) =
   let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
   let module Glv = Model.Glv in
@@ -68,7 +71,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
   and keep_factor = Prefs.keep_factor prefs in
   let log_keep_factor = log keep_factor in
   let seq_type = Model.seq_type model
-  (* the prior function takes an edge number and a pendant BL *)
+  (* The prior function takes an edge number and a pendant BL. *)
   and prior_fun =
     match prior with
       | Uniform_prior -> (fun _ _ -> 1.)
@@ -77,24 +80,24 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         fun id -> Gsl_randist.exponential_pdf ~mu:(IntMap.find id mean_map)
   and ref_length = Alignment.length ref_align in
   let utilv_nsites = Gsl_vector.create ref_length in
-  (* set up the number of pitches and strikes according to the prefs *)
+  (* Set up the number of pitches and strikes according to the prefs. *)
   let (t_max_pitches, t_max_strikes) =
     if fantasy prefs <> 0. then
-      (* in fantasy mode we evaluate the first max_pitches locations *)
+      (* In fantasy mode we evaluate the first max_pitches locations. *)
       (max_pitches prefs, max_int)
     else if max_strikes prefs = 0 then
-      (* we have disabled ball playing, and evaluate every location *)
+      (* We have disabled ball playing, and evaluate every location. *)
       (max_int, max_int)
     else
-      (* usual ball playing *)
+      (* Usual ball playing. *)
       (max_pitches prefs, max_strikes prefs)
   in
-  (* making glvs which are appropriate for query side of the first placement
-   * stage. in contrast to the second stage query glv, this guy is full length. *)
+  (* Making glvs which are appropriate for query side of the first placement
+   * stage. In contrast to the second stage query glv, this guy is full length. *)
   let full_query_orig = Model.make_glv model ~n_sites:ref_length
   in
   let full_query_evolv = Glv.mimic full_query_orig in
-  (* *** the main query loop *** *)
+  (* *** The main query loop. *** *)
   let process_query ?show_query (query_name, query_seq) =
     begin match show_query with
       | Some fn -> fn query_name
@@ -102,9 +105,9 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
-    (* prepare the query glv *)
+    (* Prepare the query glv. *)
     let query_arr = StringFuns.to_char_array query_seq in
-    (* the mask array shows true if it's included *)
+    (* The mask array shows true if it's informative and thus included. *)
     let mask_arr = Array.map Alignment.informative query_arr in
     let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
@@ -116,37 +119,41 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
         | Alignment.Protein_seq -> Array.map Prot_models.lv_of_aa a
     in
-    (* the query glv, which has been masked *)
+    (* The query glv, which has been masked. *)
     let query_glv =
-      Model.lv_arr_to_glv
+      Model.make_constant_rate_glv_from_lv_arr
         model
         (lv_arr_of_char_arr masked_query_arr)
     in
-    (* the full one, which will be used for the first stage only *)
+    (* Making full_query_orig, the glv for the unmasked likelihood vector,
+     * which will be used for the first stage optimization only. Note that
+     * it only has one rate. *)
     Glv.prep_constant_rate_glv_from_lv_arr
       full_query_orig
       (lv_arr_of_char_arr query_arr);
+    (* Making full_query_evolv, which is full_query_orig after it has been
+     * evolved along the fixed pendant branch length used for the first stage
+     * of optimization. *)
     Model.evolve_into
       model
       ~dst:full_query_evolv
       ~src:full_query_orig
       (start_pend prefs);
-    (* make a masked alignment with just the given query sequence and the
-     * reference seqs *)
+    (* Write out a masked alignment with just the given query sequence and the
+     * reference sequences if desired. *)
     if write_masked prefs then
       Alignment.to_fasta
         (Alignment.mask_align mask_arr
            (Alignment.stack [|query_name, query_seq|] ref_align))
         (query_name^".mask.fasta");
-    (* make our edges. we are breaking interface by making them then changing
-     * them later, but it would be silly to have setting functions for each
-     * edge. *)
+    (* Make the edges for our three-taxon tree that will be used for the second
+     * stage of optimization. We will breaking interface by changing
+     * them in place later, but it would be silly to have setting functions for
+     * each edge. *)
     let dist_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
     and prox_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
     and pend_edge = Glv_edge.make model query_glv (start_pend prefs)
     in
-    (* the h_r ranks the locations according to the h criterion. we use
-     * this as an ordering for the slower computation *)
     let curr_time = Sys.time () in
     let logdots = ref 0 in
     let score loc =
@@ -158,6 +165,8 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         first_informative
         last_informative
     in
+    (* The h_ranking ranks the locations according to the first stage of
+     * optimization. We use this as an ordering for the second stage. *)
     let h_ranking = Fig.enum_by_score score (strike_box prefs) figs
     and best_seen = ref None in
     let h_ranking =
