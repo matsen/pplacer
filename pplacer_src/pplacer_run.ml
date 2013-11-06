@@ -223,7 +223,6 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     Array.iter write_line ref_align;
     List.iter write_line query_list;
     close_out ch;
-    exit 0;
   end;
 
   (* *** deduplicate sequences *** *)
