@@ -264,7 +264,7 @@ spec_with_default "-j" (fun o -> Arg.Set_int o) prefs.children
 "--no-pre-mask", Arg.Set prefs.no_pre_mask,
 "Don't pre-mask sequences before placement.";
 "--write-pre-masked", Arg.Set_string prefs.pre_masked_file,
-"Write out the pre-masked sequences to the specified fasta file and exit.";
+"Write out the pre-masked sequences to the specified fasta file before placement.";
 "--map-mrca", Arg.Set_string prefs.map_fasta,
 "Specify a file to write out MAP sequences for MRCAs and corresponding placements.";
 spec_with_default "--map-mrca-min" (fun o -> Arg.Set_float o) prefs.map_cutoff
