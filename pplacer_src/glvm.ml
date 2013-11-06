@@ -30,6 +30,7 @@ sig
     val fp_classify: t -> fpclass
     val mask_into: bool array -> src:t -> dst:t -> unit
     val perhaps_pull_exponent: int -> t -> unit
+    val masked_logdot: Gsl_vector.vector -> t -> t -> Linear.uint16_vector -> float
     val bounded_logdot: Gsl_vector.vector -> t -> t -> int -> int -> float
     val logdot: Gsl_vector.vector -> t -> t -> float
     val listwise_prod: t -> t list -> unit

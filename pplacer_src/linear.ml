@@ -5,6 +5,7 @@ module BA = Bigarray
 module BA1 = BA.Array1
 module BA2 = BA.Array2
 
+type uint16_vector = (int, BA.int16_unsigned_elt, BA.c_layout) BA1.t
 
 (* *** Matrices, used for transformation. *** *)
 
@@ -31,6 +32,12 @@ external mat_pairwise_prod : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matri
 
 (* statd dst a b *)
 external mat_statd_pairwise_prod : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> unit = "mat_statd_pairwise_prod_c"
+
+(* x y mask
+ * Take the logarithm of the dot product of x and y restricted to the sites
+ * that have a nonzero value in the mask.
+ * *)
+external mat_masked_logdot : Gsl_matrix.matrix -> Gsl_matrix.matrix -> uint16_vector -> float = "mat_masked_logdot_c"
 
 (* x y first last
  * take the logarithm of the dot product of x and y restricted to the interval
@@ -62,17 +69,15 @@ external ten_bounded_logdot : Tensor.tensor -> Tensor.tensor -> int -> int -> Gs
 (* vec_pairwise_prod dst x y *)
 external vec_pairwise_prod : Gsl_vector.vector -> Gsl_vector.vector -> Gsl_vector.vector -> unit = "vec_pairwise_prod_c"
 
-type int_vector = (int, BA.int16_unsigned_elt, BA.c_layout) BA1.t
-
 (* int_vec_tot x
  * The total of an integer vector. *)
-external int_vec_tot : int_vector -> int = "int_vec_tot_c"
+external int_vec_tot : uint16_vector -> int = "int_vec_tot_c"
 
 (* int_vec_pairwise_prod dst x y *)
-external int_vec_pairwise_prod : int_vector -> int_vector -> int_vector  -> unit = "int_vec_pairwise_prod_c"
+external int_vec_pairwise_prod : uint16_vector -> uint16_vector -> uint16_vector  -> unit = "int_vec_pairwise_prod_c"
 
 (* float_mat_int_vec_mul dest mat vec
  * Left multiply the integer vector by the float matrix. This routine
  * specializes in being fast when the integer is sparse.
  * *)
-external float_mat_int_vec_mul : Gsl_vector.vector -> Gsl_matrix.matrix -> int_vector -> unit = "float_mat_int_vec_mul_c"
+external float_mat_int_vec_mul : Gsl_vector.vector -> Gsl_matrix.matrix -> uint16_vector -> unit = "float_mat_int_vec_mul_c"

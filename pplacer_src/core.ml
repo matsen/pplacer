@@ -109,11 +109,13 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     let query_arr = StringFuns.to_char_array query_seq in
     (* The mask array shows true if it's informative and thus included. *)
     let mask_arr = Array.map Alignment.informative query_arr in
+    let mask_vec =
+      Bigarray.Array1.of_array Bigarray.int16_unsigned Bigarray.c_layout
+        (Array.map (fun b -> if b then 1 else 0) mask_arr)
+    in
     let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
-    let first_informative = ArrayFuns.first Alignment.informative query_arr
-    and last_informative = ArrayFuns.last Alignment.informative query_arr in
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
@@ -158,12 +160,11 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     let logdots = ref 0 in
     let score loc =
       incr logdots;
-      Glv.bounded_logdot
+      Glv.masked_logdot
         utilv_nsites
         full_query_evolv
         (Glv_arr.get snodes loc)
-        first_informative
-        last_informative
+        mask_vec
     in
     (* The h_ranking ranks the locations according to the first stage of
      * optimization. We use this as an ordering for the second stage. *)

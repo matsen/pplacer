@@ -186,6 +186,9 @@ struct
 
     (* *** likelihood calculations *** *)
 
+    let masked_logdot _ _ _ _ = assert false; 0.
+    (*let masked_logdot utilv_nsites x y start last =*)
+
     (* the log "dot" of the likelihood vectors in the 0-indexed interval
      * [start,last] *)
     let bounded_logdot utilv_nsites x y start last =

@@ -248,6 +248,30 @@ CAMLprim value mat_statd_pairwise_prod_c(value statd_value, value dst_value, val
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value mat_masked_logdot_c(value x_value, value y_value, value mask_value)
+{
+  CAMLparam3(x_value, y_value, mask_value);
+  CAMLlocal1(ml_ll_tot);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  uint16_t *mask = Data_bigarray_val(mask_value);
+  int n_sites = (Bigarray_val(x_value)->dim[0]);
+  int n_states = (Bigarray_val(x_value)->dim[1]);
+  if(n_sites != Bigarray_val(mask_value)->dim[0]) { printf("Mask length doesn't match!"); };
+  int site, state;
+  double util, ll_tot=0;
+  for(site=0; site < n_sites; site++) {
+    util=0;
+    for(state=0; state < n_states; state++) {
+        if(mask[state]) { util += x[state] * y[state]; }
+    }
+    x += n_states; y += n_states;
+    ll_tot += log(util);
+  }
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}
+
 CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value)
 {
   CAMLparam4(x_value, y_value, first_value, last_value);

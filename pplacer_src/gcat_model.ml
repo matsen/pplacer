@@ -206,6 +206,16 @@ struct
 
     (* *** likelihood calculations *** *)
 
+    (* The log "dot" of the likelihood vectors masked by the boolean vector
+     * mask. Note that we don't have to use the utilv_nsites, so we ignore it
+     * here with a _.
+     *)
+    let masked_logdot _ x y mask =
+      assert(dims x = dims y);
+      (Linear.mat_masked_logdot x.a y.a mask)
+      +. (log_of_2 *. ((masked_total_twoexp x.e mask) +.
+                          (masked_total_twoexp y.e mask)))
+
     (* the log "dot" of the likelihood vectors in the 0-indexed interval
      * [start,last]. Note that we don't have to use the utilv_nsites , so we
      * ignore it here with a _.
