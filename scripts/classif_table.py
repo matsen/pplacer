@@ -16,6 +16,10 @@ import csv
 log = logging.getLogger(__name__)
 
 
+# Used various places
+taxa_cols = ['tax_id', 'tax_name', 'rank']
+
+
 def cursor_to_csv(curs, outfile, description=None):
     "Iterate over SQL cursor and write to outfile"
     if description is None:
@@ -26,7 +30,7 @@ def cursor_to_csv(curs, outfile, description=None):
 
 
 def by_taxon(args):
-    """This function queries for the tally and placement count totals for each taxon at the desired want_rank.
+    """This function queries for the tally and placement count totals for each taxon at the desired rank.
     It does not require a specimen map."""
 
     log.info('tabulating by_taxon')
@@ -43,7 +47,7 @@ def by_taxon(args):
          WHERE want_rank = ?
          GROUP BY t.tax_id
          ORDER BY tally DESC
-    """, (args.want_rank,))
+    """, (args.rank,))
 
     with args.by_taxon:
         cursor_to_csv(curs, args.by_taxon)
@@ -54,7 +58,6 @@ def by_taxon_with_specimens(args, by_specimen_results, specimens):
     taxon across specimens."""
 
     log.info('tabulating by_taxon using by_specimen results')
-    taxa_cols = ['tax_id', 'tax_name', 'rank']
     n_specimens = float(len(specimens))
 
     cols = taxa_cols + ['tally', 'placements', 'avg_tally', 'avg_placements', 'avg_freq' ]
@@ -100,7 +103,7 @@ def by_specimen(args):
                JOIN placement_names USING (name, placement_id)
          WHERE want_rank = ?
          GROUP BY specimen
-    """, (args.want_rank,))
+    """, (args.rank,))
 
     log.info('tabulating counts by specimen')
     curs.execute("""
@@ -119,7 +122,7 @@ def by_specimen(args):
          WHERE want_rank = ?
          GROUP BY specimen, t.tax_id
          ORDER BY freq DESC
-    """, (args.want_rank,))
+    """, (args.rank,))
 
     desc = curs.description
     rows = curs.fetchall()
@@ -141,6 +144,7 @@ def by_specimen(args):
         row[specimen] = dict(tally=tally, placements=placements, freq=freq)
         specimens.add(specimen)
 
+    assert len(specimens.intersection(taxa_cols)) == 0, "The following are invalid specimen names: %r" % taxa_cols
     return (results.values(), specimens)
 
 
@@ -189,12 +193,12 @@ def main():
     parser.add_argument('database', type=sqlite3.connect,
         help='sqlite database (output of `rppr prep_db` after `guppy classify`)')
     parser.add_argument('-m', '--specimen-map', type=argparse.FileType('r'), metavar='CSV',
-        help='input CSV map from sequences to specimens')
+        help='input CSV map from sequences to specimens (headerless; 1st col sequence id, 2nd specimen name')
     parser.add_argument('-M', '--metadata-map', type=argparse.FileType('r'), metavar='CSV',
         help="""input CSV map including a specimen column and other metadata; if specified gets merged in with
-        whichever of freqs_wide and tallies_wide outputs are specified.""")
-    parser.add_argument('-r', '--want-rank', default='species', metavar='RANK',
-        help='want_rank at which results are to be tabulated (default: %(default)s)')
+        whichever of freqs_wide and tallies_wide outputs are specified (must include header)""")
+    parser.add_argument('-r', '--rank', default='species', metavar='RANK',
+        help='rank at which results are to be tabulated (default: %(default)s)')
 
     # OUTPUTS
     parser.add_argument('by_taxon', type=argparse.FileType('w'),
