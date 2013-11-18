@@ -61,7 +61,7 @@ let pair_uppercase (name, seq) = (name, String.uppercase seq)
 let uppercase aln = Array.map pair_uppercase aln
 
 let list_of_any_file fname =
-  let has_suffix suffix = Filename.check_suffix fname suffix in
+  let has_suffix suffix = MaybeZipped.check_suffix fname suffix in
   if has_suffix ".fasta" || has_suffix ".fa" then
     Fasta.of_file fname
   else if has_suffix ".sth" || has_suffix ".sto" then
