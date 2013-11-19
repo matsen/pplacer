@@ -20,6 +20,6 @@ let suite = List.map
       | _ -> failwith (Printf.sprintf "unexpected json file %s" fname)
   )
   (get_dir_contents
-     ~pred:(flip Filename.check_suffix "jtest")
+     ~pred:(flip MaybeZipped.check_suffix "jtest")
      (tests_dir ^ "data/json")
    |> List.of_enum)
