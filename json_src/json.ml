@@ -70,6 +70,10 @@ let to_string o =
   Buffer.contents buf
 
 let to_file name o =
-  let file = open_out name in
-  to_formatter (Format.formatter_of_out_channel file) o;
+  let file = MaybeZipped.open_out name in
+  let formatter= Format.make_formatter
+    (fun s p l -> let _ = IO.output file s p l in ())
+    (fun () -> IO.flush file)
+  in
+  to_formatter formatter o;
   close_out file

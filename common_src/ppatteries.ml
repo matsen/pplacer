@@ -234,15 +234,24 @@ module MaybeZipped = struct
   let lines_of name =
     open_in name |> IO.lines_of
 
-  (*let open_out name =
+  let open_out name =
     if is_gzipped name then
       let out_chan = Gzip.open_out name in
+      (* Gzip.output doesn't return the number of characters written,
+       * hence the Buffer wrapping *)
       IO.create_out
         ~write:(Gzip.output_char out_chan)
-        ~output:(Gzip.output out_chan)
+        ~output:(fun s p l ->
+          let buf = Buffer.create l in
+          Buffer.add_substring buf s p l;
+          Gzip.output out_chan (Buffer.contents buf) 0 (Buffer.length buf);
+          Buffer.length buf)
         ~close:(fun () -> Gzip.close_out out_chan)
+        (* Gzip.flush disposes of the Gzip stream and prevents further writes -
+         * we don't want that, so no action here. *)
+        ~flush:(fun () -> ())
     else
-      File.open_out name*)
+      File.open_out name
 end
 
 (* parsing *)
