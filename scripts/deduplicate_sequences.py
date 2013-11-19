@@ -4,8 +4,10 @@ Deduplicate sequences by group
 """
 
 import argparse
+import bz2
 import collections
 import csv
+import gzip
 import hashlib
 import sys
 import textwrap
@@ -140,6 +142,41 @@ def write_map(deduplicated_sequences, fp):
     writer = csv.writer(fp, quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
     writer.writerows(rows)
 
+
+class Opener(object):
+    """Like `argparse.FileType`, but supports gzip and bzip2 file
+    compression by inferring compression type from file name suffix.
+
+    Example:
+
+      parser.add_argument('input_file', type=Opener('r'))
+      parser.add_argument('output_file', type=Opener('w'))
+
+    """
+
+    def __init__(self, mode = 'r', bufsize = -1):
+        self._mode = mode
+        self._bufsize = bufsize
+
+    def __call__(self, fname):
+        if fname is sys.stdout or fname is sys.stdin:
+            return fname
+        elif fname == '-':
+            return sys.stdin if 'r' in self._mode else sys.stdout
+        elif fname.endswith('.bz2'):
+            return bz2.BZ2File(fname, self._mode, self._bufsize)
+        elif fname.endswith('.gz'):
+            mode = ''.join(c for c in self._mode if c not in 'U')
+            return gzip.open(fname, mode, self._bufsize)
+        else:
+            return open(fname, self._mode, self._bufsize)
+
+    def __repr__(self):
+        args = self._mode, self._bufsize
+        args_str = ', '.join(repr(arg) for arg in args if arg != -1)
+        return '{}({})'.format(type(self).__name__, args_str)
+
+
 def main():
     parser = argparse.ArgumentParser(description=textwrap.dedent("""
     Deduplicate sequences in `input_fasta`, writing the results to
@@ -151,25 +188,28 @@ def main():
 
     Similarly, if your sequences are already deduplicated in some way, you may
     pass in abundance information with `--input-count-file`.
-    """), formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    Input files and output files ending with ".gz" or ".bz2" will be
+    opened using gzip or bzip2 file compression, respectively. """),
+    formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-c', '--input-count-file', dest='count_file',
-            type=argparse.FileType('r'), help="""CSV file with rows containing
+            type=Opener('r'), help="""CSV file with rows containing
             sequence_id (column 1), abundance (column 2) count. If not
             specified, all sequences are given a count of 1.""")
     split_group = parser.add_mutually_exclusive_group()
-    split_group.add_argument('-s', '--split-map', type=argparse.FileType('r'),
+    split_group.add_argument('-s', '--split-map', type=Opener('r'),
             help="""Headerless CSV file mapping from sequence id (column 1) to
             sample identifier (column 2). If not specified, all sequences are
             assumed to be from a single sample, and are fully deduplicated.""")
     split_group.add_argument('--keep-ids', action='store_true', help="""When
             specified, all sequence IDs will be written to the output file,
             rather than the first ID seen and count""")
-    parser.add_argument('input_fasta', type=argparse.FileType('r'),
+    parser.add_argument('input_fasta', type=Opener('r'),
             help="""FASTA file to deduplicate""")
-    parser.add_argument('output_fasta', type=argparse.FileType('w'),
+    parser.add_argument('output_fasta', type=Opener('w'),
             help="""Path to write deduplicated FASTA file""")
     parser.add_argument('-d', '--deduplicated-sequences-file',
-            type=argparse.FileType('w'),
+            type=Opener('w'),
             dest='map_out', default=sys.stdout, help="""Destination for csv
             file of (kept_seq_id,orig_seq_id,count) rows [default: stdout]""")
 
