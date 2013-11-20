@@ -69,7 +69,7 @@ object (self)
         ()
       in
       let weighting, criterion = self#mass_opts
-      and tree_name = Mokaphy_common.chop_suffix_if_present fname ".xml" in
+      and tree_name = safe_chop_suffix fname ".xml" in
       let my_pre_of_pr = Mass_map.Pre.of_placerun weighting criterion
       and refpkgo, ref_tree = self#get_rpo_and_tree pr1 in
       let make_heat_tree decor_t pre1 pre2 =

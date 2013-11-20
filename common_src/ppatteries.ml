@@ -182,6 +182,78 @@ let ll_normalized_prob ll_list =
             ll_list)))
     ll_list
 
+(* Functions here mimic BatFile and Filename,
+ * but support decompression of gzipped files (ending in .gz).
+ * All Filename like functions operate on filenames with a .gz extension
+ * dropped, so chop_extension "test.fasta.gz" == "test" *)
+module MaybeZipped = struct
+  let is_gzipped name =
+    Filename.check_suffix name ".gz"
+
+  let drop_gz name =
+    if is_gzipped name then
+      Filename.chop_extension name
+    else
+      name
+
+  let check_suffix name suffix =
+    Filename.check_suffix (drop_gz name) suffix
+
+  let chop_suffix name suffix =
+    Filename.chop_suffix (drop_gz name) suffix
+
+  let chop_extension name =
+    Filename.chop_extension (drop_gz name)
+
+  (* Mostly duplicates above. *)
+  let safe_chop_extension s =
+    let s = drop_gz s in
+    try chop_extension (drop_gz s) with | Invalid_argument _ -> s
+
+  let safe_chop_suffix name suff =
+    let name = drop_gz name in
+    if check_suffix name suff then chop_suffix name suff
+    else name
+
+  let open_in name =
+    if is_gzipped name then
+      let in_chan = Gzip.open_in name in
+      IO.create_in
+        ~read:(fun () ->
+          try
+            Gzip.input_char in_chan
+          with End_of_file -> raise BatIO.No_more_input)
+        ~input:(fun buf pos len ->
+          try
+            Gzip.input in_chan buf pos len
+          with End_of_file -> raise BatIO.No_more_input)
+        ~close:(fun () -> Gzip.close_in in_chan)
+    else
+      File.open_in name
+
+  let lines_of name =
+    open_in name |> IO.lines_of
+
+  let open_out name =
+    if is_gzipped name then
+      let out_chan = Gzip.open_out name in
+      (* Gzip.output doesn't return the number of characters written,
+       * hence the Buffer wrapping *)
+      IO.create_out
+        ~write:(Gzip.output_char out_chan)
+        ~output:(fun s p l ->
+          let buf = Buffer.create l in
+          Buffer.add_substring buf s p l;
+          Gzip.output out_chan (Buffer.contents buf) 0 (Buffer.length buf);
+          Buffer.length buf)
+        ~close:(fun () -> Gzip.close_out out_chan)
+        (* Gzip.flush disposes of the Gzip stream and prevents further writes -
+         * we don't want that, so no action here. *)
+        ~flush:(fun () -> ())
+    else
+      File.open_out name
+end
+
 (* parsing *)
 module Sparse = struct
   open Lexing
@@ -316,7 +388,7 @@ module Sparse = struct
     and of_file fname =
       file_parse_wrap
         fname
-        (File.lines_of %> Enum.map tokenize %> Enum.flatten %> parse)
+        (MaybeZipped.lines_of %> Enum.map tokenize %> Enum.flatten %> parse)
         fname
     in
     of_string, of_file

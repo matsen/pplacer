@@ -6,14 +6,19 @@ let of_string ?fname s =
   Sparse.wrap_of_fname_opt fname (Jsonparse.parse Jsonlex.token) lexbuf
 
 let of_file fname =
-  let fobj = open_in fname in
-  let lexbuf = Lexing.from_channel fobj in
+  let fobj = MaybeZipped.open_in fname in
+  let input s n =
+    try
+      IO.input fobj s 0 n
+    with BatIO.No_more_input -> 0
+  in
+  let lexbuf = Lexing.from_function input in
   let ret = Sparse.file_parse_wrap
     fname
     (Jsonparse.parse Jsonlex.token)
     lexbuf
   in
-  close_in fobj;
+  IO.close_in fobj;
   ret
 
 let to_escape = Str.regexp "\\([\\\\\"/\b\012\n\r\t]\\)"
@@ -65,6 +70,10 @@ let to_string o =
   Buffer.contents buf
 
 let to_file name o =
-  let file = open_out name in
-  to_formatter (Format.formatter_of_out_channel file) o;
+  let file = MaybeZipped.open_out name in
+  let formatter= Format.make_formatter
+    (fun s p l -> let _ = IO.output file s p l in ())
+    (fun () -> IO.flush file)
+  in
+  to_formatter formatter o;
   close_out file

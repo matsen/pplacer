@@ -54,7 +54,7 @@ object (self)
       in
       Phyloxml.named_gtree_to_file
         fname
-        (Mokaphy_common.chop_suffix_if_present fname ".xml") (* tree name *)
+        (safe_chop_suffix fname ".xml") (* tree name *)
         (make_bary_tree t prel)
     end
 end
