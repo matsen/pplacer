@@ -16,6 +16,7 @@ Precompiled binaries for Mac OS X and Linux can be found on the `main pplacer si
    scripts
    glossary
    compiling
+   changelog
 
 
 .. raw:: html

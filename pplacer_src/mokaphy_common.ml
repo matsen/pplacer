@@ -7,10 +7,6 @@ let write_named_float_uptri ch names u =
         if i < j then (Printf.sprintf "%g" (Uptri.get u i j))
         else ""))
 
-let chop_suffix_if_present s suff =
-  if Filename.check_suffix s suff then Filename.chop_suffix s suff
-  else s
-
 (* make sure all the trees in the placerun list are the same *)
 let list_get_same_tree = function
   | [] -> invalid_arg "list_get_same_tree"

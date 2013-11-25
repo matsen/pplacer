@@ -751,7 +751,7 @@ let run_file prefs query_fname =
     (Option.default [||] ref_align)
   in ();
   let rp = Option.map_default (flip Refpkg.set_aln_fasta rp) rp ref_align
-  and query_bname = Filename.basename (Filename.chop_extension query_fname)
+  and query_bname = Filename.basename (MaybeZipped.chop_extension query_fname)
   and from_input_alignment = Option.is_some ref_align in
   let jplace_name = match Prefs.out_file prefs with
     | "" -> ((Prefs.out_dir prefs) ^ "/" ^ query_bname ^ ".jplace")

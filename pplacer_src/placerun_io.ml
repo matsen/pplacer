@@ -204,7 +204,7 @@ let of_json_file fname =
   Placerun.make
     ?transm
     ref_tree
-    (Filename.chop_extension (Filename.basename fname))
+    (MaybeZipped.chop_extension (Filename.basename fname))
     pql
 
 let ppr_placerun ff pr =
@@ -218,10 +218,10 @@ let split_file s =
 
 (* load in a .place or .jplace file. *)
 let of_any_file fname =
-  if Filename.check_suffix fname ".place" then
+  if MaybeZipped.check_suffix fname ".place" then
     of_file fname
-  else if Filename.check_suffix fname ".json"
-      || Filename.check_suffix fname ".jplace" then
+  else if MaybeZipped.check_suffix fname ".json"
+      || MaybeZipped.check_suffix fname ".jplace" then
     of_json_file fname
   else
     failwith ("unfamiliar suffix on " ^ fname)

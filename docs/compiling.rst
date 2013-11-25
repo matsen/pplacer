@@ -1,5 +1,7 @@
-Compiling pplacer from source
-=============================
+:tocdepth: 1
+
+Compiling ``pplacer`` from source
+=================================
 
 .. important::
 
