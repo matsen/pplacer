@@ -48,7 +48,7 @@ let total_twoexp e =
   done;
   !tot
 
-(* The sum of the entries of e for unmasked values. *)
+(* The sum of the unmasked entries of e. *)
 let masked_total_twoexp e mask =
   assert(BA1.dim e = BA1.dim mask);
   let tot = ref 0. in
