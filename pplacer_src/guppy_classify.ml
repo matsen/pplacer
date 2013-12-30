@@ -165,11 +165,15 @@ let best_classification {tiamr} =
 let mrca td {tiamr} =
   TIAMR.keys tiamr |> List.of_enum |> Tax_taxonomy.list_mrca td
 
-let merge_fn f _ a b =
+let hybrid_merge_fn f _ a b =
   match a, b with
   | None, None -> None
-  | Some x, None
-  | None, Some x -> Some x
+  | Some x, None ->
+      dprint "Warning: entry in jplace with no corresponding nbc-sequence";
+      None
+  | None, Some x ->
+      dprint "Warning: nbc-sequence with no corresponding entry in jplace";
+      None
   | Some a, Some b -> Some (f a b)
 
 (* Get the maximum binding in a.tiamrim or return lbl b. When applied to a
@@ -705,17 +709,17 @@ object (self)
       | "blast" -> perform_blast ()
       | "hybrid2" ->
         StringMap.merge
-          (label3 self#merge_hybrid2 td |> merge_fn)
+          (label3 self#merge_hybrid2 td |> hybrid_merge_fn)
           (default_pplacer ())
           (default_nbc ())
       | "hybrid2f" ->
         StringMap.merge
-          (label3 self#merge_fake_hybrid2 td |> merge_fn)
+          (label3 self#merge_fake_hybrid2 td |> hybrid_merge_fn)
           (default_pplacer ())
           (default_nbc ())
       | "hybrid5" ->
         StringMap.merge
-          (label3 self#merge_hybrid5 td |> merge_fn)
+          (label3 self#merge_hybrid5 td |> hybrid_merge_fn)
           (default_pplacer ())
           (default_nbc ())
       | s -> failwith (Printf.sprintf "invalid classifier: %s" s)
