@@ -257,7 +257,8 @@ CAMLprim value mat_masked_logdot_c(value x_value, value y_value, value mask_valu
   uint16_t *mask = Data_bigarray_val(mask_value);
   int n_sites = (Bigarray_val(x_value)->dim[0]);
   int n_states = (Bigarray_val(x_value)->dim[1]);
-  if(n_sites != Bigarray_val(mask_value)->dim[0]) { printf("Mask length doesn't match!"); };
+  if(n_sites != Bigarray_val(mask_value)->dim[0])
+    { printf("mat_masked_logdot_c: Mask length doesn't match!"); };
   int site, state;
   double util, ll_tot=0;
   for(site=0; site < n_sites; site++) {
@@ -452,9 +453,11 @@ CAMLprim value ten_masked_logdot_c(value x_value, value y_value, value mask_valu
   int n_rates = Bigarray_val(x_value)->dim[0];
   int n_sites = Bigarray_val(x_value)->dim[1];
   int n_states = Bigarray_val(x_value)->dim[2];
-  if(n_sites != Bigarray_val(mask_value)->dim[0]) { printf("Mask length doesn't match!"); };
-  if(n_sites != Bigarray_val(util_value)->dim[0]) { printf("Util length doesn't match!"); };
-  int rate, site, state, n_used;
+  if(n_sites != Bigarray_val(mask_value)->dim[0])
+    { printf("ten_masked_logdot_c: Mask length doesn't match!"); };
+  if(n_sites != Bigarray_val(util_value)->dim[0])
+    { printf("ten_masked_logdot_c: Util length doesn't match!"); };
+  int rate, site, state;
   double *x_p, *y_p, *util_v;
 
   // Util will be used to accumulate results across rates.
@@ -478,11 +481,15 @@ CAMLprim value ten_masked_logdot_c(value x_value, value y_value, value mask_valu
 
   // now total up the likes from the util vector
   double ll_tot=0;
+  int n_used=0;
   for(site=0; site < n_sites; site++) {
-    if (mask[site]) { ll_tot += log(util[site]); }
+    if (mask[site]) {
+      ll_tot += log(util[site]);
+      n_used++;
+    }
   }
   // subtract once rather than perform division by n_rates n_sites times
-  ll_tot -= ((float) n_sites) * log ((float) n_rates);
+  ll_tot -= ((float) n_used) * log ((float) n_rates);
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
 }

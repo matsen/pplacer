@@ -64,7 +64,7 @@ external ten_statd_pairwise_prod : Gsl_vector.vector -> Tensor.tensor -> Tensor.
  * Take the logarithm of the dot product of x and y restricted to the sites
  * that have a nonzero value in the mask.
  * *)
-external ten_masked_logdot : Tensor.tensor -> Tensor.tensor -> uint16_vector -> Gsl_vector.vector -> float = "mat_masked_logdot_c"
+external ten_masked_logdot : Tensor.tensor -> Tensor.tensor -> uint16_vector -> Gsl_vector.vector -> float = "ten_masked_logdot_c"
 
 (* x y first last util
  * take the logarithm of the dot product of x and y restricted to the interval
