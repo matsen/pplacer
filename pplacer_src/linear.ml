@@ -34,8 +34,8 @@ external mat_pairwise_prod : Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matri
 external mat_statd_pairwise_prod : Gsl_vector.vector -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> Gsl_matrix.matrix -> unit = "mat_statd_pairwise_prod_c"
 
 (* x y mask
- * Take the logarithm of the dot product of x and y restricted to the sites
- * that have a nonzero value in the mask.
+ * Take the across-sites sum of the logarithm of the per-site dot products of x
+ * and y restricted to the sites that have a nonzero value in the mask.
  * *)
 external mat_masked_logdot : Gsl_matrix.matrix -> Gsl_matrix.matrix -> uint16_vector -> float = "mat_masked_logdot_c"
 
