@@ -309,10 +309,13 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       let get_like (_, (like, _, _)) = like in
       let sorted_ml_results =
         List.sort (comparing get_like |> flip) ml_results in
-      if Float.is_nan (get_like (List.hd sorted_ml_results)) then
-        dprint "warning: encountered NAN for final likelihood.\n";
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
+      let _ = match classify_float best_like with
+        |	FP_infinite	|	FP_nan ->
+          dprintf "Warning: encountered %g for final likelihood.\n" best_like;
+        | _ -> ()
+      in
       let keep_results, _ =
         ListFuns.partitioni
           (fun i r ->

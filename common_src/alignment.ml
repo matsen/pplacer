@@ -209,6 +209,11 @@ let emper_freq nstates like_map align =
       "emper freqs: %a@."
       Linear_utils.ppr_gsl_vector
       total;
+  let a = Gsl_vector.to_array total in
+  if Array.exists (fun x -> x < 1e-10) a then
+    dprintf
+      "\nWarning: zero-indexed state %d is zero in empirical frequency.\n\n"
+      (Array.findi (fun x -> x < 1e-10) a);
   total
 
 let identity s1 s2 =
