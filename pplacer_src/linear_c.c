@@ -261,15 +261,35 @@ CAMLprim value mat_masked_logdot_c(value x_value, value y_value, value mask_valu
     { printf("mat_masked_logdot_c: Mask length doesn't match!"); };
   int site, state;
   double util, ll_tot=0;
-  for(site=0; site < n_sites; site++) {
-    if(mask[site]) {
-      util=0;
-      for(state=0; state < n_states; state++) {
-          util += x[state] * y[state];
+  if(n_states == 4) {
+    for(site=0; site < n_sites; site++) {
+      if(mask[site]) {
+        util=0;
+        for(state=0; state < 4; state++) { util += x[state] * y[state]; }
+        ll_tot += log(util);
       }
-    ll_tot += log(util);
+      x += n_states; y += n_states;
     }
-    x += n_states; y += n_states;
+  }
+  else if(n_states == 20) {
+    for(site=0; site < n_sites; site++) {
+      if(mask[site]) {
+        util=0;
+        for(state=0; state < 20; state++) { util += x[state] * y[state]; }
+        ll_tot += log(util);
+      }
+      x += n_states; y += n_states;
+    }
+  }
+  else {
+    for(site=0; site < n_sites; site++) {
+      if(mask[site]) {
+        util=0;
+        for(state=0; state < n_states; state++) { util += x[state] * y[state]; }
+        ll_tot += log(util);
+      }
+      x += n_states; y += n_states;
+    }
   }
   ml_ll_tot = caml_copy_double(ll_tot);
   CAMLreturn(ml_ll_tot);
@@ -468,14 +488,38 @@ CAMLprim value ten_masked_logdot_c(value x_value, value y_value, value mask_valu
     // and start at the appropriate place in x and y
     x_p = x + rate * n_sites * n_states;
     y_p = y + rate * n_sites * n_states;
-    for(site=0; site < n_sites; site++) {
-      if(mask[site]) {
-        for(state=0; state < n_states; state++) {
-          *util_v += x_p[state] * y_p[state];
+    if(n_states == 4) {
+      for(site=0; site < n_sites; site++) {
+        if(mask[site]) {
+          for(state=0; state < 4; state++) {
+            *util_v += x_p[state] * y_p[state];
+          }
         }
+        x_p += n_states; y_p += n_states;
+        util_v++;
       }
-      x_p += n_states; y_p += n_states;
-      util_v++;
+    }
+    else if(n_states == 20) {
+      for(site=0; site < n_sites; site++) {
+        if(mask[site]) {
+          for(state=0; state < 20; state++) {
+            *util_v += x_p[state] * y_p[state];
+          }
+        }
+        x_p += n_states; y_p += n_states;
+        util_v++;
+      }
+    }
+    else {
+      for(site=0; site < n_sites; site++) {
+        if(mask[site]) {
+          for(state=0; state < n_states; state++) {
+            *util_v += x_p[state] * y_p[state];
+          }
+        }
+        x_p += n_states; y_p += n_states;
+        util_v++;
+      }
     }
   }
 
