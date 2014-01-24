@@ -105,14 +105,16 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     end;
     if String.length query_seq <> ref_length then
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
-    (* Prepare the query glv. *)
+    (* Turn the query sequence into a character array. *)
     let query_arr = StringFuns.to_char_array query_seq in
-    (* The mask array shows true if it's informative and thus included. *)
+    (* An array showing which sites are informative in that query sequence. *)
     let mask_arr = Array.map Alignment.informative query_arr in
+    (* The corresponding vector version. *)
     let mask_vec =
       Bigarray.Array1.of_array Bigarray.int16_unsigned Bigarray.c_layout
         (Array.map (fun b -> if b then 1 else 0) mask_arr)
     in
+    (* Mask all of the query sequences down to this subset *)
     let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
       failwith ("sequence '"^query_name^"' has no informative sites.");
