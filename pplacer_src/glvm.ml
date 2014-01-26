@@ -46,7 +46,7 @@ sig
   val log_like3: t -> Gsl_vector.vector -> Glv.t -> Glv.t -> Glv.t -> float
   val site_log_like_arr3: t -> Glv.t -> Glv.t -> Glv.t -> float array
   val slow_log_like3: t -> Glv.t -> Glv.t -> Glv.t -> float
-  val evolve_into: t -> dst:Glv.t -> src:Glv.t -> float -> unit
+  val evolve_into: t -> ?site_map:int array -> dst:Glv.t -> src:Glv.t -> float -> unit
   val statd_pairwise_prod: t -> dst:Glv.t -> Glv.t -> Glv.t -> unit
 
 end

@@ -317,7 +317,8 @@ struct
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
-  let evolve_into model ~dst ~src bl =
+  let evolve_into model ?site_map ~dst ~src bl =
+    let _ = site_map in (* Ignore site_map. *)
     (* copy over the exponents *)
     BA1.blit src.Glv.e dst.Glv.e;
     (* prepare the matrices in our matrix cache *)
