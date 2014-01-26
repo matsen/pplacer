@@ -13,4 +13,5 @@ let suite = [
   "painting" >::: Test_painting.suite;
   "newick_parser" >::: Test_newick_parser.suite;
   "ppatteries" >::: Test_ppatteries.suite;
+  "misc" >::: Test_misc.suite;
 ]
