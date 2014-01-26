@@ -107,31 +107,15 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       failwith ("query '"^query_name^"' is not the same length as the ref alignment");
     (* Turn the query sequence into a character array. *)
     let query_arr = StringFuns.to_char_array query_seq in
-    (* An array showing which sites are informative in that query sequence. *)
-    let mask_arr = Array.map Alignment.informative query_arr in
-    (* The corresponding vector version. *)
-    let mask_vec =
-      Bigarray.Array1.of_array Bigarray.int16_unsigned Bigarray.c_layout
-        (Array.map (fun b -> if b then 1 else 0) mask_arr)
-    in
-    (* Mask all of the query sequences down to this subset *)
-    let masked_query_arr = Array.filter Alignment.informative query_arr in
-    if masked_query_arr = [||] then
-      failwith ("sequence '"^query_name^"' has no informative sites.");
     let lv_arr_of_char_arr a =
       match seq_type with
         | Alignment.Nucleotide_seq -> Array.map Nuc_models.lv_of_nuc a
         | Alignment.Protein_seq -> Array.map Prot_models.lv_of_aa a
     in
-    (* The query glv, which has been masked. *)
-    let query_glv =
-      Model.make_constant_rate_glv_from_lv_arr
-        model
-        (lv_arr_of_char_arr masked_query_arr)
-    in
-    (* Making full_query_orig, the glv for the unmasked likelihood vector,
-     * which will be used for the first stage optimization only. Note that
-     * it only has one rate. *)
+    (* *** First prepare for the first phase of optimization. ***
+     * This phase is not masked. Make full_query_orig, the glv for the unmasked
+     * likelihood vector, which will be used for the first stage optimization
+     * only. Note that it only has one rate. *)
     Glv.prep_constant_rate_glv_from_lv_arr
       full_query_orig
       (lv_arr_of_char_arr query_arr);
@@ -143,6 +127,20 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       ~dst:full_query_evolv
       ~src:full_query_orig
       (start_pend prefs);
+    (* *** Now begin preparing for the three-taxon tree! ***
+     * This tree will be masked on both the query and the reference side of
+     * things. First make an array showing which sites are informative in that
+     * query sequence. *)
+    let mask_arr = Array.map Alignment.informative query_arr in
+    (* The corresponding vector version. *)
+    let mask_vec =
+      Bigarray.Array1.of_array Bigarray.int16_unsigned Bigarray.c_layout
+        (Array.map (fun b -> if b then 1 else 0) mask_arr)
+    in
+    (* Subset sites of query_arr to just informative sequences. *)
+    let masked_query_arr = Array.filter Alignment.informative query_arr in
+    if masked_query_arr = [||] then
+      failwith ("sequence '"^query_name^"' has no informative sites.");
     (* Write out a masked alignment with just the given query sequence and the
      * reference sequences if desired. *)
     if write_masked prefs then
@@ -150,6 +148,11 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         (Alignment.mask_align mask_arr
            (Alignment.stack [|query_name, query_seq|] ref_align))
         ((out_dir prefs)^"/"^query_name^".mask.fasta");
+    let query_glv =
+      Model.make_constant_rate_glv_from_lv_arr
+        model
+        (lv_arr_of_char_arr masked_query_arr)
+    in
     (* Make the edges for our three-taxon tree that will be used for the second
      * stage of optimization. We will breaking interface by changing
      * them in place later, but it would be silly to have setting functions for
