@@ -323,10 +323,10 @@ struct
     (* prepare the matrices in our matrix cache *)
     prep_tensor_for_bl model bl; (* TODO: make prep_tensor_for_bl more efficient using reind_arr. *)
     (* apply transform specified by model on the a component *)
-    let site_fn i =
+    let site_fn =
       match reind_arr with
-      | Some a -> a.(i)
-      | None -> i
+      | Some a -> (Array.get a)
+      | None -> identity
     in
     let mat_by_cat cat = BA3.slice_left_2 model.tensor cat in
     for i=0 to (Glv.get_n_sites src) - 1 do

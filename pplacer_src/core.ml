@@ -18,6 +18,9 @@ let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
 (* Make an array that indexes the true values of the array.
 # Core.mask_reindex [|true; false; false; true; false; true;|];;
 - : int array = [|0; 3; 5|]
+* When applied to a mask indicator array, it gives an array such that the ith
+* index of the reindexed array is the index of the original sequence
+* corresponding to the ith index of the masked sequence.
 *)
 let mask_reindex a =
   Array.fold_lefti (fun l i elt -> if elt then i::l else l) [] a
@@ -146,6 +149,8 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       Bigarray.Array1.of_array Bigarray.int16_unsigned Bigarray.c_layout
         (Array.map (fun b -> if b then 1 else 0) mask_arr)
     in
+    (* reind_arr has the reindexing induced by the masking (see mask_reindex
+     * above). *)
     let reind_arr = mask_reindex mask_arr in
     (* Subset sites of query_arr to just informative sequences. *)
     let masked_query_arr = Array.filter Alignment.informative query_arr in
