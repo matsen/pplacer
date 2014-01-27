@@ -54,7 +54,7 @@ struct
     Array.iter (fun v -> model.occupied_rates.(v) <- true) model.site_categories
 
   let build ref_align = function
-    | Glvm.Gcat_model (model_name, empirical_freqs, transitions, rates, site_categories) ->
+    | Glvm.Gcat_model_i (model_name, empirical_freqs, transitions, rates, site_categories) ->
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions empirical_freqs ref_align
@@ -87,6 +87,8 @@ struct
       (Array.length model.site_categories)
       Ppr.ppr_int_array model.site_categories
       Ppr.ppr_bool_array model.occupied_rates
+
+  let get_model_class () = Glvm.Gcat_model
 
   module Glv =
   struct
@@ -467,5 +469,5 @@ let init_of_json o ref_align =
     |> Array.of_list
     |> Array.map (fun x -> x-1) (* FastTree writes out 1-indexed arrays. *)
   in
-  Glvm.Gcat_model
+  Glvm.Gcat_model_i
     (model_name, empirical_freqs, opt_transitions, rates, site_categories)

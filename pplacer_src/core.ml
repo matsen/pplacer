@@ -172,9 +172,15 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
      * stage of optimization. We will breaking interface by changing
      * them in place later, but it would be silly to have setting functions for
      * each edge. *)
-    let dist_edge = Glv_edge.make ~reind_arr model (Glv.mimic query_glv) (start_pend prefs)
-    and prox_edge = Glv_edge.make ~reind_arr model (Glv.mimic query_glv) (start_pend prefs)
-    and pend_edge = Glv_edge.make ~reind_arr model query_glv (start_pend prefs)
+    (* Note that Gmix_models are homogenous across sites, so we don't need to pass
+       a reind_arr. Gcat_models aren't. *)
+    let edge_make_fn a b c = match Model.get_model_class () with
+      | Glvm.Gmix_model -> Glv_edge.make a b c
+      | Glvm.Gcat_model -> Glv_edge.make ~reind_arr a b c
+    in
+    let dist_edge = edge_make_fn model (Glv.mimic query_glv) (start_pend prefs)
+    and prox_edge = edge_make_fn model (Glv.mimic query_glv) (start_pend prefs)
+    and pend_edge = edge_make_fn model query_glv (start_pend prefs)
     in
     let curr_time = Sys.time () in
     let logdots = ref 0 in
