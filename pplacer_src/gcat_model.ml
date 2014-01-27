@@ -54,7 +54,7 @@ struct
     Array.iter (fun v -> model.occupied_rates.(v) <- true) model.site_categories
 
   let build ref_align = function
-    | Glvm.Gcat_model (model_name, empirical_freqs, transitions, rates, site_categories) ->
+    | Glvm.Gcat_model_i (model_name, empirical_freqs, transitions, rates, site_categories) ->
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions empirical_freqs ref_align
@@ -87,6 +87,8 @@ struct
       (Array.length model.site_categories)
       Ppr.ppr_int_array model.site_categories
       Ppr.ppr_bool_array model.occupied_rates
+
+  let get_model_class () = Glvm.Gcat_model
 
   module Glv =
   struct
@@ -317,17 +319,22 @@ struct
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
-  let evolve_into model ~dst ~src bl =
+  let evolve_into model ?reind_arr ~dst ~src bl =
     (* copy over the exponents *)
     BA1.blit src.Glv.e dst.Glv.e;
     (* prepare the matrices in our matrix cache *)
-    prep_tensor_for_bl model bl;
+    prep_tensor_for_bl model bl; (* TODO: make prep_tensor_for_bl more efficient using reind_arr. *)
     (* apply transform specified by model on the a component *)
+    let site_fn =
+      match reind_arr with
+      | Some a -> (Array.get a)
+      | None -> identity
+    in
     let mat_by_cat cat = BA3.slice_left_2 model.tensor cat in
     for i=0 to (Glv.get_n_sites src) - 1 do
       let src_mat = BA2.slice_left src.Glv.a i
       and dst_mat = BA2.slice_left dst.Glv.a i
-      and evo_mat = mat_by_cat model.site_categories.(i)
+      and evo_mat = mat_by_cat model.site_categories.(site_fn i)
       in
       Linear_utils.mat_vec_mul dst_mat evo_mat src_mat
     done
@@ -462,5 +469,5 @@ let init_of_json o ref_align =
     |> Array.of_list
     |> Array.map (fun x -> x-1) (* FastTree writes out 1-indexed arrays. *)
   in
-  Glvm.Gcat_model
+  Glvm.Gcat_model_i
     (model_name, empirical_freqs, opt_transitions, rates, site_categories)

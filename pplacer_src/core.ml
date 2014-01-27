@@ -15,6 +15,18 @@ let final_tolerance = 1e-5
 
 let avg l = (List.reduce (+.) l) /. (List.length l |> float_of_int)
 
+(* Make an array that indexes the true values of the array.
+# Core.mask_reindex [|true; false; false; true; false; true;|];;
+- : int array = [|0; 3; 5|]
+* When applied to a mask indicator array, it gives an array such that the ith
+* index of the reindexed array is the index of the original sequence
+* corresponding to the ith index of the masked sequence.
+*)
+let mask_reindex a =
+  Array.fold_lefti (fun l i elt -> if elt then i::l else l) [] a
+  |> List.rev
+  |> Array.of_list
+
 (* This function returns a map from the internal nodes i to the mean of the
  * prior used for the pendant branch lengths. This is the average of the leaf
  * distances strictly below the edge corresponding to the internal node i, plus
@@ -137,6 +149,9 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       Bigarray.Array1.of_array Bigarray.int16_unsigned Bigarray.c_layout
         (Array.map (fun b -> if b then 1 else 0) mask_arr)
     in
+    (* reind_arr has the reindexing induced by the masking (see mask_reindex
+     * above). *)
+    let reind_arr = mask_reindex mask_arr in
     (* Subset sites of query_arr to just informative sequences. *)
     let masked_query_arr = Array.filter Alignment.informative query_arr in
     if masked_query_arr = [||] then
@@ -157,9 +172,15 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
      * stage of optimization. We will breaking interface by changing
      * them in place later, but it would be silly to have setting functions for
      * each edge. *)
-    let dist_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
-    and prox_edge = Glv_edge.make model (Glv.mimic query_glv) (start_pend prefs)
-    and pend_edge = Glv_edge.make model query_glv (start_pend prefs)
+    (* Note that Gmix_models are homogenous across sites, so we don't need to pass
+       a reind_arr. Gcat_models aren't. *)
+    let edge_make_fn a b c = match Model.get_model_class () with
+      | Glvm.Gmix_model -> Glv_edge.make a b c
+      | Glvm.Gcat_model -> Glv_edge.make ~reind_arr a b c
+    in
+    let dist_edge = edge_make_fn model (Glv.mimic query_glv) (start_pend prefs)
+    and prox_edge = edge_make_fn model (Glv.mimic query_glv) (start_pend prefs)
+    and pend_edge = edge_make_fn model query_glv (start_pend prefs)
     in
     let curr_time = Sys.time () in
     let logdots = ref 0 in

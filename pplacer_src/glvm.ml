@@ -1,10 +1,12 @@
 open Ppatteries
 
+type model_class = Gmix_model | Gcat_model
+
 type init_params =
   (* Gmix_model (model_name, empirical_freqs, opt_transitions, rates) *)
-  | Gmix_model of string * bool * float array option * float array
+  | Gmix_model_i of string * bool * float array option * float array
   (* Gcat_model (model_name, empirical_freqs, transitions, rates, site_categories) *)
-  | Gcat_model of string * bool * float array option * float array * int array
+  | Gcat_model_i of string * bool * float array option * float array * int array
 
 module type Model =
 sig
@@ -18,6 +20,7 @@ sig
   val check: t -> Alignment.t -> unit
   val mask_sites: t -> bool array -> unit
   val write: unit IO.output -> t -> unit
+  val get_model_class: unit -> model_class
 
   module Glv:
   sig
@@ -46,7 +49,7 @@ sig
   val log_like3: t -> Gsl_vector.vector -> Glv.t -> Glv.t -> Glv.t -> float
   val site_log_like_arr3: t -> Glv.t -> Glv.t -> Glv.t -> float array
   val slow_log_like3: t -> Glv.t -> Glv.t -> Glv.t -> float
-  val evolve_into: t -> dst:Glv.t -> src:Glv.t -> float -> unit
+  val evolve_into: t -> ?reind_arr:int array -> dst:Glv.t -> src:Glv.t -> float -> unit
   val statd_pairwise_prod: t -> dst:Glv.t -> Glv.t -> Glv.t -> unit
 
 end
