@@ -37,13 +37,34 @@ There are a couple of differences between the present version and the previous v
 * ``rppr`` binary for preparing reference packages
 
 
-Pre-masking and groups
-----------------------
+Pre-masking and masking
+-----------------------
 
-Columns that are all gap in either the reference alignment or the query alignment do not impact the relative likelihood of placements.
-Thus, starting in v1.1alpha08, we don't compute them at all.
-This speeds things up a bunch, and uses a lot less memory.
-We call this pre-masking, and it can be disabled with the ``--no-pre-mask`` flag.
+One of the primary design goals of pplacer is to have it work efficiently and consistently when placing short reads in what might be a longer alignment.
+As part of achieving these design goals, we have put effort into two masking procedures, which are fairly strict in their interpretation of what is informative in a sequence alignment.
+Specifically, we consider columns that are gap in a query sequence or all gap in the reference alignment to not be informative for the placement of that query sequence.
+This is a different statement than saying that a column does not impact the phylogenetic likelihood, and indeed columns that are all gap except for one sequence do change the likelihood in all implementations that interpret gaps as missing data (this is true for essentially all phylogenetic inference software).
+
+We call the first step "pre-masking," and it ignores columns that are all gap in either the reference alignment or the query alignment.
+This has been the default behavior since v1.1alpha08, but it can be disabled with the ``--no-pre-mask`` flag.
+You can see the effect of pre-masking by supplying a file name to the ``--write-pre-masked`` flag.
+
+However, in certain situations this can lead to sequences other than the given sequence influencing the likelihood.
+Specifically, imagine that we have two sequences A and B that are non gap in column sets X and Y, respectively, and that there are no all-gap columns in the reference alignment.
+Say that X and Y are disjoint sets.
+If we ran pplacer with pre-masking on A alone, or B alone, the alignment columns would be subset to X and Y, respectively.
+However, if we run them together, the columns would be subset to the union of X and Y.
+Then, when we are placing A in the presence of B, A's gap entries in Y will influence the likelihood.
+These effects are subtle but nonzero.
+
+Therefore, we have a second step, which we call "masking," that only computes likelihoods for the columns in each placement that are informative in that placement.
+This ensures identical behavior when sequences are run separately or together, and also makes things faster.
+This is now the default behavior, and you can see the results of masking by supplying the ``--write-masked`` flag.
+(Careful when using this, as it will make one fasta file for each query sequence.)
+
+
+Groups
+------
 
 When placing metagenomic sequences onto trees built from very wide alignments (such as concatenations), we suggest using the "groups" feature.
 Using, say, ``--groups 5`` will divide the alignment into 5 evenly spaced sectors across the width of the alignment.
