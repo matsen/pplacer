@@ -327,7 +327,7 @@ struct
     (* apply transform specified by model on the a component *)
     let site_fn =
       match reind_arr with
-      | Some a -> (Array.get a)
+      | Some a -> Array.get a
       | None -> identity
     in
     let mat_by_cat cat = BA3.slice_left_2 model.tensor cat in
