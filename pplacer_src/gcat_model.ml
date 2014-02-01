@@ -73,8 +73,17 @@ struct
     | _ -> invalid_arg "build"
 
   (* prepare the tensor for a certain branch length *)
-  let prep_tensor_for_bl model bl =
-    Diagd.multi_exp ~mask:model.occupied_rates ~dst:model.tensor model.diagdq model.rates bl
+  let prep_tensor_for_bl reind_arr_opt model bl =
+    let f x = Diagd.multi_exp ~mask:x ~dst:model.tensor model.diagdq model.rates bl in
+    match reind_arr_opt with
+      | Some reind_arr -> begin
+        (* Iterate through the reind_arr and just turn on the rates that are
+         * actually used for this use of prep_tensor_for_bl. *)
+        let m = Array.make (Array.length model.occupied_rates) false in
+        Array.iter (fun i -> m.(model.site_categories.(i)) <- true) reind_arr;
+        f m
+        end
+      | None -> f model.occupied_rates
 
   let write ch model =
     Format.fprintf
@@ -323,7 +332,7 @@ struct
     (* copy over the exponents *)
     BA1.blit src.Glv.e dst.Glv.e;
     (* prepare the matrices in our matrix cache *)
-    prep_tensor_for_bl model bl; (* TODO: make prep_tensor_for_bl more efficient using reind_arr. *)
+    prep_tensor_for_bl reind_arr model bl;
     (* apply transform specified by model on the a component *)
     let site_fn =
       match reind_arr with
