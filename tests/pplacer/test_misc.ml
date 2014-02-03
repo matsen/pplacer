@@ -11,6 +11,3 @@ let suite = [
   "mask_index_reindex" >:: test_mask_reindex;
 ]
 
-
-
-
