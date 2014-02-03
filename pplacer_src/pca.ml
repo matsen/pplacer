@@ -1,6 +1,6 @@
 open Ppatteries
 
-let tol = 1e-15
+let tol = 1e-14
 let max_iter = 100000
 
 
