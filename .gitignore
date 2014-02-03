@@ -16,3 +16,4 @@ makefile
 docs/generated_rst/
 docs/_build/doctrees/
 wiki
+Session.vim

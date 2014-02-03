@@ -80,7 +80,7 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
         *dst = 0;
         // going across a
         for(j=0; j < n_states; j++) { *dst += a[j] * b[j]; }
-	a += n_states;
+        a += n_states;
         dst++;
       }
       b += n_states;
@@ -246,6 +246,53 @@ CAMLprim value mat_statd_pairwise_prod_c(value statd_value, value dst_value, val
     }
   }
   CAMLreturn(Val_unit);
+}
+
+CAMLprim value mat_masked_logdot_c(value x_value, value y_value, value mask_value)
+{
+  CAMLparam3(x_value, y_value, mask_value);
+  CAMLlocal1(ml_ll_tot);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  uint16_t *mask = Data_bigarray_val(mask_value);
+  int n_sites = (Bigarray_val(x_value)->dim[0]);
+  int n_states = (Bigarray_val(x_value)->dim[1]);
+  if(n_sites != Bigarray_val(mask_value)->dim[0])
+    { printf("mat_masked_logdot_c: Mask length doesn't match!"); };
+  int site, state;
+  double util, ll_tot=0;
+  if(n_states == 4) {
+    for(site=0; site < n_sites; site++) {
+      if(mask[site]) {
+        util=0;
+        for(state=0; state < 4; state++) { util += x[state] * y[state]; }
+        ll_tot += log(util);
+      }
+      x += n_states; y += n_states;
+    }
+  }
+  else if(n_states == 20) {
+    for(site=0; site < n_sites; site++) {
+      if(mask[site]) {
+        util=0;
+        for(state=0; state < 20; state++) { util += x[state] * y[state]; }
+        ll_tot += log(util);
+      }
+      x += n_states; y += n_states;
+    }
+  }
+  else {
+    for(site=0; site < n_sites; site++) {
+      if(mask[site]) {
+        util=0;
+        for(state=0; state < n_states; state++) { util += x[state] * y[state]; }
+        ll_tot += log(util);
+      }
+      x += n_states; y += n_states;
+    }
+  }
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
 }
 
 CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value)
@@ -415,6 +462,82 @@ CAMLprim value ten_statd_pairwise_prod_c(value statd_value, value dst_value, val
   CAMLreturn(Val_unit);
 }
 
+CAMLprim value ten_masked_logdot_c(value x_value, value y_value, value mask_value, value util_value)
+{
+  CAMLparam4(x_value, y_value, mask_value, util_value);
+  CAMLlocal1(ml_ll_tot);
+  double *x = Data_bigarray_val(x_value);
+  double *y = Data_bigarray_val(y_value);
+  uint16_t *mask = Data_bigarray_val(mask_value);
+  double *util = Data_bigarray_val(util_value);
+  int n_rates = Bigarray_val(x_value)->dim[0];
+  int n_sites = Bigarray_val(x_value)->dim[1];
+  int n_states = Bigarray_val(x_value)->dim[2];
+  if(n_sites != Bigarray_val(mask_value)->dim[0])
+    { printf("ten_masked_logdot_c: Mask length doesn't match!"); };
+  if(n_sites != Bigarray_val(util_value)->dim[0])
+    { printf("ten_masked_logdot_c: Util length doesn't match!"); };
+  int rate, site, state;
+  double *x_p, *y_p, *util_v;
+
+  // Util will be used to accumulate results across rates.
+  for(site=0; site < n_sites; site++) { util[site] = 0.0; }
+  for(rate=0; rate < n_rates; rate++) {
+    // for each rate, start at the top of the util vector
+    util_v = util;
+    // and start at the appropriate place in x and y
+    x_p = x + rate * n_sites * n_states;
+    y_p = y + rate * n_sites * n_states;
+    if(n_states == 4) {
+      for(site=0; site < n_sites; site++) {
+        if(mask[site]) {
+          for(state=0; state < 4; state++) {
+            *util_v += x_p[state] * y_p[state];
+          }
+        }
+        x_p += n_states; y_p += n_states;
+        util_v++;
+      }
+    }
+    else if(n_states == 20) {
+      for(site=0; site < n_sites; site++) {
+        if(mask[site]) {
+          for(state=0; state < 20; state++) {
+            *util_v += x_p[state] * y_p[state];
+          }
+        }
+        x_p += n_states; y_p += n_states;
+        util_v++;
+      }
+    }
+    else {
+      for(site=0; site < n_sites; site++) {
+        if(mask[site]) {
+          for(state=0; state < n_states; state++) {
+            *util_v += x_p[state] * y_p[state];
+          }
+        }
+        x_p += n_states; y_p += n_states;
+        util_v++;
+      }
+    }
+  }
+
+  // now total up the likes from the util vector
+  double ll_tot=0;
+  int n_used=0;
+  for(site=0; site < n_sites; site++) {
+    if (mask[site]) {
+      ll_tot += log(util[site]);
+      n_used++;
+    }
+  }
+  // subtract once rather than perform division by n_rates n_sites times
+  ll_tot -= ((float) n_used) * log ((float) n_rates);
+  ml_ll_tot = caml_copy_double(ll_tot);
+  CAMLreturn(ml_ll_tot);
+}
+
 CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_value, value last_value, value util_value)
 {
   CAMLparam5(x_value, y_value, first_value, last_value, util_value);
@@ -432,7 +555,7 @@ CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_va
   /* we make pointers to x, y, and util so that we can do pointer arithmetic
    * and then return to where we started. */
   double *x_p, *y_p, *util_v;
-  // now we clear it out to n_used
+  // Clear util out to n_used.
   for(site=0; site < n_used; site++) { util[site] = 0.0; }
   for(rate=0; rate < n_rates; rate++) {
     // for each rate, start at the top of the util vector

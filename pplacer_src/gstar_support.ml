@@ -48,6 +48,16 @@ let total_twoexp e =
   done;
   !tot
 
+(* The sum of the unmasked entries of e. *)
+let masked_total_twoexp e mask =
+  assert(BA1.dim e = BA1.dim mask);
+  let tot = ref 0. in
+  for i=0 to BA1.dim e - 1 do
+    if BA1.unsafe_get mask i <> 0 then
+      tot := !tot +. float_of_int (BA1.unsafe_get e i)
+  done;
+  !tot
+
 (* total all of the stored exponents in a specified range. *)
 let bounded_total_twoexp e start last =
   let tot = ref 0. in

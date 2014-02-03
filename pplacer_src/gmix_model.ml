@@ -24,7 +24,8 @@ struct
   let n_rates model = Array.length (rates model)
 
   let build ref_align = function
-    | Glvm.Gmix_model (model_name, empirical_freqs, transitions, rates) ->
+    | Glvm.Gmix_model_i
+        (model_name, empirical_freqs, transitions, rates) ->
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions empirical_freqs ref_align
@@ -45,6 +46,8 @@ struct
       (Alignment.seq_type_to_str model.seq_type)
       Linear_utils.ppr_gsl_vector model.statd
       Ppr.ppr_float_array model.rates
+
+  let get_model_class () = Glvm.Gmix_model
 
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
@@ -186,6 +189,15 @@ struct
 
     (* *** likelihood calculations *** *)
 
+    (* The log "dot" of the likelihood vectors masked by the boolean vector
+     * mask.
+     *)
+    let masked_logdot utilv_nsites x y mask =
+      assert(dims x = dims y);
+      (Linear.ten_masked_logdot x.a y.a mask utilv_nsites)
+      +. (log_of_2 *. ((masked_total_twoexp x.e mask) +.
+                          (masked_total_twoexp y.e mask)))
+
     (* the log "dot" of the likelihood vectors in the 0-indexed interval
      * [start,last] *)
     let bounded_logdot utilv_nsites x y start last =
@@ -294,7 +306,8 @@ struct
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
-  let evolve_into model ~dst ~src bl =
+  let evolve_into model ?reind_arr ~dst ~src bl =
+    let _ = reind_arr in (* Ignore reind_arr. *)
     (* copy over the exponents *)
     BA1.blit src.Glv.e dst.Glv.e;
     (* prepare the matrices in our matrix cache *)
@@ -359,7 +372,7 @@ let init_of_prefs ref_dir_complete prefs ref_align =
   in
   if Alignment.is_nuc_align ref_align && (Prefs.model_name prefs) <> "GTR" then
     dprint "WARNING: You have given me what appears to be a nucleotide alignment, but have specified a model other than GTR. I only know GTR for nucleotides!\n";
-  Glvm.Gmix_model
+  Glvm.Gmix_model_i
     ((Prefs.model_name prefs),
      (Prefs.empirical_freqs prefs),
      opt_transitions,
@@ -392,7 +405,7 @@ let init_of_json o ref_align =
     end
     else None
   in
-  Glvm.Gmix_model
+  Glvm.Gmix_model_i
     (model_name,
      (safe_hashtbl_find o "empirical_frequencies" |> Jsontype.bool),
      opt_transitions,

@@ -54,7 +54,7 @@ struct
     Array.iter (fun v -> model.occupied_rates.(v) <- true) model.site_categories
 
   let build ref_align = function
-    | Glvm.Gcat_model (model_name, empirical_freqs, transitions, rates, site_categories) ->
+    | Glvm.Gcat_model_i (model_name, empirical_freqs, transitions, rates, site_categories) ->
       let seq_type, (trans, statd) =
         Gstar_support.seqtype_and_trans_statd_of_info
           model_name transitions empirical_freqs ref_align
@@ -73,8 +73,17 @@ struct
     | _ -> invalid_arg "build"
 
   (* prepare the tensor for a certain branch length *)
-  let prep_tensor_for_bl model bl =
-    Diagd.multi_exp ~mask:model.occupied_rates ~dst:model.tensor model.diagdq model.rates bl
+  let prep_tensor_for_bl reind_arr_opt model bl =
+    let f x = Diagd.multi_exp ~mask:x ~dst:model.tensor model.diagdq model.rates bl in
+    match reind_arr_opt with
+      | Some reind_arr -> begin
+        (* Iterate through the reind_arr and just turn on the rates that are
+         * actually used for this use of prep_tensor_for_bl. *)
+        let m = Array.make (Array.length model.occupied_rates) false in
+        Array.iter (fun i -> m.(model.site_categories.(i)) <- true) reind_arr;
+        f m
+        end
+      | None -> f model.occupied_rates
 
   let write ch model =
     Format.fprintf
@@ -87,6 +96,8 @@ struct
       (Array.length model.site_categories)
       Ppr.ppr_int_array model.site_categories
       Ppr.ppr_bool_array model.occupied_rates
+
+  let get_model_class () = Glvm.Gcat_model
 
   module Glv =
   struct
@@ -206,6 +217,16 @@ struct
 
     (* *** likelihood calculations *** *)
 
+    (* The log "dot" of the likelihood vectors masked by the boolean vector
+     * mask. Note that we don't have to use the utilv_nsites, so we ignore it
+     * here with a _.
+     *)
+    let masked_logdot _ x y mask =
+      assert(dims x = dims y);
+      (Linear.mat_masked_logdot x.a y.a mask)
+      +. (log_of_2 *. ((masked_total_twoexp x.e mask) +.
+                          (masked_total_twoexp y.e mask)))
+
     (* the log "dot" of the likelihood vectors in the 0-indexed interval
      * [start,last]. Note that we don't have to use the utilv_nsites , so we
      * ignore it here with a _.
@@ -307,17 +328,22 @@ struct
 
   (* evolve_into: evolve src according to model for branch length bl, then
    * store the results in dst. *)
-  let evolve_into model ~dst ~src bl =
+  let evolve_into model ?reind_arr ~dst ~src bl =
     (* copy over the exponents *)
     BA1.blit src.Glv.e dst.Glv.e;
     (* prepare the matrices in our matrix cache *)
-    prep_tensor_for_bl model bl;
+    prep_tensor_for_bl reind_arr model bl;
     (* apply transform specified by model on the a component *)
+    let site_fn =
+      match reind_arr with
+      | Some a -> Array.get a
+      | None -> identity
+    in
     let mat_by_cat cat = BA3.slice_left_2 model.tensor cat in
     for i=0 to (Glv.get_n_sites src) - 1 do
       let src_mat = BA2.slice_left src.Glv.a i
       and dst_mat = BA2.slice_left dst.Glv.a i
-      and evo_mat = mat_by_cat model.site_categories.(i)
+      and evo_mat = mat_by_cat model.site_categories.(site_fn i)
       in
       Linear_utils.mat_vec_mul dst_mat evo_mat src_mat
     done
@@ -452,5 +478,5 @@ let init_of_json o ref_align =
     |> Array.of_list
     |> Array.map (fun x -> x-1) (* FastTree writes out 1-indexed arrays. *)
   in
-  Glvm.Gcat_model
+  Glvm.Gcat_model_i
     (model_name, empirical_freqs, opt_transitions, rates, site_categories)
