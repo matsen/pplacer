@@ -64,7 +64,7 @@ let robust_start_finder ?(max_iters=100) f raw_start left right _ =
         (* map those integers to their input values, and filter to make sure in
          * left right*)
         let jump_enum = Enum.filter
-          (fun x -> left < x & x < right)
+          (fun x -> left < x && x < right)
           (Enum.map (fun i -> raw_start +. (incr_ratio i)) jump_indices)
         in
         Enum.iter check_start jump_enum
