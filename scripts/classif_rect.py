@@ -8,6 +8,15 @@ import argparse
 import logging
 import sqlite3
 import csv
+import warnings
+
+warnings.filterwarnings("always", category=DeprecationWarning)
+deprecation_message="""
+ATTENTION!!!  This script (classif_rect.py) has been deprecated in favor of the streamlined classif_table.py,
+and will be removed entirely in a future release. Please switch over when you are able.
+"""
+warnings.warn(deprecation_message, DeprecationWarning, 2)
+
 
 log = logging.getLogger(__name__)
 
@@ -19,6 +28,7 @@ def cursor_to_csv(curs, outfile, description=None):
     writer.writerows(curs)
 
 def by_taxon(args):
+    """This one just normalizes (for the normalized_tally) by taxon"""
     # a bit ugly. maybe in the future we'll use sqlalchemy.
     specimen_join = ''
     if args.specimen_map:
@@ -44,17 +54,54 @@ def by_taxon(args):
     with args.by_taxon:
         cursor_to_csv(curs, args.by_taxon)
 
+def by_taxon_normalized_by_specimen(args, by_specimen_results, specimens):
+    """This one normalizes first by specimen, using the results from
+    by_specimen, then by taxon for the normalized_tally results."""
+
+    taxa_cols = ['tax_id', 'tax_name', 'rank']
+    n_specimens = len(specimens)
+    results = by_specimen_results.values()
+
+    cols = taxa_cols + ['normalized_tally']
+    with args.by_taxon:
+        writer = csv.writer(args.by_taxon)
+        writer.writerow(cols)
+        for result in results:
+            row = [result[c] for c in taxa_cols]
+            tax_total = sum([result[s] for s in specimens if s in
+                result.keys()])
+            row.append(tax_total / n_specimens)
+            writer.writerow(row)
+
+
 def by_specimen(args):
-    log.info('tabulating counts by specimen')
+    log.info('tabulating total per specimen mass sums')
     curs = args.database.cursor()
+    curs.execute("""
+        CREATE TEMPORARY TABLE specimen_mass
+               (specimen, total_mass, PRIMARY KEY (specimen))""")
+
+    curs.execute("""
+        INSERT INTO specimen_mass
+        SELECT specimen, SUM(mass)
+          FROM specimens
+               JOIN multiclass_concat mc USING (name)
+               JOIN placement_names USING (name, placement_id)
+         WHERE want_rank = ?
+         GROUP BY specimen
+    """, (args.want_rank,))
+
+    log.info('tabulating counts by specimen')
     curs.execute("""
         SELECT specimen,
                COALESCE(tax_name, "unclassified") tax_name,
                COALESCE(t.tax_id, "none")         tax_id,
                COALESCE(t.rank, "root")           rank,
                SUM(mass)                          tally,
-               COUNT(DISTINCT placement_id)       placements
+               COUNT(DISTINCT placement_id)       placements,
+               SUM(mass) / sm.total_mass          normalized_tally
           FROM specimens
+               JOIN specimen_mass sm USING (specimen)
                JOIN multiclass_concat mc USING (name)
                JOIN placement_names USING (name, placement_id)
                LEFT JOIN taxa t USING (tax_id)
@@ -72,11 +119,11 @@ def by_specimen(args):
 
     results = {}
     specimens = set()
-    for specimen, tax_name, tax_id, rank, tally, _ in rows:
+    for specimen, tax_name, tax_id, rank, tally, placements, normalized_tally in rows:
         row = results.get(tax_id)
         if row is None:
             row = results[tax_id] = dict(tax_id=tax_id, tax_name=tax_name, rank=rank)
-        row[specimen] = tally
+        row[specimen] = normalized_tally if args.normalize_by_specimen else tally
         specimens.add(specimen)
 
     log.info('writing by_specimen')
@@ -94,6 +141,8 @@ def by_specimen(args):
                 writer.writerow(d)
 
         writer.writerows(results.itervalues())
+
+    return (results, specimens)
 
 
 def main():
@@ -115,10 +164,16 @@ def main():
         help='input CSV map from sequences to specimens')
     parser.add_argument('--metadata-map', type=argparse.FileType('r'), metavar='CSV',
         help='input CSV map including a specimen column and other metadata')
+    parser.add_argument('--normalize-by-specimen', default=False, action='store_true',
+        help="""By taxon output has normalized_tally results be normalized by
+        specimen first, then by taxon. Additionally, the output of by-specimen
+        will use normalized_tally rather than tally.""")
 
     args = parser.parse_args()
     if args.by_specimen and not args.specimen_map:
         parser.error('specimen map is required for by-specimen output')
+    if args.normalize_by_specimen and not args.by_specimen:
+        parser.error('must compute by-specimen in order to normalize by specimen')
 
     if args.specimen_map:
         log.info('populating specimens table from specimen map')
@@ -134,9 +189,14 @@ def main():
             reader = csv.DictReader(args.metadata_map)
             args.metadata = {data['specimen']: data for data in reader}
 
-    by_taxon(args)
     if args.by_specimen:
-        by_specimen(args)
+        by_specimen_results, specimens = by_specimen(args)
+    if args.normalize_by_specimen:
+        by_taxon_normalized_by_specimen(args, by_specimen_results, specimens)
+    else:
+        by_taxon(args)
+
 
 main()
+
 
