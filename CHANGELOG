@@ -1,10 +1,13 @@
 1.1.alpha15 (in development)
 ----------------------------
 
+ * Closed GH-312: Add average frequency to classif_rect
  * Closed GH-315: support ``rppr info`` on reference packages lacking a taxonomy
  * Closed GH-316: pplacer warns rather than fails when an alignment looks like nucleotides
  * Closed GH-317: ``pplacer --write-masked-out`` respects ``--out-dir``
+ * Closed GH-318: Apply alignment mask on a per-placement basis
  * Closed GH-319: ``pplacer --write-pre-masked`` no longer exits after writing mask.
+ * Closed GH-322: Moved to Batteries version 2.1.0. Supports OCaml 4.01.0
  * Closed GH-323: ``pplacer``, ``guppy``, and ``rppr`` support gzip-compressed alignment and ``.jplace`` files.
  * Closed GH-324: ``deduplicate_sequences.py`` supports gzip-compressed FASTA files.
 
