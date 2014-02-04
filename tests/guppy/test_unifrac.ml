@@ -13,6 +13,8 @@ let suite = [
     let names, (prl, prel) =
       pres_of_dir Mass_map.Spread Placement.ml_ratio "simple"
         |> Hashtbl.enum
+        (* Sort by name: Hashtbl does not guarantee order *)
+        |> (List.of_enum %> (List.sort compare) %> List.enum)
         |> Enum.uncombine
         |> (Tuple2.map Array.of_enum (List.of_enum %> List.split))
     in
