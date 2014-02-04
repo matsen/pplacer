@@ -14,7 +14,7 @@ Compiling ``pplacer`` requires a number of libraries and tools to be installed:
 * `GNU Scientific Library (GSL)`_ [*]_
 * `libsqlite3 <http://www.sqlite.org>`_ [*]_
 * make
-* `OCaml 3.12 <http://www.ocaml.org>`_
+* `OCaml 3.12 or 4.01.0 <http://www.ocaml.org>`_
 * patch
 * m4
 * gawk
