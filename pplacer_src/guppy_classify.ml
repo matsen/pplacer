@@ -168,10 +168,10 @@ let mrca td {tiamr} =
 let hybrid_merge_fn f _ a b =
   match a, b with
   | None, None -> None
-  | Some x, None ->
+  | Some _, None ->
       dprint "Warning: entry in jplace with no corresponding nbc-sequence";
       None
-  | None, Some x ->
+  | None, Some _ ->
       dprint "Warning: nbc-sequence with no corresponding entry in jplace";
       None
   | Some a, Some b -> Some (f a b)
