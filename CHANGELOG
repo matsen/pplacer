@@ -1,6 +1,8 @@
 1.1.alpha15 (in development)
 ----------------------------
 
+ * Closed GH-320: Now compiles fine with Batteries 2.
+ * Closed GH-327: Ignore sequences that aren't in both jplace and sequence files.
  * Closed GH-312: Add average frequency to classif_rect
  * Closed GH-315: support ``rppr info`` on reference packages lacking a taxonomy
  * Closed GH-316: pplacer warns rather than fails when an alignment looks like nucleotides
