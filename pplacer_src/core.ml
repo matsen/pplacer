@@ -339,7 +339,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
       assert(sorted_ml_results <> []);
       let best_like = get_like (List.hd sorted_ml_results) in
       let _ = match classify_float best_like with
-        |	FP_infinite	|	FP_nan ->
+        | FP_infinite | FP_nan ->
           dprintf "Warning: encountered %g for final likelihood.\n" best_like;
         | _ -> ()
       in
