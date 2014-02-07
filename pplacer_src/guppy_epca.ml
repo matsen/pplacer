@@ -62,8 +62,12 @@ object (self)
     (* Once we have eigenvalues and eigenvectors, this will project the data
      * and write. *)
     let write_results vals vects prefix =
-      (* Only want to keep as many of the results as were asked for in --write-n *)
-      let write_keep arr = Array.sub arr 0 write_n in
+      (* Truncate to the number of results that were asked for in --write-n
+       * (if needed). *)
+      let write_keep arr =
+        if write_n >= Array.length arr then arr (* no truncation.*)
+        else Array.sub arr 0 write_n
+      in
       let (vals, vects) = (write_keep vals, write_keep vects) in
       let combol = (List.combine (Array.to_list vals) (Array.to_list vects))
       and names = (List.map Placerun.get_name prl) in

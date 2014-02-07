@@ -15,7 +15,7 @@ object (self)
   inherit placefile_cmd () as super_placefile
 
   val write_n = flag "--write-n"
-    (Formatted (5, "The number of principal coordinates to write out (default is %d)."))
+    (Formatted (5, "The number of principal coordinates to calculate (default is %d)."))
   val som = flag "--som"
     (Formatted (0, "The number of dimensions to rotate for support overlap minimization\
     (default is %d; options are 0, 2, 3)."))
