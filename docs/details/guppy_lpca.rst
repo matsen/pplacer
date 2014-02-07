@@ -1,3 +1,5 @@
+*This is an experimental feature. We are currently validating and writing a paper about it.*
+
 Perform length principal components analysis ("length PCA").
 Length PCA takes the special structure of phylogenetic placement data into account.
 Consequently, it is possible to visualize the principal component eigenvectors, and it can find consistent differences between samples which may not be so far apart in the tree.
