@@ -81,5 +81,3 @@ path and you are ready to go!
 .. _GNU Scientific Library (GSL): http://www.gnu.org/s/gsl/
 .. _main pplacer site: http://matsen.fhcrc.org/pplacer/
 .. _OPAM package manager: http://opam.ocaml.org
-
-.. [*] On Linux, static libraries are required: e.g. ``libgsl.a``.
