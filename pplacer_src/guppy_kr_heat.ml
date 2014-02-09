@@ -88,7 +88,7 @@ object (self)
             (my_pre_of_pr pr2)]
         @ match refpkgo with
         | None -> []
-        | Some rp -> begin
+        | Some rp -> try
             let (taxt, ti_imap) = Tax_gtree.of_refpkg_unit rp in
             let my_make_tax_pre =
               Mokaphy_common.make_tax_pre taxt weighting criterion ti_imap in
@@ -96,7 +96,13 @@ object (self)
             make_heat_tree taxt
               (my_make_tax_pre pr1)
               (my_make_tax_pre pr2)]
-        end)
+            with
+              | Placement.No_classif -> begin
+                print_endline "Warning: taxonomic heat tree skipped because \
+                                some placements missing taxonomic information.";
+                []
+                end
+        )
 
     | l ->
       List.length l
