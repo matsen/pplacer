@@ -179,19 +179,29 @@ object (self)
       let wpt infix t i =
         self#write_pre_tree (prefix_of_int i) infix t
       in
+      let run_non_tax () =
+            IntMap.iter (wpt "phy" (self#maybe_numbered drt)) blobim
+      in
       match refpkgo with
-        | None -> IntMap.iter (wpt "phy" (self#maybe_numbered drt)) blobim
+        | None -> run_non_tax ()
         | Some rp ->
+          try
         (* use a tax-labeled ref tree. Note that we've already run check_refpkgo_tree *)
-          let tdrt = Refpkg.get_tax_ref_tree rp in
-          IntMap.iter (wpt "phy" (self#maybe_numbered tdrt)) blobim;
-          let (taxt, tax_prel) =
-            tax_t_prel_of_prl
-              Tax_gtree.of_refpkg_unit weighting criterion rp prl in
-          let tax_blobim =
-            IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
-          in
-          IntMap.iter (wpt "tax" taxt) tax_blobim
+            let tdrt = Refpkg.get_tax_ref_tree rp in
+            IntMap.iter (wpt "phy" (self#maybe_numbered tdrt)) blobim;
+            let (taxt, tax_prel) =
+              tax_t_prel_of_prl
+                Tax_gtree.of_refpkg_unit weighting criterion rp prl in
+            let tax_blobim =
+              IntMap.map snd (NPreSquash.mimic cluster_t (numberize tax_prel))
+            in
+            IntMap.iter (wpt "tax" taxt) tax_blobim
+          with
+          | Placement.No_classif -> begin
+            print_endline "Warning: taxonomic squash tree skipped because \
+                            some placements missing taxonomic information.";
+            run_non_tax ()
+            end
     end
     else begin
       let pad_width = find_zero_pad_width nboot
