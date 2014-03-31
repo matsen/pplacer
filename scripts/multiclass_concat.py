@@ -2,13 +2,13 @@
 """
 This script serves two roles:
 
-First - Depending on the classification method used, the classification database may actually be left in a
-somewhat inconsistent/incomplete state. In particular, the multiclass table may not contain classifications
-for all the sequences needed to obtain accurate output from classif_table. This script fixes these issues,
-but must have the dedup_info data if the sequences you passed to guppy classify were deduplicated.
+* Depending on the classification method used, the classification database may actually be left in a
+  somewhat inconsistent/incomplete state. In particular, the multiclass table may not contain classifications
+  for all the sequences needed to obtain accurate output from classif_table. This script fixes these issues,
+  but must have the dedup_info data if the sequences you passed to guppy classify were deduplicated.
 
-Second - Creates a view `multiclass_concat` and add names for concatenated taxids to the taxa table. This
-step is also necessary to run classif_table, which groups results by these concatenated taxa.
+* Creates a view `multiclass_concat` and add names for concatenated taxids to the taxa table. This
+  step is also necessary to run classif_table, which groups results by these concatenated taxa.
 """
 
 import itertools
@@ -205,11 +205,19 @@ def main():
     logging.basicConfig(
         level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('database', type=sqlite3.connect,
-        help='sqlite database (output of `rppr prep_db` after `guppy classify`)')
-    parser.add_argument('-d', '--dedup-info', type=argparse.FileType('r'))
-    parser.add_argument('-k', '--keep-tables', action="store_true")
+        help="sqlite database (output of `rppr prep_db` after `guppy classify`)")
+    parser.add_argument('-d', '--dedup-info', type=argparse.FileType('r'),
+        help="""dedup_info CSV file returned from running deduplicate_sequences.py. This is necessary for
+        obtaining accurate results if you ran pplacer with deduplicated sequences and ran `guppy classify`
+        with any method other than the "pplacer" method.""")
+    parser.add_argument('-k', '--keep-tables', action="store_true",
+        help="""If specified, keep "scratch work" tables used in classification algorithms, and a copy of the
+        current placement_names table renamed to old_placement_names. This option is advised against as
+        placement_id consistency is not guaranteed with these tables; they can also take up quite a bit of
+        space""")
     args = parser.parse_args()
 
 
