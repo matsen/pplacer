@@ -215,18 +215,18 @@ def main():
 
     # Clean up the database so that masses will come out correctly/completely for all specimens downstream
     if args.dedup_info:
-        print "Starting cleanup"
+        log.info("Starting cleanup")
         dedup_info_reader = csv.reader(args.dedup_info)
         clean_database(args.database, dedup_info_reader)
     else:
         warnings.warn(no_dedup_info_warning)
 
     # Run the actual multiclass_concat code
-    print "Adding multiclass_concat"
+    log.info("Adding multiclass_concat")
     add_multiclass_concat(args.database)
 
     if not args.keep_tables:
-        print "Removing uneeded tables"
+        log.info("Removing uneeded tables")
         drop_uneeded_tables(args.database)
 
 
