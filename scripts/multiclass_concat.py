@@ -22,6 +22,11 @@ import csv
 log = logging.getLogger(__name__)
 warnings.filterwarnings("always", category=UserWarning)
 
+rerun_warning_message = """
+It appears that you already have a table named old_placement_names. Presumably, you have already run
+multiclass_concat on this database and opted for --keep-tables. As such, we are leaving old_placement_names
+intact instead of renaming placement_names to old_placement_names
+"""
 
 def concat_name(taxnames, rank, sep='/'):
     """Heuristics for creating a sensible combination of species names."""
@@ -109,9 +114,7 @@ def clean_database(database, dedup_info):
     except sqlite3.OperationalError:
         # If we can't do this, this is probably the second time running the script and the user wanted to keep
         # tables, so raise a warning message for them, and just delete placement_names
-        warnings.warn("It appears that you already have a table named old_placement_names. Presumably, you "
-            "have already run multiclass_concat on this database and opted for --keep-tables. As such, we "
-            "are leaving old_placement_names intact instead of renaming placement_names to old_placement_names.""")
+        warnings.warn(rerun_warning_message)
         curs.execute("DROP TABLE IF EXISTS placement_names")
 
     # Create the new placement_names table (note origin, which is in the origin, is not needed here)
