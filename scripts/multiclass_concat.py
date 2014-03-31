@@ -101,10 +101,18 @@ def clean_database(database, dedup_info):
     curs.execute("""CREATE UNIQUE INDEX IF NOT EXISTS multiclass_index
                         ON multiclass (name, want_rank, tax_id)""")
 
-    # Rename placement_names so that we can create a new, correct placement_names. If user specifies
-    # --keep-tables, we'll leave this copy in, in case they need it for mucking with things
-    curs.execute("""ALTER TABLE placement_names RENAME
-                       TO old_placement_names""")
+    try:
+        # Rename placement_names so that we can create a new, correct placement_names. If user specifies
+        # --keep-tables, we'll leave this copy in, in case they need it for mucking with things
+        curs.execute("""ALTER TABLE placement_names RENAME
+                           TO old_placement_names""")
+    except sqlite3.OperationalError:
+        # If we can't do this, this is probably the second time running the script and the user wanted to keep
+        # tables, so raise a warning message for them, and just delete placement_names
+        warnings.warn("It appears that you already have a table named old_placement_names. Presumably, you "
+            "have already run multiclass_concat on this database and opted for --keep-tables. As such, we "
+            "are leaving old_placement_names intact instead of renaming placement_names to old_placement_names.""")
+        curs.execute("DROP TABLE IF EXISTS placement_names")
 
     # Create the new placement_names table (note origin, which is in the origin, is not needed here)
     curs.execute("""
@@ -116,6 +124,7 @@ def clean_database(database, dedup_info):
 
     # Read the dedup info into a new dedup_info table. We need this for it's masses and for inflating
     # multiclass so it has classifications for all of the sequences it's supposed to
+    curs.execute("DROP TABLE IF EXISTS dedup_info")
     curs.execute("""
         CREATE TABLE dedup_info (
                global_rep TEXT NOT NULL,
