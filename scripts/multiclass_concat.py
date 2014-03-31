@@ -28,6 +28,12 @@ multiclass_concat on this database and opted for --keep-tables. As such, we are 
 intact instead of renaming placement_names to old_placement_names
 """
 
+no_dedup_info_warning = """
+WARNING! You have opted not to pass in a --dedup-info file! Unless you did not perform deduplication or are
+using the 'pplacer' classification method, this will lead to inconsistent results in downstream analyses using
+this database.
+"""
+
 def concat_name(taxnames, rank, sep='/'):
     """Heuristics for creating a sensible combination of species names."""
     splits = [x.split() for x in taxnames]
@@ -202,15 +208,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('database', type=sqlite3.connect,
         help='sqlite database (output of `rppr prep_db` after `guppy classify`)')
-    parser.add_argument('-d', '--dedup-info', type=argparse.FileType('r'), required=True)
+    parser.add_argument('-d', '--dedup-info', type=argparse.FileType('r'))
     parser.add_argument('-k', '--keep-tables', action="store_true")
     args = parser.parse_args()
 
 
     # Clean up the database so that masses will come out correctly/completely for all specimens downstream
-    print "Starting cleanup"
-    dedup_info_reader = csv.reader(args.dedup_info)
-    clean_database(args.database, dedup_info_reader)
+    if args.dedup_info:
+        print "Starting cleanup"
+        dedup_info_reader = csv.reader(args.dedup_info)
+        clean_database(args.database, dedup_info_reader)
+    else:
+        warnings.warn(no_dedup_info_warning)
 
     # Run the actual multiclass_concat code
     print "Adding multiclass_concat"
