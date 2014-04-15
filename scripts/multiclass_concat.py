@@ -28,11 +28,12 @@ multiclass_concat on this database and opted for --keep-tables. As such, we are 
 intact instead of renaming placement_names to old_placement_names
 """
 
-no_dedup_info_warning = """
-WARNING! You have opted not to pass in a --dedup-info file! Unless you did not perform deduplication or are
-using the 'pplacer' classification method, this will lead to inconsistent results in downstream analyses using
-this database.
+no_dedup_info_error = """
+You did not to pass in a --dedup-info file! Unless you did not perform deduplication or are using the
+'pplacer' classification method, this will lead to inconsistent results in downstream analyses using this
+database. If you did not perform deduplication, please specify the --no-dedup flag to avoid this Exception.
 """
+
 
 def concat_name(taxnames, rank, sep='/'):
     """Heuristics for creating a sensible combination of species names."""
@@ -210,9 +211,12 @@ def main():
     parser.add_argument('database', type=sqlite3.connect,
         help="sqlite database (output of `rppr prep_db` after `guppy classify`)")
     parser.add_argument('-d', '--dedup-info', type=argparse.FileType('r'),
-        help="""dedup_info CSV file returned from running deduplicate_sequences.py. This is necessary for
+        help="""The dedup_info CSV file returned from running deduplicate_sequences.py. This is necessary for
         obtaining accurate results if you ran pplacer with deduplicated sequences and ran `guppy classify`
         with any method other than the "pplacer" method.""")
+    parser.add_argument('-n', '--no-dedup', action="store_true",
+        help="""If the classified data was not deduplicated and you can not pass in --dedup-info, this flag
+        must be specified to avoid a runtime error.""")
     parser.add_argument('-k', '--keep-tables', action="store_true",
         help="""If specified, keep "scratch work" tables used in classification algorithms, and a copy of the
         current placement_names table renamed to old_placement_names. This option is advised against as
@@ -226,8 +230,8 @@ def main():
         log.info("Starting cleanup")
         dedup_info_reader = csv.reader(args.dedup_info)
         clean_database(args.database, dedup_info_reader)
-    else:
-        warnings.warn(no_dedup_info_warning)
+    elif not args.no_dedup:
+        raise Exception(no_dedup_info_error)
 
     # Run the actual multiclass_concat code
     log.info("Adding multiclass_concat")
