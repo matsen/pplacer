@@ -483,7 +483,7 @@ end
 class sqlite_cmd () =
 object
   val sqlite_fname = flag "--sqlite"
-    (Needs_argument ("sqlite database", "Specify the database file to use."))
+    (Needs_argument ("sqlite database", "Specify the database file to use. Required."))
   method specl = [ string_flag sqlite_fname; ]
 
   method private get_db =
