@@ -1,12 +1,7 @@
-1.1.alpha17 (under development)
--------------------------------
-
-
 1.1.alpha16
 -----------
 
- * Closed GH-334: multiclass_concat.py modifies placement database such that classif_table.py returns accurate
-   tallies.
+ * Closed GH-334: multiclass_concat.py modifies placement database such that classif_table.py returns accurate tallies.
 
 1.1.alpha15
 -----------
