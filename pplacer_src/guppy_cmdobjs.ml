@@ -129,12 +129,12 @@ object (self)
 
   method private set_default_seed =
     let seed = fv seed in
-    Gsl_rng.set_default_seed (Nativeint.of_int seed);
+    Gsl.Rng.set_default_seed (Nativeint.of_int seed);
     Random.init seed
 
   method private rng =
     self#set_default_seed;
-    Gsl_rng.make Gsl_rng.KNUTHRAN2002
+    Gsl.Rng.make Gsl.Rng.KNUTHRAN2002
 
   method private random_state =
     Random.State.make [| fv seed |]
@@ -717,7 +717,7 @@ object (self)
       and n_leaves = fvo leaf_cutoff
       and max_adcl = fvo adcl_cutoff in
       (* setting the default seed will affect C code, so this sets PAM's seed
-       * even though PAM gets a Gsl_rng.t through C. *)
+       * even though PAM gets a Gsl.Rng.t through C. *)
       self#set_default_seed;
       Voronoi.Full.csv_log :=
         fvo soln_log

@@ -8,7 +8,7 @@ exception MinimizationError
 
 
 let trans_a_mat_mul =
-  Gsl_blas.gemm ~ta:Gsl_blas.Trans ~tb:Gsl_blas.NoTrans ~alpha:1. ~beta:0.
+  Gsl.Blas.gemm ~ta:Gsl.Blas.Trans ~tb:Gsl.Blas.NoTrans ~alpha:1. ~beta:0.
 
 (*
 Rotation matrix in terms of Euler angles [|phi; theta; psi|]
@@ -39,7 +39,7 @@ Out[94]//MatrixForm= Cos[phi] Cos[psi] - Cos[theta] Sin[phi] Sin[psi]
                      Cos[theta]
 *)
 let rot_mat angles  =
-  let m = Gsl_matrix.create 3 3
+  let m = Gsl.Matrix.create 3 3
   and cos_phi   = cos angles.(0)
   and sin_phi   = sin angles.(0)
   and cos_theta = cos angles.(1)
@@ -67,7 +67,7 @@ let rot_mat angles  =
  * of the eigenvector matrix, so we multiply on the left by the transpose.
 *)
 let rotate_vects vects_part angles =
-  let result = Gsl_matrix.copy vects_part in
+  let result = Gsl.Matrix.copy vects_part in
   trans_a_mat_mul ~a:(rot_mat angles) ~b:vects_part ~c:result;
   result
 
@@ -81,21 +81,21 @@ let rotate_vects vects_part angles =
  * \sum_j a_{ij}^2 Var(X_j).
  * As can be seen, we do this for a maximum of three dimensions. *)
 let rotate_vals vals angles =
-  let vals_part = Gsl_vector.of_array (Array.sub vals 0 3) in
-  let vals_result = Gsl_vector.create ~init:0. 3 in
+  let vals_part = Gsl.Vector.of_array (Array.sub vals 0 3) in
+  let vals_result = Gsl.Vector.create ~init:0. 3 in
   let vals_rest = Array.sub vals 3 ((Array.length vals) - 3) in
   let rot = rot_mat angles in
   (* Square the elements of the rotation matrix. *)
-  Gsl_matrix.mul_elements rot rot;
+  Gsl.Matrix.mul_elements rot rot;
   (* Multiply its transpose by our vals to get the rotated vals. *)
-  Gsl_blas.gemv Gsl_blas.Trans ~alpha:1. ~beta:0. ~a:rot ~x:vals_part ~y:vals_result;
-  Array.append (Gsl_vector.to_array vals_result) vals_rest
+  Gsl.Blas.gemv Gsl.Blas.Trans ~alpha:1. ~beta:0. ~a:rot ~x:vals_part ~y:vals_result;
+  Array.append (Gsl.Vector.to_array vals_result) vals_rest
 
 (* Measures the overlap between the tranform vector components when rotated
  * through the given angles. *)
 let overlap vects_part dims angles =
   let rotated_vects = rotate_vects vects_part angles in
-  let row i = Gsl_matrix.row rotated_vects i
+  let row i = Gsl.Matrix.row rotated_vects i
   and indices = match dims with
   | 2 -> [(0, 1)]
   | 3 -> [(0, 1); (0, 2); (1, 2)]
@@ -104,10 +104,10 @@ let overlap vects_part dims angles =
   let rec overlapper = function
   | [] -> 0.
   | (i, j)::rest ->
-      let mult = Gsl_vector.copy (row i) in
-      Gsl_vector.mul mult (row j);
+      let mult = Gsl.Vector.copy (row i) in
+      Gsl.Vector.mul mult (row j);
       (* asum because we want to take the absolute value dot product. *)
-      Gsl_blas.asum mult +. overlapper rest
+      Gsl.Blas.asum mult +. overlapper rest
   in
   overlapper indices
 
@@ -121,15 +121,15 @@ let min_overlap vects_part dims =
         ~start_finder:Minimization.robust_start_finder
         obj_fun
         0.
-        (-. Gsl_math.pi_4)
-        Gsl_math.pi_4 tolerance
+        (-. Gsl.Math.pi_4)
+        Gsl.Math.pi_4 tolerance
       in
       [|min; 0.; 0.|]
   | 3 ->
       let obj_fun = overlap vects_part dims
       and start = [|0.; 0.; 0.|]
-      and lower = Array.make 3 (-. Gsl_math.pi)
-      and upper = Array.make 3 (Gsl_math.pi)
+      and lower = Array.make 3 (-. Gsl.Math.pi)
+      and upper = Array.make 3 (Gsl.Math.pi)
       in
       let run_one_3d index_order =
           Minimization.multimin ~index_order obj_fun start lower upper tolerance
@@ -187,11 +187,11 @@ let flip_axes ~orig_vects ~new_vects =
 (* Returns a tuple of the roated vects (as an array of arrays), the rotated
  * vals. *)
 let som_rotation vects dims vals =
-  let vects_part = Gsl_matrix.of_arrays (Array.sub vects 0 3) in
+  let vects_part = Gsl.Matrix.of_arrays (Array.sub vects 0 3) in
   (* Where all the real work is - find min(s) *)
   let min = min_overlap vects_part dims in
   let vals = rotate_vals vals min
-  and vects_part = Gsl_matrix.to_arrays (rotate_vects vects_part min)
+  and vects_part = Gsl.Matrix.to_arrays (rotate_vects vects_part min)
   in
   let vals, vects_part = reordered_by_vals vals vects_part dims in
   let flipped_vects = flip_axes ~orig_vects:vects ~new_vects:vects_part in

@@ -347,7 +347,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       if fpc > FP_zero then
         Printf.printf "%s is a %s\n" str (string_of_fpclass fpc)
     in
-    let utilv_nsites = Gsl_vector.create n_sites
+    let utilv_nsites = Gsl.Vector.create n_sites
     and util_d = Glv.mimic darr.(0)
     and util_p = Glv.mimic parr.(0)
     and util_one = Glv.mimic darr.(0)

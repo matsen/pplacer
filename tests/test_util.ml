@@ -40,8 +40,8 @@ let farr_of_string s =
 let farrarr_of_string s =
   Array.of_list (List.map farr_of_string (Str.split (Str.regexp "\n") s))
 
-let vec_of_string s = Gsl_vector.of_array (farr_of_string s)
-let mat_of_string s = Gsl_matrix.of_arrays (farrarr_of_string s)
+let vec_of_string s = Gsl.Vector.of_array (farr_of_string s)
+let mat_of_string s = Gsl.Matrix.of_arrays (farrarr_of_string s)
 
 
 (* *** equalities *** *)
@@ -79,9 +79,9 @@ let placerun_equal pr1 pr2 =
 (* *** approximate equalities *** *)
 
 let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
-  let dim = Gsl_vector.length v1 in
+  let dim = Gsl.Vector.length v1 in
   try
-    assert(dim = Gsl_vector.length v2);
+    assert(dim = Gsl.Vector.length v2);
     for i=0 to dim-1 do
       if not (approx_equal ~epsilon v1.{i} v2.{i}) then raise Exit
     done;
@@ -90,9 +90,9 @@ let vec_approx_equal ?(epsilon = 1e-5) v1 v2 =
   | Exit -> false
 
 let mat_approx_equal ?(epsilon = 1e-5) m1 m2 =
-  let (rows,cols) as dim1 = Gsl_matrix.dims m1 in
+  let (rows,cols) as dim1 = Gsl.Matrix.dims m1 in
   try
-    assert(dim1 = Gsl_matrix.dims m2);
+    assert(dim1 = Gsl.Matrix.dims m2);
     for i=0 to rows-1 do
       for j=0 to cols-1 do
         if not (approx_equal ~epsilon m1.{i,j} m2.{i,j}) then raise Exit
@@ -165,7 +165,7 @@ let check_map_approx_equal message = Enum.iter2
 (* *** random stuff *** *)
 
 let rand_symmetric n =
-  let m = Gsl_matrix.create n n in
+  let m = Gsl.Matrix.create n n in
   for i=0 to n-1 do
     for j=i to n-1 do
       m.{i,j} <- 1. -. Random.float 2.;
@@ -175,8 +175,8 @@ let rand_symmetric n =
   m;;
 
 let make_rng seed =
-  let rng = Gsl_rng.make Gsl_rng.KNUTHRAN2002 in
-  Gsl_rng.set rng (Nativeint.of_int seed);
+  let rng = Gsl.Rng.make Gsl.Rng.KNUTHRAN2002 in
+  Gsl.Rng.set rng (Nativeint.of_int seed);
   rng
 
 let colorset_of_strings = List.map Tax_id.of_string |- Convex.ColorSet.of_list

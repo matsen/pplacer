@@ -25,7 +25,7 @@ let matrix_of_pqueries weighting criterion t pqueryl =
   let n = Array.length pquerya
   and ca_info = Edge_rdist.build_ca_info t
   in
-  let m = Gsl_matrix.create n n in
+  let m = Gsl.Matrix.create n n in
   let dist_fun =
     (Pquery_distances.dist_fun_of_point_spread weighting) criterion ca_info
   in
@@ -44,7 +44,7 @@ let build_mtilde weighting criterion pr1 pr2 =
   let mt = matrix_of_pqueries weighting criterion t
       ((Placerun.get_pqueries pr1)@(Placerun.get_pqueries pr2))
   in
-  Gsl_matrix.scale mt (1. /. (Gtree.tree_length t));
+  Gsl.Matrix.scale mt (1. /. (Gtree.tree_length t));
   mt
 
 let vec_tot = vec_fold_left (+.) 0.
@@ -79,24 +79,24 @@ let sq v = v *. v
  * applying f to each of the rows of m *)
 let map_rows_to_vector f m =
   let n_rows = Array2.dim1 m in
-  let v = Gsl_vector.create n_rows in
+  let v = Gsl.Vector.create n_rows in
   for i=0 to n_rows-1 do
-    Array1.unsafe_set v i (f (Gsl_matrix.row m i))
+    Array1.unsafe_set v i (f (Gsl.Matrix.row m i))
   done;
   v
 
 (* the average of each of the rows *)
 let row_avg m =
-  let (_, n_cols) = Gsl_matrix.dims m
+  let (_, n_cols) = Gsl.Matrix.dims m
   and ra = map_rows_to_vector vec_tot m in
-  Gsl_vector.scale ra (1. /. (float_of_int n_cols));
+  Gsl.Vector.scale ra (1. /. (float_of_int n_cols));
   ra
 
 (* if m is mtilde then convert it to an m. n1 and n2 are the number of pqueries
  * in pr1 and pr2 *)
 let m_of_mtilde m n1 n2 =
   (* it's mtilde so far *)
-  let (n,_) = Gsl_matrix.dims m in
+  let (n,_) = Gsl.Matrix.dims m in
   assert(n = n1+n2);
   let ra = row_avg m in
   let avg = (vec_tot ra) /. (float_of_int n) in
@@ -116,13 +116,13 @@ let m_of_mtilde m n1 n2 =
 (* get expectation of w within some tolerance *)
 let w_expectation rng tol m =
   let n = mat_dim_asserting_square m in
-  let v = Gsl_vector.create n in
+  let v = Gsl.Vector.create n in
   let n_samples = ref 0
   and sample_total = ref 0.
   in
   let next_expectation () =
     for i=0 to n-1 do
-      v.{i} <- Gsl_randist.gaussian rng ~sigma:1.
+      v.{i} <- Gsl.Randist.gaussian rng ~sigma:1.
     done;
     incr n_samples;
     sample_total := !sample_total +. rooted_qform m v;
@@ -140,13 +140,13 @@ let w_expectation rng tol m =
 
 let write_matrix_normal_dist rng name1 name2 m w n_samples =
   let n = Array2.dim1 m in
-  let v = Gsl_vector.create n in
+  let v = Gsl.Vector.create n in
   let normal_ws =
     List.init
       n_samples
       (fun _ ->
         for i=0 to n-1 do
-          v.{i} <- Gsl_randist.gaussian rng ~sigma:1.
+          v.{i} <- Gsl.Randist.gaussian rng ~sigma:1.
         done;
         rooted_qform m v)
   in

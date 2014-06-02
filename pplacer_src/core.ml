@@ -87,11 +87,11 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
   and prior_fun =
     match prior with
       | Uniform_prior -> (fun _ _ -> 1.)
-      | Flat_exp_prior mean -> fun _ -> Gsl_randist.exponential_pdf ~mu:mean
+      | Flat_exp_prior mean -> fun _ -> Gsl.Randist.exponential_pdf ~mu:mean
       | Informative_exp_prior mean_map ->
-        fun id -> Gsl_randist.exponential_pdf ~mu:(IntMap.find id mean_map)
+        fun id -> Gsl.Randist.exponential_pdf ~mu:(IntMap.find id mean_map)
   and ref_length = Alignment.length ref_align in
-  let utilv_nsites = Gsl_vector.create ref_length in
+  let utilv_nsites = Gsl.Vector.create ref_length in
   (* Set up the number of pitches and strikes according to the prefs. *)
   let (t_max_pitches, t_max_strikes) =
     if fantasy prefs <> 0. then
@@ -271,7 +271,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
     in
     let safe_ml_optimize_location tol loc =
       try ml_optimize_location tol loc with
-        | Gsl_error.Gsl_exn(_,_) -> begin
+        | Gsl.Error.Gsl_exn(_,_) -> begin
           (* try again starting with default branch lengths *)
           tt_edges_default loc;
           ml_optimize_location tol loc
@@ -286,7 +286,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         begin match begin
           try
             Some (safe_ml_optimize_location (initial_tolerance prefs) loc)
-          with Gsl_error.Gsl_exn(_,warn_str) ->
+          with Gsl.Error.Gsl_exn(_,warn_str) ->
             dprintf
               "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
               loc
@@ -359,7 +359,7 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
             try
               (loc, safe_ml_optimize_location final_tolerance loc)
             with
-              | Gsl_error.Gsl_exn(_,warn_str) ->
+              | Gsl.Error.Gsl_exn(_,warn_str) ->
                 dprintf
                   "Warning: GSL problem with final branch length optimization for location %d. %s\n"
                   loc

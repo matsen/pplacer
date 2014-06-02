@@ -40,7 +40,7 @@ let multivariate_hypergeometric_sample rng ~n ~p =
   let dst = Array.map (const 0) p in
   0 --^ n
   |> Enum.iter (fun _ ->
-    let i = Gsl_randist.discrete rng (Gsl_randist.discrete_preproc src) in
+    let i = Gsl.Randist.discrete rng (Gsl.Randist.discrete_preproc src) in
     src.(i) <- src.(i) -. 1.; dst.(i) <- succ dst.(i));
   dst
 
@@ -70,7 +70,7 @@ object (self)
   method private placefile_action prl =
     let sample_fun =
       if fv weight_as_count then multivariate_hypergeometric_sample
-      else Gsl_randist.multinomial
+      else Gsl.Randist.multinomial
     in
     let sample = sample_fun self#rng ~n:(fv n_taken)
     and gt = Mokaphy_common.list_get_same_tree prl in

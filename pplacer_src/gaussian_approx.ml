@@ -89,7 +89,7 @@ let pair_approx ?(normalization=1.) rng n_samples p t upre1 upre2 =
   (* The sampling routine. *)
   let sample_gaussians () =
    Array.iteri
-     (fun i _ -> sample.(i) <- Gsl_randist.gaussian rng ~sigma:1.)
+     (fun i _ -> sample.(i) <- Gsl.Randist.gaussian rng ~sigma:1.)
      sample
   in
   (* Go "past" a labeled mass. *)

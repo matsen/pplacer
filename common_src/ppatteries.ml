@@ -781,7 +781,7 @@ end
 let exn_wrap f = Printexc.pass f ()
 
 let () =
-  Gsl_error.init ();
+  Gsl.Error.init ();
   Printexc.register_printer
     (function
      | Unix.Unix_error (errno, fn, param) ->
