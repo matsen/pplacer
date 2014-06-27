@@ -19,6 +19,15 @@ A larger :math:`p` increases the impact of differences of mass, while a smaller 
 
 Note that the significance p-values calculated by ``-s`` or ``--gaussian`` are not corrected for multiple comparison.
 
-See `Evans and Matsen`_ for more details.
+The assessment of significance is tricky for metagenomic sampling.
+The randomization test (that seems to be very commonly used in association with UniFrac and that is implemented here with the ``-s`` flag) does not have wonderful properties when in the setting of incomplete sampling with non-independent observations.
+This is commonly the case for metagenomic sampling.
+Imagine, for example, that we have a random observation process on the tree equipped with some collection of "base observations."
+Each process takes a random subset of those base observations and then throws down some number of reads for each observation in that set, the number of which has mean >> 1.
+If the set of base observations is large compared to the number of sample observations, then two draws will always appear significantly different even though they are from the same underlying process.
+Thus I would only trust a rejection of the null when sampling is quite deep and the same primers are used for the experiments being compared.
+
+
+See `Evans and Matsen`_ for more details on phylogenetic KR.
 
 .. _Evans and Matsen: http://arxiv.org/abs/1005.1699
