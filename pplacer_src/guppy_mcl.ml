@@ -44,7 +44,7 @@ object (self)
   @ super_mass#specl
   @ [float_flag inflation]
 
-  method desc = "cluster pqueries"
+  method desc = "cluster pqueries using Markov clustering via MCL"
   method usage = "usage: mcl [options] placefile"
 
   method private placefile_action = function

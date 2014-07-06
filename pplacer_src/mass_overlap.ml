@@ -1,5 +1,11 @@
+(*
+The overlap of a pair of pqueries is defined to be the inner product of their
+likelihood weight ratios (or posterior probabilities) as indexed by tree edges.
+*)
+
 open Ppatteries
 
+(* SAMR is for Real-valued string algebraic map. *)
 module SAMR = AlgMapR (StringMap)
 let sorted_tuple ?(cmp = compare) (a, b) = if cmp a b < 0 then b, a else a, b
 

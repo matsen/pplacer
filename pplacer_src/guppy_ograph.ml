@@ -13,7 +13,7 @@ object (self)
     super_output#specl
   @ super_mass#specl
 
-  method desc = "finds the mass islands of one or more pqueries"
+  method desc = "finds the overlap graph of one or more pqueries"
   method usage = "usage: ograph [options] placefile"
 
   method private placefile_action = function
