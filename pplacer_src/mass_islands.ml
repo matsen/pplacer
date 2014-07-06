@@ -7,9 +7,7 @@ open Ppatteries
    nodes being pqueries and edges signifying overlap. Call the connected
    components of the overlap graph "islands".
 
-   We would like to have an algorithm to efficiently infer the islands.
-
-   I would propose that it would go as follows:
+   The algorithms works as follows:
 
    * think of islands as pairs of (E, P), P is a set of pqueries that are in
    the same island, and E is the set of edges that have mass assigned to them
