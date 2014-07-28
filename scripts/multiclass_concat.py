@@ -1,14 +1,25 @@
 #!/usr/bin/env python
-"""
-This script serves two roles:
+"""This script serves two roles:
 
-* Depending on the classification method used, the classification database may actually be left in a
-  somewhat inconsistent/incomplete state. In particular, the multiclass table may not contain classifications
-  for all the sequences needed to obtain accurate output from classif_table. This script fixes these issues,
-  but must have the dedup_info data if the sequences you passed to guppy classify were deduplicated.
+* Depending on the classification method used, the classification
+  database may be left in an inconsistent/incomplete state. In
+  particular, the multiclass table may not contain classifications for
+  all the sequences needed to obtain accurate read count tallies from
+  classif_table. This script fixes these issues, but must have the
+  dedup_info data if the sequences you passed to guppy classify were
+  deduplicated.
 
-* Creates a view `multiclass_concat` and add names for concatenated taxids to the taxa table. This
-  step is also necessary to run classif_table, which groups results by these concatenated taxa.
+* Creates a view `multiclass_concat` and add names for concatenated
+  taxids to the taxa table. This step is also necessary to run
+  classif_table, which groups results by these concatenated taxa.
+
+Note that the file specified by `-d/--dedup-info` is the output of
+`deduplicate_sequence.py -d/--deduplicated-sequences-file` and is a
+headerless csv file with fields (kept_seq_id,orig_seq_id,count). This
+file is necessary for obtaining accurate results if the sequences
+provided to pplacer were deduplicated, and `guppy classify` was run
+with any method other than the "pplacer" method.
+
 """
 
 import itertools
@@ -211,9 +222,8 @@ def main():
     parser.add_argument('database', type=sqlite3.connect,
         help="sqlite database (output of `rppr prep_db` after `guppy classify`)")
     parser.add_argument('-d', '--dedup-info', type=argparse.FileType('r'),
-        help="""The dedup_info CSV file returned from running deduplicate_sequences.py. This is necessary for
-        obtaining accurate results if you ran pplacer with deduplicated sequences and ran `guppy classify`
-        with any method other than the "pplacer" method.""")
+                        help="""Headerless CSV file with fields
+                        "kept_seq_id","orig_seq_id","count" (see note above)""")
     parser.add_argument('-n', '--no-dedup', action="store_true",
         help="""If the classified data was not deduplicated and you can not pass in --dedup-info, this flag
         must be specified to avoid a runtime error.""")
