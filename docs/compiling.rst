@@ -45,7 +45,7 @@ OPAM
 OPAM can also manage different versions of the OCaml compiler - ``pplacer`` is tested against version 3.12.1.
 
 See the the `official instructions
-<http://opam.ocaml.org/doc/Quick_Install.html>`_ for installation details.
+<http://opam.ocaml.org/doc/Install.html>`_ for installation details.
 
 Once OPAM is installed, it needs to be configured:
 
