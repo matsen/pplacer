@@ -101,7 +101,7 @@ let gemmish dst a b =
   done
 
 let dediagonalize dst u lambda uit =
-  let n = Gsl_vector.length lambda in
+  let n = Gsl.Vector.length lambda in
   for i=0 to n-1 do
     for j=0 to n-1 do
       dst.{i,j} <- 0.;

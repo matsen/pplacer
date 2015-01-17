@@ -8,11 +8,11 @@ let prot_map = begin
   let pm = ref CharMap.empty in
   Array.iteri (
     fun i c ->
-      let v = Gsl_vector.create ~init:0. 20 in
+      let v = Gsl.Vector.create ~init:0. 20 in
       v.{i} <- 1.;
       pm := CharMap.add c v !pm;
   ) prot_code;
-  let any = Gsl_vector.create ~init:1. 20 in
+  let any = Gsl.Vector.create ~init:1. 20 in
   CharMap.add '-' any (
     CharMap.add 'B' (CharMap.find 'N' !pm) ( (* asparagine is N or B *)
     CharMap.add 'Z' (CharMap.find 'Q' !pm) ( (* asparagine is Q or Z *)
@@ -45,7 +45,7 @@ let parseProtModel stringArr =
         else lowerTriMat.((max i j)-1).(min i j)) in
   qMat
 
-let parseFreq str = Gsl_vector.of_array (parseLine str)
+let parseFreq str = Gsl.Vector.of_array (parseLine str)
 
 let littleWag =
 parseProtModel [|

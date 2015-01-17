@@ -190,8 +190,12 @@ let _ = dispatch begin function
     Batteries.before_options ();
 
     (* use static linking for native binaries *)
-    if not is_osx then
+    if not is_osx then begin
       flag ["link"; "ocaml"; "native"] (S[A"-ccopt"; A"-static"]);
+    end else begin
+      flag ["compile"; "c"] (S[A"-ccopt"; A"-mmacosx-version-min=10.6"]);
+      (*flag ["compile"; "ocaml"; "native"] (S[A"-ccopt"; A"-mmacosx-version-min=10.6"]);*)
+    end
 
   | After_rules ->
     OCamlFind.after_rules ();

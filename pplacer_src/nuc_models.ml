@@ -23,7 +23,7 @@ Any 	           G or C or T or A 	  N
 
 let nuc_map =
   CharMap.of_pairlist (
-    List.map (fun (c, v) -> (c, Gsl_vector.of_array v)) (
+    List.map (fun (c, v) -> (c, Gsl.Vector.of_array v)) (
 (*            A   C   G   T  *)
       ['A', [|1.; 0.; 0.; 0.|];
        'C', [|0.; 1.; 0.; 0.|];
@@ -81,5 +81,5 @@ let b_of_trans_vector v =
   for i=0 to 5 do
     set_both m (transform 3 i) v.(i)
   done;
-  Gsl_matrix.of_arrays m
+  Gsl.Matrix.of_arrays m
 

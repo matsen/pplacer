@@ -17,7 +17,7 @@ open Linear_utils
 
 (* Compute the mean of a vector v. *)
 let vec_mean v =
-  (vec_fold_left (+.) 0. v) /. (float (Gsl_vector.length v))
+  (vec_fold_left (+.) 0. v) /. (float (Gsl.Vector.length v))
 
 (* Compute the mean of a vector v and subtract it from each element, i.e. apply
  * a centering matrix: http://en.wikipedia.org/wiki/Centering_matrix
@@ -28,7 +28,7 @@ let vec_center v =
 
 (* Replicate the upper triangle of a matrix m to the lower triangle. *)
 let mat_rep_uptri m =
-  let (n_rows, _) = Gsl_matrix.dims m in
+  let (n_rows, _) = Gsl.Matrix.dims m in
   for i=1 to n_rows-1 do
     for j=0 to i-1 do
       m.{i, j} <- m.{j, i}
@@ -41,18 +41,18 @@ type lpca_result = { eval: float array;
 
 (* An intermediate edge result record with the following meanings in terms of
    the length_pca writeup. *)
-type lpca_data = { f: Gsl_vector.vector;
+type lpca_data = { f: Gsl.Vector.vector;
                 (* $f_k$, the proximal minus the distal mass
                  * (WRT current position). *)
-                   ufl: Gsl_matrix.matrix;
+                   ufl: Gsl.Matrix.matrix;
                 (* $uFL$, an s x s accumulator matrix of partial inner products
                  * later used in projecting a sample $u$ onto $Fw$. See
                  * eq:ufl. *)
-                   af: Gsl_vector.vector IntMap.t;
+                   af: Gsl.Vector.vector IntMap.t;
                 (* $AF$, which is an e x s matrix, here encoded as a map
                  * (edges) to a vector indexed by sample number. See
                  * eq:f_tilde. *)
-                   fplf: Gsl_matrix.matrix }
+                   fplf: Gsl.Matrix.matrix }
                 (* $F'LF$, which is the "proxy" that we use to avoid computing
                  * the eigenvectors of the full matrix GL. See prop:gl_fplf
                  * and eq:fplf. *)
@@ -89,10 +89,10 @@ let lpca_agg_data l =
      lpca_tot_edge_nz that no placements occurred precisely at the proximal
      node of the edge. Here b is used for the contribution of a branch. *)
   let attached_mass b =
-    let m = Gsl_vector.copy b.f in
-    Gsl_vector.scale m (-1.);
-    Gsl_vector.add_constant m 1.;
-    Gsl_vector.scale m (1. /. 2.);
+    let m = Gsl.Vector.copy b.f in
+    Gsl.Vector.scale m (-1.);
+    Gsl.Vector.add_constant m 1.;
+    Gsl.Vector.scale m (1. /. 2.);
     m
   in
   match l with
@@ -102,11 +102,11 @@ let lpca_agg_data l =
           (* axpy is y := a*x + y, so the below means a.f += -2 m, where m is
              the amount of mass attached to subtree bj. This accomplishes the
              update described by eq:node_crossing, *)
-          Gsl_blas.axpy (-2.) (attached_mass bj) a.f;
-          Gsl_matrix.add a.ufl bj.ufl;
+          Gsl.Blas.axpy (-2.) (attached_mass bj) a.f;
+          Gsl.Matrix.add a.ufl bj.ufl;
           (* Add the sibling branch's contribution to F'LF, as in
              eq:piecewise_edge. *)
-          Gsl_matrix.add a.fplf bj.fplf;
+          Gsl.Matrix.add a.fplf bj.fplf;
           { a with af = map_union a.af bj.af })
         b bs
       in
@@ -124,11 +124,11 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
     with
       | Not_found -> []
   in
-  let n_samples = Gsl_vector.length data_0.f in
+  let n_samples = Gsl.Vector.length data_0.f in
   (* af_e is an accumulator for this edge's row in the $\tilde{F} = AF$ matrix,
      defined in eq:f_tilde and later used in computing edge-averaged
      eigenvectors as described in the text. *)
-  let af_e = Gsl_vector.create ~init:0. n_samples in
+  let af_e = Gsl.Vector.create ~init:0. n_samples in
   (* In aux, i counts the number of "constant regions" along the edge. *)
   let rec aux i pl prev_distal_bl data =
     let update_data sample_id mass len =
@@ -141,13 +141,13 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
        * is "hidden" in this call as the outer product f_cen * f_cen^T, which is
        * then weighted by the region length and added to the F'LF accumulator,
        * as in eq:fplf_update. *)
-      Gsl_blas.syr Gsl_blas.Upper ~alpha:len ~x:f_cen ~a:data.fplf;
+      Gsl.Blas.syr Gsl.Blas.Upper ~alpha:len ~x:f_cen ~a:data.fplf;
       (* Add this region's contribution to \tilde{F}, as in eq:f_tilde. *)
-      Gsl_vector.add af_e f_cen;
+      Gsl.Vector.add af_e f_cen;
       (* dger is rank-1 update A = \alpha x y^T + A of the matrix A. This is
          the update computation for the inner term of eq:ufl, but for all the
          samples at once. *)
-      Gsl_blas.dger ~alpha:len ~x:data.f ~y:f_cen ~a:data.ufl;
+      Gsl.Blas.dger ~alpha:len ~x:data.f ~y:f_cen ~a:data.ufl;
       (* Terminate this region and update f_k as we pass. *)
       data.f.{sample_id} <- data.f.{sample_id} -. (2. *. mass)
     in
@@ -170,7 +170,7 @@ let lpca_tot_edge_nz sm edge_id bl data_0 =
         assert(len > 0.);
         update_data 0 0. len;
         (* Multiplying on left by averaging matrix as just before eq:f_tilde. *)
-        Gsl_vector.scale af_e (1. /. (float (succ i)));
+        Gsl.Vector.scale af_e (1. /. (float (succ i)));
         { data with af = IntMap.add edge_id af_e data.af }
   in
   aux 0 pl 0. data_0
@@ -224,10 +224,10 @@ let gen_data sl ref_tree =
   let sm = make_n_lpca_map sl in
   let tot_edge = lpca_tot_edge sm in
   let n_samples = List.length sl in
-  let data_0 = { f = Gsl_vector.create ~init:1. n_samples; (* prox - distal *)
-                 ufl = Gsl_matrix.create ~init:0. n_samples n_samples;
+  let data_0 = { f = Gsl.Vector.create ~init:1. n_samples; (* prox - distal *)
+                 ufl = Gsl.Matrix.create ~init:0. n_samples n_samples;
                  af = IntMap.empty;
-                 fplf = Gsl_matrix.create ~init:0. n_samples n_samples } in
+                 fplf = Gsl.Matrix.create ~init:0. n_samples n_samples } in
   let data =
     Stree.recur
       (fun edge_id dl -> (* internal nodes *)
@@ -239,17 +239,17 @@ let gen_data sl ref_tree =
         tot_edge
           edge_id
           (Gtree.get_bl ref_tree edge_id)
-          { data_0 with f = Gsl_vector.copy data_0.f;
-                        ufl = Gsl_matrix.copy data_0.ufl;
-                        fplf = Gsl_matrix.copy data_0.fplf })
+          { data_0 with f = Gsl.Vector.copy data_0.f;
+                        ufl = Gsl.Matrix.copy data_0.ufl;
+                        fplf = Gsl.Matrix.copy data_0.fplf })
       (Gtree.get_stree ref_tree)
   in
   let inv_smo = 1. /. (float (n_samples - 1)) in (* Samples Minus One. *)
   let inv_sqrt_smo = sqrt inv_smo in
-  Gsl_matrix.scale data.fplf inv_smo;
-  Gsl_matrix.scale data.ufl inv_sqrt_smo;
+  Gsl.Matrix.scale data.fplf inv_smo;
+  Gsl.Matrix.scale data.ufl inv_sqrt_smo;
   mat_rep_uptri data.fplf;
   IntMap.iter
-    (fun _ v -> Gsl_vector.scale v inv_sqrt_smo)
+    (fun _ v -> Gsl.Vector.scale v inv_sqrt_smo)
     data.af;
   data

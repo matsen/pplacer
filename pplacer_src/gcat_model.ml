@@ -31,7 +31,7 @@ module rec Model: Glvm.Model =
 struct
 
   type t = {
-    statd: Gsl_vector.vector;
+    statd: Gsl.Vector.vector;
     diagdq: Diagd.t;
     seq_type: Alignment.seq_type;
     rates: float array;
@@ -186,7 +186,7 @@ struct
     let prep_constant_rate_glv_from_lv_arr g lv_arr =
       assert(lv_arr <> [||]);
       assert(get_n_sites g = Array.length lv_arr);
-      assert(get_n_states g = Gsl_vector.length lv_arr.(0));
+      assert(get_n_states g = Gsl.Vector.length lv_arr.(0));
       seti g
         (fun _ -> 0)
         (fun ~site ~state -> lv_arr.(site).{state})
@@ -201,13 +201,13 @@ struct
       (* cycle through sites *)
       for site=0 to n_sites-1 do
         let _, twoexp = Matrix.slice_left g.a site
-          |> Gsl_vector.max
+          |> Gsl.Vector.max
           |> frexp
         in
         (* now scale if it's needed *)
         if twoexp < min_allowed_twoexp then begin
           (* take the negative so that we "divide" by 2^our_twoexp *)
-          Gsl_vector.scale
+          Gsl.Vector.scale
             (Matrix.slice_left g.a site)
             (of_twoexp (-twoexp));
           (* bring the exponent out *)
@@ -273,9 +273,9 @@ struct
       let n_sites = get_n_sites g
       and n_states = get_n_states g in
       let summary = Array.make n_sites initial
-      and u = Gsl_vector.create ~init:0. n_states in
+      and u = Gsl.Vector.create ~init:0. n_states in
       for site=0 to n_sites-1 do
-        Gsl_vector.set_all u 0.;
+        Gsl.Vector.set_all u 0.;
         for state=0 to n_states-1 do
           u.{state} <- u.{state} +. (get_a ~site ~state g)
         done;
@@ -311,7 +311,7 @@ struct
     assert(lv_arr <> [||]);
     let g = Glv.make
       ~n_sites:(Array.length lv_arr)
-      ~n_states:(Gsl_vector.length lv_arr.(0)) in
+      ~n_states:(Gsl.Vector.length lv_arr.(0)) in
     Glv.prep_constant_rate_glv_from_lv_arr g lv_arr;
     g
 
@@ -447,7 +447,7 @@ and Like_stree: sig
   val site_log_like_arr:
     Model.t ->
     Newick_gtree.t ->
-    Gsl_vector.vector array IntMap.t ->
+    Gsl.Vector.vector array IntMap.t ->
     Model.Glv.t array -> Model.Glv.t array -> float array
 end = LSM(Model)
 

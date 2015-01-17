@@ -10,7 +10,7 @@ let boot_placerun rng pr =
   let pqa = Array.of_list (Placerun.get_pqueries pr) in
   let multip = Array.map Pquery.multiplicity pqa in
   (* multa has the resampled multiplicity of each of the pqueries. *)
-  let multa = Gsl_randist.multinomial
+  let multa = Gsl.Randist.multinomial
     rng
     (int_of_float (Array.fold_left ( +. ) 0. multip)) (* get total multiplicity *)
     multip

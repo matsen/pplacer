@@ -19,10 +19,10 @@ let inverse_gamma_cdf ~alpha ~beta ?(epsilon = 1e-7) y =
    *
    * y < C(epsilon) <=> Cinv(y) < epsilon *)
 
-  if y < Gsl_cdf.gamma_P ~a:alpha ~b:beta ~x:epsilon then
+  if y < Gsl.Cdf.gamma_P ~a:alpha ~b:beta ~x:epsilon then
     0.
   else
-    Gsl_cdf.gamma_Pinv ~a:alpha ~b:beta ~p:y
+    Gsl.Cdf.gamma_Pinv ~a:alpha ~b:beta ~p:y
 
 let make_mean_one v =
   let tot = Array.fold_left (+.) 0. v
@@ -37,7 +37,7 @@ let make_mean_one v =
  * which is what Yang calls the incomplete gamma function.
  * We use his terminology here.
  *)
-let incomplete_gamma ~alpha x = Gsl_sf.gamma_inc_P alpha x
+let incomplete_gamma ~alpha x = Gsl.Sf.gamma_inc_P alpha x
 
 let int_div i j = (float_of_int i) /. (float_of_int j)
 

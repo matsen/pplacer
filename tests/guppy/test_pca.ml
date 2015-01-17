@@ -60,10 +60,10 @@ let prcomp_vects = mat_of_string
   0.1652807 0.6576928 -0.7349302
   0.6467657 0.4902907 0.5842167"
 (* we have the vectors be rows in matrix, so we can get at them *)
-let () = Gsl_matrix.transpose_in_place prcomp_vects
+let () = Gsl.Matrix.transpose_in_place prcomp_vects
 
 let (variances, pv) = gen_pca ~use_raw_eval:true 3 x;;
-let vects = Gsl_matrix.of_arrays pv;;
+let vects = Gsl.Matrix.of_arrays pv;;
 let stddevs = Array.map sqrt variances;;
 
 (*
@@ -86,10 +86,10 @@ let sprcomp_vects = mat_of_string
 0.5030103 0.8305398   -0.2391325
 0.6341729 -0.1666971   0.7550079"
 (* we have the vectors be rows in matrix, so we can get at them *)
-let () = Gsl_matrix.transpose_in_place sprcomp_vects
+let () = Gsl.Matrix.transpose_in_place sprcomp_vects
 
 let (svariances, spv) = gen_pca ~scale:true ~use_raw_eval:true 3 x;;
-let svects = Gsl_matrix.of_arrays spv;;
+let svects = Gsl.Matrix.of_arrays spv;;
 let sstddevs = Array.map sqrt svariances;;
 
 let test_pca stddev1 stddev2 vect1 vect2 =

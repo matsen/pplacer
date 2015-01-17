@@ -4,8 +4,8 @@ open Test_util
 open Diagd;;
 open Linear_utils;;
 
-let b = Gsl_matrix.of_arrays [|[|-. 1.; 0.15|];[|0.15; -.2.|]|];;
-let d = Gsl_vector.of_array [|0.25; 0.75|];;
+let b = Gsl.Matrix.of_arrays [|[|-. 1.; 0.15|];[|0.15; -.2.|]|];;
+let d = Gsl.Vector.of_array [|0.25; 0.75|];;
 let diagd = of_d_b d b;;
 let noep = normed_of_exchangeable_pair b d;;
 
@@ -14,12 +14,12 @@ let test_dediag _ =
   and a_alt = to_matrix diagd in
   "dediag not remaking the matrix" @? (a ^=^ a_alt)
 
-let exp1 = Gsl_matrix.of_arrays
+let exp1 = Gsl.Matrix.of_arrays
   [|
     [|0.77992929; 0.01668155|];
     [|0.05004464; 0.22387769|];
   |]
-let exp4 = Gsl_matrix.of_arrays
+let exp4 = Gsl.Matrix.of_arrays
   [|
     [|0.37187386; 0.011053085|];
     [|0.03315925; 0.003437709|];
@@ -41,7 +41,7 @@ let test_multi_exp _ =
 
 let column_sums_one m =
   try
-    let (rows,cols) = Gsl_matrix.dims m in
+    let (rows,cols) = Gsl.Matrix.dims m in
     for j=0 to cols-1 do
       let sum = ref 0. in
       for i=0 to rows-1 do
