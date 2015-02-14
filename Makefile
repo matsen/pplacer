@@ -44,7 +44,7 @@ runcaml:
 	rlwrap ocaml
 
 tags:
-	taggage `find . -name "*.ml" | grep -v "_build"`
+	otags `find . -name "*.ml" | grep -v "_build"`
 
 docs: gen_docs.native
 	./gen_docs.native
