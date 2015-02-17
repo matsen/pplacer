@@ -1,5 +1,5 @@
 /_build
-tags
+TAGS
 *.mltop
 *.top
 *.native
