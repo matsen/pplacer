@@ -71,8 +71,9 @@ let of_refpkg_and_classif_map rp cm =
             accum
         with Not_found ->
           Printf.sprintf
-            "tax_id %s is not represented on the classification tree. this suggests the \
-             placefile was classified with an old version of the reference package"
+            "tax_id %s is not represented on the classification tree. If you used \
+             --mrca-class for placement did you also use it for classification, \
+             and vice versa?"
             (Tax_id.to_string ti)
           |> failwith)
       IAMR.empty
