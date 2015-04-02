@@ -34,7 +34,8 @@ object (self)
           let f = function
             | [canon; rep; count] ->
               Hashtbl.add sequence_tbl canon (rep, float_of_string count)
-            | _ -> failwith "malformed row in jplace"
+            | _ -> failwith
+                ("Found a row without three columns in: "^(fv dupfile))
           in
           fv dupfile
             |> open_in
