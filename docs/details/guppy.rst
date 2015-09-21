@@ -220,7 +220,7 @@ guppy subcommand:
 .. _pplacer: http://matsen.fhcrc.org/pplacer
 .. _this configuration file: https://github.com/fhcrc/microbiome-demo/blob/master/bin/_aptx_configuration_file
 .. _phyloxml: http://phyloxml.org/
-.. _archaeopteryx: http://www.phylosoft.org/archaeopteryx/
+.. _archaeopteryx: https://sites.google.com/site/cmzmasek/home/software/archaeopteryx
 .. _Evans and Matsen: http://arxiv.org/abs/1005.1699
 .. _Matsen and Evans: http://arxiv.org/abs/1107.5095
 .. _BIOM file: http://biom-format.org/
