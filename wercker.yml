@@ -1,0 +1,8 @@
+box: matsen/pplacer-builder
+
+build:
+  steps:
+    - script:
+        name: build pplacer
+        code: make
+
