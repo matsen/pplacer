@@ -17,3 +17,6 @@ docs/generated_rst/
 docs/_build/doctrees/
 wiki
 Session.vim
+_builds
+_projects
+_steps
