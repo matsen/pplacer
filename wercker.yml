@@ -4,9 +4,4 @@ build:
   steps:
     - script:
         name: build pplacer
-        code: make
-  after-steps:
-    - wantedly/pretty-slack-notify:
-        webhook_url: $SLACK_WEBHOOK_URL
-
-
+        code: make zip && make test
