@@ -1,5 +1,6 @@
 RELEASE=pplacer guppy rppr
 DEBUG=pplacer.d guppy.d rppr.d
+DESCRIPT:=pplacer-$(shell uname)-$(shell git describe)
 
 all: $(RELEASE)
 debug: $(DEBUG)
@@ -50,4 +51,9 @@ docs: gen_docs.native
 	./gen_docs.native
 	make -C docs html
 
-.PHONY: $(RELEASE) clean runcaml tags test docs
+zip: $(RELEASE)
+	cp -r bin $(DESCRIPT)
+	zip pplacer.zip $(DESCRIPT)/*
+	rm -rf $(DESCRIPT)
+
+.PHONY: $(RELEASE) clean runcaml tags test docs zip
