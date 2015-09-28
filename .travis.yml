@@ -6,7 +6,7 @@ services:
   - docker
 
 before_install:
-  - docker pull matsen/pplacer-build
+  - docker pull matsen/pplacer-builder
 
 script:
   - mkdir -p _export
