@@ -10,7 +10,7 @@ before_install:
 
 script:
   - mkdir -p _export
-  - docker run -t matsen/pplacer -v $(readlink -f _export):/export .
+  - docker run -t matsen/pplacer-builder -v $(readlink -f _export):/export .
 
 deploy:
   provider: releases
