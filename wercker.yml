@@ -11,3 +11,10 @@ build:
             url: $SLACK_URL
             channel: microbiome
             username: pplacer wercker
+
+deploy:
+    steps:
+        - uetchy/gh-pages:
+            token: $GITHUB_TOKEN
+            repo: matsen/test
+            path: docs/_build/html
