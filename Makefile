@@ -52,8 +52,10 @@ docs: gen_docs.native
 	make -C docs html
 
 zip: $(RELEASE)
-	cp -r bin $(DESCRIPT)
-	zip pplacer.zip $(DESCRIPT)/*
+	rm -rf $(DESCRIPT)
+	mkdir $(DESCRIPT)
+	cp -r bin/* scripts $(DESCRIPT)
+	zip -r pplacer-linux.zip $(DESCRIPT)/*
 	rm -rf $(DESCRIPT)
 
 .PHONY: $(RELEASE) clean runcaml tags test docs zip

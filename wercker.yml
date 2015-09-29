@@ -1,7 +1,13 @@
 box: matsen/pplacer-builder
 
 build:
-  steps:
-    - script:
-        name: build pplacer
-        code: make zip && make test
+    steps:
+        - script:
+            name: build pplacer
+            code: make zip && make test && make docs
+
+    after-steps:
+        - slack-notifier:
+            url: $SLACK_URL
+            channel: microbiome
+            username: pplacer wercker
