@@ -10,7 +10,7 @@ build:
         - slack-notifier:
             url: $SLACK_URL
             channel: microbiome
-            username: pplacer wercker
+            username: pplacer build
 
 deploy:
     steps:
@@ -18,3 +18,11 @@ deploy:
             token: $GITHUB_TOKEN
             repo: matsen/test
             path: docs/_build/html
+
+    after-steps:
+        - slack-notifier:
+            url: $SLACK_URL
+            channel: microbiome
+            username: pplacer docs deploy
+
+
