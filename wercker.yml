@@ -1,4 +1,4 @@
-box: matsen/pplacer-builder
+box: matsen/pplacer-build-env
 
 build:
     steps:
