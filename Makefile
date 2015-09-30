@@ -50,6 +50,7 @@ tags:
 docs: gen_docs.native
 	./gen_docs.native
 	make -C docs html
+	touch docs/_build/html/.nojekyll
 
 zip: $(RELEASE)
 	rm -rf $(DESCRIPT)
