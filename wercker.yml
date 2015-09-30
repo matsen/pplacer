@@ -14,7 +14,7 @@ build:
 
 deploy:
     steps:
-        - matsen/gh-pages:
+        - ematsen/gh-pages:
             token: $GITHUB_TOKEN
             repo: matsen/test
             path: docs/_build/html
