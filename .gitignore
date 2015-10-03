@@ -8,6 +8,7 @@ TAGS
 *.annot
 .ocamlinit
 .toplevel_history
+.latest-upload
 top_tests
 bin
 common_src/install_common_pprs.txt

@@ -52,11 +52,16 @@ docs: gen_docs.native
 	make -C docs html
 	touch docs/_build/html/.nojekyll
 
-zip: $(RELEASE)
+pplacer-linux.zip: $(RELEASE)
 	rm -rf $(DESCRIPT)
 	mkdir $(DESCRIPT)
 	cp -r bin/* scripts $(DESCRIPT)
 	zip -r pplacer-linux.zip $(DESCRIPT)/*
 	rm -rf $(DESCRIPT)
 
-.PHONY: $(RELEASE) clean runcaml tags test docs zip
+zip: pplacer-linux.zip
+
+upload: pplacer-linux.zip
+	curl --upload-file ./pplacer-linux.zip https://transfer.sh/$(DESCRIPT).zip > .latest-upload
+
+.PHONY: $(RELEASE) clean runcaml tags test docs zip upload
