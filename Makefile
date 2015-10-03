@@ -61,8 +61,10 @@ pplacer-linux.zip: $(RELEASE)
 
 zip: pplacer-linux.zip
 
-upload: pplacer-linux.zip
+.latest-upload: pplacer-linux.zip
 	curl --upload-file ./pplacer-linux.zip https://transfer.sh/$(DESCRIPT).zip > .latest-upload
+
+upload: .latest-upload
 	curl -X POST --data-urlencode 'payload={"text": "Latest pplacer uploaded to '$(shell cat .latest-upload)'"}' $(SLACK_URL)
 
 
