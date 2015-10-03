@@ -11,9 +11,6 @@ build:
             url: $SLACK_URL
             channel: microbiome
             username: pplacer build
-        - script:
-            name: upload pplacer
-            code: SLACK_URL=$SLACK_URL make upload
 
 deploy:
     steps:
@@ -21,6 +18,9 @@ deploy:
             token: $GITHUB_TOKEN
             repo: matsen/pplacer
             path: docs/_build/html
+        - script:
+            name: upload pplacer
+            code: SLACK_URL=$SLACK_URL make upload
 
     after-steps:
         - slack-notifier:
