@@ -1,5 +1,7 @@
 # pplacer suite of programs
 
+[![wercker status](https://app.wercker.com/status/b3fe580ff3a62d0a69c6da264c03ba81/s/master "wercker status")](https://app.wercker.com/project/bykey/b3fe580ff3a62d0a69c6da264c03ba81)
+
 `pplacer` places reads on a phylogenetic tree.
 `guppy` (Grand Unified Phylogenetic Placement Yanalyzer) yanalyzes them.
 `rppr` is a helpful tool for working with reference packages.
