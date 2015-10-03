@@ -63,5 +63,7 @@ zip: pplacer-linux.zip
 
 upload: pplacer-linux.zip
 	curl --upload-file ./pplacer-linux.zip https://transfer.sh/$(DESCRIPT).zip > .latest-upload
+	curl -X POST --data-urlencode 'payload={"text": "Latest pplacer uploaded to '$(shell cat .latest-upload)'"}' $(SLACK_URL)
+
 
 .PHONY: $(RELEASE) clean runcaml tags test docs zip upload

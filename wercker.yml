@@ -13,7 +13,7 @@ build:
             username: pplacer build
         - script:
             name: upload pplacer
-            code: make upload && curl -X POST --data-urlencode 'payload={"text": "Latest pplacer uploaded to '$(cat .latest-upload)'"}' $SLACK_URL
+            code: SLACK_URL=$SLACK_URL make upload
 
 deploy:
     steps:
