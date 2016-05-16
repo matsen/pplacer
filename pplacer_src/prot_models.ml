@@ -12,12 +12,34 @@ let prot_map = begin
       v.{i} <- 1.;
       pm := CharMap.add c v !pm;
   ) prot_code;
-  let any = Gsl_vector.create ~init:1. 20 in
+  let any = Gsl_vector.create ~init:1. 20
+  and b_vector = Gsl_vector.create ~init:0. 20
+  and j_vector = Gsl_vector.create ~init:0. 20
+  and z_vector = Gsl_vector.create ~init:0. 20
+  in
+  (* B is D or N. *)
+  Gsl_vector.add b_vector (CharMap.find 'D' !pm);
+  Gsl_vector.add b_vector (CharMap.find 'N' !pm);
+  (* J is I or L. *)
+  Gsl_vector.add j_vector (CharMap.find 'I' !pm);
+  Gsl_vector.add j_vector (CharMap.find 'L' !pm);
+  (* Z is E or Q. *)
+  Gsl_vector.add z_vector (CharMap.find 'E' !pm);
+  Gsl_vector.add z_vector (CharMap.find 'Q' !pm);
+  (*
+  Format.print_char 'B';
+  Format.printf " %a@\n" Linear_utils.ppr_gsl_vector b_vector;
+  Format.print_char 'J';
+  Format.printf " %a@\n" Linear_utils.ppr_gsl_vector j_vector;
+  Format.print_char 'Z';
+  Format.printf " %a@\n" Linear_utils.ppr_gsl_vector z_vector;
+  *)
   CharMap.add '-' any (
-    CharMap.add 'B' (CharMap.find 'N' !pm) ( (* asparagine is N or B *)
-    CharMap.add 'Z' (CharMap.find 'Q' !pm) ( (* asparagine is Q or Z *)
+    CharMap.add 'B' b_vector (
+    CharMap.add 'J' j_vector (
+    CharMap.add 'Z' z_vector (
     CharMap.add '?' any (
-    CharMap.add 'X' any !pm))))
+    CharMap.add 'X' any !pm)))))
 end
 
 let lv_of_aa aa =
