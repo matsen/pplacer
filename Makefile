@@ -1,6 +1,6 @@
 RELEASE=pplacer guppy rppr
 DEBUG=pplacer.d guppy.d rppr.d
-DESCRIPT:=pplacer-$(shell uname)-$(shell git describe)
+DESCRIPT:=pplacer-$(shell uname)-$(shell git describe --tags)
 
 all: $(RELEASE)
 debug: $(DEBUG)
