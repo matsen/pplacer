@@ -1,3 +1,8 @@
+1.1.alpha17
+-----------
+
+ * Closed GH-346: Adding proper support for ambigious amino acid codes.
+
 1.1.alpha16
 -----------
 
