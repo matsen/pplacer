@@ -169,7 +169,7 @@ let setup_git_version () =
     Printf.fprintf ch "let version = %S\n" version;
     close_out ch
   in
-  match run_and_read "git describe --long | tr -d '\\n'" with
+  match run_and_read "git describe --tags --long | tr -d '\\n'" with
     | "" ->
       begin match begin
         try
