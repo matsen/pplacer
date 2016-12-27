@@ -141,7 +141,8 @@ let to_strl_gen fint ffloat ftaxid default place =
   let map_ratio, map_overlap =
     Option.map_default (Tuple2.map some some) (None, None) place.map_identity
   (* eta expansion !! *)
-  and fopt f xo = Option.map_default f default xo in
+  and fopt f xo = Option.map_default f default xo
+  and fidentity x = ffloat (fst x) in
   [
     fint place.location;
     ffloat place.ml_ratio;
@@ -153,6 +154,7 @@ let to_strl_gen fint ffloat ftaxid default place =
     fopt ftaxid place.classif;
     fopt ffloat map_ratio;
     fopt fint map_overlap;
+    fopt fidentity place.map_identity;
   ]
 
 let to_strl =
