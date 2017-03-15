@@ -108,7 +108,7 @@ def main():
 
     classif_db = os.path.join(workdir, 'classifications.sqlite')
     index_refpkg = os.path.join(args.hrefpkg, 'index.refpkg')
-    index = Refpkg(index_refpkg)
+    index = Refpkg(index_refpkg, create=False)
     index_rank = index.metadata('index_rank')
     classif_rank = args.classification_rank or index_rank
     index_counts = os.path.join(args.hrefpkg, 'index-%s.counts' % (classif_rank,))
