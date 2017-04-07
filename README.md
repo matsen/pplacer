@@ -13,3 +13,6 @@
 
 `pplacer`, `guppy`, and `rppr` are free software under the GPL v3.
 
+Several other tools have used pplacer as one of their main components. Some of these include:
+
+* **SEPP** (Mirarab, Nguyen, Warnow, PSB, 2012) aims to improve the scalability of phylogenetic placement using divide-and-conquer. It uses Ensembles of Hidden Markov Models (implemented by HMMER) to both align sequnces and to find a (small) subtree for placement using pplacer. [SEPP](github.com/smirarab/sepp) can place the green genes dataset with 200,000 sequences. A standalone version for the greengenes reference is available [here](https://github.com/smirarab/sepp/wiki/SEPP-on-Greengenes). 
