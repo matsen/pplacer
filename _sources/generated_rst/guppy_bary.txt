@@ -1,0 +1,32 @@
+:tocdepth: 3
+
+.. _guppy_bary:
+
+====
+bary
+====
+
+`bary` draws the barycenter of a placement collection on the reference tree.
+
+::
+
+  usage: bary [options] placefile[s]
+
+Options
+=======
+
+-c  Reference package path.
+--point-mass  Treat every pquery as a point mass concentrated on the highest-weight placement.
+--pp  Use posterior probability for the weight.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+
+Details
+=======
+
+Calculate the center of mass of the placement distribution and write it out to a phyloXML file for viewing.
+When several place files are given, calculate the barycenter for each, and mark them on the same tree.
+Because phyloxml isn't actually designed to show points on the tree, the phyloXML is a kluge for the time being-- using "speciation" and "duplication" tags.
+

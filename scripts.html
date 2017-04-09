@@ -1,0 +1,376 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>scripts &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="index.html" />
+    <link rel="next" title="glossary" href="glossary.html" />
+    <link rel="prev" title="reroot" href="generated_rst/rppr_reroot.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="glossary.html" title="glossary"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="generated_rst/rppr_reroot.html" title="reroot"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">scripts</a><ul>
+<li><a class="reference internal" href="#installing">Installing</a></li>
+<li><a class="reference internal" href="#refpkg-align-py"><code class="docutils literal"><span class="pre">refpkg_align.py</span></code></a><ul>
+<li><a class="reference internal" href="#list-of-subcommands">List of subcommands</a></li>
+<li><a class="reference internal" href="#mask">mask</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#sort-placefile-py"><code class="docutils literal"><span class="pre">sort_placefile.py</span></code></a></li>
+<li><a class="reference internal" href="#update-refpkg-py"><code class="docutils literal"><span class="pre">update_refpkg.py</span></code></a></li>
+<li><a class="reference internal" href="#check-placements-py"><code class="docutils literal"><span class="pre">check_placements.py</span></code></a></li>
+<li><a class="reference internal" href="#deduplicate-sequences-py"><code class="docutils literal"><span class="pre">deduplicate_sequences.py</span></code></a></li>
+<li><a class="reference internal" href="#pca-for-qiime-py"><code class="docutils literal"><span class="pre">pca_for_qiime.py</span></code></a></li>
+<li><a class="reference internal" href="#extract-taxonomy-from-biom-py"><code class="docutils literal"><span class="pre">extract_taxonomy_from_biom.py</span></code></a></li>
+<li><a class="reference internal" href="#hrefpkg-query-py"><code class="docutils literal"><span class="pre">hrefpkg_query.py</span></code></a></li>
+<li><a class="reference internal" href="#multiclass-concat-py"><code class="docutils literal"><span class="pre">multiclass_concat.py</span></code></a></li>
+<li><a class="reference internal" href="#split-qiime-py"><code class="docutils literal"><span class="pre">split_qiime.py</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="generated_rst/rppr_reroot.html"
+                        title="previous chapter">reroot</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="glossary.html"
+                        title="next chapter">glossary</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/scripts.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="scripts">
+<span id="id1"></span><h1>scripts<a class="headerlink" href="#scripts" title="Permalink to this headline">¶</a></h1>
+<p>The <cite>pplacer</cite> package comes with a few scripts to perform common tasks on
+reference packages and placements:</p>
+<div class="section" id="installing">
+<h2>Installing<a class="headerlink" href="#installing" title="Permalink to this headline">¶</a></h2>
+<p>All scripts can be used by specifying the full path.  For convenience, a Python
+<code class="docutils literal"><span class="pre">setup.py</span></code> file is provided, which will install them globally.  To install,
+run:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ python setup.py install
+</pre></div>
+</div>
+<p>from the <code class="docutils literal"><span class="pre">scripts/</span></code> subdirectory, prefixed with <code class="docutils literal"><span class="pre">sudo</span></code> if the python
+installation directory is not writable.</p>
+</div>
+<div class="section" id="refpkg-align-py">
+<h2><code class="docutils literal"><span class="pre">refpkg_align.py</span></code><a class="headerlink" href="#refpkg-align-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">refpkg_align.py</span></code> works with reference package alignments and alignment
+profiles, providing methods to align sequences to a reference package
+alignment, and extract an alignment from a reference package.</p>
+<p><code class="docutils literal"><span class="pre">refpkg_align.py</span></code> depends on <a class="reference external" href="http://www.biopython.org/">BioPython</a>, as
+well as the external tools used for alignment: <a class="reference external" href="http://hmmer.janelia.org">HMMER3</a>, <a class="reference external" href="http://infernal.janelia.org">Infernal</a>, and <a class="reference external" href="http://qiime.org/pynast">PyNAST</a>.</p>
+<div class="section" id="list-of-subcommands">
+<h3>List of subcommands<a class="headerlink" href="#list-of-subcommands" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="align">
+<h4><code class="docutils literal"><span class="pre">align</span></code><a class="headerlink" href="#align" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal"><span class="pre">refpkg_align.py</span> <span class="pre">align</span></code> aligns sequences to a reference package alignment for
+use with pplacer.  For reference packages built with <a class="reference external" href="http://infernal.janelia.org">Infernal</a>, <code class="docutils literal"><span class="pre">cmalign</span></code> is
+used for alignment. For packages built using <a class="reference external" href="http://hmmer.janelia.org">HMMER3</a>, alignment is performed
+with <code class="docutils literal"><span class="pre">hmmalign</span></code>. Reference packages lacking a <code class="docutils literal"><span class="pre">profile</span></code> entry are aligned
+using <a class="reference external" href="http://qiime.org/pynast">PyNAST</a>.  By default, an alignment <a class="reference internal" href="#mask"><span>mask</span></a> is applied if it exists.</p>
+<p>The output format varies: Stockholm for Infernal- and HMMER-based reference
+packages, FASTA for all others.</p>
+<p>For Infernal-based reference packages, MPI may be used.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: refpkg_align.py align [options] refpkg seqfile outfile
+</pre></div>
+</div>
+<div class="section" id="options">
+<h5>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h5>
+<div class="highlight-python"><div class="highlight"><pre>-h, --help            show this help message and exit
+--align-opts OPTS     Alignment options, such as &quot;--mapali $aln_sto&quot;. &#39;$&#39;
+                      characters will need to be escaped if using template
+                      variables. Available template variables are $aln_sto,
+                      $profile. Defaults are as follows for the different
+                      profiles: (PyNAST: &quot;-l 150 -f /dev/null -g /dev/null&quot;)
+                      (INFERNAL: &quot;-1 --hbanded --sub --dna&quot;)
+--alignment-method {PyNAST,HMMER3,INFERNAL}
+                      Profile version to use. [default: Guess. PyNAST is
+                      used if a valid CM or HMM is not found in the
+                      reference package.]
+--no-mask             Do not trim the alignment to unmasked columns.
+                      [default: apply mask if it exists]
+--debug               Enable debug output
+--verbose             Enable verbose output
+
+MPI Options
+
+--use-mpi             Use MPI [infernal only]
+--mpi-arguments MPI_ARGUMENTS
+                      Arguments to pass to mpirun
+--mpi-run MPI_RUN     Name of mpirun executable
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="extract">
+<h4><code class="docutils literal"><span class="pre">extract</span></code><a class="headerlink" href="#extract" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal"><span class="pre">extract</span></code> extracts a reference alignment from a reference package, apply a
+<a class="reference internal" href="#mask"><span>mask</span></a> if it exists by default.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: refpkg_align.py extract [options] refpkg output_file
+</pre></div>
+</div>
+<div class="section" id="id2">
+<h5>Options<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h5>
+<div class="highlight-python"><div class="highlight"><pre>positional arguments:
+  refpkg                Reference package directory
+  output_file           Destination
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --output-format OUTPUT_FORMAT
+                        output format [default: stockholm]
+  --no-mask             Do not apply mask to alignment [default: apply mask
+                        if it exists]
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="mask">
+<span id="id3"></span><h3>mask<a class="headerlink" href="#mask" title="Permalink to this headline">¶</a></h3>
+<p><em>Warning:</em> masking is experimental and we may change our mind about how it gets
+implemented.</p>
+<p>Alignment masks may be specified through an entry named &#8220;mask&#8221; in the
+<code class="docutils literal"><span class="pre">CONTENTS.json</span></code> file of a reference package pointing to a file with a
+comma-delimited set of 0-based indices in an alignment to <strong>keep</strong> after
+masking.</p>
+<p>For example, a mask specification of:</p>
+<blockquote>
+<div><code class="docutils literal"><span class="pre">0,1,2,3,4,5,6,28,29</span></code></div></blockquote>
+<p>Would discard all columns in an alignment except for 0-7, 28, and 29.</p>
+</div>
+</div>
+<div class="section" id="sort-placefile-py">
+<h2><code class="docutils literal"><span class="pre">sort_placefile.py</span></code><a class="headerlink" href="#sort-placefile-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">sort_placefile.py</span></code> takes a placefile and sorts and formats its contents for
+then performing a visual diff of placefiles. Output defaults to being emitted
+to stdout.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: sort_placefile.py [-h] [-o FILE] infile
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-refpkg-py">
+<h2><code class="docutils literal"><span class="pre">update_refpkg.py</span></code><a class="headerlink" href="#update-refpkg-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">update_refpkg.py</span></code> updates a reference package from the 1.0 format to the 1.1
+format. It takes the <code class="docutils literal"><span class="pre">CONTENTS.json</span></code> file in the reference package as its
+parameter and updates it in place, after making a backup copy.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: update_refpkg.py [-h] CONTENTS.json
+</pre></div>
+</div>
+</div>
+<div class="section" id="check-placements-py">
+<h2><code class="docutils literal"><span class="pre">check_placements.py</span></code><a class="headerlink" href="#check-placements-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">check_placements.py</span></code> checks a placefile for potential issues, including:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Any <code class="docutils literal"><span class="pre">like_weight_ratio</span></code> being equal to 0.</li>
+<li>The sum of the <code class="docutils literal"><span class="pre">like_weight_ratios</span></code> not being equal to 1.</li>
+<li>Any <code class="docutils literal"><span class="pre">post_prob</span></code> being equal to 0.</li>
+<li>The sum of the <code class="docutils literal"><span class="pre">post_probs</span></code> being equal to 0.</li>
+<li>The sum of the <code class="docutils literal"><span class="pre">post_probs</span></code> not being equal to 1.</li>
+</ul>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre>usage: check_placements.py example.jplace
+</pre></div>
+</div>
+</div>
+<div class="section" id="deduplicate-sequences-py">
+<span id="deduplicate-sequences"></span><h2><code class="docutils literal"><span class="pre">deduplicate_sequences.py</span></code><a class="headerlink" href="#deduplicate-sequences-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">deduplicate_sequences.py</span></code> deduplicates a sequence file and produces a dedup
+file suitable for use with <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span> <span class="pre">-m</span></code>. See the
+<a class="reference internal" href="generated_rst/guppy_redup.html#guppy-redup"><span>redup</span></a> documentation for details.</p>
+</div>
+<div class="section" id="pca-for-qiime-py">
+<h2><code class="docutils literal"><span class="pre">pca_for_qiime.py</span></code><a class="headerlink" href="#pca-for-qiime-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">pca_for_qiime.py</span></code> converts the <code class="docutils literal"><span class="pre">trans</span></code> file output by <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">pca</span></code> into
+the tab-delimited format expected by QIIME&#8217;s plotting functions.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: pca_for_qiime.py [-h] trans tsv
+</pre></div>
+</div>
+</div>
+<div class="section" id="extract-taxonomy-from-biom-py">
+<h2><code class="docutils literal"><span class="pre">extract_taxonomy_from_biom.py</span></code><a class="headerlink" href="#extract-taxonomy-from-biom-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">extract_taxonomy_from_biom.py</span></code> extracts the taxonomy information from a BIOM
+file, producing seqinfo and taxonomy files which can then be placed into a
+reference package.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: extract_taxonomy_from_biom.py [-h] biom taxtable seqinfo
+</pre></div>
+</div>
+</div>
+<div class="section" id="hrefpkg-query-py">
+<h2><code class="docutils literal"><span class="pre">hrefpkg_query.py</span></code><a class="headerlink" href="#hrefpkg-query-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">hrefpkg_query.py</span></code> classifies sequences using a hrefpkg. The output is a
+sqlite database with the same schema as created by <a class="reference internal" href="generated_rst/rppr_prep_db.html#rppr-prep-db"><span>rppr prep_db</span></a>.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: hrefpkg_query.py [options] hrefpkg query_seqs classification_db
+
+positional arguments:
+  hrefpkg               hrefpkg to classify using
+  query_seqs            input query sequences
+  classification_db     output sqlite database
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -j CORES, --ncores CORES
+                        number of cores to tell commands to use
+  -r RANK, --classification-rank RANK
+                        rank to perform the initial NBC classification at
+  --workdir DIR         directory to write intermediate files to (default: a
+                        temporary directory)
+  --disable-cleanup     don&#39;t remove the work directory as the final step
+  --use-mpi             run refpkg_align with MPI
+  --alignment {align-each,merge-each,none}
+                        respectively: align each input sequence; subset an
+                        input stockholm alignment and merge each sequence to a
+                        reference alignment; only subset an input stockholm
+                        alignment (default: align-each)
+  --cmscores FILE       in align-each mode, write out a file containing the
+                        cmalign scores
+
+external binaries:
+  --pplacer PROG        pplacer binary to call
+  --guppy PROG          guppy binary to call
+  --rppr PROG           rppr binary to call
+  --refpkg-align PROG   refpkg_align binary to call
+  --cmalign PROG        cmalign binary to call
+</pre></div>
+</div>
+</div>
+<div class="section" id="multiclass-concat-py">
+<h2><code class="docutils literal"><span class="pre">multiclass_concat.py</span></code><a class="headerlink" href="#multiclass-concat-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">multiclass_concat.py</span></code> takes a database which has been classified using
+<a class="reference internal" href="generated_rst/guppy_classify.html#guppy-classify"><span>guppy classify</span></a> and creates a view
+<code class="docutils literal"><span class="pre">multiclass_concat</span></code>. This view has the same schema as <code class="docutils literal"><span class="pre">multiclass</span></code>, with
+the addition of an <code class="docutils literal"><span class="pre">id_count</span></code> column. However, instead of getting multiple
+rows when a sequence has multiple classifications at a rank, the <code class="docutils literal"><span class="pre">tax_id</span></code>
+column will be all of the tax_ids concatenated together, delimited by <code class="docutils literal"><span class="pre">,</span></code>.</p>
+<p>To ensure that it&#8217;s still easy to join <code class="docutils literal"><span class="pre">multiclass_concat</span></code> to the <code class="docutils literal"><span class="pre">taxa</span></code>
+table, rows are inserted into the <code class="docutils literal"><span class="pre">taxa</span></code> table for each concatenated tax_id
+present in the <code class="docutils literal"><span class="pre">multiclass_concat</span></code> table which have a <code class="docutils literal"><span class="pre">tax_name</span></code> created by
+concatenating the names of all the constituent tax_ids.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: multiclass_concat.py [options] database
+
+positional arguments:
+  database    sqlite database (output of `rppr prep_db` after `guppy
+              classify`)
+
+optional arguments:
+  -h, --help  show this help message and exit
+</pre></div>
+</div>
+</div>
+<div class="section" id="split-qiime-py">
+<h2><code class="docutils literal"><span class="pre">split_qiime.py</span></code><a class="headerlink" href="#split-qiime-py" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">split_qiime.py</span></code> takes sequences in <a class="reference external" href="http://qiime.org/tutorials/tutorial.html#assign-samples-to-multiplex-reads">QIIME&#8217;s preprocessed FASTA format</a> and
+generates a FASTA file which contains the original sequence names. Optionally,
+a specimen map can also be written out which maps from the original sequence
+names to their specimens as listed in the QIIME file.</p>
+<p>For example, an incoming sequence identified by <code class="docutils literal"><span class="pre">&gt;PC.634_1</span> <span class="pre">FLP3FBN01ELBSX</span></code>
+will be written out as <code class="docutils literal"><span class="pre">&gt;FLP3FBN01ELBSX</span></code> with an entry in the specimen_map of
+<code class="docutils literal"><span class="pre">FLP3FBN01ELBSX,PC.634</span></code>.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: split_qiime.py [-h] [qiime] [fasta] [specimen_map]
+
+Extract the original sequence names from a QIIME FASTA file.
+
+positional arguments:
+  qiime         input QIIME file (default: stdin)
+  fasta         output FASTA file (default: stdout)
+  specimen_map  if specified, output specimen map (default: don&#39;t write)
+
+optional arguments:
+  -h, --help    show this help message and exit
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="glossary.html" title="glossary"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="generated_rst/rppr_reroot.html" title="reroot"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

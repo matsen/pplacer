@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>convexify &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="rppr" href="rppr.html" />
+    <link rel="next" title="infer" href="rppr_infer.html" />
+    <link rel="prev" title="convex_taxids" href="rppr_convex_taxids.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="rppr_infer.html" title="infer"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rppr_convex_taxids.html" title="convex_taxids"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="rppr.html" accesskey="U">rppr</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">convexify</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="rppr_convex_taxids.html"
+                        title="previous chapter">convex_taxids</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="rppr_infer.html"
+                        title="next chapter">infer</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/rppr_convexify.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="convexify">
+<span id="rppr-convexify"></span><h1>convexify<a class="headerlink" href="#convexify" title="Permalink to this headline">¶</a></h1>
+<p><cite>convexify</cite> identifies minimal leaf set to cut for taxonomic concordance.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: convexify [-c my.refpkg | --tree my.tre --colors my.csv]
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-c</span></kbd></td>
+<td>Reference package path. Required.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--node-numbers</span></kbd></td>
+<td>Put the node numbers in where the bootstraps usually go.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--tree</span></kbd></td>
+<td>A tree file in newick format to work on in place of a reference package.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--colors</span></kbd></td>
+<td>A CSV file of the colors on the tree supplied with &#8211;tree.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-t</span></kbd></td>
+<td>If specified, the path to write the discordance tree to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--cut-seqs</span></kbd></td>
+<td>If specified, the path to write a CSV file of cut sequences per-rank to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--alternates</span></kbd></td>
+<td>If specified, the path to write a CSV file of alternate colors per-sequence to.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--check-all-ranks</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>When determining alternate colors, check all ranks instead of the least recent uncut rank.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--all-alternates</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>When determining alternate colors, ignore the taxononomy and show all alternates.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--cutoff</span></kbd></td>
+<td>Any trees with a maximum badness over this value are skipped. Default: 12.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--limit-rank</span></kbd></td>
+<td>If specified, only convexify at the given ranks. Ranks are given as a comma-delimited list of names.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--timing</span></kbd></td>
+<td>If specified, save timing information for solved trees to a CSV file.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--rooted</span></kbd></td>
+<td>Strictly evaluate convexity; ensure that each color sits in its own rooted subtree.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--naive</span></kbd></td>
+<td>Use the naive convexify algorithm.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--no-early</span></kbd></td>
+<td>Don&#8217;t terminate early when convexifying.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">convexify</span></code> applies an exact dynamic program to identify leaves of a phylogenetic tree that don&#8217;t agree with their taxonomic labels.
+You can read more in the <a class="reference external" href="http://matsen.fhcrc.org/general/2011/09/27/convexify.html">announcement</a> or the <a class="reference external" href="http://arxiv.org/abs/1109.5423">paper</a>.</p>
+<p>You can either specify a reference package or a tree and a CSV file of colors.
+The CSV file is formatted as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">leaf_name1</span><span class="p">,</span><span class="n">color1</span>
+<span class="n">leaf_name2</span><span class="p">,</span><span class="n">color2</span>
+</pre></div>
+</div>
+<p>where the colors are just strings.</p>
+<p>Note that <code class="docutils literal"><span class="pre">--no-early</span></code> and <code class="docutils literal"><span class="pre">--naive</span></code> don&#8217;t change the results.
+They just (much) run more slowly for all but the most trivial problems.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="rppr_infer.html" title="infer"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rppr_convex_taxids.html" title="convex_taxids"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="rppr.html" >rppr</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

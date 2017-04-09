@@ -1,0 +1,68 @@
+====
+rppr
+====
+
+:Authors: Erick Matsen and Aaron Gallagher
+:Title: rppr
+:Version: 1.1
+:License: GPL v3
+:Date: September 2011
+
+|rppr| is a binary to help prepare reference packages and select sequences.
+It's pronounced "ripper" and is short for Reference Package PReparer.
+"Evaluator" might be a more appropriate descriptor than "preparer", but acronym aesthetics won out over precision here.
+
+
+Usage
+=====
+
+Command line interface
+----------------------
+The general way to invoke |rppr| is ``rppr COMMAND [options] placefile[s]`` where COMMAND is one of the |rppr| commands.
+For example::
+
+  rppr info -c some.refpkg
+
+These programs are listed with more detail below, and can always be found using ``rppr --cmds`` .
+
+|rppr| can also be invoked as ``rppr --quiet COMMAND [...]``,  which prevents
+the specified command from writing to stdout unless explicitly requested.
+
+List of subcommands
+===================
+
+The following table provides links to more in-depth documentation for each
+rppr subcommand:
+
+=========================================  =============================================================================
+                                  Command                                                                    Description
+=========================================  =============================================================================
+                :ref:`check <rppr_check>`                                                     checks a reference package
+:ref:`convex_taxids <rppr_convex_taxids>`                                 determines convex tax_ids per-rank in a refpkg
+        :ref:`convexify <rppr_convexify>`                   identifies minimal leaf set to cut for taxonomic concordance
+                :ref:`infer <rppr_infer>`        infers classifications of unclassified sequences in a reference package
+                  :ref:`info <rppr_info>`                                    gives information about a reference package
+          :ref:`min_adcl <rppr_min_adcl>`        finds a good collection of sequences to cut from a placefile's ref tree
+:ref:`min_adcl_tree <rppr_min_adcl_tree>`                        finds a good collection of sequences to cut from a tree
+            :ref:`pdprune <rppr_pdprune>`                                                 prunes the tree to maximize PD
+            :ref:`prep_db <rppr_prep_db>`                     makes SQL enabling taxonomic querying of placement results
+            :ref:`prepsim <rppr_prepsim>`  makes a simulation by taking out taxids and turning them into fake placements
+            :ref:`reclass <rppr_reclass>`                        reclassifies nonconvex sequences in a reference package
+          :ref:`ref_tree <rppr_ref_tree>`  writes a taxonomically annotated reference tree and an induced taxonomic tree
+              :ref:`reroot <rppr_reroot>`                                     reroots a given reference package in place
+=========================================  =============================================================================
+
+.. toctree::
+   :glob:
+   :hidden:
+
+   rppr_*
+
+
+.. |rppr| replace:: ``rppr``
+.. |guppy| replace:: ``guppy``
+.. |pplacer| replace:: ``pplacer``
+.. |KR| replace:: Kantorovich-Rubinstein
+
+.. vim:set ai fo+=n fo-=l ft=rst:
+

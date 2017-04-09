@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>trim &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="unifrac" href="guppy_unifrac.html" />
+    <link rel="prev" title="tog" href="guppy_tog.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_unifrac.html" title="unifrac"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_tog.html" title="tog"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">trim</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_tog.html"
+                        title="previous chapter">tog</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_unifrac.html"
+                        title="next chapter">unifrac</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_trim.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="trim">
+<span id="guppy-trim"></span><h1>trim<a class="headerlink" href="#trim" title="Permalink to this headline">¶</a></h1>
+<p><cite>trim</cite> trims placefiles down to only containing an informative subset of the mass.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: trim [options] placefile[s]
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--point-mass</span></kbd></td>
+<td>Treat every pquery as a point mass concentrated on the highest-weight placement.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pp</span></kbd></td>
+<td>Use posterior probability for the weight.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-o</span></kbd></td>
+<td>Specify the filename to write to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--min-path-mass</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The minimum mass which must be on the path to a leaf to keep it. default: 0.001</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--discarded</span></kbd></td>
+<td>A file to write discarded pqueries to.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--rewrite-discarded-mass</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Move placements which were on discarded leaves to the nearest non-discarded node.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>This subcommand is a quick root-dependent way to trim the reference tree to what is relevant for a collection of placements.</p>
+<p>The first step is to select a collection of leaves that will be present in the trimmed tree.
+Convert all of the placements into mass by unitizing mass for each placerun individually and then take the overall average of those collections of masses.
+Then select any leaf for inclusion that has at least <code class="docutils literal"><span class="pre">--min-path-mass</span></code> on the path from the root to the leaves.</p>
+<p>Once those leaves are selected, we take the induced subtree on those leaves. That is, if we were to take the induced subtree of</p>
+<div class="highlight-python"><div class="highlight"><pre>  ^
+ / \
+/\  \
+ab  /\
+   c d
+</pre></div>
+</div>
+<p>with the leaf set {a,d}, we would get the tree</p>
+<div class="highlight-python"><div class="highlight"><pre>  ^
+ / \
+/   \
+a    \
+     d
+</pre></div>
+</div>
+<p>with the branch lengths induced by adding branch lengths along edges that are not bifurcating.</p>
+<p>This trimmed tree is then put in the placefile.
+Note that even though the tree is different than the one in the reference package, we have arranged things so that it&#8217;s possible to use reference package <em>C</em> with a tree that has been trimmed from <em>C</em>&#8216;s tree.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_unifrac.html" title="unifrac"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_tog.html" title="tog"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

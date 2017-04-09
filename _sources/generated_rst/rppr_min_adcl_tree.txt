@@ -1,0 +1,47 @@
+:tocdepth: 3
+
+.. _rppr_min_adcl_tree:
+
+=============
+min_adcl_tree
+=============
+
+`min_adcl_tree` finds a good collection of sequences to cut from a tree.
+
+::
+
+  usage: min_adcl_tree [options] newick.tre
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--no-csv  Output the results as a padded matrix instead of csv.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+--seed  Set the random seed, an integer > 0. Default is 1.
+-v  If specified, write progress output to stderr.
+-t  If specified, the path to write the trimmed tree to.
+--leaves  The maximum number of leaves to keep in the tree.
+--max-adcl  The maximum ADCL that a solution can have.
+--algorithm  Which algorithm to use to prune leaves. Choices are 'greedy', 'full', 'force', and 'pam'. Default full.
+--all-adcls-file  If specified, write out a csv file containing every intermediate computed ADCL.
+--log  If specified with the full algorithm, write out a csv file containing solutions at every internal node.
+--always-include  If specified, the leaf names read from the provided file will not be trimmed.
+--query-seqs  A comma-separated list of leaves to turn into query sequences.
+
+Details
+=======
+
+.. important::
+  ``rppr min_adcl_tree`` Prints the labels of the leaves that should be **removed** from the tree, not those that should be kept.
+
+``min_adcl_tree`` chooses the set of *k* sequences *X* that minimize the average distance from each pruned sequence to the closest sequence in *X*.
+
+You can read more in the announcement_ or the paper_.
+
+See :ref:`min_adcl_tree <rppr_min_adcl>` for the same equivalent operation on a tree with placements.
+
+.. _announcement: http://matsen.fhcrc.org/general/2012/05/31/adcl-paper.html
+.. _paper: http://arxiv.org/abs/1205.6867

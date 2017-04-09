@@ -1,0 +1,22 @@
+:tocdepth: 3
+
+.. _guppy_merge:
+
+=====
+merge
+=====
+
+`merge` merges placefiles together.
+
+::
+
+  usage: merge [options] placefiles
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--split-csv  Write out a csv file indicating the source of each read in the combined placefile.
+

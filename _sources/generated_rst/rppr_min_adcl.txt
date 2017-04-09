@@ -1,0 +1,50 @@
+:tocdepth: 3
+
+.. _rppr_min_adcl:
+
+========
+min_adcl
+========
+
+`min_adcl` finds a good collection of sequences to cut from a placefile's ref tree.
+
+::
+
+  usage: min_adcl [options] placefile
+
+Options
+=======
+
+--point-mass  Treat every pquery as a point mass concentrated on the highest-weight placement.
+--pp  Use posterior probability for the weight.
+-c  Reference package path.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--no-csv  Output the results as a padded matrix instead of csv.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+--seed  Set the random seed, an integer > 0. Default is 1.
+-v  If specified, write progress output to stderr.
+-t  If specified, the path to write the trimmed tree to.
+--leaves  The maximum number of leaves to keep in the tree.
+--max-adcl  The maximum ADCL that a solution can have.
+--algorithm  Which algorithm to use to prune leaves. Choices are 'greedy', 'full', 'force', and 'pam'. Default full.
+--all-adcls-file  If specified, write out a csv file containing every intermediate computed ADCL.
+--log  If specified with the full algorithm, write out a csv file containing solutions at every internal node.
+--always-include  If specified, the leaf names read from the provided file will not be trimmed.
+--leaf-mass  Fraction of mass to be distributed uniformly across leaves. Default 0.
+
+Details
+=======
+
+.. important::
+  ``rppr min_adcl`` Prints the labels of the leaves that should be **removed** from the tree, not those that should be kept.
+
+Chooses the set of *k* sequences *X* that minimize the average distance between each placement the closest sequence in *X*.
+
+You can read more in the announcement_ or the paper_.
+
+See :ref:`min_adcl_tree <rppr_min_adcl_tree>` for the same equivalent operation on a tree without placements.
+
+.. _announcement: http://matsen.fhcrc.org/general/2012/05/31/adcl-paper.html
+.. _paper: http://arxiv.org/abs/1205.6867

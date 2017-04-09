@@ -1,0 +1,28 @@
+:tocdepth: 3
+
+.. _guppy_rarefy:
+
+======
+rarefy
+======
+
+`rarefy` performs rarefaction on collections of placements.
+
+::
+
+  usage: rarefy [options] placefile
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--seed  Set the random seed, an integer > 0. Default is 1.
+-n  The number of pqueries to keep per placefile.
+--weight-as-count  Interpret (integer) weights on pqueries as counts and sample without replacement.
+
+Details
+=======
+
+Rarefaction *with replacement*, which is necessary because we allow floating point multiplicities.

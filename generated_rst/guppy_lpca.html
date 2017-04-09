@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>lpca &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="mcl" href="guppy_mcl.html" />
+    <link rel="prev" title="kr_heat" href="guppy_kr_heat.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_mcl.html" title="mcl"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_kr_heat.html" title="kr_heat"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">lpca</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_kr_heat.html"
+                        title="previous chapter">kr_heat</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_mcl.html"
+                        title="next chapter">mcl</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_lpca.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="lpca">
+<span id="guppy-lpca"></span><h1>lpca<a class="headerlink" href="#lpca" title="Permalink to this headline">¶</a></h1>
+<p><cite>lpca</cite> performs length principal components.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: lpca [options] placefiles
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames. Required.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--point-mass</span></kbd></td>
+<td>Treat every pquery as a point mass concentrated on the highest-weight placement.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pp</span></kbd></td>
+<td>Use posterior probability for the weight.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-c</span></kbd></td>
+<td>Reference package path.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--min-fat</span></kbd></td>
+<td>The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: 0.01</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--total-width</span></kbd></td>
+<td>Set the total pixel width for all of the branches of the tree. Default: 300</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--width-factor</span></kbd></td>
+<td>Override total-width by directly setting the number of pixels per unit of thing displayed.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--node-numbers</span></kbd></td>
+<td>Put the node numbers in where the bootstraps usually go.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--gray-black</span></kbd></td>
+<td>Use gray/black in place of red/blue to signify the sign of the coefficient for that edge.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--min-width</span></kbd></td>
+<td>Specify the minimum width for a branch to be colored and thickened. Default is 1.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--write-n</span></kbd></td>
+<td>The number of principal coordinates to calculate (default is 5).</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--som</span></kbd></td>
+<td>The number of dimensions to rotate for support overlap minimization(default is 0; options are 0, 2, 3).</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--scale</span></kbd></td>
+<td>Scale variances to one before performing principal components.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--symmv</span></kbd></td>
+<td>Use a complete eigendecomposition rather than power iteration.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--raw-eval</span></kbd></td>
+<td>Output the raw eigenvalue rather than the fraction of variance.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--kappa</span></kbd></td>
+<td>Specify the exponent for scaling between weighted and unweighted splitification. default: 1</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--rep-edges</span></kbd></td>
+<td>Cluster neighboring edges that have splitified euclidean distance less than the argument.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--epsilon</span></kbd></td>
+<td>The epsilon to use to determine if a split matrix&#8217;s column is constant for filtering. default: 1e-05</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p><em>This is an experimental feature. We are currently validating and writing a paper about it.</em></p>
+<p>Perform length principal components analysis (&#8220;length PCA&#8221;).
+Length PCA takes the special structure of phylogenetic placement data into account.
+Consequently, it is possible to visualize the principal component eigenvectors, and it can find consistent differences between samples which may not be so far apart in the tree.
+Length PCA is similar to <a class="reference internal" href="guppy_epca.html"><em>epca</em></a> but is invariant to edge subdivision on the reference tree where edge PCA is invariant to branch length.
+Running this command produces the following files for a run with out prefix set to <code class="docutils literal"><span class="pre">out</span></code>:</p>
+<dl class="docutils">
+<dt>out.trans</dt>
+<dd>The top eigenvalues (first column) then their corresponding eigenvectors.</dd>
+<dt>out.proj</dt>
+<dd>The samples projected into principal coordinate space.</dd>
+<dt>out.xml</dt>
+<dd>The eigenvectors visualized as fattened and colored trees.</dd>
+</dl>
+<p>The <code class="docutils literal"><span class="pre">--som</span></code> flag triggers a Support Overlap Minimization (SOM) rotation of the principal components. Setting this value to <code class="docutils literal"><span class="pre">n</span></code> triggers a rotation of the first n principal component vectors such that the overlap in support (non-zero vector entries) between the vectors is minimized. This can make the projections easier to interpret from a biological perspective, but care should be taken not to rotate noise into more meaningful components (a good rule of thumb is not to rotate vectors with less than 10% of the variance).</p>
+<p>Acceptable values are 0 (no rotation; the default), 2 or 3. Looking at the output from the non-rotated principal components can help you determine what is most appropriate here. If 2 or 3 are specified, the follows files will also be output:</p>
+<dl class="docutils">
+<dt>out.som</dt>
+<dd>The rotated eigenvectors and corresponding variance values.</dd>
+<dt>out.som.xml</dt>
+<dd>The rotated vectors visualized as fattened and colored trees.</dd>
+</dl>
+<p>See the <a class="reference internal" href="guppy_splitify.html"><em>splitify</em></a> documentation for information about the <code class="docutils literal"><span class="pre">--kappa</span></code> flag.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_mcl.html" title="mcl"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_kr_heat.html" title="kr_heat"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

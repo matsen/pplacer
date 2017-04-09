@@ -1,0 +1,44 @@
+:tocdepth: 3
+
+.. _guppy_fat:
+
+===
+fat
+===
+
+`fat` makes trees with edges fattened in proportion to the number of reads.
+
+::
+
+  usage: fat [options] placefile[s]
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--point-mass  Treat every pquery as a point mass concentrated on the highest-weight placement.
+--pp  Use posterior probability for the weight.
+-c  Reference package path.
+--min-fat  The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: 0.01
+--total-width  Set the total pixel width for all of the branches of the tree. Default: 300
+--width-factor  Override total-width by directly setting the number of pixels per unit of thing displayed.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+--average  Average all input placefiles together.
+--edpl  Specify the maximum EDPL for an EDPL tree.
+
+Details
+=======
+
+Given a list of place files, ``--average`` normalizes the mass in each, then
+takes the average of those masses to make an appropriately averaged fat tree
+for those place files.
+
+Expected Distance between Placement Locations (EDPL) values can be visualized
+on the tree by specifying a maximum value for the scale via the ``--edpl``
+flag. The scale is represented by 0 EDPL being white, going to red for the
+maximum value. When EDPL is above the specified maximum, the branch is colored
+yellow. When there are multiple placements on a given edge, their EDPL values
+are combined using a weighted average, where the weights are the values of the
+ML weight ratio or posterior probability.

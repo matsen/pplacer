@@ -1,0 +1,24 @@
+:tocdepth: 3
+
+.. _rppr_info:
+
+====
+info
+====
+
+`info` gives information about a reference package.
+
+::
+
+  usage: info -c my.refpkg
+
+Options
+=======
+
+-c  Reference package path. Required.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--csv  Output the results as csv instead of a padded matrix.
+--taxonomic  Show by-rank taxonomic information
+

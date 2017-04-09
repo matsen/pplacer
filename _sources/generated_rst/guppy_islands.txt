@@ -1,0 +1,31 @@
+:tocdepth: 3
+
+.. _guppy_islands:
+
+=======
+islands
+=======
+
+`islands` finds the mass islands of one or more pqueries.
+
+::
+
+  usage: islands [options] placefile[s]
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--pp  Use posterior probability for the weight.
+--discard-below  Ignore pquery locations with a mass less than the specified value.
+
+Details
+=======
+
+Say that two pqueries overlap if there is an edge such that the two pqueries both put mass on that edge.
+Define the overlap graph to be the graph with nodes being pqueries and edges signifying overlap.
+Call the connected components of the overlap graph *islands*.
+
+That is, islands are maximal sets of pqueries with no edge-mass overlap between sets.

@@ -1,0 +1,25 @@
+:tocdepth: 3
+
+.. _guppy_error:
+
+=====
+error
+=====
+
+`error` finds the error between two placefiles.
+
+::
+
+  usage: error [options] experimental.jplace expected.jplace
+
+Options
+=======
+
+--pp  Use posterior probability for the weight.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--csv  Output the results as csv instead of a padded matrix.
+--include-pendant  Include pendant branch lengths in distance calculations.
+--scale-experimental-bl  Scale the branch lengths in the experimental jplace file.
+

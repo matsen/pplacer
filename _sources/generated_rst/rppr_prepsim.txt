@@ -1,0 +1,22 @@
+:tocdepth: 3
+
+.. _rppr_prepsim:
+
+=======
+prepsim
+=======
+
+`prepsim` makes a simulation by taking out taxids and turning them into fake placements.
+
+::
+
+  usage: prepsim [options] -c my.refpkg
+
+Options
+=======
+
+-c  Reference package path. Required.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames. Required.
+-r  Comma-delimited list of tax_ids to prune.
+

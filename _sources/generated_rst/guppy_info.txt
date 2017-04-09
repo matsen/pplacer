@@ -1,0 +1,22 @@
+:tocdepth: 3
+
+.. _guppy_info:
+
+====
+info
+====
+
+`info` writes the number of leaves of the reference tree and the number of pqueries.
+
+::
+
+  usage: info [options] placefile[s]
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--csv  Output the results as csv instead of a padded matrix.
+

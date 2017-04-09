@@ -1,0 +1,43 @@
+:tocdepth: 3
+
+.. _guppy_heat:
+
+====
+heat
+====
+
+`heat` maps an an arbitrary vector of the correct length to the tree.
+
+::
+
+  usage: heat -o my.xml -c my.refpkg matrix.csv
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+-c  Reference package path. Required.
+--min-fat  The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: 0.01
+--total-width  Set the total pixel width for all of the branches of the tree. Default: 300
+--width-factor  Override total-width by directly setting the number of pixels per unit of thing displayed.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+--gray-black  Use gray/black in place of red/blue to signify the sign of the coefficient for that edge.
+--min-width  Specify the minimum width for a branch to be colored and thickened. Default is 1.
+
+Details
+=======
+
+Makes
+
+For example, given a tree like so::
+
+((A:2{0},B:9{1}):7{2},C:5{3},D:1{4}):0{5};
+
+and a CSV line::
+
+"test",0,3,0,0,-6,1
+
+this command run with a total width of 300 will put width 90 in red on the edge leading to B, width 180 in blue on the edge leading to D, and width 30 in red on the root edge.
+

@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>fat &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="filter" href="guppy_filter.html" />
+    <link rel="prev" title="error" href="guppy_error.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_filter.html" title="filter"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_error.html" title="error"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">fat</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_error.html"
+                        title="previous chapter">error</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_filter.html"
+                        title="next chapter">filter</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_fat.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="fat">
+<span id="guppy-fat"></span><h1>fat<a class="headerlink" href="#fat" title="Permalink to this headline">¶</a></h1>
+<p><cite>fat</cite> makes trees with edges fattened in proportion to the number of reads.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: fat [options] placefile[s]
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-o</span></kbd></td>
+<td>Specify the filename to write to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--point-mass</span></kbd></td>
+<td>Treat every pquery as a point mass concentrated on the highest-weight placement.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pp</span></kbd></td>
+<td>Use posterior probability for the weight.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-c</span></kbd></td>
+<td>Reference package path.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--min-fat</span></kbd></td>
+<td>The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: 0.01</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--total-width</span></kbd></td>
+<td>Set the total pixel width for all of the branches of the tree. Default: 300</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--width-factor</span></kbd></td>
+<td>Override total-width by directly setting the number of pixels per unit of thing displayed.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--node-numbers</span></kbd></td>
+<td>Put the node numbers in where the bootstraps usually go.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--average</span></kbd></td>
+<td>Average all input placefiles together.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--edpl</span></kbd></td>
+<td>Specify the maximum EDPL for an EDPL tree.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>Given a list of place files, <code class="docutils literal"><span class="pre">--average</span></code> normalizes the mass in each, then
+takes the average of those masses to make an appropriately averaged fat tree
+for those place files.</p>
+<p>Expected Distance between Placement Locations (EDPL) values can be visualized
+on the tree by specifying a maximum value for the scale via the <code class="docutils literal"><span class="pre">--edpl</span></code>
+flag. The scale is represented by 0 EDPL being white, going to red for the
+maximum value. When EDPL is above the specified maximum, the branch is colored
+yellow. When there are multiple placements on a given edge, their EDPL values
+are combined using a weighted average, where the weights are the values of the
+ML weight ratio or posterior probability.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_filter.html" title="filter"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_error.html" title="error"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

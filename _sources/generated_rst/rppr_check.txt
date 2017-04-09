@@ -1,0 +1,19 @@
+:tocdepth: 3
+
+.. _rppr_check:
+
+=====
+check
+=====
+
+`check` checks a reference package.
+
+::
+
+  usage: check -c my.refpkg
+
+Options
+=======
+
+-c  Reference package path. Required.
+

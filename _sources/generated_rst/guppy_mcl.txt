@@ -1,0 +1,30 @@
+:tocdepth: 3
+
+.. _guppy_mcl:
+
+===
+mcl
+===
+
+`mcl` cluster pqueries using Markov clustering via MCL.
+
+::
+
+  usage: mcl [options] placefile
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--csv  Output the results as csv instead of a padded matrix.
+--pp  Use posterior probability for the weight.
+--inflation  If specified, pass this as the inflation value to MCL.
+
+Details
+=======
+
+Markov clustering done via the Markov Clustering Library `MCL`_ on the overlap graph (see the :doc:`guppy_ograph` documentation for information about the overlap graph).
+
+.. _MCL: http://micans.org/mcl/

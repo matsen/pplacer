@@ -1,0 +1,20 @@
+:tocdepth: 3
+
+.. _guppy_demulti:
+
+=======
+demulti
+=======
+
+`demulti` splits apart placements with multiplicity, undoing a round procedure.
+
+::
+
+  usage: demulti [options] placefile[s]
+
+Options
+=======
+
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+

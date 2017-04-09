@@ -1,0 +1,44 @@
+:tocdepth: 3
+
+.. _guppy_mft:
+
+===
+mft
+===
+
+`mft` Multi-Filter and Transform placefiles.
+
+::
+
+  usage: mft [options] placefile[s]
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--unitize  Make total unit mass per placerun by multiplying with a scalar.
+--transform  A transform to apply to the read multiplicities before calculating. Options are 'log', 'unit', 'asinh', and 'no_trans'. Default is no transform.
+--leaf-values  Name of CSV file giving values for the leaves of the tree to use in independent contrasts.
+
+Details
+=======
+
+
+This is the power tool for splitting apart place files and applying mass
+transforms.
+
+If either the ``--transform`` or ``--unitize`` flags are specified, then the
+resulting placefiles will have mass instead of a name list. Otherwise, the
+output placefiles will have either mass or a name list depending on what the
+input placefiles had.
+
+To do nothing but transform the input placefiles to placefiles with mass
+instead of a name list, specify ``--transform no_trans``.
+
+One can use the ``--leaf-values`` flag to correct for copy number. This flag
+runs the internals of :doc:`guppy_indep_c` and then divides the masses of the
+placements by the inferred value, which can be copy number if you supply
+``--leaf-values`` with a CSV file of copy numbers for reference sequences.
+

@@ -1,0 +1,23 @@
+:tocdepth: 3
+
+.. _guppy_to_rdp:
+
+======
+to_rdp
+======
+
+`to_rdp` convert a reference package to a format RDP wants.
+
+::
+
+  usage: to_rdp -c my.refpkg -o prefix
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames. Required.
+-c  Reference package path. Required.
+-r  Ranks to include in the annotated fasta file. Can be comma-separated.
+

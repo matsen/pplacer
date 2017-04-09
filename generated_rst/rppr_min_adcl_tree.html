@@ -1,0 +1,194 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>min_adcl_tree &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="rppr" href="rppr.html" />
+    <link rel="next" title="pdprune" href="rppr_pdprune.html" />
+    <link rel="prev" title="min_adcl" href="rppr_min_adcl.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="rppr_pdprune.html" title="pdprune"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="rppr_min_adcl.html" title="min_adcl"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="rppr.html" accesskey="U">rppr</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">min_adcl_tree</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="rppr_min_adcl.html"
+                        title="previous chapter">min_adcl</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="rppr_pdprune.html"
+                        title="next chapter">pdprune</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/rppr_min_adcl_tree.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="min-adcl-tree">
+<span id="rppr-min-adcl-tree"></span><h1>min_adcl_tree<a class="headerlink" href="#min-adcl-tree" title="Permalink to this headline">¶</a></h1>
+<p><cite>min_adcl_tree</cite> finds a good collection of sequences to cut from a tree.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: min_adcl_tree [options] newick.tre
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-o</span></kbd></td>
+<td>Specify the filename to write to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--no-csv</span></kbd></td>
+<td>Output the results as a padded matrix instead of csv.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--node-numbers</span></kbd></td>
+<td>Put the node numbers in where the bootstraps usually go.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--seed</span></kbd></td>
+<td>Set the random seed, an integer &gt; 0. Default is 1.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-v</span></kbd></td>
+<td>If specified, write progress output to stderr.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-t</span></kbd></td>
+<td>If specified, the path to write the trimmed tree to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--leaves</span></kbd></td>
+<td>The maximum number of leaves to keep in the tree.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--max-adcl</span></kbd></td>
+<td>The maximum ADCL that a solution can have.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--algorithm</span></kbd></td>
+<td>Which algorithm to use to prune leaves. Choices are &#8216;greedy&#8217;, &#8216;full&#8217;, &#8216;force&#8217;, and &#8216;pam&#8217;. Default full.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--all-adcls-file</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If specified, write out a csv file containing every intermediate computed ADCL.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--log</span></kbd></td>
+<td>If specified with the full algorithm, write out a csv file containing solutions at every internal node.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--always-include</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>If specified, the leaf names read from the provided file will not be trimmed.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--query-seqs</span></kbd></td>
+<td>A comma-separated list of leaves to turn into query sequences.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last"><code class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl_tree</span></code> Prints the labels of the leaves that should be <strong>removed</strong> from the tree, not those that should be kept.</p>
+</div>
+<p><code class="docutils literal"><span class="pre">min_adcl_tree</span></code> chooses the set of <em>k</em> sequences <em>X</em> that minimize the average distance from each pruned sequence to the closest sequence in <em>X</em>.</p>
+<p>You can read more in the <a class="reference external" href="http://matsen.fhcrc.org/general/2012/05/31/adcl-paper.html">announcement</a> or the <a class="reference external" href="http://arxiv.org/abs/1205.6867">paper</a>.</p>
+<p>See <a class="reference internal" href="rppr_min_adcl.html#rppr-min-adcl"><span>min_adcl_tree</span></a> for the same equivalent operation on a tree with placements.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="rppr_pdprune.html" title="pdprune"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="rppr_min_adcl.html" title="min_adcl"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="rppr.html" >rppr</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

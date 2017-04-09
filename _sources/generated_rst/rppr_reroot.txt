@@ -1,0 +1,22 @@
+:tocdepth: 3
+
+.. _rppr_reroot:
+
+======
+reroot
+======
+
+`reroot` reroots a given reference package in place.
+
+::
+
+  usage: reroot -c my.refpkg
+
+Options
+=======
+
+-c  Reference package path. Required.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+

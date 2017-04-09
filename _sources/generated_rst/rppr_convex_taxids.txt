@@ -1,0 +1,23 @@
+:tocdepth: 3
+
+.. _rppr_convex_taxids:
+
+=============
+convex_taxids
+=============
+
+`convex_taxids` determines convex tax_ids per-rank in a refpkg.
+
+::
+
+  usage: convex_taxids -c my.refpkg
+
+Options
+=======
+
+-c  Reference package path. Required.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--no-csv  Output the results as a padded matrix instead of csv.
+

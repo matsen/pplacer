@@ -1,0 +1,18 @@
+:tocdepth: 3
+
+.. _guppy_check:
+
+=====
+check
+=====
+
+`check` checks placefiles for common problems.
+
+::
+
+  usage: check [options] placefile[s]
+
+Options
+=======
+
+

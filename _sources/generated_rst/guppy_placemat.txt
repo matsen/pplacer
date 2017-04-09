@@ -1,0 +1,24 @@
+:tocdepth: 3
+
+.. _guppy_placemat:
+
+========
+placemat
+========
+
+`placemat` prints out a pairwise distance matrix between placements.
+
+::
+
+  usage: placemat [options] placefile
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--csv  Output the results as csv instead of a padded matrix.
+--point-mass  Treat every pquery as a point mass concentrated on the highest-weight placement.
+--pp  Use posterior probability for the weight.
+

@@ -1,0 +1,70 @@
+:tocdepth: 3
+
+.. _guppy_epca:
+
+====
+epca
+====
+
+`epca` performs edge principal components.
+
+::
+
+  usage: epca [options] placefiles
+
+Options
+=======
+
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames. Required.
+--point-mass  Treat every pquery as a point mass concentrated on the highest-weight placement.
+--pp  Use posterior probability for the weight.
+-c  Reference package path.
+--min-fat  The minimum branch length for fattened edges (to increase their visibility). To turn off set to 0. Default: 0.01
+--total-width  Set the total pixel width for all of the branches of the tree. Default: 300
+--width-factor  Override total-width by directly setting the number of pixels per unit of thing displayed.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+--gray-black  Use gray/black in place of red/blue to signify the sign of the coefficient for that edge.
+--min-width  Specify the minimum width for a branch to be colored and thickened. Default is 1.
+--write-n  The number of principal coordinates to calculate (default is 5).
+--som  The number of dimensions to rotate for support overlap minimization(default is 0; options are 0, 2, 3).
+--scale  Scale variances to one before performing principal components.
+--symmv  Use a complete eigendecomposition rather than power iteration.
+--raw-eval  Output the raw eigenvalue rather than the fraction of variance.
+--kappa  Specify the exponent for scaling between weighted and unweighted splitification. default: 1
+--rep-edges  Cluster neighboring edges that have splitified euclidean distance less than the argument.
+--epsilon  The epsilon to use to determine if a split matrix's column is constant for filtering. default: 1e-05
+
+Details
+=======
+
+Perform `edge principal components`_ analysis ("edge PCA").
+Edge PCA takes the special structure of phylogenetic placement data into account.
+Consequently, it is possible to visualize_ the principal component eigenvectors, and it can find consistent differences between samples which may not be so far apart in the tree.
+
+Running this command produces the following files for a run with out prefix set to ``out``:
+
+out.trans
+  The top eigenvalues (first column) then their corresponding eigenvectors.
+
+out.proj
+  The samples projected into principal coordinate space.
+
+out.xml
+  The eigenvectors visualized as fattened and colored trees.
+
+The ``--som`` flag triggers a Support Overlap Minimization (SOM) rotation of the principal components. Setting this value to ``n`` triggers a rotation of the first n principal component vectors such that the overlap in support (non-zero vector entries) between the vectors is minimized. This can make the projections easier to interpret from a biological perspective, but care should be taken not to rotate noise into more meaningful components (a good rule of thumb is not to rotate vectors with less than 10% of the variance).
+
+Acceptable values are 0 (no rotation; the default), 2 or 3. Looking at the output from the non-rotated principal components can help you determine what is most appropriate here. If 2 or 3 are specified, the follows files will also be output:
+
+out.som
+  The rotated eigenvectors and corresponding variance values.
+
+out.som.xml
+  The rotated vectors visualized as fattened and colored trees.
+
+
+See the :doc:`guppy_splitify` documentation for information about the ``--kappa`` flag.
+
+.. _visualize: http://matsen.fhcrc.org/pplacer/demo/pca.html
+.. _edge principal components: http://arxiv.org/abs/1107.5095

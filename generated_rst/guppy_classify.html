@@ -1,0 +1,305 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>classify &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="compress" href="guppy_compress.html" />
+    <link rel="prev" title="check" href="guppy_check.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_compress.html" title="compress"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_check.html" title="check"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">classify</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+<li><a class="reference internal" href="#classifiers">Classifiers</a></li>
+<li><a class="reference internal" href="#sqlite">Sqlite</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_check.html"
+                        title="previous chapter">check</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_compress.html"
+                        title="next chapter">compress</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_classify.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="classify">
+<span id="guppy-classify"></span><h1>classify<a class="headerlink" href="#classify" title="Permalink to this headline">¶</a></h1>
+<p><cite>classify</cite> outputs classification information in SQLite format.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: classify [options] placefile[s]
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-c</span></kbd></td>
+<td>Reference package path. Required.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--sqlite</span></kbd></td>
+<td>Specify the database file to use. Required.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--seed</span></kbd></td>
+<td>Set the random seed, an integer &gt; 0. Default is 1.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--classifier</span></kbd></td>
+<td>Which classifier to use, out of &#8216;pplacer&#8217;, &#8216;nbc&#8217;, &#8216;hybrid2&#8217;, &#8216;hybrid5&#8217; or &#8216;rdp&#8217;. default: pplacer</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--cutoff</span></kbd></td>
+<td>The default value for the likelihood_cutoff param. Default: 0.90</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--bayes-cutoff</span></kbd></td>
+<td>The default value for the bayes_cutoff param. Default: 1.00</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--multiclass-min</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The default value for the multiclass_min param. Default: 0.20</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bootstrap-cutoff</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The default value for the bootstrap_cutoff param. Default: 0.80</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--bootstrap-extension-cutoff</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The default value for the bootstrap_cutoff param. Default: 0.40</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pp</span></kbd></td>
+<td>Use posterior probability for our criteria in the pplacer classifier.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--tax-median-identity-from</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Calculate the median identity for each sequence per-tax_id from the specified alignment.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--mrca-class</span></kbd></td>
+<td>Classify against a placefile that was generated with MRCA classification</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--nbc-sequences</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The query sequences to use for the NBC classifier. Can be specified multiple times for multiple inputs.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--word-length</span></kbd></td>
+<td>The length of the words used for NBC classification. default: 8</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--nbc-rank</span></kbd></td>
+<td>The desired most specific rank for NBC classification. &#8216;all&#8217; puts each sequence in the classifier at every rank of its lineage. default: genus</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--n-boot</span></kbd></td>
+<td>The number of times to bootstrap a sequence with the NBC classifier. 0 = no bootstrap. default: 100</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-j</span></kbd></td>
+<td>The number of processes to spawn to do NBC classification. default: 2</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--no-pre-mask</span></kbd></td>
+<td>Don&#8217;t pre-mask the sequences for NBC classification.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--nbc-counts</span></kbd></td>
+<td>Read/write NBC k-mer counts to the given file. File cannot be NFS mounted.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--nbc-as-rdp</span></kbd></td>
+<td>Do NBC classification like RDP: find the lineage of the full-sequence classification, then bootstrap to find support for it.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--rdp-results</span></kbd></td>
+<td>The RDP results file for use with the RDP classifier. Can be specified multiple times for multiple inputs.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--blast-results</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>The BLAST results file for use with the BLAST classifier. Can be specified multiple times for multiple inputs.</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--no-random-tie-break</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td>Take the first NBC hit even if there are others that are equally good.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>This subcommand outputs the classifications made by pplacer in a database.</p>
+<p><em>The classifications made by the current implementation of pplacer are done with a simple, root-dependent algorithm.
+We are currently working on improved algorithms.</em>
+For best results, first taxonomically root the tree in your reference package (so that the root of the tree corresponds to the &#8220;deepest&#8221; evolutionary event according to the taxonomy).
+This can be done automatically the <cite>taxit reroot</cite> command in taxtastic.
+(Note that as of 27 May 2011, this requires the dev version of biopython available on github.)</p>
+<p>The classifications are simply done by containment.
+Say clade <em>A</em> of the reference tree is the smallest such that contains a given placement.
+The most specific classification for that read will be the lowest common ancestor of the taxonomic classifications for the leaves of <em>A</em>.
+If the desired classification is more specific than that, then we get a disconnect between the desired and the actual classification.
+For example, if we try to classify at the species level and the clade LCA is a genus, then we will get a genus name.
+If there is uncertainty in read placement, then there is uncertainty in classification.</p>
+</div>
+<div class="section" id="classifiers">
+<h2>Classifiers<a class="headerlink" href="#classifiers" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code> has a variety of classifiers.</p>
+<dl class="glossary docutils">
+<dt id="term-pplacer">pplacer</dt>
+<dd><p class="first">Takes placefiles as input and classifies using the method described
+above.</p>
+<p class="last">When refining classifications for the <code class="docutils literal"><span class="pre">multiclass</span></code> table, first, all of
+the classifications with a likelihood of less than the value of
+<code class="docutils literal"><span class="pre">--multiclass-cutoff</span></code> are discarded. Next, if the value for
+<code class="docutils literal"><span class="pre">--bayes-cutoff</span></code> is nonzero, ranks below the most specific rank with
+bayes factor evidence greater than or equal to that cutoff are discarded.
+Otherwise, the likelihoods of remaining classifications are summed
+per-rank, and ranks with a likelihood sum of less than <code class="docutils literal"><span class="pre">--cutoff</span></code> are
+discarded.</p>
+</dd>
+<dt id="term-nbc">nbc</dt>
+<dd><p class="first">Takes sequences via the <code class="docutils literal"><span class="pre">--nbc-sequences</span></code> flag and classifies them with
+a naive bayes classifier.</p>
+<p>The input sequences must be an alignment by default, either aligned to
+the reference sequences or include an alignment of the reference
+sequences (in the same manner pplacer does). If the <code class="docutils literal"><span class="pre">--no-pre-mask</span></code>
+flag is specified, the input sequences may be unaligned, and must not
+also contain reference sequences.</p>
+<p class="last">When refining classifications for the <code class="docutils literal"><span class="pre">multiclass</span></code> table, for each
+rank, the best classification with a bootstrap above the value of
+<code class="docutils literal"><span class="pre">--bootstrap-cutoff</span></code> is selected. Ranks with no such classifications
+are discarded.</p>
+</dd>
+<dt id="term-rdp">rdp</dt>
+<dd><p class="first">Takes the output of Mothur&#8217;s <a class="reference external" href="http://www.mothur.org/wiki/Classify.seqs">classify.seqs</a> via the <code class="docutils literal"><span class="pre">--rdp-results</span></code>
+flag and inserts the classifications into the database. This should be
+the <code class="docutils literal"><span class="pre">.taxonomy</span></code> file.</p>
+<p class="last">Refinement for <code class="docutils literal"><span class="pre">multiclass</span></code> is done the same as for <a class="reference internal" href="#term-nbc"><span class="xref std std-term">nbc</span></a>.</p>
+</dd>
+<dt id="term-blast">blast</dt>
+<dd><p class="first">Takes the output of <a class="reference external" href="http://www.ncbi.nlm.nih.gov/books/NBK1763/">BLAST</a> via the <code class="docutils literal"><span class="pre">--blast-results</span></code> flag and inserts
+the classifications into the database. The output must be in outfmt 6.</p>
+<p class="last">Refinement for <code class="docutils literal"><span class="pre">multiclass</span></code> is done the same as for <a class="reference internal" href="#term-nbc"><span class="xref std std-term">nbc</span></a>.</p>
+</dd>
+<dt id="term-hybrid">hybrid</dt>
+<dd>Still in flux.</dd>
+</dl>
+</div>
+<div class="section" id="sqlite">
+<h2>Sqlite<a class="headerlink" href="#sqlite" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code> writes its output into a sqlite3 database. The argument to
+the <code class="docutils literal"><span class="pre">--sqlite</span></code> flag is the sqlite3 database into which the results should be
+put. This database must have first been intialized using <a class="reference internal" href="rppr_prep_db.html#rppr-prep-db"><span>rppr prep_db</span></a>.</p>
+<p>The following tables are populated by <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code>:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">runs</span></code> &#8211; describes each separate invocation of <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code>; exactly
+one row will be added for each invocation.</li>
+<li><code class="docutils literal"><span class="pre">placements</span></code> &#8211; describes groups of sequences. Each row will represent one
+or more sequences and indicate which classifier was used.</li>
+<li><code class="docutils literal"><span class="pre">placement_names</span></code> &#8211; indicates which sequences are in this group of
+sequences and where each sequence came from.</li>
+<li><code class="docutils literal"><span class="pre">placement_classifications</span></code> &#8211; indicates tax_id and likelihood for the
+<a class="reference internal" href="#term-pplacer"><span class="xref std std-term">pplacer</span></a> and <a class="reference internal" href="#term-hybrid"><span class="xref std std-term">hybrid</span></a> classifiers.</li>
+<li><code class="docutils literal"><span class="pre">placement_evidence</span></code> &#8211; indicates bayes factor evidence for the
+<a class="reference internal" href="#term-pplacer"><span class="xref std std-term">pplacer</span></a> and <a class="reference internal" href="#term-hybrid"><span class="xref std std-term">hybrid</span></a> classifiers.</li>
+<li><code class="docutils literal"><span class="pre">placement_position</span></code> &#8211; indicates placement position for the
+<a class="reference internal" href="#term-pplacer"><span class="xref std std-term">pplacer</span></a> and <a class="reference internal" href="#term-hybrid"><span class="xref std std-term">hybrid</span></a> classifiers.</li>
+<li><code class="docutils literal"><span class="pre">placement_median_identities</span></code> &#8211; indicates sequence median percent identity
+for the <a class="reference internal" href="#term-pplacer"><span class="xref std std-term">pplacer</span></a> and <a class="reference internal" href="#term-hybrid"><span class="xref std std-term">hybrid</span></a> classifiers when run with the
+<code class="docutils literal"><span class="pre">--tax-median-identity-from</span></code> flag.</li>
+<li><code class="docutils literal"><span class="pre">placement_nbc</span></code> &#8211; indicates tax_id and bootstrap value for the
+<a class="reference internal" href="#term-nbc"><span class="xref std std-term">nbc</span></a>, <a class="reference internal" href="#term-rdp"><span class="xref std std-term">rdp</span></a>, <a class="reference internal" href="#term-blast"><span class="xref std std-term">blast</span></a>, and <a class="reference internal" href="#term-hybrid"><span class="xref std std-term">hybrid</span></a> classifiers.</li>
+<li><code class="docutils literal"><span class="pre">multiclass</span></code> &#8211; indicates the best classification and rank of
+classification from any classifier for a given sequence name and desired rank
+of classification. There might be multiple classifications for a particular
+sequence and desired rank, but only when using the <a class="reference internal" href="#term-pplacer"><span class="xref std std-term">pplacer</span></a> or
+<a class="reference internal" href="#term-hybrid"><span class="xref std std-term">hybrid</span></a> classifiers.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_compress.html" title="compress"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_check.html" title="check"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+:tocdepth: 3
+
+.. _guppy_ograph:
+
+======
+ograph
+======
+
+`ograph` finds the overlap graph of one or more pqueries.
+
+::
+
+  usage: ograph [options] placefile
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--pp  Use posterior probability for the weight.
+
+Details
+=======
+
+The overlap of a pair of pqueries is defined to be the inner product of their
+likelihood weight ratios (or posterior probabilities) as indexed by tree edges.
+
+This subcommand outputs all nonzero overlaps between pqueries in the form::
+
+    pquery_1 pquery_2 inner_product
+
+which is a specification of the weighted edges of a graph with pqueries as vertices.

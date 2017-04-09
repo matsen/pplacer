@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>mft &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="ograph" href="guppy_ograph.html" />
+    <link rel="prev" title="merge" href="guppy_merge.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_ograph.html" title="ograph"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_merge.html" title="merge"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">mft</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_merge.html"
+                        title="previous chapter">merge</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_ograph.html"
+                        title="next chapter">ograph</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_mft.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="mft">
+<span id="guppy-mft"></span><h1>mft<a class="headerlink" href="#mft" title="Permalink to this headline">¶</a></h1>
+<p><cite>mft</cite> Multi-Filter and Transform placefiles.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: mft [options] placefile[s]
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-o</span></kbd></td>
+<td>Specify the filename to write to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--unitize</span></kbd></td>
+<td>Make total unit mass per placerun by multiplying with a scalar.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--transform</span></kbd></td>
+<td>A transform to apply to the read multiplicities before calculating. Options are &#8216;log&#8217;, &#8216;unit&#8217;, &#8216;asinh&#8217;, and &#8216;no_trans&#8217;. Default is no transform.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--leaf-values</span></kbd></td>
+<td>Name of CSV file giving values for the leaves of the tree to use in independent contrasts.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>This is the power tool for splitting apart place files and applying mass
+transforms.</p>
+<p>If either the <code class="docutils literal"><span class="pre">--transform</span></code> or <code class="docutils literal"><span class="pre">--unitize</span></code> flags are specified, then the
+resulting placefiles will have mass instead of a name list. Otherwise, the
+output placefiles will have either mass or a name list depending on what the
+input placefiles had.</p>
+<p>To do nothing but transform the input placefiles to placefiles with mass
+instead of a name list, specify <code class="docutils literal"><span class="pre">--transform</span> <span class="pre">no_trans</span></code>.</p>
+<p>One can use the <code class="docutils literal"><span class="pre">--leaf-values</span></code> flag to correct for copy number. This flag
+runs the internals of <a class="reference internal" href="guppy_indep_c.html"><em>indep_c</em></a> and then divides the masses of the
+placements by the inferred value, which can be copy number if you supply
+<code class="docutils literal"><span class="pre">--leaf-values</span></code> with a CSV file of copy numbers for reference sequences.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_ograph.html" title="ograph"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_merge.html" title="merge"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

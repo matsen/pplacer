@@ -1,8 +1,0 @@
-csv.1.2.2
-ounit.1.1.2
-xmlm.1.1.1
-mcl.12-068oasis4
-batteries.2.1.0
-ocaml-gsl.0.6.3
-sqlite3.1.6.3
-camlzip.1.05

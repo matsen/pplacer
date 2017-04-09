@@ -1,0 +1,54 @@
+:tocdepth: 3
+
+.. _rppr_convexify:
+
+=========
+convexify
+=========
+
+`convexify` identifies minimal leaf set to cut for taxonomic concordance.
+
+::
+
+  usage: convexify [-c my.refpkg | --tree my.tre --colors my.csv]
+
+Options
+=======
+
+-c  Reference package path. Required.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+--tree  A tree file in newick format to work on in place of a reference package.
+--colors  A CSV file of the colors on the tree supplied with --tree.
+-t  If specified, the path to write the discordance tree to.
+--cut-seqs  If specified, the path to write a CSV file of cut sequences per-rank to.
+--alternates  If specified, the path to write a CSV file of alternate colors per-sequence to.
+--check-all-ranks  When determining alternate colors, check all ranks instead of the least recent uncut rank.
+--all-alternates  When determining alternate colors, ignore the taxononomy and show all alternates.
+--cutoff  Any trees with a maximum badness over this value are skipped. Default: 12.
+--limit-rank  If specified, only convexify at the given ranks. Ranks are given as a comma-delimited list of names.
+--timing  If specified, save timing information for solved trees to a CSV file.
+--rooted  Strictly evaluate convexity; ensure that each color sits in its own rooted subtree.
+--naive  Use the naive convexify algorithm.
+--no-early  Don't terminate early when convexifying.
+
+Details
+=======
+
+
+``convexify`` applies an exact dynamic program to identify leaves of a phylogenetic tree that don't agree with their taxonomic labels.
+You can read more in the announcement_ or the paper_.
+
+You can either specify a reference package or a tree and a CSV file of colors.
+The CSV file is formatted as follows::
+
+  leaf_name1,color1
+  leaf_name2,color2
+
+where the colors are just strings.
+
+Note that ``--no-early`` and ``--naive`` don't change the results.
+They just (much) run more slowly for all but the most trivial problems.
+
+
+.. _announcement: http://matsen.fhcrc.org/general/2011/09/27/convexify.html
+.. _paper: http://arxiv.org/abs/1109.5423

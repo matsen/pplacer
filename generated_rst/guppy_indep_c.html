@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>indep_c &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="info" href="guppy_info.html" />
+    <link rel="prev" title="heat" href="guppy_heat.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_info.html" title="info"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_heat.html" title="heat"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">indep_c</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_heat.html"
+                        title="previous chapter">heat</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_info.html"
+                        title="next chapter">info</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_indep_c.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="indep-c">
+<span id="guppy-indep-c"></span><h1>indep_c<a class="headerlink" href="#indep-c" title="Permalink to this headline">¶</a></h1>
+<p><cite>indep_c</cite> calculates the independent contrasts of pqueries.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: indep_c [options] placefile[s]
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--pp</span></kbd></td>
+<td>Use posterior probability for the weight.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">-o</span></kbd></td>
+<td>Specify the filename to write to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--csv</span></kbd></td>
+<td>Output the results as csv instead of a padded matrix.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--leaf-values</span></kbd></td>
+<td>Name of CSV file giving values for the leaves of the tree.</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>This is an implementation of the &#8220;independent contrasts&#8221; method of <a class="reference external" href="http://www.jstor.org/discover/10.2307/2461605">(Felsenstein, 1985)</a>.</p>
+<p>Assume we have the following pair of placements on a simple tree:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span><span class="s">&quot;tree&quot;</span><span class="p">:</span> <span class="s">&quot;((A:2{0},B:9{1}):7{2},C:5{3},D:1{4}):0{5};&quot;</span><span class="p">,</span> <span class="s">&quot;placements&quot;</span><span class="p">:</span>
+  <span class="p">[{</span><span class="s">&quot;p&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1309.83</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">]],</span> <span class="s">&quot;n&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;read1&quot;</span><span class="p">]},</span>
+    <span class="p">{</span><span class="s">&quot;p&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mf">1309.83</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">10</span><span class="p">]],</span> <span class="s">&quot;n&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s">&quot;read2&quot;</span><span class="p">]}</span>
+  <span class="p">],</span> <span class="s">&quot;version&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s">&quot;fields&quot;</span><span class="p">:</span>
+  <span class="p">[</span><span class="s">&quot;edge_num&quot;</span><span class="p">,</span> <span class="s">&quot;likelihood&quot;</span><span class="p">,</span> <span class="s">&quot;like_weight_ratio&quot;</span><span class="p">,</span> <span class="s">&quot;distal_length&quot;</span><span class="p">,</span>
+    <span class="s">&quot;pendant_length&quot;</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>And that <code class="docutils literal"><span class="pre">ic.csv</span></code> is a (possibly partial) list of tip values as follows:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">A</span><span class="p">,</span><span class="mi">3</span>
+<span class="n">B</span><span class="p">,</span><span class="mi">0</span>
+<span class="n">D</span><span class="p">,</span><span class="mi">1</span>
+</pre></div>
+</div>
+<p>Then, a run of <code class="docutils literal"><span class="pre">indep_c</span></code> will give you the maximum likelihood values of
+values at the tips assuming that the value changes by Brownian motion:</p>
+<div class="highlight-python"><div class="highlight"><pre>rhino2 ~/ic » guppy indep_c --leaf-values ic.csv ex.jplace
+sequence         x
+   read1   2.60377
+   read2  0.490566
+</pre></div>
+</div>
+<p>Note that <a class="reference internal" href="guppy_mft.html"><em>mft</em></a> has the <code class="docutils literal"><span class="pre">--leaf-values</span></code> option to divide the placement weights by these inferred values.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_info.html" title="info"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_heat.html" title="heat"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

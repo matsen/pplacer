@@ -1,0 +1,28 @@
+:tocdepth: 3
+
+.. _rppr_pdprune:
+
+=======
+pdprune
+=======
+
+`pdprune` prunes the tree to maximize PD.
+
+::
+
+  usage: pdprune [options] tree
+
+Options
+=======
+
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--csv  Output the results as csv instead of a padded matrix.
+--cutoff  Specify the maximum branch length to be trimmed.
+--leaves  Specify the maximum number of leaves to leave un-trimmed.
+--names-only  Only split out a list of names, rather than names and PD decrease.
+--unsafe  Don't perform internal checks.
+--never-prune-from  Provide a file containing sequence names that will not be pruned.
+--never-prune-regex-from  Provide a file containing regular expressions; sequence names matching one of these will not be pruned.
+

@@ -1,0 +1,175 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>splitify &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     'v1.1.alpha19-4-g1189285',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="up" title="guppy" href="guppy.html" />
+    <link rel="next" title="squash" href="guppy_squash.html" />
+    <link rel="prev" title="sing" href="guppy_sing.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="guppy_squash.html" title="squash"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="guppy_sing.html" title="sing"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" accesskey="U">guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">splitify</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#details">Details</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="guppy_sing.html"
+                        title="previous chapter">sing</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="guppy_squash.html"
+                        title="next chapter">squash</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_rst/guppy_splitify.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="splitify">
+<span id="guppy-splitify"></span><h1>splitify<a class="headerlink" href="#splitify" title="Permalink to this headline">¶</a></h1>
+<p><cite>splitify</cite> writes out differences of masses for the splits of the tree.</p>
+<div class="highlight-python"><div class="highlight"><pre>usage: splitify [options] placefile(s)
+</pre></div>
+</div>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<table class="docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">-o</span></kbd></td>
+<td>Specify the filename to write to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--out-dir</span></kbd></td>
+<td>Specify the directory to write files to.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--prefix</span></kbd></td>
+<td>Specify a string to be prepended to filenames.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--point-mass</span></kbd></td>
+<td>Treat every pquery as a point mass concentrated on the highest-weight placement.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--pp</span></kbd></td>
+<td>Use posterior probability for the weight.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--kappa</span></kbd></td>
+<td>Specify the exponent for scaling between weighted and unweighted splitification. default: 1</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--rep-edges</span></kbd></td>
+<td>Cluster neighboring edges that have splitified euclidean distance less than the argument.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--epsilon</span></kbd></td>
+<td>The epsilon to use to determine if a split matrix&#8217;s column is constant for filtering. default: no filtering</td></tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="details">
+<h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
+<p>The first step to perform edge PCA is to make a matrix with rows indexed by the samples, and columns by the edges of the tree.
+The <span class="math">(s,e)</span> entry of this matrix is the difference between the distribution of mass on either side of edge <span class="math">e</span> for the sample <span class="math">s</span>.
+Specifically, it is the amount of mass on the distal (non-root) side of edge <span class="math">e</span> minus the amount of mass on the proximal side.
+The matrix is indexed such that the first numerical column is edge labeled 0 in the reference tree.
+The <code class="docutils literal"><span class="pre">splitify</span></code> subcommand simply writes out this matrix.</p>
+<p>Specifying <code class="docutils literal"><span class="pre">--rep-edges</span> <span class="pre">x</span></code> will only take representatives from collections of neighboring edges whose Euclidean distance between splitified columns is less than <code class="docutils literal"><span class="pre">x</span></code>.</p>
+<p>The <code class="docutils literal"><span class="pre">--kappa</span></code> option enables a componentwise transformation <span class="math">\varphi_\kappa</span> on the entries of this matrix.</p>
+<div class="math">
+<p><span class="math">\varphi_\kappa(x) = \mathrm{sgn}(x) |x|^\kappa</span></p>
+</div><p>where the <span class="math">\kappa</span> parameter can any non-negative number.
+This parameter scales between ignoring abundance information (<span class="math">\kappa = 0</span>), using it linearly (<span class="math">\kappa = 1</span>), and emphasizing it (<span class="math">\kappa &gt; 1</span>).</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="guppy_squash.html" title="squash"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="guppy_sing.html" title="sing"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="guppy.html" >guppy</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2011-2014, Matsen Group.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+    </div>
+  </body>
+</html>

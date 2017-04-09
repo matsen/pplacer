@@ -1,0 +1,29 @@
+:tocdepth: 3
+
+.. _guppy_tog:
+
+===
+tog
+===
+
+`tog` makes a tree with each of the reads represented as a pendant edge.
+
+::
+
+  usage: tog [options] placefile[s]
+
+Options
+=======
+
+--pp  Use posterior probability for the weight.
+-o  Specify the filename to write to.
+--out-dir  Specify the directory to write files to.
+--prefix  Specify a string to be prepended to filenames.
+--xml  Write phyloXML (with colors) for all visualizations.
+--node-numbers  Put the node numbers in where the bootstraps usually go.
+
+Details
+=======
+
+Only the best placement is used.
+
