@@ -51,7 +51,7 @@ RUN eval $(opam config env) && make
 RUN cp /pplacer/src/bin/* /usr/local/bin
 WORKDIR /pplacer/src/bin/ 
 RUN zip /pplacer.zip *
-WORKDIR /pplacer/
+WORKDIR /pplacer/src/
 RUN zip /pplacer.zip ./scripts/*
 WORKDIR /pplacer/src/scripts
 RUN python setup.py install
