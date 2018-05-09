@@ -1,5 +1,5 @@
-## SOFTWARE PPLACER
-## VERISON v1.1.alpha19-4-g1189285
+## pplacer-build
+## Build pplacer from source
 
 FROM ubuntu:14.04
 RUN apt-get -y update
