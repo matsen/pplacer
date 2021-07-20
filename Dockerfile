@@ -23,7 +23,7 @@ zip=3.0-8
 
 RUN wget https://raw.githubusercontent.com/ocaml/opam/1.3.1/shell/opam_installer.sh -O - | sh -s /usr/local/bin
 RUN ln -s /usr/local/bin/opam /usr/bin/opam && /usr/local/bin/opam init -y
-RUN opam repo add pplacer-deps http://matsen.github.com/pplacer-opam-repository &&  opam update pplacer-deps && eval `opam config env`
+RUN opam repo add pplacer-deps http://matsen.github.io/pplacer-opam-repository &&  opam update pplacer-deps && eval `opam config env`
 RUN opam install -y depext.1.0.5 && opam depext -y \
 csv.1.6 \
 ounit.2.0.8 \
