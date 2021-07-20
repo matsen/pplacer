@@ -55,7 +55,7 @@ Once OPAM is installed, it needs to be configured:
     command -v ocamlc && ( ocamlc -version | grep -q 3.12.1 ) || opam switch install 3.12.1
 
     opam init
-    opam repo add pplacer-deps http://matsen.github.com/pplacer-opam-repository
+    opam repo add pplacer-deps http://matsen.github.io/pplacer-opam-repository
     opam update pplacer-deps
     eval `opam config env`
 
