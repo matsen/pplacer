@@ -7,9 +7,9 @@
 `rppr` is a helpful tool for working with reference packages.
 
 * [project webpage (with compiled binaries)](http://matsen.fhcrc.org/pplacer/)
-* [documentation](http://matsen.github.com/pplacer/)
-* [tutorial](http://fhcrc.github.com/microbiome-demo/)
-* [compilation instructions](http://matsen.github.com/pplacer/compiling.html)
+* [documentation](http://matsen.github.io/pplacer/)
+* [tutorial](http://fhcrc.github.io/microbiome-demo/)
+* [compilation instructions](http://matsen.github.io/pplacer/compiling.html)
 
 `pplacer`, `guppy`, and `rppr` are free software under the GPL v3.
 
