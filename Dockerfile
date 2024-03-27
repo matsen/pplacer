@@ -54,9 +54,7 @@ WORKDIR /pplacer/src
 COPY ./ /pplacer/src/
 
 RUN eval $(opam config env) && make
-RUN mkdir /pplacer/bin
-RUN cp /pplacer/src/bin/* /pplacer/bin
-RUN ln -s /pplacer/bin/* /usr/local/bin
+RUN cp /pplacer/src/bin/* /usr/local/bin
 WORKDIR /pplacer/src/bin/
 RUN zip /pplacer.zip *
 WORKDIR /pplacer/src/
