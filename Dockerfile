@@ -47,8 +47,7 @@ RUN opam install -y depext.1.0.5 \
   batteries.2.8.0 \
   ocaml-gsl.0.6.3 \
   sqlite3.4.1.3 \
-  camlzip.1.05 \
-  python3-sphinx=1.2.2+dfsg-1ubuntu1.1
+  camlzip.1.05
 
 RUN mkdir /pplacer && mkdir /pplacer/src && mkdir /data
 WORKDIR /pplacer/src
@@ -62,8 +61,9 @@ WORKDIR /pplacer/src/
 RUN zip /pplacer.zip ./scripts/*
 WORKDIR /pplacer/src/scripts
 RUN python setup.py install
-WORKDIR /pplacer/
-RUN zip /pplacer.zip src
+
+# WORKDIR /pplacer/
+# RUN zip /pplacer.zip -r src
 
 WORKDIR /data
 # RUN rm -r /pplacer/src/
