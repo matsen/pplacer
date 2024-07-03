@@ -15,9 +15,11 @@ common_src/install_common_pprs.txt
 common_src/version.ml
 makefile
 docs/generated_rst/
+docs/_build
 docs/_build/doctrees/
 wiki
 Session.vim
 _builds
 _projects
 _steps
+_data
