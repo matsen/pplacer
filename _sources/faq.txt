@@ -5,7 +5,7 @@ FAQ
 
 How can I cite pplacer?
 -----------------------
-Right now there is only one paper to cite::
+Please cite::
 
   @article{matsen2010pplacer,
     title={pplacer: linear time maximum-likelihood and Bayesian phylogenetic placement of sequences onto a fixed reference tree},
@@ -18,8 +18,7 @@ Right now there is only one paper to cite::
     publisher={BioMed Central Ltd}
   }
 
-At some point we will write something up for the new pplacer, guppy, taxtastic, etc., but if you use a method implemented in guppy (such as edge PCA) we hope you will cite the paper describing that method.
-
+If you use a method implemented in guppy (such as edge PCA) we hope you will cite the paper describing that method.
 
 Why is pplacer taking up so much memory?
 ----------------------------------------

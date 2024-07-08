@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pplacer &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    <title>pplacer &mdash; pplacer v1.1.alpha19-20-g399f513 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     'v1.1.alpha19-4-g1189285',
+        VERSION:     'v1.1.alpha19-20-g399f513',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="top" title="pplacer v1.1.alpha19-20-g399f513 documentation" href="../index.html" />
     <link rel="next" title="guppy" href="guppy.html" />
     <link rel="prev" title="pplacer documentation home" href="../index.html" /> 
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
+  <body>
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -40,10 +40,10 @@
         <li class="right" >
           <a href="../index.html" title="pplacer documentation home"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="../index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
@@ -73,14 +73,12 @@
   <h4>Next topic</h4>
   <p class="topless"><a href="guppy.html"
                         title="next chapter">guppy</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/generated_rst/pplacer.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/generated_rst/pplacer.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
@@ -99,7 +97,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body" role="main">
+          <div class="body">
             
   <div class="section" id="pplacer">
 <span id="id1"></span><h1>pplacer<a class="headerlink" href="#pplacer" title="Permalink to this headline">¶</a></h1>
@@ -285,12 +283,12 @@ If you wish to override specific parts of the reference package, you can do so w
 We have the beginnings of a <a class="reference external" href="http://microbiome.fhcrc.org/apps/refpkg/">reference package database</a> which we hope in the future to be a comprehensive resource for phylogenetic placement.
 It&#8217;s just started, and we would love to have your submissions.
 For now most users will have to make a reference package using our <a class="reference external" href="https://github.com/fhcrc/taxtastic/">taxtastic</a> package.</p>
-<p>The <code class="docutils literal"><span class="pre">aln.fasta</span></code> is the alignment file.
+<p>The <tt class="docutils literal"><span class="pre">aln.fasta</span></tt> is the alignment file.
 It should have the reference sequences which were used to make the reference tree, aligned with the query sequences to be placed on the reference tree.
 The reference sequences must have identical names to those used in the reference tree.
 It&#8217;s possible to split the alignment into two files (the reference sequences and the query sequences); in that case you need to make sure that those alignments are in the same frame and have the same length.
 This splitting was obligatory in v1.0.
-The alignment can be in FASTA format (with a <code class="docutils literal"><span class="pre">.fasta</span></code> or <code class="docutils literal"><span class="pre">.fa</span></code> suffix) or Stockholm format (with a <code class="docutils literal"><span class="pre">.sto</span></code> or <code class="docutils literal"><span class="pre">.sth</span></code> suffix).</p>
+The alignment can be in FASTA format (with a <tt class="docutils literal"><span class="pre">.fasta</span></tt> or <tt class="docutils literal"><span class="pre">.fa</span></tt> suffix) or Stockholm format (with a <tt class="docutils literal"><span class="pre">.sto</span></tt> or <tt class="docutils literal"><span class="pre">.sth</span></tt> suffix).</p>
 </div>
 <div class="section" id="migrating-from-pplacer-v1-0">
 <h3>Migrating from pplacer v1.0<a class="headerlink" href="#migrating-from-pplacer-v1-0" title="Permalink to this headline">¶</a></h3>
@@ -300,8 +298,8 @@ The alignment can be in FASTA format (with a <code class="docutils literal"><spa
 <li>Reference packages encapsulate reference information, making it easy to do placement and taxonomic annotation</li>
 <li>Alignments can now be supplied as a single file, rather than being split into reference and query alignments</li>
 <li>Much better: faster, taxonomic integration, etc</li>
-<li><code class="docutils literal"><span class="pre">placeviz</span></code>, <code class="docutils literal"><span class="pre">placeutil</span></code> and <code class="docutils literal"><span class="pre">mokaphy</span></code> have been replaced by a single binary called <code class="docutils literal"><span class="pre">guppy</span></code></li>
-<li><code class="docutils literal"><span class="pre">rppr</span></code> binary for preparing reference packages</li>
+<li><tt class="docutils literal"><span class="pre">placeviz</span></tt>, <tt class="docutils literal"><span class="pre">placeutil</span></tt> and <tt class="docutils literal"><span class="pre">mokaphy</span></tt> have been replaced by a single binary called <tt class="docutils literal"><span class="pre">guppy</span></tt></li>
+<li><tt class="docutils literal"><span class="pre">rppr</span></tt> binary for preparing reference packages</li>
 </ul>
 </div>
 <div class="section" id="pre-masking-and-masking">
@@ -311,8 +309,8 @@ As part of achieving these design goals, we have put effort into two masking pro
 Specifically, we consider columns that are gap in a query sequence or all gap in the reference alignment to not be informative for the placement of that query sequence.
 This is a different statement than saying that a column does not impact the phylogenetic likelihood, and indeed columns that are all gap except for one sequence do change the likelihood in all implementations that interpret gaps as missing data (this is true for essentially all phylogenetic inference software).</p>
 <p>We call the first procedure &#8220;pre-masking,&#8221; and it ignores columns that are all gap in either the reference alignment or the query alignment.
-This has been the default behavior since v1.1alpha08, but it can be disabled with the <code class="docutils literal"><span class="pre">--no-pre-mask</span></code> flag.
-You can see the effect of pre-masking by supplying a file name to the <code class="docutils literal"><span class="pre">--write-pre-masked</span></code> flag.</p>
+This has been the default behavior since v1.1alpha08, but it can be disabled with the <tt class="docutils literal"><span class="pre">--no-pre-mask</span></tt> flag.
+You can see the effect of pre-masking by supplying a file name to the <tt class="docutils literal"><span class="pre">--write-pre-masked</span></tt> flag.</p>
 <p>However, in certain situations this can lead to sequences other than the given sequence influencing the likelihood.
 Specifically, imagine that we have two sequences A and B that are non-gap in column sets X and Y, respectively, and that there are no all-gap columns in the reference alignment.
 Say that X and Y are disjoint sets.
@@ -322,13 +320,13 @@ Then, when we are placing A in the presence of B, A&#8217;s gap entries in Y wil
 These effects are subtle but nonzero.</p>
 <p>Therefore, we have a second procedure, which we call &#8220;masking,&#8221; that only computes likelihoods for the columns in each placement that are informative in that placement.
 This ensures identical behavior when sequences are run separately or together, and also makes things faster.
-This is now the default behavior, and you can see the results of masking by supplying the <code class="docutils literal"><span class="pre">--write-masked</span></code> flag.
+This is now the default behavior, and you can see the results of masking by supplying the <tt class="docutils literal"><span class="pre">--write-masked</span></tt> flag.
 (Careful when using this, as it will make one fasta file for each query sequence.)</p>
 </div>
 <div class="section" id="groups">
 <h3>Groups<a class="headerlink" href="#groups" title="Permalink to this headline">¶</a></h3>
 <p>When placing metagenomic sequences onto trees built from very wide alignments (such as concatenations), we suggest using the &#8220;groups&#8221; feature.
-Using, say, <code class="docutils literal"><span class="pre">--groups</span> <span class="pre">5</span></code> will divide the alignment into 5 evenly spaced sectors across the width of the alignment.
+Using, say, <tt class="docutils literal"><span class="pre">--groups</span> <span class="pre">5</span></tt> will divide the alignment into 5 evenly spaced sectors across the width of the alignment.
 The reads are then grouped into which sector they fit into best, and each group is run sequentially.
 In combination with the pre-masking, this can result in a very substantial reduction of memory usage, because the likelihood vectors are calculated for one sector (plus a bit extra) at a time.
 Note that these gains will be eliminated if you have reads that span the whole reference alignment.
@@ -338,8 +336,8 @@ Using this feature will not change the result except possibly for likelihood com
 <h3><a class="reference external" href="http://www.json.org/">JSON</a> format specification<a class="headerlink" href="#json-format-specification" title="Permalink to this headline">¶</a></h3>
 <p>The JSON format is described in detail in our paper on the <a class="reference external" href="http://www.plosone.org/article/info:doi/10.1371/journal.pone.0031009">phylogenetic
 placement format</a>. Each document is a JSON object with a minimum of four keys:
-<code class="docutils literal"><span class="pre">tree</span></code>, <code class="docutils literal"><span class="pre">fields</span></code>, <code class="docutils literal"><span class="pre">placements</span></code>, and <code class="docutils literal"><span class="pre">version</span></code>. Another key,
-<code class="docutils literal"><span class="pre">metadata</span></code>, is optional. Other keys in the root object are ignored.</p>
+<tt class="docutils literal"><span class="pre">tree</span></tt>, <tt class="docutils literal"><span class="pre">fields</span></tt>, <tt class="docutils literal"><span class="pre">placements</span></tt>, and <tt class="docutils literal"><span class="pre">version</span></tt>. Another key,
+<tt class="docutils literal"><span class="pre">metadata</span></tt>, is optional. Other keys in the root object are ignored.</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="18%" />
@@ -351,19 +349,19 @@ placement format</a>. Each document is a JSON object with a minimum of four keys
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">version</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">version</span></tt></td>
 <td>The version of the JSON format as an integer.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">tree</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">tree</span></tt></td>
 <td>The reference tree as a string, in &#8220;edge-numbered Newick&#8221; format.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">placements</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">placements</span></tt></td>
 <td>An array of placements.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">fields</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">fields</span></tt></td>
 <td>An array of strings corresponding to the data given in the placements array.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">metadata</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">metadata</span></tt></td>
 <td>An object containing metadata about the generation of this collection of placements.</td>
 </tr>
 </tbody>
@@ -371,22 +369,22 @@ placement format</a>. Each document is a JSON object with a minimum of four keys
 <p>An &#8220;edge-numbered Newick&#8221; tree is simply a Newick format tree with integers in
 curly braces which provide a well-defined numbering of edges. These edge
 numbers are used to specify the edges on which the placements lie.</p>
-<p>Currently there are three versions of the placefile format accepted by <code class="docutils literal"><span class="pre">guppy</span></code>
-and <code class="docutils literal"><span class="pre">rppr</span></code>: <code class="docutils literal"><span class="pre">1</span></code>, <code class="docutils literal"><span class="pre">2</span></code>, and <code class="docutils literal"><span class="pre">3</span></code>, though only version 3 will be generated.</p>
+<p>Currently there are three versions of the placefile format accepted by <tt class="docutils literal"><span class="pre">guppy</span></tt>
+and <tt class="docutils literal"><span class="pre">rppr</span></tt>: <tt class="docutils literal"><span class="pre">1</span></tt>, <tt class="docutils literal"><span class="pre">2</span></tt>, and <tt class="docutils literal"><span class="pre">3</span></tt>, though only version 3 will be generated.</p>
 <div class="section" id="differences-between-versions-1-and-2">
-<h4>Differences between versions <code class="docutils literal"><span class="pre">1</span></code> and <code class="docutils literal"><span class="pre">2</span></code><a class="headerlink" href="#differences-between-versions-1-and-2" title="Permalink to this headline">¶</a></h4>
+<h4>Differences between versions <tt class="docutils literal"><span class="pre">1</span></tt> and <tt class="docutils literal"><span class="pre">2</span></tt><a class="headerlink" href="#differences-between-versions-1-and-2" title="Permalink to this headline">¶</a></h4>
 <p>There are only two differences between versions 1 and 2: the format of the
-Newick tree in the <code class="docutils literal"><span class="pre">tree</span></code> field has changed, and <code class="docutils literal"><span class="pre">marginal_prob</span></code> was
-renamed to <code class="docutils literal"><span class="pre">marginal_like</span></code> in version 2.</p>
+Newick tree in the <tt class="docutils literal"><span class="pre">tree</span></tt> field has changed, and <tt class="docutils literal"><span class="pre">marginal_prob</span></tt> was
+renamed to <tt class="docutils literal"><span class="pre">marginal_like</span></tt> in version 2.</p>
 <p>Version 1 used a slightly different version of edge-numbered Newick trees for
-the <code class="docutils literal"><span class="pre">tree</span></code> field, where edge numbers were specified in square brackets
+the <tt class="docutils literal"><span class="pre">tree</span></tt> field, where edge numbers were specified in square brackets
 instead of curly braces. Both this kind of Newick tree and version 1 of the
 JSON format are now deprecated.</p>
 </div>
 <div class="section" id="differences-between-versions-2-and-3">
-<h4>Differences between versions <code class="docutils literal"><span class="pre">2</span></code> and <code class="docutils literal"><span class="pre">3</span></code><a class="headerlink" href="#differences-between-versions-2-and-3" title="Permalink to this headline">¶</a></h4>
-<p>Version 3 replaces the separate <code class="docutils literal"><span class="pre">n</span></code> and <code class="docutils literal"><span class="pre">m</span></code> keys in placement objects with
-a more general <code class="docutils literal"><span class="pre">nm</span></code> key that can associate mass with each name.</p>
+<h4>Differences between versions <tt class="docutils literal"><span class="pre">2</span></tt> and <tt class="docutils literal"><span class="pre">3</span></tt><a class="headerlink" href="#differences-between-versions-2-and-3" title="Permalink to this headline">¶</a></h4>
+<p>Version 3 replaces the separate <tt class="docutils literal"><span class="pre">n</span></tt> and <tt class="docutils literal"><span class="pre">m</span></tt> keys in placement objects with
+a more general <tt class="docutils literal"><span class="pre">nm</span></tt> key that can associate mass with each name.</p>
 </div>
 <div class="section" id="format-summary">
 <h4>Format summary<a class="headerlink" href="#format-summary" title="Permalink to this headline">¶</a></h4>
@@ -402,46 +400,46 @@ a more general <code class="docutils literal"><span class="pre">nm</span></code>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">edge_num</span></code></td>
-<td>The edge number from the provided <code class="docutils literal"><span class="pre">tree</span></code> as an integer.</td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">edge_num</span></tt></td>
+<td>The edge number from the provided <tt class="docutils literal"><span class="pre">tree</span></tt> as an integer.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">likelihood</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">likelihood</span></tt></td>
 <td>ML log likelihood as a float.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">like_weight_ratio</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">like_weight_ratio</span></tt></td>
 <td>ML likelihood weight ratio as a float.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">distal_length</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">distal_length</span></tt></td>
 <td>ML distance from the distal side of the edge as a float.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">pendant_length</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">pendant_length</span></tt></td>
 <td>ML pendant branch length as a float.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">post_prob</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">post_prob</span></tt></td>
 <td>The posterior probability of a placement on the edge.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">marginal_like</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">marginal_like</span></tt></td>
 <td>The marginal likelihood of a placement on the edge. <a class="footnote-reference" href="#f1" id="id2">[1]</a></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">marginal_prob</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">marginal_prob</span></tt></td>
 <td>The marginal likelihood of a placement on the edge. <a class="footnote-reference" href="#f2" id="id3">[2]</a></td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">classification</span></code></td>
-<td>The <code class="docutils literal"><span class="pre">tax_id</span></code> from a reference package as a string.</td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">classification</span></tt></td>
+<td>The <tt class="docutils literal"><span class="pre">tax_id</span></tt> from a reference package as a string.</td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">map_ratio</span></code></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">map_ratio</span></tt></td>
 <td>The percent identity between this sequence and the corresponding MAP sequence.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">map_overlap</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">map_overlap</span></tt></td>
 <td>The number of overlapping sites between this sequence and the corresponding MAP sequence.</td>
 </tr>
 </tbody>
 </table>
-<p>For <code class="docutils literal"><span class="pre">guppy</span></code> to be able to load a JSON file, it must have <code class="docutils literal"><span class="pre">edge_num</span></code>,
-<code class="docutils literal"><span class="pre">likelihood</span></code>, <code class="docutils literal"><span class="pre">like_weight_ratio</span></code>, <code class="docutils literal"><span class="pre">distal_length</span></code>, and
-<code class="docutils literal"><span class="pre">pendant_length</span></code> fields. All other fields are optional, but if one of
-<code class="docutils literal"><span class="pre">post_prob</span></code> and <code class="docutils literal"><span class="pre">marginal_like</span></code> are specified, both must be specified.</p>
-<p>Each entry in the <code class="docutils literal"><span class="pre">placements</span></code> array is an object with the following keys:</p>
+<p>For <tt class="docutils literal"><span class="pre">guppy</span></tt> to be able to load a JSON file, it must have <tt class="docutils literal"><span class="pre">edge_num</span></tt>,
+<tt class="docutils literal"><span class="pre">likelihood</span></tt>, <tt class="docutils literal"><span class="pre">like_weight_ratio</span></tt>, <tt class="docutils literal"><span class="pre">distal_length</span></tt>, and
+<tt class="docutils literal"><span class="pre">pendant_length</span></tt> fields. All other fields are optional, but if one of
+<tt class="docutils literal"><span class="pre">post_prob</span></tt> and <tt class="docutils literal"><span class="pre">marginal_like</span></tt> are specified, both must be specified.</p>
+<p>Each entry in the <tt class="docutils literal"><span class="pre">placements</span></tt> array is an object with the following keys:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="4%" />
@@ -453,17 +451,17 @@ a more general <code class="docutils literal"><span class="pre">nm</span></code>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">n</span></code></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">n</span></tt></td>
 <td>A string or array of strings corresponding to the name or names of the sequences placed here. <a class="footnote-reference" href="#f5" id="id4">[5]</a></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">p</span></code></td>
-<td>An array of arrays containing placement data in the same order as <code class="docutils literal"><span class="pre">fields</span></code>.</td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">p</span></tt></td>
+<td>An array of arrays containing placement data in the same order as <tt class="docutils literal"><span class="pre">fields</span></tt>.</td>
 </tr>
-<tr class="row-even"><td><code class="docutils literal"><span class="pre">m</span></code></td>
-<td><em>(optional)</em> A float that represents the mass of this placement. If this key is specified, <code class="docutils literal"><span class="pre">n</span></code> must only be or contain a single string. <a class="footnote-reference" href="#f1" id="id5">[1]</a> <a class="footnote-reference" href="#f4" id="id6">[4]</a></td>
+<tr class="row-even"><td><tt class="docutils literal"><span class="pre">m</span></tt></td>
+<td><em>(optional)</em> A float that represents the mass of this placement. If this key is specified, <tt class="docutils literal"><span class="pre">n</span></tt> must only be or contain a single string. <a class="footnote-reference" href="#f1" id="id5">[1]</a> <a class="footnote-reference" href="#f4" id="id6">[4]</a></td>
 </tr>
-<tr class="row-odd"><td><code class="docutils literal"><span class="pre">nm</span></code></td>
-<td>An array of <code class="docutils literal"><span class="pre">[name,</span> <span class="pre">mass]</span></code> pair arrays representing the mass for each sequence placed here. <a class="footnote-reference" href="#f3" id="id7">[3]</a></td>
+<tr class="row-odd"><td><tt class="docutils literal"><span class="pre">nm</span></tt></td>
+<td>An array of <tt class="docutils literal"><span class="pre">[name,</span> <span class="pre">mass]</span></tt> pair arrays representing the mass for each sequence placed here. <a class="footnote-reference" href="#f3" id="id7">[3]</a></td>
 </tr>
 </tbody>
 </table>
@@ -497,31 +495,31 @@ different masses:</p>
 <table class="docutils footnote" frame="void" id="f1" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label">[1]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> New in format version <code class="docutils literal"><span class="pre">2</span></code>.</td></tr>
+<tr><td class="label">[1]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> New in format version <tt class="docutils literal"><span class="pre">2</span></tt>.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="f2" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Removed in format version <code class="docutils literal"><span class="pre">2</span></code>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id3">[2]</a></td><td>Removed in format version <tt class="docutils literal"><span class="pre">2</span></tt>.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="f3" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id7">[3]</a></td><td>New in format version <code class="docutils literal"><span class="pre">3</span></code>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id7">[3]</a></td><td>New in format version <tt class="docutils literal"><span class="pre">3</span></tt>.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="f4" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>Removed in format version <code class="docutils literal"><span class="pre">3</span></code>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id6">[4]</a></td><td>Removed in format version <tt class="docutils literal"><span class="pre">3</span></tt>.</td></tr>
 </tbody>
 </table>
 <table class="docutils footnote" frame="void" id="f5" rules="none">
 <colgroup><col class="label" /><col /></colgroup>
 <tbody valign="top">
-<tr><td class="label"><a class="fn-backref" href="#id4">[5]</a></td><td>This key will not ever be generated by any program in the pplacer suite as of format version <code class="docutils literal"><span class="pre">3</span></code>, but will continue to be accepted by <code class="docutils literal"><span class="pre">guppy</span></code> and <code class="docutils literal"><span class="pre">rppr</span></code>.</td></tr>
+<tr><td class="label"><a class="fn-backref" href="#id4">[5]</a></td><td>This key will not ever be generated by any program in the pplacer suite as of format version <tt class="docutils literal"><span class="pre">3</span></tt>, but will continue to be accepted by <tt class="docutils literal"><span class="pre">guppy</span></tt> and <tt class="docutils literal"><span class="pre">rppr</span></tt>.</td></tr>
 </tbody>
 </table>
 </div>
@@ -541,9 +539,9 @@ For example:</p>
 <div class="highlight-python"><div class="highlight"><pre>cmalign --hbanded --sub --dna -1 -o refalign.sto profile.cm refseqs.fasta
 </pre></div>
 </div>
-<p>Inputs to this command include an alignment profile (<code class="docutils literal"><span class="pre">profile.cm</span></code>) and unaligned reference sequences (<code class="docutils literal"><span class="pre">refs.fasta</span></code>).
-The output file, identified using the <code class="docutils literal"><span class="pre">-o</span></code> option, contains the aligned reference sequences in Stockholm format.
-The <code class="docutils literal"><span class="pre">-1</span></code> (that&#8217;s a one, not an L) specifies non-interleaved output, one sequence per line.</p>
+<p>Inputs to this command include an alignment profile (<tt class="docutils literal"><span class="pre">profile.cm</span></tt>) and unaligned reference sequences (<tt class="docutils literal"><span class="pre">refs.fasta</span></tt>).
+The output file, identified using the <tt class="docutils literal"><span class="pre">-o</span></tt> option, contains the aligned reference sequences in Stockholm format.
+The <tt class="docutils literal"><span class="pre">-1</span></tt> (that&#8217;s a one, not an L) specifies non-interleaved output, one sequence per line.</p>
 </div>
 <div class="section" id="merging-reference-and-query-sequences">
 <h5>Merging reference and query sequences<a class="headerlink" href="#merging-reference-and-query-sequences" title="Permalink to this headline">¶</a></h5>
@@ -553,18 +551,18 @@ First, align the query sequences just like the reference sequences above:</p>
 <div class="highlight-python"><div class="highlight"><pre>cmalign --hbanded --sub --dna -1 -o qalign.sto profile.cm qseqs.fasta
 </pre></div>
 </div>
-<p>Next, merge the reference and query alignments using the <code class="docutils literal"><span class="pre">--merge</span></code> option:</p>
+<p>Next, merge the reference and query alignments using the <tt class="docutils literal"><span class="pre">--merge</span></tt> option:</p>
 <div class="highlight-python"><div class="highlight"><pre>cmalign --merge --hbanded --sub --dna -1 -o merged.sto profile.cm refalign.sto qalign.sto
 </pre></div>
 </div>
-<p>Now <code class="docutils literal"><span class="pre">merged.sto</span></code> contains a single alignment of both reference and query sequences, and can be used with pplacer as follows after making a reference tree and accompanying statistics file:</p>
+<p>Now <tt class="docutils literal"><span class="pre">merged.sto</span></tt> contains a single alignment of both reference and query sequences, and can be used with pplacer as follows after making a reference tree and accompanying statistics file:</p>
 <div class="highlight-python"><div class="highlight"><pre>pplacer -t reference_tree -s statistics_file merged.sto
 </pre></div>
 </div>
 </div>
 <div class="section" id="using-a-reference-package">
 <h5>Using a reference package<a class="headerlink" href="#using-a-reference-package" title="Permalink to this headline">¶</a></h5>
-<p>A closely related example involves alignment with the profile and reference sequences included in a reference package (<code class="docutils literal"><span class="pre">my.refpkg</span></code> - note that names may vary in a reference package).
+<p>A closely related example involves alignment with the profile and reference sequences included in a reference package (<tt class="docutils literal"><span class="pre">my.refpkg</span></tt> - note that names may vary in a reference package).
 So now we skip creation of the reference alignment.
 First, create the query alignment:</p>
 <div class="highlight-python"><div class="highlight"><pre>cmalign --hbanded --sub --dna -1 -o qalign.sto my.refpkg/profile.cm qseqs.fasta
@@ -585,7 +583,7 @@ First, create the query alignment:</p>
 <div class="section" id="examples-using-hmmer">
 <h4>Examples using HMMER<a class="headerlink" href="#examples-using-hmmer" title="Permalink to this headline">¶</a></h4>
 <p><a class="reference external" href="http://hmmer.janelia.org/">HMMER</a> is another excellent package for searching and aligning sequences by the Eddy group, which can align amino acid and nucleotide sequences.</p>
-<p>Assume that we have a reference alignment <code class="docutils literal"><span class="pre">refseqs.sto</span></code> in Stockholm format. We first build an HMM:</p>
+<p>Assume that we have a reference alignment <tt class="docutils literal"><span class="pre">refseqs.sto</span></tt> in Stockholm format. We first build an HMM:</p>
 <div class="highlight-python"><div class="highlight"><pre>hmmbuild refseqs.hmm refseqs.sto
 </pre></div>
 </div>
@@ -614,7 +612,7 @@ First, create the query alignment:</p>
 <div class="highlight-python"><div class="highlight"><pre>FastTree -nt -gtr -log vaginal.log vaginal.fasta &gt; vaginal.tre
 </pre></div>
 </div>
-<p>In particular, do not use the <code class="docutils literal"><span class="pre">-gamma</span></code> option, but do use the <code class="docutils literal"><span class="pre">-gtr</span></code> option.</p>
+<p>In particular, do not use the <tt class="docutils literal"><span class="pre">-gamma</span></tt> option, but do use the <tt class="docutils literal"><span class="pre">-gtr</span></tt> option.</p>
 </div>
 <div class="section" id="amino-acid-alignments">
 <h5>Amino Acid alignments<a class="headerlink" href="#amino-acid-alignments" title="Permalink to this headline">¶</a></h5>
@@ -622,7 +620,7 @@ First, create the query alignment:</p>
 <div class="highlight-python"><div class="highlight"><pre>FastTree -log TIGR00001.log TIGR00001.fasta &gt; TIGR00001.tre
 </pre></div>
 </div>
-<p>Again, <code class="docutils literal"><span class="pre">-gamma</span></code> should not be used.</p>
+<p>Again, <tt class="docutils literal"><span class="pre">-gamma</span></tt> should not be used.</p>
 </div>
 </div>
 <div class="section" id="phyml-and-raxml">
@@ -646,7 +644,7 @@ phyml -q -d aa -m WAG -i amino_acids.phy
 <p>Note that pplacer only works with phyml version 3.0 (the current version).</p>
 <p>Both of these programs emit &#8220;statistics files&#8221;: files that describe the phylogenetic model used.
 Pplacer then uses those same statistics to place your reads.
-For RAxML, they are called something like <code class="docutils literal"><span class="pre">RAxML_info.test</span></code>, whereas for PHYML they are called something like <code class="docutils literal"><span class="pre">test_aln_phyml_stats.txt</span></code>.</p>
+For RAxML, they are called something like <tt class="docutils literal"><span class="pre">RAxML_info.test</span></tt>, whereas for PHYML they are called something like <tt class="docutils literal"><span class="pre">test_aln_phyml_stats.txt</span></tt>.</p>
 <p>If your taxon names have too many funny symbols, pplacer will get confused.
 We have had a difficult time with the wacky names exported by the otherwise lovely software <a class="reference external" href="http://www.geneious.com/">geneious</a>.
 If you have a tree which isn&#8217;t getting parsed properly by pplacer, and you think it should be, send it to us and we will have a look.</p>
@@ -675,38 +673,38 @@ We start with the edge that looks best from the initial evaluation; say that the
 Fix some positive number D, which we call the &#8220;strike box.&#8221;
 We proceed down the list in order until we encounter the first placement which has log likelihood less than L - D, which we call a &#8220;strike.&#8221;
 Continue, allowing some number of strikes, until we stop doing detailed evaluation of what are most likely rather poor parts of the tree.</p>
-<p>You can control the behavior of baseball playing using the <code class="docutils literal"><span class="pre">--max-strikes</span></code>, <code class="docutils literal"><span class="pre">--strike-box</span></code>, and <code class="docutils literal"><span class="pre">--max-pitches</span></code> options.
-If, for any reason, you wish to disable baseball playing, simply add <code class="docutils literal"><span class="pre">--max-strikes</span></code> to zero (this also disables the <code class="docutils literal"><span class="pre">--max-pitches</span></code> option).</p>
+<p>You can control the behavior of baseball playing using the <tt class="docutils literal"><span class="pre">--max-strikes</span></tt>, <tt class="docutils literal"><span class="pre">--strike-box</span></tt>, and <tt class="docutils literal"><span class="pre">--max-pitches</span></tt> options.
+If, for any reason, you wish to disable baseball playing, simply add <tt class="docutils literal"><span class="pre">--max-strikes</span></tt> to zero (this also disables the <tt class="docutils literal"><span class="pre">--max-pitches</span></tt> option).</p>
 <p>Having control over these options raises the question of how to set them.
 The answer to this question can be given by pplacer&#8217;s &#8220;fantasy baseball&#8221; feature.
-To gain an understanding of the tradeoff between runtime and accuracy, it analyzes all <code class="docutils literal"><span class="pre">--max-pitches</span></code> best locations.
-It then runs the baseball algorithm with each combination of strike box (from 0 to the specified <code class="docutils literal"><span class="pre">--strike-box</span></code>) and max strikes (from 1 to the specified <code class="docutils literal"><span class="pre">--max-strikes</span></code>).
+To gain an understanding of the tradeoff between runtime and accuracy, it analyzes all <tt class="docutils literal"><span class="pre">--max-pitches</span></tt> best locations.
+It then runs the baseball algorithm with each combination of strike box (from 0 to the specified <tt class="docutils literal"><span class="pre">--strike-box</span></tt>) and max strikes (from 1 to the specified <tt class="docutils literal"><span class="pre">--max-strikes</span></tt>).
 Using these different settings the program reports</p>
 <ul class="simple">
-<li>the &#8220;batting average,&#8221; i.e. the number of times the baseball algorithm with those settings achieved the optimal location obtained by evaluating all <code class="docutils literal"><span class="pre">--max-pitches</span></code> best locations; found in the file prefix.batting_avg.out</li>
-<li>the &#8220;log likelihood difference,&#8221; i.e. the difference between the ML log likelihood achieved by the baseball algorithm with those settings compared to the best obtained by evaluating all <code class="docutils literal"><span class="pre">--max-pitches</span></code> best locations; found in the file prefix.like_diff.out</li>
+<li>the &#8220;batting average,&#8221; i.e. the number of times the baseball algorithm with those settings achieved the optimal location obtained by evaluating all <tt class="docutils literal"><span class="pre">--max-pitches</span></tt> best locations; found in the file prefix.batting_avg.out</li>
+<li>the &#8220;log likelihood difference,&#8221; i.e. the difference between the ML log likelihood achieved by the baseball algorithm with those settings compared to the best obtained by evaluating all <tt class="docutils literal"><span class="pre">--max-pitches</span></tt> best locations; found in the file prefix.like_diff.out</li>
 <li>the &#8220;number of trials,&#8221; i.e. the number of locations fully evaluated by the baseball algorithm with those settings; found in the file prefix.n_trials.out</li>
 </ul>
-<p>The fantasy mode is invoked by telling pplacer what average likelihood difference you would like via the <code class="docutils literal"><span class="pre">--fantasy</span></code> option.
-You can also tell it to run an evenly-spaced fraction of the query sequences in fantasy mode using the <code class="docutils literal"><span class="pre">--fantasy-frac</span></code> option, which gives you an idea of the optimal run parameters for the rest of the sequences. For example:</p>
+<p>The fantasy mode is invoked by telling pplacer what average likelihood difference you would like via the <tt class="docutils literal"><span class="pre">--fantasy</span></tt> option.
+You can also tell it to run an evenly-spaced fraction of the query sequences in fantasy mode using the <tt class="docutils literal"><span class="pre">--fantasy-frac</span></tt> option, which gives you an idea of the optimal run parameters for the rest of the sequences. For example:</p>
 <div class="highlight-python"><div class="highlight"><pre>pplacer --max-strikes 10 --strike-box 10 --fantasy 0.05 --fantasy-frac 0.02 -r example.fasta...
 </pre></div>
 </div>
 <p>says to run pplacer trying all of the combinations of max strikes and strike box up to 10, looking for the optimal combination which will give an average log likelihood difference of 0.05, and running on 2% of the query sequences.
-If, for any reason, you wish to disable baseball playing, simply add <code class="docutils literal"><span class="pre">--max-strikes</span></code> to zero (this also disables the <code class="docutils literal"><span class="pre">--max-pitches</span></code> option).</p>
+If, for any reason, you wish to disable baseball playing, simply add <tt class="docutils literal"><span class="pre">--max-strikes</span></tt> to zero (this also disables the <tt class="docutils literal"><span class="pre">--max-pitches</span></tt> option).</p>
 <p>You can use R to plot these matrices in a heat-map like fashion like so:</p>
 <div class="highlight-python"><div class="highlight"><pre>ba &gt; read.table(&quot;reads_nodups.batting_avg.out&quot;)
 image(x=c(0:nrow(ba)-1),xlab= &quot;strike box&quot;, ylab= &quot;number of strikes&quot;, \
    y=c(1:ncol(ba)-1),z=as.matrix(ba), main=&quot;batting average&quot;)
 </pre></div>
 </div>
-<p>Note that we have set things up so that turning on posterior probability with <code class="docutils literal"><span class="pre">-p</span></code> now changes the default search parameters to make a deeper search as follows:</p>
+<p>Note that we have set things up so that turning on posterior probability with <tt class="docutils literal"><span class="pre">-p</span></tt> now changes the default search parameters to make a deeper search as follows:</p>
 <div class="highlight-python"><div class="highlight"><pre>--keep-at-most 20
 --keep-factor 0.001
 --max-strikes 20
 </pre></div>
 </div>
-<p>You can set these to anything you like by using these flags <em>after</em> the <code class="docutils literal"><span class="pre">-p</span></code>.</p>
+<p>You can set these to anything you like by using these flags <em>after</em> the <tt class="docutils literal"><span class="pre">-p</span></tt>.</p>
 </div>
 <div class="section" id="fig-ranking">
 <h3>Fig ranking<a class="headerlink" href="#fig-ranking" title="Permalink to this headline">¶</a></h3>
@@ -714,9 +712,9 @@ image(x=c(0:nrow(ba)-1),xlab= &quot;strike box&quot;, ylab= &quot;number of stri
 using the structure of the reference tree. This initial phase is not the
 bottleneck for trees on a thousand or so taxa, but it is for trees on tens of
 thousands of taxa or more.</p>
-<p>If a value is specified as <code class="docutils literal"><span class="pre">--fig-cutoff</span> <span class="pre">x</span></code>, pplacer will find subtrees of
+<p>If a value is specified as <tt class="docutils literal"><span class="pre">--fig-cutoff</span> <span class="pre">x</span></tt>, pplacer will find subtrees of
 the reference tree (that we call figs) on the reference tree such that no two
-leaves in the cluster have a distance of greater than <code class="docutils literal"><span class="pre">x</span></code>. Each leaf is
+leaves in the cluster have a distance of greater than <tt class="docutils literal"><span class="pre">x</span></tt>. Each leaf is
 contained in exactly one fig. A representative edge of the fig is chosen as
 follows: say <em>n</em> is the most proximal node contained in the fig; the
 representative is the edge descending from <em>n</em> to the subtree with the greatest
@@ -732,17 +730,17 @@ the first fig is evaluated.</p>
 <p>As each fig is evaluated for a query sequence, pplacer will also select any
 figs ordered immediately after the current fig where the difference between
 that fig&#8217;s representative likelihood and the current fig&#8217;s representative
-likelihood is less than the value of the <code class="docutils literal"><span class="pre">--strike-box</span></code> parameter. Each of
+likelihood is less than the value of the <tt class="docutils literal"><span class="pre">--strike-box</span></tt> parameter. Each of
 these figs&#8217; sets of edges are then merged into the current fig&#8217;s edge set.</p>
 <p>To test the accuracy of fig evaluation vs. full evaluation, the
-<code class="docutils literal"><span class="pre">--fig-eval-all</span></code> flag can be specified to do both fig and full evaluation,
+<tt class="docutils literal"><span class="pre">--fig-eval-all</span></tt> flag can be specified to do both fig and full evaluation,
 then show the percentage of sequences where the best location chosen by full
-evaluation and fig evaluation is the same. <code class="docutils literal"><span class="pre">--fig-eval-all</span></code> must be specified
-to specify the <code class="docutils literal"><span class="pre">--fig-eval-discrepancy-tree</span></code> flag. If this flag is specified,
+evaluation and fig evaluation is the same. <tt class="docutils literal"><span class="pre">--fig-eval-all</span></tt> must be specified
+to specify the <tt class="docutils literal"><span class="pre">--fig-eval-discrepancy-tree</span></tt> flag. If this flag is specified,
 a tree will be written out showing the locations chosen by both methods for
 each sequence where the two differ.</p>
-<p>The colored trees written out by the <code class="docutils literal"><span class="pre">--fig-tree</span></code> and
-<code class="docutils literal"><span class="pre">--fig-eval-discrepancy-tree</span></code> flags shows figs as colored subtrees within the
+<p>The colored trees written out by the <tt class="docutils literal"><span class="pre">--fig-tree</span></tt> and
+<tt class="docutils literal"><span class="pre">--fig-eval-discrepancy-tree</span></tt> flags shows figs as colored subtrees within the
 reference tree.</p>
 </div>
 <div class="section" id="model-refinement">
@@ -754,34 +752,34 @@ happen when supplying an integrated reference and query alignment.</p>
 <p>When the site rates cannot be used directly, the model gets &#8220;refined&#8221;.
 Currently, this only actually means something for the CAT model, in which case
 it infers site categories. You can force this behavior by using the
-<code class="docutils literal"><span class="pre">--always-refine</span></code> flag.</p>
+<tt class="docutils literal"><span class="pre">--always-refine</span></tt> flag.</p>
 </div>
 <div class="section" id="memory-usage">
 <span id="id8"></span><h3>Memory usage<a class="headerlink" href="#memory-usage" title="Permalink to this headline">¶</a></h3>
 <p>The amount of memory pplacer needs will vary depending on the reference package
 and input alignment and is directly proportional to the number of sites after
-pre-masking and the number of nodes on the reference tree. <a class="reference internal" href="../faq.html#faq"><span>As mentioned
-in the FAQ</span></a>, placing on a GTRGAMMA RAxML tree will use about four times
+pre-masking and the number of nodes on the reference tree. <a class="reference internal" href="../faq.html#faq"><em>As mentioned
+in the FAQ</em></a>, placing on a GTRGAMMA RAxML tree will use about four times
 as much memory as placing on a FastTree tree.</p>
 <p>To see how much memory would be used for by the part of pplacer which uses the
-most memory (i.e. internal nodes), pass the <code class="docutils literal"><span class="pre">--pretend</span></code> flag and it will be
+most memory (i.e. internal nodes), pass the <tt class="docutils literal"><span class="pre">--pretend</span></tt> flag and it will be
 displayed. pplacer will use more memory than this value, but for most analyses,
 this will be by far the biggest allocation.</p>
 <p>In cases when there isn&#8217;t enough memory for pplacer to use for internal nodes,
 or it&#8217;s otherwise disadvantageous to use physical memory, it&#8217;s possible to
-instead tell pplacer to <a class="reference external" href="http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html"><code class="docutils literal"><span class="pre">mmap(2)</span></code></a> a file instead using the <code class="docutils literal"><span class="pre">--mmap-file</span></code> flag.
+instead tell pplacer to <a class="reference external" href="http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html"><tt class="docutils literal"><span class="pre">mmap(2)</span></tt></a> a file instead using the <tt class="docutils literal"><span class="pre">--mmap-file</span></tt> flag.
 This will, very roughly, perform disk IO instead of using physical memory.</p>
 <p>You will see that pplacer will use the same amount of <em>address space</em>, but less
-<em>physical memory</em>. In terms of <code class="docutils literal"><span class="pre">top(1)</span></code> on linux, <code class="docutils literal"><span class="pre">VIRT</span></code> will stay the same
-but <code class="docutils literal"><span class="pre">RES</span></code> will decrease. The speed of pplacer will also become at least
+<em>physical memory</em>. In terms of <tt class="docutils literal"><span class="pre">top(1)</span></tt> on linux, <tt class="docutils literal"><span class="pre">VIRT</span></tt> will stay the same
+but <tt class="docutils literal"><span class="pre">RES</span></tt> will decrease. The speed of pplacer will also become at least
 partially dependent on the speed of the drive where the mmap file is located;
 with an SSD you might not see any difference from using physical memory, while
 with a spinning metal drive there might be some slowdown. Placing the file on
 an NFS mount is likely not ideal for this reason.</p>
 <p>The implementation and underlying behavior of mmap may vary between platforms
 (the link above is only for linux out of convenience), but pplacer will always
-call <a class="reference external" href="http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html"><code class="docutils literal"><span class="pre">mmap(2)</span></code></a> with <code class="docutils literal"><span class="pre">PROT_READ</span> <span class="pre">|</span> <span class="pre">PROT_WRITE</span></code> and <code class="docutils literal"><span class="pre">MAP_SHARED</span></code>.</p>
-<p>It&#8217;s also possible to pass a directory for the value of the <code class="docutils literal"><span class="pre">--mmap-file</span></code>
+call <a class="reference external" href="http://www.kernel.org/doc/man-pages/online/pages/man2/mmap.2.html"><tt class="docutils literal"><span class="pre">mmap(2)</span></tt></a> with <tt class="docutils literal"><span class="pre">PROT_READ</span> <span class="pre">|</span> <span class="pre">PROT_WRITE</span></tt> and <tt class="docutils literal"><span class="pre">MAP_SHARED</span></tt>.</p>
+<p>It&#8217;s also possible to pass a directory for the value of the <tt class="docutils literal"><span class="pre">--mmap-file</span></tt>
 flag; this will create a temporary file in that directory, and then unlink it
 after opening it. The data will be written to the drive, but when the process
 exits, the last reference to that filesystem entry will be removed and it will
@@ -796,7 +794,7 @@ get cleaned up.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -808,12 +806,12 @@ get cleaned up.</p>
         <li class="right" >
           <a href="../index.html" title="pplacer documentation home"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="../index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer" role="contentinfo">
+    <div class="footer">
         &copy; Copyright 2011-2014, Matsen Group.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

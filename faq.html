@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>FAQ &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    <title>FAQ &mdash; pplacer v1.1.alpha19-20-g399f513 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     'v1.1.alpha19-4-g1189285',
+        VERSION:     'v1.1.alpha19-20-g399f513',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,11 +23,11 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="index.html" />
+    <link rel="top" title="pplacer v1.1.alpha19-20-g399f513 documentation" href="index.html" />
     <link rel="prev" title="Changelog" href="changelog.html" /> 
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
+  <body>
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -36,10 +36,10 @@
         <li class="right" >
           <a href="changelog.html" title="Changelog"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
@@ -54,14 +54,12 @@
   <h4>Previous topic</h4>
   <p class="topless"><a href="changelog.html"
                         title="previous chapter">Changelog</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/faq.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/faq.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
       <input type="text" name="q" />
@@ -80,13 +78,13 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body" role="main">
+          <div class="body">
             
   <div class="section" id="faq">
 <span id="id1"></span><h1>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="how-can-i-cite-pplacer">
 <h2>How can I cite pplacer?<a class="headerlink" href="#how-can-i-cite-pplacer" title="Permalink to this headline">¶</a></h2>
-<p>Right now there is only one paper to cite:</p>
+<p>Please cite:</p>
 <div class="highlight-python"><div class="highlight"><pre>@article{matsen2010pplacer,
   title={pplacer: linear time maximum-likelihood and Bayesian phylogenetic placement of sequences onto a fixed reference tree},
   author={Matsen, F.A. and Kodner, R.B. and Armbrust, E.},
@@ -99,7 +97,7 @@
 }
 </pre></div>
 </div>
-<p>At some point we will write something up for the new pplacer, guppy, taxtastic, etc., but if you use a method implemented in guppy (such as edge PCA) we hope you will cite the paper describing that method.</p>
+<p>If you use a method implemented in guppy (such as edge PCA) we hope you will cite the paper describing that method.</p>
 </div>
 <div class="section" id="why-is-pplacer-taking-up-so-much-memory">
 <h2>Why is pplacer taking up so much memory?<a class="headerlink" href="#why-is-pplacer-taking-up-so-much-memory" title="Permalink to this headline">¶</a></h2>
@@ -108,18 +106,18 @@ This is what makes it fast!</p>
 <p>Pplacer uses about 1/4 of the memory when placing on a FastTree tree as compared to a RAxML tree inferred with GTRGAMMA.
 If your reads are short and in a fixed region, the memory used by pplacer v1.1 alpha08 (or later) scales with respect to the total number of non-gap columns in your query alignment.
 You can also make it use less memory (and run faster) by cutting down the size of your reference tree.</p>
-<p>Additionally, if you are placing metagenomic reads onto a very wide alignment (such as a concatenation) read about the <code class="docutils literal"><span class="pre">--groups</span></code> feature in the documentation.</p>
-<p>If all else fails, there is also a flag <code class="docutils literal"><span class="pre">--mmap-file</span></code> to pplacer. If this
+<p>Additionally, if you are placing metagenomic reads onto a very wide alignment (such as a concatenation) read about the <tt class="docutils literal"><span class="pre">--groups</span></tt> feature in the documentation.</p>
+<p>If all else fails, there is also a flag <tt class="docutils literal"><span class="pre">--mmap-file</span></tt> to pplacer. If this
 flag is passed, pplacer will use an mmapped file instead of making large
 allocations.</p>
-<p>Details about mmap are covered in more detail in the <a class="reference internal" href="generated_rst/pplacer.html#memory-usage"><span>pplacer details section</span></a>.</p>
+<p>Details about mmap are covered in more detail in the <a class="reference internal" href="generated_rst/pplacer.html#memory-usage"><em>pplacer details section</em></a>.</p>
 </div>
 <div class="section" id="why-doesn-t-pplacer-output-a-newick-tree">
 <h2>Why doesn&#8217;t pplacer output a Newick tree?<a class="headerlink" href="#why-doesn-t-pplacer-output-a-newick-tree" title="Permalink to this headline">¶</a></h2>
 <p>Pplacer does not output a Newick tree because it does not build phylogenetic trees.
 It maps sequences into trees, with uncertainty, and thus its output format encodes those maps.
 You can read more about the pplacer/EPA output format and our motivations for it in the corresponding <a class="reference external" href="http://www.plosone.org/article/info%3Adoi%2F10.1371%2Fjournal.pone.0031009">paper</a>.</p>
-<p>If you do need a newick tree, you can look at guppy&#8217;s <a class="reference internal" href="generated_rst/guppy_tog.html#guppy-tog"><span>tog</span></a> command, but be careful, as the output is not a real phylogenetic tree.
+<p>If you do need a newick tree, you can look at guppy&#8217;s <a class="reference internal" href="generated_rst/guppy_tog.html#guppy-tog"><em>tog</em></a> command, but be careful, as the output is not a real phylogenetic tree.
 For example, two very similar query sequences that are both rather different than the reference sequences will end up on long parallel branches rather than in a subtree of size two.</p>
 </div>
 </div>
@@ -130,7 +128,7 @@ For example, two very similar query sequences that are both rather different tha
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -139,12 +137,12 @@ For example, two very similar query sequences that are both rather different tha
         <li class="right" >
           <a href="changelog.html" title="Changelog"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer" role="contentinfo">
+    <div class="footer">
         &copy; Copyright 2011-2014, Matsen Group.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
