@@ -5,7 +5,7 @@ The pplacer suite consists of three separate binaries: pplacer, guppy, and rppr.
 The pplacer binary actually does phylogenetic placement and produces place files, guppy does all of the downstream analysis of placements, and rppr does useful things having to do with reference packages.
 If this is your first time looking at this documentation we suggest looking at our `overview`_.
 
-Precompiled binaries for Mac OS X and Linux can be found on the the `GitHub releases page <https://github.com/matsen/pplacer/releases/tag/v1.1.alpha19>`_.
+Precompiled binaries for Mac OS X and Linux can be found on the the `GitHub releases page <https://github.com/matsen/pplacer/releases>`_.
 
 .. toctree::
    :maxdepth: 2
