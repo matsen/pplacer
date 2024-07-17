@@ -5,7 +5,7 @@ The pplacer suite consists of three separate binaries: pplacer, guppy, and rppr.
 The pplacer binary actually does phylogenetic placement and produces place files, guppy does all of the downstream analysis of placements, and rppr does useful things having to do with reference packages.
 If this is your first time looking at this documentation we suggest looking at our `overview`_.
 
-Precompiled binaries for Mac OS X and Linux can be found on the `main pplacer site`_.
+Precompiled binaries for Mac OS X and Linux can be found on the the `GitHub releases page <https://github.com/matsen/pplacer/releases>`_.
 
 .. toctree::
    :maxdepth: 2
@@ -23,19 +23,14 @@ Precompiled binaries for Mac OS X and Linux can be found on the `main pplacer si
 
    <h2> <font color="red">Warning</font> </h2>
 
-pplacer is under heavy development, and not all parts are at the same level of maturity.
-The general guideline is: if we have released a paper about a method, then we have verified and tested it.
-Thus, the following functionality is stable:
+pplacer is no longer under development. Here are some things that people have used the pplacer suite for:
 
-* placement and visualization ability as described in the BMC Bioinformatics paper
+* placement and visualization
 * Kantorovich-Rubenstein distances
 * edge principal components and squash clustering
 * taxonomic/phylogenetic discordance analysis
 * taxon subsetting by minimizing the average distance to the closest leaf
-
-We suggest that you wait to do any serious analysis using features not described on this list.
-In particular, the taxonomic classification functionality is not stable and is still being validated.
-
+* taxonomic classification
 
 Tutorial
 --------
