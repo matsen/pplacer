@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Changelog &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    <title>Changelog &mdash; pplacer v1.1.alpha19-20-g399f513 documentation</title>
     
     <link rel="stylesheet" href="_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     'v1.1.alpha19-4-g1189285',
+        VERSION:     'v1.1.alpha19-20-g399f513',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,12 +23,12 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="index.html" />
+    <link rel="top" title="pplacer v1.1.alpha19-20-g399f513 documentation" href="index.html" />
     <link rel="next" title="FAQ" href="faq.html" />
     <link rel="prev" title="Compiling pplacer from source" href="compiling.html" /> 
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
+  <body>
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -40,10 +40,10 @@
         <li class="right" >
           <a href="compiling.html" title="Compiling pplacer from source"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h3><a href="index.html">Table Of Contents</a></h3>
   <ul>
@@ -52,18 +52,16 @@
 
   <h4>Previous topic</h4>
   <p class="topless"><a href="compiling.html"
-                        title="previous chapter">Compiling <code class="docutils literal"><span class="pre">pplacer</span></code> from source</a></p>
+                        title="previous chapter">Compiling <tt class="docutils literal"><span class="pre">pplacer</span></tt> from source</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="faq.html"
                         title="next chapter">FAQ</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="_sources/changelog.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/changelog.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="search.html" method="get">
       <input type="text" name="q" />
@@ -82,7 +80,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body" role="main">
+          <div class="body">
             
   <div class="section" id="changelog">
 <h1>Changelog<a class="headerlink" href="#changelog" title="Permalink to this headline">¶</a></h1>
@@ -125,15 +123,15 @@
 <div><ul class="simple">
 <li>Closed GH-320: Now compiles fine with Batteries 2.</li>
 <li>Closed GH-327: Ignore sequences that aren&#8217;t in both jplace and sequence files.</li>
-<li>Closed GH-312: An improved script for managing classification results, called <code class="docutils literal"><span class="pre">classif_table.py</span></code>; <code class="docutils literal"><span class="pre">classif_rect.py</span></code> is now deprecated.</li>
-<li>Closed GH-315: support <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">info</span></code> on reference packages lacking a taxonomy</li>
+<li>Closed GH-312: An improved script for managing classification results, called <tt class="docutils literal"><span class="pre">classif_table.py</span></tt>; <tt class="docutils literal"><span class="pre">classif_rect.py</span></tt> is now deprecated.</li>
+<li>Closed GH-315: support <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">info</span></tt> on reference packages lacking a taxonomy</li>
 <li>Closed GH-316: pplacer warns rather than fails when an alignment looks like nucleotides</li>
-<li>Closed GH-317: <code class="docutils literal"><span class="pre">pplacer</span> <span class="pre">--write-masked-out</span></code> respects <code class="docutils literal"><span class="pre">--out-dir</span></code></li>
+<li>Closed GH-317: <tt class="docutils literal"><span class="pre">pplacer</span> <span class="pre">--write-masked-out</span></tt> respects <tt class="docutils literal"><span class="pre">--out-dir</span></tt></li>
 <li>Closed GH-318: Apply alignment mask on a per-placement basis</li>
-<li>Closed GH-319: <code class="docutils literal"><span class="pre">pplacer</span> <span class="pre">--write-pre-masked</span></code> no longer exits after writing mask.</li>
+<li>Closed GH-319: <tt class="docutils literal"><span class="pre">pplacer</span> <span class="pre">--write-pre-masked</span></tt> no longer exits after writing mask.</li>
 <li>Closed GH-322: Moved to Batteries version 2.1.0. Supports OCaml 4.01.0</li>
-<li>Closed GH-323: <code class="docutils literal"><span class="pre">pplacer</span></code>, <code class="docutils literal"><span class="pre">guppy</span></code>, and <code class="docutils literal"><span class="pre">rppr</span></code> support gzip-compressed alignment and <code class="docutils literal"><span class="pre">.jplace</span></code> files.</li>
-<li>Closed GH-324: <code class="docutils literal"><span class="pre">deduplicate_sequences.py</span></code> supports gzip-compressed FASTA files.</li>
+<li>Closed GH-323: <tt class="docutils literal"><span class="pre">pplacer</span></tt>, <tt class="docutils literal"><span class="pre">guppy</span></tt>, and <tt class="docutils literal"><span class="pre">rppr</span></tt> support gzip-compressed alignment and <tt class="docutils literal"><span class="pre">.jplace</span></tt> files.</li>
+<li>Closed GH-324: <tt class="docutils literal"><span class="pre">deduplicate_sequences.py</span></tt> supports gzip-compressed FASTA files.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -141,59 +139,59 @@
 <h2>1.1.alpha14<a class="headerlink" href="#alpha14" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Closed GH-181: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">indep_c</span></code>; added <code class="docutils literal"><span class="pre">--leaf-values</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">mft</span></code>.</li>
-<li>Closed GH-215: Added <code class="docutils literal"><span class="pre">pca_for_qiime.py</span></code> and <code class="docutils literal"><span class="pre">extract_taxonomy_from_biom.py</span></code>;
+<li>Closed GH-181: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">indep_c</span></tt>; added <tt class="docutils literal"><span class="pre">--leaf-values</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">mft</span></tt>.</li>
+<li>Closed GH-215: Added <tt class="docutils literal"><span class="pre">pca_for_qiime.py</span></tt> and <tt class="docutils literal"><span class="pre">extract_taxonomy_from_biom.py</span></tt>;
 changed guppy and rppr to allow BIOM files to be passed as arguments where
 placefiles are allowed.</li>
-<li>Closed GH-241: On the NBC classifier of <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code>: renamed
-<code class="docutils literal"><span class="pre">--target-rank</span></code> to <code class="docutils literal"><span class="pre">--nbc-rank</span></code>; added <code class="docutils literal"><span class="pre">--nbc-rank</span> <span class="pre">auto</span></code>.</li>
-<li>Closed GH-248: Added premasking by default to the NBC classifier of <code class="docutils literal"><span class="pre">guppy</span>
-<span class="pre">classify</span></code>; correspondingly added <code class="docutils literal"><span class="pre">--no-pre-mask</span></code>.</li>
+<li>Closed GH-241: On the NBC classifier of <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></tt>: renamed
+<tt class="docutils literal"><span class="pre">--target-rank</span></tt> to <tt class="docutils literal"><span class="pre">--nbc-rank</span></tt>; added <tt class="docutils literal"><span class="pre">--nbc-rank</span> <span class="pre">auto</span></tt>.</li>
+<li>Closed GH-248: Added premasking by default to the NBC classifier of <tt class="docutils literal"><span class="pre">guppy</span>
+<span class="pre">classify</span></tt>; correspondingly added <tt class="docutils literal"><span class="pre">--no-pre-mask</span></tt>.</li>
 <li>Closed GH-250: Completely revamped classification.</li>
 <li>Closed GH-251: Added the hybrid5 classifier.</li>
-<li>Closed GH-256: Added <code class="docutils literal"><span class="pre">--mmap-file</span></code> to pplacer; changed <code class="docutils literal"><span class="pre">--pretend</span></code> in
+<li>Closed GH-256: Added <tt class="docutils literal"><span class="pre">--mmap-file</span></tt> to pplacer; changed <tt class="docutils literal"><span class="pre">--pretend</span></tt> in
 pplacer to show the amount of memory which would be allocated.</li>
-<li>Closed GH-259: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">mcl</span></code> and a <code class="docutils literal"><span class="pre">--mcl</span></code> flag to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></code>.</li>
-<li>Closed GH-260: Added <code class="docutils literal"><span class="pre">rooted_pd</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">fpd</span></code>; Added a <code class="docutils literal"><span class="pre">--variance</span></code> flag
-to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></code>.</li>
-<li>Closed GH-261: Added <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convex_taxids</span></code>.</li>
-<li>Closed GH-262: Added <code class="docutils literal"><span class="pre">--as-mass</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span></code>; updated
-<code class="docutils literal"><span class="pre">sort_placefile.py</span></code> for the new placefile format; fixed pplacer to better
+<li>Closed GH-259: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">mcl</span></tt> and a <tt class="docutils literal"><span class="pre">--mcl</span></tt> flag to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></tt>.</li>
+<li>Closed GH-260: Added <tt class="docutils literal"><span class="pre">rooted_pd</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">fpd</span></tt>; Added a <tt class="docutils literal"><span class="pre">--variance</span></tt> flag
+to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></tt>.</li>
+<li>Closed GH-261: Added <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convex_taxids</span></tt>.</li>
+<li>Closed GH-262: Added <tt class="docutils literal"><span class="pre">--as-mass</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span></tt>; updated
+<tt class="docutils literal"><span class="pre">sort_placefile.py</span></tt> for the new placefile format; fixed pplacer to better
 deal with internal edges on a tree with a branch length of 0.</li>
-<li>Closed GH-263: Fixed a bug that could sometimes cause failures in <code class="docutils literal"><span class="pre">rppr</span>
-<span class="pre">min_adcl</span></code> with the PAM algorithm.</li>
-<li>Closed GH-265: Fixed a bug that could cometimes cause <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></code> to
+<li>Closed GH-263: Fixed a bug that could sometimes cause failures in <tt class="docutils literal"><span class="pre">rppr</span>
+<span class="pre">min_adcl</span></tt> with the PAM algorithm.</li>
+<li>Closed GH-265: Fixed a bug that could cometimes cause <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></tt> to
 return a suboptimal rooting.</li>
-<li>Closed GH-266: Adding <code class="docutils literal"><span class="pre">map_ratio</span></code> and <code class="docutils literal"><span class="pre">map_overlap</span></code> columns to <code class="docutils literal"><span class="pre">guppy</span>
-<span class="pre">to_csv</span></code>.</li>
-<li>Closed GH-267: Added a <code class="docutils literal"><span class="pre">leaf_count</span></code> column to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convex_taxids</span></code>.</li>
+<li>Closed GH-266: Adding <tt class="docutils literal"><span class="pre">map_ratio</span></tt> and <tt class="docutils literal"><span class="pre">map_overlap</span></tt> columns to <tt class="docutils literal"><span class="pre">guppy</span>
+<span class="pre">to_csv</span></tt>.</li>
+<li>Closed GH-267: Added a <tt class="docutils literal"><span class="pre">leaf_count</span></tt> column to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convex_taxids</span></tt>.</li>
 <li>Closed GH-268: Merged various minor fixes.</li>
 <li>Closed GH-273: Fix convexify for multifurcating trees</li>
-<li>Closed GH-274: Added <code class="docutils literal"><span class="pre">--weight-as-count</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></code>.</li>
-<li>Closed GH-276: Added <code class="docutils literal"><span class="pre">-k</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></code>.</li>
-<li>Closed GH-277: Added <code class="docutils literal"><span class="pre">--weight-as-count</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefy</span></code>.</li>
-<li>Closed GH-278: Changed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></code> to allow multiple placefiles to be
+<li>Closed GH-274: Added <tt class="docutils literal"><span class="pre">--weight-as-count</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></tt>.</li>
+<li>Closed GH-276: Added <tt class="docutils literal"><span class="pre">-k</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></tt>.</li>
+<li>Closed GH-277: Added <tt class="docutils literal"><span class="pre">--weight-as-count</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefy</span></tt>.</li>
+<li>Closed GH-278: Changed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></tt> to allow multiple placefiles to be
 passed instead of just one.</li>
-<li>Closed GH-282: Added a <code class="docutils literal"><span class="pre">--inflation</span></code> flag to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">mcl</span></code> and <code class="docutils literal"><span class="pre">guppy</span>
-<span class="pre">compress</span></code>.</li>
-<li>Closed GH-286: Changed pplacer&#8217;s <code class="docutils literal"><span class="pre">--mmap-file</span></code> to accept a path to either a
+<li>Closed GH-282: Added a <tt class="docutils literal"><span class="pre">--inflation</span></tt> flag to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">mcl</span></tt> and <tt class="docutils literal"><span class="pre">guppy</span>
+<span class="pre">compress</span></tt>.</li>
+<li>Closed GH-286: Changed pplacer&#8217;s <tt class="docutils literal"><span class="pre">--mmap-file</span></tt> to accept a path to either a
 directory or a file.</li>
 <li>Closed GH-287: Added a more informative error message for the case of an
 input alignment containing some, but not all reference sequence names.</li>
-<li>Closed GH-288: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">placemat</span></code></li>
+<li>Closed GH-288: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">placemat</span></tt></li>
 <li>Closed GH-290: Random tie breaking in NBC classifier</li>
 <li>Closed GH-291: Added qD(T) alpha diversity measure from Chao et. al., 2010
 (doi:10.1098/rstb.2010.0272)</li>
 <li>Closed GH-293: Switched build system to use OPAM</li>
-<li>Closed GH-294: Added <code class="docutils literal"><span class="pre">--unitize</span></code> option to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">squash</span></code></li>
+<li>Closed GH-294: Added <tt class="docutils literal"><span class="pre">--unitize</span></tt> option to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">squash</span></tt></li>
 <li>Closed GH-297: Support multiprocessing during squash cluster bootstrapping</li>
 <li>Closed GH-298: Faster upper-limit finding during integration</li>
 <li>Closed GH-299: Fix NaN likelihoods for empirical frequencies + unseen state</li>
 <li>Closed GH-303: Updated Batteries dependency to version 2.0.0</li>
 <li>Closed GH-305: Eliminate compilation warnings from CDD</li>
 <li>Closed GH-306: Random tie breaking is default in NBC</li>
-<li>Closed GH-307: Renamed <code class="docutils literal"><span class="pre">--kappa</span></code> to <code class="docutils literal"><span class="pre">--theta</span></code>, <code class="docutils literal"><span class="pre">awpd</span></code> to <code class="docutils literal"><span class="pre">bwpd</span></code> in <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">fpd</span></code></li>
-<li>Closed GH-309: Support overlap minimization (SOM) added to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">epca</span></code> (see also GH-221)</li>
+<li>Closed GH-307: Renamed <tt class="docutils literal"><span class="pre">--kappa</span></tt> to <tt class="docutils literal"><span class="pre">--theta</span></tt>, <tt class="docutils literal"><span class="pre">awpd</span></tt> to <tt class="docutils literal"><span class="pre">bwpd</span></tt> in <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">fpd</span></tt></li>
+<li>Closed GH-309: Support overlap minimization (SOM) added to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">epca</span></tt> (see also GH-221)</li>
 </ul>
 </div></blockquote>
 </div>
@@ -203,33 +201,33 @@ input alignment containing some, but not all reference sequence names.</li>
 <div><ul class="simple">
 <li>Fixed a bug where pplacer would sometimes fail abruptly with a Child_error
 of EBADF on close(2). [rc2]</li>
-<li>Added missing <code class="docutils literal"><span class="pre">-o</span></code> and related flags to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">to_csv</span></code>. [rc3]</li>
+<li>Added missing <tt class="docutils literal"><span class="pre">-o</span></tt> and related flags to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">to_csv</span></tt>. [rc3]</li>
 <li>Fixed minor errors in the documentation [r2]</li>
-<li>Closed GH-216: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">trim</span></code> and <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">check</span></code>.</li>
-<li>Closed GH-225: Added <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">vorotree</span></code>.</li>
-<li>Closed GH-235: Added <code class="docutils literal"><span class="pre">--rep-edges</span></code> flag for the splitify subcommands.</li>
-<li>Closed GH-237: Added a multiplicity column to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></code>.</li>
-<li>Closed GH-238: Added <code class="docutils literal"><span class="pre">--epsilon</span></code> for splitify commands to filter constant
+<li>Closed GH-216: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">trim</span></tt> and <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">check</span></tt>.</li>
+<li>Closed GH-225: Added <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">vorotree</span></tt>.</li>
+<li>Closed GH-235: Added <tt class="docutils literal"><span class="pre">--rep-edges</span></tt> flag for the splitify subcommands.</li>
+<li>Closed GH-237: Added a multiplicity column to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></tt>.</li>
+<li>Closed GH-238: Added <tt class="docutils literal"><span class="pre">--epsilon</span></tt> for splitify commands to filter constant
 edges out of the resulting splitify matrices.</li>
-<li>Closed GH-239: Added the <code class="docutils literal"><span class="pre">pam</span></code> algorithm to voronoi commands; cleaned up
+<li>Closed GH-239: Added the <tt class="docutils literal"><span class="pre">pam</span></tt> algorithm to voronoi commands; cleaned up
 voronoi full algorithm and implementation.</li>
-<li>Closed GH-240: Added a <code class="docutils literal"><span class="pre">-o</span></code> flag for pplacer.</li>
+<li>Closed GH-240: Added a <tt class="docutils literal"><span class="pre">-o</span></tt> flag for pplacer.</li>
 <li>Closed GH-242: Renamed ECLD to ADCL; added &#8211;max-adcl to voronoi commands.</li>
-<li>Closed GH-243: Updated <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></code> so it can run on reference packages
+<li>Closed GH-243: Updated <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></tt> so it can run on reference packages
 which have unannotated sequences.</li>
-<li>Closed GH-244: Updated <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">infer</span></code> to handle sequences which could not be
+<li>Closed GH-244: Updated <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">infer</span></tt> to handle sequences which could not be
 reasonably placed anywhere on the tree.</li>
 <li>Closed GH-245: Updated code to allow refpkgs to be passed as .zip files as
 well as directories.</li>
 <li>Closed GH-246: Added &#8211;always-include to voronoi commands.</li>
-<li>Closed GH-247: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">unifrac</span></code>.</li>
-<li>Closed GH-249: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefy</span></code>.</li>
-<li>Closed GH-252: Added <code class="docutils literal"><span class="pre">--all-alternates</span></code> to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code>.</li>
-<li>Closed GH-253: Added <code class="docutils literal"><span class="pre">--no-collapse</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></code>.</li>
-<li>Closed GH-255: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">to_csv</span></code>.</li>
-<li>Closed GH-257: Renamed <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">voronoi</span></code> to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl</span></code>, <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">vorotree</span></code> to
-<code class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl_tree</span></code>, and <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">adcl</span></code>. Added <code class="docutils literal"><span class="pre">--seed</span></code> to
-<code class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl</span></code> and <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl_tree</span></code>.</li>
+<li>Closed GH-247: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">unifrac</span></tt>.</li>
+<li>Closed GH-249: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefy</span></tt>.</li>
+<li>Closed GH-252: Added <tt class="docutils literal"><span class="pre">--all-alternates</span></tt> to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt>.</li>
+<li>Closed GH-253: Added <tt class="docutils literal"><span class="pre">--no-collapse</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></tt>.</li>
+<li>Closed GH-255: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">to_csv</span></tt>.</li>
+<li>Closed GH-257: Renamed <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">voronoi</span></tt> to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl</span></tt>, <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">vorotree</span></tt> to
+<tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl_tree</span></tt>, and <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">adcl</span></tt>. Added <tt class="docutils literal"><span class="pre">--seed</span></tt> to
+<tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl</span></tt> and <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">min_adcl_tree</span></tt>.</li>
 <li>Closed GH-280: Fixed a bug in which pplacer would fail if passed -t and
 -s flags without also passing a -c or -r flag.</li>
 </ul>
@@ -239,48 +237,48 @@ well as directories.</li>
 <h2>1.1.alpha12<a class="headerlink" href="#alpha12" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">to_rdp</span></code> and <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify_rdp</span></code>.</li>
-<li>Closed GH-113: Updated the <code class="docutils literal"><span class="pre">best_classification</span></code> and <code class="docutils literal"><span class="pre">multiclass</span></code> SQL views;
-correspondingly changed the flags to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></code>; added the
-<code class="docutils literal"><span class="pre">placement_evidence</span></code> table for bayes classification.</li>
+<li>Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">to_rdp</span></tt> and <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify_rdp</span></tt>.</li>
+<li>Closed GH-113: Updated the <tt class="docutils literal"><span class="pre">best_classification</span></tt> and <tt class="docutils literal"><span class="pre">multiclass</span></tt> SQL views;
+correspondingly changed the flags to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></tt>; added the
+<tt class="docutils literal"><span class="pre">placement_evidence</span></tt> table for bayes classification.</li>
 <li>Closed GH-183: Added documentation for more functions.</li>
-<li>Closed GH-189: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">pentropy</span></code>.</li>
-<li>Closed GH-191: Added -m to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span></code>; bumped the jplace format version
+<li>Closed GH-189: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">pentropy</span></tt>.</li>
+<li>Closed GH-191: Added -m to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span></tt>; bumped the jplace format version
 to 3 with the ability to give each name for a pquery a different mass.</li>
-<li>Closed GH-192: Added <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">infer</span></code>.</li>
-<li>Closed GH-193: Added <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reclass</span></code>.</li>
-<li>Closed GH-194: Added a <code class="docutils literal"><span class="pre">mass</span></code> column to <code class="docutils literal"><span class="pre">placement_names</span></code> to parallel new
+<li>Closed GH-192: Added <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">infer</span></tt>.</li>
+<li>Closed GH-193: Added <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reclass</span></tt>.</li>
+<li>Closed GH-194: Added a <tt class="docutils literal"><span class="pre">mass</span></tt> column to <tt class="docutils literal"><span class="pre">placement_names</span></tt> to parallel new
 features in the jplace format.</li>
 <li>Closed GH-195: Added a &#8211;groups flag to pplacer for placing metagenomic
 sequences onto trees built from very wide alignments.</li>
 <li>Closed GH-196: Added code to pplacer to better handle errors raised when
 calling fork(2).</li>
-<li>Closed GH-198: Added progress reporting code to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></code>.</li>
-<li>Closed GH-199: Renamed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">pentropy</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">entropy</span></code>; added quadratic
+<li>Closed GH-198: Added progress reporting code to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></tt>.</li>
+<li>Closed GH-199: Renamed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">pentropy</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">entropy</span></tt>; added quadratic
 entropy calculation.</li>
-<li>Closed GH-200: Added &#8211;discard-below to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">{islands,compress}</span></code>.</li>
+<li>Closed GH-200: Added &#8211;discard-below to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">{islands,compress}</span></tt>.</li>
 <li>Closed GH-201: Added a setup.py file to the scripts directory.</li>
-<li>Closed GH-202: Added <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">prepsim</span></code>; added &#8211;include-pendant to
-<code class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></code>.</li>
-<li>Closed GH-204: Added more columns to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reclass</span></code>.</li>
-<li>Closed GH-205: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">error</span></code>.</li>
+<li>Closed GH-202: Added <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">prepsim</span></tt>; added &#8211;include-pendant to
+<tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></tt>.</li>
+<li>Closed GH-204: Added more columns to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reclass</span></tt>.</li>
+<li>Closed GH-205: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">error</span></tt>.</li>
 <li>Closed GH-206: Updated some pplacer documentation.</li>
-<li>Closed GH-207: Added CSV output to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">edpl</span></code>.</li>
+<li>Closed GH-207: Added CSV output to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">edpl</span></tt>.</li>
 <li>Closed GH-208: Fixed the -o flag to reflect the actual file written to for
-<code class="docutils literal"><span class="pre">guppy</span> <span class="pre">{sing,tog,edpl}</span></code>.</li>
+<tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">{sing,tog,edpl}</span></tt>.</li>
 <li>Closed GH-209: Fixed a bug preventing Gcat_model refinement if the supplied
 alignment had a different number of sites from the refpkg; added
 &#8211;always-refine to pplacer.</li>
-<li>Closed GH-210: Merged <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">{pd,wpd,entropy}</span></code> into <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">fpd</span></code>.</li>
+<li>Closed GH-210: Merged <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">{pd,wpd,entropy}</span></tt> into <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">fpd</span></tt>.</li>
 <li>Closed GH-212: Changed parsing error messages to be more specific.</li>
 <li>Closed GH-213: Added PyNAST support to refpkg_align.py.</li>
-<li>Closed GH-214: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">ograph</span></code>.</li>
-<li>Closed GH-218: Added &#8211;split-csv to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">merge</span></code>.</li>
+<li>Closed GH-214: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">ograph</span></tt>.</li>
+<li>Closed GH-218: Added &#8211;split-csv to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">merge</span></tt>.</li>
 <li>Closed GH-219: Fixed some guppy commands which needed a zero root branch
 length.</li>
 <li>Closed GH-220: Added error messages for some exceptions; fixed
-<code class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></code>.</li>
-<li>Closed GH-222: Added a -c flag to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">bary</span></code>.</li>
+<tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">rarefact</span></tt>.</li>
+<li>Closed GH-222: Added a -c flag to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">bary</span></tt>.</li>
 <li>Closed GH-236: Fixed support for numeric leaf names when writing out XML.</li>
 </ul>
 </div></blockquote>
@@ -290,23 +288,23 @@ length.</li>
 <blockquote>
 <div><ul class="simple">
 <li>Fixed a bug with parsing MAP identity from a jplace file.</li>
-<li>Fixed a bug that occurred sometimes when running <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code> on a tree
+<li>Fixed a bug that occurred sometimes when running <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt> on a tree
 where not every leaf had a corresponding tax_id at a particular rank.</li>
 <li>Fixed a bug with fasttree placements which caused failure when the site
 categories had to be calculated (ie. when using a combined reference + query
 alignment)</li>
 <li>Changed versions to be parsed only out of git tags.</li>
-<li>Closed GH-42: Added &#8211;edpl flag to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">fat</span></code> for EDPL coloring in fat
+<li>Closed GH-42: Added &#8211;edpl flag to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">fat</span></tt> for EDPL coloring in fat
 trees.</li>
-<li>Closed GH-146: Added an &#8211;unweighted flag to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">pca</span></code>.</li>
+<li>Closed GH-146: Added an &#8211;unweighted flag to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">pca</span></tt>.</li>
 <li>Closed GH-168: Changed guppy and rppr to list the subcommands in &#8211;help;
 reformatted the options flags to be more readable.</li>
 <li>Closed GH-169: Fixed all commands that work on reference packages to use the
 -c flag to specify the reference package.</li>
-<li>Closed GH-176: Fixed <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></code> to handle cases where not all tax_ids are
+<li>Closed GH-176: Fixed <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></tt> to handle cases where not all tax_ids are
 specified under the rank the rerooting is happening at.</li>
-<li>Closed GH-177: Added &#8211;mass-gt and &#8211;mass-le flags to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">filter</span></code>.</li>
-<li>Closed GH-178: Fixed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></code> to add a zero root branch length.</li>
+<li>Closed GH-177: Added &#8211;mass-gt and &#8211;mass-le flags to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">filter</span></tt>.</li>
+<li>Closed GH-178: Fixed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></tt> to add a zero root branch length.</li>
 <li>Closed GH-179: Changed the JSON emitter to be able to represent a wider
 range of floats.</li>
 <li>Closed GH-182: Changed &#8216;weighted&#8217; to &#8216;spread&#8217; and &#8216;unweighted&#8217; to &#8216;point&#8217;
@@ -323,10 +321,10 @@ that some reference sequences are unclassified.</li>
 <div><ul class="simple">
 <li>Closed GH-126: Split Glv/Model into Gmix_model and Gcat_model with the
 option of adding more models to pplacer later.</li>
-<li>Closed GH-154: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">islands</span></code>.</li>
+<li>Closed GH-154: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">islands</span></tt>.</li>
 <li>Closed GH-156: Added functionality for calculating multiple KR distances
 with only one tree traversal.</li>
-<li>Closed GH-157: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></code>.</li>
+<li>Closed GH-157: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">compress</span></tt>.</li>
 <li>Closed GH-162: Added fig ranking to pplacer.</li>
 <li>Closed GH-163: Added a &#8211;node-numbers flag to every command that emits a
 phyloxml tree which adds the tree&#8217;s node numbers to the phyloxml output as
@@ -343,11 +341,11 @@ bootstrap values.</li>
 placement was on the edge just proximal to an MRCA.</li>
 <li>Fixed a bug wherein the Newick parser would add a &#8216;.&#8217; to the end of leaf
 names if the name was an integer.</li>
-<li>In fixing a bug, made <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></code> only emit the first name in a pquery in
+<li>In fixing a bug, made <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">diplac</span></tt> only emit the first name in a pquery in
 its results.</li>
 <li>Fixed a bug that caused the trailing } in a JSON file to be omitted when the
 file was large enough.</li>
-<li>Added a <code class="docutils literal"><span class="pre">multiclass</span></code> view and associated parameters to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></code>.</li>
+<li>Added a <tt class="docutils literal"><span class="pre">multiclass</span></tt> view and associated parameters to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></tt>.</li>
 <li>Fixed a bug where sometimes placements that fell too close to the root would
 vanish with the &#8211;map-identity flag on.</li>
 <li>Fixed identity to give 0% sequence identity in the case of no overlap
@@ -358,17 +356,17 @@ data isn&#8217;t written multiple times.</li>
 tree when creating a placefile.</li>
 <li>Fixed some issues with phyloxml generation.</li>
 <li>Closed GH-27: Reorganized functions that operate on alignments.</li>
-<li>Closed GH-67: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">wpd</span></code>.</li>
-<li>Closed GH-72: Added new features to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code> and fixed the
+<li>Closed GH-67: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">wpd</span></tt>.</li>
+<li>Closed GH-72: Added new features to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt> and fixed the
 implementation of the convexify algorithm, as it cut too many leaves in some
 corner cases.</li>
 <li>Closed GH-75: Changed mass maps to use records types instead of tuples.</li>
-<li>Closed GH-76: Added a check in <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code> to ensure that the sqlite
+<li>Closed GH-76: Added a check in <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></tt> to ensure that the sqlite
 database has been properly initialized.</li>
-<li>Closed GH-78: Added an &#8211;average flag to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">fat</span></code>.</li>
+<li>Closed GH-78: Added an &#8211;average flag to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">fat</span></tt>.</li>
 <li>Closed GH-81: Removed old code that was deprecated by batteries; changed
 most code to be using batteries.</li>
-<li>Closed GH-82: Merged the <code class="docutils literal"><span class="pre">pick</span></code> branch into dev.</li>
+<li>Closed GH-82: Merged the <tt class="docutils literal"><span class="pre">pick</span></tt> branch into dev.</li>
 <li>Closed GH-84: Renamed .json to .jplace for new-format placefiles.</li>
 <li>Closed GH-85: Added better error messages for potential premasking failures.</li>
 <li>Closed GH-86: Dropped support for older versions of the reference package
@@ -381,7 +379,7 @@ gamma distribution.</li>
 arguments.</li>
 <li>Closed GH-91: Added more documentation to .mli files.</li>
 <li>Closed GH-92: Added searching and alignment scripts.</li>
-<li>Closed GH-94: Improved the leaf selection criteria in <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">voronoi</span></code>.</li>
+<li>Closed GH-94: Improved the leaf selection criteria in <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">voronoi</span></tt>.</li>
 <li>Closed GH-96: Now using colors from colorbrewer2.org for heat.</li>
 <li>Closed GH-98: Added a &#8211;map-identity flag to pplacer.</li>
 <li>Closed GH-99: Added more examples for guppy batchfiles.</li>
@@ -392,57 +390,57 @@ accessible with a &#8211;naive flag.</li>
 <li>Closed GH-105: Added parameter substitution to guppy batchfiles.</li>
 <li>Closed GH-108: Added more data from jplace files into the taxtable schema;
 added a way to change the cutoff for best_classifications.</li>
-<li>Closed GH-109: Added a <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">info</span></code> subcommand.</li>
-<li>Closed GH-110: Added a &#8211;no-early flag to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code>.</li>
+<li>Closed GH-109: Added a <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">info</span></tt> subcommand.</li>
+<li>Closed GH-110: Added a &#8211;no-early flag to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt>.</li>
 <li>Closed GH-111: Added a script to update reference packages to version 1.1.</li>
 <li>Closed GH-112: Improved some of pplacer&#8217;s error messages.</li>
 <li>Closed GH-114: Changed MAP identity in placefiles to be stored flat instead
 of nested.</li>
 <li>Closed GH-115: Updated the documentation to reflect changes to the SQL
-schema in <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></code>.</li>
+schema in <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></tt>.</li>
 <li>Closed GH-116: Added &#8211;keep-at-most and &#8211;keep-factor flags to pplacer.</li>
-<li>Closed GH-117: Added the output of <code class="docutils literal"><span class="pre">git</span> <span class="pre">describe</span></code> to &#8211;version output.</li>
+<li>Closed GH-117: Added the output of <tt class="docutils literal"><span class="pre">git</span> <span class="pre">describe</span></tt> to &#8211;version output.</li>
 <li>Closed Gh-118: Added a &#8211;quiet flag to guppy and rppr.</li>
-<li>Closed GH-119: Added a <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></code> subcommand.</li>
-<li>Closed GH-120: Added a &#8211;rank-limit flag to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code>.</li>
-<li>Closed GH-122: Renamed <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">taxtable</span></code> to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></code>.</li>
+<li>Closed GH-119: Added a <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></tt> subcommand.</li>
+<li>Closed GH-120: Added a &#8211;rank-limit flag to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt>.</li>
+<li>Closed GH-122: Renamed <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">taxtable</span></tt> to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">prep_db</span></tt>.</li>
 <li>Closed GH-124: Rewrote the Newick parser.</li>
-<li>Closed GH-125: Added a &#8211;rooted flag to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code>.</li>
+<li>Closed GH-125: Added a &#8211;rooted flag to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt>.</li>
 <li>Closed GH-128: Added informative priors to pplacer integration.</li>
-<li>Closed GH-129: Added the ability for <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></code> to convexify a tree
+<li>Closed GH-129: Added the ability for <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">convexify</span></tt> to convexify a tree
 not in a reference package.</li>
-<li>Closed GH-130: Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">pd</span></code>.</li>
+<li>Closed GH-130: Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">pd</span></tt>.</li>
 <li>Closed GH-131: Changed pplacer to set some defaults with the -p flag.</li>
 <li>Closed GH-133: Added edge painting classification by default to pplacer and
-a corresponding &#8211;painted flag to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">ref_tree</span></code>.</li>
+a corresponding &#8211;painted flag to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">ref_tree</span></tt>.</li>
 <li>Re-closed GH-133: Added checks for the case when not all ranks are
 represented by some sequence in the reference package.</li>
 <li>Closed GH-135: Generally improved error messages in pplacer, guppy, and
 rppr.</li>
-<li>Closed GH-138: Removed the &#8211;transform flag from everything except <code class="docutils literal"><span class="pre">guppy</span>
-<span class="pre">mft</span></code>; removed the &#8211;unweighted flag from commands which don&#8217;t respect it.</li>
+<li>Closed GH-138: Removed the &#8211;transform flag from everything except <tt class="docutils literal"><span class="pre">guppy</span>
+<span class="pre">mft</span></tt>; removed the &#8211;unweighted flag from commands which don&#8217;t respect it.</li>
 <li>Closed GH-139: Added a check to pplacer to ensure all query sequences have
 at least some overlap with some reference sequence.</li>
 <li>Closed GH-140: Allowed pplacer to be run with -t and without -r or -c.</li>
-<li>Closed GH-141: Removed <code class="docutils literal"><span class="pre">compare_placements.py</span></code>; added <code class="docutils literal"><span class="pre">check_placements.py</span></code>;
+<li>Closed GH-141: Removed <tt class="docutils literal"><span class="pre">compare_placements.py</span></tt>; added <tt class="docutils literal"><span class="pre">check_placements.py</span></tt>;
 documented the rest of the python scripts.</li>
-<li>Closed GH-143: Changed the &#8211;leaves argument to <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">voronoi</span></code> to specify
+<li>Closed GH-143: Changed the &#8211;leaves argument to <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">voronoi</span></tt> to specify
 the number of leaves to keep in the tree instead of the number of leaves to
 prune.</li>
 <li>Closed GH-144: Changed pplacer to explicitly disallow unplaced sequences
-from being written out; changed <code class="docutils literal"><span class="pre">best_classifications</span></code> and <code class="docutils literal"><span class="pre">multiclass</span></code> views
+from being written out; changed <tt class="docutils literal"><span class="pre">best_classifications</span></tt> and <tt class="docutils literal"><span class="pre">multiclass</span></tt> views
 to yield NULL for rows where no placements match all the criteria.</li>
 <li>Closed GH-149: Updated the jplace version to 2; changed the Newick parser
 and emitter to allow for the new format of trees with edge numbers specified
 in braces instead of brackets.</li>
-<li>Closed GH-153: Changed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">mft</span></code> to not squash name lists to mass by
+<li>Closed GH-153: Changed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">mft</span></tt> to not squash name lists to mass by
 default.</li>
 <li>Closed GH-155: Changed pplacer to always check for invalid bases when
 pre-masking sequences.</li>
 <li>Closed GH-159: Updated to use the v2 batteries API.</li>
 <li>Closed GH-164: Fixed some bugs related to various APIs not knowing how to
 deal with node labels on non-leaves.</li>
-<li>Closed GH-167: Fixed an issue where <code class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></code> wasn&#8217;t updating the bark
+<li>Closed GH-167: Fixed an issue where <tt class="docutils literal"><span class="pre">rppr</span> <span class="pre">reroot</span></tt> wasn&#8217;t updating the bark
 of trees correctly.</li>
 </ul>
 </div></blockquote>
@@ -456,14 +454,14 @@ during placements.</li>
 <li>Closed GH-47: Added unit tests for gaussian kr distance.</li>
 <li>Closed GH-49: Added a more informative error message to pplacer if reference
 sequences occur multiple times in a query file.</li>
-<li>Closed GH-52: Fixed padding in <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">squash</span></code>.</li>
+<li>Closed GH-52: Fixed padding in <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">squash</span></tt>.</li>
 <li>Closed GH-58: Improved navigation for the documentation on guppy commands.</li>
 <li>Closed GH-59: Improved documentation for guppy commands using sqlite.</li>
-<li>Closed GH-60: Improved documentation for <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code>.</li>
+<li>Closed GH-60: Improved documentation for <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></tt>.</li>
 <li>Closed GH-65: Released alpha08.</li>
 <li>Closed GH-66: Added a FAQ to the documentation.</li>
-<li>Closed GH-68: Changed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span></code> to show multiplicity.</li>
-<li>Closed GH-69: Changed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">tog</span></code> to use polytomy instead of a _ delimiter
+<li>Closed GH-68: Changed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span></tt> to show multiplicity.</li>
+<li>Closed GH-69: Changed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">tog</span></tt> to use polytomy instead of a _ delimiter
 joining sequence names.</li>
 <li>Closed GH-70: Added documentation for how to compile pplacer.</li>
 <li>Closed GH-73: Added a pre-masking feature to cut out irrelevant columns of
@@ -472,7 +470,7 @@ the alignment.</li>
 <li>Added a script to sort placefiles for easier visual diffs.</li>
 <li>Added more informative error messages when the length of the query alignment
 and reference alignment don&#8217;t match.</li>
-<li><code class="docutils literal"><span class="pre">guppy</span> <span class="pre">edpl</span></code> now calculates the EDPL (expected distance between placement
+<li><tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">edpl</span></tt> now calculates the EDPL (expected distance between placement
 locations) for placements</li>
 </ul>
 </div></blockquote>
@@ -481,7 +479,7 @@ locations) for placements</li>
 <h2>1.1.alpha07<a class="headerlink" href="#alpha07" title="Permalink to this headline">¶</a></h2>
 <blockquote>
 <div><ul class="simple">
-<li>Fixed a serious issue with any command that used a <code class="docutils literal"><span class="pre">--prefix</span></code> flag.</li>
+<li>Fixed a serious issue with any command that used a <tt class="docutils literal"><span class="pre">--prefix</span></tt> flag.</li>
 </ul>
 </div></blockquote>
 </div>
@@ -493,17 +491,17 @@ locations) for placements</li>
 <li>Closed GH-44: improved sqlite3 support in guppy.</li>
 <li>Closed GH-45: better consistency of output flags across all guppy commands.</li>
 <li>Closed GH-48: better error reporting when loading json placefiles.</li>
-<li>Closed GH-50: fixed the output of <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code>.</li>
+<li>Closed GH-50: fixed the output of <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></tt>.</li>
 <li>Closed GH-51: only parsing the first word as a sequence name in a fasta file.</li>
-<li>Renamed the <code class="docutils literal"><span class="pre">--normal</span></code> flag for <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></code> to <code class="docutils literal"><span class="pre">--gaussian</span></code> to avoid confusion
+<li>Renamed the <tt class="docutils literal"><span class="pre">--normal</span></tt> flag for <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></tt> to <tt class="docutils literal"><span class="pre">--gaussian</span></tt> to avoid confusion
 with normalization.</li>
 <li>Only one shuffle at a time is now stored in memory (big savings, obviously).</li>
-<li>Fixed bug that was throwing off <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></code> shuffling significance estimation.</li>
-<li><code class="docutils literal"><span class="pre">guppy</span> <span class="pre">pca</span></code> now defaults to scaling eigenvalues to percent variance; now has
+<li>Fixed bug that was throwing off <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></tt> shuffling significance estimation.</li>
+<li><tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">pca</span></tt> now defaults to scaling eigenvalues to percent variance; now has
 a &#8211;raw-eval flag to specify otherwise.</li>
 <li>Fixed all of the sequence parsers to be tail-recursive, so parsing large
 files no longer causes segfaults.</li>
-<li>Added a <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span></code> command for re-adding duplicate sequences to
+<li>Added a <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">redup</span></tt> command for re-adding duplicate sequences to
 placefiles generated from deduplicated sequence files.</li>
 </ul>
 </div></blockquote>
@@ -513,20 +511,20 @@ placefiles generated from deduplicated sequence files.</li>
 <blockquote>
 <div><ul class="simple">
 <li>Closed GH-11: options for the tree-generating subcommands are more uniform.</li>
-<li>Closed GH-22: added more unit tests for <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></code>.</li>
+<li>Closed GH-22: added more unit tests for <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></tt>.</li>
 <li>Closed GH-32: using power iteration rather than full
 eigendecomposition. Leads to 60x speedup for PCA on demo data.</li>
 <li>Closed GH-35: added a remark in the documentation about multiple comparison.</li>
 <li>Closed GH-41: added docs for the json placefile format.</li>
-<li>Added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">splitify</span></code>. Spits out differences of mass across splits.</li>
-<li>Changed default behavior of <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></code> to not normalize, and
-correspondingly added in a <code class="docutils literal"><span class="pre">--normalize</span></code> command line flag.</li>
+<li>Added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">splitify</span></tt>. Spits out differences of mass across splits.</li>
+<li>Changed default behavior of <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr</span></tt> to not normalize, and
+correspondingly added in a <tt class="docutils literal"><span class="pre">--normalize</span></tt> command line flag.</li>
 <li>Improved documentation.</li>
-<li>Moved <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">heat</span></code> to <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr_heat</span></code>.</li>
-<li>The <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">heat</span></code> subcommand now maps an arbitrary vector to a phylogenetic
+<li>Moved <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">heat</span></tt> to <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">kr_heat</span></tt>.</li>
+<li>The <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">heat</span></tt> subcommand now maps an arbitrary vector to a phylogenetic
 tree contained in a reference package.</li>
-<li>Removed redundant <code class="docutils literal"><span class="pre">classic</span></code> subcommand from guppy.</li>
-<li>Changed <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">round</span></code> to use the new placefile format.</li>
+<li>Removed redundant <tt class="docutils literal"><span class="pre">classic</span></tt> subcommand from guppy.</li>
+<li>Changed <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">round</span></tt> to use the new placefile format.</li>
 <li>Added support for posterior probabilities in json placefiles.</li>
 <li>Removed csv and old-placefile-format generation from pplacer.</li>
 <li>Added the ability to run pplacer in multiple processes in parallel with the
@@ -543,12 +541,12 @@ multiprocessing code.</li>
 <li><p class="first">Closed GH-12: removed Placement.classif, and renamed
 Placement.contain_classif to Placement.classif.</p>
 </li>
-<li><p class="first">Closed GH-29: added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">merge</span></code> to merge multiple placefiles.</p>
+<li><p class="first">Closed GH-29: added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">merge</span></tt> to merge multiple placefiles.</p>
 </li>
 <li><p class="first">Closed GH-30: accepting r, n, and rn as delimiters everywhere in pplacer
 and guppy.</p>
 </li>
-<li><p class="first">Closed GH-36: added <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">{classic,tog,sing,filter}</span></code>. The former three were
+<li><p class="first">Closed GH-36: added <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">{classic,tog,sing,filter}</span></tt>. The former three were
 originally a part of placeviz, and the lattermost filters placefiles to only
 a specific subset of their placements.</p>
 </li>
@@ -557,7 +555,7 @@ a specific subset of their placements.</p>
 <li><p class="first">Closed GH-38: added this changelog.</p>
 </li>
 <li><dl class="first docutils">
-<dt>Bugfix in <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></code>. From the commit:</dt>
+<dt>Bugfix in <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">classify</span></tt>. From the commit:</dt>
 <dd><p class="first last">Previously, a file was being opened and closed for every pquery in every
 placerun. This resulted in only the last pquery being classified and
 written out. Now only one file is being opened for each placerun.</p>
@@ -575,7 +573,7 @@ written out. Now only one file is being opened for each placerun.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -587,12 +585,12 @@ written out. Now only one file is being opened for each placerun.</p>
         <li class="right" >
           <a href="compiling.html" title="Compiling pplacer from source"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer" role="contentinfo">
+    <div class="footer">
         &copy; Copyright 2011-2014, Matsen Group.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

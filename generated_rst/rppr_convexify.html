@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>convexify &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    <title>convexify &mdash; pplacer v1.1.alpha19-20-g399f513 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     'v1.1.alpha19-4-g1189285',
+        VERSION:     'v1.1.alpha19-20-g399f513',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,13 +23,13 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="top" title="pplacer v1.1.alpha19-20-g399f513 documentation" href="../index.html" />
     <link rel="up" title="rppr" href="rppr.html" />
     <link rel="next" title="infer" href="rppr_infer.html" />
     <link rel="prev" title="convex_taxids" href="rppr_convex_taxids.html" /> 
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
+  <body>
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -41,11 +41,11 @@
         <li class="right" >
           <a href="rppr_convex_taxids.html" title="convex_taxids"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="rppr.html" accesskey="U">rppr</a> &raquo;</li> 
+        <li><a href="../index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li>
+          <li><a href="rppr.html" accesskey="U">rppr</a> &raquo;</li> 
       </ul>
     </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
@@ -62,14 +62,12 @@
   <h4>Next topic</h4>
   <p class="topless"><a href="rppr_infer.html"
                         title="next chapter">infer</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/generated_rst/rppr_convexify.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/generated_rst/rppr_convexify.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
@@ -88,7 +86,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body" role="main">
+          <div class="body">
             
   <div class="section" id="convexify">
 <span id="rppr-convexify"></span><h1>convexify<a class="headerlink" href="#convexify" title="Permalink to this headline">¶</a></h1>
@@ -154,7 +152,7 @@
 </div>
 <div class="section" id="details">
 <h2>Details<a class="headerlink" href="#details" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">convexify</span></code> applies an exact dynamic program to identify leaves of a phylogenetic tree that don&#8217;t agree with their taxonomic labels.
+<p><tt class="docutils literal"><span class="pre">convexify</span></tt> applies an exact dynamic program to identify leaves of a phylogenetic tree that don&#8217;t agree with their taxonomic labels.
 You can read more in the <a class="reference external" href="http://matsen.fhcrc.org/general/2011/09/27/convexify.html">announcement</a> or the <a class="reference external" href="http://arxiv.org/abs/1109.5423">paper</a>.</p>
 <p>You can either specify a reference package or a tree and a CSV file of colors.
 The CSV file is formatted as follows:</p>
@@ -163,7 +161,7 @@ The CSV file is formatted as follows:</p>
 </pre></div>
 </div>
 <p>where the colors are just strings.</p>
-<p>Note that <code class="docutils literal"><span class="pre">--no-early</span></code> and <code class="docutils literal"><span class="pre">--naive</span></code> don&#8217;t change the results.
+<p>Note that <tt class="docutils literal"><span class="pre">--no-early</span></tt> and <tt class="docutils literal"><span class="pre">--naive</span></tt> don&#8217;t change the results.
 They just (much) run more slowly for all but the most trivial problems.</p>
 </div>
 </div>
@@ -174,7 +172,7 @@ They just (much) run more slowly for all but the most trivial problems.</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -186,13 +184,13 @@ They just (much) run more slowly for all but the most trivial problems.</p>
         <li class="right" >
           <a href="rppr_convex_taxids.html" title="convex_taxids"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li>
-          <li class="nav-item nav-item-1"><a href="rppr.html" >rppr</a> &raquo;</li> 
+        <li><a href="../index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li>
+          <li><a href="rppr.html" >rppr</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer" role="contentinfo">
+    <div class="footer">
         &copy; Copyright 2011-2014, Matsen Group.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>

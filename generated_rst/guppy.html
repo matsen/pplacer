@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>guppy &mdash; pplacer v1.1.alpha19-4-g1189285 documentation</title>
+    <title>guppy &mdash; pplacer v1.1.alpha19-20-g399f513 documentation</title>
     
     <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -14,7 +14,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../',
-        VERSION:     'v1.1.alpha19-4-g1189285',
+        VERSION:     'v1.1.alpha19-20-g399f513',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,12 +23,12 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <link rel="top" title="pplacer v1.1.alpha19-4-g1189285 documentation" href="../index.html" />
+    <link rel="top" title="pplacer v1.1.alpha19-20-g399f513 documentation" href="../index.html" />
     <link rel="next" title="adcl" href="guppy_adcl.html" />
     <link rel="prev" title="pplacer" href="pplacer.html" /> 
   </head>
-  <body role="document">
-    <div class="related" role="navigation" aria-label="related navigation">
+  <body>
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -40,10 +40,10 @@
         <li class="right" >
           <a href="pplacer.html" title="pplacer"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="../index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+      <div class="sphinxsidebar">
         <div class="sphinxsidebarwrapper">
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
@@ -73,14 +73,12 @@
   <h4>Next topic</h4>
   <p class="topless"><a href="guppy_adcl.html"
                         title="next chapter">adcl</a></p>
-  <div role="note" aria-label="source link">
-    <h3>This Page</h3>
-    <ul class="this-page-menu">
-      <li><a href="../_sources/generated_rst/guppy.txt"
-            rel="nofollow">Show Source</a></li>
-    </ul>
-   </div>
-<div id="searchbox" style="display: none" role="search">
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/generated_rst/guppy.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
   <h3>Quick search</h3>
     <form class="search" action="../search.html" method="get">
       <input type="text" name="q" />
@@ -99,7 +97,7 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body" role="main">
+          <div class="body">
             
   <div class="section" id="guppy">
 <h1><a class="toc-backref" href="#id2">guppy</a><a class="headerlink" href="#guppy" title="Permalink to this headline">¶</a></h1>
@@ -119,7 +117,7 @@
 </tr>
 </tbody>
 </table>
-<p><code class="docutils literal"><span class="pre">guppy</span></code> is a tool for working with, visualizing, and comparing collections of phylogenetic placements, such as those made by <a class="reference external" href="http://matsen.fhcrc.org/pplacer">pplacer</a> or RAxML&#8217;s EPA.
+<p><tt class="docutils literal"><span class="pre">guppy</span></tt> is a tool for working with, visualizing, and comparing collections of phylogenetic placements, such as those made by <a class="reference external" href="http://matsen.fhcrc.org/pplacer">pplacer</a> or RAxML&#8217;s EPA.
 &#8220;GUPPY&#8221; is an acronym: Grand Unified Phylogenetic Placement Yanalyzer.</p>
 <div class="contents new topic" id="contents">
 <p class="topic-title first">Contents</p>
@@ -143,9 +141,9 @@
 </div>
 <div class="section" id="introduction">
 <h2><a class="toc-backref" href="#id3">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>To use the statistical comparison features of <code class="docutils literal"><span class="pre">guppy</span></code>, it&#8217;s a good idea to have a basic understanding of what the Kantorovich-Rubinstein (KR, a.k.a. earth-mover&#8217;s distance) is doing, and how the edge PCA and squash clustering algorithms work.
+<p>To use the statistical comparison features of <tt class="docutils literal"><span class="pre">guppy</span></tt>, it&#8217;s a good idea to have a basic understanding of what the Kantorovich-Rubinstein (KR, a.k.a. earth-mover&#8217;s distance) is doing, and how the edge PCA and squash clustering algorithms work.
 There is a gentle introduction in <a class="reference external" href="http://arxiv.org/abs/1107.5095">Matsen and Evans</a>, and a more full treatment in <a class="reference external" href="http://arxiv.org/abs/1005.1699">Evans and Matsen</a>.</p>
-<p>Here&#8217;s a table to demonstrate the relation of <code class="docutils literal"><span class="pre">guppy</span></code> concepts to ones which may be more familiar to the reader:</p>
+<p>Here&#8217;s a table to demonstrate the relation of <tt class="docutils literal"><span class="pre">guppy</span></tt> concepts to ones which may be more familiar to the reader:</p>
 <table border="1" class="docutils">
 <colgroup>
 <col width="30%" />
@@ -177,34 +175,34 @@ The heat tree (<a class="reference external" href="guppy_kr_heat.html">kr_heat</
 </div>
 <div class="section" id="usage">
 <h2><a class="toc-backref" href="#id4">Usage</a><a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
-<p><code class="docutils literal"><span class="pre">guppy</span></code> does lots of different things&#8211; it makes heat trees, makes matrices of Kantorovich-Rubinstein distances, does edge PCA, etc.
+<p><tt class="docutils literal"><span class="pre">guppy</span></tt> does lots of different things&#8211; it makes heat trees, makes matrices of Kantorovich-Rubinstein distances, does edge PCA, etc.
 Each of these have their own options.
 Rather than make a suite of little programs, we have opted for an interface analogous to git and svn: namely, a collection of different actions wrapped up into a single interface.</p>
 <p>There are two ways to access the commands&#8211; through the command line interface, and through the batch mode.
-A list of these programs is below, and can always be found using <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">--cmds</span></code>.</p>
+A list of these programs is below, and can always be found using <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">--cmds</span></tt>.</p>
 <div class="section" id="command-line-interface">
 <h3><a class="toc-backref" href="#id5">Command line interface</a><a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h3>
-<p>The general way to invoke <code class="docutils literal"><span class="pre">guppy</span></code> is <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">COMMAND</span> <span class="pre">[options]</span> <span class="pre">placefile[s]</span></code> where COMMAND is one of the <code class="docutils literal"><span class="pre">guppy</span></code> commands.
+<p>The general way to invoke <tt class="docutils literal"><span class="pre">guppy</span></tt> is <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">COMMAND</span> <span class="pre">[options]</span> <span class="pre">placefile[s]</span></tt> where COMMAND is one of the <tt class="docutils literal"><span class="pre">guppy</span></tt> commands.
 For example:</p>
 <div class="highlight-python"><div class="highlight"><pre>guppy heat --gray-black coastal.jplace DCM.jplace
 </pre></div>
 </div>
-<p>These programs are listed with more detail below, and can always be found using <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">--cmds</span></code> .</p>
-<p><code class="docutils literal"><span class="pre">guppy</span></code> can also be invoked as <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">--quiet</span> <span class="pre">COMMAND</span> <span class="pre">[...]</span></code>,  which prevents
+<p>These programs are listed with more detail below, and can always be found using <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">--cmds</span></tt> .</p>
+<p><tt class="docutils literal"><span class="pre">guppy</span></tt> can also be invoked as <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">--quiet</span> <span class="pre">COMMAND</span> <span class="pre">[...]</span></tt>,  which prevents
 the specified command from writing to stdout unless explicitly requested.</p>
 </div>
 <div class="section" id="batch-mode">
 <h3><a class="toc-backref" href="#id6">Batch mode</a><a class="headerlink" href="#batch-mode" title="Permalink to this headline">¶</a></h3>
 <p>It&#8217;s easy to run lots of commands at once with batch mode.  However, unlike
 running the equivalent set of commands on the command line, <em>placefiles are
-only loaded once per batch file run</em>. <code class="docutils literal"><span class="pre">guppy</span></code> will load a given file the first
+only loaded once per batch file run</em>. <tt class="docutils literal"><span class="pre">guppy</span></tt> will load a given file the first
 time it is used in a command.</p>
 <p>Batch files are files with one guppy command per line, specified exactly as
-would be written in a shell, except without the leading <code class="docutils literal"><span class="pre">guppy</span></code>. Arguments
+would be written in a shell, except without the leading <tt class="docutils literal"><span class="pre">guppy</span></tt>. Arguments
 can be enclosed in double quotes to preserve whitespace, and double quotes
-within quoted strings are quoted by doubling (e.g. <code class="docutils literal"><span class="pre">&quot;spam</span> <span class="pre">&quot;&quot;and&quot;&quot;</span> <span class="pre">eggs&quot;</span></code>).
-Globbing (e.g. <code class="docutils literal"><span class="pre">*.jplace</span></code>) is not allowed. Comments are also allowed in batch
-files; everything on a line after a <code class="docutils literal"><span class="pre">#</span></code> is ignored.</p>
+within quoted strings are quoted by doubling (e.g. <tt class="docutils literal"><span class="pre">&quot;spam</span> <span class="pre">&quot;&quot;and&quot;&quot;</span> <span class="pre">eggs&quot;</span></tt>).
+Globbing (e.g. <tt class="docutils literal"><span class="pre">*.jplace</span></tt>) is not allowed. Comments are also allowed in batch
+files; everything on a line after a <tt class="docutils literal"><span class="pre">#</span></tt> is ignored.</p>
 <p>An example batch file:</p>
 <div class="highlight-python"><div class="highlight"><pre># Whole-line comment.
 pca -o pca -c some.refpkg src/a.jplace src/b.jplace
@@ -212,7 +210,7 @@ squash -c some.refpkg -o squash_out src/a.jplace src/b.jplace
 classify -c some.refpkg some.jplace  # inline comment
 </pre></div>
 </div>
-<p>If this was saved as <code class="docutils literal"><span class="pre">example.batch</span></code>, it would be invoked from guppy as:</p>
+<p>If this was saved as <tt class="docutils literal"><span class="pre">example.batch</span></tt>, it would be invoked from guppy as:</p>
 <div class="highlight-python"><div class="highlight"><pre>guppy --batch example.batch
 </pre></div>
 </div>
@@ -221,18 +219,18 @@ classify -c some.refpkg some.jplace  # inline comment
 <p>Batch files also have two unique features: virtual placefiles, and parameter
 substitution.</p>
 <p>Within a batch file, if a placefile is saved to or loaded from a path beginning
-with a <code class="docutils literal"><span class="pre">&#64;</span></code>, the data will be stored in memory instead of written to disk. For
+with a <tt class="docutils literal"><span class="pre">&#64;</span></tt>, the data will be stored in memory instead of written to disk. For
 example:</p>
 <div class="highlight-python"><div class="highlight"><pre>merge -o @merged.jplace src/a.jplace src/b.jplace
 info @merged.jplace
 </pre></div>
 </div>
-<p>will effectively run <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span></code> on the placefile resulting from merging the
+<p>will effectively run <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span></tt> on the placefile resulting from merging the
 two arguments, but without ever writing that merged file to disk.</p>
 <p>Additionally, parameters can be passed in from the command line to the batch
 file. On the command line, parameters are specified as additional arguments to
-guppy in <code class="docutils literal"><span class="pre">key=value</span></code> format. In the batch file, substitutions are done from
-identifiers in <code class="docutils literal"><span class="pre">{key}</span></code> format. For example, when a batch file containing</p>
+guppy in <tt class="docutils literal"><span class="pre">key=value</span></tt> format. In the batch file, substitutions are done from
+identifiers in <tt class="docutils literal"><span class="pre">{key}</span></tt> format. For example, when a batch file containing</p>
 <div class="highlight-python"><div class="highlight"><pre>info {k1} {k2}
 </pre></div>
 </div>
@@ -244,7 +242,7 @@ identifiers in <code class="docutils literal"><span class="pre">{key}</span></co
 <div class="highlight-python"><div class="highlight"><pre>guppy 1.jplace 2.jplace
 </pre></div>
 </div>
-<p>Braces can also be quoted by doubling (e.g. <code class="docutils literal"><span class="pre">{{foo}}</span></code> will become <code class="docutils literal"><span class="pre">{foo}</span></code>).</p>
+<p>Braces can also be quoted by doubling (e.g. <tt class="docutils literal"><span class="pre">{{foo}}</span></tt> will become <tt class="docutils literal"><span class="pre">{foo}</span></tt>).</p>
 </div>
 </div>
 <div class="section" id="pqueries-versus-placements">
@@ -261,21 +259,21 @@ We will use &#8220;pquery&#8221; to denote a &#8220;placed query (sequence)&#822
 For example, if some reads are identical, they can be treated as a group.
 Doing so makes guppy operations <em>much</em> faster.</p>
 <p>By default, they are used &#8220;as is&#8221; for guppy calculations&#8211; a single placement with multiplicity four is the same as four reads placed individually.
-However, if one would like to decrease the impact of multiplicities on downstream analysis (e.g. if PCR artifacts are suspected) one can use the <code class="docutils literal"><span class="pre">--transform</span></code> option of <code class="docutils literal"><span class="pre">mft</span></code> to choose a transform for the multiplicies before use.
+However, if one would like to decrease the impact of multiplicities on downstream analysis (e.g. if PCR artifacts are suspected) one can use the <tt class="docutils literal"><span class="pre">--transform</span></tt> option of <tt class="docutils literal"><span class="pre">mft</span></tt> to choose a transform for the multiplicies before use.
 Doing so will convert your placements into labeled masses.</p>
 </div>
 <div class="section" id="split-placefiles">
 <span id="id1"></span><h3><a class="toc-backref" href="#id9">&#8216;Split&#8217; placefiles</a><a class="headerlink" href="#split-placefiles" title="Permalink to this headline">¶</a></h3>
 <p>It&#8217;s often convenient to split up place files in all sorts of ways, but it&#8217;s nice not to have to duplicate the information in the placefiles multiple times.
 For that reason, we have introduced &#8220;split&#8221; placefiles.
-The syntax for these is <code class="docutils literal"><span class="pre">my.jplace:my.csv</span></code>, where the CSV file maps from query sequence names to the split placefile name.
-For example, say <code class="docutils literal"><span class="pre">my.csv</span></code> was like:</p>
+The syntax for these is <tt class="docutils literal"><span class="pre">my.jplace:my.csv</span></tt>, where the CSV file maps from query sequence names to the split placefile name.
+For example, say <tt class="docutils literal"><span class="pre">my.csv</span></tt> was like:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="s">&quot;read1&quot;</span><span class="p">,</span><span class="s">&quot;a&quot;</span>
 <span class="s">&quot;read2&quot;</span><span class="p">,</span><span class="s">&quot;b&quot;</span>
 </pre></div>
 </div>
-<p>and <code class="docutils literal"><span class="pre">my.jplace</span></code> has placements for read1 and read2.
-Then <code class="docutils literal"><span class="pre">my.jplace:my.csv</span></code> would act like a list of two placefiles named a and b, with read1 and read2, respectively.
+<p>and <tt class="docutils literal"><span class="pre">my.jplace</span></tt> has placements for read1 and read2.
+Then <tt class="docutils literal"><span class="pre">my.jplace:my.csv</span></tt> would act like a list of two placefiles named a and b, with read1 and read2, respectively.
 Not every placement name in the place file needs to appear in the CSV file, so you can use this for subsetting.</p>
 </div>
 <div class="section" id="biom-files">
@@ -283,19 +281,19 @@ Not every placement name in the place file needs to appear in the CSV file, so y
 <p>Any command which expects a placefile (in both guppy and rppr) can also be
 given a <a class="reference external" href="http://biom-format.org/">BIOM file</a>. As BIOM files (unlike placefiles) do not contain a tree,
 it must be passed at the same time, with a colon delimiting the two paths. For
-example, to run <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span></code> on <code class="docutils literal"><span class="pre">my.biom</span></code> with a tree <code class="docutils literal"><span class="pre">my.tre</span></code>, the
-invocation would be <code class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span> <span class="pre">my.tre:my.biom</span></code>. Trees must be in the Newick
+example, to run <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span></tt> on <tt class="docutils literal"><span class="pre">my.biom</span></tt> with a tree <tt class="docutils literal"><span class="pre">my.tre</span></tt>, the
+invocation would be <tt class="docutils literal"><span class="pre">guppy</span> <span class="pre">info</span> <span class="pre">my.tre:my.biom</span></tt>. Trees must be in the Newick
 format.</p>
 <p>As the BIOM format describes counts at leaves, the placements generated by
 parsing a BIOM file will all have zero distal branch length and zero pendant
 branch length.</p>
 <p>BIOM files will also automatically be split by sample. If a BIOM file has
-columns <code class="docutils literal"><span class="pre">Sample1</span></code> and <code class="docutils literal"><span class="pre">Sample2</span></code>, that file will be interpreted as two
-placefiles, named respectively <code class="docutils literal"><span class="pre">Sample1</span></code> and <code class="docutils literal"><span class="pre">Sample2</span></code>.</p>
+columns <tt class="docutils literal"><span class="pre">Sample1</span></tt> and <tt class="docutils literal"><span class="pre">Sample2</span></tt>, that file will be interpreted as two
+placefiles, named respectively <tt class="docutils literal"><span class="pre">Sample1</span></tt> and <tt class="docutils literal"><span class="pre">Sample2</span></tt>.</p>
 </div>
 <div class="section" id="phyloxml-viewing-notes">
 <h3><a class="toc-backref" href="#id11">phyloXML viewing notes</a><a class="headerlink" href="#phyloxml-viewing-notes" title="Permalink to this headline">¶</a></h3>
-<p><code class="docutils literal"><span class="pre">guppy</span></code> makes fattened and annotated trees to visualize the results of various analyses.
+<p><tt class="docutils literal"><span class="pre">guppy</span></tt> makes fattened and annotated trees to visualize the results of various analyses.
 We have chosen to use phyloXML as the format for these trees, as it has width and color tags for edges; if you see .xml files coming out of a guppy analysis that&#8217;s what they are for.
 We like looking at these trees using the tree viewer <a class="reference external" href="https://sites.google.com/site/cmzmasek/home/software/archaeopteryx">archaeopteryx</a>.
 If you open archaeopteryx with the default settings, you will see <em>nothing interesting</em>: simply the reference tree.
@@ -318,121 +316,121 @@ guppy subcommand:</p>
 </tr>
 </thead>
 <tbody valign="top">
-<tr class="row-even"><td><a class="reference internal" href="guppy_adcl.html#guppy-adcl"><span>adcl</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_adcl.html#guppy-adcl"><em>adcl</em></a></td>
 <td>calculates ADCL for each pquery in a placefile</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_bary.html#guppy-bary"><span>bary</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_bary.html#guppy-bary"><em>bary</em></a></td>
 <td>draws the barycenter of a placement collection on the reference tree</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_check.html#guppy-check"><span>check</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_check.html#guppy-check"><em>check</em></a></td>
 <td>checks placefiles for common problems</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_classify.html#guppy-classify"><span>classify</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_classify.html#guppy-classify"><em>classify</em></a></td>
 <td>outputs classification information in SQLite format</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_compress.html#guppy-compress"><span>compress</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_compress.html#guppy-compress"><em>compress</em></a></td>
 <td>compresses a placefile&#8217;s pqueries</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_demulti.html#guppy-demulti"><span>demulti</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_demulti.html#guppy-demulti"><em>demulti</em></a></td>
 <td>splits apart placements with multiplicity, undoing a round procedure</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_distmat.html#guppy-distmat"><span>distmat</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_distmat.html#guppy-distmat"><em>distmat</em></a></td>
 <td>prints out a pairwise distance matrix between the edges</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_edpl.html#guppy-edpl"><span>edpl</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_edpl.html#guppy-edpl"><em>edpl</em></a></td>
 <td>calculates the EDPL uncertainty values for a collection of pqueries</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_epca.html#guppy-epca"><span>epca</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_epca.html#guppy-epca"><em>epca</em></a></td>
 <td>performs edge principal components</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_error.html#guppy-error"><span>error</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_error.html#guppy-error"><em>error</em></a></td>
 <td>finds the error between two placefiles</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_fat.html#guppy-fat"><span>fat</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_fat.html#guppy-fat"><em>fat</em></a></td>
 <td>makes trees with edges fattened in proportion to the number of reads</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_filter.html#guppy-filter"><span>filter</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_filter.html#guppy-filter"><em>filter</em></a></td>
 <td>filters one or more placefiles by placement name</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_fpd.html#guppy-fpd"><span>fpd</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_fpd.html#guppy-fpd"><em>fpd</em></a></td>
 <td>calculates various alpha diversity metrics of placefiles</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_heat.html#guppy-heat"><span>heat</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_heat.html#guppy-heat"><em>heat</em></a></td>
 <td>maps an an arbitrary vector of the correct length to the tree</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_indep_c.html#guppy-indep-c"><span>indep_c</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_indep_c.html#guppy-indep-c"><em>indep_c</em></a></td>
 <td>calculates the independent contrasts of pqueries</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_info.html#guppy-info"><span>info</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_info.html#guppy-info"><em>info</em></a></td>
 <td>writes the number of leaves of the reference tree and the number of pqueries</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_islands.html#guppy-islands"><span>islands</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_islands.html#guppy-islands"><em>islands</em></a></td>
 <td>finds the mass islands of one or more pqueries</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_kr.html#guppy-kr"><span>kr</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_kr.html#guppy-kr"><em>kr</em></a></td>
 <td>calculates the Kantorovich-Rubinstein distance and corresponding p-values</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_kr_heat.html#guppy-kr-heat"><span>kr_heat</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_kr_heat.html#guppy-kr-heat"><em>kr_heat</em></a></td>
 <td>makes a heat tree</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_lpca.html#guppy-lpca"><span>lpca</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_lpca.html#guppy-lpca"><em>lpca</em></a></td>
 <td>performs length principal components</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_mcl.html#guppy-mcl"><span>mcl</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_mcl.html#guppy-mcl"><em>mcl</em></a></td>
 <td>cluster pqueries using Markov clustering via MCL</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_merge.html#guppy-merge"><span>merge</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_merge.html#guppy-merge"><em>merge</em></a></td>
 <td>merges placefiles together</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_mft.html#guppy-mft"><span>mft</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_mft.html#guppy-mft"><em>mft</em></a></td>
 <td>Multi-Filter and Transform placefiles</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_ograph.html#guppy-ograph"><span>ograph</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_ograph.html#guppy-ograph"><em>ograph</em></a></td>
 <td>finds the overlap graph of one or more pqueries</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_placemat.html#guppy-placemat"><span>placemat</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_placemat.html#guppy-placemat"><em>placemat</em></a></td>
 <td>prints out a pairwise distance matrix between placements</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_pmlpca.html#guppy-pmlpca"><span>pmlpca</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_pmlpca.html#guppy-pmlpca"><em>pmlpca</em></a></td>
 <td>performs poor-man&#8217;s length principal components</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_rarefact.html#guppy-rarefact"><span>rarefact</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_rarefact.html#guppy-rarefact"><em>rarefact</em></a></td>
 <td>calculates phylogenetic rarefaction curves</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_rarefy.html#guppy-rarefy"><span>rarefy</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_rarefy.html#guppy-rarefy"><em>rarefy</em></a></td>
 <td>performs rarefaction on collections of placements</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_redup.html#guppy-redup"><span>redup</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_redup.html#guppy-redup"><em>redup</em></a></td>
 <td>restores duplicates to deduped placefiles</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_round.html#guppy-round"><span>round</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_round.html#guppy-round"><em>round</em></a></td>
 <td>clusters the placements by rounding branch lengths</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_sing.html#guppy-sing"><span>sing</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_sing.html#guppy-sing"><em>sing</em></a></td>
 <td>makes one tree for each query sequence, showing uncertainty</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_splitify.html#guppy-splitify"><span>splitify</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_splitify.html#guppy-splitify"><em>splitify</em></a></td>
 <td>writes out differences of masses for the splits of the tree</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_squash.html#guppy-squash"><span>squash</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_squash.html#guppy-squash"><em>squash</em></a></td>
 <td>performs squash clustering</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_to_csv.html#guppy-to-csv"><span>to_csv</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_to_csv.html#guppy-to-csv"><em>to_csv</em></a></td>
 <td>turns a placefile into a csv file</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_to_json.html#guppy-to-json"><span>to_json</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_to_json.html#guppy-to-json"><em>to_json</em></a></td>
 <td>converts old-style .place files to .jplace placement files</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_to_rdp.html#guppy-to-rdp"><span>to_rdp</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_to_rdp.html#guppy-to-rdp"><em>to_rdp</em></a></td>
 <td>convert a reference package to a format RDP wants</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_tog.html#guppy-tog"><span>tog</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_tog.html#guppy-tog"><em>tog</em></a></td>
 <td>makes a tree with each of the reads represented as a pendant edge</td>
 </tr>
-<tr class="row-odd"><td><a class="reference internal" href="guppy_trim.html#guppy-trim"><span>trim</span></a></td>
+<tr class="row-odd"><td><a class="reference internal" href="guppy_trim.html#guppy-trim"><em>trim</em></a></td>
 <td>trims placefiles down to only containing an informative subset of the mass</td>
 </tr>
-<tr class="row-even"><td><a class="reference internal" href="guppy_unifrac.html#guppy-unifrac"><span>unifrac</span></a></td>
+<tr class="row-even"><td><a class="reference internal" href="guppy_unifrac.html#guppy-unifrac"><em>unifrac</em></a></td>
 <td>calculates unifrac on two or more placefiles</td>
 </tr>
 </tbody>
@@ -448,7 +446,7 @@ guppy subcommand:</p>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related" role="navigation" aria-label="related navigation">
+    <div class="related">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -460,12 +458,12 @@ guppy subcommand:</p>
         <li class="right" >
           <a href="pplacer.html" title="pplacer"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../index.html">pplacer v1.1.alpha19-4-g1189285 documentation</a> &raquo;</li> 
+        <li><a href="../index.html">pplacer v1.1.alpha19-20-g399f513 documentation</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer" role="contentinfo">
+    <div class="footer">
         &copy; Copyright 2011-2014, Matsen Group.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.3.1.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.2.
     </div>
   </body>
 </html>
