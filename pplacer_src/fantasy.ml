@@ -84,7 +84,7 @@ let add_to_fantasy_matrix ml_results fm =
 (* mostly for testing.. we will typically make one fm then add lots of seqs to
  * it. *)
 let build_fantasy_matrix ml_results ~max_strike_box ~max_strikes =
-  let fm = make_fantasy_matrix max_strike_box max_strikes in
+  let fm = make_fantasy_matrix ~max_strike_box ~max_strikes in
   add_to_fantasy_matrix ml_results fm;
   fm
 
@@ -148,4 +148,3 @@ let results_to_file fname_prefix fantasy_mat n_fantasies =
   write_mat (fname_prefix^".n_trials.out") n_trials_avg;
   write_mat (fname_prefix^".like_diff.out") like_diff_avg;
   ()
-

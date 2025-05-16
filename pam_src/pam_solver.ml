@@ -4,7 +4,7 @@ module BA = Bigarray
 module BA1 = Bigarray.Array1
 
 type int_vector = (int, BA.int_elt, BA.c_layout) BA1.t
-external c_pam: int -> string -> Matrix.matrix -> int_vector * float = "caml_pam"
+external c_pam: int -> bytes -> Matrix.matrix -> int_vector * float = "caml_pam"
 
 module I = Mass_map.Indiv
 
@@ -20,9 +20,9 @@ let solve ?keep gt mass leaves =
   let old_leaf_idx old = Array.findi ((=) (IntMap.find old transm)) leaf_arr
   and rtrans i = IntMap.find i rtransm
   and total_mass = I.total_mass mass in
-  let keep_string = String.make (Array.length leaf_arr) '\000' in
+  let keep_string = Bytes.make (Array.length leaf_arr) '\000' in
   Option.may
-    (IntSet.iter (fun leaf -> keep_string.[old_leaf_idx leaf] <- '\001'))
+    (IntSet.iter (fun leaf -> Bytes.set keep_string (old_leaf_idx leaf) '\001'))
     keep;
   (* Generate a work matrix. *)
   let leaf_vec, work = IntMap.fold

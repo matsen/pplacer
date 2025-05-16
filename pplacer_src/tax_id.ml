@@ -67,7 +67,7 @@ let print ch x =
 (* *** Maps and Sets *** *)
 module OrderedTaxId = struct
   type t = tax_id
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module PprTaxId = struct
@@ -77,4 +77,3 @@ end
 
 module TaxIdMap = BetterMap (Map.Make(OrderedTaxId)) (PprTaxId)
 module TaxIdSet = BetterSet (Set.Make(OrderedTaxId)) (PprTaxId)
-

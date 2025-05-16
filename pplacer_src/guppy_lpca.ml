@@ -5,9 +5,9 @@ open Lpca
 
 (* Normalize the rows of a matrix m to unit vectors. *)
 let norm_rows m =
-  let n_rows, _ = Gsl_matrix.dims m in
+  let n_rows, _ = Gsl.Matrix.dims m in
   for i=0 to (n_rows-1) do
-    Linear_utils.l2_normalize (Gsl_matrix.row m i);
+    Linear_utils.l2_normalize (Gsl.Matrix.row m i);
   done
 
 (* Compute the n largest singular values of a matrix m (or its transpose) as
@@ -16,17 +16,17 @@ let norm_rows m =
    for simplicity. *)
 let singular_values ~trans m n =
   let real c =
-    let open Gsl_complex in
+    let open Complex in
     c.re
   in
-  let n_rows, n_cols = Gsl_matrix.dims m in
+  let n_rows, n_cols = Gsl.Matrix.dims m in
   let n_mm, ta, tb =
-    if trans then (n_rows, Gsl_blas.NoTrans, Gsl_blas.Trans) else (n_cols, Gsl_blas.Trans, Gsl_blas.NoTrans)
+    if trans then (n_rows, Gsl.Blas.NoTrans, Gsl.Blas.Trans) else (n_cols, Gsl.Blas.Trans, Gsl.Blas.NoTrans)
   in
-  let mm = Gsl_matrix.create n_mm n_mm in
-  Gsl_blas.gemm ~ta ~tb ~alpha:1. ~a:m ~b:m ~beta:0. ~c:mm;
-  let eval_c = Gsl_eigen.nonsymm ~protect:false (`M(mm)) in
-  let eval = Array.map real (Gsl_vector_complex.to_array eval_c) in
+  let mm = Gsl.Matrix.create n_mm n_mm in
+  Gsl.Blas.gemm ~ta ~tb ~alpha:1. ~a:m ~b:m ~beta:0. ~c:mm;
+  let eval_c = Gsl.Eigen.nonsymm ~protect:false (`M(mm)) in
+  let eval = Array.map real (Gsl.Vector_complex.to_array eval_c) in
   Array.sort (flip compare) eval;
   Array.map sqrt (Array.sub eval 0 n)
 
@@ -54,21 +54,21 @@ object (self)
     Lpca.gen_data sl t
 
   method private check_data data write_n =
-    let fal = Array.to_list (Gsl_matrix.to_arrays data.fplf) in
+    let fal = Array.to_list (Gsl.Matrix.to_arrays data.fplf) in
     self#check_uniqueness fal write_n
 
   method private gen_pca ~use_raw_eval ~scale ~symmv n_components data _ =
-    let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv n_components (Gsl_matrix.to_arrays data.fplf) in
+    let (eval, evect) = Pca.gen_pca ~use_raw_eval ~scale ~symmv n_components (Gsl.Matrix.to_arrays data.fplf) in
     (* Populate the edge-averaged e x s matrix AF from its
        IntMap encoding. See eq:f_tilde. *)
-    let af = Gsl_matrix.of_arrays (Array.of_list (List.map Gsl_vector.to_array (List.of_enum (IntMap.values data.af))))
-    and w' = Gsl_matrix.of_arrays evect in
-    let n_edges, _ = Gsl_matrix.dims af in
-    let afw = Gsl_matrix.create n_edges n_components in
+    let af = Gsl.Matrix.of_arrays (Array.of_list (List.map Gsl.Vector.to_array (List.of_enum (IntMap.values data.af))))
+    and w' = Gsl.Matrix.of_arrays evect in
+    let n_edges, _ = Gsl.Matrix.dims af in
+    let afw = Gsl.Matrix.create n_edges n_components in
     (* Compute the edge-averaged eigenvectors. *)
-    Gsl_blas.gemm ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.Trans ~alpha:1. ~a:af ~b:w' ~beta:0. ~c:afw;
-    let afw' = Gsl_matrix.create n_components n_edges in
-    Gsl_matrix.transpose afw' afw;
+    Gsl.Blas.gemm ~ta:Gsl.Blas.NoTrans ~tb:Gsl.Blas.Trans ~alpha:1. ~a:af ~b:w' ~beta:0. ~c:afw;
+    let afw' = Gsl.Matrix.create n_components n_edges in
+    Gsl.Matrix.transpose afw' afw;
     (* Normalize the eigenvectors and the edge-averaged eigenvectors to unit
        length. *)
     norm_rows w';
@@ -83,12 +83,12 @@ object (self)
     (*
       let weighting, criterion = self#mass_opts in
       let sufa = singular_values ~trans:false data.ufl n_components
-      and sua = singular_values ~trans:true (Gsl_matrix.of_arrays (Array.of_list (List.map (self#splitify_placerun_nx weighting criterion) prl))) n_components in
+      and sua = singular_values ~trans:true (Gsl.Matrix.of_arrays (Array.of_list (List.map (self#splitify_placerun_nx weighting criterion) prl))) n_components in
       let sfa = Array.map2 (/.) sufa sua in
-      Array.iteri (fun i x -> Gsl_vector.scale (Gsl_matrix.row w' i) (1. /. x)) sfa;
+      Array.iteri (fun i x -> Gsl_vector.scale (Gsl.Matrix.row w' i) (1. /. x)) sfa;
     *)
-    let norm_evect = Gsl_matrix.to_arrays w'
-    and edge_evect = Gsl_matrix.to_arrays afw' in
+    let norm_evect = Gsl.Matrix.to_arrays w'
+    and edge_evect = Gsl.Matrix.to_arrays afw' in
     { eval; evect = norm_evect; edge_evect }
 
   method private post_pca result data prl =
@@ -134,7 +134,7 @@ object (self)
         (prefix^".proj")
         (List.combine
            names
-           (List.map (fun d -> Array.map (Pca.dot d) vects) (Array.to_list (Gsl_matrix.to_arrays data.ufl))))
+           (List.map (fun d -> Array.map (Pca.dot d) vects) (Array.to_list (Gsl.Matrix.to_arrays data.ufl))))
     in
 
     write_results result.eval result.evect prefix;

@@ -17,7 +17,7 @@ let mass_trees_dirname = "mass_trees"
 module NPreBlob =
   struct
     type t = int list * Mass_map.Pre.t
-    let compare = Pervasives.compare
+    let compare = Stdlib.compare
     let merge (l1, p1) (l2, p2) = (l1 @ l2, p1 @ p2)
   end
 
@@ -141,8 +141,8 @@ object (self)
     let tree_name = prefix^"."^infix in
     let massm = (Mass_map.By_edge.of_pre ~factor:(1. /. tot) pre) in
     Phyloxml.named_gtree_to_file
-      (tree_name ^ ".fat.xml")
-      (tree_name ^ ".fat")
+      ~fname:(tree_name ^ ".fat.xml")
+      ~tree_name:(tree_name ^ ".fat")
       (self#fat_tree_of_massm drt massm)
 
   method private placefile_action prl =

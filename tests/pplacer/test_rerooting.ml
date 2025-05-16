@@ -2,8 +2,6 @@ open Ppatteries
 open OUnit
 open Test_util
 
-open Convex
-
 let suite = List.map
   (fun (before, reroot_at, after) ->
     let before' = Newick_gtree.of_string before

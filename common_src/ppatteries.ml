@@ -60,7 +60,7 @@ let maybe_map_cons f = function
 let maybe_cons o l = maybe_map_cons identity o l
 
 let to_csv_out ch =
-  (ch :> <close_out: unit -> unit; output: string -> int -> int -> int>)
+  (ch :> <close_out: unit -> unit; output: bytes -> int -> int -> int>)
 let csv_out_channel ch = new IO.out_channel ch |> to_csv_out
 
 let to_csv_in ch = object
@@ -243,8 +243,8 @@ module MaybeZipped = struct
         ~write:(Gzip.output_char out_chan)
         ~output:(fun s p l ->
           let buf = Buffer.create l in
-          Buffer.add_substring buf s p l;
-          Gzip.output out_chan (Buffer.contents buf) 0 (Buffer.length buf);
+          Buffer.add_subbytes buf s p l;
+          Gzip.output out_chan (Buffer.to_bytes buf) 0 (Buffer.length buf);
           Buffer.length buf)
         ~close:(fun () -> Gzip.close_out out_chan)
         (* Gzip.flush disposes of the Gzip stream and prevents further writes -
@@ -445,7 +445,7 @@ module ArrayFuns = struct
     if l <> Array.length b then
       invalid_arg "map2: unequal length arrays";
     if l = 0 then [||] else begin
-      let r = Array.create l
+      let r = Array.make l
         (f (Array.unsafe_get a 0) (Array.unsafe_get b 0)) in
       for i = 1 to l - 1 do
         Array.unsafe_set r i
@@ -714,9 +714,9 @@ module StringFuns = struct
   let left_pad pad_width c s =
     assert(pad_width >= 0);
     let len = String.length s in
-    let new_s = String.make (len+pad_width) c in
+    let new_s = Bytes.make (len+pad_width) c in
     String.blit s 0 new_s pad_width len;
-    new_s
+    Bytes.unsafe_to_string new_s
 
 end
 
@@ -781,7 +781,7 @@ end
 let exn_wrap f = Printexc.pass f ()
 
 let () =
-  Gsl_error.init ();
+  Gsl.Error.init ();
   Printexc.register_printer
     (function
      | Unix.Unix_error (errno, fn, param) ->

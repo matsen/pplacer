@@ -1,5 +1,3 @@
-open Ppatteries
-
 type 'a t = 'a option ref
 
 let create () = ref None

@@ -2,7 +2,6 @@
 
 open Ppatteries
 open OUnit
-open Test_util
 let maybe_zipped_suite =
   let assert_false x = assert_equal x false
   and assert_true x = assert_equal x true in

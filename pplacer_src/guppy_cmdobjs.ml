@@ -129,12 +129,12 @@ object (self)
 
   method private set_default_seed =
     let seed = fv seed in
-    Gsl_rng.set_default_seed (Nativeint.of_int seed);
+    Gsl.Rng.set_default_seed (Nativeint.of_int seed);
     Random.init seed
 
   method private rng =
     self#set_default_seed;
-    Gsl_rng.make Gsl_rng.KNUTHRAN2002
+    Gsl.Rng.make Gsl.Rng.KNUTHRAN2002
 
   method private random_state =
     Random.State.make [| fv seed |]
@@ -612,7 +612,7 @@ object (self)
 
   method private filter_fal orig_length fal edges =
     List.map (Array.filteri (fun i _ -> IntSet.mem i edges)) fal,
-    Enum.combine (Enum.range 0, IntSet.enum edges) |> IntMap.of_enum,
+    Enum.combine (Enum.range 0) (IntSet.enum edges) |> IntMap.of_enum,
     orig_length
 
   method private filter_rep_edges prl fal =

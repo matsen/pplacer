@@ -57,7 +57,7 @@ let length align =
   else if same_lengths align then String.length (get_seq align 0)
   else failwith "length: not all same length"
 
-let pair_uppercase (name, seq) = (name, String.uppercase seq)
+let pair_uppercase (name, seq) = (name, String.uppercase_ascii seq)
 let uppercase aln = Array.map pair_uppercase aln
 
 let list_of_any_file fname =
@@ -190,14 +190,14 @@ let emper_freq nstates like_map align =
     CharMap.map (
       fun like_vect ->
         Linear_utils.alloc_l1_normalize like_vect) like_map)) in
-  let total = Gsl_vector.create ~init:0. nstates in
+  let total = Gsl.Vector.create ~init:0. nstates in
   Array.iter (
     fun (name, seq) ->
       String.iter (
         fun base ->
           if base <> '-' && base <> '?' then
             if CharMap.mem base no_missing_normed then
-              Gsl_vector.add total (CharMap.find base no_missing_normed)
+              Gsl.Vector.add total (CharMap.find base no_missing_normed)
             else
               failwith (Printf.sprintf "'%c' not a known base in %s!" base name)
       ) seq
@@ -209,7 +209,7 @@ let emper_freq nstates like_map align =
       "emper freqs: %a@."
       Linear_utils.ppr_gsl_vector
       total;
-  let a = Gsl_vector.to_array total in
+  let a = Gsl.Vector.to_array total in
   if Array.exists (fun x -> x < 1e-10) a then
     dprintf
       "\nWarning: zero-indexed state %d is zero in empirical frequency.\n\n"

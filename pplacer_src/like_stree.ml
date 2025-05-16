@@ -3,7 +3,6 @@
  *)
 
 open Ppatteries
-open Stree
 
 (* below 2^-50 = 1e-15 we pull out the exponent into the int *)
 let min_allowed_twoexp = -50
@@ -131,4 +130,3 @@ struct
         Model.site_log_like_arr3 model ed.(i) ed.(j) util_glv
     | _ -> failwith "site_log_like_arr: degree two node"
 end
-

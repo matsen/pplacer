@@ -1,7 +1,6 @@
 open Ppatteries
 open Subcommand
 open Guppy_cmdobjs
-open Placerun
 
 
 class cmd () =

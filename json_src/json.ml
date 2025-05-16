@@ -35,7 +35,7 @@ let quote = Str.global_substitute to_escape begin fun s ->
     | s -> failwith ("invalid " ^ s)
 end
 
-let rec to_formatter ff o =
+let to_formatter ff o =
   let rec aux = function
     | Bool b -> Format.fprintf ff "%s" (string_of_bool b)
     | Int i -> Format.fprintf ff "%d" i
@@ -72,7 +72,7 @@ let to_string o =
 let to_file name o =
   let file = MaybeZipped.open_out name in
   let formatter= Format.make_formatter
-    (fun s p l -> let _ = IO.output file s p l in ())
+    (fun s p l -> let _ = IO.output file (Bytes.unsafe_of_string s) p l in ())
     (fun () -> IO.flush file)
   in
   to_formatter formatter o;

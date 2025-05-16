@@ -99,7 +99,7 @@ let cmd_map_of_list l =
     display_map
 
 (* intended to be the inner loop of a function *)
-let rec inner_loop ~prg_name ~version (display_map, cmd_map) =
+let inner_loop ~prg_name ~version (display_map, cmd_map) =
   let process = process_cmd prg_name display_map cmd_map
   and args = ref []
   and batchfile = ref None in
@@ -198,7 +198,7 @@ let string_list_flag =
 let delimited_list_flag ?(delimiter = ",") f =
   some_flag
     (fun f -> Arg.String
-      (fun x -> f.value := Some (fv ~default:[] f @ String.nsplit x delimiter)))
+      (fun x -> f.value := Some (fv ~default:[] f @ String.split_on_string x ~by:delimiter)))
     f
 
 class virtual subcommand () =

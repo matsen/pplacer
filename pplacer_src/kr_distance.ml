@@ -75,7 +75,7 @@ let general_total_along_edge:
         (* sum things up on final segment to the next node *)
         (next_subtotal bl, data_sofar)
   in
-  aux prev_subtot 0. start_data data_info_list
+  aux ~subtotal:prev_subtot ~prev_a:0. start_data data_info_list
 
 (* total some data over the tree, which can be combined from subtrees using
  * data_list_sum, and can be totaled across edges using curried_edge_total, and

@@ -32,7 +32,7 @@ let dim_of_n_entries n_entries =
   *)
 let pair_to_int dim i j = j-1 + i*(2*dim-i-3)/2
 
-let rec int_to_pair dim k =
+let int_to_pair dim k =
   let rec aux curr_i start_j curr_k =
     assert(start_j < dim);
     assert(0 <= curr_i && curr_i < dim);
@@ -56,7 +56,7 @@ let assert_dims_ok u i j =
   if not (dims_ok u i j) then
     invalid_arg (Printf.sprintf "uptri : dims %d %d in %d not OK" i j u.dim)
 
-let create d x = {dim = d; data = Array.create (n_entries_of_dim d) x}
+let create d x = {dim = d; data = Array.make (n_entries_of_dim d) x}
 let size u = u.dim
 let get u i j = assert_dims_ok u i j; u.data.(pair_to_int u.dim i j)
 let set u i j x = assert_dims_ok u i j; u.data.(pair_to_int u.dim i j) <- x
@@ -129,5 +129,3 @@ let ppr_lowtri ff ppr u =
     done;
     Format.fprintf ff "@\n";
   done
-
-

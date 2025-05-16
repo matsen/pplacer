@@ -14,7 +14,7 @@ struct
 
   type three_tax = {
     model: Model.t;
-    util_v: Gsl_vector.vector; (* should be as long as the number of sites *)
+    util_v: Gsl.Vector.vector; (* should be as long as the number of sites *)
     prox: Glv_edge.t;      (* the proximal glv *)
     dist: Glv_edge.t;      (* the distal glv *)
     pend: Glv_edge.t;      (* the pendant, i.e. query glv *)
@@ -155,7 +155,7 @@ struct
       with
         (* Points may not enclose a minimum when close to max_pend -
          * just integrate to max_pend *)
-        | Gsl_error.Gsl_exn(Gsl_error.EINVAL, _) -> max_pend
+        | Gsl.Error.Gsl_exn(Gsl.Error.EINVAL, _) -> max_pend
     end
 
   (* The idea here is to properly integrate log likelihood functions by removing
@@ -202,7 +202,7 @@ struct
           |> log
           |> (+.) base_ll
         with
-          | Gsl_error.Gsl_exn (Gsl_error.ETOL, _) ->
+          | Gsl.Error.Gsl_exn (Gsl.Error.ETOL, _) ->
             (* Integration failed to reach tolerance with highest-order rule. Because
              * these functions are smooth, the problem is too-wide integration bounds.
              * We halve and try again. This is obviously pretty rough, but if we

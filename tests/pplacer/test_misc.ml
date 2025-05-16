@@ -1,5 +1,4 @@
 open OUnit
-open Test_util
 
 let test_mask_reindex _ =
   "mask_index_empty" @?
@@ -10,4 +9,3 @@ let test_mask_reindex _ =
 let suite = [
   "mask_index_reindex" >:: test_mask_reindex;
 ]
-

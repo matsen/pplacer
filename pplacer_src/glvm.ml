@@ -16,7 +16,7 @@ sig
   val seq_type: t -> Alignment.seq_type
   val rates: t -> float array
   val refine: t -> int -> Newick_gtree.t ->
-    Gsl_vector.vector array IntMap.t -> glv_t array -> glv_t array -> unit
+    Gsl.Vector.vector array IntMap.t -> glv_t array -> glv_t array -> unit
   val check: t -> Alignment.t -> unit
   val mask_sites: t -> bool array -> unit
   val write: unit IO.output -> t -> unit
@@ -33,20 +33,20 @@ sig
     val fp_classify: t -> fpclass
     val mask_into: bool array -> src:t -> dst:t -> unit
     val perhaps_pull_exponent: int -> t -> unit
-    val masked_logdot: Gsl_vector.vector -> t -> t -> Linear.uint16_vector -> float
-    val bounded_logdot: Gsl_vector.vector -> t -> t -> int -> int -> float
-    val logdot: Gsl_vector.vector -> t -> t -> float
+    val masked_logdot: Gsl.Vector.vector -> t -> t -> Linear.uint16_vector -> float
+    val bounded_logdot: Gsl.Vector.vector -> t -> t -> int -> int -> float
+    val logdot: Gsl.Vector.vector -> t -> t -> float
     val listwise_prod: t -> t list -> unit
-    val prep_constant_rate_glv_from_lv_arr: t -> Gsl_vector.vector array -> unit
-    val summarize_post: (Gsl_vector.vector -> 'a) -> 'a -> t -> 'a array
+    val prep_constant_rate_glv_from_lv_arr: t -> Gsl.Vector.vector array -> unit
+    val summarize_post: (Gsl.Vector.vector -> 'a) -> 'a -> t -> 'a array
   end
 
   val make_glv: t -> n_sites:int -> Glv.t
   val mmap_glv_arrays:
     t -> Unix.file_descr -> bool -> int -> int -> n_sites:int -> Glv.t array array
   val size_of_glv_arrays: t -> int -> int -> n_sites:int -> int
-  val make_constant_rate_glv_from_lv_arr: t -> Gsl_vector.vector array -> Glv.t
-  val log_like3: t -> Gsl_vector.vector -> Glv.t -> Glv.t -> Glv.t -> float
+  val make_constant_rate_glv_from_lv_arr: t -> Gsl.Vector.vector array -> Glv.t
+  val log_like3: t -> Gsl.Vector.vector -> Glv.t -> Glv.t -> Glv.t -> float
   val site_log_like_arr3: t -> Glv.t -> Glv.t -> Glv.t -> float array
   val slow_log_like3: t -> Glv.t -> Glv.t -> Glv.t -> float
   val evolve_into: t -> ?reind_arr:int array -> dst:Glv.t -> src:Glv.t -> float -> unit

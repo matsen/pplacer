@@ -8,7 +8,7 @@ module Model: Glvm.Model =
 struct
 
   type t = {
-    statd: Gsl_vector.vector;
+    statd: Gsl.Vector.vector;
     diagdq: Diagd.t;
     seq_type: Alignment.seq_type;
     rates: float array;
@@ -16,7 +16,6 @@ struct
   }
 
   let statd model = model.statd
-  let diagdq model = model.diagdq
   let rates model = model.rates
   let tensor model = model.tensor
   let seq_type model = model.seq_type
@@ -51,7 +50,7 @@ struct
 
   (* prepare the tensor for a certain branch length *)
   let prep_tensor_for_bl model bl =
-    Diagd.multi_exp model.tensor model.diagdq model.rates bl
+    Diagd.multi_exp ~dst:model.tensor model.diagdq model.rates bl
 
   module Glv =
   struct
@@ -150,7 +149,7 @@ struct
     let prep_constant_rate_glv_from_lv_arr g lv_arr =
       assert(lv_arr <> [||]);
       assert(get_n_sites g = Array.length lv_arr);
-      assert(get_n_states g = Gsl_vector.length lv_arr.(0));
+      assert(get_n_states g = Gsl.Vector.length lv_arr.(0));
       seti g
         (fun _ -> 0)
         (fun ~rate:_ ~site ~state ->
@@ -171,14 +170,14 @@ struct
         (* first find the max twoexp *)
         for rate=0 to n_rates-1 do
           let s = BA3.slice_left_1 g.a rate site in
-          let (_, twoexp) = frexp (Gsl_vector.max s) in
+          let (_, twoexp) = frexp (Gsl.Vector.max s) in
           if twoexp > !max_twoexp then max_twoexp := twoexp
         done;
         (* now scale if it's needed *)
         if !max_twoexp < min_allowed_twoexp then begin
           for rate=0 to n_rates-1 do
             (* take the negative so that we "divide" by 2^our_twoexp *)
-            Gsl_vector.scale
+            Gsl.Vector.scale
               (BA3.slice_left_1 g.a rate site)
               (of_twoexp (-(!max_twoexp)));
           done;
@@ -244,9 +243,9 @@ struct
       and n_states = get_n_states g
       and n_rates = get_n_rates g in
       let summary = Array.make n_sites initial
-      and u = Gsl_vector.create ~init:0. n_states in
+      and u = Gsl.Vector.create ~init:0. n_states in
       for site=0 to n_sites-1 do
-        Gsl_vector.set_all u 0.;
+        Gsl.Vector.set_all u 0.;
         for rate=0 to n_rates-1 do
           for state=0 to n_states-1 do
             u.{state} <- u.{state} +. (get_a ~rate ~site ~state g)
@@ -290,7 +289,7 @@ struct
     let g = Glv.make
       ~n_rates:(n_rates model)
       ~n_sites:(Array.length lv_arr)
-      ~n_states:(Gsl_vector.length lv_arr.(0)) in
+      ~n_states:(Gsl.Vector.length lv_arr.(0)) in
     Glv.prep_constant_rate_glv_from_lv_arr g lv_arr;
     g
 

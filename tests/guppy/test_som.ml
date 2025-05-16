@@ -10,15 +10,15 @@ let is_inverse mat1 mat2 =
   let id = mat_of_string "1.0 0.0 0.0
                           0.0 1.0 0.0
                           0.0 0.0 1.0"
-  and res = Gsl_matrix.copy mat1 in
-  Gsl_blas.gemm ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.NoTrans ~alpha:1.0 ~beta:0.0 ~a:mat1 ~b:mat2 ~c:res;
+  and res = Gsl.Matrix.copy mat1 in
+  Gsl.Blas.gemm ~ta:Gsl.Blas.NoTrans ~tb:Gsl.Blas.NoTrans ~alpha:1.0 ~beta:0.0 ~a:mat1 ~b:mat2 ~c:res;
   mat_approx_equal res id
 
 let test_rot_mat_orth angles () =
   let orig = rot_mat angles in
-  let dim = fst (Gsl_matrix.dims orig) in
-  let trans = Gsl_matrix.create dim dim in
-  Gsl_matrix.transpose trans orig;
+  let dim = fst (Gsl.Matrix.dims orig) in
+  let trans = Gsl.Matrix.create dim dim in
+  Gsl.Matrix.transpose trans orig;
   "non orthogonality in rotation matrix" @? is_inverse orig trans
 
 let to_rotate = mat_of_string
@@ -29,12 +29,12 @@ let to_rotate = mat_of_string
 let extra_row = farr_of_string "1.0  4.0  3.0  2.0 -8.0"
 
 let we_would_like_this_back =
-    Array.append (Gsl_matrix.to_arrays to_rotate) [| extra_row |]
+    Array.append (Gsl.Matrix.to_arrays to_rotate) [| extra_row |]
 
 let mat_for_som_test angles =
-  let c = Gsl_matrix.copy to_rotate in
+  let c = Gsl.Matrix.copy to_rotate in
   Som.trans_a_mat_mul ~a:(rot_mat angles) ~b:to_rotate ~c;
-  Array.append (Gsl_matrix.to_arrays c) [| extra_row |]
+  Array.append (Gsl.Matrix.to_arrays c) [| extra_row |]
 
 let dummy_vars = farr_of_string "0.5 0.25 0.15 0.1"
 
@@ -78,4 +78,3 @@ let suite = [
   "3d som test 3" >:: test_som_3d [|0.2;-0.9; 0.5|];
   "var order preservation" >:: test_som_3d_var_order dummy_vars [|0.1; 0.2; 0.3|];
 ]
-

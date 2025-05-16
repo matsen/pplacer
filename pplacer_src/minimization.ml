@@ -84,14 +84,14 @@ let brent ?(max_iters=100) ?(start_finder=bisection_start_finder) f raw_start le
   try
     let start = start_finder ~max_iters f raw_start left right tolerance in
     let iterator =
-        Gsl_min.make Gsl_min.BRENT f start left right in
+        Gsl.Min.make Gsl.Min.BRENT f ~min:start ~lo:left ~up:right in
     let rec run whichStep =
       if whichStep > max_iters then raise ExceededMaxIter
       else begin
-        Gsl_min.iterate iterator;
-        let interLow, interHigh = Gsl_min.interval iterator in
+        Gsl.Min.iterate iterator;
+        let interLow, interHigh = Gsl.Min.interval iterator in
         if interHigh -. interLow < tolerance then
-          Gsl_min.minimum iterator
+          Gsl.Min.minimum iterator
         else
           run (whichStep+1)
       end

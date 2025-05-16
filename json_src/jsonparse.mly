@@ -10,20 +10,20 @@
     and chr i = Char.chr (Int32.to_int i)
     in
     if x <= 0x7f then
-      let s = String.create 1 in
-      s.[0] <- chr x';
-      s
+      let s = Bytes.create 1 in
+      Bytes.set s 0 (chr x');
+      Bytes.unsafe_to_string s
     else if x <= 0x7ff then
-      let s = String.create 2 in
-      s.[0] <- chr (x' >>- 6 &- 0b00011111l |- 0b11000000l);
-      s.[1] <- chr (x' &- 0b00111111l |- 0b10000000l);
-      s
+      let s = Bytes.create 2 in
+      Bytes.set s 0 (chr (x' >>- 6 &- 0b00011111l |- 0b11000000l));
+      Bytes.set s 1 (chr (x' &- 0b00111111l |- 0b10000000l));
+      Bytes.unsafe_to_string s
     else if x <= 0xffff then
-      let s = String.create 3 in
-      s.[0] <- chr (x' >>- 12 &- 0b00001111l |- 0b11100000l);
-      s.[1] <- chr (x' >>- 6 &- 0b00111111l |- 0b10000000l);
-      s.[2] <- chr (x' &- 0b00111111l |- 0b10000000l);
-      s
+      let s = Bytes.create 3 in
+      Bytes.set s 0 (chr (x' >>- 12 &- 0b00001111l |- 0b11100000l));
+      Bytes.set s 1 (chr (x' >>- 6 &- 0b00111111l |- 0b10000000l));
+      Bytes.set s 2 (chr (x' &- 0b00111111l |- 0b10000000l));
+      Bytes.unsafe_to_string s
     else
       invalid_arg "utf8_encode"
 

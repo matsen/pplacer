@@ -10,7 +10,7 @@ val set_zero: matrix -> unit
 val set_id: matrix -> unit
 val memcpy: src:matrix -> dst:matrix -> unit
 val copy: matrix -> matrix
-val row: matrix -> int -> Gsl_vector.vector
+val row: matrix -> int -> Gsl.Vector.vector
 val add: matrix -> matrix -> unit
 val sub: matrix -> matrix -> unit
 val mul_elements: matrix -> matrix -> unit

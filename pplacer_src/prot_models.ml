@@ -8,24 +8,24 @@ let prot_map = begin
   let pm = ref CharMap.empty in
   Array.iteri (
     fun i c ->
-      let v = Gsl_vector.create ~init:0. 20 in
+      let v = Gsl.Vector.create ~init:0. 20 in
       v.{i} <- 1.;
       pm := CharMap.add c v !pm;
   ) prot_code;
-  let any = Gsl_vector.create ~init:1. 20
-  and b_vector = Gsl_vector.create ~init:0. 20
-  and j_vector = Gsl_vector.create ~init:0. 20
-  and z_vector = Gsl_vector.create ~init:0. 20
+  let any = Gsl.Vector.create ~init:1. 20
+  and b_vector = Gsl.Vector.create ~init:0. 20
+  and j_vector = Gsl.Vector.create ~init:0. 20
+  and z_vector = Gsl.Vector.create ~init:0. 20
   in
   (* B is D or N. *)
-  Gsl_vector.add b_vector (CharMap.find 'D' !pm);
-  Gsl_vector.add b_vector (CharMap.find 'N' !pm);
+  Gsl.Vector.add b_vector (CharMap.find 'D' !pm);
+  Gsl.Vector.add b_vector (CharMap.find 'N' !pm);
   (* J is I or L. *)
-  Gsl_vector.add j_vector (CharMap.find 'I' !pm);
-  Gsl_vector.add j_vector (CharMap.find 'L' !pm);
+  Gsl.Vector.add j_vector (CharMap.find 'I' !pm);
+  Gsl.Vector.add j_vector (CharMap.find 'L' !pm);
   (* Z is E or Q. *)
-  Gsl_vector.add z_vector (CharMap.find 'E' !pm);
-  Gsl_vector.add z_vector (CharMap.find 'Q' !pm);
+  Gsl.Vector.add z_vector (CharMap.find 'E' !pm);
+  Gsl.Vector.add z_vector (CharMap.find 'Q' !pm);
   (*
   Format.print_char 'B';
   Format.printf " %a@\n" Linear_utils.ppr_gsl_vector b_vector;
@@ -67,7 +67,7 @@ let parseProtModel stringArr =
         else lowerTriMat.((max i j)-1).(min i j)) in
   qMat
 
-let parseFreq str = Gsl_vector.of_array (parseLine str)
+let parseFreq str = Gsl.Vector.of_array (parseLine str)
 
 let littleWag =
 parseProtModel [|

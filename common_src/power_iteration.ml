@@ -9,11 +9,11 @@ open Bigarray
 
 type eig =
   {
-    v: Gsl_vector.vector;
+    v: Gsl.Vector.vector;
     l: float;
   }
 
-let scale_by_l2 v = Gsl_vector.scale v (1. /. (Gsl_blas.nrm2 v))
+let scale_by_l2 v = Gsl.Vector.scale v (1. /. (Gsl.Blas.nrm2 v))
 
 let big_entry_ratio v1 v2 =
   let i = vec_fmax_index abs_float v2 in
@@ -37,12 +37,12 @@ let stop_time tol v w =
 
 (* Find the top eigenvalue of a symmetric matrix by power iteration. *)
 let top_eig m tol max_iter =
-  let (rows, cols) = Gsl_matrix.dims m in
+  let (rows, cols) = Gsl.Matrix.dims m in
   assert(rows = cols);
-  let v = Gsl_vector.create ~init:1. rows in
-  let scratch = Gsl_vector.copy v in
+  let v = Gsl.Vector.create ~init:1. rows in
+  let scratch = Gsl.Vector.copy v in
   let mat_vec_mul ~a =
-    Gsl_blas.symv Gsl_blas.Upper ~alpha:1. ~a ~beta:0. in
+    Gsl.Blas.symv Gsl.Blas.Upper ~alpha:1. ~a ~beta:0. in
   let mul_and_scale x dst =
     mat_vec_mul ~a:m ~x ~y:dst;
     scale_by_l2 dst
@@ -62,13 +62,13 @@ let top_eig m tol max_iter =
 
 (* Calculates the outer product (scalar v v^T) and puts it in m. *)
 let outer_product ?(scalar=1.) m v =
-  let len = Gsl_vector.length v in
-  let (n_rows, n_cols) = Gsl_matrix.dims m in
+  let len = Gsl.Vector.length v in
+  let (n_rows, n_cols) = Gsl.Matrix.dims m in
   assert(n_rows = len && n_cols = len);
   for i=0 to len-1 do
     let row = Array2.slice_left m i in
     Array1.blit v row; (* copy v to row *)
-    Gsl_vector.scale row (scalar *. v.{i});
+    Gsl.Vector.scale row (scalar *. v.{i});
   done;;
 
 let projector_of_eig m eig =
@@ -76,15 +76,15 @@ let projector_of_eig m eig =
 
 (* Make an array of the top n eigs. *)
 let top_eigs m tol max_iter n_eigs =
-  let m' = Gsl_matrix.copy m in
-  let proj = Gsl_matrix.copy m in
+  let m' = Gsl.Matrix.copy m in
+  let proj = Gsl.Matrix.copy m in
   let rec aux n_left accu =
     if n_left <= 0 then accu
     else
       let eig = top_eig m' tol max_iter in
       projector_of_eig proj eig;
       (* Subtract the projector from m'. *)
-      Gsl_matrix.sub m' proj;
+      Gsl.Matrix.sub m' proj;
       aux (n_left - 1) (eig::accu)
   in
   Array.of_list (List.rev (aux n_eigs []))

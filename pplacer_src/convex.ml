@@ -624,9 +624,6 @@ let rank_tax_map_of_refpkg rp =
             (Refpkg.get_name rp))
       td.Tax_taxonomy.rank_names)
 
-let add_color_setly k v m =
-  IntMap.add k (CS.add v (IntMap.get k CS.empty m)) m
-
 let merge_color_setly m1 m2 =
   IntMap.fold
     (fun k v m ->
@@ -820,5 +817,3 @@ module Naive = struct
     CSM.find CS.empty (COM.find None (walk tree))
 
 end
-
-

@@ -6,7 +6,7 @@ let of_pql ?inflation criterion pql =
   let pqa = Array.of_list pql in
   let name_map =
     Enum.combine
-      (Array.enum pqa |> Enum.map Pquery.name, Enum.range 0)
+      (Array.enum pqa |> Enum.map Pquery.name) (Enum.range 0)
     |> StringMap.of_enum
   in
   let count = StringMap.cardinal name_map in

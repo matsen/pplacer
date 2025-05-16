@@ -1,6 +1,6 @@
 open Ppatteries
 include Bigarray.Array2
-include Gsl_matrix
+include Gsl.Matrix
 
 let create a b = Bigarray.Array2.create Bigarray.float64 Bigarray.c_layout a b
 let mimic a = create (dim1 a) (dim2 a)
@@ -29,4 +29,3 @@ let rect_transpose m =
     (fun i j _ -> get m j i)
     m';
   m'
-

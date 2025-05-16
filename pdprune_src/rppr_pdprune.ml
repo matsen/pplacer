@@ -98,4 +98,3 @@ object (self)
       |> failwith
 
 end
-

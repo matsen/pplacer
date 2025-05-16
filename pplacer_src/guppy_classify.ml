@@ -680,7 +680,7 @@ object (self)
           |> (:=) best_classif_map
 
       and classify line =
-        let splut = String.nsplit line "\t" |> Array.of_list in
+        let splut = String.split_on_string line ~by:"\t" |> Array.of_list in
         splut.(0), splut.(1), float_of_string splut.(2) /. 100.
 
       in

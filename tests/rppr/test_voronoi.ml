@@ -1,4 +1,3 @@
-open Batteries
 open OUnit
 open Test_util
 open Voronoi
@@ -135,7 +134,7 @@ let suite = [
     let mass = Mass_map.Indiv.of_placerun Mass_map.Point Placement.ml_ratio pr
     and gt = Placerun.get_ref_tree pr in
     let get_sols = IntMap.find 2 in
-    Gsl_rng.set_default_seed 0n;
+    Gsl.Rng.set_default_seed 0n;
     (* yes, I know. the alternative is worse. I dare you to try it. *)
     let full_sols = Voronoi.Full.solve ~n_leaves:2 gt mass |> get_sols
     and pam_sols = Voronoi.PAM.solve ~n_leaves:2 gt mass |> get_sols

@@ -3,7 +3,6 @@
  *)
 
 open Ppatteries
-open Stree
 
 exception No_PP
 exception No_classif

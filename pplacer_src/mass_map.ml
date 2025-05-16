@@ -250,7 +250,7 @@ end
 let no_transform = identity
 let unit_transform _ = 1.
 let log_transform x = log x
-let asinh_transform x = Gsl_math.asinh x
+let asinh_transform x = Gsl.Math.asinh x
 
 let transform_map = StringMap.of_pairlist
   [

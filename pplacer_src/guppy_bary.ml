@@ -53,8 +53,8 @@ object (self)
         ()
       in
       Phyloxml.named_gtree_to_file
-        fname
-        (safe_chop_suffix fname ".xml") (* tree name *)
+        ~fname
+        ~tree_name:(safe_chop_suffix fname ".xml") (* tree name *)
         (make_bary_tree t prel)
     end
 end

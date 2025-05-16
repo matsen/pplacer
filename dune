@@ -1,0 +1,20 @@
+(include_subdirs unqualified)
+
+(executables
+ (public_names pplacer guppy rppr -)
+ (names pplacer guppy rppr tests)
+ (flags :standard -w -7-9-36)
+ (foreign_stubs
+  (language c)
+  (names linear_c unix_support caml_pam pam
+         cddcore caml_cdd cddio cddlib cddlp cddmp cddproj pplacer_cdd setoper))
+ (libraries batteries sqlite3 camlzip gsl csv xmlm mcl ounit2))
+
+(subdir pplacer_src
+ (dirs)
+ (ocamllex newick_lexer)
+ (ocamlyacc newick_parser))
+
+(subdir json_src
+ (ocamllex jsonlex)
+ (ocamlyacc jsonparse))

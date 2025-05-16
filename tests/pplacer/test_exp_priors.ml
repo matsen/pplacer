@@ -2,8 +2,6 @@ open Ppatteries
 open OUnit
 open Test_util
 
-open Convex
-
 (* Testing Core.prior_mean_map. Here we test it adding on one half of the top
  * edge onto the average. *)
 
