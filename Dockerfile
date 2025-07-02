@@ -1,69 +1,105 @@
 ## pplacer-build
-## Build pplacer from source
+## Build pplacer from source with OCaml 4.14.x and opam 2.x
 
-FROM ubuntu:14.04
+FROM ubuntu:24.04
 
-RUN apt -y update
-RUN apt -y --force-yes install \
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NO_AT_BRIDGE=1
+
+# Install general-purpose tools
+RUN apt-get update && apt-get install -y \
+  vim \
+  openjdk-8-jdk
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
   git \
-  camlp4-extra=4.01.0-3ubuntu3.1 \
-  gawk=1:4.0.1+dfsg-2.1ubuntu2 \
-  libgsl0-dev=1.16+dfsg-1ubuntu1 \
-  zlib1g=1:1.2.8.dfsg-1ubuntu1 \
-  zlib1g-dev=1:1.2.8.dfsg-1ubuntu1 \
-  m4=1.4.17-2ubuntu1 \
-  wget=1.15-1ubuntu1.14.04.5 \
-  ocaml=4.01.0-3ubuntu3.1 \
-  patch=2.7.1-4ubuntu2.4 \
-  build-essential=11.6ubuntu6 \
-  pkg-config=0.26-1ubuntu4 \
-  unzip=6.0-9ubuntu1.5 \
-  sqlite3=3.8.2-1ubuntu2.2 \
-  libsqlite3-dev=3.8.2-1ubuntu2.2 \
-  python=2.7.5-5ubuntu3 \
-  zip=3.0-8
+  build-essential \
+  pkg-config \
+  m4 \
+  wget \
+  curl \
+  unzip \
+  zip \
+  libgsl-dev \
+  libgsl27 \
+  zlib1g-dev \
+  zlib1g \
+  libsqlite3-dev \
+  sqlite3 \
+  python3 \
+  python3-pip \
+  pipx \
+  bubblewrap \
+  rsync \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN wget https://raw.githubusercontent.com/ocaml/opam/1.3.1/shell/opam_installer.sh -O - \
-  | sh -s /usr/local/bin
-RUN ln -s /usr/local/bin/opam /usr/bin/opam && /usr/local/bin/opam init -y
-RUN opam repo add pplacer-deps http://matsen.github.io/pplacer-opam-repository \
-  && opam update pplacer-deps \
-  && eval `opam config env`
-RUN opam install -y depext.1.0.5 \
-  && opam depext -y \
-  csv.1.6 \
-  ounit.2.0.8 \
-  xmlm.1.2.0 \
-  mcl.12-068oasis4 \
-  batteries.2.8.0 \
-  ocaml-gsl.0.6.3 \
-  sqlite3.4.1.3 \
-  camlzip.1.05 \
+# Install opam 2.x
+RUN curl -L https://github.com/ocaml/opam/releases/download/2.2.1/opam-2.2.1-x86_64-linux -o /usr/local/bin/opam \
+  && chmod +x /usr/local/bin/opam
+
+# Initialize opam with OCaml 4.14.2
+RUN opam init --disable-sandboxing -y --compiler=4.14.2 \
+  && eval $(opam env)
+
+# Add pplacer opam repository
+RUN eval $(opam env) \
+  && opam repo add pplacer-deps http://matsen.github.io/pplacer-opam-repository \
+  && opam update
+
+# Install OCaml dependencies
+RUN eval $(opam env) \
   && opam install -y \
-  csv.1.6 \
-  ounit.2.0.8 \
-  xmlm.1.2.0 \
-  mcl.12-068oasis4 \
-  batteries.2.8.0 \
-  ocaml-gsl.0.6.3 \
-  sqlite3.4.1.3 \
-  camlzip.1.05
+  dune.3.19.1 \
+  csv.2.4 \
+  ounit2.2.2.7 \
+  xmlm.1.4.0 \
+  batteries.3.8.0 \
+  gsl.1.25.0 \
+  sqlite3.5.2.0 \
+  camlzip.1.11 \
+  ocamlfind
 
-RUN mkdir /pplacer && mkdir /pplacer/src && mkdir /data
+# Copy pplacer source code
+RUN mkdir -p /pplacer/src
 WORKDIR /pplacer/src
 COPY ./ /pplacer/src/
 
-RUN eval $(opam config env) && make
-RUN cp /pplacer/src/bin/* /usr/local/bin
-WORKDIR /pplacer/src/bin/
-RUN zip /pplacer.zip *
-WORKDIR /pplacer/src/
-RUN zip /pplacer.zip ./scripts/*
+# Copy and build mcl source code
+RUN mkdir -p /mcl/src
+WORKDIR /mcl/src
+COPY ./mcl /mcl/src/
+RUN eval $(opam env) \
+  && ./configure \
+  && make
+RUN eval $(opam env) \
+  && dune build \
+  && dune install
+
+# Build pplacer
+WORKDIR /pplacer/src
+RUN eval $(opam env) \
+  && dune build
+
+# Install binaries
+RUN cp _build/default/pplacer.exe /usr/local/bin/pplacer \
+  && cp _build/default/guppy.exe /usr/local/bin/guppy \
+  && cp _build/default/rppr.exe /usr/local/bin/rppr
+
+# Package binaries and scripts
+WORKDIR /pplacer/src
+RUN mkdir -p /pplacer/bin \
+  && cp _build/default/*.exe /pplacer/bin/ \
+  && cd /pplacer/bin \
+  && zip /pplacer.zip * \
+  && cd /pplacer/src \
+  && zip /pplacer.zip ./scripts/*
+
+# Install pplacer scripts
 WORKDIR /pplacer/src/scripts
-RUN python setup.py install
+RUN chmod +x *.py \
+  && cp *.py /usr/local/bin/
 
-# WORKDIR /pplacer/
-# RUN zip /pplacer.zip -r src
-
+# Set working directory for data
 WORKDIR /data
-# RUN rm -r /pplacer/src/
