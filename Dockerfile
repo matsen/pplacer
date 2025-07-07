@@ -74,6 +74,12 @@ RUN eval $(opam env) \
   && ./configure \
   && make
 RUN eval $(opam env)
+RUN echo "Checking MCL libraries..." \
+  && ls -la src/clew/libclew.a \
+  && ls -la src/impala/libimpala.a \
+  && ls -la src/mcl/libmcl.a \
+  && ls -la util/libutil.a \
+  && echo "All MCL libraries built successfully!"
 WORKDIR /pplacer/src
 RUN rm -rf mcl
 RUN ln -s /mcl/src mcl
