@@ -73,9 +73,7 @@ COPY ./mcl /mcl/src/
 RUN eval $(opam env) \
   && ./configure \
   && make
-RUN eval $(opam env) \
-  && dune build \
-  && dune install
+RUN eval $(opam env)
 
 # Build pplacer
 WORKDIR /pplacer/src
