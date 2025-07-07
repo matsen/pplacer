@@ -74,6 +74,9 @@ RUN eval $(opam env) \
   && ./configure \
   && make
 RUN eval $(opam env)
+WORKDIR /pplacer/src
+RUN rm -rf mcl
+RUN ln -s /mcl/src mcl
 
 # Build pplacer
 WORKDIR /pplacer/src
