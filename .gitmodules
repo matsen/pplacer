@@ -1,3 +1,6 @@
 [submodule "docs/_build/html"]
 	path = docs/_build/html
 	url = git@github.com:matsen/pplacer.git
+[submodule "mcl"]
+	path = mcl
+	url = git@github.com:davidrich27/mcl.git
