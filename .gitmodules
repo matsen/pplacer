@@ -3,4 +3,4 @@
 	url = git@github.com:matsen/pplacer.git
 [submodule "mcl"]
 	path = mcl
-	url = git@github.com:davidrich27/mcl.git
+	url = git@github.com:fhcrc/mcl.git
