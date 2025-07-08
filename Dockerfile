@@ -8,8 +8,7 @@ ENV NO_AT_BRIDGE=1
 
 # Install general-purpose tools
 RUN apt-get update && apt-get install -y \
-  vim \
-  openjdk-8-jdk
+  vim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
