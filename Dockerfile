@@ -1,7 +1,12 @@
 ## pplacer-build
-## Build pplacer from source with OCaml 4.14.x and opam 2.x
+## Build pplacer from source with OCaml and opam 2.x
+## Use: docker build --build-arg OCAML_VERSION=4.14.2 -t pplacer:ocaml4 .
+##      docker build --build-arg OCAML_VERSION=5.2.1 -t pplacer:ocaml5 .
 
 FROM ubuntu:24.04
+
+# Build argument for OCaml version
+ARG OCAML_VERSION=5.2.1
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NO_AT_BRIDGE=1
@@ -38,8 +43,8 @@ RUN apt-get update && apt-get install -y \
 RUN curl -L https://github.com/ocaml/opam/releases/download/2.2.1/opam-2.2.1-x86_64-linux -o /usr/local/bin/opam \
   && chmod +x /usr/local/bin/opam
 
-# Initialize opam with OCaml 4.14.2
-RUN opam init --disable-sandboxing -y --compiler=4.14.2 \
+# Initialize opam with specified OCaml version
+RUN opam init --disable-sandboxing -y --compiler=${OCAML_VERSION} \
   && eval $(opam env)
 
 # Add pplacer opam repository
@@ -47,18 +52,31 @@ RUN eval $(opam env) \
   && opam repo add pplacer-deps http://matsen.github.io/pplacer-opam-repository \
   && opam update
 
-# Install OCaml dependencies
+# Install OCaml dependencies with version pinning for OCaml 4.x
 RUN eval $(opam env) \
-  && opam install -y \
-  dune.3.19.1 \
-  csv.2.4 \
-  ounit2.2.2.7 \
-  xmlm.1.4.0 \
-  batteries.3.8.0 \
-  gsl.1.25.0 \
-  sqlite3.5.2.0 \
-  camlzip.1.11 \
-  ocamlfind
+  && if [ "${OCAML_VERSION}" = "4.14.2" ]; then \
+       opam install -y \
+         dune.3.19.1 \
+         csv.2.4 \
+         ounit2.2.2.7 \
+         xmlm.1.4.0 \
+         batteries.3.8.0 \
+         gsl.1.25.0 \
+         sqlite3.5.2.0 \
+         camlzip.1.11 \
+         ocamlfind; \
+     else \
+       opam install -y \
+         dune \
+         csv \
+         ounit2 \
+         xmlm \
+         batteries \
+         gsl \
+         sqlite3 \
+         camlzip \
+         ocamlfind; \
+     fi
 
 # Copy pplacer source code
 RUN mkdir -p /pplacer/src
