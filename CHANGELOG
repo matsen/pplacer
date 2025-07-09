@@ -1,3 +1,14 @@
+1.1.alpha20
+-----------
+
+ * Closed GH-385: Major OCaml and dependency upgrades:
+   - Upgraded OCaml from 4.01.x to 4.14.2 (with OCaml 5.2.1 compatibility)
+   - Upgraded opam from 1.x to 2.2.1
+   - Migrated build system to dune 3.19.1
+   - Updated all dependencies to modern versions (batteries 3.8.0, gsl 1.25.0, sqlite3 5.2.0, etc.)
+   - Converted MCL from opam package to git submodule
+   - Added ARM64/Apple Silicon support
+
 1.1.alpha19
 -----------
 
