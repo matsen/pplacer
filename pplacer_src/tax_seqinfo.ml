@@ -50,7 +50,7 @@ let of_csv csv =
           }
           sim
       with
-      | Failure "check_add" ->
+      | Failure s when s = "check_add" ->
           failwith
           (Printf.sprintf "Tax_refdata.of_csv: contradictory line for %s\n" seqname_str)
       | Not_found -> failwith ("seq_name and/or tax_id fields missing in seqinfo"))

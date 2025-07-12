@@ -66,6 +66,7 @@ val uncolor_leaves: v -> IntSet.t -> v * IntSet.t
 (** This function returns the updated Voronoi after removing all of the leaves
     in the given set, as well as the set of leaves which were affected by this
     removal. *)
+
 val uncolor_leaf: v -> leaf -> v * IntSet.t
 (** uncolor_leaf v l <=> uncolor_leaves v (IntSet.singleton l) *)
 

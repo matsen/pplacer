@@ -37,10 +37,10 @@ let list_replace ~src ~dst = List.map (fun x -> if x = src then dst else x)
 
 let edge_update ~src ~dst = function
   | Pend(id,bl,l) as p ->
-      if List.mem src l then Pend(id,bl, list_replace src dst l) else p
+      if List.mem src l then Pend(id,bl, list_replace ~src ~dst l) else p
   | Inte(bl,l,r) as i ->
       if not ((List.mem src l) || (List.mem src r)) then i
-      else Inte(bl, list_replace src dst l, list_replace src dst r)
+      else Inte(bl, list_replace ~src ~dst l, list_replace ~src ~dst r)
 
 
 (* *** PTREE UTILS *** *)

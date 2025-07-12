@@ -1,6 +1,5 @@
 (* Functions for summarizing the site-wise posterior probability of base pairs
  * at given sites for internal positions on the tree. *)
-open Ppatteries
 
 module Make (Model: Glvm.Model) =
 struct

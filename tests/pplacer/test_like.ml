@@ -48,7 +48,7 @@ let like_test info () =
     [darr; parr;];
   let half_bl_fun loc = (Gtree.get_bl tree loc) /. 2. in
   Glv_arr.prep_supernodes model ~dst:snodes darr parr half_bl_fun;
-  let utilv_nsites = Gsl_vector.create n_sites
+  let utilv_nsites = Gsl.Vector.create n_sites
   and util_d = Glv.mimic darr.(0)
   and util_p = Glv.mimic parr.(0)
   and util_one = Glv.mimic darr.(0)

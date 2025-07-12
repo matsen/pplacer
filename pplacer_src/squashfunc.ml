@@ -54,7 +54,7 @@ module Squash (B: BLOB) =
     let compare_cble a b =
       let cdist = compare a.dist b.dist in
       if cdist <> 0 then cdist
-      else Pervasives.compare a b
+      else Stdlib.compare a b
 
     let replace_blob distf oldb newb c =
       if c.small = oldb then cble_of_blobs distf c.big newb
@@ -179,5 +179,3 @@ module Squash (B: BLOB) =
       in
       !blobim
   end
-
-

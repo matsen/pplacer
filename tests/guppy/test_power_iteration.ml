@@ -1,8 +1,6 @@
 open OUnit
 open Test_util
 open Pca
-open Linear_utils
-open Power_iteration
 
 let () = Random.init 1;;
 let m = rand_symmetric 5;;
@@ -11,7 +9,7 @@ let power_l, power_v = power_eigen 5 m;;
 let symmv_l, symmv_v = symmv_eigen 5 m;;
 
 let first_coord_pos_vec v =
-  if v.{0} < 0. then Gsl_vector.scale v (-.1.)
+  if v.{0} < 0. then Gsl.Vector.scale v (-.1.)
 
 let first_coord_pos_arr_vec aa =
   Array.iter first_coord_pos_vec aa

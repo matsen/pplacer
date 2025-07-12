@@ -1,6 +1,5 @@
 type tree_fmt = Newick | Phyloxml
 
-open Subcommand
 open Ppatteries
 
 let intmap_of_arr a =
@@ -76,5 +75,3 @@ let spread_short_fat min_bl t =
             | Some bl -> if bl > min_bl then b else b#set_bl min_bl
           end)
       (Gtree.get_bark_map t))
-
-

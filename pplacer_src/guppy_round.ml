@@ -48,7 +48,7 @@ module RPQMap =
   Map.Make
     (struct
       type t = rounded_pquery
-      let compare = Pervasives.compare
+      let compare = Stdlib.compare
     end)
 
 let add_listly k v m =

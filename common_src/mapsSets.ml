@@ -3,7 +3,7 @@ open Ppr
 
 module OrderedFloat = struct
   type t = float
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end
 
 module OrderedInt = struct

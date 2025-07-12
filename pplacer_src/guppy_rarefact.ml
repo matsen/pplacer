@@ -66,8 +66,7 @@ object (self)
               @ (if is_uniform_mass then [fmt qm] else [""]))
         |> begin
           if fv variance then
-            curry
-              Enum.combine
+            Enum.combine
               (Rarefaction.variance_of_placerun criterion ?k_max pr)
             |- Enum.map (fun ((_, uv, rv), sl) -> sl @ [fmt uv; fmt rv])
           else identity

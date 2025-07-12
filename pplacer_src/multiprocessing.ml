@@ -20,7 +20,6 @@ module FDM = Map.Make(OrderedFileDescr)
 
 type handler = {
   ch: in_channel;
-  pid: int;
   handler: handler -> unit;
 }
 
@@ -71,14 +70,14 @@ let event_loop children =
   in aux pipe_map
 
 type buffer = {
-  buf: string;
+  buf: bytes;
   mutable pos: int;
   length: int;
 }
-let buffer n = {buf = String.create n; pos = 0; length = n}
+let buffer n = {buf = Bytes.create n; pos = 0; length = n}
 type buffer_state =
   | Needs_more
-  | Done of string
+  | Done of bytes
 
 let fill_buffer b ch =
   let ch = Unix.descr_of_in_channel ch in
@@ -99,7 +98,7 @@ let marshal ch x =
 
 type marshal_recv_phase =
   | Needs_header of buffer
-  | Needs_data of string * buffer
+  | Needs_data of bytes * buffer
 
 let rec range = function
   | 0 -> []
@@ -164,8 +163,8 @@ object (self)
   method pid = pid
 
   method handlers = [
-    {pid; ch = rd; handler = self#marshal_recv};
-    {pid; ch = progress; handler = self#progress_recv};
+    {ch = rd; handler = self#marshal_recv};
+    {ch = progress; handler = self#progress_recv};
   ]
 
   method close =
@@ -186,7 +185,7 @@ object (self)
       | Done header, Needs_header _ ->
         marshal_state <- Needs_data (header, buffer (Marshal.data_size header 0))
       | Done body, Needs_data (header, _) ->
-        let obj = Marshal.from_string (header ^ body) 0 in
+        let obj = Marshal.from_bytes (Bytes.cat header body) 0 in
         self#obj_received obj;
         marshal_state <- Needs_header (buffer 20)
 

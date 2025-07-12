@@ -1,0 +1,5 @@
+mcl/**/_build/
+mcl/**/.git
+**/_build/
+**/.git/
+

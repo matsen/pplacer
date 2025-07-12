@@ -32,7 +32,7 @@ let rec node_ids_aux = function
 let node_ids stree = List.sort compare (node_ids_aux stree)
 let nonroot_node_ids stree =
   try List.sort compare (List.tl (node_ids_aux stree)) with
-  | Failure "tl" -> invalid_arg "nonroot_node_ids"
+  | Failure _ -> invalid_arg "nonroot_node_ids"
 
 let rec leaf_ids = function
   | Node(_,tL) -> List.flatten (List.map leaf_ids tL)
@@ -147,4 +147,3 @@ let rec nodes_containing nodes = function
       IntSet.add i nodes'
     else
       nodes'
-

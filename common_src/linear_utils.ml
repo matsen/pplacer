@@ -17,44 +17,44 @@ open Ppatteries
 (* *** Vector operations *** *)
 
 let vec_init n f =
-  let v = Gsl_vector.create n in
+  let v = Gsl.Vector.create n in
   for i=0 to n-1 do Array1.unsafe_set v i (f i) done;
   v
 
 let vec_fold_left f start v =
   let x = ref start
-  and n = Gsl_vector.length v in
+  and n = Gsl.Vector.length v in
   for i=0 to n-1 do
     x := f !x (Array1.unsafe_get v i)
   done;
   !x
 
 let vec_map f v =
-  vec_init (Gsl_vector.length v) (fun i -> f (Array1.unsafe_get v i))
+  vec_init (Gsl.Vector.length v) (fun i -> f (Array1.unsafe_get v i))
 
 let vec_iter f a =
-  let n = Gsl_vector.length a in
+  let n = Gsl.Vector.length a in
   for i=0 to n-1 do
     f (Array1.unsafe_get a i)
   done
 
 let vec_iteri f a =
-  let n = Gsl_vector.length a in
+  let n = Gsl.Vector.length a in
   for i=0 to n-1 do
     f i (Array1.unsafe_get a i)
   done
 
 let vec_iter2 f a b =
-  let n = Gsl_vector.length a in
-  assert(n = Gsl_vector.length b);
+  let n = Gsl.Vector.length a in
+  assert(n = Gsl.Vector.length b);
   for i=0 to n-1 do
     f (Array1.unsafe_get a i) (Array1.unsafe_get b i)
   done
 
 let vec_map2_into f ~dst a b =
-  let n = Gsl_vector.length dst in
-  assert(n = Gsl_vector.length a);
-  assert(n = Gsl_vector.length b);
+  let n = Gsl.Vector.length dst in
+  assert(n = Gsl.Vector.length a);
+  assert(n = Gsl.Vector.length b);
   for i=0 to n-1 do
     Array1.unsafe_set dst i
       (f (Array1.unsafe_get a i) (Array1.unsafe_get b i))
@@ -66,7 +66,7 @@ let vec_predicate pred v =
 
 (* Maximum element after applying f. *)
 let vec_fmax_index f v =
-  assert(0 <> Gsl_vector.length v);
+  assert(0 <> Gsl.Vector.length v);
   let max_val = ref (f v.{0})
   and max_ind = ref 0
   in
@@ -84,7 +84,7 @@ let vec_fmax_index f v =
 let lp_norm p v =
   assert(p > 0.);
   let x = ref 0. in
-  for i=0 to (Gsl_vector.length v)-1 do
+  for i=0 to (Gsl.Vector.length v)-1 do
     x := !x +. (v.{i} ** p)
   done;
   !x ** (1. /. p)
@@ -94,13 +94,13 @@ let l2_norm v = lp_norm 2. v
 
 (* normalize in place *)
 let gen_normalize norm_fun v =
-  Gsl_vector.scale v (1. /. (norm_fun v))
+  Gsl.Vector.scale v (1. /. (norm_fun v))
 let l1_normalize v = gen_normalize l1_norm v
 let l2_normalize v = gen_normalize l2_norm v
 
 let alloc_gen_normalize norm_fun v =
-  let normed = Gsl_vector.copy v in
-  Gsl_vector.scale normed (1. /. (norm_fun normed));
+  let normed = Gsl.Vector.copy v in
+  Gsl.Vector.scale normed (1. /. (norm_fun normed));
   normed
 let alloc_l1_normalize v = alloc_gen_normalize l1_norm v
 let alloc_l2_normalize v = alloc_gen_normalize l2_norm v
@@ -109,7 +109,7 @@ let alloc_l2_normalize v = alloc_gen_normalize l2_norm v
 (* *** Matrix operations *** *)
 
 let mat_init n_rows n_cols f =
-  let m = Gsl_matrix.create n_rows n_cols in
+  let m = Gsl.Matrix.create n_rows n_cols in
   for i=0 to n_rows-1 do
     let row = Array2.slice_left m i in
     for j=0 to n_cols-1 do
@@ -119,12 +119,12 @@ let mat_init n_rows n_cols f =
   m
 
 let mat_map f m =
-  let (rows, cols) = Gsl_matrix.dims m in
+  let (rows, cols) = Gsl.Matrix.dims m in
   mat_init rows cols (fun i j -> f m.{i,j})
 
 let diag v =
-  let n = Gsl_vector.length v in
-  let m = Gsl_matrix.create ~init:0. n n in
+  let n = Gsl.Vector.length v in
+  let m = Gsl.Matrix.create ~init:0. n n in
   for i=0 to n-1 do
     m.{i,i} <- v.{i}
   done;
@@ -132,7 +132,7 @@ let diag v =
 
 (* information about vectors and matrices *)
 let assert_symmetric m =
-  let n, cols = Gsl_matrix.dims m in
+  let n, cols = Gsl.Matrix.dims m in
   assert(n = cols);
   for i=0 to n-1 do
     for j=i to n-1 do
@@ -144,8 +144,8 @@ let assert_symmetric m =
   done
 
 let alloc_transpose m =
-  let mt = Gsl_matrix.copy m in
-  Gsl_matrix.transpose_in_place mt;
+  let mt = Gsl.Matrix.copy m in
+  Gsl.Matrix.transpose_in_place mt;
   mt
 
 let mat_dim_asserting_square m =
@@ -154,7 +154,7 @@ let mat_dim_asserting_square m =
   n
 
 let qform m v =
-  let n = Gsl_vector.length v in
+  let n = Gsl.Vector.length v in
   assert(n = Array2.dim1 m && n = Array2.dim2 m);
   let x = ref 0. in
   for i=0 to n-1 do
@@ -177,48 +177,48 @@ let trace m =
   !x
 
 let mat_vec_mul dest a v =
-  Gsl_blas.gemv
-    Gsl_blas.NoTrans ~alpha:1.
+  Gsl.Blas.gemv
+    Gsl.Blas.NoTrans ~alpha:1.
     ~a:a ~x:v ~beta:0. ~y:dest
 
 let alloc_mat_vec_mul a v =
-  let (rows, midA) = Gsl_matrix.dims a
-  and midV = Gsl_vector.length v in
+  let (rows, midA) = Gsl.Matrix.dims a
+  and midV = Gsl.Vector.length v in
   assert(midA = midV);
-  let w = Gsl_vector.create rows in
+  let w = Gsl.Vector.create rows in
   mat_vec_mul w a v;
   w
 
 let mat_mat_mul dest a b =
-  Gsl_blas.gemm
-    ~ta:Gsl_blas.NoTrans ~tb:Gsl_blas.NoTrans
+  Gsl.Blas.gemm
+    ~ta:Gsl.Blas.NoTrans ~tb:Gsl.Blas.NoTrans
     ~alpha:1. ~a:a ~b:b ~beta:0. ~c:dest
 
 let alloc_mat_mat_mul a b =
-  let (rows, midA) = Gsl_matrix.dims a
-  and (midB, cols) = Gsl_matrix.dims b in
+  let (rows, midA) = Gsl.Matrix.dims a
+  and (midB, cols) = Gsl.Matrix.dims b in
   assert(midA = midB);
-  let m = Gsl_matrix.create rows cols in
+  let m = Gsl.Matrix.create rows cols in
   mat_mat_mul m a b;
   m
 
 (* gives a matrix such that the columns are the eigenvectors. *)
 let symm_eigs m =
   assert_symmetric m;
-  Gsl_eigen.symmv (`M(m))
+  Gsl.Eigen.symmv (`M(m))
 
 (* pretty printers *)
 let ppr_gsl_vector ff y =
   Legacy.Format.fprintf ff "@[{";
   Ppr.ppr_list_inners Legacy.Format.pp_print_float ff (
-    Array.to_list (Gsl_vector.to_array y));
+    Array.to_list (Gsl.Vector.to_array y));
   Legacy.Format.fprintf ff "}@]"
 
 let ppr_gsl_matrix ff m =
-  let nrows, _ = Gsl_matrix.dims m in
+  let nrows, _ = Gsl.Matrix.dims m in
   Legacy.Format.fprintf ff "@[{";
   for i=0 to nrows-1 do
-    ppr_gsl_vector ff (Gsl_matrix.row m i);
+    ppr_gsl_vector ff (Gsl.Matrix.row m i);
     if i < nrows-1 then Legacy.Format.fprintf ff ";@ "
   done;
   Legacy.Format.fprintf ff "}@]"

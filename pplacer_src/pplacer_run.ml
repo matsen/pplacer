@@ -85,7 +85,7 @@ let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
    * informative column of the reference sequence. *)
   let overlaps_mask s = String.enum s
     |> Enum.map Alignment.informative
-    |> curry Enum.combine (Array.enum ref_mask)
+    |> Enum.combine (Array.enum ref_mask)
     |> Enum.exists (uncurry (&&))
   in
   let query_list = List.filter
@@ -110,15 +110,15 @@ let premask ?(discard_nonoverlapped = false) seq_type ref_align query_list =
     mask
   in
   let cut_from_mask (name, seq) =
-    let seq' = String.create masklen
+    let seq' = Bytes.create masklen
     and pos = ref 0 in
     Array.iteri
       (fun e not_masked ->
         if not_masked then
-          (seq'.[!pos] <- seq.[e];
+          (Bytes.set seq' !pos seq.[e];
            incr pos))
       mask;
-    name, seq'
+    name, Bytes.unsafe_to_string seq'
   in
   dprintf "sequence length cut from %d to %d.\n" n_sites masklen;
   let effective_length = match seq_type with
@@ -347,7 +347,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       if fpc > FP_zero then
         Printf.printf "%s is a %s\n" str (string_of_fpclass fpc)
     in
-    let utilv_nsites = Gsl_vector.create n_sites
+    let utilv_nsites = Gsl.Vector.create n_sites
     and util_d = Glv.mimic darr.(0)
     and util_p = Glv.mimic parr.(0)
     and util_one = Glv.mimic darr.(0)
@@ -406,7 +406,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
   in
   let q = Queue.create () in
   List.iter
-    (fun (name, seq) -> Queue.push (name, (String.uppercase seq)) q)
+    (fun (name, seq) -> Queue.push (name, (String.uppercase_ascii seq)) q)
     query_list;
 
   (* functions called respectively: when a result is received from a child
@@ -421,7 +421,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
     and fantasy_mod = round (100. *. (Prefs.fantasy_frac prefs))
     and n_fantasies = ref 0
     in
-    let rec gotfunc = function
+    let gotfunc = function
       | Core.Fantasy f ->
         Fantasy.add_to_fantasy_matrix f fantasy_mat;
         incr n_fantasies;
@@ -538,7 +538,7 @@ let run_placements prefs rp query_list from_input_alignment placerun_name placer
       else
         identity
     and queries = ref [] in
-    let rec gotfunc = function
+    let gotfunc = function
       | Core.Pquery pq when not (Pquery.is_placed pq) ->
           dprintf "warning: %d sequence(s) (including %s) were \
                    not placed and will be omitted.\n"

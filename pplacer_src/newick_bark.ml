@@ -119,7 +119,7 @@ let float_approx_compare epsilon x y =
 let floato_approx_compare epsilon a b =
   match (a, b) with
   | (Some x, Some y) -> float_approx_compare epsilon x y
-  | (a, b) -> Pervasives.compare a b
+  | (a, b) -> Stdlib.compare a b
 
 let compare ?epsilon:(epsilon=0.) ?cmp_edge_label:(cmp_edge_label=true) b1 b2 =
   let fc = floato_approx_compare epsilon in

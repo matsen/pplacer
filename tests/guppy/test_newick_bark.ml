@@ -1,6 +1,5 @@
 open Ppatteries
 open OUnit
-open Test_util
 
 let suite = [
   "test_get_confidence_name_opt" >:: begin fun () ->

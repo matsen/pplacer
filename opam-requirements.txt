@@ -1,8 +1,8 @@
-csv.1.2.2
-ounit.1.1.2
-xmlm.1.1.1
+csv.2.4
+ounit.2.2.7
+xmlm.1.4.0
 mcl.12-068oasis4
-batteries.2.1.0
-ocaml-gsl.0.6.3
-sqlite3.1.6.3
-camlzip.1.05
+batteries.3.8.0
+gsl.1.25.0
+sqlite3.5.2.0
+camlzip.1.11

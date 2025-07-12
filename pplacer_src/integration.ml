@@ -25,9 +25,7 @@ let value_of_triple (v, _, _) = v
 
 (* non-adaptive Gauss-Kronrod integration *)
 let integrate f a b ~abs_err ~rel_err =
-  Gsl_integration.qng f ~a:a ~b:b ~epsabs:abs_err ~epsrel:rel_err
+  Gsl.Integration.qng f ~a:a ~b:b ~epsabs:abs_err ~epsrel:rel_err
 
 let value_integrate f a b ~abs_err ~rel_err =
   value_of_triple (integrate f a b ~abs_err ~rel_err)
-
-

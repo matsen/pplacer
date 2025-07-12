@@ -1,5 +1,4 @@
 open Ppatteries
-open Subcommand
 open Linear_utils
 open Guppy_cmdobjs
 
@@ -15,27 +14,27 @@ left_diag_mul_mat vd m;;
 - : Gsl_matrix.matrix = {{2.; 1.; 5.}; {4.; 8.; 0.}}
 *)
 let left_diag_mul_mat vd m =
-  for i=0 to (fst (Gsl_matrix.dims m))-1 do
-    Gsl_vector.scale (Gsl_matrix.row m i) vd.{i}
+  for i=0 to (fst (Gsl.Matrix.dims m))-1 do
+    Gsl.Vector.scale (Gsl.Matrix.row m i) vd.{i}
   done
 
 (*
-let m = Gsl_matrix.of_arrays faa;;
+let m = Gsl.Matrix.of_arrays faa;;
 right_diag_mul_mat m vd;;
-- : Gsl_matrix.matrix = {{2.; 2.; 15.}; {2.; 8.; 0.}}
+- : Gsl.Matrix.matrix = {{2.; 2.; 15.}; {2.; 8.; 0.}}
 *)
 let right_diag_mul_mat m vd =
-  for i=0 to (fst (Gsl_matrix.dims m))-1 do
-    Gsl_vector.mul (Gsl_matrix.row m i) vd
+  for i=0 to (fst (Gsl.Matrix.dims m))-1 do
+    Gsl.Vector.mul (Gsl.Matrix.row m i) vd
   done
 
 (*
-let va = Array.map Gsl_vector.of_array faa;;
+let va = Array.map Gsl.Vector.of_array faa;;
 right_diag_mul_va va vd;;
-- : Gsl_vector.vector array = [|{2.; 2.; 15.}; {2.; 8.; 0.}|]
+- : Gsl.Vector.vector array = [|{2.; 2.; 15.}; {2.; 8.; 0.}|]
 *)
 let right_diag_mul_va va vd =
-  Array.iter (fun v -> Gsl_vector.mul v vd) va
+  Array.iter (fun v -> Gsl.Vector.mul v vd) va
 
 type epca_result = { eval: float array; evect: float array array }
 
@@ -65,20 +64,20 @@ object (self)
 
   method private gen_pca ~use_raw_eval ~scale ~symmv write_n data prl =
     let _ = use_raw_eval in
-    let faa_z = Gsl_matrix.of_arrays (Array.of_list data.edge_diff) in
-    let n_samples, n_edges = Gsl_matrix.dims faa_z in
-    let tmp = Gsl_matrix.create n_edges n_samples in
-    Gsl_matrix.transpose tmp faa_z;
+    let faa_z = Gsl.Matrix.of_arrays (Array.of_list data.edge_diff) in
+    let n_samples, n_edges = Gsl.Matrix.dims faa_z in
+    let tmp = Gsl.Matrix.create n_edges n_samples in
+    Gsl.Matrix.transpose tmp faa_z;
     for i=0 to n_edges-1 do
-      let col = Gsl_matrix.row tmp i in
-      Gsl_vector.add_constant col (-. Lpca.vec_mean col);
+      let col = Gsl.Matrix.row tmp i in
+      Gsl.Vector.add_constant col (-. Lpca.vec_mean col);
     done;
-    Gsl_matrix.transpose faa_z tmp;
+    Gsl.Matrix.transpose faa_z tmp;
     let inv_sqrt_smo = 1. /. (sqrt (float (n_samples - 1))) in
-    Gsl_matrix.scale faa_z inv_sqrt_smo;
-    let faa = Gsl_matrix.to_arrays faa_z in
+    Gsl.Matrix.scale faa_z inv_sqrt_smo;
+    let faa = Gsl.Matrix.to_arrays faa_z in
     let m = Pca.covariance_matrix ~scale faa
-    and d = Gsl_vector.create ~init:0. n_edges
+    and d = Gsl.Vector.create ~init:0. n_edges
     and ref_tree = self#get_ref_tree prl in
     for i=0 to n_edges-1 do
       d.{i} <- (Gtree.get_bl ref_tree i);
@@ -96,7 +95,7 @@ object (self)
      * However, according to length PCA we must multiply on the right by d,
      * which ends up just being right multiplication by d_root. *)
     right_diag_mul_va u d_root;
-    { eval = l; evect = Array.map Gsl_vector.to_array u }
+    { eval = l; evect = Array.map Gsl.Vector.to_array u }
 
   method private post_pca result data prl =
     let combol = (List.combine (Array.to_list result.eval) (Array.to_list result.evect))

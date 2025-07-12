@@ -1,6 +1,5 @@
 open Ppatteries
 open OUnit
-open Test_util
 
 let fal = [
   [| -1.; -1.; -1.; -1.; -1.; -1.; -1.; -1.;

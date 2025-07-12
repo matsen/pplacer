@@ -182,7 +182,7 @@ module Classifier = struct
     (* The matrix of randomly-generated bootstraps. *)
     boot_matrix: (int, BA.int16_unsigned_elt, BA.c_layout) BA2.t;
     (* A vector to hold the results of a classification multiplication. *)
-    classify_vec: Gsl_vector.vector;
+    classify_vec: Gsl.Vector.vector;
   }
 
   type rank = Rank of int | Auto_rank | All_ranks
@@ -216,7 +216,7 @@ module Classifier = struct
       BA.c_layout
       boot_rows
       c.base.n_words
-    and classify_vec = Gsl_vector.create ~init:0. n_taxids in
+    and classify_vec = Gsl.Vector.create ~init:0. n_taxids in
     if fill_counts then
       Preclassifier.to_taxid_word_counts c taxid_word_counts;
     BA2.fill boot_matrix 0;
@@ -228,10 +228,10 @@ module Classifier = struct
   let classify_vec ?(random_tie_break = false) cf vec =
     let open Preclassifier in
     let dest = cf.classify_vec in
-    Gsl_vector.set_zero dest;
+    Gsl.Vector.set_zero dest;
     Linear.float_mat_int_vec_mul dest cf.taxid_word_counts vec;
     (if random_tie_break then random_winner_max_index dest
-    else Gsl_vector.max_index dest)
+    else Gsl.Vector.max_index dest)
       |> Array.get cf.pc.tax_ids
 
   (* fill a vector with counts for a sequence *)

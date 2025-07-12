@@ -188,7 +188,7 @@ let sort_by_rank td ti1 ti2 =
   else (ti2,ti1)
 
 (* *** using *** *)
-let rec mrca td ti1 ti2 =
+let mrca td ti1 ti2 =
   let rec aux = function
     | x, NoTax
     | NoTax, x -> x

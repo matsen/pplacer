@@ -16,7 +16,7 @@ let of_map (type a) (type b) m (u1: b) (u2: b) (model: a) t ~(darr: b array) ~(p
   let module Model = (val m: Glvm.Model with type t = a and type glv_t = b) in
   let module Seq_post = Seq_post.Make(Model) in
   let bounded_max_index vec =
-    let idx = Gsl_vector.max_index vec in
+    let idx = Gsl.Vector.max_index vec in
     if vec.{idx} /. (Linear_utils.l1_norm vec) < cutoff then -1 else idx
   and code = Model.seq_type model |> Glvm.code in
   IntMap.mapi

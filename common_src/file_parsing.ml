@@ -74,7 +74,7 @@ let rec find_beginning predicate = function
 # separate_first_satisfactory (fun x -> x = 2) [2;2;3;2;4;5;2;2;4];;
 - : int list * int list = ([2; 2], [3; 2; 4; 5; 2; 2; 4])
 *)
-let rec separate_first_satisfactory predicate start_l =
+let separate_first_satisfactory predicate start_l =
   let rec aux satisfactory = function
     | x::l as rest ->
         if predicate x then aux (x::satisfactory) l
@@ -82,4 +82,3 @@ let rec separate_first_satisfactory predicate start_l =
     | [] -> (List.rev satisfactory, [])
   in
   aux [] start_l
-

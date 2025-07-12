@@ -25,33 +25,33 @@
 open Linear_utils
 
 let mm = alloc_mat_mat_mul
-let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl_vector.vector) i
-let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl_vector.vector) i
+let get1 a i = Bigarray.Array1.unsafe_get (a:Gsl.Vector.vector) i
+let set1 a i = Bigarray.Array1.unsafe_set (a:Gsl.Vector.vector) i
 
 
 (* the setup is that X diag(\lambda) X^{-1} is the matrix of interest. *)
 type t =
   {
-    x: Gsl_matrix.matrix;
-    l: Gsl_vector.vector; (* lambda *)
-    xit: Gsl_matrix.matrix; (* x inverse transpose *)
-    util: Gsl_vector.vector;
+    x: Gsl.Matrix.matrix;
+    l: Gsl.Vector.vector; (* lambda *)
+    xit: Gsl.Matrix.matrix; (* x inverse transpose *)
+    util: Gsl.Vector.vector;
   }
 
 let make ~x ~l ~xit =
-  let n = Gsl_vector.length l in
-  assert((n,n) = Gsl_matrix.dims x);
-  assert((n,n) = Gsl_matrix.dims xit);
+  let n = Gsl.Vector.length l in
+  assert((n,n) = Gsl.Matrix.dims x);
+  assert((n,n) = Gsl.Matrix.dims xit);
   {
     x; l; xit;
-    util = Gsl_vector.create n;
+    util = Gsl.Vector.create n;
   }
 
 
   (* *** utils *** *)
 
-let dim dd = Gsl_vector.length dd.l
-let matrix_of_same_dims dd = Gsl_matrix.create (dim dd) (dim dd)
+let dim dd = Gsl.Vector.length dd.l
+let matrix_of_same_dims dd = Gsl.Matrix.create (dim dd) (dim dd)
 
 
   (* *** into matrices *** *)
@@ -64,7 +64,7 @@ let to_matrix dd =
 (* return an exponentiated matrix *)
 let to_exp dd bl =
   let dst = matrix_of_same_dims dd in
-  for i=0 to (Gsl_vector.length dd.l)-1 do
+  for i=0 to (Gsl.Vector.length dd.l)-1 do
     set1 dd.util i (exp (bl *. (get1 dd.l i)))
   done;
   Linear.dediagonalize dst dd.x dd.util dd.xit;
@@ -82,7 +82,7 @@ let multi_exp ?mask ~dst dd rates bl =
     | None -> fun _ -> true (* no mask, do everything *)
     | Some m -> fun r -> m.(r) = true (* compute if specified *)
   in
-  let n = Gsl_vector.length dd.l in
+  let n = Gsl.Vector.length dd.l in
   try
     Tensor.set_all dst 0.;
     for r=0 to (Array.length rates)-1 do
@@ -138,10 +138,10 @@ let of_d_b d b =
  * resulting matrix gets multiplied on the left by something that zeroes out
  * the ith row for every i that has a zero entry in pi. *)
 let b_of_exchangeable_pair r pi =
-  let n = Gsl_vector.length pi in
+  let n = Gsl.Vector.length pi in
   mat_init n n
     (fun i j ->
-      if i <> j then Gsl_matrix.get r i j
+      if i <> j then Gsl.Matrix.get r i j
       else
       (* r_ii = - (pi_i)^{-1} \sum_{k \ne i} r_ki pi_k *)
         (let total = ref 0. in
@@ -159,12 +159,12 @@ let find_rate dd pi =
   let q = to_matrix dd in
   let rate = ref 0. in
   for i=0 to (dim dd)-1 do
-    rate := !rate -. q.{i,i} *. (Gsl_vector.get pi i)
+    rate := !rate -. q.{i,i} *. (Gsl.Vector.get pi i)
   done;
   !rate
 
 let normalize_rate dd pi =
-  Gsl_vector.scale dd.l (1. /. (find_rate dd pi))
+  Gsl.Vector.scale dd.l (1. /. (find_rate dd pi))
 
 let normed_of_exchangeable_pair m pi =
   let dd = of_exchangeable_pair m pi in

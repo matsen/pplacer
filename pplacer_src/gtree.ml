@@ -300,4 +300,3 @@ let add_subtrees_by_map ref_tree where_subtree_map =
     | Stree.Leaf i -> our_add_above (of_stree (Stree.Leaf i))
   in
   aux (get_stree ref_tree)
-

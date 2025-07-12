@@ -1,0 +1,44 @@
+name: Build Release Binaries
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        docker build --build-arg OCAML_VERSION=5.2.1 -t pplacer:latest .
+        
+    - name: Extract binaries from Docker image
+      run: |
+        # Create a temporary container to extract files
+        docker create --name temp-container pplacer:latest
+        
+        # Extract the zip file containing binaries
+        docker cp temp-container:/pplacer.zip ./pplacer-linux-x86_64.zip
+        
+        # Clean up
+        docker rm temp-container
+        
+    - name: Upload Linux binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: pplacer-linux-x86_64
+        path: pplacer-linux-x86_64.zip
+        
+    - name: Upload to release
+      if: github.event_name == 'release'
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} pplacer-linux-x86_64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -29,16 +29,16 @@
 CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
 {
   CAMLparam3(dst_value, a_value, b_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *a = Data_bigarray_val(a_value);
-  double *b = Data_bigarray_val(b_value);
-  int n_states = Bigarray_val(a_value)->dim[0];
-  int n_sites = Bigarray_val(b_value)->dim[0];
+  double *dst = Caml_ba_data_val(dst_value);
+  double *a = Caml_ba_data_val(a_value);
+  double *b = Caml_ba_data_val(b_value);
+  int n_states = Caml_ba_array_val(a_value)->dim[0];
+  int n_sites = Caml_ba_array_val(b_value)->dim[0];
   int site, i, j;
   double *a_start = a;
-  if( n_states != Bigarray_val(a_value)->dim[1] ||
-      n_sites  != Bigarray_val(dst_value)->dim[0] ||
-      n_states != Bigarray_val(dst_value)->dim[1] ) {
+  if( n_states != Caml_ba_array_val(a_value)->dim[1] ||
+      n_sites  != Caml_ba_array_val(dst_value)->dim[0] ||
+      n_states != Caml_ba_array_val(dst_value)->dim[1] ) {
     printf("bad input dimensions!");
   };
   if(n_states == 4) {
@@ -92,12 +92,12 @@ CAMLprim value gemmish_c(value dst_value, value a_value, value b_value)
 CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value, value uit_value)
 {
   CAMLparam4(dst_value, u_value, lambda_value, uit_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *u = Data_bigarray_val(u_value);
-  double *lambda = Data_bigarray_val(lambda_value);
-  double *uit = Data_bigarray_val(uit_value);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *u = Caml_ba_data_val(u_value);
+  double *lambda = Caml_ba_data_val(lambda_value);
+  double *uit = Caml_ba_data_val(uit_value);
   double *uit_p;
-  int n = Bigarray_val(lambda_value)->dim[0];
+  int n = Caml_ba_array_val(lambda_value)->dim[0];
   int i, j, k;
   /* dst.{i,j} <- dst.{i,j} +. (lambda.{k} *. u.{i,k} *. uit.{j,k}) */
   if(n == 4) {
@@ -152,9 +152,9 @@ CAMLprim value dediagonalize (value dst_value, value u_value, value lambda_value
 CAMLprim value mat_print_c(value x_value)
 {
   CAMLparam1(x_value);
-  double *x = Data_bigarray_val(x_value);
-  int n_sites = (Bigarray_val(x_value)->dim[0]);
-  int n_states = (Bigarray_val(x_value)->dim[1]);
+  double *x = Caml_ba_data_val(x_value);
+  int n_sites = (Caml_ba_array_val(x_value)->dim[0]);
+  int n_states = (Caml_ba_array_val(x_value)->dim[1]);
   double *loc = x;
   int site, state;
   for(site=0; site < n_sites; site++) {
@@ -171,12 +171,12 @@ CAMLprim value mat_log_like3_c(value statd_value, value x_value, value y_value, 
 {
   CAMLparam4(statd_value, x_value, y_value, z_value);
   CAMLlocal1(ml_ll_tot);
-  double *statd = Data_bigarray_val(statd_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  double *z = Data_bigarray_val(z_value);
-  int n_sites = Bigarray_val(x_value)->dim[0];
-  int n_states = Bigarray_val(x_value)->dim[1];
+  double *statd = Caml_ba_data_val(statd_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
+  double *z = Caml_ba_data_val(z_value);
+  int n_sites = Caml_ba_array_val(x_value)->dim[0];
+  int n_states = Caml_ba_array_val(x_value)->dim[1];
   int site, state;
   double util, ll_tot=0;
   // here we hard code in the limits for some popular choices
@@ -218,10 +218,10 @@ CAMLprim value mat_log_like3_c(value statd_value, value x_value, value y_value, 
 CAMLprim value mat_pairwise_prod_c(value dst_value, value x_value, value y_value)
 {
   CAMLparam3(dst_value, x_value, y_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  int size = (Bigarray_val(x_value)->dim[0]) * (Bigarray_val(x_value)->dim[1]);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
+  int size = (Caml_ba_array_val(x_value)->dim[0]) * (Caml_ba_array_val(x_value)->dim[1]);
   int i;
   for(i=0; i < size; i++) {
     dst[i] = x[i] * y[i];
@@ -232,12 +232,12 @@ CAMLprim value mat_pairwise_prod_c(value dst_value, value x_value, value y_value
 CAMLprim value mat_statd_pairwise_prod_c(value statd_value, value dst_value, value a_value, value b_value)
 {
   CAMLparam4(statd_value, dst_value, a_value, b_value);
-  double *statd = Data_bigarray_val(statd_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *a = Data_bigarray_val(a_value);
-  double *b = Data_bigarray_val(b_value);
-  int n_sites = Bigarray_val(a_value)->dim[0];
-  int n_states = Bigarray_val(a_value)->dim[1];
+  double *statd = Caml_ba_data_val(statd_value);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *a = Caml_ba_data_val(a_value);
+  double *b = Caml_ba_data_val(b_value);
+  int n_sites = Caml_ba_array_val(a_value)->dim[0];
+  int n_states = Caml_ba_array_val(a_value)->dim[1];
   int site, state;
   for(site=0; site < n_sites; site++) {
     for(state=0; state < n_states; state++) {
@@ -252,12 +252,12 @@ CAMLprim value mat_masked_logdot_c(value x_value, value y_value, value mask_valu
 {
   CAMLparam3(x_value, y_value, mask_value);
   CAMLlocal1(ml_ll_tot);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  uint16_t *mask = Data_bigarray_val(mask_value);
-  int n_sites = (Bigarray_val(x_value)->dim[0]);
-  int n_states = (Bigarray_val(x_value)->dim[1]);
-  if(n_sites != Bigarray_val(mask_value)->dim[0])
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
+  uint16_t *mask = Caml_ba_data_val(mask_value);
+  int n_sites = (Caml_ba_array_val(x_value)->dim[0]);
+  int n_states = (Caml_ba_array_val(x_value)->dim[1]);
+  if(n_sites != Caml_ba_array_val(mask_value)->dim[0])
     { printf("mat_masked_logdot_c: Mask length doesn't match!"); };
   int site, state;
   double util, ll_tot=0;
@@ -299,12 +299,12 @@ CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_va
 {
   CAMLparam4(x_value, y_value, first_value, last_value);
   CAMLlocal1(ml_ll_tot);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
   int first = Int_val(first_value);
   int last = Int_val(last_value);
   int n_used = 1 + last - first;
-  int n_states = Bigarray_val(x_value)->dim[1];
+  int n_states = Caml_ba_array_val(x_value)->dim[1];
   int site, state;
   double util, ll_tot=0;
   // start at the beginning
@@ -345,10 +345,10 @@ CAMLprim value mat_bounded_logdot_c(value x_value, value y_value, value first_va
 CAMLprim value ten_print_c(value x_value)
 {
   CAMLparam1(x_value);
-  double *x = Data_bigarray_val(x_value);
-  int n_rates = (Bigarray_val(x_value)->dim[0]);
-  int n_sites = (Bigarray_val(x_value)->dim[1]);
-  int n_states = (Bigarray_val(x_value)->dim[2]);
+  double *x = Caml_ba_data_val(x_value);
+  int n_rates = (Caml_ba_array_val(x_value)->dim[0]);
+  int n_sites = (Caml_ba_array_val(x_value)->dim[1]);
+  int n_states = (Caml_ba_array_val(x_value)->dim[2]);
   double *loc = x;
   int rate, site, state;
   for(rate=0; rate < n_rates; rate++) {
@@ -368,14 +368,14 @@ CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, 
 {
   CAMLparam5(statd_value, x_value, y_value, z_value, util_value);
   CAMLlocal1(ml_ll_tot);
-  double *statd = Data_bigarray_val(statd_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  double *z = Data_bigarray_val(z_value);
-  double *util = Data_bigarray_val(util_value);
-  int n_rates = Bigarray_val(x_value)->dim[0];
-  int n_sites = Bigarray_val(x_value)->dim[1];
-  int n_states = Bigarray_val(x_value)->dim[2];
+  double *statd = Caml_ba_data_val(statd_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
+  double *z = Caml_ba_data_val(z_value);
+  double *util = Caml_ba_data_val(util_value);
+  int n_rates = Caml_ba_array_val(x_value)->dim[0];
+  int n_sites = Caml_ba_array_val(x_value)->dim[1];
+  int n_states = Caml_ba_array_val(x_value)->dim[2];
   int rate, site, state;
   double *util_v;
   for(site=0; site < n_sites; site++) { util[site] = 0.0; }
@@ -426,13 +426,13 @@ CAMLprim value ten_log_like3_c(value statd_value, value x_value, value y_value, 
 CAMLprim value ten_pairwise_prod_c(value dst_value, value x_value, value y_value)
 {
   CAMLparam3(dst_value, x_value, y_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
   int size =
-    (Bigarray_val(x_value)->dim[0])
-    * (Bigarray_val(x_value)->dim[1])
-    * (Bigarray_val(x_value)->dim[2]);
+    (Caml_ba_array_val(x_value)->dim[0])
+    * (Caml_ba_array_val(x_value)->dim[1])
+    * (Caml_ba_array_val(x_value)->dim[2]);
   int i;
   for(i=0; i < size; i++) {
     dst[i] = x[i] * y[i];
@@ -443,13 +443,13 @@ CAMLprim value ten_pairwise_prod_c(value dst_value, value x_value, value y_value
 CAMLprim value ten_statd_pairwise_prod_c(value statd_value, value dst_value, value a_value, value b_value)
 {
   CAMLparam4(statd_value, dst_value, a_value, b_value);
-  double *statd = Data_bigarray_val(statd_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *a = Data_bigarray_val(a_value);
-  double *b = Data_bigarray_val(b_value);
-  int n_rates = Bigarray_val(a_value)->dim[0];
-  int n_sites = Bigarray_val(a_value)->dim[1];
-  int n_states = Bigarray_val(a_value)->dim[2];
+  double *statd = Caml_ba_data_val(statd_value);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *a = Caml_ba_data_val(a_value);
+  double *b = Caml_ba_data_val(b_value);
+  int n_rates = Caml_ba_array_val(a_value)->dim[0];
+  int n_sites = Caml_ba_array_val(a_value)->dim[1];
+  int n_states = Caml_ba_array_val(a_value)->dim[2];
   int rate, site, state;
   for(rate=0; rate < n_rates; rate++) {
     for(site=0; site < n_sites; site++) {
@@ -466,16 +466,16 @@ CAMLprim value ten_masked_logdot_c(value x_value, value y_value, value mask_valu
 {
   CAMLparam4(x_value, y_value, mask_value, util_value);
   CAMLlocal1(ml_ll_tot);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
-  uint16_t *mask = Data_bigarray_val(mask_value);
-  double *util = Data_bigarray_val(util_value);
-  int n_rates = Bigarray_val(x_value)->dim[0];
-  int n_sites = Bigarray_val(x_value)->dim[1];
-  int n_states = Bigarray_val(x_value)->dim[2];
-  if(n_sites != Bigarray_val(mask_value)->dim[0])
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
+  uint16_t *mask = Caml_ba_data_val(mask_value);
+  double *util = Caml_ba_data_val(util_value);
+  int n_rates = Caml_ba_array_val(x_value)->dim[0];
+  int n_sites = Caml_ba_array_val(x_value)->dim[1];
+  int n_states = Caml_ba_array_val(x_value)->dim[2];
+  if(n_sites != Caml_ba_array_val(mask_value)->dim[0])
     { printf("ten_masked_logdot_c: Mask length doesn't match!"); };
-  if(n_sites != Bigarray_val(util_value)->dim[0])
+  if(n_sites != Caml_ba_array_val(util_value)->dim[0])
     { printf("ten_masked_logdot_c: Util length doesn't match!"); };
   int rate, site, state;
   double *x_p, *y_p, *util_v;
@@ -542,14 +542,14 @@ CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_va
 {
   CAMLparam5(x_value, y_value, first_value, last_value, util_value);
   CAMLlocal1(ml_ll_tot);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
   int first = Int_val(first_value);
   int last = Int_val(last_value);
-  double *util = Data_bigarray_val(util_value);
-  int n_rates = Bigarray_val(x_value)->dim[0];
-  int n_sites = Bigarray_val(x_value)->dim[1];
-  int n_states = Bigarray_val(x_value)->dim[2];
+  double *util = Caml_ba_data_val(util_value);
+  int n_rates = Caml_ba_array_val(x_value)->dim[0];
+  int n_sites = Caml_ba_array_val(x_value)->dim[1];
+  int n_states = Caml_ba_array_val(x_value)->dim[2];
   int rate, site, state;
   int n_used = 1 + last - first;
   /* we make pointers to x, y, and util so that we can do pointer arithmetic
@@ -607,11 +607,11 @@ CAMLprim value ten_bounded_logdot_c(value x_value, value y_value, value first_va
 CAMLprim value vec_pairwise_prod_c(value dst_value, value x_value, value y_value)
 {
   CAMLparam3(dst_value, x_value, y_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *x = Data_bigarray_val(x_value);
-  double *y = Data_bigarray_val(y_value);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *x = Caml_ba_data_val(x_value);
+  double *y = Caml_ba_data_val(y_value);
   int i;
-  for(i=0; i < Bigarray_val(x_value)->dim[0]; i++) {
+  for(i=0; i < Caml_ba_array_val(x_value)->dim[0]; i++) {
     dst[i] = x[i] * y[i];
   }
   CAMLreturn(Val_unit);
@@ -620,10 +620,10 @@ CAMLprim value vec_pairwise_prod_c(value dst_value, value x_value, value y_value
 CAMLprim value int_vec_tot_c(value x_value)
 {
   CAMLparam1(x_value);
-  uint16_t *x = Data_bigarray_val(x_value);
+  uint16_t *x = Caml_ba_data_val(x_value);
   CAMLlocal1(ml_tot);
   int i, tot = 0;
-  for(i=0; i < Bigarray_val(x_value)->dim[0]; i++)
+  for(i=0; i < Caml_ba_array_val(x_value)->dim[0]; i++)
     tot += *x++;
   ml_tot = Val_int(tot);
   CAMLreturn(ml_tot);
@@ -632,10 +632,10 @@ CAMLprim value int_vec_tot_c(value x_value)
 CAMLprim value int_vec_pairwise_prod_c(value dst_value, value x_value, value y_value)
 {
   CAMLparam3(dst_value, x_value, y_value);
-  uint16_t *dst = Data_bigarray_val(dst_value);
-  uint16_t *x = Data_bigarray_val(x_value);
-  uint16_t *y = Data_bigarray_val(y_value);
-  uint16_t *dst_end = dst + Bigarray_val(dst_value)->dim[0];
+  uint16_t *dst = Caml_ba_data_val(dst_value);
+  uint16_t *x = Caml_ba_data_val(x_value);
+  uint16_t *y = Caml_ba_data_val(y_value);
+  uint16_t *dst_end = dst + Caml_ba_array_val(dst_value)->dim[0];
   while (dst < dst_end)
     *dst++ = *x++ * *y++;
   CAMLreturn(Val_unit);
@@ -644,16 +644,16 @@ CAMLprim value int_vec_pairwise_prod_c(value dst_value, value x_value, value y_v
 CAMLprim value float_mat_int_vec_mul_c(value dst_value, value mat_value, value vec_value)
 {
   CAMLparam3(dst_value, mat_value, vec_value);
-  double *dst = Data_bigarray_val(dst_value);
-  double *mat = Data_bigarray_val(mat_value);
-  uint16_t vec_j, *vec = Data_bigarray_val(vec_value);
+  double *dst = Caml_ba_data_val(dst_value);
+  double *mat = Caml_ba_data_val(mat_value);
+  uint16_t vec_j, *vec = Caml_ba_data_val(vec_value);
   int j;
-  int n = Bigarray_val(mat_value)->dim[0], k = Bigarray_val(mat_value)->dim[1];
+  int n = Caml_ba_array_val(mat_value)->dim[0], k = Caml_ba_array_val(mat_value)->dim[1];
   double *dst_start = dst, *dst_end = dst + k;
 
-  if (Bigarray_val(vec_value)->dim[0] != n)
+  if (Caml_ba_array_val(vec_value)->dim[0] != n)
     caml_failwith("dim_0 vec != dim_0 mat");
-  if (Bigarray_val(dst_value)->dim[0] != k)
+  if (Caml_ba_array_val(dst_value)->dim[0] != k)
     caml_failwith("dim_0 dst != dim_1 mat");
 
   for (j = 0; j < n; ++j) {

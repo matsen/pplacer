@@ -1,5 +1,4 @@
 open Subcommand
-open Guppy_cmdobjs
 open Ppatteries
 open Convex
 

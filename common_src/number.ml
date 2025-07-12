@@ -44,7 +44,7 @@ struct
   let max = ( || )
   let pow x y = if y then x else true
   let indic = ( = )
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let succ = not
   let abs x = x
   let inv _ = false
@@ -80,7 +80,7 @@ struct
       aux y
   let indic x y =
     if x = y then 1 else 0
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let succ = (+) 1
   let abs = abs
   let conv_float_fun f =
@@ -118,7 +118,7 @@ struct
   let max = bcheck max
   let pow = bcheck ( ** )
   let indic = bcheck (fun x y -> if x = y then 1. else 0.)
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
   let succ = (+.) 1.
   let abs = abs_float
   let inv = ucheck (fun x -> 1. /. x)
