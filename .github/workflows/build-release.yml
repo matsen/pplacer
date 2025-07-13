@@ -55,3 +55,27 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        
+    - name: Build natively on macOS
+      run: ./build-macos-native-ci.sh
+      
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: pplacer-macos-arm64
+        path: pplacer-macos-arm64.zip
+        
+    - name: Upload to release
+      if: github.event_name == 'release'
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} pplacer-macos-arm64.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

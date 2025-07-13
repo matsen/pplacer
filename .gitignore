@@ -25,3 +25,8 @@ _steps
 _data
 CLAUDE.md
 .claude
+
+# Build artifacts
+build-output/
+pplacer-*.zip
+*.tar.gz
