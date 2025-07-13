@@ -6,32 +6,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-linux:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            platform: linux/amd64
+          - platform: linux/amd64
             name: linux-x86_64
-          - os: ubuntu-latest  
-            platform: linux/arm64
+          - platform: linux/arm64
             name: linux-arm64
-          - os: macos-latest
-            platform: linux/arm64
-            name: macos-arm64
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         submodules: recursive
       
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+      
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       
     - name: Build Docker image
       run: |
-        docker build --platform ${{ matrix.platform }} --build-arg OCAML_VERSION=5.2.1 -t pplacer:latest .
+        docker build --platform ${{ matrix.platform }} --build-arg OCAML_VERSION=5.2.1 -t pplacer:latest --load .
         
     - name: Extract binaries from Docker image
       run: |
@@ -54,5 +52,64 @@ jobs:
       if: github.event_name == 'release'
       run: |
         gh release upload ${{ github.event.release.tag_name }} pplacer-${{ matrix.name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+      
+    - name: Install Docker
+      run: |
+        # Install Docker Desktop
+        brew install --cask docker
+        
+        # Start Docker Desktop
+        open -a Docker
+        
+        # Wait for Docker to start (with timeout)
+        echo "Waiting for Docker to start..."
+        timeout=300
+        elapsed=0
+        while ! docker info > /dev/null 2>&1; do
+          if [ $elapsed -ge $timeout ]; then
+            echo "Docker failed to start within $timeout seconds"
+            exit 1
+          fi
+          echo "Still waiting for Docker... ($elapsed seconds)"
+          sleep 10
+          elapsed=$((elapsed + 10))
+        done
+        echo "Docker is ready!"
+        
+    - name: Build Docker image
+      run: |
+        docker build --build-arg OCAML_VERSION=5.2.1 -t pplacer:latest .
+        
+    - name: Extract binaries from Docker image
+      run: |
+        # Create a temporary container to extract files
+        docker create --name temp-container pplacer:latest
+        
+        # Extract the zip file containing binaries
+        docker cp temp-container:/pplacer.zip ./pplacer-macos-arm64.zip
+        
+        # Clean up
+        docker rm temp-container
+        
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: pplacer-macos-arm64
+        path: pplacer-macos-arm64.zip
+        
+    - name: Upload to release
+      if: github.event_name == 'release'
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} pplacer-macos-arm64.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
