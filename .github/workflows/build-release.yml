@@ -6,8 +6,20 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-latest
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux/amd64
+            name: linux-x86_64
+          - os: ubuntu-latest  
+            platform: linux/arm64
+            name: linux-arm64
+          - os: macos-latest
+            platform: linux/arm64
+            name: macos-arm64
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -19,7 +31,7 @@ jobs:
       
     - name: Build Docker image
       run: |
-        docker build --build-arg OCAML_VERSION=5.2.1 -t pplacer:latest .
+        docker build --platform ${{ matrix.platform }} --build-arg OCAML_VERSION=5.2.1 -t pplacer:latest .
         
     - name: Extract binaries from Docker image
       run: |
@@ -27,20 +39,20 @@ jobs:
         docker create --name temp-container pplacer:latest
         
         # Extract the zip file containing binaries
-        docker cp temp-container:/pplacer.zip ./pplacer-linux-x86_64.zip
+        docker cp temp-container:/pplacer.zip ./pplacer-${{ matrix.name }}.zip
         
         # Clean up
         docker rm temp-container
         
-    - name: Upload Linux binaries
+    - name: Upload binaries
       uses: actions/upload-artifact@v4
       with:
-        name: pplacer-linux-x86_64
-        path: pplacer-linux-x86_64.zip
+        name: pplacer-${{ matrix.name }}
+        path: pplacer-${{ matrix.name }}.zip
         
     - name: Upload to release
       if: github.event_name == 'release'
       run: |
-        gh release upload ${{ github.event.release.tag_name }} pplacer-linux-x86_64.zip
+        gh release upload ${{ github.event.release.tag_name }} pplacer-${{ matrix.name }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
