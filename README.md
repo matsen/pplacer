@@ -1,12 +1,13 @@
 # pplacer suite of programs
 
-[![wercker status](https://app.wercker.com/status/b3fe580ff3a62d0a69c6da264c03ba81/s/master "wercker status")](https://app.wercker.com/project/bykey/b3fe580ff3a62d0a69c6da264c03ba81)
+[![Build Release Binaries](https://github.com/matsen/pplacer/actions/workflows/build-release.yml/badge.svg)](https://github.com/matsen/pplacer/actions/workflows/build-release.yml)
 
 `pplacer` places reads on a phylogenetic tree.
 `guppy` (Grand Unified Phylogenetic Placement Yanalyzer) yanalyzes them.
 `rppr` is a helpful tool for working with reference packages.
 
-* [project webpage (with compiled binaries)](http://matsen.fhcrc.org/pplacer/)
+* [**Download compiled binaries**](https://github.com/matsen/pplacer/releases/latest) (Linux x86_64, ARM64, macOS ARM64)
+* [project webpage](http://matsen.fhcrc.org/pplacer/)
 * [documentation](http://matsen.github.io/pplacer/)
 * [tutorial](http://fhcrc.github.io/microbiome-demo/)
 * [compilation instructions](http://matsen.github.io/pplacer/compiling.html)
