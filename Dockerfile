@@ -93,8 +93,11 @@ RUN echo "Checking MCL libraries..." \
   && ls -la util/libutil.a \
   && echo "All MCL libraries built successfully!"
 
-# Create static dune configuration for Docker build
-RUN mv dune dune-dynamic && \
+# Build pplacer with static linking - change to src directory first
+WORKDIR /pplacer/src
+
+# Create static dune configuration for Docker build  
+RUN cp dune dune-dynamic && \
     echo '(include_subdirs unqualified)' > dune && \
     echo '' >> dune && \
     echo '(executables' >> dune && \
@@ -115,9 +118,6 @@ RUN mv dune dune-dynamic && \
     echo '(subdir json_src' >> dune && \
     echo ' (ocamllex jsonlex)' >> dune && \
     echo ' (ocamlyacc jsonparse))' >> dune
-
-# Build pplacer with static linking
-WORKDIR /pplacer/src
 RUN eval $(opam env) \
   && dune build
 
