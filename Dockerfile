@@ -11,7 +11,7 @@ ARG OCAML_VERSION=5.2.1
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NO_AT_BRIDGE=1
 
-# Install system dependencies
+# Install system dependencies (including static libraries)
 RUN apt-get update && apt-get install -y \
   git \
   build-essential \
@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y \
   zlib1g \
   libsqlite3-dev \
   sqlite3 \
+  libc6-dev \
   python3 \
   python3-pip \
   pipx \
@@ -92,7 +93,30 @@ RUN echo "Checking MCL libraries..." \
   && ls -la util/libutil.a \
   && echo "All MCL libraries built successfully!"
 
-# Build pplacer
+# Create static dune configuration for Docker build
+RUN mv dune dune-dynamic && \
+    echo '(include_subdirs unqualified)' > dune && \
+    echo '' >> dune && \
+    echo '(executables' >> dune && \
+    echo ' (public_names pplacer guppy rppr -)' >> dune && \
+    echo ' (names pplacer guppy rppr tests)' >> dune && \
+    echo ' (flags :standard -w -7-9-36 -ccopt -static)' >> dune && \
+    echo ' (foreign_stubs' >> dune && \
+    echo '  (language c)' >> dune && \
+    echo '  (names linear_c unix_support caml_pam pam' >> dune && \
+    echo '         cddcore caml_cdd cddio cddlib cddlp cddmp cddproj pplacer_cdd setoper))' >> dune && \
+    echo ' (libraries batteries sqlite3 camlzip gsl csv xmlm mcl ounit2))' >> dune && \
+    echo '' >> dune && \
+    echo '(subdir pplacer_src' >> dune && \
+    echo ' (dirs)' >> dune && \
+    echo ' (ocamllex newick_lexer)' >> dune && \
+    echo ' (ocamlyacc newick_parser))' >> dune && \
+    echo '' >> dune && \
+    echo '(subdir json_src' >> dune && \
+    echo ' (ocamllex jsonlex)' >> dune && \
+    echo ' (ocamlyacc jsonparse))' >> dune
+
+# Build pplacer with static linking
 WORKDIR /pplacer/src
 RUN eval $(opam env) \
   && dune build
