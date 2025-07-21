@@ -37,9 +37,17 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Install opam 2.x
-RUN curl -L https://github.com/ocaml/opam/releases/download/2.2.1/opam-2.2.1-x86_64-linux -o /usr/local/bin/opam \
-  && chmod +x /usr/local/bin/opam
+# Install opam 2.x - detect architecture
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        OPAM_ARCH="x86_64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        OPAM_ARCH="arm64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    curl -L https://github.com/ocaml/opam/releases/download/2.2.1/opam-2.2.1-${OPAM_ARCH}-linux -o /usr/local/bin/opam && \
+    chmod +x /usr/local/bin/opam
 
 # Initialize opam with specified OCaml version
 RUN opam init --disable-sandboxing -y --compiler=${OCAML_VERSION} \
