@@ -26,9 +26,9 @@ jobs:
         chmod +x scripts/build-docker.sh
         PLATFORM=${{ matrix.platform }} OCAML_VERSION=5.2.1 ./scripts/build-docker.sh --test
         
-    - name: Rename output for consistency
+    - name: Verify output exists
       run: |
-        mv pplacer-${{ matrix.name }}.zip ./pplacer-${{ matrix.name }}.zip
+        ls -la pplacer-${{ matrix.name }}.zip
         
     - name: Upload binaries
       uses: actions/upload-artifact@v4
@@ -57,9 +57,16 @@ jobs:
         ./scripts/build-macos.sh --deps
         OCAML_VERSION=5.2.1 ./scripts/build-macos.sh
         
-    - name: Rename output for consistency
+    - name: Rename macOS output for consistency
       run: |
-        mv pplacer-macos-*.zip ./pplacer-macos-arm64.zip
+        if [ -f pplacer-macos-arm64.zip ]; then
+          echo "File already correctly named"
+        elif [ -f pplacer-macos-intel.zip ]; then
+          mv pplacer-macos-intel.zip pplacer-macos-arm64.zip
+        else
+          echo "Looking for macOS output files:"
+          ls -la pplacer-macos-*.zip
+        fi
       
     - name: Upload binaries
       uses: actions/upload-artifact@v4

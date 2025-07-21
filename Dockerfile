@@ -119,12 +119,9 @@ RUN cp dune dune-dynamic && \
     echo '(subdir json_src' >> dune && \
     echo ' (ocamllex jsonlex)' >> dune && \
     echo ' (ocamlyacc jsonparse))' >> dune
-# Check available GSL libraries and build
-RUN ls -la /usr/lib/x86_64-linux-gnu/libgsl* || echo "No GSL libs in /usr/lib/x86_64-linux-gnu/" && \
-    ls -la /usr/lib/libgsl* || echo "No GSL libs in /usr/lib/" && \
-    pkg-config --libs gsl || echo "pkg-config gsl failed" && \
-    eval $(opam env) && \
-    dune build
+# Build pplacer
+RUN eval $(opam env) \
+  && dune build
 
 # Install binaries
 RUN cp _build/default/pplacer.exe /usr/local/bin/pplacer \
