@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
   libsqlite3-dev \
   sqlite3 \
   libc6-dev \
+  gsl-bin \
   python3 \
   python3-pip \
   pipx \
@@ -103,7 +104,7 @@ RUN cp dune dune-dynamic && \
     echo '(executables' >> dune && \
     echo ' (public_names pplacer guppy rppr -)' >> dune && \
     echo ' (names pplacer guppy rppr tests)' >> dune && \
-    echo ' (flags :standard -w -7-9-36 -ccopt -static)' >> dune && \
+    echo ' (flags :standard -w -7-9-36)' >> dune && \
     echo ' (foreign_stubs' >> dune && \
     echo '  (language c)' >> dune && \
     echo '  (names linear_c unix_support caml_pam pam' >> dune && \
@@ -118,8 +119,12 @@ RUN cp dune dune-dynamic && \
     echo '(subdir json_src' >> dune && \
     echo ' (ocamllex jsonlex)' >> dune && \
     echo ' (ocamlyacc jsonparse))' >> dune
-RUN eval $(opam env) \
-  && dune build
+# Check available GSL libraries and build
+RUN ls -la /usr/lib/x86_64-linux-gnu/libgsl* || echo "No GSL libs in /usr/lib/x86_64-linux-gnu/" && \
+    ls -la /usr/lib/libgsl* || echo "No GSL libs in /usr/lib/" && \
+    pkg-config --libs gsl || echo "pkg-config gsl failed" && \
+    eval $(opam env) && \
+    dune build
 
 # Install binaries
 RUN cp _build/default/pplacer.exe /usr/local/bin/pplacer \
