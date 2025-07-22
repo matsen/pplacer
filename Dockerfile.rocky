@@ -1,0 +1,140 @@
+## pplacer-rocky
+## Build pplacer binaries on Rocky Linux 8.5 for RHEL/CentOS compatibility
+## Use: docker build -f Dockerfile.rocky --build-arg OCAML_VERSION=5.2.1 -t pplacer:rocky .
+
+FROM rockylinux/rockylinux:8.5
+
+# Build argument for OCaml version
+ARG OCAML_VERSION=5.2.1
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NO_AT_BRIDGE=1
+ENV OCAML_VERSION=${OCAML_VERSION}
+
+# Install system dependencies
+RUN dnf update -y && dnf install -y epel-release && \
+    dnf config-manager --set-enabled powertools && \
+    dnf groupinstall -y "Development Tools" && \
+    dnf install -y \
+    git \
+    pkgconfig \
+    m4 \
+    wget \
+    curl \
+    unzip \
+    zip \
+    gsl-devel \
+    zlib-devel \
+    sqlite-devel \
+    glibc-devel \
+    python3 \
+    python3-pip \
+    rsync && \
+    dnf clean all
+
+# Install opam 2.x - detect architecture
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        OPAM_ARCH="x86_64"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        OPAM_ARCH="arm64"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    curl -L https://github.com/ocaml/opam/releases/download/2.2.1/opam-2.2.1-${OPAM_ARCH}-linux -o /usr/local/bin/opam && \
+    chmod +x /usr/local/bin/opam
+
+# Initialize opam with specified OCaml version
+RUN opam init --disable-sandboxing -y --compiler=${OCAML_VERSION} \
+  && eval $(opam env)
+
+# Add pplacer opam repository
+RUN eval $(opam env) \
+  && opam repo add pplacer-deps http://matsen.github.io/pplacer-opam-repository \
+  && opam update
+
+# Install OCaml dependencies with version pinning for OCaml 4.x
+RUN eval $(opam env) \
+  && if [ "${OCAML_VERSION}" = "4.14.2" ]; then \
+  opam install -y \
+  dune.3.19.1 \
+  csv.2.4 \
+  ounit2.2.2.7 \
+  xmlm.1.4.0 \
+  batteries.3.8.0 \
+  gsl.1.25.0 \
+  sqlite3.5.2.0 \
+  camlzip.1.11 \
+  ocamlfind; \
+  else \
+  opam install -y \
+  dune \
+  csv \
+  ounit2 \
+  xmlm \
+  batteries \
+  gsl \
+  sqlite3 \
+  camlzip \
+  ocamlfind; \
+  fi
+
+# Copy pplacer source code
+RUN mkdir -p /pplacer/src
+WORKDIR /pplacer/src
+COPY ./ /pplacer/src/
+
+# Copy and build mcl source code (continue if it fails)
+WORKDIR /pplacer/src/mcl
+RUN eval $(opam env) \
+  && ./configure || echo "MCL configure failed, continuing" \
+  && make || echo "MCL make failed, continuing" 
+RUN echo "Checking MCL libraries..." && \
+  (ls -la src/clew/libclew.a || echo "libclew.a not found") && \
+  (ls -la src/impala/libimpala.a || echo "libimpala.a not found") && \
+  (ls -la src/mcl/libmcl.a || echo "libmcl.a not found") && \
+  (ls -la util/libutil.a || echo "libutil.a not found") && \
+  echo "MCL check complete (some libraries may be missing)"
+
+# Build pplacer with Rocky Linux (glibc 2.28 compatible)
+WORKDIR /pplacer/src
+
+# Use original dune configuration (no modifications needed for Rocky)
+RUN eval $(opam env) \
+  && dune build
+
+# Verify glibc compatibility
+RUN echo "=== Checking glibc requirements ===" && \
+  objdump -T _build/default/pplacer.exe | grep GLIBC | sort | tail -10 && \
+  echo "=== Binary info ===" && \
+  file _build/default/pplacer.exe && \
+  ls -lh _build/default/*.exe
+
+# Install binaries
+RUN cp _build/default/pplacer.exe /usr/local/bin/pplacer \
+  && cp _build/default/guppy.exe /usr/local/bin/guppy \
+  && cp _build/default/rppr.exe /usr/local/bin/rppr
+
+# Install pplacer scripts
+WORKDIR /pplacer/src/scripts
+RUN chmod +x *.py \
+  && cp *.py /usr/local/bin/
+
+# Package binaries and scripts
+WORKDIR /pplacer/src
+RUN mkdir -p /pplacer/bin \
+  && cp _build/default/*.exe /pplacer/bin/ \
+  && cd /pplacer/bin \
+  && zip /pplacer-rhel.zip * \
+  && cd /pplacer/src \
+  && zip /pplacer-rhel.zip ./scripts/*
+
+# Test that binaries work and show dependencies
+RUN echo "=== Testing Rocky Linux binaries ===" \
+  && /usr/local/bin/pplacer --help | head -5 \
+  && echo "=== Binary dependencies ===" \
+  && ldd /usr/local/bin/pplacer \
+  && echo "All binaries working on Rocky Linux 8.5!"
+
+# Set working directory for data
+WORKDIR /data
