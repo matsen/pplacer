@@ -12,7 +12,8 @@ ENV NO_AT_BRIDGE=1
 ENV OCAML_VERSION=${OCAML_VERSION}
 
 # Install system dependencies
-RUN dnf update -y && dnf install -y epel-release && \
+RUN dnf update -y && \
+    dnf install -y epel-release dnf-plugins-core && \
     dnf config-manager --set-enabled powertools && \
     dnf groupinstall -y "Development Tools" && \
     dnf install -y \
