@@ -2,7 +2,7 @@
 ## Build pplacer binaries on Rocky Linux 8.5 for RHEL/CentOS compatibility
 ## Use: docker build -f Dockerfile.rocky --build-arg OCAML_VERSION=5.2.1 -t pplacer:rocky .
 
-FROM rockylinux/rockylinux:8.5
+FROM quay.io/centos/centos:stream8
 
 # Build argument for OCaml version
 ARG OCAML_VERSION=5.2.1
@@ -30,7 +30,8 @@ RUN dnf update -y && \
     glibc-devel \
     python3 \
     python3-pip \
-    rsync && \
+    rsync \
+    bubblewrap && \
     dnf clean all
 
 # Install opam 2.x - detect architecture
