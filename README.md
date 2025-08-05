@@ -1,6 +1,7 @@
 # pplacer suite of programs
 
 [![Build Release Binaries](https://github.com/matsen/pplacer/actions/workflows/build-release.yml/badge.svg)](https://github.com/matsen/pplacer/actions/workflows/build-release.yml)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/pplacer/README.html)
 
 `pplacer` places reads on a phylogenetic tree.
 `guppy` (Grand Unified Phylogenetic Placement Yanalyzer) yanalyzes them.
