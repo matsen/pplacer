@@ -295,6 +295,19 @@ let check p =
     failwith "Starting pendant branch length must be strictly positive.";
   if start_pend p >= max_pend p then
     failwith "Starting pendant branch length must be strictly less than maximum pendant branch length.";
+  (* Work around hanging issue on macOS ARM64 by forcing single process mode *)
+  if children p > 0 && Sys.os_type = "Unix" then begin
+    try
+      let ic = Unix.open_process_in "uname -s -m" in
+      let line = input_line ic in
+      let _ = Unix.close_process_in ic in
+      if String.trim line = "Darwin arm64" then begin
+        Printf.printf "macOS ARM64 detected; using single process mode to avoid hanging issue.\n";
+        p.children := 0
+      end
+    with _ -> (* ignore errors in platform detection *)
+      ()
+  end;
   ()
 
 let usage =
