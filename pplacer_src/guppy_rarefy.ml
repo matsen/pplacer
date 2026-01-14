@@ -52,7 +52,8 @@ object (self)
   inherit rng_cmd () as super_rng
 
   val n_taken = flag "-n"
-    (Needs_argument ("n_taken", "The number of pqueries to keep per placefile."))
+    (Needs_argument ("n_taken", "The number of reads to sample per placefile. \
+      Due to sampling, the number of distinct pqueries in the output will be <= n."))
   val weight_as_count = flag "--weight-as-count"
     (Plain (false, "Interpret (integer) weights on pqueries as counts and sample without replacement."))
 
