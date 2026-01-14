@@ -286,12 +286,26 @@ let pplacer_core (type a) (type b) m prefs figs prior (model: a) ref_align gtree
         begin match begin
           try
             Some (safe_ml_optimize_location (initial_tolerance prefs) loc)
-          with Gsl.Error.Gsl_exn(_,warn_str) ->
+          with
+          | Gsl.Error.Gsl_exn(_,warn_str) ->
             dprintf
               "Warning: GSL problem with location %d for query %s; Skipped with warning \"%s\".\n"
               loc
               query_name
               warn_str;
+            None
+          | Minimization.FindStartFailure ->
+            dprintf
+              "Warning: couldn't find valid optimization start for %s at location %d; Skipped.\n"
+              query_name
+              loc;
+            None
+          | Minimization.InvalidStartValues (left, start, right) ->
+            dprintf
+              "Warning: invalid optimization bounds (left=%g, start=%g, right=%g) for %s at location %d; Skipped.\n"
+              left start right
+              query_name
+              loc;
             None
         end with
           | None -> play_ball like_record n_strikes results
