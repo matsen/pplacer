@@ -8,9 +8,10 @@ type 'a message =
   | Exception of exn
   | Fatal_exception of exn
 
-class virtual ['a] process: (in_channel -> out_channel -> unit) ->
+class virtual ['a] process: (in_channel -> Unix.file_descr -> unit) ->
 object
   method rd: in_channel
+  method wr_fd: Unix.file_descr
   method wr: out_channel
   method progress: in_channel
   method pid: int
@@ -35,4 +36,5 @@ val fold:
 val event_loop: 'a process list -> unit
 val queue_of_list: 'a list -> 'a Queue.t
 val marshal: out_channel -> 'a -> unit
+val marshal_to_fd: Unix.file_descr -> 'a -> unit
 val try_fork: int -> ('a -> 'b) -> 'a -> 'b list

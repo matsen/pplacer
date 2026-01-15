@@ -92,9 +92,21 @@ let fill_buffer b ch =
         Needs_more
       end
 
+(* Write marshaled data directly to a file descriptor using Unix I/O.
+ * This avoids potential channel buffering issues after fork. *)
+let marshal_to_fd fd x =
+  let data = Marshal.to_bytes x [] in
+  let len = Bytes.length data in
+  let rec write_all offset =
+    if offset < len then
+      let written = Unix.write fd data offset (len - offset) in
+      write_all (offset + written)
+  in
+  write_all 0
+
+(* Marshal to an out_channel by writing to its underlying file descriptor. *)
 let marshal ch x =
-  Marshal.to_channel ch x [];
-  flush ch
+  marshal_to_fd (Unix.descr_of_out_channel ch) x
 
 type marshal_recv_phase =
   | Needs_header of buffer
@@ -122,6 +134,8 @@ class virtual ['a] process child_func =
       (* Do the actual closing of the irrelevant descriptors. *)
       begin
         let ignored = List.map fd_of_file_descr child_only in
+        (* Keep stderr (fd 2) open for error reporting *)
+        let ignored = 2 :: ignored in
         let ignored = match Ppatteries.memory_stats_ch with
           | None -> ignored
           | Some ch ->
@@ -134,14 +148,17 @@ class virtual ['a] process child_func =
       (* Make writing to stdout instead write to the progress channel. *)
       Unix.dup2 progress_wr Unix.stdout;
       Unix.close progress_wr;
-      let rd = Unix.in_channel_of_descr child_rd
-      and wr = Unix.out_channel_of_descr parent_wr in
+      (* Use raw file descriptor for writing to avoid OCaml 5.x channel
+       * buffering issues. Creating an out_channel from a file descriptor
+       * after fork can cause deadlocks due to internal buffering state. *)
+      let rd = Unix.in_channel_of_descr child_rd in
       begin
         try
-          child_func rd wr
+          child_func rd parent_wr
         with exn ->
           Printexc.print_backtrace stderr;
-          marshal wr (Fatal_exception exn)
+          marshal_to_fd parent_wr (Fatal_exception exn);
+          Unix.close parent_wr
       end;
       (* The child should only execute its function and not return control to
        * where the parent spawned it. *)
@@ -153,11 +170,14 @@ class virtual ['a] process child_func =
 
 object (self)
   val rd = Unix.in_channel_of_descr parent_rd
+  (* Store raw fd for direct writing to avoid OCaml 5.x channel issues *)
+  val wr_fd = child_wr
   val wr = Unix.out_channel_of_descr child_wr
   val progress = Unix.in_channel_of_descr progress_rd
   val pid = pid
 
   method rd = rd
+  method wr_fd = wr_fd
   method wr = wr
   method progress = progress
   method pid = pid
@@ -175,7 +195,7 @@ object (self)
    *  (b) reading the marshal contents.
    * Once a whole cycle of this has been completed, call obj_received. *)
   method virtual obj_received: 'a message -> unit
-  val mutable marshal_state = Needs_header (buffer 20)
+  val mutable marshal_state = Needs_header (buffer Marshal.header_size)
   method private marshal_recv h =
     let b = match marshal_state with
       | Needs_header b -> b
@@ -187,7 +207,7 @@ object (self)
       | Done body, Needs_data (header, _) ->
         let obj = Marshal.from_bytes (Bytes.cat header body) 0 in
         self#obj_received obj;
-        marshal_state <- Needs_header (buffer 20)
+        marshal_state <- Needs_header (buffer Marshal.header_size)
 
   (* By setting the progress channel to work in nonblocking mode, we can use
    * ocaml's existing line buffering implementation instead of writing our
@@ -218,9 +238,9 @@ class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
   (* In the case of map, the child sends a ready signal, then repeatedly reads
    * objects from its input channel until there are no more objects to read. The
    * read objects are applied to the supplied function, and then written back to
-   * the parent. *)
+   * the parent. wr is a raw file descriptor to avoid OCaml 5.x channel issues. *)
   let child_func rd wr =
-    marshal wr Ready;
+    marshal_to_fd wr Ready;
     let rec aux () =
       match begin
         try
@@ -229,7 +249,7 @@ class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
           | End_of_file -> None
       end with
         | Some x ->
-          marshal
+          marshal_to_fd
             wr
             begin
               try
@@ -239,7 +259,7 @@ class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
                 Exception exn
             end;
           aux ()
-        | None -> close_in rd; close_out wr
+        | None -> close_in rd; Unix.close wr
     in aux ()
   in
 
@@ -251,7 +271,8 @@ object (self)
   method ret = ret
 
   (* The parent halves of the children all share a Queue from which new objects
-   * are taken in order to fairly distribute work. *)
+   * are taken in order to fairly distribute work. Use raw fd for writing to
+   * avoid OCaml 5.x channel issues. *)
   method push =
     match begin
       try
@@ -259,7 +280,7 @@ object (self)
       with
         | Queue.Empty -> None
     end with
-      | Some x -> marshal wr x
+      | Some x -> marshal_to_fd wr_fd x
       | None -> self#close
 
   method obj_received = function
@@ -308,9 +329,10 @@ class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
 
   (* fold is similar to map, except that there are no intermediate results. To
    * signal that it needs another object, it writes back None, and when the
-   * parent closes the child's input channel, sends the final result. *)
+   * parent closes the child's input channel, sends the final result.
+   * wr is a raw file descriptor to avoid OCaml 5.x channel issues. *)
   let child_func rd wr =
-    marshal wr Ready;
+    marshal_to_fd wr Ready;
     let rec aux prev =
       match begin
         try
@@ -319,7 +341,7 @@ class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
           | End_of_file -> None
       end with
         | Some x ->
-          marshal wr (Data None);
+          marshal_to_fd wr (Data None);
           aux (f x prev)
         | None -> Data (Some prev)
     in
@@ -330,9 +352,9 @@ class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
         Printexc.print_backtrace stderr;
         Exception exn
     in
-    marshal wr res;
+    marshal_to_fd wr res;
     close_in rd;
-    close_out wr
+    Unix.close wr
   in
 
 object (self)
@@ -342,6 +364,7 @@ object (self)
   val mutable ret = initial
   method ret = ret
 
+  (* Use raw fd for writing to avoid OCaml 5.x channel issues. *)
   method push =
     match begin
       try
@@ -349,7 +372,7 @@ object (self)
       with
         | Queue.Empty -> None
     end with
-      | Some x -> marshal wr x
+      | Some x -> marshal_to_fd wr_fd x
       | None -> self#close
 
   method obj_received = function

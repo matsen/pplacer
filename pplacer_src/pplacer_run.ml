@@ -9,9 +9,10 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
    * reference implementation of Multiprocessing.map, because the core of
    * pplacer is a pure function that takes sequences and yields results. The
    * difference comes from being able to decide per-sequence whether or not it
-   * should be sent to the child at all. *)
+   * should be sent to the child at all.
+   * wr is a raw file descriptor to avoid OCaml 5.x channel issues. *)
   let child_func rd wr =
-    marshal wr Ready;
+    marshal_to_fd wr Ready;
     let rec aux () =
       match begin
         try
@@ -20,7 +21,7 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
           | End_of_file -> None
       end with
         | Some x ->
-          marshal
+          marshal_to_fd
             wr
             begin
               try
@@ -30,13 +31,14 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
                 Exception exn
             end;
           aux ()
-        | None -> Legacy.close_in rd; Legacy.close_out wr
+        | None -> Legacy.close_in rd; Legacy.Unix.close wr
     in aux ()
   in
 
 object (self)
   inherit ['b] process child_func as super
 
+  (* Use raw fd for writing to avoid potential channel buffering issues. *)
   method private push =
     match begin
       try
@@ -44,7 +46,7 @@ object (self)
       with
         | Finished -> None
     end with
-      | Some x -> marshal self#wr x
+      | Some x -> marshal_to_fd self#wr_fd x
       | None -> self#close
 
   method obj_received = function
