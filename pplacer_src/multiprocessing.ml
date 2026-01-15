@@ -92,21 +92,34 @@ let fill_buffer b ch =
         Needs_more
       end
 
+(* Write all bytes to a file descriptor, handling partial writes.
+ * Returns unit when all bytes have been written. *)
+let write_all_bytes fd data =
+  let len = Bytes.length data in
+  let rec aux offset =
+    if offset < len then begin
+      let written = Unix.write fd data offset (len - offset) in
+      assert (written > 0);  (* Unix.write should never return 0 for non-empty write *)
+      aux (offset + written)
+    end
+  in
+  aux 0
+
 (* Write marshaled data directly to a file descriptor using Unix I/O.
- * This avoids potential channel buffering issues after fork. *)
+ * This avoids channel buffering deadlocks that occur in OCaml 5.x when
+ * using out_channels created from file descriptors after fork(). *)
 let marshal_to_fd fd x =
   let data = Marshal.to_bytes x [] in
-  let len = Bytes.length data in
-  let rec write_all offset =
-    if offset < len then
-      let written = Unix.write fd data offset (len - offset) in
-      write_all (offset + written)
-  in
-  write_all 0
+  write_all_bytes fd data
 
 (* Marshal to an out_channel by writing to its underlying file descriptor. *)
 let marshal ch x =
   marshal_to_fd (Unix.descr_of_out_channel ch) x
+
+(* Close child process channels: the read channel and write file descriptor. *)
+let close_child_channels rd wr_fd =
+  close_in rd;
+  Unix.close wr_fd
 
 type marshal_recv_phase =
   | Needs_header of buffer
@@ -152,17 +165,19 @@ class virtual ['a] process child_func =
        * buffering issues. Creating an out_channel from a file descriptor
        * after fork can cause deadlocks due to internal buffering state. *)
       let rd = Unix.in_channel_of_descr child_rd in
-      begin
+      let exit_code =
         try
-          child_func rd parent_wr
+          child_func rd parent_wr;
+          0  (* Normal completion *)
         with exn ->
           Printexc.print_backtrace stderr;
           marshal_to_fd parent_wr (Fatal_exception exn);
-          Unix.close parent_wr
-      end;
+          Unix.close parent_wr;
+          1  (* Fatal exception occurred *)
+      in
       (* The child should only execute its function and not return control to
        * where the parent spawned it. *)
-      exit 0
+      exit exit_code
     | pid ->
       List.iter Unix.close child_only;
       pid
@@ -259,7 +274,7 @@ class ['a, 'b] map_process ?(progress_handler = default_progress_handler)
                 Exception exn
             end;
           aux ()
-        | None -> close_in rd; Unix.close wr
+        | None -> close_child_channels rd wr
     in aux ()
   in
 
@@ -353,8 +368,7 @@ class ['a, 'b] fold_process ?(progress_handler = default_progress_handler)
         Exception exn
     in
     marshal_to_fd wr res;
-    close_in rd;
-    Unix.close wr
+    close_child_channels rd wr
   in
 
 object (self)

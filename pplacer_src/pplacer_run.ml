@@ -31,7 +31,7 @@ class ['a, 'b] pplacer_process (f: 'a -> 'b) gotfunc nextfunc progressfunc =
                 Exception exn
             end;
           aux ()
-        | None -> Legacy.close_in rd; Legacy.Unix.close wr
+        | None -> close_child_channels rd wr
     in aux ()
   in
 
