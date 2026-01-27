@@ -3,7 +3,7 @@
 ## Use: docker build --build-arg OCAML_VERSION=4.14.2 -t pplacer:ocaml4 .
 ##      docker build --build-arg OCAML_VERSION=5.2.1 -t pplacer:ocaml5 .
 
-FROM ubuntu:24.04
+FROM ubuntu:22.04
 
 # Build argument for OCaml version
 ARG OCAML_VERSION=5.2.1
@@ -91,6 +91,8 @@ COPY ./ /pplacer/src/
 
 # Copy and build mcl source code
 WORKDIR /pplacer/src/mcl
+# Remove any stale object files that may have been checked in (e.g., from different platform)
+RUN find . -name "*.o" -delete
 RUN eval $(opam env) \
   && ./configure \
   && make
