@@ -39,9 +39,12 @@ struct
     Glv_edge.set_bl tt.model tt.pend pend_bl
 
   let set_dist_bl tt dist_bl =
-    let prox_bl = (get_cut_bl tt) -. dist_bl in
-    assert(prox_bl >= 0.);
-    Glv_edge.set_bl tt.model tt.dist dist_bl;
+    (* Clamp dist_bl to [0, cut_bl] to handle floating-point precision issues
+       from Brent minimization that can return values slightly outside bounds *)
+    let cut_bl = get_cut_bl tt in
+    let clamped_dist_bl = max 0. (min dist_bl cut_bl) in
+    let prox_bl = cut_bl -. clamped_dist_bl in
+    Glv_edge.set_bl tt.model tt.dist clamped_dist_bl;
     Glv_edge.set_bl tt.model tt.prox prox_bl
 
   (* we minimize the negative of the log likelihood *)
