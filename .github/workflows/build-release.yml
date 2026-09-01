@@ -20,11 +20,12 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-      
+        fetch-depth: 0
+
     - name: Build using unified build script
       run: |
         chmod +x scripts/build-docker.sh
-        PLATFORM=${{ matrix.platform }} OCAML_VERSION=5.2.1 ./scripts/build-docker.sh --test
+        PLATFORM=${{ matrix.platform }} OCAML_VERSION=5.2.1 PPLACER_VERSION="${{ github.event.release.tag_name }}" ./scripts/build-docker.sh --test
         
     - name: Verify output exists
       run: |
@@ -50,12 +51,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-        
+        fetch-depth: 0
+
     - name: Build using unified build script
       run: |
         chmod +x scripts/build-macos.sh
         ./scripts/build-macos.sh --deps
-        OCAML_VERSION=5.2.1 ./scripts/build-macos.sh
+        OCAML_VERSION=5.2.1 PPLACER_VERSION="${{ github.event.release.tag_name }}" ./scripts/build-macos.sh
         
     - name: Rename macOS output for consistency
       run: |

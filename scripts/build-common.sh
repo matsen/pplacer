@@ -120,7 +120,8 @@ create_static_dune_config() {
 (executables
  (public_names pplacer guppy rppr -)
  (names pplacer guppy rppr tests)
- (flags :standard -w -7-9-36 $static_flags)
+ (flags :standard -w -7-9-36)
+ (link_flags ($static_flags -cclib -lgsl -cclib -lgslcblas))
  (foreign_stubs
   (language c)
   (names linear_c unix_support caml_pam pam

@@ -1,0 +1,7 @@
+(rule
+ (targets version.ml)
+ (deps
+  (universe))
+ (action
+  (system
+   "v=\"${PPLACER_VERSION:-}\"; if [ -z \"$v\" ]; then v=$(git -C %{workspace_root} describe --tags --always --dirty 2>/dev/null); fi; if [ -z \"$v\" ]; then v=dev; fi; printf 'let version = \"%s\"\\n' \"$v\" > version.ml")))

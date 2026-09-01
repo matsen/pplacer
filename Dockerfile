@@ -8,6 +8,11 @@ FROM ubuntu:22.04
 # Build argument for OCaml version
 ARG OCAML_VERSION=5.2.1
 
+# Version string baked into `pplacer/guppy/rppr --version`; there is no .git
+# directory in this image, so it must be passed in (e.g. the release tag).
+ARG PPLACER_VERSION=dev
+ENV PPLACER_VERSION=${PPLACER_VERSION}
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV NO_AT_BRIDGE=1
 
@@ -107,29 +112,8 @@ RUN echo "Checking MCL libraries..." \
 # Build pplacer with static linking - change to src directory first
 WORKDIR /pplacer/src
 
-# Create static dune configuration for Docker build  
-RUN cp dune dune-dynamic && \
-    echo '(include_subdirs unqualified)' > dune && \
-    echo '' >> dune && \
-    echo '(executables' >> dune && \
-    echo ' (public_names pplacer guppy rppr -)' >> dune && \
-    echo ' (names pplacer guppy rppr tests)' >> dune && \
-    echo ' (flags :standard -w -7-9-36)' >> dune && \
-    echo ' (foreign_stubs' >> dune && \
-    echo '  (language c)' >> dune && \
-    echo '  (names linear_c unix_support caml_pam pam' >> dune && \
-    echo '         cddcore caml_cdd cddio cddlib cddlp cddmp cddproj pplacer_cdd setoper))' >> dune && \
-    echo ' (libraries batteries sqlite3 camlzip gsl csv xmlm mcl ounit2))' >> dune && \
-    echo '' >> dune && \
-    echo '(subdir pplacer_src' >> dune && \
-    echo ' (dirs)' >> dune && \
-    echo ' (ocamllex newick_lexer)' >> dune && \
-    echo ' (ocamlyacc newick_parser))' >> dune && \
-    echo '' >> dune && \
-    echo '(subdir json_src' >> dune && \
-    echo ' (ocamllex jsonlex)' >> dune && \
-    echo ' (ocamlyacc jsonparse))' >> dune
-# Build pplacer
+# Build pplacer (the repo's dune file already links pplacer/guppy/rppr statically;
+# PPLACER_VERSION is baked into the binaries since there is no .git dir in this image)
 RUN eval $(opam env) \
   && dune build
 
