@@ -120,7 +120,7 @@ main() {
     build_mcl
     
     # Create static configuration with Linux-specific flags
-    create_static_dune_config "-ccopt -static"
+    create_static_dune_config "-ccopt -static -ccopt -no-pie"
     
     build_pplacer
     

@@ -8,7 +8,7 @@
   (language c)
   (names linear_c unix_support caml_pam pam
          cddcore caml_cdd cddio cddlib cddlp cddmp cddproj pplacer_cdd setoper))
- (link_flags (-ccopt -static -cclib -lgsl -cclib -lgslcblas))
+ (link_flags (-ccopt -static -ccopt -no-pie -cclib -lgsl -cclib -lgslcblas))
  (libraries batteries sqlite3 camlzip gsl csv xmlm mcl ounit2))
 
 (subdir pplacer_src
