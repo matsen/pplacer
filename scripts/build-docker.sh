@@ -18,6 +18,9 @@ DEFAULT_OCAML_VERSION="5.2.1"
 # Configuration
 PLATFORM="${PLATFORM:-$DEFAULT_PLATFORM}"
 OCAML_VERSION="${OCAML_VERSION:-$DEFAULT_OCAML_VERSION}"
+# The Docker build context has no .git dir, so compute the version here on the
+# host (where .git is present) and pass it in as a build arg.
+PPLACER_VERSION="${PPLACER_VERSION:-$(cd "$PROJECT_ROOT" && git describe --tags --always --dirty 2>/dev/null || echo dev)}"
 
 # Parse platform for naming
 case "$PLATFORM" in
@@ -60,6 +63,7 @@ build_docker_image() {
         docker buildx build \
             --platform "$PLATFORM" \
             --build-arg OCAML_VERSION="$OCAML_VERSION" \
+            --build-arg PPLACER_VERSION="$PPLACER_VERSION" \
             -t "$IMAGE_TAG" \
             --load \
             .
@@ -68,6 +72,7 @@ build_docker_image() {
         docker build \
             --platform "$PLATFORM" \
             --build-arg OCAML_VERSION="$OCAML_VERSION" \
+            --build-arg PPLACER_VERSION="$PPLACER_VERSION" \
             -t "$IMAGE_TAG" \
             .
     fi
@@ -136,6 +141,7 @@ main() {
     log_info "Platform: $PLATFORM"
     log_info "Platform name: $PLATFORM_NAME"
     log_info "OCaml version: $OCAML_VERSION"
+    log_info "Pplacer version: $PPLACER_VERSION"
     log_info "Output: $OUTPUT_NAME"
     
     # Check if Docker is available

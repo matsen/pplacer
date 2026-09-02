@@ -119,8 +119,17 @@ main() {
     install_ocaml_deps
     build_mcl
     
-    # Create static configuration with Linux-specific flags
-    create_static_dune_config "-ccopt -static"
+    # Create static configuration with Linux-specific flags. True static
+    # linking isn't achievable on aarch64: Ubuntu's prebuilt libc.a crt
+    # startup code overflows a short-range GOT relocation once the binary
+    # grows this large ("relocation truncated to fit:
+    # R_AARCH64_LD64_GOTPAGE_LO15"), which no flag on our side can fix.
+    if [[ "$ARCHITECTURE" == "aarch64" ]] || [[ "$ARCHITECTURE" == "arm64" ]]; then
+        log_warning "Skipping static linking on $ARCHITECTURE (not supported, see comment in build-linux.sh)"
+        create_static_dune_config ""
+    else
+        create_static_dune_config "-ccopt -static -ccopt -no-pie"
+    fi
     
     build_pplacer
     
