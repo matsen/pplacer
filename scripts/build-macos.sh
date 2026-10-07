@@ -56,7 +56,8 @@ install_opam() {
 create_macos_dune_config() {
     log_info "Creating macOS dune configuration with Homebrew paths"
     # Force archive symbols to override the OCaml binding's shared-library
-    # flags, then discard unused symbols and the unneeded GSL dylib.
+    # flags, then discard unused symbols and the unneeded GSL dylib. CBLAS
+    # still comes from the Accelerate framework the binding links.
     local gsl_prefix
     gsl_prefix="$(brew --prefix gsl)"
     
@@ -74,7 +75,6 @@ create_macos_dune_config() {
  (flags :standard -w -7-9-36)
  (link_flags
   -ccopt -Wl,-force_load,$gsl_prefix/lib/libgsl.a
-  -ccopt -Wl,-force_load,$gsl_prefix/lib/libgslcblas.a
   -ccopt -Wl,-dead_strip -ccopt -Wl,-dead_strip_dylibs)
  (foreign_stubs
   (language c)
