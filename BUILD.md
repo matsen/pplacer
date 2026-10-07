@@ -51,8 +51,9 @@ The build system consists of several scripts in the `scripts/` directory:
 - Self-contained executables
 
 ### macOS Builds
-- Creates **dynamic binaries** linked to Homebrew libraries
-- Requires GSL, SQLite3, and zlib to be installed
+- Links GSL statically; no runtime GSL installation is required
+- SQLite3 and zlib remain dynamically linked
+- The build checks all three executables with `otool -L` and rejects external GSL dependencies
 - Works on both Intel and Apple Silicon Macs
 
 ### Linux Native Builds

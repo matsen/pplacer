@@ -55,19 +55,27 @@ install_opam() {
 # Create macOS-specific dune configuration with Homebrew paths
 create_macos_dune_config() {
     log_info "Creating macOS dune configuration with Homebrew paths"
+    # Force archive symbols to override the OCaml binding's shared-library
+    # flags, then discard unused symbols and the unneeded GSL dylib. CBLAS
+    # still comes from the Accelerate framework the binding links.
+    local gsl_prefix
+    gsl_prefix="$(brew --prefix gsl)"
     
     # Backup original dune file
     if [[ -f "dune" ]] && [[ ! -f "dune-dynamic" ]]; then
         cp dune dune-dynamic
     fi
     
-    cat > dune << 'EOF'
+    cat > dune << EOF
 (include_subdirs unqualified)
 
 (executables
  (public_names pplacer guppy rppr -)
  (names pplacer guppy rppr tests)
  (flags :standard -w -7-9-36)
+ (link_flags
+  -ccopt -Wl,-force_load,$gsl_prefix/lib/libgsl.a
+  -ccopt -Wl,-dead_strip -ccopt -Wl,-dead_strip_dylibs)
  (foreign_stubs
   (language c)
   (names linear_c unix_support caml_pam pam
@@ -118,7 +126,13 @@ check_binary_deps() {
     
     if command -v otool &> /dev/null; then
         log_info "Dynamic library dependencies:"
-        otool -L "$binary_path" | grep -E "(dylib|so)" | head -10 || log_info "No external dynamic libraries found"
+        local dependencies
+        dependencies="$(otool -L "$binary_path")"
+        printf '%s\n' "$dependencies"
+        if [[ "$dependencies" == *libgsl*.dylib* ]]; then
+            log_error "GSL must be statically linked: $binary_path"
+            exit 1
+        fi
     fi
 }
 
@@ -159,13 +173,16 @@ main() {
     install_ocaml_deps
     build_mcl
     
-    # Create macOS-specific configuration (no static linking on macOS)
+    # Link GSL statically; SQLite and zlib remain dynamically linked.
     create_macos_dune_config
+    trap restore_dune_config EXIT
     
     build_pplacer
     
     # Check binary dependencies
-    check_binary_deps "_build/default/pplacer.exe"
+    for binary in pplacer guppy rppr; do
+        check_binary_deps "_build/default/$binary.exe"
+    done
     
     package_binaries "$OUTPUT_NAME"
     restore_dune_config
