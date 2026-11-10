@@ -68,6 +68,7 @@ The build system consists of several scripts in the `scripts/` directory:
   - Supported: `5.2.1`, `4.14.2`
 - **`PLATFORM`** - Target platform for Docker builds (default: linux/amd64)
   - Supported: `linux/amd64`, `linux/arm64`
+- **`PPLACER_VERSION`** - String that `--version` reports. If unset, the build uses `common_src/git_archival.txt` (filled in by `git archive`, so GitHub tag tarballs carry their tag), then `git describe`, then `dev`.
 
 ### Examples
 
